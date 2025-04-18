@@ -1,0 +1,88 @@
+# OrKa: Orchestrator Kit Agents
+# Copyright © 2025 Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka
+#
+# Licensed under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
+# You may not use this file for commercial purposes without explicit permission.
+#
+# Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
+# For commercial use, contact: marcosomma.work@gmail.com
+# 
+# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
+# This file is an example of how to use OrKa to build a fact-checking agent.
+
+
+orchestrator:
+  id: fact-checker
+  strategy: decision-tree
+  queue: orka:fact-core
+  agents:
+    - domain_classifier # < -- 1st agent Classifies the domain "science, geography, history, technology, date check, general"
+    - is_fact # < -- 2nd agent Classifies if the input is a fact or not 
+    - requires_search # < -- 3rd agent Classifies if the input requires external search or not
+    - router_search # < -- 4th agent Routes to either duck_search or validate_fact based on requires_search
+    - duck_search #     < -- IF YES > agent Performs web search using DuckDuckGo
+    - need_answer #     < -- IF NO > agent Classifies if the input is a question that requires an answer
+    - router_answer #   < -- 5th agent Routes to either build_answer or validate_fact based on need_answer
+    - build_answer #      < -- IF YES > agent Builds an answer (using the search results from duck_search if availables)
+    - validate_fact #     < -- IF NO > agent Validates the fact (using the search results from duck_search if availables)
+
+agents:
+  - id: domain_classifier
+    type: openai-classification
+    prompt: >
+      Classify this question {{ input }} one of the following domains
+    options: [science, geography, history, technology, date check, general, pople, culture, politics, sports]
+    queue: orka:domain
+
+  - id: is_fact
+    type: openai-binary
+    prompt: >
+      Is this a {{ input }} factual assertion that can be verified externally? Answer TRUE or FALSE.
+    queue: orka:is_fact
+
+  - id: requires_search
+    type: openai-binary
+    prompt: >
+      Does this {{ input }} require external search to validate? Answer strictly TRUE or FALSE.
+    queue: orka:need_search
+
+  - id: router_search
+    type: router
+    params:
+      decision_key: requires_search
+      routing_map:
+        true: ["duck_search"]
+        false: ["validate_fact"]
+
+  - id: duck_search
+    type: duckduckgo
+    prompt: Perform web search
+    queue: orka:search
+
+  - id: need_answer
+    type: openai-binary
+    prompt: >
+      Is this a {{ input }} is a question that requires an answer?
+    queue: orka:is_fact
+
+  - id: router_answer
+    type: router
+    params:
+      decision_key: need_answer
+      routing_map:
+        true: ["build_answer"]
+        false: ["validate_fact"]
+
+  - id: validate_fact
+    type: openai-binary
+    prompt: |
+      Given the fact "{{ input }}", and the search results "{{ previous_outputs.duck_search }}"?
+    queue: validation_queue
+
+  - id: build_answer
+    type: openai-answer
+    prompt: |
+      Given this question "{{ input }}", and the search results "{{ previous_outputs.duck_search }}", return a complelling answer.
+    queue: validation_queue
