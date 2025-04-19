@@ -1,0 +1,39 @@
+orchestrator:
+  id: orka-ui
+  strategy: sequential
+  queue: orka:generated
+  agents:
+    - duckduckgo_0
+    - openai-binary_2
+    - openai-answer_1
+agents:
+  - id: duckduckgo_0
+    type: duckduckgo
+    queue: orka:duckduckgo_0
+    prompt: '{{ input }}'
+  - id: openai-binary_2
+    type: openai-binary
+    queue: orka:openai-binary_2
+    prompt: |-
+      is the fact true. Use also ectra data to validate it
+
+      ## FACT: 
+      ```
+      {{ input }}
+      ```
+      ## EXTRA DATA: 
+      ```
+      {{ previous_outputs.duckduckgo_0  }}
+      ```
+  - id: openai-answer_1
+    type: openai-answer
+    queue: orka:openai-answer_1
+    prompt: |-
+      Is your task to explain "why" the fact is valid or not.
+
+      - Is the fact valid? ` {{ previous_outputs
+       }} ` 
+      ## FACT: 
+      ```
+      {{ input }}
+      ```

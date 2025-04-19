@@ -1,0 +1,65 @@
+orchestrator:
+  id: orka-ui
+  strategy: decision-tree
+  queue: orka:generated
+  agents:
+    - openai-binary_0
+    - router_1
+    - openai-classification_5
+    - duckduckgo_2
+    - openai-binary_6
+    - openai-binary_4
+    - duckduckgo_8
+    - openai-answer_3
+    - openai-answer_7
+agents:
+  - id: openai-binary_0
+    type: openai-binary
+    queue: orka:openai-binary_0
+    prompt: is this a question?
+  - id: router_1
+    type: router
+    params:
+      decision_key: openai-binary_0
+      routing_map:
+        'true':
+          - openai-classification_5
+          - openai-binary_6
+          - duckduckgo_8
+          - openai-answer_7
+        'false':
+          - duckduckgo_2
+          - openai-binary_4
+          - openai-answer_3
+  - id: openai-classification_5
+    type: openai-classification
+    queue: orka:openai-classification_5
+    prompt: Cassify the following text `{{ input }}` into one of the following categories
+    options:
+      - Nature
+      - Tech
+      - General
+  - id: duckduckgo_2
+    type: duckduckgo
+    queue: orka:duckduckgo_2
+    prompt: search {{ input }}
+  - id: openai-binary_6
+    type: openai-binary
+    queue: orka:openai-binary_6
+    prompt: test {{ input }} {{ previous_outputs }}
+  - id: openai-binary_4
+    type: openai-binary
+    queue: orka:openai-binary_4
+    prompt: test {{ input }} {{ previous_outputs.duckduckgo_2 }}
+  - id: duckduckgo_8
+    type: duckduckgo
+    queue: orka:duckduckgo_8
+    prompt: search {{ input }}
+  - id: openai-answer_3
+    type: openai-answer
+    queue: orka:openai-answer_3
+    prompt: validate {{ input }} {{ previous_outputs }}
+  - id: openai-answer_7
+    type: openai-answer
+    queue: orka:openai-answer_7
+    prompt: validate {{ input }} {{ previous_outputs }}

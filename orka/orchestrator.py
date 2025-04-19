@@ -127,24 +127,37 @@ class Orchestrator:
             else:
                 result = agent.run(payload)
 
+            
             outputs[agent_id] = result
             print(f"[ORKA] Agent '{agent_id}' returned: {result}")
-            if queue:  # Check if this is the last agent
-                self.memory.log(agent_id, agent.__class__.__name__, {
-                                "input": input_data, "result": result
-                            })
-            else:
-                self.memory.log(agent_id, agent.__class__.__name__, {
-                                "input": input_data, "result": result
-                            })
-                self.memory.log(agent_id, agent.__class__.__name__, { "hystory": payload })
-
             if agent_type == "routeragent":
                 next_agents = result if isinstance(result, list) else [result]
                 queue = next_agents
+
+                # Log the routing decision with next agents
+                self.memory.log(agent_id, agent.__class__.__name__, {
+                    "input": input_data,
+                    "decision_key": decision_key,
+                    "decision_value": raw_decision_value,
+                    "next_agents": str(next_agents)
+                })
+
                 print(f"[ORKA][ROUTER] Injecting agents into queue: {next_agents}")
                 continue
-
+            else:
+                if queue:  # Check if this is the last agent
+                    self.memory.log(agent_id, agent.__class__.__name__, {
+                                    "input": input_data, "result": result
+                                })
+                else:
+                    self.memory.log(agent_id, agent.__class__.__name__, {
+                                    "input": input_data, "result": result
+                                })
+                    self.memory.log(agent_id, agent.__class__.__name__, { "hystory": payload })
+                    self.memory.log(agent_id, agent.__class__.__name__, {
+                        "input": input_data,
+                        "result": result
+                    })
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_dir = os.getenv("ORKA_LOG_DIR", "logs")
         file_path = f"orka_trace_{timestamp}.json"
