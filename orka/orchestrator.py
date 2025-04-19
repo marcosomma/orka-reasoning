@@ -14,6 +14,7 @@
 import importlib
 import os
 import json
+from time import time
 from jinja2 import Template
 from datetime import datetime
 from .loader import YAMLLoader
@@ -95,7 +96,7 @@ class Orchestrator:
         return False
 
     def run(self, input_data):
-        outputs = {}
+        logs = []
         queue = self.orchestrator_cfg["agents"][:]
 
         while queue:
@@ -106,62 +107,68 @@ class Orchestrator:
 
             payload = {
                 "input": input_data,
-                "previous_outputs": outputs
+                "previous_outputs": {
+                    log["agent_id"]: log["payload"]["result"]
+                    for log in logs
+                    if "result" in log["payload"]
+                }
             }
 
+            start_time = time()
+
             if agent_type == "routeragent":
-                decision_key = agent.params.get('decision_key')
+                decision_key = agent.params.get("decision_key")
                 if decision_key is None:
-                    raise ValueError(
-                        "Router agent must have 'decision_key' in params.")
-                raw_decision_value = outputs.get(decision_key)
+                    raise ValueError("Router agent must have 'decision_key' in params.")
+                raw_decision_value = payload["previous_outputs"].get(decision_key)
                 normalized = self.normalize_bool(raw_decision_value)
                 normalized_key = "true" if normalized else "false"
-                payload['previous_outputs'][decision_key] = normalized_key
+                payload["previous_outputs"][decision_key] = normalized_key
                 result = agent.run(payload)
-                print(f"[ROUTER] Using decision_key='{decision_key}' → '{normalized_key}' → route={result}")
+                next_agents = result if isinstance(result, list) else [result]
+                queue = next_agents
+                payload_out = {
+                    "input": input_data,
+                    "decision_key": decision_key,
+                    "decision_value": raw_decision_value,
+                    "normalized_key": normalized_key,
+                    "next_agents": str(next_agents)
+                }
             elif hasattr(agent, "prompt") and isinstance(agent.prompt, str):
                 rendered_prompt = self.render_prompt(agent.prompt, payload)
                 payload["prompt"] = rendered_prompt
                 result = agent.run(payload)
+                payload_out = {
+                    "input": input_data,
+                    "result": result
+                }
             else:
                 result = agent.run(payload)
+                payload_out = {
+                    "input": input_data,
+                    "result": result
+                }
 
-            
-            outputs[agent_id] = result
+            duration = round(time() - start_time, 4)
+            log_entry = {
+                "agent_id": agent_id,
+                "event_type": agent.__class__.__name__,
+                "timestamp": datetime.utcnow().isoformat(),
+                "duration": duration,
+                "payload": payload_out
+            }
+            logs.append(log_entry)
+            self.memory.log(agent_id, agent.__class__.__name__, payload_out)
+
             print(f"[ORKA] Agent '{agent_id}' returned: {result}")
             if agent_type == "routeragent":
-                next_agents = result if isinstance(result, list) else [result]
-                queue = next_agents
-
-                # Log the routing decision with next agents
-                self.memory.log(agent_id, agent.__class__.__name__, {
-                    "input": input_data,
-                    "decision_key": decision_key,
-                    "decision_value": raw_decision_value,
-                    "next_agents": str(next_agents)
-                })
-
                 print(f"[ORKA][ROUTER] Injecting agents into queue: {next_agents}")
-                continue
-            else:
-                if queue:  # Check if this is the last agent
-                    self.memory.log(agent_id, agent.__class__.__name__, {
-                                    "input": input_data, "result": result
-                                })
-                else:
-                    self.memory.log(agent_id, agent.__class__.__name__, {
-                                    "input": input_data, "result": result
-                                })
-                    self.memory.log(agent_id, agent.__class__.__name__, { "hystory": payload })
-                    self.memory.log(agent_id, agent.__class__.__name__, {
-                        "input": input_data,
-                        "result": result
-                    })
+
+        # Save log
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_dir = os.getenv("ORKA_LOG_DIR", "logs")
-        file_path = f"orka_trace_{timestamp}.json"
         os.makedirs(log_dir, exist_ok=True)
-        log_path = os.path.join(log_dir, file_path)
+        log_path = os.path.join(log_dir, f"orka_trace_{timestamp}.json")
         self.memory.save_to_file(log_path)
-        return outputs
+
+        return logs  # Return raw logs, just like stored
