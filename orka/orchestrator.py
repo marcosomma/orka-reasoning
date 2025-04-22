@@ -18,7 +18,7 @@ from time import time
 from jinja2 import Template
 from datetime import datetime
 from .loader import YAMLLoader
-from .agents import agents, llm_agents, google_duck_agents, router_agent
+from .agents import agents, llm_agents, google_duck_agents, router_agent, failover_agent, failing_agent
 from .memory_logger import RedisMemoryLogger
 
 AGENT_TYPES = {
@@ -29,7 +29,9 @@ AGENT_TYPES = {
     "openai-answer": llm_agents.OpenAIAnswerBuilder,
     "google-search": google_duck_agents.GoogleSearchAgent,
     "duckduckgo": google_duck_agents.DuckDuckGoAgent,
-    "router": router_agent.RouterAgent
+    "router": router_agent.RouterAgent,
+    "failover": failover_agent.FailoverAgent,
+    "failing": failing_agent.FailingAgent,
 }
 
 
@@ -44,7 +46,7 @@ class Orchestrator:
 
     def _init_agents(self):
         instances = {}
-        for cfg in self.agent_cfgs:
+        def init_single_agent(cfg):
             agent_cls = AGENT_TYPES.get(cfg["type"])
             if not agent_cls:
                 raise ValueError(f"Unsupported agent type: {cfg['type']}")
@@ -57,27 +59,34 @@ class Orchestrator:
             clean_cfg.pop("id", None)
             clean_cfg.pop("type", None)
 
-            print(f"[INIT] Instantiating agent {agent_id} of type {agent_type}")
+            print(f"[INIT] Instantiating agent {agent_id} of type '**********'")
+            # print(f"[INIT] Instantiating agent {agent_id} of type {agent_type}")
 
             if agent_type == "router":
                 clean_cfg.pop("prompt", None)
                 clean_cfg.pop("queue", None)
                 params = clean_cfg.pop("params", {})
-                clean_cfg.pop("agent_id", None)  # 💥 Prevent double-passing
-                agent = agent_cls(agent_id=agent_id,
-                                  params=params, **clean_cfg)
-            else:
-                prompt = clean_cfg.pop("prompt")
-                queue = clean_cfg.pop("queue")
                 clean_cfg.pop("agent_id", None)
-                agent = agent_cls(
-                    agent_id=agent_id,
-                    prompt=prompt,
-                    queue=queue,
-                    **clean_cfg
-                )
+                return agent_cls(agent_id=agent_id, params=params, **clean_cfg)
 
-            instances[agent_id] = agent
+            elif agent_type == "failover":
+                # Recursively init children
+                child_instances = []
+                for child_cfg in cfg.get("children", []):
+                    child_agent = init_single_agent(child_cfg)
+                    child_instances.append(child_agent)
+                return agent_cls(agent_id=agent_id, children=child_instances, queue=cfg.get("queue"))
+
+            else:
+                prompt = clean_cfg.pop("prompt", None)
+                queue = clean_cfg.pop("queue", None)
+                clean_cfg.pop("agent_id", None)
+                return agent_cls(agent_id=agent_id, prompt=prompt, queue=queue, **clean_cfg)
+
+        for cfg in self.agent_cfgs:
+            agent = init_single_agent(cfg)
+            instances[cfg["id"]] = agent
+
         return instances
 
     def render_prompt(self, template_str, payload):
@@ -103,7 +112,8 @@ class Orchestrator:
             agent_id = queue.pop(0)
             agent = self.agents[agent_id]
             agent_type = agent.type
-            print(f"[ORKA] Running agent '{agent_id}' of type '{agent_type}'")
+            # print(f"[ORKA] Running agent '{agent_id}' of type '{agent_type}'")
+            print(f"[ORKA] Running agent '{agent_id}' of type '**********'")
 
             payload = {
                 "input": input_data,
@@ -140,6 +150,7 @@ class Orchestrator:
                 result = agent.run(payload)
                 payload_out = {
                     "input": input_data,
+                    "prompt": rendered_prompt,
                     "result": result
                 }
             else:

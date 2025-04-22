@@ -1,0 +1,45 @@
+orchestrator:
+  id: orka-ui
+  strategy: sequential
+  queue: orka:failover
+  agents:
+    - test_failover
+    - test_failover2
+
+agents:
+  - id: test_failover
+    type: failover
+    queue: orka:test_failover
+    children:
+      - id: failing_test_agent1
+        type: failing
+        queue: orka:failing_test_agent1
+      - id: failing_test_agent2
+        type: failing
+        queue: orka:failing_test_agent2
+      - id: failing_test_agent3
+        type: failing
+        queue: orka:failing_test_agent3
+      - id: failing_test_agent4
+        type: failing
+        queue: orka:failing_test_agent4
+      - id: actual_working_agent
+        type: duckduckgo
+        prompt: >
+          {{ input }}
+        queue: orka:actual_working_agent
+  - id: test_failover2
+    type: failover
+    queue: orka:test_failover2
+    children:
+      - id: failing_test_agent5
+        type: failing
+        queue: orka:failing_test_agent5
+      - id: failing_test_agent6
+        type: failing
+        queue: orka:failing_test_agent6
+      - id: build_answer
+        type: openai-answer
+        prompt: |
+          Given this question "{{ input }}", and the search results "{{ previous_outputs.test_failover }}", return a compelling answer.
+        queue: orka:validation_queue

@@ -17,14 +17,14 @@ agents:
   - id: domain_classifier
     type: openai-classification
     prompt: >
-      Classify this question {{ input }} one of the following domains
-    options: [science, geography, history, technology, date check, general, pople, culture, politics, sports]
+      Classify this question {{ input }} one of the following domains {{ options }}
+    options: [science, geography, history, technology, date check, general, people, culture, politics, sports]
     queue: orka:domain
 
   - id: is_fact
     type: openai-binary
     prompt: >
-      Is this a {{ input }} factual assertion that can be verified externally? Answer TRUE or FALSE.
+      Is this a `{{ input }}` fact assertion? Answer TRUE or FALSE.
     queue: orka:is_fact
 
   - id: requires_search
@@ -43,7 +43,8 @@ agents:
 
   - id: duck_search
     type: duckduckgo
-    prompt: Perform web search
+    prompt: > 
+      {{ input }}
     queue: orka:search
 
   - id: need_answer

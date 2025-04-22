@@ -10,11 +10,11 @@
 # For commercial use, contact: marcosomma.work@gmail.com
 # 
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
-
-from .agents import BinaryAgent, ClassificationAgent
-from .llm_agents import OpenAIBinaryAgent, OpenAIClassificationAgent, OpenAIAnswerBuilder
-from .google_duck_agents import GoogleSearchAgent, DuckDuckGoAgent
+import time
 from .agent_base import BaseAgent
-from .router_agent import RouterAgent
-from .failover_agent import FailoverAgent
-from .failing_agent import FailingAgent
+
+class FailingAgent(BaseAgent):
+    def run(self, input_data):
+        print(f"[FAKE_AGENT] {self.agent_id}: Simulating failure...")
+        time.sleep(5)  # simulate slow agent
+        raise RuntimeError(f"{self.agent_id} failed intentionally after 5 seconds.")
