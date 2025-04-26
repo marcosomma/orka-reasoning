@@ -59,8 +59,8 @@ class Orchestrator:
             clean_cfg.pop("id", None)
             clean_cfg.pop("type", None)
 
-            print(f"[INIT] Instantiating agent {agent_id} of type '**********'")
-            # print(f"[INIT] Instantiating agent {agent_id} of type {agent_type}")
+            # print(f"[INIT] Instantiating agent {agent_id} of type '**********'")
+            print(f"[INIT] Instantiating agent {agent_id} of type {agent_type}")
 
             if agent_type == "router":
                 clean_cfg.pop("prompt", None)
@@ -112,8 +112,8 @@ class Orchestrator:
             agent_id = queue.pop(0)
             agent = self.agents[agent_id]
             agent_type = agent.type
-            # print(f"[ORKA] Running agent '{agent_id}' of type '{agent_type}'")
-            print(f"[ORKA] Running agent '{agent_id}' of type '**********'")
+            print(f"[ORKA] Running agent '{agent_id}' of type '{agent_type}'")
+            # print(f"[ORKA] Running agent '{agent_id}' of type '**********'")
 
             payload = {
                 "input": input_data,
@@ -123,11 +123,17 @@ class Orchestrator:
                     if "result" in log["payload"]
                 }
             }
+            log_entry = {
+                "agent_id": agent_id,
+                "event_type": agent.__class__.__name__,
+                "timestamp": datetime.utcnow().isoformat()
+            }
 
             start_time = time()
 
             if agent_type == "routeragent":
                 decision_key = agent.params.get("decision_key")
+                routing_map = agent.params.get("routing_map")
                 if decision_key is None:
                     raise ValueError("Router agent must have 'decision_key' in params.")
                 raw_decision_value = payload["previous_outputs"].get(decision_key)
@@ -140,9 +146,9 @@ class Orchestrator:
                 payload_out = {
                     "input": input_data,
                     "decision_key": decision_key,
-                    "decision_value": raw_decision_value,
-                    "normalized_key": normalized_key,
-                    "next_agents": str(next_agents)
+                    "decision_value":  str(raw_decision_value),
+                    "routing_map":  str(routing_map),
+                    "next_agents":  str(next_agents)
                 }
             elif hasattr(agent, "prompt") and isinstance(agent.prompt, str):
                 rendered_prompt = self.render_prompt(agent.prompt, payload)
@@ -161,13 +167,8 @@ class Orchestrator:
                 }
 
             duration = round(time() - start_time, 4)
-            log_entry = {
-                "agent_id": agent_id,
-                "event_type": agent.__class__.__name__,
-                "timestamp": datetime.utcnow().isoformat(),
-                "duration": duration,
-                "payload": payload_out
-            }
+            log_entry["duration"] = duration
+            log_entry["payload"] = payload_out
             logs.append(log_entry)
             self.memory.log(agent_id, agent.__class__.__name__, payload_out)
 

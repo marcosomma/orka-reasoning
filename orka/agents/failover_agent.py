@@ -26,7 +26,7 @@ class FailoverAgent(BaseAgent):
                 result = child.run(input_data)
                 if result:
                     print(f"[FAILOVER] Agent '{child.agent_id}' succeeded.")
-                    return result
+                    return {child.agent_id: result}
             except Exception as e:
                 print(f"[WARNING][FAILOVER] Agent '{child.agent_id}' failed: {e}")
         raise RuntimeError("All fallback agents failed.")
