@@ -1,0 +1,78 @@
+orchestrator:
+  id: full_nodes_test_orchestrator
+  strategy: decision-tree
+  queue: orka:test
+  agents:
+    - initial_classify
+    - search_required
+    - router_search_path
+    - failover_search
+    - wait_results
+    - final_router
+    - final_builder
+
+agents:
+  # First simple classification
+  - id: initial_classify
+    type: openai-classification
+    prompt: >
+      Classify this input "{{ input }}" into science, history, or nonsense.
+    options: [tech, science, history, nonsense]
+    queue: orka:domain
+
+  # Is search needed?
+  - id: search_required
+    type: openai-binary
+    prompt: >
+      Does "{{ input }}" require external information to answer properly? (TRUE/FALSE)
+    queue: orka:need_search
+
+  # Router to different paths
+  - id: router_search_path
+    type: router
+    params:
+      decision_key: search_required
+      routing_map:
+        true: ["failover_search"]
+        false: ["wait_results"]
+
+  # Failover node: tries failing agent first, fallback to real search if crash
+  - id: failover_search
+    type: failover
+    children:
+      - id: broken_search
+        type: failing
+        prompt: "This search will fail because agent is broken."
+        queue: orka:broken_search
+
+      - id: backup_duck_search
+        type: duckduckgo
+        prompt: Perform a backup web search for "{{ input }}"
+        queue: orka:duck_backup
+
+  # Wait for both initial classification and failover search
+  - id: wait_results
+    type: waitfor
+    queue: orka:logic
+    inputs:
+      - initial_classify
+      - failover_search
+
+  # Final router based on initial classification
+  - id: final_router
+    type: router
+    params:
+      decision_key: initial_classify
+      routing_map:
+        science: ["final_builder"]
+        history: ["final_builder"]
+        nonsense: ["final_builder"]
+
+  # Final answer building
+  - id: final_builder
+    type: openai-answer
+    prompt: |
+      Build a detailed answer combining:
+      - Classification result: {{ previous_outputs.initial_classify }}
+      - Search result: {{ previous_outputs.failover_search }}
+    queue: orka:final_output

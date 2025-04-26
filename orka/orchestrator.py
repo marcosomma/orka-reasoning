@@ -19,7 +19,7 @@ from jinja2 import Template
 from datetime import datetime
 from .loader import YAMLLoader
 from .agents import agents, llm_agents, google_duck_agents, BaseAgent
-from .nodes import router_node, failover_node, failing_node, BaseNode
+from .nodes import router_node, failover_node, failing_node, wait_for_node, BaseNode
 from .memory_logger import RedisMemoryLogger
 
 AGENT_TYPES = {
@@ -33,6 +33,7 @@ AGENT_TYPES = {
     "router": router_node.RouterNode,
     "failover": failover_node.FailoverNode,
     "failing": failing_node.FailingNode,
+    "waitfor": wait_for_node.WaitForNode,
 }
 
 
@@ -69,6 +70,12 @@ class Orchestrator:
                 params = clean_cfg.pop("params", {})
                 clean_cfg.pop("agent_id", None)
                 return agent_cls(node_id=agent_id, params=params, **clean_cfg)
+
+            if agent_type == "waitfor":
+                prompt = clean_cfg.pop("prompt", None)
+                queue = clean_cfg.pop("queue", None)
+                clean_cfg.pop("agent_id", None)
+                return agent_cls(node_id=agent_id, prompt=prompt, queue=queue, memory_logger=self.memory, **clean_cfg)
 
             elif agent_type == "failover":
                 # Recursively init children
@@ -168,10 +175,16 @@ class Orchestrator:
                 }
             else:
                 result = agent.run(payload)
-                payload_out = {
-                    "input": input_data,
-                    "result": result
-                }
+                if isinstance(result, dict) and result.get("status") == "waiting":
+                    print(f"[ORKA][WAITING] Node '{agent_id}' is still waiting on: {result.get('received')}")
+                    # Re-enqueue this agent at the end of the queue
+                    queue.append(agent_id)
+                    continue  # Skip logging this cycle
+                else:
+                    payload_out = {
+                        "input": input_data,
+                        "result": result
+                    }
 
             duration = round(time() - start_time, 4)
             log_entry["duration"] = duration

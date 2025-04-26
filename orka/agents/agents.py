@@ -22,10 +22,8 @@ class BinaryAgent(BaseAgent):
 
 class ClassificationAgent(BaseAgent):
     def run(self, input_data):
-        # Placeholder logic: naive keyword classification
-        if "why" in input_data.lower() or "how" in input_data.lower():
-            return "opinion"
-        elif "is" in input_data.lower() or "are" in input_data.lower():
-            return "fact"
+        text = input_data.get("input", "")
+        if "why" in text.lower() or "how" in text.lower():
+            return "cat"
         else:
-            return "question"
+            return "dog"

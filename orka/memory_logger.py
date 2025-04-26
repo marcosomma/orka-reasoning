@@ -23,6 +23,10 @@ class RedisMemoryLogger:
         self.stream_key = stream_key
         self.client = redis.from_url(self.redis_url)
         self.memory = []  # 🧠 Local memory buffer
+    
+    @property
+    def redis(self):
+        return self.client
 
     def log(self, agent_id, event_type, payload):
         event = {

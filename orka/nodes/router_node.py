@@ -15,6 +15,7 @@ from .agent_node import BaseNode
 
 class RouterNode(BaseNode):
     def __init__(self, node_id, params=None, **kwargs):
+        queue = kwargs.pop("queue", None)
         super().__init__(node_id=node_id, prompt=None, queue=None, **kwargs)
         if params is None:
             raise ValueError("RouterAgent requires 'params' with 'decision_key' and 'routing_map'.")
