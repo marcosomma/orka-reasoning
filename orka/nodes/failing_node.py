@@ -10,8 +10,15 @@
 # For commercial use, contact: marcosomma.work@gmail.com
 # 
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
+import time
+from .agent_node import BaseNode
 
-from .agents import BinaryAgent, ClassificationAgent
-from .llm_agents import OpenAIBinaryAgent, OpenAIClassificationAgent, OpenAIAnswerBuilder
-from .google_duck_agents import GoogleSearchAgent, DuckDuckGoAgent
-from .agent_base import BaseAgent
+class FailingNode(BaseNode):
+    @property
+    def id(self):
+        return getattr(self, "agent_id", getattr(self, "node_id", "unknown"))
+    
+    def run(self, input_data):
+        print(f"[FAKE_NODE] {self.node_id}: Simulating failure...")
+        time.sleep(5)  # simulate slow node
+        raise RuntimeError(f"{self.node_id} failed intentionally after 5 seconds.")

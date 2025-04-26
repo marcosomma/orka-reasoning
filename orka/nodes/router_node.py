@@ -11,11 +11,11 @@
 # 
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 
-from .agent_base import BaseAgent
+from .agent_node import BaseNode
 
-class RouterAgent(BaseAgent):
-    def __init__(self, agent_id, params=None, **kwargs):
-        super().__init__(agent_id=agent_id, prompt=None, queue=None, **kwargs)
+class RouterNode(BaseNode):
+    def __init__(self, node_id, params=None, **kwargs):
+        super().__init__(node_id=node_id, prompt=None, queue=None, **kwargs)
         if params is None:
             raise ValueError("RouterAgent requires 'params' with 'decision_key' and 'routing_map'.")
         self.params = params

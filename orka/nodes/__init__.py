@@ -10,11 +10,9 @@
 # For commercial use, contact: marcosomma.work@gmail.com
 # 
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
-import time
-from .agent_base import BaseAgent
 
-class FailingAgent(BaseAgent):
-    def run(self, input_data):
-        print(f"[FAKE_AGENT] {self.agent_id}: Simulating failure...")
-        time.sleep(5)  # simulate slow agent
-        raise RuntimeError(f"{self.agent_id} failed intentionally after 5 seconds.")
+
+from .router_node import RouterNode
+from .failover_node import FailoverNode
+from .failing_node import FailingNode
+from .agent_node import BaseNode

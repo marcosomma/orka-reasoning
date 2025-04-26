@@ -10,23 +10,24 @@
 # For commercial use, contact: marcosomma.work@gmail.com
 # 
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
-from .agent_base import BaseAgent
+from .agent_node import BaseNode
 
-class FailoverAgent(BaseAgent):
-    def __init__(self, agent_id, children, queue):
-        self.id = agent_id
+class FailoverNode(BaseNode):
+    def __init__(self, node_id, children, queue):
+        self.id = node_id
         self.children = children
         self.queue = queue
         self.type = self.__class__.__name__.lower() 
 
     def run(self, input_data):
         for child in self.children:
-            try:
-                print(f"[FAILOVER] Trying agent '{child.agent_id}'")
+            child_id = getattr(child, "agent_id", getattr(child, "node_id", "unknown_child"))
+            try:        
+                print(f"[FAILOVER] Trying agent '{child_id}'")
                 result = child.run(input_data)
                 if result:
-                    print(f"[FAILOVER] Agent '{child.agent_id}' succeeded.")
-                    return {child.agent_id: result}
+                    print(f"[FAILOVER] Agent '{child_id}' succeeded.")
+                    return {child_id: result}
             except Exception as e:
-                print(f"[WARNING][FAILOVER] Agent '{child.agent_id}' failed: {e}")
+                print(f"[WARNING][FAILOVER] Agent '{child_id}' failed: {e}")
         raise RuntimeError("All fallback agents failed.")

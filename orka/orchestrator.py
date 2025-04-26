@@ -18,7 +18,8 @@ from time import time
 from jinja2 import Template
 from datetime import datetime
 from .loader import YAMLLoader
-from .agents import agents, llm_agents, google_duck_agents, router_agent, failover_agent, failing_agent
+from .agents import agents, llm_agents, google_duck_agents, BaseAgent
+from .nodes import router_node, failover_node, failing_node, BaseNode
 from .memory_logger import RedisMemoryLogger
 
 AGENT_TYPES = {
@@ -29,9 +30,9 @@ AGENT_TYPES = {
     "openai-answer": llm_agents.OpenAIAnswerBuilder,
     "google-search": google_duck_agents.GoogleSearchAgent,
     "duckduckgo": google_duck_agents.DuckDuckGoAgent,
-    "router": router_agent.RouterAgent,
-    "failover": failover_agent.FailoverAgent,
-    "failing": failing_agent.FailingAgent,
+    "router": router_node.RouterNode,
+    "failover": failover_node.FailoverNode,
+    "failing": failing_node.FailingNode,
 }
 
 
@@ -67,7 +68,7 @@ class Orchestrator:
                 clean_cfg.pop("queue", None)
                 params = clean_cfg.pop("params", {})
                 clean_cfg.pop("agent_id", None)
-                return agent_cls(agent_id=agent_id, params=params, **clean_cfg)
+                return agent_cls(node_id=agent_id, params=params, **clean_cfg)
 
             elif agent_type == "failover":
                 # Recursively init children
@@ -75,8 +76,14 @@ class Orchestrator:
                 for child_cfg in cfg.get("children", []):
                     child_agent = init_single_agent(child_cfg)
                     child_instances.append(child_agent)
-                return agent_cls(agent_id=agent_id, children=child_instances, queue=cfg.get("queue"))
+                return agent_cls(node_id=agent_id, children=child_instances, queue=cfg.get("queue"))
 
+            elif agent_type == "failing":
+                prompt = clean_cfg.pop("prompt", None)
+                queue = clean_cfg.pop("queue", None)
+                clean_cfg.pop("agent_id", None)
+                return agent_cls(node_id=agent_id, prompt=prompt, queue=queue, **clean_cfg)
+            
             else:
                 prompt = clean_cfg.pop("prompt", None)
                 queue = clean_cfg.pop("queue", None)
