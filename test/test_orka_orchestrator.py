@@ -10,7 +10,6 @@
 # For commercial use, contact: marcosomma.work@gmail.com
 # 
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
-
 import os
 import pytest
 from dotenv import load_dotenv
@@ -24,27 +23,42 @@ class DummyAgent:
         self.prompt = prompt
         self.queue = queue
         self.type = self.__class__.__name__.lower()
-    def run(self, input_data): return f"processed: {input_data}"
+
+    def run(self, input_data):
+        return {self.agent_id: f"processed: {input_data}"}
 
 def test_orchestrator_flow(monkeypatch, tmp_path):
     from orka.orchestrator import Orchestrator
+
     file = tmp_path / "orka.yaml"
     file.write_text("""
 orchestrator:
   id: test
-  agents: [a1, a2]
+  agents:
+   - a1
+   - a2
 agents:
   - id: a1
-    type: openai-binary
+    type: dummy
     prompt: test
     queue: q1
   - id: a2
-    type: openai-binary
+    type: dummy
     prompt: test
     queue: q2
 """)
+
     from orka import orchestrator
     orchestrator.AGENT_TYPES["dummy"] = DummyAgent
     o = Orchestrator(str(file))
     result = o.run("msg")
-    assert "a1" in result and "a2" in result
+
+    # Assert result is list (expected now)
+    assert isinstance(result, list), f"Expected result to be list, got {type(result)}"
+
+    # Extract all agent_ids that appeared
+    agent_ids = {entry["agent_id"] for entry in result if "agent_id" in entry}
+
+    # Validate expected agents executed
+    assert "a1" in agent_ids, f"'a1' not found in executed agent IDs: {agent_ids}"
+    assert "a2" in agent_ids, f"'a2' not found in executed agent IDs: {agent_ids}"

@@ -35,10 +35,18 @@ def run_cli_entrypoint(config_path, input_text, log_to_file=False):
         with open("orka_trace.log", "w") as f:
             f.write(str(result))
     else:
-        for agent_id, value in result.items():
-            print(f"{agent_id}: {value}")
-
-    return result  # ← this is crucial for test assertion
+        if isinstance(result, dict):
+            for agent_id, value in result.items():
+                print(f"{agent_id}: {value}")
+        elif isinstance(result, list):
+            for event in result:
+                agent_id = event.get("agent_id", "unknown")
+                payload = event.get("payload", {})
+                print(f"Agent: {agent_id} | Payload: {payload}")
+        else:
+            print(result)
+    
+    return result  # <--- VERY IMPORTANT for your test to receive it
 
 if __name__ == "__main__":
     main()

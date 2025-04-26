@@ -30,19 +30,18 @@ orchestrator:
     - is_fact
     - requires_search
     - router_search
-    - duck_search  
+    - duck_search
     - need_answer
     - router_answer
-    - validate_fact
     - build_answer
+    - validate_fact
 
 agents:
   - id: domain_classifier
     type: openai-classification
     prompt: >
-      Classify this question into one of the following domains:
-      - science, geography, history, technology, date check, general
-    options: [science, geography, history, technology, date check, general]
+      Classify this question {{ input }} into one of the following domains
+    options: [science, geography, history, technology, date check, general, people, culture, politics, sports]
     queue: orka:domain
 
   - id: is_fact
@@ -62,7 +61,7 @@ agents:
     params:
       decision_key: requires_search
       routing_map:
-        true: ["duck_search"]
+        true: ["duck_search", "need_answer", "router_answer"]
         false: ["validate_fact"]
 
   - id: duck_search
@@ -73,7 +72,7 @@ agents:
   - id: need_answer
     type: openai-binary
     prompt: >
-      Is this a {{ input }} is a question that requires an answer?
+      Is this a {{ input }} a question that requires an answer?
     queue: orka:is_fact
 
   - id: router_answer
@@ -85,17 +84,19 @@ agents:
         false: ["validate_fact"]
 
   - id: validate_fact
-    type: openai-binary
+    type: openai-answer
     prompt: |
-      Given the fact "{{ input }}", and the search results "{{ previous_outputs.duck_search }}"?
+      Given this quote "{{ input }}". Validate if it is a fact or a question:
+      - if true fact: Explain why.
+      - if false fact: Explain why.
+      - if question: Answer it.
     queue: validation_queue
 
   - id: build_answer
     type: openai-answer
     prompt: |
-      Given this question "{{ input }}", and the search results "{{ previous_outputs.duck_search }}", return a complelling answer.
+      Given this question "{{ input }}", and the search results "{{ previous_outputs.duck_search }}", return a compelling answer.
     queue: validation_queue
-
     '''
     config_file = tmp_path / "example_valid.yml"
     config_file.write_text(yaml_content)
@@ -116,19 +117,30 @@ def test_yaml_structure(example_yaml):
     assert len(data["agents"]) == len(data["orchestrator"]["agents"])
 
 def test_run_orka(monkeypatch, example_yaml):
-    # Mock the core agent system
+    # Mock env vars
     monkeypatch.setenv("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
     monkeypatch.setenv("BASE_OPENAI_MODEL", os.getenv("BASE_OPENAI_MODEL"))
-    
-    # Simulate CLI logic (replace with actual OrKa call if available)
+
     from orka.orka_cli import run_cli_entrypoint
 
     try:
         print(f"example_yaml: {str(example_yaml)}")
-        run_cli_entrypoint(
+        result = run_cli_entrypoint(
             config_path=str(example_yaml),
             input_text="What is the capital of France?",
             log_to_file=False,
         )
+
+        # Make sure result is iterable
+        assert isinstance(result, list), f"Expected list of events, got {type(result)}"
+
+        # Extract agent_ids from events
+        agent_ids = {entry["agent_id"] for entry in result if "agent_id" in entry}
+
+        # Check expected outputs are somewhere in the agent_ids
+        assert any(agent_id in agent_ids for agent_id in ["build_answer", "validate_fact", "duck_search"]), \
+            f"Expected one of build_answer, validate_fact, or duck_search, but got {agent_ids}"
+
     except Exception as e:
         pytest.fail(f"Execution failed: {e}")
+
