@@ -125,7 +125,7 @@ def test_run_orka(monkeypatch, example_yaml):
 
         result_router_false = run_cli_entrypoint(
             config_path=str(example_yaml),
-            input_text="Colosseum is in Rome!",
+            input_text="I know Colosseum is in Rome!",
             log_to_file=False,
         )
 
