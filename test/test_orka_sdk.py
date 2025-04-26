@@ -22,57 +22,36 @@ load_dotenv()
 def example_yaml(tmp_path):
     yaml_content = '''\
 orchestrator:
-  id: fact-checker
-  strategy: decision-tree
-  queue: orka:fact-core
+  id: orka-ui
+  strategy: sequential
+  queue: orka:failover
   agents:
-    - domain_classifier
-    - is_fact
-    - requires_search
-    - router_search
-    - duck_search
+    - test_failover
     - need_answer
     - router_answer
-    - build_answer
     - validate_fact
+    - test_failover2
 
 agents:
-  - id: domain_classifier
-    type: openai-classification
-    prompt: >
-      Classify this question {{ input }} into one of the following domains
-    options: [science, geography, history, technology, date check, general, people, culture, politics, sports]
-    queue: orka:domain
-
-  - id: is_fact
-    type: openai-binary
-    prompt: >
-      Is this a {{ input }} factual assertion that can be verified externally? Answer TRUE or FALSE.
-    queue: orka:is_fact
-
-  - id: requires_search
-    type: openai-binary
-    prompt: >
-      Does this {{ input }} require external search to validate? Answer strictly TRUE or FALSE.
-    queue: orka:need_search
-
-  - id: router_search
-    type: router
-    params:
-      decision_key: requires_search
-      routing_map:
-        true: ["duck_search", "need_answer", "router_answer"]
-        false: ["validate_fact"]
-
-  - id: duck_search
-    type: duckduckgo
-    prompt: Perform web search
-    queue: orka:search
+  - id: test_failover
+    type: failover
+    queue: orka:test_failover
+    children:
+      - id: failing_test_agent1
+        type: failing
+        queue: orka:failing_test_agent1
+      - id: actual_working_agent
+        type: duckduckgo
+        prompt: >
+          {{ input }}
+        queue: orka:actual_working_agent
 
   - id: need_answer
     type: openai-binary
     prompt: >
-      Is this a {{ input }} a question that requires an answer?
+      Is this a {{ input }} is a question that requires an answer or a fact to be validated?
+      - TRUE: ia s question and requires an answer
+      - FALSE: is an assertion requires a fact to be validated
     queue: orka:is_fact
 
   - id: router_answer
@@ -80,23 +59,27 @@ agents:
     params:
       decision_key: need_answer
       routing_map:
-        true: ["build_answer"]
+        true: ["test_failover2"]
         false: ["validate_fact"]
 
   - id: validate_fact
-    type: openai-answer
+    type: openai-binary
     prompt: |
-      Given this quote "{{ input }}". Validate if it is a fact or a question:
-      - if true fact: Explain why.
-      - if false fact: Explain why.
-      - if question: Answer it.
-    queue: validation_queue
+      Given the fact "{{ input }}", and the search results "{{ previous_outputs.duck_search }}"?
+    queue: orka:validation_queue
 
-  - id: build_answer
-    type: openai-answer
-    prompt: |
-      Given this question "{{ input }}", and the search results "{{ previous_outputs.duck_search }}", return a compelling answer.
-    queue: validation_queue
+  - id: test_failover2
+    type: failover
+    queue: orka:test_failover2
+    children:
+      - id: failing_test_agent2
+        type: failing
+        queue: orka:failing_test_agent2
+      - id: build_answer
+        type: openai-answer
+        prompt: |
+          Given this question "{{ input }}", and the search results "{{ previous_outputs.test_failover }}", return a compelling answer.
+        queue: orka:validation_queue
     '''
     config_file = tmp_path / "example_valid.yml"
     config_file.write_text(yaml_content)
@@ -124,22 +107,43 @@ def test_run_orka(monkeypatch, example_yaml):
     from orka.orka_cli import run_cli_entrypoint
 
     try:
-        print(f"example_yaml: {str(example_yaml)}")
-        result = run_cli_entrypoint(
+        result_router_true = run_cli_entrypoint(
             config_path=str(example_yaml),
             input_text="What is the capital of France?",
             log_to_file=False,
         )
 
         # Make sure result is iterable
-        assert isinstance(result, list), f"Expected list of events, got {type(result)}"
+        assert isinstance(result_router_true, list), f"Expected list of events, got {type(result_router_true)}"
 
         # Extract agent_ids from events
-        agent_ids = {entry["agent_id"] for entry in result if "agent_id" in entry}
+        true_agent_ids = {entry["agent_id"] for entry in result_router_true if "agent_id" in entry}
 
-        # Check expected outputs are somewhere in the agent_ids
-        assert any(agent_id in agent_ids for agent_id in ["build_answer", "validate_fact", "duck_search"]), \
-            f"Expected one of build_answer, validate_fact, or duck_search, but got {agent_ids}"
+        # Check expected outputs are somewhere in the true_agent_ids
+        assert any(agent_id in true_agent_ids for agent_id in ["test_failover2"]), \
+            f"Expected one of build_answer, validate_fact, or duck_search, but got {true_agent_ids}"
+        # Check expected outputs are somewhere in the true_agent_ids
+        assert not any(agent_id in true_agent_ids for agent_id in ["validate_fact"]), \
+            f"Expected one of build_answer, validate_fact, or duck_search, but got {true_agent_ids}"
+
+        result_router_false = run_cli_entrypoint(
+            config_path=str(example_yaml),
+            input_text="Colosseum is in Rome!",
+            log_to_file=False,
+        )
+
+        # Make sure result is iterable
+        assert isinstance(result_router_false, list), f"Expected list of events, got {type(result_router_false)}"
+
+        # Extract agent_ids from events
+        false_agent_ids = {entry["agent_id"] for entry in result_router_false if "agent_id" in entry}
+
+        # Check expected outputs are somewhere in the false_agent_ids
+        assert any(agent_id in false_agent_ids for agent_id in ["validate_fact"]), \
+            f"Expected one of build_answer, validate_fact, or duck_search, but got {false_agent_ids}"
+        # Check expected outputs are somewhere in the false_agent_ids
+        assert not any(agent_id in false_agent_ids for agent_id in ["test_failover2"]), \
+            f"Expected one of build_answer, validate_fact, or duck_search, but got {false_agent_ids}"
 
     except Exception as e:
         pytest.fail(f"Execution failed: {e}")
