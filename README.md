@@ -113,6 +113,104 @@ Click the thumbnail above to watch a quick video demo of OrKa in action — how 
 
 ## 📄 Usage
 
+### 📄 OrKa Nodes and Agents Documentation
+
+#### 📊 Agents
+
+##### BinaryAgent
+- **Purpose**: Classify an input into TRUE/FALSE.
+- **Input**: A dict containing a string under "input" key.
+- **Output**: A boolean value.
+- **Typical Use**: "Is this sentence a factual statement?"
+
+##### ClassificationAgent
+- **Purpose**: Classify input text into predefined categories.
+- **Input**: A dict with "input".
+- **Output**: A string label from predefined options.
+- **Typical Use**: "Classify a sentence as science, history, or nonsense."
+
+##### OpenAIBinaryAgent
+- **Purpose**: Use an LLM to binary classify a prompt into TRUE/FALSE.
+- **Input**: A dict with "input".
+- **Output**: A boolean.
+- **Typical Use**: "Is this a question?"
+
+##### OpenAIClassificationAgent
+- **Purpose**: Use an LLM to classify input into multiple labels.
+- **Input**: Dict with "input".
+- **Output**: A string label.
+- **Typical Use**: "What domain does this question belong to?"
+
+##### OpenAIAnswerBuilder
+- **Purpose**: Build a detailed answer from a prompt, usually enriched by previous outputs.
+- **Input**: Dict with "input" and "previous_outputs".
+- **Output**: A full textual answer.
+- **Typical Use**: "Answer a question combining search results and classifications."
+
+##### DuckDuckGoAgent
+- **Purpose**: Perform a real-time web search using DuckDuckGo.
+- **Input**: Dict with "input" (the query string).
+- **Output**: A list of search result strings.
+- **Typical Use**: "Search for latest information about OrKa project."
+
+---
+
+#### 🧵 Nodes
+
+##### RouterNode
+- **Purpose**: Dynamically route execution based on a prior decision output.
+- **Input**: Dict with "previous_outputs".
+- **Routing Logic**: Matches a decision_key's value to a list of next agent ids.
+- **Typical Use**: "Route to search agents if external lookup needed; otherwise validate directly."
+
+##### FailoverNode
+- **Purpose**: Execute multiple child agents in sequence until one succeeds.
+- **Input**: Dict with "input".
+- **Behavior**: Tries each child agent. If one crashes/fails, moves to next.
+- **Typical Use**: "Try web search with service A; if unavailable, fallback to service B."
+
+##### FailingNode
+- **Purpose**: Intentionally fail. Used to simulate errors during execution.
+- **Input**: Dict with "input".
+- **Output**: Always throws an Exception.
+- **Typical Use**: "Test failover scenarios or resilience paths."
+
+##### WaitForNode
+- **Purpose**: Wait for multiple upstream agents to complete before continuing.
+- **Input**: Dict with "previous_outputs".
+- **Behavior**: Does not run until all specified inputs are present.
+- **Output**: Merged payload from all awaited agents.
+- **Typical Use**: "Wait for domain classification AND search results before final answer building."
+
+---
+
+#### 📊 Summary Table
+
+| Name | Type | Core Purpose |
+|:---|:---|:---|
+| BinaryAgent | Agent | True/False classification |
+| ClassificationAgent | Agent | Category classification |
+| OpenAIBinaryAgent | Agent | LLM-backed binary decision |
+| OpenAIClassificationAgent | Agent | LLM-backed category decision |
+| OpenAIAnswerBuilder | Agent | Compose detailed answer |
+| DuckDuckGoAgent | Agent | Perform web search |
+| RouterNode | Node | Dynamically route next steps |
+| FailoverNode | Node | Resilient sequential fallback |
+| FailingNode | Node | Simulate failure |
+| WaitForNode | Node | Wait for multiple dependencies |
+
+---
+
+#### 🚀 Quick Usage Tip
+
+Each agent and node in OrKa follows a simple run pattern:
+```python
+output = agent_or_node.run(input_data)
+```
+Where `input_data` includes `"input"` (the original query) and `"previous_outputs"` (completed agent results).
+
+This consistent interface is what makes OrKa composable and powerful.
+
 OrKa operates based on YAML configuration files that define the orchestration of agents.
 
 1. **Prepare a YAML Configuration**: Create a YAML file (e.g., `example.yml`) that outlines your agentic workflow.
@@ -184,14 +282,6 @@ This will execute the workflow defined in `example.yml` with the input question,
 ## 📚 Documentation
 
 📘 [View the Documentation](./docs/index.md)
-
-## PIP deploy
-```
-rm -rf dist/ build/ ./*.egg-info
-python3 -m build
-pip install --upgrade twine
-twine upload dist/*
-```
 
 ## 🤝 Contributing
 
