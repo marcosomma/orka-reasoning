@@ -189,8 +189,14 @@ class Orchestrator:
                 await self.run_parallel_agents(fork_targets, fork_group_id, input_data, payload["previous_outputs"])
 
             elif agent_type == "joinnode":
+                fork_group_id = self.memory.redis.get(f"fork_group_mapping:{agent.group_id}")
+                if fork_group_id:
+                    fork_group_id = fork_group_id.decode() if isinstance(fork_group_id, bytes) else fork_group_id
+                else:
+                    fork_group_id = agent.group_id  # fallback
+
+                payload["fork_group_id"] = fork_group_id  # inject
                 result = agent.run(payload)
-                fork_group_id = getattr(agent, "group_id", None)
                 if not fork_group_id:
                     raise ValueError(f"JoinNode '{agent_id}' missing required group_id.")
 
@@ -198,12 +204,6 @@ class Orchestrator:
                     print(f"[ORKA][JOIN][WAITING] Node '{agent_id}' is still waiting on fork group: {fork_group_id}")
                     queue.append(agent_id)
                     continue  # Skip logging this round
-
-                payload_out = {
-                    "input": input_data,
-                    "joined_group": fork_group_id,
-                    "result": result
-                }
                 self.fork_manager.delete_group(fork_group_id)  # Clean up fork group after join
 
             else:
@@ -266,16 +266,15 @@ class Orchestrator:
                     return res
                 tasks.append((agent_id, fake_coro()))
 
-        # Split agent_id and coroutine
+        # Split agent_ids and coroutine tasks
         coroutines = [task[1] for task in tasks]
         agent_ids = [task[0] for task in tasks]
 
         results = await asyncio.gather(*coroutines)
 
-        # ⚡ FIX: write into dynamic fork_group_id based key
-        state_key = f"waitfor:{fork_group_id}:inputs"
-
-        for agent_id, res in zip(agent_ids, results):
-            self.memory.log(agent_id, "ForkedAgent", {"result": res})
-            self.memory.hset(state_key, agent_id, json.dumps(res))
-            self.fork_manager.mark_agent_done(fork_group_id, agent_id)
+        # 🚨 Save each forked result into Redis for JoinNode to find it
+        # state_key = f"waitfor:{fork_group_id}:inputs"
+        for agent_id, result in zip(agent_ids, results):
+            join_state_key = f"waitfor:join_parallel_checks:inputs"  # hardcoded or dynamically set later
+            self.memory.hset(join_state_key, agent_id, json.dumps(result))
+            self.memory.log(agent_id, "ForkedAgent", {"result": result})

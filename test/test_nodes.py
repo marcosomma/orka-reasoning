@@ -97,36 +97,35 @@ async def test_fork_node_run(monkeypatch):
     assert orchestrator.queue == ["agentA", "agentB", "agentC"]
     
 @pytest.mark.asyncio
-async def test_waitfor_node_run(monkeypatch):
+async def test_join_node_run(monkeypatch):
     memory = RedisMemoryLogger()
 
-    # Patch client with fake Redis
     fake_redis = {}
     memory.client = type('', (), {
         "hset": lambda _, key, field, val: fake_redis.setdefault(key, {}).update({field: val}),
-        "hkeys": lambda _, key: list(fake_redis.get(key, {}).keys()),
         "hget": lambda _, key, field: fake_redis[key][field],
-        "set": lambda _, key, val: fake_redis.__setitem__(key, val),
+        "hkeys": lambda _, key: list(fake_redis.get(key, {}).keys()),
+        "smembers": lambda _, key: list(fake_redis.get(key, set())),
         "delete": lambda _, key: fake_redis.pop(key, None),
+        "set": lambda _, key, val: fake_redis.__setitem__(key, val),
         "xadd": lambda _, stream, data: fake_redis.setdefault(stream, []).append(data),
-        "smembers": lambda _, key: list(fake_redis.get(key, {}).keys()),  # ✅ add smembers
     })()
 
-    # Manually create the fake fork group
-    fake_redis["fork_group:test_wait"] = {"agent1": "", "agent2": ""}
+    # Prepopulate Redis with the forked results
+    fake_redis["waitfor:join_parallel_checks:inputs"] = {
+        "agentA": json.dumps("classified_result"),
+        "agentB": json.dumps(["search result A", "search result B"]),
+    }
+    fake_redis["fork_group:fork_parallel_checks_testgroup"] = {"agentA", "agentB"}
 
-    wait_node = JoinNode(node_id="test_wait", prompt=None, queue="test", memory_logger=memory, group="test_wait")
-    
-    
-    memory.client.hset(wait_node.state_key, "agent1", json.dumps("yes"))
-    payload = {"previous_outputs": {"agent1": "yes"}}
-    waiting = wait_node.run(payload)
-    assert waiting["status"] == "waiting"  # ✅ Now it will WAIT correctly
-    
-    memory.client.hset(wait_node.state_key, "agent2", json.dumps("confirmed"))
-    payload2 = {"previous_outputs": {"agent2": "confirmed"}}
-    done = wait_node.run(payload2)
-    assert done["status"] == "done"
-    assert "agent1" in done["merged"]
-    assert "agent2" in done["merged"]
+    wait_node = JoinNode(node_id="join_parallel_checks", prompt=None, queue="test", memory_logger=memory, group="fork_parallel_checks_testgroup")
 
+    payload = {
+        "fork_group_id": "fork_parallel_checks_testgroup"
+    }
+
+    result = wait_node.run(payload)
+
+    assert result["status"] == "done"
+    assert "agentA" in result["merged"]
+    assert "agentB" in result["merged"]

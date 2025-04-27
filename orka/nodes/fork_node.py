@@ -28,6 +28,12 @@ class ForkNode(BaseNode):
 
         # Fork agents into queue
         orchestrator.enqueue_fork(targets, fork_group_id)
+        self.memory_logger.redis.set(f"fork_group_mapping:{self.node_id}", fork_group_id)
+        self.memory_logger.log(
+            agent_id=self.node_id,
+            event_type="fork",
+            payload={"targets": targets, "fork_group": fork_group_id}
+        )
         self.memory_logger.redis.sadd(f"fork_group:{fork_group_id}", *targets)
         return {"status": "forked", "fork_group": fork_group_id}
 

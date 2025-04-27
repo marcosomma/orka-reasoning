@@ -11,6 +11,7 @@
 # 
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 
+
 import json
 import time
 from .agent_node import BaseNode
@@ -19,25 +20,21 @@ class JoinNode(BaseNode):
     def __init__(self, node_id, prompt, queue, memory_logger=None, **kwargs):
         super().__init__(node_id, prompt, queue, **kwargs)
         self.memory_logger = memory_logger
-        self.group_id = kwargs.get("group")  # track which fork group
+        self.group_id = kwargs.get("group")
         self.timeout_seconds = kwargs.get("timeout_seconds", 60)
         self.output_key = f"{self.node_id}:output"
-        self.state_key = f"waitfor:{self.node_id}:inputs"
 
     def run(self, input_data):
+        print(f"[JOIN] {self.node_id} received input: {input_data}")
         start_time = time.time()
 
-        # 🔥 Get dynamic fork group id from input_data (fallback to self.group_id if missing)
         fork_group_id = input_data.get("fork_group_id", self.group_id)
+        state_key = f"waitfor:join_parallel_checks:inputs"
 
-        state_key = f"waitfor:{fork_group_id}:inputs"
-
-        # Fetch completed outputs
-        inputs_received = self.memory_logger.redis.hkeys(state_key)
+        inputs_received = self.memory_logger.hkeys(state_key)
         received = [i.decode() if isinstance(i, bytes) else i for i in inputs_received]
 
-        # Fetch correct forked agent ids
-        fork_targets = self.memory_logger.redis.smembers(f"fork_group:{fork_group_id}")
+        fork_targets = self.memory_logger.smembers(f"fork_group:{fork_group_id}")
         fork_targets = [i.decode() if isinstance(i, bytes) else i for i in fork_targets]
 
         print(f"[JOIN] All agents in group '{fork_group_id}' merging... Found {received}")
@@ -50,11 +47,9 @@ class JoinNode(BaseNode):
 
         return {"status": "waiting", "received": received}
 
-
-
     def _complete(self, fork_targets, state_key):
         merged = {
-            agent_id: json.loads(self.memory_logger.redis.hget(state_key, agent_id))
+            agent_id: json.loads(self.memory_logger.hget(state_key, agent_id))
             for agent_id in fork_targets
         }
 
@@ -69,6 +64,3 @@ class JoinNode(BaseNode):
         self.memory_logger.redis.delete(f"fork_group:{self.group_id}")
 
         return {"status": "done", "merged": merged}
-
-
-
