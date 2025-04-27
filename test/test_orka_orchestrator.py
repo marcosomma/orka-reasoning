@@ -26,8 +26,8 @@ class DummyAgent:
 
     def run(self, input_data):
         return {self.agent_id: f"processed: {input_data}"}
-
-def test_orchestrator_flow(monkeypatch, tmp_path):
+@pytest.mark.asyncio
+async def test_orchestrator_flow(monkeypatch, tmp_path):
     from orka.orchestrator import Orchestrator
 
     file = tmp_path / "orka.yaml"
@@ -51,7 +51,7 @@ agents:
     from orka import orchestrator
     orchestrator.AGENT_TYPES["dummy"] = DummyAgent
     o = Orchestrator(str(file))
-    result = o.run("msg")
+    result = await o.run("msg")
 
     # Assert result is list (expected now)
     assert isinstance(result, list), f"Expected result to be list, got {type(result)}"
