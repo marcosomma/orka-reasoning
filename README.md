@@ -175,12 +175,22 @@ Click the thumbnail above to watch a quick video demo of OrKa in action — how 
 - **Output**: Always throws an Exception.
 - **Typical Use**: "Test failover scenarios or resilience paths."
 
-##### WaitForNode
-- **Purpose**: Wait for multiple upstream agents to complete before continuing.
-- **Input**: Dict with "previous_outputs".
-- **Behavior**: Does not run until all specified inputs are present.
-- **Output**: Merged payload from all awaited agents.
-- **Typical Use**: "Wait for domain classification AND search results before final answer building."
+##### **ForkNode**  
+- **Purpose**: Split execution into multiple parallel agent branches.
+- **Input**: Dict with "input" and "previous\_outputs".
+- **Behavior**: Launches multiple child agents simultaneously. Supports sequential (default) or full parallel execution.
+- **Options**:
+- `targets`: List of agents to fork.
+- `mode`: "sequential" or "parallel".
+- **Typical Use**: "Validate topic and check if a summary is needed simultaneously. 
+
+##### **JoinNode**
+- **Purpose**: Wait for multiple forked agents to complete, then merge their outputs.
+- **Input**: Dict including `fork_group_id` (forked group name).
+- **Behavior**: Suspends execution until all required forked agents have completed. Then aggregates their outputs.
+- **Typical Use**: "Wait for parallel validations to finish before deciding next step."”
+
+
 
 ---
 
@@ -198,7 +208,8 @@ Click the thumbnail above to watch a quick video demo of OrKa in action — how 
 | FailoverNode | Node | Resilient sequential fallback |
 | FailingNode | Node | Simulate failure |
 | WaitForNode | Node | Wait for multiple dependencies |
-
+| ForkNode | Node	| Parallel execution split | 
+| JoinNode | Node | Parallel execution merge | 
 ---
 
 #### 🚀 Quick Usage Tip
