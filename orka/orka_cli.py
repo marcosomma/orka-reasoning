@@ -12,10 +12,11 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 
 import argparse
-from orka.orchestrator import Orchestrator
+import asyncio
 import os
+from orka.orchestrator import Orchestrator
 
-def main():
+async def main():
     parser = argparse.ArgumentParser(description="Run OrKa with a YAML configuration.")
     parser.add_argument("config", help="Path to the YAML configuration file.")
     parser.add_argument("input", help="Input question or statement for the orchestrator.")
@@ -23,13 +24,13 @@ def main():
     args = parser.parse_args()
 
     orchestrator = Orchestrator(config_path=args.config)
-    orchestrator.run(args.input)
+    await orchestrator.run(args.input)
 
-def run_cli_entrypoint(config_path, input_text, log_to_file=False):
+async def run_cli_entrypoint(config_path, input_text, log_to_file=False):
     from orka.orchestrator import Orchestrator
 
     orchestrator = Orchestrator(config_path)
-    result = orchestrator.run(input_text)
+    result = await orchestrator.run(input_text)
 
     if log_to_file:
         with open("orka_trace.log", "w") as f:
@@ -49,4 +50,4 @@ def run_cli_entrypoint(config_path, input_text, log_to_file=False):
     return result  # <--- VERY IMPORTANT for your test to receive it
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

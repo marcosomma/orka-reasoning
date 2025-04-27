@@ -51,7 +51,7 @@ class Orchestrator:
 
         self.memory = RedisMemoryLogger()
         self.fork_manager = ForkGroupManager(self.memory.redis)
-
+        self.queue = self.orchestrator_cfg["agents"][:]
         self.agents = self._init_agents()
 
     def _init_agents(self):
@@ -116,7 +116,10 @@ class Orchestrator:
             return value.strip().lower() in ["true", "yes"]
         return False
 
-    def run(self, input_data):
+    def enqueue_fork(self, agent_ids, fork_group_id):
+        self.queue = agent_ids + self.queue
+
+    async def run(self, input_data):
         logs = []
         queue = self.orchestrator_cfg["agents"][:]
 
@@ -164,7 +167,7 @@ class Orchestrator:
                 }
 
             elif agent_type == "forknode":
-                result = agent.run(payload)
+                result = await agent.run(self, payload)
                 fork_targets = agent.config.get("targets", [])
                 if not fork_targets:
                     raise ValueError(f"ForkNode '{agent_id}' requires non-empty 'targets' list.")

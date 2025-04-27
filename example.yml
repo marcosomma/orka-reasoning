@@ -5,6 +5,8 @@ orchestrator:
   agents:
     - initial_classify
     - search_required
+    - fork_parallel_checks   # 🔥 Insert fork node here
+    - join_parallel_checks   # 🔥 Insert join node here
     - router_search_path
     - failover_search
     - final_router
@@ -24,8 +26,34 @@ agents:
   - id: search_required
     type: openai-binary
     prompt: >
-      Is "{{ input }}" a question that require a deep internet research?
+      Is "{{ input }}" a question that requires deep internet research?
     queue: orka:need_search
+
+  # 🔥 Fork node: splits into two parallel validation checks
+  - id: fork_parallel_checks
+    type: fork
+    targets:
+      - topic_validity_check
+      - need_for_summary_check
+
+  # Parallel branch 1: Check topic validity
+  - id: topic_validity_check
+    type: openai-binary
+    prompt: >
+      Is "{{ input }}" a valid, meaningful topic to investigate?
+    queue: orka:topic_check
+
+  # Parallel branch 2: Check if we need a summary
+  - id: need_for_summary_check
+    type: openai-binary
+    prompt: >
+      Should we build a detailed summary for "{{ input }}"?
+    queue: orka:summary_check
+
+  # 🔥 Join node: waits for both topic_validity_check and need_for_summary_check
+  - id: join_parallel_checks
+    type: join
+    group: fork_parallel_checks
 
   # Router to different paths
   - id: router_search_path
@@ -50,15 +78,15 @@ agents:
         prompt: Perform a backup web search for "{{ input }}"
         queue: orka:duck_backup
 
-  # additional info check
+  # Additional info check
   - id: info_completed
     type: openai-binary
     prompt: >
-      Did have extr data for this sentence "{{ input }}"? 
+      Did we retrieve extra data for this input "{{ input }}"?
       {{ previous_outputs }}
     queue: orka:info_completed
 
-  # Final router based on initial classification
+  # Final router based on info check
   - id: final_router
     type: router
     params:
@@ -67,7 +95,7 @@ agents:
         true: ["final_builder_true"]
         false: ["final_builder_false"]
 
-  # Final answer building
+  # Final answer building if extra info was found
   - id: final_builder_true
     type: openai-answer
     prompt: |
@@ -76,8 +104,7 @@ agents:
       - Search result: {{ previous_outputs.failover_search }}
     queue: orka:final_output
 
-
-  # Final answer building
+  # Final answer building if no extra info
   - id: final_builder_false
     type: openai-answer
     prompt: |

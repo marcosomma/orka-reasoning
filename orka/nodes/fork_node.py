@@ -13,14 +13,21 @@
 from .agent_node import BaseNode
 
 class ForkNode(BaseNode):
+    def __init__(self, node_id, prompt=None, queue=None, memory_logger=None, **kwargs):
+        super().__init__(node_id=node_id, prompt=prompt, queue=queue, **kwargs)
+        self.memory_logger = memory_logger
+        self.config = kwargs  # ✅ store config explicitly
+
     async def run(self, orchestrator, context):
         targets = self.config.get("targets", [])
         if not targets:
-            raise ValueError(f"ForkNode {self.id} requires non-empty 'targets' list")
+            raise ValueError(f"ForkNode '{self.node_id}' requires non-empty 'targets' list.")
 
-        group_id = f"{self.id}_{context['execution_id']}"
-        orchestrator.create_fork_group(group_id, targets)
+        fork_group_id = orchestrator.fork_manager.generate_group_id(self.node_id)
+        orchestrator.fork_manager.create_group(fork_group_id, targets)
 
-        await orchestrator.launch_parallel_agents(targets, parent_context=context, group_id=group_id)
+        # Fork agents into queue
+        orchestrator.enqueue_fork(targets, fork_group_id)
 
-        return {"status": "forked", "group_id": group_id}
+        return {"status": "forked", "fork_group": fork_group_id}
+
