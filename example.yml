@@ -1,95 +1,95 @@
-# OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
-#
-# This file is part of OrKa – https://github.com/marcosomma/orka
-#
-# Licensed under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
-# You may not use this file for commercial purposes without explicit permission.
-#
-# Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
-# For commercial use, contact: marcosomma.work@gmail.com
-# 
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
-# This file is an example of how to use OrKa to build a fact-checking agent.
-
-
 orchestrator:
-  id: fact-checker
+  id: full_nodes_test_orchestrator
   strategy: decision-tree
-  queue: orka:fact-core
+  queue: orka:test
   agents:
-    - domain_classifier # < -- 1st agent Classifies the domain "science, geography, history, technology, date check, general"
-    - is_fact # < -- 2nd agent Classifies if the input is a fact or not 
-    - requires_search # < -- 3rd agent Classifies if the input requires external search or not
-    - router_search # < -- 4th agent Routes to either duck_search or validate_fact based on requires_search
-    - duck_search #     < -- IF YES > agent Performs web search using DuckDuckGo
-    - need_answer #     < -- IF NO > agent Classifies if the input is a question that requires an answer
-    - router_answer #   < -- 5th agent Routes to either build_answer or validate_fact based on need_answer
-    - build_answer #      < -- IF YES > agent Builds an answer (using the search results from duck_search if availables)
-    - validate_fact #     < -- IF NO > agent Validates the fact (using the search results from duck_search if availables)
+    - initial_classify
+    - search_required
+    - router_search_path
+    - failover_search
+    - wait_results
+    - info_completed
+    - final_router
+    - final_builder
 
 agents:
-  - id: domain_classifier
+  # First simple classification
+  - id: initial_classify
     type: openai-classification
     prompt: >
-      Classify this question {{ input }} one of the following domains
-    options: [science, geography, history, technology, date check, general, pople, culture, politics, sports]
+      Classify this input "{{ input }}" into science, history, or nonsense.
+    options: [tech, science, history, nonsense]
     queue: orka:domain
 
-  - id: is_fact
+  # Is search needed?
+  - id: search_required
     type: openai-binary
     prompt: >
-      Is this a {{ input }} factual assertion that can be verified externally? Answer TRUE or FALSE.
-    queue: orka:is_fact
-
-  - id: requires_search
-    type: openai-binary
-    prompt: >
-      Does this {{ input }} require external search to validate? Answer strictly TRUE or FALSE.
+      Is "{{ input }}" a question that require a deep internet research?
     queue: orka:need_search
 
-  - id: router_search
+  # Router to different paths
+  - id: router_search_path
     type: router
     params:
-      decision_key: requires_search
+      decision_key: search_required
       routing_map:
-        true: ["duck_search", "need_answer", "router_answer"]
-        false: ["validate_fact"]
+        true: ["failover_search", "wait_results", "info_completed", "final_router"]
+        false: ["info_completed", "final_router"]
 
-  - id: duck_search
-    type: duckduckgo
-    prompt: Perform web search
-    queue: orka:search
+  # Failover node: tries failing agent first, fallback to real search if crash
+  - id: failover_search
+    type: failover
+    children:
+      - id: broken_search
+        type: failing
+        prompt: "This search will fail because agent is broken."
+        queue: orka:broken_search
 
-  - id: need_answer
+      - id: backup_duck_search
+        type: duckduckgo
+        prompt: Perform a backup web search for "{{ input }}"
+        queue: orka:duck_backup
+
+  # Wait for both initial classification and failover search
+  - id: wait_results
+    type: waitfor
+    queue: orka:logic
+    inputs:
+      - initial_classify
+      - failover_search
+
+  # additional info check
+  - id: info_completed
     type: openai-binary
     prompt: >
-      Is this a {{ input }} is a question that requires an answer?
-    queue: orka:is_fact
+      Did have extr data for this sentence "{{ input }}"? 
+      {{ previous_outputs }}
+    queue: orka:info_completed
 
-  - id: router_answer
+  # Final router based on initial classification
+  - id: final_router
     type: router
     params:
-      decision_key: need_answer
+      decision_key: info_completed
       routing_map:
-        true: ["build_answer"]
-        false: ["validate_fact"]
+        true: ["final_builder_true"]
+        false: ["final_builder_false"]
 
-  - id: validate_fact
+  # Final answer building
+  - id: final_builder_true
     type: openai-answer
     prompt: |
-      Given this quote "{{ input }}". validate if is a fact or a question:
-      - if is a true fact: Explain why"?
-      - if is a false fact: Explain why"?
-      - if is a question: Answer to it"?
+      Build a detailed answer combining:
+      - Classification result: {{ previous_outputs.initial_classify }}
+      - Search result: {{ previous_outputs.failover_search }}
+    queue: orka:final_output
 
-      ## is a fact: {{ previous_outputs.is_fact }}
-      ## is NOT a question: {{ previous_outputs.is_fact }}
-      
-    queue: validation_queue
 
-  - id: build_answer
+  # Final answer building
+  - id: final_builder_false
     type: openai-answer
     prompt: |
-      Given this question "{{ input }}", and the search results "{{ previous_outputs.duck_search }}", return a complelling answer.
-    queue: validation_queue
+      Build a detailed answer based on the classification result:
+      - Classification result: {{ previous_outputs.initial_classify }}
+    queue: orka:final_output

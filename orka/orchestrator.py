@@ -145,7 +145,8 @@ class Orchestrator:
 
             start_time = time()
 
-            if agent_type == "routeragent":
+    
+            if agent_type == "routernode":
                 decision_key = agent.params.get("decision_key")
                 routing_map = agent.params.get("routing_map")
                 if decision_key is None:
