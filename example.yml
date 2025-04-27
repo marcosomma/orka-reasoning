@@ -7,10 +7,9 @@ orchestrator:
     - search_required
     - router_search_path
     - failover_search
-    - wait_results
-    - info_completed
     - final_router
-    - final_builder
+    - final_builder_true
+    - final_builder_false
 
 agents:
   # First simple classification
@@ -34,7 +33,7 @@ agents:
     params:
       decision_key: search_required
       routing_map:
-        true: ["failover_search", "wait_results", "info_completed", "final_router"]
+        true: ["failover_search", "final_router"]
         false: ["info_completed", "final_router"]
 
   # Failover node: tries failing agent first, fallback to real search if crash
@@ -50,14 +49,6 @@ agents:
         type: duckduckgo
         prompt: Perform a backup web search for "{{ input }}"
         queue: orka:duck_backup
-
-  # Wait for both initial classification and failover search
-  - id: wait_results
-    type: waitfor
-    queue: orka:logic
-    inputs:
-      - initial_classify
-      - failover_search
 
   # additional info check
   - id: info_completed

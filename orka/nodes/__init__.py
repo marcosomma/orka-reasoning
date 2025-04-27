@@ -15,5 +15,6 @@
 from .router_node import RouterNode
 from .failover_node import FailoverNode
 from .failing_node import FailingNode
-from .wait_for_node import WaitForNode
+from .join_node import JoinNode
+from .fork_node import ForkNode
 from .agent_node import BaseNode

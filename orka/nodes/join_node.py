@@ -15,32 +15,39 @@ import json
 import time
 from .agent_node import BaseNode
 
-class WaitForNode(BaseNode):
+class JoinNode(BaseNode):
     def __init__(self, node_id, prompt, queue, memory_logger=None, **kwargs):
         super().__init__(node_id, prompt, queue, **kwargs)
         self.memory_logger = memory_logger
-        self.inputs = kwargs.get("inputs", [])
+        self.group_id = kwargs.get("group")  # track which fork group
+        self.timeout_seconds = kwargs.get("timeout_seconds", 60)
         self.output_key = f"{self.node_id}:output"
         self.state_key = f"waitfor:{self.node_id}:inputs"
 
     def run(self, input_data):
-        previous_outputs = input_data.get("previous_outputs", {})
-        for agent_id in self.inputs:
-            if agent_id in previous_outputs:
-                self.memory_logger.redis.hset(self.state_key, agent_id, json.dumps(previous_outputs[agent_id]))
+        start_time = time.time()
 
+        # Fetch all current completed outputs
         inputs_received = self.memory_logger.redis.hkeys(self.state_key)
         received = [i.decode() if isinstance(i, bytes) else i for i in inputs_received]
-        if all(agent in received for agent in self.inputs):
-            return self._complete()
-        else:
-            return {"status": "waiting", "received": received}
 
+        # Check if all forked agents finished
+        fork_targets = self.memory_logger.redis.smembers(f"fork_group:{self.group_id}")
+        fork_targets = [i.decode() if isinstance(i, bytes) else i for i in fork_targets]
 
-    def _complete(self):
+        if all(agent in received for agent in fork_targets):
+            return self._complete(fork_targets)
+
+        # Timeout handling
+        if time.time() - start_time > self.timeout_seconds:
+            return {"status": "timeout", "received": received}
+
+        return {"status": "waiting", "received": received}
+
+    def _complete(self, fork_targets):
         merged = {
             agent_id: json.loads(self.memory_logger.redis.hget(self.state_key, agent_id))
-            for agent_id in self.inputs
+            for agent_id in fork_targets
         }
 
         self.memory_logger.redis.set(self.output_key, json.dumps(merged))
@@ -49,6 +56,9 @@ class WaitForNode(BaseNode):
             event_type="wait_complete",
             payload=merged
         )
+
+        # Cleanup
         self.memory_logger.redis.delete(self.state_key)
+        self.memory_logger.redis.delete(f"fork_group:{self.group_id}")
 
         return {"status": "done", "merged": merged}
