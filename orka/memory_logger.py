@@ -52,6 +52,21 @@ class RedisMemoryLogger:
 
     def tail(self, count=10):
         return self.client.xrevrange(self.stream_key, count=count)
+    
+    def hset(self, name, key, value):
+        return self.client.hset(name, key, value)
+
+    def hget(self, name, key):
+        return self.client.hget(name, key)
+
+    def hkeys(self, name):
+        return self.client.hkeys(name)
+
+    def hdel(self, name, *keys):
+        return self.client.hdel(name, *keys)
+    
+    def smembers(self, name):
+        return self.client.smembers(name)
 
 
 # Future stub

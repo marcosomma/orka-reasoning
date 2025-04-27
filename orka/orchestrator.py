@@ -16,6 +16,7 @@
 
 import os
 import json
+import asyncio
 from time import time
 from datetime import datetime
 from jinja2 import Template
@@ -174,14 +175,18 @@ class Orchestrator:
 
                 fork_group_id = self.fork_manager.generate_group_id(agent_id)
                 self.fork_manager.create_group(fork_group_id, fork_targets)
+                payload["fork_group_id"] = fork_group_id
 
-                queue = fork_targets + queue
+                mode = agent.config.get("mode", "sequential")  # 🔥 Add this: default sequential if not set
 
                 payload_out = {
                     "input": input_data,
                     "fork_group": fork_group_id,
                     "fork_targets": fork_targets
                 }
+
+                print(f"[ORKA][FORK][PARALLEL] Running forked agents in parallel for group {fork_group_id}")
+                await self.run_parallel_agents(fork_targets, fork_group_id, input_data, payload["previous_outputs"])
 
             elif agent_type == "joinnode":
                 result = agent.run(payload)
@@ -236,3 +241,41 @@ class Orchestrator:
         self.memory.save_to_file(log_path)
 
         return logs
+
+    import asyncio
+
+    async def run_parallel_agents(self, agent_ids, fork_group_id, input_data, previous_outputs):
+        tasks = []
+
+        for agent_id in agent_ids:
+            agent = self.agents[agent_id]
+            payload = {
+                "input": input_data,
+                "previous_outputs": previous_outputs
+            }
+
+            if isinstance(agent, router_node.BaseNode):
+                result = agent.run(self, payload)
+            else:
+                result = agent.run(payload)
+
+            if asyncio.iscoroutine(result) or isinstance(result, asyncio.Future):
+                tasks.append((agent_id, result))
+            else:
+                async def fake_coro(res=result):
+                    return res
+                tasks.append((agent_id, fake_coro()))
+
+        # Split agent_id and coroutine
+        coroutines = [task[1] for task in tasks]
+        agent_ids = [task[0] for task in tasks]
+
+        results = await asyncio.gather(*coroutines)
+
+        # ⚡ FIX: write into dynamic fork_group_id based key
+        state_key = f"waitfor:{fork_group_id}:inputs"
+
+        for agent_id, res in zip(agent_ids, results):
+            self.memory.log(agent_id, "ForkedAgent", {"result": res})
+            self.memory.hset(state_key, agent_id, json.dumps(res))
+            self.fork_manager.mark_agent_done(fork_group_id, agent_id)

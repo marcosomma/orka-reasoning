@@ -5,8 +5,8 @@ orchestrator:
   agents:
     - initial_classify
     - search_required
-    - fork_parallel_checks   # 🔥 Insert fork node here
-    - join_parallel_checks   # 🔥 Insert join node here
+    - fork_parallel_checks
+    - join_parallel_checks
     - router_search_path
     - failover_search
     - final_router
@@ -34,23 +34,24 @@ agents:
     type: fork
     targets:
       - topic_validity_check
-      - need_for_summary_check
+      - summary_category_check
 
-  # Parallel branch 1: Check topic validity
+  # Parallel branch 1: Check topic validity (still binary)
   - id: topic_validity_check
     type: openai-binary
     prompt: >
       Is "{{ input }}" a valid, meaningful topic to investigate?
     queue: orka:topic_check
 
-  # Parallel branch 2: Check if we need a summary
-  - id: need_for_summary_check
-    type: openai-binary
+  # Parallel branch 2: NOW classification (changed!)
+  - id: summary_category_check
+    type: openai-classification
     prompt: >
-      Should we build a detailed summary for "{{ input }}"?
+      Classify the input "{{ input }}" into one of: [summary, detailed, none].
+    options: [summary, detailed, none]
     queue: orka:summary_check
 
-  # 🔥 Join node: waits for both topic_validity_check and need_for_summary_check
+  # 🔥 Join node: waits for both topic_validity_check and summary_category_check
   - id: join_parallel_checks
     type: join
     group: fork_parallel_checks
@@ -64,7 +65,7 @@ agents:
         true: ["failover_search", "final_router"]
         false: ["info_completed", "final_router"]
 
-  # Failover node: tries failing agent first, fallback to real search if crash
+  # Failover node
   - id: failover_search
     type: failover
     children:
@@ -72,7 +73,6 @@ agents:
         type: failing
         prompt: "This search will fail because agent is broken."
         queue: orka:broken_search
-
       - id: backup_duck_search
         type: duckduckgo
         prompt: Perform a backup web search for "{{ input }}"
@@ -95,7 +95,7 @@ agents:
         true: ["final_builder_true"]
         false: ["final_builder_false"]
 
-  # Final answer building if extra info was found
+  # Final answer builders
   - id: final_builder_true
     type: openai-answer
     prompt: |
@@ -104,7 +104,6 @@ agents:
       - Search result: {{ previous_outputs.failover_search }}
     queue: orka:final_output
 
-  # Final answer building if no extra info
   - id: final_builder_false
     type: openai-answer
     prompt: |
