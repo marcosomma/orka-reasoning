@@ -17,10 +17,15 @@ class ForkGroupManager:
         self.redis = redis_client
 
     def create_group(self, fork_group_id, agent_ids):
-        """Create a new fork group with agent IDs."""
-        if not agent_ids:
-            raise ValueError(f"Cannot create fork group '{fork_group_id}' with empty agent list.")
-        self.redis.sadd(self._group_key(fork_group_id), *agent_ids)
+        # 🔥 Flatten any nested branch sequences (e.g., [[a, b, c], [x, y]])
+        flat_ids = []
+        for el in agent_ids:
+            if isinstance(el, list):
+                flat_ids.extend(el)
+            else:
+                flat_ids.append(el)
+        self.redis.sadd(self._group_key(fork_group_id), *flat_ids)
+
 
     def mark_agent_done(self, fork_group_id, agent_id):
         """Remove agent ID from fork group."""
@@ -46,3 +51,20 @@ class ForkGroupManager:
     def _group_key(self, fork_group_id):
         """Internal helper to standardize Redis key naming."""
         return f"fork_group:{fork_group_id}"
+    # NEW
+    def _branch_seq_key(self, fork_group_id):
+        return f"fork_branch:{fork_group_id}"
+
+    def track_branch_sequence(self, fork_group_id, agent_sequence):
+        """ Save branch sequence so that when one finishes, next is known """
+        for i in range(len(agent_sequence) - 1):
+            current = agent_sequence[i]
+            next_one = agent_sequence[i+1]
+            self.redis.hset(self._branch_seq_key(fork_group_id), current, next_one)
+
+    def next_in_sequence(self, fork_group_id, agent_id):
+        """ Return the next agent to trigger after current finished """
+        next_one = self.redis.hget(self._branch_seq_key(fork_group_id), agent_id)
+        if next_one:
+            return next_one.decode() if isinstance(next_one, bytes) else next_one
+        return None

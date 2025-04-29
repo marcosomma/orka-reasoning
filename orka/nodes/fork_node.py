@@ -16,6 +16,7 @@ class ForkNode(BaseNode):
     def __init__(self, node_id, prompt=None, queue=None, memory_logger=None, **kwargs):
         super().__init__(node_id=node_id, prompt=prompt, queue=queue, **kwargs)
         self.memory_logger = memory_logger
+        self.targets = kwargs.get("targets", [])  # ✅ Store the fork branches here
         self.config = kwargs  # ✅ store config explicitly
 
     async def run(self, orchestrator, context):
@@ -24,16 +25,28 @@ class ForkNode(BaseNode):
             raise ValueError(f"ForkNode '{self.node_id}' requires non-empty 'targets' list.")
 
         fork_group_id = orchestrator.fork_manager.generate_group_id(self.node_id)
-        orchestrator.fork_manager.create_group(fork_group_id, targets)
+        all_flat_agents = []  # ✅ Store all agents in a flat list
+        # Handle new structure: list of branches
+        for branch in self.targets:
+            if isinstance(branch, list):
+                # Branch is a sequence — only queue the FIRST agent now
+                first_agent = branch[0]
+                orchestrator.enqueue_fork([first_agent], fork_group_id)
+                orchestrator.fork_manager.track_branch_sequence(fork_group_id, branch)
+                all_flat_agents.extend(branch)
+            else:
+                # Single agent, flat structure (fallback)
+                orchestrator.enqueue_fork([branch], fork_group_id)
+                all_flat_agents.append(branch)
 
-        # Fork agents into queue
-        orchestrator.enqueue_fork(targets, fork_group_id)
+            orchestrator.fork_manager.create_group(fork_group_id, all_flat_agents)
+
         self.memory_logger.redis.set(f"fork_group_mapping:{self.node_id}", fork_group_id)
         self.memory_logger.log(
             agent_id=self.node_id,
             event_type="fork",
-            payload={"targets": targets, "fork_group": fork_group_id}
+            payload={"targets": all_flat_agents, "fork_group": fork_group_id}
         )
-        self.memory_logger.redis.sadd(f"fork_group:{fork_group_id}", *targets)
+        self.memory_logger.redis.sadd(f"fork_group:{fork_group_id}", *all_flat_agents)
         return {"status": "forked", "fork_group": fork_group_id}
 

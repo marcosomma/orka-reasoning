@@ -170,6 +170,15 @@ class Orchestrator:
             elif agent_type == "forknode":
                 result = await agent.run(self, payload)
                 fork_targets = agent.config.get("targets", [])
+                # 🔥 FLATTEN branch steps
+                flat_targets = []
+                for branch in fork_targets:
+                    if isinstance(branch, list):
+                        flat_targets.extend(branch)
+                    else:
+                        flat_targets.append(branch)
+                fork_targets = flat_targets
+
                 if not fork_targets:
                     raise ValueError(f"ForkNode '{agent_id}' requires non-empty 'targets' list.")
 
@@ -219,6 +228,12 @@ class Orchestrator:
                 fork_group = payload.get("input", {})
                 if fork_group:
                     self.fork_manager.mark_agent_done(fork_group, agent_id)
+
+                # 🔥 Check if this agent has a next-in-sequence step in its branch
+                next_agent = self.fork_manager.next_in_sequence(fork_group, agent_id)
+                if next_agent:
+                    print(f"[ORKA][FORK-SEQUENCE] Agent '{agent_id}' finished. Enqueuing next in sequence: '{next_agent}'")
+                    self.enqueue_fork([next_agent], fork_group)
 
                 payload_out = {
                     "input": input_data,
