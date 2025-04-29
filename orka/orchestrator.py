@@ -120,7 +120,7 @@ class Orchestrator:
         return False
 
     def enqueue_fork(self, agent_ids, fork_group_id):
-        self.queue = agent_ids + self.queue
+        self.queue.extend(agent_ids) # Add to queue keeping order
 
     async def run(self, input_data):
         logs = []

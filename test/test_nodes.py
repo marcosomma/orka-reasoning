@@ -66,7 +66,7 @@ async def test_fork_node_run(monkeypatch):
             self.queue = []
             self.fork_manager = FakeForkGroupManager()
         def enqueue_fork(self, agent_ids, fork_group_id):
-            self.queue = agent_ids + self.queue
+            self.queue.extend(agent_ids) # Add to queue keeping order
 
     orchestrator = FakeOrchestrator()
 
