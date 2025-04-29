@@ -29,21 +29,37 @@ agents:
       Is "{{ input }}" a question that requires deep internet research?
     queue: orka:need_search
 
-  # 🔥 Fork node: splits into two parallel validation checks
+  # 🔥 Fork node: splits into two parallel validation flows
   - id: fork_parallel_checks
     type: fork
     targets:
-      - topic_validity_check
-      - summary_category_check
+      - [topic_validity_check, topic_depth_estimation, topic_final_validation]
+      - [summary_category_check, summary_needs_elaboration, summary_final_approval]
+  # 🔵 Branch 1: Topic validation flow
 
-  # Parallel branch 1: Check topic validity (still binary)
   - id: topic_validity_check
     type: openai-binary
     prompt: >
       Is "{{ input }}" a valid, meaningful topic to investigate?
     queue: orka:topic_check
 
-  # Parallel branch 2: NOW classification (changed!)
+  - id: topic_depth_estimation
+    type: openai-classification
+    prompt: >
+      Estimate how deep the investigation on "{{ input }}" would need to be: [shallow, medium, deep].
+    options: [shallow, medium, deep]
+    depends_on: [topic_validity_check]
+    queue: orka:topic_depth
+
+  - id: topic_final_validation
+    type: openai-binary
+    prompt: >
+      Considering the input "{{ input }}" and its estimated depth ({{ previous_outputs.topic_depth_estimation }}), is it worth pursuing?
+    depends_on: [topic_depth_estimation]
+    queue: orka:topic_final_validation
+
+  # 🔵 Branch 2: Summary categorization flow
+
   - id: summary_category_check
     type: openai-classification
     prompt: >
@@ -51,7 +67,21 @@ agents:
     options: [summary, detailed, none]
     queue: orka:summary_check
 
-  # 🔥 Join node: waits for both topic_validity_check and summary_category_check
+  - id: summary_needs_elaboration
+    type: openai-binary
+    prompt: >
+      Does the input "{{ input }}" require elaboration based on its category ({{ previous_outputs.summary_category_check }})?
+    depends_on: [summary_category_check]
+    queue: orka:summary_elaboration_check
+
+  - id: summary_final_approval
+    type: openai-binary
+    prompt: >
+      Should the summary for "{{ input }}" be expanded or is it complete enough?
+    depends_on: [summary_needs_elaboration]
+    queue: orka:summary_final_approval
+
+  # 🔥 Join node: waits for BOTH mini-branches to complete
   - id: join_parallel_checks
     type: join
     group: fork_parallel_checks

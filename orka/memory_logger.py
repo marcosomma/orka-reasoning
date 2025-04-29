@@ -28,22 +28,33 @@ class RedisMemoryLogger:
     def redis(self):
         return self.client
 
-    def log(self, agent_id, event_type, payload):
+    def log(self, agent_id, event_type, payload, step=None, run_id=None, fork_group=None, parent=None):
         event = {
             "agent_id": agent_id,
             "event_type": event_type,
             "timestamp": datetime.utcnow().isoformat(),
-            "payload": payload  # <-- keep as dict here
+            "payload": payload
         }
+        if step is not None:
+            event["step"] = step
+        if run_id:
+            event["run_id"] = run_id
+        if fork_group:
+            event["fork_group"] = fork_group
+        if parent:
+            event["parent"] = parent
+
         self.memory.append(event)
 
-        # Safe encoding for Redis
         self.client.xadd(self.stream_key, {
             "agent_id": agent_id,
             "event_type": event_type,
             "timestamp": event["timestamp"],
-            "payload": json.dumps(payload)  # <- just here for Redis compatibility
+            "payload": json.dumps(payload),
+            "run_id": run_id or "default",
+            "step": str(step or -1),
         })
+
 
     def save_to_file(self, file_path):
         with open(file_path, 'w') as f:

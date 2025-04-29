@@ -10,7 +10,9 @@
 # For commercial use, contact: marcosomma.work@gmail.com
 # 
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
+from datetime import datetime
 from .agent_node import BaseNode
+
 
 class FailoverNode(BaseNode):
     def __init__(self, node_id, children, queue):
@@ -23,11 +25,11 @@ class FailoverNode(BaseNode):
         for child in self.children:
             child_id = getattr(child, "agent_id", getattr(child, "node_id", "unknown_child"))
             try:        
-                print(f"[FAILOVER] Trying agent '{child_id}'")
+                # print(f"[ORKA][NODE][FAILOVER] Trying agent '{child_id}'")
                 result = child.run(input_data)
                 if result:
-                    print(f"[FAILOVER] Agent '{child_id}' succeeded.")
+                    # print(f"[ORKA][NODE][FAILOVER] Agent '{child_id}' succeeded.")
                     return {child_id: result}
             except Exception as e:
-                print(f"[WARNING][FAILOVER] Agent '{child_id}' failed: {e}")
+                print(f"{datetime.now()} > [ORKA][NODE][FAILOVER][WARNING] Agent '{child_id}' failed: {e}")
         raise RuntimeError("All fallback agents failed.")

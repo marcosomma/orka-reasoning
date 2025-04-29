@@ -25,7 +25,7 @@ class JoinNode(BaseNode):
         self.output_key = f"{self.node_id}:output"
 
     def run(self, input_data):
-        print(f"[JOIN] {self.node_id} received input: {input_data}")
+        # print(f"[ORKA][NODE][JOIN] {self.node_id} received input: {input_data}")
         start_time = time.time()
 
         fork_group_id = input_data.get("fork_group_id", self.group_id)
@@ -37,7 +37,7 @@ class JoinNode(BaseNode):
         fork_targets = self.memory_logger.smembers(f"fork_group:{fork_group_id}")
         fork_targets = [i.decode() if isinstance(i, bytes) else i for i in fork_targets]
 
-        print(f"[JOIN] All agents in group '{fork_group_id}' merging... Found {received}")
+        # print(f"[ORKA][NODE][JOIN] All agents in group '{fork_group_id}' merging... Found {received}")
 
         if all(agent in received for agent in fork_targets):
             return self._complete(fork_targets, state_key)
@@ -54,11 +54,7 @@ class JoinNode(BaseNode):
         }
 
         self.memory_logger.redis.set(self.output_key, json.dumps(merged))
-        self.memory_logger.log(
-            agent_id=self.node_id,
-            event_type="wait_complete",
-            payload=merged
-        )
+        
 
         self.memory_logger.redis.delete(state_key)
         self.memory_logger.redis.delete(f"fork_group:{self.group_id}")

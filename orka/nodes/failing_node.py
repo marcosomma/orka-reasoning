@@ -19,6 +19,6 @@ class FailingNode(BaseNode):
         return getattr(self, "agent_id", getattr(self, "node_id", "unknown"))
     
     def run(self, input_data):
-        print(f"[FAKE_NODE] {self.node_id}: Simulating failure...")
+        # print(f"[ORKA][NODE][FAKE_NODE] {self.node_id}: Simulating failure...")
         time.sleep(5)  # simulate slow node
         raise RuntimeError(f"{self.node_id} failed intentionally after 5 seconds.")
