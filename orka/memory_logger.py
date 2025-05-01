@@ -28,7 +28,7 @@ class RedisMemoryLogger:
     def redis(self):
         return self.client
 
-    def log(self, agent_id, event_type, payload, step=None, run_id=None, fork_group=None, parent=None):
+    def log(self, agent_id, event_type, payload, step=None, run_id=None, fork_group=None, parent=None, previous_outputs=None):
         event = {
             "agent_id": agent_id,
             "event_type": event_type,
@@ -43,6 +43,8 @@ class RedisMemoryLogger:
             event["fork_group"] = fork_group
         if parent:
             event["parent"] = parent
+        if previous_outputs:
+            event["previous_outputs"] = previous_outputs
 
         self.memory.append(event)
 

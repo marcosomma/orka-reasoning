@@ -121,6 +121,25 @@ class Orchestrator:
 
     def enqueue_fork(self, agent_ids, fork_group_id):
         self.queue.extend(agent_ids) # Add to queue keeping order
+    
+    @staticmethod
+    def build_previous_outputs(logs):
+        outputs = {}
+        for log in logs:
+            agent_id = log["agent_id"]
+            payload = log.get("payload", {})
+
+            # Case: regular agent output
+            if "result" in payload:
+                outputs[agent_id] = payload["result"]
+
+            # Case: JoinNode with merged dict
+            if "result" in payload and isinstance(payload["result"], dict):
+                merged = payload["result"].get("merged")
+                if isinstance(merged, dict):
+                    outputs.update(merged)
+
+        return outputs
 
     async def run(self, input_data):
         logs = []
@@ -131,16 +150,13 @@ class Orchestrator:
             agent = self.agents[agent_id]
             agent_type = agent.type
             self.step_index += 1
-            print(f"{datetime.now()} > [ORKA] {self.step_index} >  Running agent '{agent_id}' of type '{agent_type}'")
 
             payload = {
                 "input": input_data,
-                "previous_outputs": {
-                    log["agent_id"]: log["payload"]["result"]
-                    for log in logs
-                    if "result" in log["payload"]
-                }
+                "previous_outputs": self.build_previous_outputs(logs),
             }
+            freezed_payload = json.dumps(payload)  # Freeze the payload as a string
+            print(f"{datetime.now()} > [ORKA] {self.step_index} >  Running agent '{agent_id}' of type '{agent_type}', payload: {freezed_payload}")
             log_entry = {
                 "agent_id": agent_id,
                 "event_type": agent.__class__.__name__,
@@ -199,7 +215,8 @@ class Orchestrator:
                 self.memory.log(agent_id, agent.__class__.__name__, payload_out, step=self.step_index, run_id=self.run_id)
 
                 print(f"{datetime.now()} > [ORKA][FORK][PARALLEL] {self.step_index} >  Running forked agents in parallel for group {fork_group_id}")
-                await self.run_parallel_agents(fork_targets, fork_group_id, input_data, payload["previous_outputs"])
+                fork_logs = await self.run_parallel_agents(fork_targets, fork_group_id, input_data, payload["previous_outputs"])
+                logs.extend(fork_logs)  # 🧩 This re-enables full trace of previous_outputs
 
             elif agent_type == "joinnode":
                 fork_group_id = self.memory.redis.get(f"fork_group_mapping:{agent.group_id}")
@@ -249,8 +266,11 @@ class Orchestrator:
                     "input": input_data,
                     "result": result
                 }
+                if hasattr(agent, 'prompt') and agent.prompt:
+                    payload_out["prompt"] = agent.prompt
 
             duration = round(time() - start_time, 4)
+            payload_out["previous_outputs"] = payload["previous_outputs"]
             log_entry["duration"] = duration
             log_entry["payload"] = payload_out
             logs.append(log_entry)
@@ -302,9 +322,21 @@ class Orchestrator:
         # state_key = f"waitfor:{fork_group_id}:inputs"
         forked_step_index = 0
         step_index = f"{self.step_index}[{forked_step_index}]"
+        result_logs = []
         for agent_id, result in zip(agent_ids, results):
             forked_step_index += 1
             step_index = f"{self.step_index}[{forked_step_index}]"
             join_state_key = f"waitfor:join_parallel_checks:inputs"  # hardcoded or dynamically set later
             self.memory.hset(join_state_key, agent_id, json.dumps(result))
-            self.memory.log(agent_id, f"ForkedAgent-{agent.__class__.__name__}", {"result": result}, step=step_index, run_id=self.run_id)
+            log_data = {
+                "agent_id": agent_id,
+                "event_type": f"ForkedAgent-{agent.__class__.__name__}",
+                "timestamp": datetime.utcnow().isoformat(),
+                "payload": {"result": result},
+                "previous_outputs": previous_outputs,
+                "step": step_index,
+                "run_id": self.run_id
+            }
+            result_logs.append(log_data)
+            self.memory.log(agent_id, f"ForkedAgent-{agent.__class__.__name__}", {"result": result}, step=step_index, run_id=self.run_id, previous_outputs=previous_outputs)
+        return result_logs

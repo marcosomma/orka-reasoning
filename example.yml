@@ -1,6 +1,6 @@
 orchestrator:
   id: full_nodes_test_orchestrator
-  strategy: decision-tree
+  strategy: parallel
   queue: orka:test
   agents:
     - initial_classify
@@ -8,10 +8,7 @@ orchestrator:
     - fork_parallel_checks
     - join_parallel_checks
     - router_search_path
-    - failover_search
     - final_router
-    - final_builder_true
-    - final_builder_false
 
 agents:
   # First simple classification
@@ -33,7 +30,9 @@ agents:
   - id: fork_parallel_checks
     type: fork
     targets:
-      - [topic_validity_check, topic_depth_estimation, topic_final_validation]
+      - - topic_validity_check 
+        - topic_depth_estimation
+        - topic_final_validation
       - [summary_category_check, summary_needs_elaboration, summary_final_approval]
   # 🔵 Branch 1: Topic validation flow
 
