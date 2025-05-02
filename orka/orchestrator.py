@@ -279,13 +279,20 @@ class Orchestrator:
                 if not fork_group_id:
                     raise ValueError(f"JoinNode '{agent_id}' missing required group_id.")
 
-                # If not all forked agents are done, re-queue this join node and wait
-                if not self.fork_manager.is_group_done(fork_group_id):
+                # Handle different JoinNode statuses
+                if result.get("status") == "waiting":
                     print(f"{datetime.now()} > [ORKA][JOIN][WAITING] {self.step_index} > Node '{agent_id}' is still waiting on fork group: {fork_group_id}")
                     queue.append(agent_id)
                     self.memory.log(agent_id, agent.__class__.__name__, payload_out, step=self.step_index, run_id=self.run_id)
                     continue  # Skip logging this round
-                self.fork_manager.delete_group(fork_group_id)  # Clean up fork group after join
+                elif result.get("status") == "timeout":
+                    print(f"{datetime.now()} > [ORKA][JOIN][TIMEOUT] {self.step_index} > Node '{agent_id}' timed out waiting for fork group: {fork_group_id}")
+                    self.memory.log(agent_id, agent.__class__.__name__, payload_out, step=self.step_index, run_id=self.run_id)
+                    # Clean up the fork group even on timeout
+                    self.fork_manager.delete_group(fork_group_id)
+                    continue
+                elif result.get("status") == "done":
+                    self.fork_manager.delete_group(fork_group_id)  # Clean up fork group after successful join
 
             else:
                 # Normal Agent: run and handle result

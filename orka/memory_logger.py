@@ -27,10 +27,10 @@ class RedisMemoryLogger:
         Initialize the Redis memory logger.
         
         Args:
-            redis_url (str, optional): URL for the Redis server. Defaults to environment variable REDIS_URL or localhost.
+            redis_url (str, optional): URL for the Redis server. Defaults to environment variable REDIS_URL or redis service name.
             stream_key (str, optional): Key for the Redis stream. Defaults to "orka:memory".
         """
-        self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379/0")
+        self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://redis:6379/0")
         self.stream_key = stream_key
         self.client = redis.from_url(self.redis_url)
         self.memory = []  # Local memory buffer for in-memory storage

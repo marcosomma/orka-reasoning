@@ -1,0 +1,198 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: sans-serif;
+    background: #1a1a1a;
+    color: #eee;
+  }
+
+  h1{
+    font-size: 3vw;
+    margin: 0;
+    padding: 0;
+    color: #fff;
+  }
+  
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  .footer,
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background-color: #111;
+    color: white;
+    padding: 10px 20px;
+    font-family: monospace;
+    border-bottom: 1px solid #333;
+    max-height: 160px;
+    justify-content: space-around;
+    z-index: 1000;
+  }
+
+  .footer {
+    justify-content:stretch;
+    font-size: 0.8rem;
+    width: 100%; 
+  }
+  
+  .logo {
+    height: 140px;
+    width: 140px;
+  }
+  
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+  
+  .sidebar {
+    width: 20%;
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    background-color: #222;
+    gap: 10px;
+    overflow-y: auto;
+  }
+  
+  .canvas {
+    flex-grow: 1;
+    background-color: #2a2a2a;
+    border-left: 1px solid #333;
+    border-right: 1px solid #333;
+    overflow: auto;
+  }
+  
+  .editor {
+    width: 10%;
+    min-width: 140px;
+    padding: 10px;
+    background-color: #1e1e1e;
+    box-shadow: rgba(0, 0, 0, 0.1) 4px 0px 12px;
+    border-right: 1px solid #333;
+    color: #ddd;
+    overflow-y: auto;
+  }
+  
+  .input-panel input,
+  .yml-panel textarea,
+  .output-panel textarea {
+    width: 100%;
+    min-width: 450px;
+    min-height: 110px;
+    margin: 10px;
+    font-size: 14px;
+    background-color: #333;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    margin: 7px;
+    display: flex;
+    flex: 1;
+  }
+  .input-panel input {
+    min-height: 35px;
+    height: 35px;
+  }
+  
+  .yml-panel textarea{
+    height: 160px;
+    margin: 0;
+  }
+
+  .input-wrapper {
+      float: left;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      padding-right: 50px;
+  }
+
+  .settings-panel {
+    position: fixed;
+    right: 0;
+    top: 160px;
+    width: 200px;
+    height: 100vh;
+    background-color: #2a2a2a;
+    box-shadow: rgba(0, 0, 0, 0.1) -4px 0px 12px;
+    padding: 14px;
+    overflow-y: auto;
+    border-left: 1px solid #333;
+    z-index: 1;
+    transition: all 1s ease-in-out;
+  }
+  
+  .settings-panel h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    font-size: 1.25rem;
+    color: #999;
+  }
+  
+  .settings-panel label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #999;
+    margin-top: 20px;
+    margin-bottom: 6px;
+  }
+  
+  .settings-panel input,
+  .settings-panel select,
+  .settings-panel textarea {
+    width: 100%;
+    font-size: 0.9rem;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-family: inherit;
+  }
+  
+  .settings-panel input,
+  .settings-panel select,
+  .settings-panel textarea {
+    width: 100%;
+    font-size: 0.9rem;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-family: inherit;
+  }
+
+  .settings-panel input:disabled,
+  .settings-panel select:disabled,
+  .settings-panel textarea:disabled {
+    width: 100%;
+    font-size: 0.9rem;
+    padding: 8px 10px;
+    border: 1px solid #666;
+    border-radius: 6px;
+    font-family: inherit;
+    background-color: #444;
+    color: #888;
+    cursor: not-allowed;
+  }
+
+  .settings-panel textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+  
+  .settings-panel pre {
+    background: #f4f4f4;
+    padding: 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-size: 0.85rem;
+  }

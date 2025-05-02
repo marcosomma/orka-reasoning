@@ -1,0 +1,24 @@
+version: '3'
+services:
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - orka-network
+
+  orka-backend:
+    build: .
+    command: python -m orka.server
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    networks:
+      - orka-network
+
+networks:
+  orka-network:
+    driver: bridge

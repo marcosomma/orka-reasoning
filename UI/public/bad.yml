@@ -1,0 +1,52 @@
+orchestrator:
+  id: orka-ui
+  strategy: sequential
+  queue: orka:fact-core
+  agents:
+    - openai_classification_1
+    - openai_binary_0
+    - router_2
+    - duckduckgo_4
+    - openai_answer_5
+    - openai_answer_3
+
+agents:
+  - id: openai_classification_1
+    type: openai-classification
+    queue: orka:openai_classification_1
+    prompt: >
+      Classify the following question in one of the given options
+      @@ QUESTION : {{ input }}
+    options: [science, geography, history, technology, date check, general, pople, culture, politics, sports]
+  - id: openai_binary_0
+    type: openai-binary
+    queue: orka:openai_binary_0
+    prompt: >
+      Will the following question require further internet research?
+      ## QUESTION: {{ input }}
+  - id: router_2
+    type: router
+    params:
+      decision_key: openai_binary_0
+      routing_map:
+        true: [duckduckgo_4]
+        false: [openai_answer_3]
+  - id: openai_answer_3
+    type: openai-answer
+    queue: validation_queue
+    prompt: >
+      Return a compelling answer for the given question ensuring to add as much
+      details is possible.
+      ## QUESTION: {{ input }}
+  - id: duckduckgo_4
+    type: duckduckgo
+    queue: orka:duckduckgo_4
+    prompt: '{{ input }} domain {{ previous_outputs.openai_classification_1 }}'
+  - id: openai_answer_5
+    type: openai-answer
+    queue: validation_queue
+    prompt: >
+      Return a compelling answer for the given question use the following extra
+      information to add as much details is possible.
+      ## QUESTION: {{ input }}
+      ## EXTRA INFO : {{ previous_outputs.duckduckgo_4 }}
