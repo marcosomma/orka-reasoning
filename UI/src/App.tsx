@@ -105,7 +105,7 @@ const App: React.FC = () => {
       )}
       <header className="header">
         <img src="/logo.png" alt="OrKa logo" className="logo" />
-        <h1>Orchestrator Kit Agents</h1>
+        <h1>(localhost) Orchestrator Kit Agents</h1>
         <img src="/logo.png" alt="OrKa logo" className="logo" />
       </header>
       <Canvas

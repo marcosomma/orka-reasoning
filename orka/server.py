@@ -67,7 +67,7 @@ async def run_execution(request: Request):
         })
 
 # Serve the UI static files at the root URL
-app.mount("/", StaticFiles(directory="./UI", html=True), name="ui")
+app.mount("/", StaticFiles(directory="./UI/dist", html=True), name="ui")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
