@@ -1,4 +1,4 @@
-[📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md)
+[📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
 
 # OrKa Architecture ***(Patent Pending)***
 
@@ -12,7 +12,6 @@ This document breaks down the key architectural components and how they work tog
 
 - **Agents:** Pluggable units of reasoning (e.g., classifier, validator, search agent).
 - **Orchestrator:** Controls the flow of data between agents.
-- **Router Agent:** Conditionally modifies flow based on logic.
 - **Redis Streams:** Used for async messaging and trace logging.
 - **YAML Config:** Describes the orchestration graph.
 
@@ -27,7 +26,7 @@ This document breaks down the key architectural components and how they work tog
                                   │
                     ┌─────────────┼─────────────┐
                     ▼             ▼             ▼
-              [Agent A]     [RouterAgent]   [Agent B]
+              [Agent A]      [Agent X]      [Agent B]
                     │             │             │
                     ▼             ▼             ▼
                [Output A]    [Next Agent(s)] [Output B]
@@ -58,8 +57,7 @@ This document breaks down the key architectural components and how they work tog
 OrKa is fully driven by `orka.yaml`, which defines:
 - Agent IDs and types
 - Prompts and behavior
-- Routing logic via `RouterAgent`
-- Execution strategy (decision-tree, dynamic)
+- Execution strategy (sequential)
 
 This allows reproducible reasoning pipelines and declarative logic.
 
@@ -87,7 +85,6 @@ All agent outputs are logged with metadata:
 
 ## 🛣 Roadmap Additions
 
-- ✅ Dynamic routing via `RouterAgent`
 - 🔜 Kafka support (stream processing + replay)
 - 🔜 DAG visualization of agent flow
 - 🔜 Agent plugins via Python entrypoints
@@ -97,4 +94,5 @@ All agent outputs are logged with metadata:
 
 OrKa’s architecture is intentionally minimal, observable, and composable — so you can build LLM-based cognition that doesn’t disappear into a black box.
 
-[📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md)
+[📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
+

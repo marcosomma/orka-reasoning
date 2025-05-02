@@ -1,4 +1,5 @@
-[📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md)
+[📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
+
 # OrKa – Orchestrator Kit for Agentic Reasoning  ***(Patent Pending)***
 
 **OrKa** is a modular, transparent AI cognition framework for orchestrating agent-based reasoning workflows using LLMs. Designed from the ground up for **traceability**, **modularity**, and **introspective control**, OrKa enables the construction of composable reasoning systems inspired by cognitive science — without sacrificing the power of modern foundation models.
@@ -11,7 +12,7 @@
 
 OrKa is a lightweight SDK and orchestration runtime for defining cognitive pipelines using YAML files and pluggable AI agents.
 
-It shifts AI orchestration from monolithic prompting or hard-coded chains to a **distributed cognition model**, where each step is handled by a distinct reasoning agent: classifiers, validators, searchers, routers, and more.
+It shifts AI orchestration from monolithic prompting or hard-coded chains to a **distributed cognition model**, where each step is handled by a distinct reasoning agent: classifiers, validators, searchers and more.
 
 Every step is logged, inspectable, and overrideable. OrKa doesn’t hide the process — it **lets you observe cognition as it unfolds**.
 
@@ -35,7 +36,6 @@ Every step is logged, inspectable, and overrideable. OrKa doesn’t hide the pro
 
 ✅ Pluggable agent system  
 ✅ LLM-backed binary/classification/chain-of-thought agents  
-✅ Conditional logic via `RouterAgent`  
 ✅ Google/DuckDuckGo search fallback  
 ✅ Full Redis-based trace logging  
 ✅ Kafka-ready memory layer (planned)  
@@ -66,7 +66,6 @@ python test_run.py
 ````
 
 ## 🛣 Roadmap
-✅ Agent routing via RouterAgent
 
 🔜 Kafka-backed memory agent
 
@@ -94,4 +93,4 @@ This project welcomes collaboration with:
 ---
 ***Built** by Marco Somma, multipotentialite, AI engineer, and builder of cognitive tools that think out loud.*
 
-[📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md)
+[📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)

@@ -17,6 +17,10 @@ import os
 from orka.orchestrator import Orchestrator
 
 async def main():
+    """
+    Main entry point for the OrKa CLI.
+    Parses command-line arguments, initializes the orchestrator, and runs it with the provided input.
+    """
     parser = argparse.ArgumentParser(description="Run OrKa with a YAML configuration.")
     parser.add_argument("config", help="Path to the YAML configuration file.")
     parser.add_argument("input", help="Input question or statement for the orchestrator.")
@@ -27,6 +31,17 @@ async def main():
     await orchestrator.run(args.input)
 
 async def run_cli_entrypoint(config_path, input_text, log_to_file=False):
+    """
+    Run the OrKa orchestrator with the given configuration and input.
+    
+    Args:
+        config_path (str): Path to the YAML configuration file.
+        input_text (str): Input question or statement for the orchestrator.
+        log_to_file (bool, optional): If True, save the orchestration trace to a log file. Defaults to False.
+    
+    Returns:
+        dict or list: The result of the orchestration run.
+    """
     from orka.orchestrator import Orchestrator
 
     orchestrator = Orchestrator(config_path)

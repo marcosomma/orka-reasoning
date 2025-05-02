@@ -1,0 +1,50 @@
+meta:
+  version: 0.3
+  author: marco
+  description: Basic fact-checking flow with router and fallback
+  created: 2025-04-10
+
+orchestrator:
+  id: fact_pipeline
+  mode: router
+
+agents:
+  - id: topic_classifier
+    type: classification
+    prompt: >
+      Classify the following query into: [history, science, unknown]
+    options: [history, science, unknown]
+    queue: orka:classify
+
+  - id: is_fact
+    type: binary
+    prompt: >
+      Is the input a factual claim? Return TRUE or FALSE.
+    queue: orka:binary
+
+  - id: router_decision
+    type: router
+    prompt: >
+      Based on prior outputs, choose: [validate_fact, search_query, skip]
+    routes:
+      validate_fact: validate_agent
+      search_query: search_agent
+      skip: final_output
+    queue: orka:router
+
+  - id: validate_agent
+    type: binary
+    prompt: >
+      Validate the factuality of this input.
+    queue: orka:validate
+
+  - id: search_agent
+    type: duckduckgo
+    prompt: Search for this input.
+    queue: orka:search
+
+  - id: final_output
+    type: builder
+    prompt: >
+      Compose a response using the outputs.
+    queue: orka:builder

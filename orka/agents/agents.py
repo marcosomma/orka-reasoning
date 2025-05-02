@@ -14,14 +14,42 @@
 from .agent_base import BaseAgent
 
 class BinaryAgent(BaseAgent):
+    """
+    A simple agent that performs binary classification.
+    Returns True or False based on input content.
+    """
+
     def run(self, input_data):
+        """
+        Perform binary classification on the input.
+        
+        Args:
+            input_data (str or dict): Input to classify.
+        
+        Returns:
+            bool: True if input doesn't contain 'not', False otherwise.
+        """
         # Placeholder logic: in real use, this would call an LLM or heuristic
         if isinstance(input_data, str) and "not" in input_data.lower():
             return False
         return True
 
 class ClassificationAgent(BaseAgent):
+    """
+    A simple agent that performs multi-class classification.
+    Classifies input into 'cat' or 'dog' based on question words.
+    """
+
     def run(self, input_data):
+        """
+        Classify the input into categories based on question words.
+        
+        Args:
+            input_data (dict): Input containing text to classify.
+        
+        Returns:
+            str: 'cat' if input contains 'why' or 'how', 'dog' otherwise.
+        """
         text = input_data.get("input", "")
         if "why" in text.lower() or "how" in text.lower():
             return "cat"

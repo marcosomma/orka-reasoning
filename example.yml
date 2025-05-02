@@ -1,141 +1,91 @@
 orchestrator:
-  id: full_nodes_test_orchestrator
+  id: orka-ui
   strategy: parallel
-  queue: orka:test
+  queue: orka:generated
   agents:
-    - initial_classify
-    - search_required
-    - fork_parallel_checks
-    - join_parallel_checks
-    - router_search_path
-    - final_router
-
+    - fork_2
+    - join_1
+    - openai-binary_6
+    - router_7
 agents:
-  # First simple classification
-  - id: initial_classify
-    type: openai-classification
-    prompt: >
-      Classify this input "{{ input }}" into science, history, or nonsense.
-    options: [tech, science, history, nonsense]
-    queue: orka:domain
-
-  # Is search needed?
-  - id: search_required
-    type: openai-binary
-    prompt: >
-      Is "{{ input }}" a question that requires deep internet research?
-    queue: orka:need_search
-
-  # 🔥 Fork node: splits into two parallel validation flows
-  - id: fork_parallel_checks
+  - id: fork_2
     type: fork
     targets:
-      - - topic_validity_check 
-        - topic_depth_estimation
-        - topic_final_validation
-      - [summary_category_check, summary_needs_elaboration, summary_final_approval]
-  # 🔵 Branch 1: Topic validation flow
-
-  - id: topic_validity_check
-    type: openai-binary
-    prompt: >
-      Is "{{ input }}" a valid, meaningful topic to investigate?
-    queue: orka:topic_check
-
-  - id: topic_depth_estimation
+      - - duckduckgo_4
+      - - openai-classification_5
+  - id: duckduckgo_4
+    type: duckduckgo
+    queue: orka:duckduckgo_4
+    prompt: "{{ input }}"
+  - id: openai-classification_5
     type: openai-classification
-    prompt: >
-      Estimate how deep the investigation on "{{ input }}" would need to be: [shallow, medium, deep].
-    options: [shallow, medium, deep]
-    depends_on: [topic_validity_check]
-    queue: orka:topic_depth
-
-  - id: topic_final_validation
-    type: openai-binary
-    prompt: >
-      Considering the input "{{ input }}" and its estimated depth ({{ previous_outputs.topic_depth_estimation }}), is it worth pursuing?
-    depends_on: [topic_depth_estimation]
-    queue: orka:topic_final_validation
-
-  # 🔵 Branch 2: Summary categorization flow
-
-  - id: summary_category_check
-    type: openai-classification
-    prompt: >
-      Classify the input "{{ input }}" into one of: [summary, detailed, none].
-    options: [summary, detailed, none]
-    queue: orka:summary_check
-
-  - id: summary_needs_elaboration
-    type: openai-binary
-    prompt: >
-      Does the input "{{ input }}" require elaboration based on its category ({{ previous_outputs.summary_category_check }})?
-    depends_on: [summary_category_check]
-    queue: orka:summary_elaboration_check
-
-  - id: summary_final_approval
-    type: openai-binary
-    prompt: >
-      Should the summary for "{{ input }}" be expanded or is it complete enough?
-    depends_on: [summary_needs_elaboration]
-    queue: orka:summary_final_approval
-
-  # 🔥 Join node: waits for BOTH mini-branches to complete
-  - id: join_parallel_checks
+    queue: orka:openai-classification_5
+    prompt: |-
+      Classify the sentence in the the following category.
+      SENTENCE: {{ input }}
+    options:
+      - Tech
+      - Nature
+      - People
+      - Others
+  - id: join_1
     type: join
-    group: fork_parallel_checks
-
-  # Router to different paths
-  - id: router_search_path
-    type: router
-    params:
-      decision_key: search_required
-      routing_map:
-        true: ["failover_search", "final_router"]
-        false: ["info_completed", "final_router"]
-
-  # Failover node
-  - id: failover_search
-    type: failover
-    children:
-      - id: broken_search
-        type: failing
-        prompt: "This search will fail because agent is broken."
-        queue: orka:broken_search
-      - id: backup_duck_search
-        type: duckduckgo
-        prompt: Perform a backup web search for "{{ input }}"
-        queue: orka:duck_backup
-
-  # Additional info check
-  - id: info_completed
+    group: fork_2
+  - id: openai-binary_6
     type: openai-binary
-    prompt: >
-      Did we retrieve extra data for this input "{{ input }}"?
-      {{ previous_outputs }}
-    queue: orka:info_completed
-
-  # Final router based on info check
-  - id: final_router
+    queue: orka:openai-binary_6
+    prompt: |-
+      Is the sentence or the extra data relate to a person?
+      SENTENCE: {{ input }}
+      EXTRA DATA: {{ previous_outputs }}
+  - id: router_7
     type: router
     params:
-      decision_key: info_completed
+      decision_key: openai-binary_6
       routing_map:
-        true: ["final_builder_true"]
-        false: ["final_builder_false"]
-
-  # Final answer builders
-  - id: final_builder_true
+        "true":
+          - openai-answer_10
+          - duckduckgo_8
+          - openai-answer_9
+        "false":
+          - failover_10
+  - id: openai-answer_10
     type: openai-answer
-    prompt: |
-      Build a detailed answer combining:
-      - Classification result: {{ previous_outputs.initial_classify }}
-      - Search result: {{ previous_outputs.failover_search }}
-    queue: orka:final_output
+    queue: orka:openai-answer_10
+    prompt: |-
+      Return me ONLY name and surname of the person pointed in this sentence or extra data.
 
-  - id: final_builder_false
+      SENTENCE: {{ input }}
+      EXTRA DATA: {{ previous_outputs }}
+  - id: failover_10
+    type: failover
+    input: router_7
+    children:
+      - id: openai-answer_11
+        type: openai-answer
+        queue: orka:openai-answer_11
+        prompt: |-
+          Based on the sentence. Return me a compelling answer or a deeper overview. based also on the extra data
+
+          SENTENCE: {{ input }}
+          EXTRA DATA: {{ previous_outputs }}
+      - id: openai-answer_12
+        type: openai-answer
+        queue: orka:openai-answer_12
+        prompt: |-
+          Based on the sentence. Return me a compelling answer or a deeper overview. based also on the extra data
+
+          SENTENCE: {{ input }}
+          EXTRA DATA: {{ previous_outputs }}
+  - id: duckduckgo_8
+    type: duckduckgo
+    queue: orka:duckduckgo_8
+    prompt: "{{ previous_outputs[\"openai-answer_10\"] }}"
+  - id: openai-answer_9
     type: openai-answer
-    prompt: |
-      Build a detailed answer based on the classification result:
-      - Classification result: {{ previous_outputs.initial_classify }}
-    queue: orka:final_output
+    queue: orka:openai-answer_9
+    prompt: |-
+      Based on the sentence. Return me a compelling answer or a deeper overview. based also on the extra data
+
+      SENTENCE: {{ input }}
+      EXTRA DATA: {{ previous_outputs }}

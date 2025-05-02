@@ -14,7 +14,21 @@
 import abc
 
 class BaseNode(abc.ABC):
+    """
+    Abstract base class for all agent nodes in the OrKa orchestrator.
+    Defines the common interface and properties for agent nodes.
+    """
+
     def __init__(self, node_id, prompt, queue, **kwargs):
+        """
+        Initialize the base node with the given parameters.
+        
+        Args:
+            node_id (str): Unique identifier for the node.
+            prompt (str): Prompt or instruction for the node.
+            queue (list): Queue of agents or nodes to be processed.
+            **kwargs: Additional parameters for the node.
+        """
         self.node_id = node_id
         self.prompt = prompt
         self.queue = queue
@@ -25,8 +39,22 @@ class BaseNode(abc.ABC):
 
     @abc.abstractmethod
     def run(self, input_data):
-        '''Run the logical node.'''
+        """
+        Abstract method to run the logical node.
+        
+        Args:
+            input_data: Input data for the node to process.
+        
+        Raises:
+            NotImplementedError: If the method is not implemented by a subclass.
+        """
         pass
 
     def __repr__(self):
+        """
+        Return a string representation of the node.
+        
+        Returns:
+            str: String representation of the node.
+        """
         return f"<{self.__class__.__name__} id={self.agent_id} queue={self.queue}>"

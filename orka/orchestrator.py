@@ -43,7 +43,17 @@ AGENT_TYPES = {
 }
 
 class Orchestrator:
+    """
+    The Orchestrator is the core engine that loads a YAML configuration,
+    instantiates agents and nodes, and manages the execution of the reasoning workflow.
+    It supports parallelism, dynamic routing, and full trace logging.
+    """
+
     def __init__(self, config_path):
+        """
+        Initialize the Orchestrator with a YAML config file.
+        Loads orchestrator and agent configs, sets up memory and fork management.
+        """
         self.loader = YAMLLoader(config_path)
         self.loader.validate()
 
@@ -52,12 +62,16 @@ class Orchestrator:
 
         self.memory = RedisMemoryLogger()
         self.fork_manager = ForkGroupManager(self.memory.redis)
-        self.queue = self.orchestrator_cfg["agents"][:]
-        self.agents = self._init_agents()
-        self.run_id = str(uuid4())
-        self.step_index = 0
+        self.queue = self.orchestrator_cfg["agents"][:]  # Initial agent execution queue
+        self.agents = self._init_agents()                # Dict of agent_id -> agent instance
+        self.run_id = str(uuid4())                       # Unique run/session ID
+        self.step_index = 0                              # Step counter for traceability
 
     def _init_agents(self):
+        """
+        Instantiate all agents/nodes as defined in the YAML config.
+        Returns a dict mapping agent IDs to their instances.
+        """
         instances = {}
 
         def init_single_agent(cfg):
@@ -68,6 +82,7 @@ class Orchestrator:
             agent_type = cfg["type"].strip().lower()
             agent_id = cfg["id"]
 
+            # Remove fields not needed for instantiation
             clean_cfg = cfg.copy()
             clean_cfg.pop("id", None)
             clean_cfg.pop("type", None)
@@ -76,17 +91,21 @@ class Orchestrator:
 
             print(f"{datetime.now()} > [ORKA][INIT] Instantiating agent {agent_id} of type {agent_type}")
 
+            # Special handling for node types with unique constructor signatures
             if agent_type in ("router"):
+                # RouterNode expects node_id and params
                 prompt = cfg.get("prompt", None)
                 queue = cfg.get("queue", None)
                 return agent_cls(node_id=agent_id, **clean_cfg)
 
             if agent_type in ("fork", "join"):
+                # Fork/Join nodes need memory_logger for group management
                 prompt = cfg.get("prompt", None)
                 queue = cfg.get("queue", None)
                 return agent_cls(node_id=agent_id, prompt=prompt, queue=queue, memory_logger=self.memory, **clean_cfg)
 
             if agent_type == "failover":
+                # FailoverNode takes a list of child agent instances
                 queue = cfg.get("queue", None)
                 child_instances = [init_single_agent(child_cfg) for child_cfg in cfg.get("children", [])]
                 return agent_cls(node_id=agent_id, children=child_instances, queue=queue)
@@ -96,6 +115,7 @@ class Orchestrator:
                 queue = cfg.get("queue", None)
                 return agent_cls(node_id=agent_id, prompt=prompt, queue=queue, **clean_cfg)
 
+            # Default agent instantiation
             prompt = cfg.get("prompt", None)
             queue = cfg.get("queue", None)
             return agent_cls(agent_id=agent_id, prompt=prompt, queue=queue, **clean_cfg)
@@ -107,12 +127,20 @@ class Orchestrator:
         return instances
 
     def render_prompt(self, template_str, payload):
+        """
+        Render a Jinja2 template string with the given payload.
+        Used for dynamic prompt construction.
+        """
         if not isinstance(template_str, str):
             raise ValueError(f"Expected template_str to be str, got {type(template_str)} instead.")
         return Template(template_str).render(**payload)
 
     @staticmethod
     def normalize_bool(value):
+        """
+        Normalize a value to boolean.
+        Accepts bools or strings like 'true', 'yes', etc.
+        """
         if isinstance(value, bool):
             return value
         if isinstance(value, str):
@@ -120,10 +148,17 @@ class Orchestrator:
         return False
 
     def enqueue_fork(self, agent_ids, fork_group_id):
+        """
+        Add agent IDs to the execution queue (used for forked/parallel execution).
+        """
         self.queue.extend(agent_ids) # Add to queue keeping order
     
     @staticmethod
     def build_previous_outputs(logs):
+        """
+        Build a dictionary of previous agent outputs from the execution logs.
+        Used to provide context to downstream agents.
+        """
         outputs = {}
         for log in logs:
             agent_id = log["agent_id"]
@@ -142,6 +177,11 @@ class Orchestrator:
         return outputs
 
     async def run(self, input_data):
+        """
+        Main execution loop for the orchestrator.
+        Iterates through the agent queue, passing input and previous outputs,
+        handling special node types (router, fork, join, etc.), and logging results.
+        """
         logs = []
         queue = self.orchestrator_cfg["agents"][:]
 
@@ -151,11 +191,12 @@ class Orchestrator:
             agent_type = agent.type
             self.step_index += 1
 
+            # Build payload for the agent: current input and all previous outputs
             payload = {
                 "input": input_data,
                 "previous_outputs": self.build_previous_outputs(logs),
             }
-            freezed_payload = json.dumps(payload)  # Freeze the payload as a string
+            freezed_payload = json.dumps(payload)  # Freeze the payload as a string for logging/debug
             print(f"{datetime.now()} > [ORKA] {self.step_index} >  Running agent '{agent_id}' of type '{agent_type}', payload: {freezed_payload}")
             log_entry = {
                 "agent_id": agent_id,
@@ -165,6 +206,7 @@ class Orchestrator:
 
             start_time = time()
 
+            # Handle RouterNode: dynamic routing based on previous outputs
             if agent_type == "routernode":
                 decision_key = agent.params.get("decision_key")
                 routing_map = agent.params.get("routing_map")
@@ -186,10 +228,11 @@ class Orchestrator:
                     "next_agents": str(next_agents)
                 }
 
+            # Handle ForkNode: run multiple agents in parallel branches
             elif agent_type == "forknode":
                 result = await agent.run(self, payload)
                 fork_targets = agent.config.get("targets", [])
-                # 🔥 FLATTEN branch steps
+                # Flatten branch steps for parallel execution
                 flat_targets = []
                 for branch in fork_targets:
                     if isinstance(branch, list):
@@ -205,7 +248,7 @@ class Orchestrator:
                 self.fork_manager.create_group(fork_group_id, fork_targets)
                 payload["fork_group_id"] = fork_group_id
 
-                mode = agent.config.get("mode", "sequential")  # 🔥 Add this: default sequential if not set
+                mode = agent.config.get("mode", "sequential")  # Default to sequential if not set
 
                 payload_out = {
                     "input": input_data,
@@ -216,8 +259,9 @@ class Orchestrator:
 
                 print(f"{datetime.now()} > [ORKA][FORK][PARALLEL] {self.step_index} >  Running forked agents in parallel for group {fork_group_id}")
                 fork_logs = await self.run_parallel_agents(fork_targets, fork_group_id, input_data, payload["previous_outputs"])
-                logs.extend(fork_logs)  # 🧩 This re-enables full trace of previous_outputs
+                logs.extend(fork_logs)  # Add forked agent logs to the main log
 
+            # Handle JoinNode: wait for all forked agents to finish, then join results
             elif agent_type == "joinnode":
                 fork_group_id = self.memory.redis.get(f"fork_group_mapping:{agent.group_id}")
                 if fork_group_id:
@@ -235,6 +279,7 @@ class Orchestrator:
                 if not fork_group_id:
                     raise ValueError(f"JoinNode '{agent_id}' missing required group_id.")
 
+                # If not all forked agents are done, re-queue this join node and wait
                 if not self.fork_manager.is_group_done(fork_group_id):
                     print(f"{datetime.now()} > [ORKA][JOIN][WAITING] {self.step_index} > Node '{agent_id}' is still waiting on fork group: {fork_group_id}")
                     queue.append(agent_id)
@@ -243,9 +288,10 @@ class Orchestrator:
                 self.fork_manager.delete_group(fork_group_id)  # Clean up fork group after join
 
             else:
-                # Normal Agent
+                # Normal Agent: run and handle result
                 result = agent.run(payload)
 
+                # If agent is waiting (e.g., for async input), re-queue it
                 if isinstance(result, dict) and result.get("status") == "waiting":
                     print(f"{datetime.now()} > [ORKA][WAITING] {self.step_index} > Node '{agent_id}' is still waiting: {result.get('received')}")
                     queue.append(agent_id)
@@ -256,7 +302,7 @@ class Orchestrator:
                 if fork_group:
                     self.fork_manager.mark_agent_done(fork_group, agent_id)
 
-                # 🔥 Check if this agent has a next-in-sequence step in its branch
+                # Check if this agent has a next-in-sequence step in its branch
                 next_agent = self.fork_manager.next_in_sequence(fork_group, agent_id)
                 if next_agent:
                     print(f"{datetime.now()} > [ORKA][FORK-SEQUENCE] {self.step_index} > Agent '{agent_id}' finished. Enqueuing next in sequence: '{next_agent}'")
@@ -269,6 +315,7 @@ class Orchestrator:
                 if hasattr(agent, 'prompt') and agent.prompt:
                     payload_out["prompt"] = agent.prompt
 
+            # Log the result and timing for this step
             duration = round(time() - start_time, 4)
             payload_out["previous_outputs"] = payload["previous_outputs"]
             log_entry["duration"] = duration
@@ -279,7 +326,7 @@ class Orchestrator:
             
             print(f"{datetime.now()} > [ORKA] {self.step_index} > Agent '{agent_id}' returned: {result}")
 
-        # Save logs
+        # Save logs to file at the end of the run
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_dir = os.getenv("ORKA_LOG_DIR", "logs")
         os.makedirs(log_dir, exist_ok=True)
@@ -291,6 +338,10 @@ class Orchestrator:
     import asyncio
 
     async def run_parallel_agents(self, agent_ids, fork_group_id, input_data, previous_outputs):
+        """
+        Run multiple agents in parallel (for forked branches).
+        Returns a list of log entries for each forked agent.
+        """
         tasks = []
 
         for agent_id in agent_ids:
@@ -300,11 +351,13 @@ class Orchestrator:
                 "previous_outputs": previous_outputs
             }
 
+            # If the agent is a node, pass orchestrator as first arg
             if isinstance(agent, router_node.BaseNode):
                 result = agent.run(self, payload)
             else:
                 result = agent.run(payload)
 
+            # If the result is a coroutine, schedule it; otherwise, wrap in a coroutine
             if asyncio.iscoroutine(result) or isinstance(result, asyncio.Future):
                 tasks.append((agent_id, result))
             else:
@@ -318,8 +371,7 @@ class Orchestrator:
 
         results = await asyncio.gather(*coroutines)
 
-        # 🚨 Save each forked result into Redis for JoinNode to find it
-        # state_key = f"waitfor:{fork_group_id}:inputs"
+        # Save each forked result into Redis for JoinNode to find it
         forked_step_index = 0
         step_index = f"{self.step_index}[{forked_step_index}]"
         result_logs = []

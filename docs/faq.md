@@ -1,39 +1,20 @@
 [📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
 
-# Getting Started with OrKa
+# OrKa FAQ
 
-## 1. Install
-```bash
-git clone https://github.com/marcosomma/orka.git
-cd orka
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+### How is this different from LangChain?
+LangChain wraps LLM APIs with logic. OrKa defines cognitive structure in YAML + has full introspection.
 
-## 2. Configure `.env`
-```
-OPENAI_API_KEY=...
-OPENAI_MODEL=gpt-3.5-turbo
-```
+### Why YAML?
+Declarative, composable, versionable. Think: Terraform for thought.
 
-## 3. Run Demo
-```bash
-python test_run.py
-```
-This runs `orka.yaml` against a sample input.
+### What happens if an agent fails?
+It logs the error. You can define `fallback:` agents to take over. No silent failures.
 
-## 4. Inspect Logs
-```bash
-redis-cli xrevrange orka:memory + - COUNT 5
-```
+### Can I run this with local LLMs?
+Yes. Via LiteLLM proxy, run with Ollama, LM Studio, Claude, OpenRouter.
 
-## 5. Edit `orka.yaml`
-- Change prompts
-- Add agents
-- Insert fallback paths
-
-## 6. Need Help?
-GitHub issues or Discord: https://discord.gg/UthTN8Xu
+### What about security?
+Redis/Kafka can be encrypted. PII filters recommended. OrKaUI will support auth soon.
 
 [📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
