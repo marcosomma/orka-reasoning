@@ -24,10 +24,10 @@ agents:
       Classify the sentence in the the following category.
       SENTENCE: {{ input }}
     options:
-      - Tech
-      - Nature
-      - People
-      - Others
+      - tech
+      - nature
+      - people
+      - others
   - id: join_1
     type: join
     group: fork_2
@@ -35,7 +35,7 @@ agents:
     type: openai-binary
     queue: orka:openai-binary_6
     prompt: |-
-      Is the sentence or the extra data relate to a person?
+      Are the sentence or the extra data relate to a person?
       SENTENCE: {{ input }}
       EXTRA DATA: {{ previous_outputs }}
   - id: router_7
