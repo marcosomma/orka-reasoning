@@ -10,6 +10,7 @@
 # For commercial use, contact: marcosomma.work@gmail.com
 # 
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
+
 class FakeRedisClient:
     def __init__(self):
         self.store = {}
@@ -51,3 +52,7 @@ class FakeRedisClient:
     def xrevrange(self, stream, count=1):
         entries = self.store.get(stream, [])
         return list(reversed(entries[-count:]))
+    
+    def getaddrinfo(self, *args, **kwargs):
+        # Return a plausible value for socket.getaddrinfo
+        return [(2, 1, 6, '', ('127.0.0.1', 6379))]

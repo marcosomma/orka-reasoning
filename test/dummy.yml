@@ -1,0 +1,12 @@
+orchestrator:
+  id: test_orchestrator
+  strategy: decision-tree
+  queue: test_queue
+  agents: [dummy_agent]
+
+agents:
+  - id: dummy_agent
+    type: openai-binary
+    prompt: "Is '{{ input }}' a valid project?"
+    queue: test_queue
+    
