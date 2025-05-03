@@ -1,27 +1,25 @@
-version: '3'
+version: '3.8'
 services:
   redis:
-    image: redis:latest
+    image: redis:7.2-alpine
     ports:
       - "6379:6379"
-    networks:
-      - orka-network
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    restart: always
 
   orka-backend:
     build:
-      context: ../..
-      dockerfile: orka/docker/Dockerfile
-    command: python -m orka.server
+      context: .
+      dockerfile: docker/Dockerfile
     ports:
       - "8000:8000"
-    depends_on:
-      - redis
     environment:
       - REDIS_URL=redis://redis:6379/0
-    networks:
-      - orka-network
+    depends_on:
+      - redis
     restart: always
 
-networks:
-  orka-network:
-    driver: bridge
+volumes:
+  redis_data:

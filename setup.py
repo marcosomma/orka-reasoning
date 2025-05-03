@@ -18,7 +18,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="orka-reasoning",
-    version="0.3.64",
+    version="0.3.7",
     author="Marco Somma",
     author_email="marcosomma.work@gmail.com",
     description="OrKa: Modular orchestration for agent-based cognition",
@@ -28,17 +28,19 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        "redis",
-        "pyyaml",
-        "litellm",
-        "jinja2",
-        "google-api-python-client",
-        "duckduckgo-search",
-        "python-dotenv",
-        "openai",
-        "async-timeout",
-        "fastapi",
-        "uvicorn",
+        "redis>=4.5.0",
+        "pyyaml>=6.0",
+        "litellm>=1.0.0",
+        "jinja2>=3.0.0",
+        "google-api-python-client>=2.0.0",
+        "duckduckgo-search>=3.0.0",
+        "python-dotenv>=0.19.0",
+        "openai>=1.0.0",
+        "async-timeout>=4.0.0",
+        "fastapi>=0.68.0",
+        "uvicorn>=0.15.0",
+        "pydantic>=1.8.0",
+        "httpx>=0.24.0",
     ],
     extras_require={
         "dev": ["pytest", "coverage", "pytest-cov"]
@@ -55,6 +57,6 @@ setup(
         ],
     },
     package_data={
-        'orka': ['docker/*'],
+        'orka': ['docker/*', 'requirements.txt'],
     },
 )
