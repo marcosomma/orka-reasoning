@@ -37,6 +37,8 @@ setup(
         "python-dotenv",
         "openai",
         "async-timeout",
+        "fastapi",
+        "uvicorn",
     ],
     extras_require={
         "dev": ["pytest", "coverage", "pytest-cov"]
@@ -47,4 +49,9 @@ setup(
         "Operating System :: OS Independent"
     ],
     python_requires=">=3.8",
+    entry_points={
+        'console_scripts': [
+            'orka-start=orka_start:main',
+        ],
+    },
 )

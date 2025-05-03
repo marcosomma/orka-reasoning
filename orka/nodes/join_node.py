@@ -17,33 +17,11 @@ from .agent_node import BaseNode
 
 class JoinNode(BaseNode):
     """
-    JoinNode is responsible for synchronizing and merging results from parallel branches
-    created by a ForkNode in a workflow. It waits for all expected agents to complete
-    their tasks, merges their results, and handles timeouts if not all agents respond
-    within a specified number of retries.
-
-    Attributes:
-        node_id (str): Unique identifier for the node.
-        prompt (str): Prompt or description for the node.
-        queue: Queue object for task management.
-        memory_logger: Logger with Redis interface for state management.
-        group_id (str): Identifier for the group of parallel agents to join.
-        max_retries (int): Maximum number of retries before timing out.
-        output_key (str): Redis key for storing merged output.
-        _retry_key (str): Redis key for tracking retry count.
+    A node that waits for and merges results from parallel branches created by a ForkNode.
+    Uses a max retry counter to prevent infinite waiting.
     """
 
     def __init__(self, node_id, prompt, queue, memory_logger=None, **kwargs):
-        """
-        Initialize a JoinNode.
-
-        Args:
-            node_id (str): Unique identifier for the node.
-            prompt (str): Prompt or description for the node.
-            queue: Queue object for task management.
-            memory_logger: Logger with Redis interface for state management.
-            **kwargs: Additional keyword arguments (e.g., group, max_retries).
-        """
         super().__init__(node_id, prompt, queue, **kwargs)
         self.memory_logger = memory_logger
         self.group_id = kwargs.get("group")
@@ -52,16 +30,6 @@ class JoinNode(BaseNode):
         self._retry_key = f"{self.node_id}:join_retry_count"
 
     def run(self, input_data):
-        """
-        Main execution method for the JoinNode. Waits for all expected parallel agents
-        to complete, merges their results, and handles timeouts.
-
-        Args:
-            input_data (dict): Input data containing at least 'fork_group_id'.
-
-        Returns:
-            dict: Status information, including 'waiting', 'timeout', or 'done'.
-        """
         fork_group_id = input_data.get("fork_group_id", self.group_id)
         state_key = f"waitfor:join_parallel_checks:inputs"
 
@@ -105,16 +73,6 @@ class JoinNode(BaseNode):
         }
 
     def _complete(self, fork_targets, state_key):
-        """
-        Merge results from all completed agents and clean up Redis state.
-
-        Args:
-            fork_targets (list): List of agent IDs expected to complete.
-            state_key (str): Redis key where agent results are stored.
-
-        Returns:
-            dict: Status 'done' and the merged results.
-        """
         merged = {
             agent_id: json.loads(self.memory_logger.hget(state_key, agent_id))
             for agent_id in fork_targets
