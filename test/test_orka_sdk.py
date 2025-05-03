@@ -14,6 +14,8 @@
 import os
 import pytest
 from dotenv import load_dotenv
+from fake_redis import FakeRedisClient
+from unittest.mock import patch
 
 # Load environment
 load_dotenv()
@@ -154,22 +156,21 @@ def test_yaml_structure(example_yaml):
 
 @pytest.mark.asyncio
 async def test_run_orka(monkeypatch, example_yaml):
-    # Mock env vars
     monkeypatch.setenv("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
     monkeypatch.setenv("BASE_OPENAI_MODEL", os.getenv("BASE_OPENAI_MODEL"))
 
     from orka.orka_cli import run_cli_entrypoint
 
-    try:
-        result_router_true = await run_cli_entrypoint(
-            config_path=str(example_yaml),
-            input_text="What is the capital of France?",
-            log_to_file=False,
-        )
+    # 👇 Add fake Redis patch here
+    with patch("orka.memory_logger.redis.from_url", return_value=FakeRedisClient()):
+        try:
+            result_router_true = await run_cli_entrypoint(
+                config_path=str(example_yaml),
+                input_text="What is the capital of France?",
+                log_to_file=False,
+            )
 
-        # Make sure result is iterable
-        assert isinstance(result_router_true, list), f"Expected list of events, got {type(result_router_true)}"
-
-    except Exception as e:
-        pytest.fail(f"Execution failed: {e}")
+            assert isinstance(result_router_true, list), f"Expected list of events, got {type(result_router_true)}"
+        except Exception as e:
+            pytest.fail(f"Execution failed: {e}")
 

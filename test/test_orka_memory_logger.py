@@ -14,13 +14,20 @@
 import os
 import pytest
 from dotenv import load_dotenv
+from orka.memory_logger import RedisMemoryLogger
+from fake_redis import FakeRedisClient
 
-# Load environment
+# Load env
 load_dotenv()
 
 def test_logger_write_and_read(monkeypatch):
-    from orka.memory_logger import RedisMemoryLogger
+    # Inject fake Redis client
     logger = RedisMemoryLogger()
+    logger.client = FakeRedisClient()
+
     logger.log("test_agent", "output", {"foo": "bar"})
+
+    # Validate written item
     items = logger.client.xrevrange("orka:memory", count=1)
-    assert len(items[0][1]) == 6
+    assert len(items) == 1
+    assert "agent_id" in items[0]  # or items[0].get("agent_id")

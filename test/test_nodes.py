@@ -1,3 +1,15 @@
+# OrKa: Orchestrator Kit Agents
+# Copyright © 2025 Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka
+#
+# Licensed under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
+# You may not use this file for commercial purposes without explicit permission.
+#
+# Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
+# For commercial use, contact: marcosomma.work@gmail.com
+# 
+# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 import pytest
 import json
 from orka.nodes.router_node import RouterNode
@@ -7,6 +19,8 @@ from orka.nodes.join_node import JoinNode
 from orka.nodes.fork_node import ForkNode
 from orka.agents.google_duck_agents import DuckDuckGoAgent
 from orka.memory_logger import RedisMemoryLogger
+from fake_redis import FakeRedisClient
+
 
 
 def test_router_node_run():
@@ -99,31 +113,24 @@ async def test_fork_node_run(monkeypatch):
 @pytest.mark.asyncio
 async def test_join_node_run(monkeypatch):
     memory = RedisMemoryLogger()
+    fake_redis = FakeRedisClient()
+    memory.client = fake_redis
 
-    fake_redis = {}
-    memory.client = type('', (), {
-        "hset": lambda _, key, field, val: fake_redis.setdefault(key, {}).update({field: val}),
-        "hget": lambda _, key, field: fake_redis[key][field],
-        "hkeys": lambda _, key: list(fake_redis.get(key, {}).keys()),
-        "smembers": lambda _, key: list(fake_redis.get(key, set())),
-        "delete": lambda _, key: fake_redis.pop(key, None),
-        "set": lambda _, key, val: fake_redis.__setitem__(key, val),
-        "xadd": lambda _, stream, data: fake_redis.setdefault(stream, []).append(data),
-    })()
+    # Prepopulate state
+    fake_redis.hset("waitfor:join_parallel_checks:inputs", "agentA", json.dumps("classified_result"))
+    fake_redis.hset("waitfor:join_parallel_checks:inputs", "agentB", json.dumps(["search result A", "search result B"]))
+    fake_redis.sadd("fork_group:fork_parallel_checks_testgroup", "agentA", "agentB")
 
-    # Prepopulate Redis with the forked results
-    fake_redis["waitfor:join_parallel_checks:inputs"] = {
-        "agentA": json.dumps("classified_result"),
-        "agentB": json.dumps(["search result A", "search result B"]),
-    }
-    fake_redis["fork_group:fork_parallel_checks_testgroup"] = {"agentA", "agentB"}
+    # Build JoinNode
+    wait_node = JoinNode(
+        node_id="join_parallel_checks",
+        prompt=None,
+        queue="test",
+        memory_logger=memory,
+        group="fork_parallel_checks_testgroup"
+    )
 
-    wait_node = JoinNode(node_id="join_parallel_checks", prompt=None, queue="test", memory_logger=memory, group="fork_parallel_checks_testgroup")
-
-    payload = {
-        "fork_group_id": "fork_parallel_checks_testgroup"
-    }
-
+    payload = {"fork_group_id": "fork_parallel_checks_testgroup"}
     result = wait_node.run(payload)
 
     assert result["status"] == "done"

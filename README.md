@@ -110,6 +110,44 @@ Click the thumbnail above to watch a quick video demo of OrKa in action — how 
    GOOGLE_API_KEY=sksdsadasqwdad....
    GOOGLE_CSE_ID=1234
    ```
+   
+### 🚦 CLI Stack Launcher: `orka-start`
+
+After installing OrKa (`pip install orka-reasoning`), you can launch the full backend infrastructure using:
+
+```
+orka-start
+```
+
+This command performs the following:
+
+1. **Starts Redis via Docker Compose**  
+   Automatically pulls, builds, and runs the Redis container (defined in `docker-compose.yml`).
+2. **Starts the OrKa Backend**  
+   Launches `orka.server` as a Python module.
+3. **Waits for services to come online**  
+   Ensures Redis and the orchestrator backend are running before proceeding.
+4. **Keeps the backend active**  
+   The command remains active until you press `Ctrl+C` to shut everything down.
+
+#### ✅ Use this when:
+- You're developing or testing OrKa locally.
+- You want a self-contained stack running Redis + the backend.
+- You're using OrKaUI and need the backend API live.
+
+#### ⚠️ Requirements:
+- Docker and `docker-compose` must be installed and in your system PATH.
+- A valid `docker-compose.yml` file must be present in your project directory.
+- This command **does not execute a YAML flow** — it's for launching infrastructure only.
+
+#### 🧯 If the CLI isn’t found:
+If `orka-start` isn’t recognized (common in Windows or conda environments), use the Python module fallback:
+
+```
+python -m orka_start
+```
+
+This does the same thing and works universally.
 
 ## 📄 Usage
 

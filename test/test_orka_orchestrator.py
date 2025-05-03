@@ -13,8 +13,9 @@
 import os
 import pytest
 from dotenv import load_dotenv
+from unittest.mock import patch
+from fake_redis import FakeRedisClient
 
-# Load environment
 load_dotenv()
 
 class DummyAgent:
@@ -26,8 +27,10 @@ class DummyAgent:
 
     def run(self, input_data):
         return {self.agent_id: f"processed: {input_data}"}
+
 @pytest.mark.asyncio
 async def test_orchestrator_flow(monkeypatch, tmp_path):
+    from orka import orchestrator
     from orka.orchestrator import Orchestrator
 
     file = tmp_path / "orka.yaml"
@@ -48,17 +51,15 @@ agents:
     queue: q2
 """)
 
-    from orka import orchestrator
-    orchestrator.AGENT_TYPES["dummy"] = DummyAgent
-    o = Orchestrator(str(file))
-    result = await o.run("msg")
+    fake_redis = FakeRedisClient()
 
-    # Assert result is list (expected now)
+    with patch("orka.memory_logger.redis.from_url", return_value=fake_redis):
+        orchestrator.AGENT_TYPES["dummy"] = DummyAgent
+        o = Orchestrator(str(file))
+        result = await o.run("msg")
+
     assert isinstance(result, list), f"Expected result to be list, got {type(result)}"
-
-    # Extract all agent_ids that appeared
     agent_ids = {entry["agent_id"] for entry in result if "agent_id" in entry}
-
-    # Validate expected agents executed
     assert "a1" in agent_ids, f"'a1' not found in executed agent IDs: {agent_ids}"
     assert "a2" in agent_ids, f"'a2' not found in executed agent IDs: {agent_ids}"
+
