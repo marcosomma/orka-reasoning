@@ -8,7 +8,9 @@ services:
       - orka-network
 
   orka-backend:
-    build: .
+    build:
+      context: ../..
+      dockerfile: orka/docker/Dockerfile
     command: python -m orka.server
     ports:
       - "8000:8000"

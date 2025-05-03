@@ -18,13 +18,13 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="orka-reasoning",
-    version="0.3.6",
+    version="0.3.64",
     author="Marco Somma",
     author_email="marcosomma.work@gmail.com",
     description="OrKa: Modular orchestration for agent-based cognition",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/marcosomma/orka",
+    url="https://orkacore.com",
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
@@ -51,7 +51,10 @@ setup(
     python_requires=">=3.8",
     entry_points={
         'console_scripts': [
-            'orka-start=orka_start:main',
+            'orka-start=orka.orka_start:main',
         ],
+    },
+    package_data={
+        'orka': ['docker/*'],
     },
 )

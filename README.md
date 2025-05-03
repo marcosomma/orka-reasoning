@@ -2,12 +2,12 @@
 
 <div align="center">
 
-  <img src="./assets/logo_256.png" alt="OrKa Logo" width="256" height="256"/>
+<img src="https://orkacore.com/assets/ORKA_logo.png" alt="OrKa Logo" width="256" height="256"/>
 
-![Tests](https://github.com/marcosomma/orka/actions/workflows/tests.yml/badge.svg)
-[![codecov](https://codecov.io/gh/marcosomma/orka-core/graph/badge.svg?token=V91X4WGBBZ)](https://codecov.io/gh/marcosomma/orka-core)
+![Tests](https://github.com/marcosomma/orka-core/actions/workflows/tests.yml/badge.svg)
+  <img src="https://codecov.io/gh/marcosomma/orka-core/graph/badge.svg?token=V91X4WGBBZ"/>
 
-[WEB](https://marcosomma.github.io/orka/)
+[WEB](https://orkacore.com)
 </div>
 
 **Orchestrator Kit for Agentic Reasoning** - OrKa is a modular AI orchestration system that transforms Large Language Models (LLMs) into composable agents capable of reasoning, fact-checking, and constructing answers with transparent traceability.
