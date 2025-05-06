@@ -70,7 +70,21 @@ class DuckDuckGoAgent(BaseAgent):
         Returns:
             list: List of search result snippets.
         """
-        query = input_data["input"]
+        print(json.dumps(input_data, indent=2))
+        print(self.__dict__)
+        
+        # Replace template variables in prompt
+        query = self.prompt
+        if "{{input}}" in query:
+            query = query.replace("{{input}}", input_data["input"])
+            
+        # Replace any previous_outputs variables
+        for key, value in input_data.get("previous_outputs", {}).items():
+            template_var = f"{{{{ previous_outputs.{key} }}}}"
+            if template_var in query:
+                query = query.replace(template_var, str(value))
+            
+        print(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>: {query}")
         if not query:
             return ["No query provided"]
         try:
@@ -80,4 +94,4 @@ class DuckDuckGoAgent(BaseAgent):
             return results
         except Exception as e:
             return [f"DuckDuckGo search failed: {str(e)}"]
-        
+        print()

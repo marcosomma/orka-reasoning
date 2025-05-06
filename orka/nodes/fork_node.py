@@ -33,6 +33,7 @@ class ForkNode(BaseNode):
         self.memory_logger = memory_logger
         self.targets = kwargs.get("targets", [])  # Store the fork branches
         self.config = kwargs  # Store config explicitly
+        self.mode = kwargs.get("mode", "sequential")  # Default to sequential execution
 
     async def run(self, orchestrator, context):
         """
@@ -61,8 +62,13 @@ class ForkNode(BaseNode):
             if isinstance(branch, list):
                 # Branch is a sequence - only queue the FIRST agent now
                 first_agent = branch[0]
-                orchestrator.enqueue_fork([first_agent], fork_group_id)
-                orchestrator.fork_manager.track_branch_sequence(fork_group_id, branch)
+                if self.mode == "sequential":
+                    # For sequential mode, only queue the first agent
+                    orchestrator.enqueue_fork([first_agent], fork_group_id)
+                    orchestrator.fork_manager.track_branch_sequence(fork_group_id, branch)
+                else:
+                    # For parallel mode, queue all agents
+                    orchestrator.enqueue_fork(branch, fork_group_id)
                 all_flat_agents.extend(branch)
             else:
                 # Single agent, flat structure (fallback)

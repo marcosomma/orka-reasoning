@@ -65,6 +65,25 @@ Click the thumbnail above to watch a quick video demo of OrKa in action — how 
    python -m orka.orka_start
    ```
 
+### Running OrkaUI Locally
+
+To run the OrkaUI locally and connect it with your local OrkaBackend:
+
+1. **Pull the OrkaUI Docker image**:
+   ```bash
+   docker pull marcosomma/orka-ui:latest
+   ```
+
+2. **Run the OrkaUI container**:
+   ```bash
+   docker run -d \
+     -p 8080:80 \
+     --name orka-ui \
+     marcosomma/orka-ui:latest
+   ```
+
+This will start the OrkaUI on port 8080, connected to your local OrkaBackend running on port 8000.
+
 ## 📝 Usage
 
 ### Building Your Orchestrator

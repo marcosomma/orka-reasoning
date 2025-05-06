@@ -84,7 +84,7 @@ class OpenAIBinaryAgent(BaseAgent):
         response = client.chat.completions.create(
             model=OPENAI_MODEL,
             messages=[{"role": "user", "content": full_prompt}],
-            temperature=0  # Use deterministic output
+            temperature=1.0  # Use deterministic output
         )
         # Parse the response into a boolean
         answer = response.choices[0].message.content.strip().lower()
@@ -119,7 +119,7 @@ class OpenAIClassificationAgent(BaseAgent):
         response = client.chat.completions.create(
             model=OPENAI_MODEL,
             messages=[{"role": "user", "content": full_prompt}],
-            temperature=0  # Use deterministic output
+            temperature=1.0  # Use deterministic output
         )
         # Parse the response and validate against options
         answer = response.choices[0].message.content.strip().lower()
