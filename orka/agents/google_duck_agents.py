@@ -70,8 +70,6 @@ class DuckDuckGoAgent(BaseAgent):
         Returns:
             list: List of search result snippets.
         """
-        print(json.dumps(input_data, indent=2))
-        print(self.__dict__)
         
         # Replace template variables in prompt
         query = self.prompt
@@ -84,7 +82,6 @@ class DuckDuckGoAgent(BaseAgent):
             if template_var in query:
                 query = query.replace(template_var, str(value))
             
-        print(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>: {query}")
         if not query:
             return ["No query provided"]
         try:

@@ -17,6 +17,7 @@
 import os
 import json
 import asyncio
+import threading
 from time import time
 from datetime import datetime
 from jinja2 import Template
@@ -26,6 +27,7 @@ from .agents import agents, llm_agents, google_duck_agents
 from .nodes import router_node, failover_node, failing_node, join_node, fork_node
 from .memory_logger import RedisMemoryLogger
 from .fork_group_manager import ForkGroupManager
+from concurrent.futures import ThreadPoolExecutor
 
 AGENT_TYPES = {
     "binary": agents.BinaryAgent,
@@ -72,6 +74,8 @@ class Orchestrator:
         Instantiate all agents/nodes as defined in the YAML config.
         Returns a dict mapping agent IDs to their instances.
         """
+        print(self.orchestrator_cfg)
+        print(self.agent_cfgs)
         instances = {}
 
         def init_single_agent(cfg):
@@ -342,54 +346,79 @@ class Orchestrator:
 
         return logs
 
-    import asyncio
+    async def _run_agent_async(self, agent_id, input_data, previous_outputs):
+        """
+        Run a single agent asynchronously.
+        """
+        agent = self.agents[agent_id]
+        payload = {
+            "input": input_data,
+            "previous_outputs": previous_outputs
+        }
+
+        if isinstance(agent, router_node.BaseNode):
+            # For nodes, we need to handle them differently since they need orchestrator
+            result = agent.run(self, payload)
+        else:
+            # Run the agent in a thread pool to avoid blocking
+            loop = asyncio.get_event_loop()
+            with ThreadPoolExecutor() as pool:
+                result = await loop.run_in_executor(pool, agent.run, payload)
+
+        return agent_id, result
+
+    async def _run_branch_async(self, branch_agents, input_data, previous_outputs):
+        """
+        Run a sequence of agents in a branch sequentially.
+        """
+        branch_results = {}
+        for agent_id in branch_agents:
+            agent_id, result = await self._run_agent_async(agent_id, input_data, previous_outputs)
+            branch_results[agent_id] = result
+            # Update previous_outputs for the next agent in the branch
+            previous_outputs = {**previous_outputs, **branch_results}
+        return branch_results
 
     async def run_parallel_agents(self, agent_ids, fork_group_id, input_data, previous_outputs):
         """
-        Run multiple agents in parallel (for forked branches).
+        Run multiple branches in parallel, with agents within each branch running sequentially.
         Returns a list of log entries for each forked agent.
         """
-        tasks = []
+        # Get the fork node to understand the branch structure
+        fork_node_id = fork_group_id.split('_')[0] + '_' + fork_group_id.split('_')[1]  # Get 'fork_temporal' from 'fork_temporal_1746645176'
+        fork_node = self.agents[fork_node_id]
+        branches = fork_node.targets
 
-        for agent_id in agent_ids:
-            agent = self.agents[agent_id]
-            payload = {
-                "input": input_data,
-                "previous_outputs": previous_outputs
-            }
+        # Run each branch in parallel
+        branch_tasks = [
+            self._run_branch_async(branch, input_data, previous_outputs)
+            for branch in branches
+        ]
 
-            # If the agent is a node, pass orchestrator as first arg
-            if isinstance(agent, router_node.BaseNode):
-                result = agent.run(self, payload)
-            else:
-                result = agent.run(payload)
+        # Wait for all branches to complete
+        branch_results = await asyncio.gather(*branch_tasks)
 
-            # If the result is a coroutine, schedule it; otherwise, wrap in a coroutine
-            if asyncio.iscoroutine(result) or isinstance(result, asyncio.Future):
-                tasks.append((agent_id, result))
-            else:
-                async def fake_coro(res=result):
-                    return res
-                tasks.append((agent_id, fake_coro()))
-
-        # Split agent_ids and coroutine tasks
-        coroutines = [task[1] for task in tasks]
-        agent_ids = [task[0] for task in tasks]
-
-        results = await asyncio.gather(*coroutines)
-
-        # Save each forked result into Redis for JoinNode to find it
+        # Process results and create logs
         forked_step_index = 0
-        step_index = f"{self.step_index}[{forked_step_index}]"
         result_logs = []
-        for agent_id, result in zip(agent_ids, results):
+        
+        # Flatten branch results into a single list of (agent_id, result) pairs
+        all_results = []
+        for branch_result in branch_results:
+            all_results.extend(branch_result.items())
+
+        for agent_id, result in all_results:
             forked_step_index += 1
             step_index = f"{self.step_index}[{forked_step_index}]"
-            join_state_key = f"waitfor:join_parallel_checks:inputs"  # hardcoded or dynamically set later
+            
+            # Save result to Redis for JoinNode
+            join_state_key = f"waitfor:join_parallel_checks:inputs"
             self.memory.hset(join_state_key, agent_id, json.dumps(result))
+            
+            # Create log entry
             log_data = {
                 "agent_id": agent_id,
-                "event_type": f"ForkedAgent-{agent.__class__.__name__}",
+                "event_type": f"ForkedAgent-{self.agents[agent_id].__class__.__name__}",
                 "timestamp": datetime.utcnow().isoformat(),
                 "payload": {"result": result},
                 "previous_outputs": previous_outputs,
@@ -397,5 +426,15 @@ class Orchestrator:
                 "run_id": self.run_id
             }
             result_logs.append(log_data)
-            self.memory.log(agent_id, f"ForkedAgent-{agent.__class__.__name__}", {"result": result}, step=step_index, run_id=self.run_id, previous_outputs=previous_outputs)
+            
+            # Log to memory
+            self.memory.log(
+                agent_id,
+                f"ForkedAgent-{self.agents[agent_id].__class__.__name__}",
+                {"result": result},
+                step=step_index,
+                run_id=self.run_id,
+                previous_outputs=previous_outputs
+            )
+
         return result_logs
