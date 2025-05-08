@@ -359,6 +359,8 @@ class Orchestrator:
         if isinstance(agent, router_node.BaseNode):
             # For nodes, we need to handle them differently since they need orchestrator
             result = agent.run(self, payload)
+            if asyncio.iscoroutine(result):
+                result = await result
         else:
             # Run the agent in a thread pool to avoid blocking
             loop = asyncio.get_event_loop()
@@ -410,6 +412,10 @@ class Orchestrator:
         for agent_id, result in all_results:
             forked_step_index += 1
             step_index = f"{self.step_index}[{forked_step_index}]"
+            
+            # Ensure result is awaited if it's a coroutine
+            if asyncio.iscoroutine(result):
+                result = await result
             
             # Save result to Redis for JoinNode
             join_state_key = f"waitfor:join_parallel_checks:inputs"

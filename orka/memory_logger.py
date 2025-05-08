@@ -54,6 +54,9 @@ class RedisMemoryLogger:
             parent (str, optional): ID of the parent event. Defaults to None.
             previous_outputs (dict, optional): Previous outputs from agents. Defaults to None.
         """
+        if not agent_id:
+            raise ValueError("Event must contain 'agent_id'")
+
         event = {
             "agent_id": agent_id,
             "event_type": event_type,
@@ -73,14 +76,17 @@ class RedisMemoryLogger:
 
         self.memory.append(event)
 
-        self.client.xadd(self.stream_key, {
-            "agent_id": agent_id,
-            "event_type": event_type,
-            "timestamp": event["timestamp"],
-            "payload": json.dumps(payload),
-            "run_id": run_id or "default",
-            "step": str(step or -1),
-        })
+        try:
+            self.client.xadd(self.stream_key, {
+                "agent_id": agent_id,
+                "event_type": event_type,
+                "timestamp": event["timestamp"],
+                "payload": json.dumps(payload),
+                "run_id": run_id or "default",
+                "step": str(step or -1),
+            })
+        except Exception as e:
+            raise Exception(f"Failed to log event to Redis: {str(e)}")
 
     def save_to_file(self, file_path):
         """

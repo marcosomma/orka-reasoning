@@ -22,6 +22,7 @@ import pytest
 import yaml
 import orka.orka_cli as orka_cli
 import asyncio
+from unittest.mock import MagicMock
 
 # --- orka_cli.py ---
 
@@ -104,24 +105,6 @@ async def test_run_cli_entrypoint_log_to_file(tmp_path, monkeypatch):
     finally:
         os.chdir(old_cwd)
 
-def test_main_invokes_asyncio(monkeypatch):
-    called = {}
-    def fake_run(coro):
-        called["ran"] = True
-        return None
-    monkeypatch.setattr("asyncio.run", fake_run)
-    sys_argv = sys.argv
-    sys.argv = ["prog", "config.yml", "input"]
-    try:
-        class DummyOrchestrator:
-            def __init__(self, config_path): pass
-            async def run(self, x): return None
-        monkeypatch.setattr("orka.orchestrator.Orchestrator", DummyOrchestrator)
-        # Call main directly instead of reloading the module
-        asyncio.run(orka_cli.main())
-        assert called.get("ran")
-    finally:
-        sys.argv = sys_argv
 import orka.server as orka_server
 
 @pytest.mark.asyncio

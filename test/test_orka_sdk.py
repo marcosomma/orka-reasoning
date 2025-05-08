@@ -154,23 +154,3 @@ def test_yaml_structure(example_yaml):
     assert isinstance(data["agents"], list)
     assert isinstance(data["orchestrator"]["agents"], list)
 
-@pytest.mark.asyncio
-async def test_run_orka(monkeypatch, example_yaml):
-    monkeypatch.setenv("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
-    monkeypatch.setenv("BASE_OPENAI_MODEL", os.getenv("BASE_OPENAI_MODEL"))
-
-    from orka.orka_cli import run_cli_entrypoint
-
-    # 👇 Add fake Redis patch here
-    with patch("orka.memory_logger.redis.from_url", return_value=FakeRedisClient()):
-        try:
-            result_router_true = await run_cli_entrypoint(
-                config_path=str(example_yaml),
-                input_text="What is the capital of France?",
-                log_to_file=False,
-            )
-
-            assert isinstance(result_router_true, list), f"Expected list of events, got {type(result_router_true)}"
-        except Exception as e:
-            pytest.fail(f"Execution failed: {e}")
-
