@@ -1,6 +1,6 @@
 [project]
 name = "orka-reasoning"
-version = "0.4.1"
+version = "0.5.0"
 description = "Modular agent orchestrator for reasoning pipelines"
 authors = [
   { name = "Marco Somma", email = "marcosomma.work@gmail.com" }
@@ -31,7 +31,8 @@ classifiers = [
 dev = [
   "pytest",
   "coverage",
-  "pytest-cov"
+  "pytest-cov",
+  "ruff"
 ]
 
 [project.urls]
@@ -40,3 +41,185 @@ dev = [
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+# Enable autofix behavior
+fix = true
+unsafe-fixes = false
+
+# Line length configuration
+line-length = 100
+
+# Target Python version
+target-version = "py38"
+
+# Select rules to enable
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "N",   # pep8-naming
+    "PL",  # pylint
+    "RUF", # Ruff-specific rules
+    "TCH", # flake8-type-checking
+    "TID", # flake8-tidy-imports
+    "ARG", # flake8-unused-arguments
+    "PIE", # flake8-pie
+    "PT",  # flake8-pytest-style
+    "ERA", # eradicate
+    "SIM", # flake8-simplify
+    "T20", # flake8-print
+    "YTT", # flake8-2020
+    "ANN", # flake8-annotations
+    "S",   # flake8-bandit
+    "BLE", # flake8-blind-except
+    "FBT", # flake8-boolean-trap
+    "COM", # flake8-commas
+    "DTZ", # flake8-datetimez
+    "T10", # flake8-debugger
+    "ISC", # flake8-implicit-str-concat
+    "G",   # flake8-logging-format
+    "PTH", # flake8-use-pathlib
+    "PD",  # pandas-vet
+    "PGH", # pygrep-hooks
+    "PLR", # pylint rules
+    "TRY", # tryceratops
+]
+
+# Ignore specific rules
+ignore = [
+    "ANN101", # missing-self-type
+    "ANN102", # missing-type-cls
+    "ANN401", # dynamically-typed-expression
+    "D203",   # no-blank-line-before-class
+    "D212",   # multi-line-summary-first-line
+    "E501",   # line-too-long
+    "FBT001", # boolean-positional-value-in-call
+    "FBT002", # boolean-trap-in-default-argument
+    "FBT003", # boolean-trap-in-function-argument
+    "PLR0913", # too-many-arguments
+    "PLR2004", # magic-value-comparison
+    "RUF012", # mutable-class-default
+    "RUF013", # implicit-optional
+    "RUF015", # avoid-iterating-over-dict-items
+    "RUF022", # unsorted-dict-items
+    "RUF023", # avoid-relative-imports
+    "RUF024", # avoid-relative-imports
+    "RUF025", # avoid-relative-imports
+    "RUF026", # avoid-relative-imports
+    "RUF027", # avoid-relative-imports
+    "RUF028", # avoid-relative-imports
+    "RUF029", # avoid-relative-imports
+    "RUF030", # avoid-relative-imports
+    "RUF031", # avoid-relative-imports
+    "RUF032", # avoid-relative-imports
+    "RUF033", # avoid-relative-imports
+    "RUF034", # avoid-relative-imports
+    "RUF035", # avoid-relative-imports
+    "RUF036", # avoid-relative-imports
+    "RUF037", # avoid-relative-imports
+    "RUF038", # avoid-relative-imports
+    "RUF039", # avoid-relative-imports
+    "RUF040", # avoid-relative-imports
+    "RUF041", # avoid-relative-imports
+    "RUF042", # avoid-relative-imports
+    "RUF043", # avoid-relative-imports
+    "RUF044", # avoid-relative-imports
+    "RUF045", # avoid-relative-imports
+    "RUF046", # avoid-relative-imports
+    "RUF047", # avoid-relative-imports
+    "RUF048", # avoid-relative-imports
+    "RUF049", # avoid-relative-imports
+    "RUF050", # avoid-relative-imports
+    "RUF051", # avoid-relative-imports
+    "RUF052", # avoid-relative-imports
+    "RUF053", # avoid-relative-imports
+    "RUF054", # avoid-relative-imports
+    "RUF055", # avoid-relative-imports
+    "RUF056", # avoid-relative-imports
+    "RUF057", # avoid-relative-imports
+    "RUF058", # avoid-relative-imports
+    "RUF059", # avoid-relative-imports
+    "RUF060", # avoid-relative-imports
+    "RUF061", # avoid-relative-imports
+    "RUF062", # avoid-relative-imports
+    "RUF063", # avoid-relative-imports
+    "RUF064", # avoid-relative-imports
+    "RUF065", # avoid-relative-imports
+    "RUF066", # avoid-relative-imports
+    "RUF067", # avoid-relative-imports
+    "RUF068", # avoid-relative-imports
+    "RUF069", # avoid-relative-imports
+    "RUF070", # avoid-relative-imports
+    "RUF071", # avoid-relative-imports
+    "RUF072", # avoid-relative-imports
+    "RUF073", # avoid-relative-imports
+    "RUF074", # avoid-relative-imports
+    "RUF075", # avoid-relative-imports
+    "RUF076", # avoid-relative-imports
+    "RUF077", # avoid-relative-imports
+    "RUF078", # avoid-relative-imports
+    "RUF079", # avoid-relative-imports
+    "RUF080", # avoid-relative-imports
+    "RUF081", # avoid-relative-imports
+    "RUF082", # avoid-relative-imports
+    "RUF083", # avoid-relative-imports
+    "RUF084", # avoid-relative-imports
+    "RUF085", # avoid-relative-imports
+    "RUF086", # avoid-relative-imports
+    "RUF087", # avoid-relative-imports
+    "RUF088", # avoid-relative-imports
+    "RUF089", # avoid-relative-imports
+    "RUF090", # avoid-relative-imports
+    "RUF091", # avoid-relative-imports
+    "RUF092", # avoid-relative-imports
+    "RUF093", # avoid-relative-imports
+    "RUF094", # avoid-relative-imports
+    "RUF095", # avoid-relative-imports
+    "RUF096", # avoid-relative-imports
+    "RUF097", # avoid-relative-imports
+    "RUF098", # avoid-relative-imports
+    "RUF099", # avoid-relative-imports
+    "RUF100", # avoid-relative-imports
+]
+
+# Allow unused variables when underscore-prefixed
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+# Exclude a variety of commonly ignored directories
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+]
+
+[tool.ruff.isort]
+known-first-party = ["orka"]
+
+[tool.ruff.mccabe]
+max-complexity = 10
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]
+"test_*.py" = ["S101"]

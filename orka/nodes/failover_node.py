@@ -8,9 +8,10 @@
 #
 # Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
 # For commercial use, contact: marcosomma.work@gmail.com
-# 
+#
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 from datetime import datetime
+
 from .agent_node import BaseNode
 
 
@@ -23,7 +24,7 @@ class FailoverNode(BaseNode):
     def __init__(self, node_id, children, queue):
         """
         Initialize the failover node.
-        
+
         Args:
             node_id (str): Unique identifier for the node.
             children (list): List of child nodes to try in sequence.
@@ -32,29 +33,33 @@ class FailoverNode(BaseNode):
         self.id = node_id
         self.children = children
         self.queue = queue
-        self.type = self.__class__.__name__.lower() 
+        self.type = self.__class__.__name__.lower()
 
     def run(self, input_data):
         """
         Run the failover logic by trying each child node in sequence.
-        
+
         Args:
             input_data: Input data to pass to child nodes.
-        
+
         Returns:
             dict: Result from the first successful child node.
-        
+
         Raises:
             RuntimeError: If all child nodes fail.
         """
         for child in self.children:
-            child_id = getattr(child, "agent_id", getattr(child, "node_id", "unknown_child"))
-            try:        
+            child_id = getattr(
+                child, "agent_id", getattr(child, "node_id", "unknown_child")
+            )
+            try:
                 # Try running the current child node
                 result = child.run(input_data)
                 if result:
                     return {child_id: result}
             except Exception as e:
                 # Log the failure and continue to next child
-                print(f"{datetime.now()} > [ORKA][NODE][FAILOVER][WARNING] Agent '{child_id}' failed: {e}")
+                print(
+                    f"{datetime.now()} > [ORKA][NODE][FAILOVER][WARNING] Agent '{child_id}' failed: {e}"
+                )
         raise RuntimeError("All fallback agents failed.")

@@ -12,7 +12,6 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 
 from fastapi import FastAPI, Request
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from orka.orchestrator import Orchestrator
@@ -58,7 +57,6 @@ async def run_execution(request: Request):
     
     print("\n========== [DEBUG] Orchestrator Result ==========")
     pprint.pprint(result)
-    
     
     return JSONResponse(content={
             "input": input_text,

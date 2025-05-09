@@ -8,21 +8,21 @@
 #
 # Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
 # For commercial use, contact: marcosomma.work@gmail.com
-# 
+#
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 
 import os
+
 import pytest
 from dotenv import load_dotenv
-from fake_redis import FakeRedisClient
-from unittest.mock import patch
 
 # Load environment
 load_dotenv()
 
+
 @pytest.fixture
 def example_yaml(tmp_path):
-    yaml_content = '''\
+    yaml_content = """\
 orchestrator:
   id: full_nodes_test_orchestrator
   strategy: decision-tree
@@ -136,21 +136,23 @@ agents:
       Build a detailed answer based on the classification result:
       - Classification result: {{ previous_outputs.initial_classify }}
     queue: orka:final_output
-    '''
+    """
     config_file = tmp_path / "example_valid.yml"
     config_file.write_text(yaml_content, encoding="utf-8")
     print(f"YAML config file created at: {config_file}")
     return config_file
 
+
 def test_env_variables():
     assert os.getenv("OPENAI_API_KEY") is not None
     assert os.getenv("BASE_OPENAI_MODEL") is not None
 
+
 def test_yaml_structure(example_yaml):
     import yaml
+
     data = yaml.safe_load(example_yaml.read_text())
     assert "agents" in data
     assert "orchestrator" in data
     assert isinstance(data["agents"], list)
     assert isinstance(data["orchestrator"]["agents"], list)
-

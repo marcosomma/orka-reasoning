@@ -8,17 +8,17 @@
 #
 # Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
 # For commercial use, contact: marcosomma.work@gmail.com
-# 
+#
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
     name="orka-reasoning",
-    version="0.4.1",
+    version="0.5.0",
     author="Marco Somma",
     author_email="marcosomma.work@gmail.com",
     description="OrKa: Modular orchestration for agent-based cognition",
@@ -42,21 +42,19 @@ setup(
         "pydantic>=1.8.0",
         "httpx>=0.24.0",
     ],
-    extras_require={
-        "dev": ["pytest", "coverage", "pytest-cov"]
-    },
+    extras_require={"dev": ["pytest", "coverage", "pytest-cov"]},
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: Other/Proprietary License",  # Use this for CC BY-NC
-        "Operating System :: OS Independent"
+        "Operating System :: OS Independent",
     ],
     python_requires=">=3.8",
     entry_points={
-        'console_scripts': [
-            'orka-start=orka.orka_start:main',
+        "console_scripts": [
+            "orka-start=orka.orka_start:main",
         ],
     },
     package_data={
-        'orka': ['docker/*', 'requirements.txt'],
+        "orka": ["docker/*", "requirements.txt"],
     },
 )

@@ -8,17 +8,17 @@
 #
 # Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
 # For commercial use, contact: marcosomma.work@gmail.com
-# 
+#
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 
-import os
-import pytest
 from dotenv import load_dotenv
-from orka.memory_logger import RedisMemoryLogger
 from fake_redis import FakeRedisClient
+
+from orka.memory_logger import RedisMemoryLogger
 
 # Load env
 load_dotenv()
+
 
 def test_logger_write_and_read(monkeypatch):
     # Inject fake Redis client

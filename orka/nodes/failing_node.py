@@ -8,10 +8,12 @@
 #
 # Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
 # For commercial use, contact: marcosomma.work@gmail.com
-# 
+#
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 import time
+
 from .agent_node import BaseNode
+
 
 class FailingNode(BaseNode):
     """
@@ -23,19 +25,19 @@ class FailingNode(BaseNode):
     def id(self):
         """
         Get the ID of the node.
-        
+
         Returns:
             str: The node ID.
         """
         return getattr(self, "agent_id", getattr(self, "node_id", "unknown"))
-    
+
     def run(self, input_data):
         """
         Simulate a failing node by raising a RuntimeError after a delay.
-        
+
         Args:
             input_data: Input data for the node (unused in this implementation).
-        
+
         Raises:
             RuntimeError: Always raises an error to simulate failure.
         """

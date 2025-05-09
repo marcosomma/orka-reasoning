@@ -8,18 +8,20 @@
 #
 # Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
 # For commercial use, contact: marcosomma.work@gmail.com
-# 
+#
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 
 import os
-import json
-from .agent_base import BaseAgent
-from googleapiclient.discovery import build
+
 from duckduckgo_search import DDGS
+from googleapiclient.discovery import build
+
+from .agent_base import BaseAgent
 
 # Google config
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 GOOGLE_CSE_ID = os.getenv("GOOGLE_CSE_ID")
+
 
 class GoogleSearchAgent(BaseAgent):
     """
@@ -30,13 +32,13 @@ class GoogleSearchAgent(BaseAgent):
     def run(self, input_data):
         """
         Perform a Google search and return result snippets.
-        
+
         Args:
             input_data (str): Search query.
-        
+
         Returns:
             list: List of search result snippets.
-        
+
         Raises:
             EnvironmentError: If Google API credentials are missing.
         """
@@ -63,25 +65,25 @@ class DuckDuckGoAgent(BaseAgent):
     def run(self, input_data):
         """
         Perform a DuckDuckGo search and return result snippets.
-        
+
         Args:
             input_data (dict): Input containing search query.
-        
+
         Returns:
             list: List of search result snippets.
         """
-        
+
         # Replace template variables in prompt
         query = self.prompt
         if "{{input}}" in query:
             query = query.replace("{{input}}", input_data["input"])
-            
+
         # Replace any previous_outputs variables
         for key, value in input_data.get("previous_outputs", {}).items():
             template_var = f"{{{{ previous_outputs.{key} }}}}"
             if template_var in query:
                 query = query.replace(template_var, str(value))
-            
+
         if not query:
             return ["No query provided"]
         try:

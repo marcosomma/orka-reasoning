@@ -12,6 +12,7 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 
 import yaml
+from typing import Dict, List, Any
 
 class YAMLLoader:
     """
@@ -19,51 +20,51 @@ class YAMLLoader:
     Loads and validates the configuration for the OrKa orchestrator.
     """
 
-    def __init__(self, path):
+    def __init__(self, path: str) -> None:
         """
         Initialize the YAML loader with the path to the configuration file.
         
         Args:
-            path (str): Path to the YAML configuration file.
+            path: Path to the YAML configuration file.
         """
         self.path = path
         self.config = self._load_yaml()
 
-    def _load_yaml(self):
+    def _load_yaml(self) -> Dict[str, Any]:
         """
         Load the YAML configuration from the file.
         
         Returns:
-            dict: The loaded YAML configuration.
+            The loaded YAML configuration.
         """
         with open(self.path, 'r') as f:
             return yaml.safe_load(f)
 
-    def get_orchestrator(self):
+    def get_orchestrator(self) -> Dict[str, Any]:
         """
         Get the orchestrator configuration section.
         
         Returns:
-            dict: The orchestrator configuration.
+            The orchestrator configuration.
         """
         return self.config.get('orchestrator', {})
 
-    def get_agents(self):
+    def get_agents(self) -> List[Dict[str, Any]]:
         """
         Get the agents configuration section.
         
         Returns:
-            list: The list of agent configurations.
+            The list of agent configurations.
         """
         return self.config.get('agents', [])
 
-    def validate(self):
+    def validate(self) -> bool:
         """
         Validate the configuration file.
         Checks for required sections and correct data types.
         
         Returns:
-            bool: True if the configuration is valid.
+            True if the configuration is valid.
         
         Raises:
             ValueError: If the configuration is invalid.

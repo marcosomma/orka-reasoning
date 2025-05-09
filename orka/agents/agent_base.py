@@ -8,10 +8,11 @@
 #
 # Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
 # For commercial use, contact: marcosomma.work@gmail.com
-# 
+#
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 
 import abc
+
 
 class BaseAgent(abc.ABC):
     """
@@ -22,7 +23,7 @@ class BaseAgent(abc.ABC):
     def __init__(self, agent_id, prompt, queue, **kwargs):
         """
         Initialize the base agent with common properties.
-        
+
         Args:
             agent_id (str): Unique identifier for the agent.
             prompt (str): Prompt or instruction for the agent.
@@ -33,20 +34,20 @@ class BaseAgent(abc.ABC):
         self.prompt = prompt
         self.queue = queue
         self.params = kwargs
-        self.type = self.__class__.__name__.lower()  
+        self.type = self.__class__.__name__.lower()
 
     @abc.abstractmethod
     def run(self, input_data):
         """
         Abstract method to run the agent's reasoning process.
         Must be implemented by all concrete agent classes.
-        
+
         Args:
             input_data: Input data for the agent to process.
-        
+
         Returns:
             The result of the agent's processing.
-        
+
         Raises:
             NotImplementedError: If not implemented by a subclass.
         """
@@ -55,7 +56,7 @@ class BaseAgent(abc.ABC):
     def __repr__(self):
         """
         Return a string representation of the agent.
-        
+
         Returns:
             str: String representation showing agent class, ID, and queue.
         """

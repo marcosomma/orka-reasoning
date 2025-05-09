@@ -8,12 +8,14 @@
 #
 # Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
 # For commercial use, contact: marcosomma.work@gmail.com
-# 
+#
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 
 
 import json
+
 from .agent_node import BaseNode
+
 
 class JoinNode(BaseNode):
     """
@@ -31,7 +33,7 @@ class JoinNode(BaseNode):
 
     def run(self, input_data):
         fork_group_id = input_data.get("fork_group_id", self.group_id)
-        state_key = f"waitfor:join_parallel_checks:inputs"
+        state_key = "waitfor:join_parallel_checks:inputs"
 
         # Get or increment retry count in Redis
         retry_count = self.memory_logger.redis.get(self._retry_key)
@@ -79,5 +81,7 @@ class JoinNode(BaseNode):
         }
         self.memory_logger.redis.set(self.output_key, json.dumps(merged))
         self.memory_logger.redis.delete(state_key)
-        self.memory_logger.redis.delete(f"fork_group:{fork_targets[0] if fork_targets else ''}")
+        self.memory_logger.redis.delete(
+            f"fork_group:{fork_targets[0] if fork_targets else ''}"
+        )
         return {"status": "done", "merged": merged}

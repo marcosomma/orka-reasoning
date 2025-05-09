@@ -8,14 +8,19 @@
 #
 # Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
 # For commercial use, contact: marcosomma.work@gmail.com
-# 
+#
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 
-from .agents import BinaryAgent, ClassificationAgent
-from .llm_agents import OpenAIBinaryAgent, OpenAIClassificationAgent, OpenAIAnswerBuilder
-from .google_duck_agents import GoogleSearchAgent, DuckDuckGoAgent
-from .agent_base import BaseAgent
 from orka.agents.memory_agent import MemoryAgent
+
+from .agent_base import BaseAgent
+from .agents import BinaryAgent, ClassificationAgent
+from .google_duck_agents import DuckDuckGoAgent, GoogleSearchAgent
+from .llm_agents import (
+    OpenAIAnswerBuilder,
+    OpenAIBinaryAgent,
+    OpenAIClassificationAgent,
+)
 
 AGENT_REGISTRY = {
     "memory": MemoryAgent,

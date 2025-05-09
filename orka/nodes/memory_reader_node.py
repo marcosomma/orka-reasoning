@@ -1,8 +1,11 @@
-from typing import Dict, Any, List
 import json
+from typing import Any, Dict
+
 import redis.asyncio as redis
-from .agent_node import BaseNode
+
 from ..utils.bootstrap_memory_index import retry
+from .agent_node import BaseNode
+
 
 class MemoryReaderNode(BaseNode):
     """Node for reading from memory stream."""
@@ -16,25 +19,35 @@ class MemoryReaderNode(BaseNode):
         """Read latest memories from stream."""
         session_id = context.get("session_id", "default")
         stream_key = f"orka:memory:{session_id}"
-        
+
         # Get latest entries with retry
         entries = await retry(self.redis.xrange(stream_key))
         if entries:
             # Get last N entries, but in chronological order
-            entries = entries[-self.limit:]
-        
+            entries = entries[-self.limit :]
+
         memories = []
         for entry_id, data in entries:
             try:
                 # Handle both string and bytes payload
-                payload_str = data.get(b"payload", b"{}").decode() if isinstance(data.get(b"payload"), bytes) else data.get("payload", "{}")
+                payload_str = (
+                    data.get(b"payload", b"{}").decode()
+                    if isinstance(data.get(b"payload"), bytes)
+                    else data.get("payload", "{}")
+                )
                 payload = json.loads(payload_str)
-                memories.append({
-                    "id": entry_id.decode() if isinstance(entry_id, bytes) else entry_id,
-                    "content": payload["content"],
-                    "metadata": payload.get("metadata", {}),
-                    "ts": int(data.get(b"ts", 0)) if isinstance(data.get(b"ts"), bytes) else int(data.get("ts", 0))
-                })
+                memories.append(
+                    {
+                        "id": entry_id.decode()
+                        if isinstance(entry_id, bytes)
+                        else entry_id,
+                        "content": payload["content"],
+                        "metadata": payload.get("metadata", {}),
+                        "ts": int(data.get(b"ts", 0))
+                        if isinstance(data.get(b"ts"), bytes)
+                        else int(data.get("ts", 0)),
+                    }
+                )
             except (json.JSONDecodeError, KeyError, AttributeError) as e:
                 print(f"Error processing memory entry: {e}")
                 continue
@@ -42,7 +55,7 @@ class MemoryReaderNode(BaseNode):
         # Store result in context
         context.setdefault("outputs", {})[self.node_id] = {
             "status": "success",
-            "memories": memories
+            "memories": memories,
         }
-        
-        return context["outputs"][self.node_id] 
+
+        return context["outputs"][self.node_id]

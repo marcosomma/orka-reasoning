@@ -8,9 +8,10 @@
 #
 # Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
 # For commercial use, contact: marcosomma.work@gmail.com
-# 
+#
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 from .agent_node import BaseNode
+
 
 class ForkNode(BaseNode):
     """
@@ -21,7 +22,7 @@ class ForkNode(BaseNode):
     def __init__(self, node_id, prompt=None, queue=None, memory_logger=None, **kwargs):
         """
         Initialize the fork node.
-        
+
         Args:
             node_id (str): Unique identifier for the node.
             prompt (str, optional): Prompt or instruction for the node.
@@ -38,20 +39,22 @@ class ForkNode(BaseNode):
     async def run(self, orchestrator, context):
         """
         Execute the fork operation by creating parallel branches.
-        
+
         Args:
             orchestrator: The orchestrator instance managing the workflow.
             context: Context data for the fork operation.
-        
+
         Returns:
             dict: Status and fork group information.
-        
+
         Raises:
             ValueError: If no targets are specified.
         """
         targets = self.config.get("targets", [])
         if not targets:
-            raise ValueError(f"ForkNode '{self.node_id}' requires non-empty 'targets' list.")
+            raise ValueError(
+                f"ForkNode '{self.node_id}' requires non-empty 'targets' list."
+            )
 
         # Generate a unique ID for this fork group
         fork_group_id = orchestrator.fork_manager.generate_group_id(self.node_id)
@@ -65,7 +68,9 @@ class ForkNode(BaseNode):
                 if self.mode == "sequential":
                     # For sequential mode, only queue the first agent
                     orchestrator.enqueue_fork([first_agent], fork_group_id)
-                    orchestrator.fork_manager.track_branch_sequence(fork_group_id, branch)
+                    orchestrator.fork_manager.track_branch_sequence(
+                        fork_group_id, branch
+                    )
                 else:
                     # For parallel mode, queue all agents
                     orchestrator.enqueue_fork(branch, fork_group_id)
@@ -79,7 +84,8 @@ class ForkNode(BaseNode):
             orchestrator.fork_manager.create_group(fork_group_id, all_flat_agents)
 
         # Store fork group mapping and agent list in Redis
-        self.memory_logger.redis.set(f"fork_group_mapping:{self.node_id}", fork_group_id)
+        self.memory_logger.redis.set(
+            f"fork_group_mapping:{self.node_id}", fork_group_id
+        )
         self.memory_logger.redis.sadd(f"fork_group:{fork_group_id}", *all_flat_agents)
         return {"status": "forked", "fork_group": fork_group_id}
-

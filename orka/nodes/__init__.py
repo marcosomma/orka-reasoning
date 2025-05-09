@@ -8,13 +8,13 @@
 #
 # Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
 # For commercial use, contact: marcosomma.work@gmail.com
-# 
+#
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 
 
-from .router_node import RouterNode
-from .failover_node import FailoverNode
-from .failing_node import FailingNode
-from .join_node import JoinNode
-from .fork_node import ForkNode
 from .agent_node import BaseNode
+from .failing_node import FailingNode
+from .failover_node import FailoverNode
+from .fork_node import ForkNode
+from .join_node import JoinNode
+from .router_node import RouterNode

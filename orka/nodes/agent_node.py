@@ -8,10 +8,11 @@
 #
 # Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
 # For commercial use, contact: marcosomma.work@gmail.com
-# 
+#
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 
 import abc
+
 
 class BaseNode(abc.ABC):
     """
@@ -22,7 +23,7 @@ class BaseNode(abc.ABC):
     def __init__(self, node_id, prompt, queue, **kwargs):
         """
         Initialize the base node with the given parameters.
-        
+
         Args:
             node_id (str): Unique identifier for the node.
             prompt (str): Prompt or instruction for the node.
@@ -34,17 +35,17 @@ class BaseNode(abc.ABC):
         self.queue = queue
         self.params = kwargs
         self.type = self.__class__.__name__.lower()
-        if(self.type == "failing"):
+        if self.type == "failing":
             self.agent_id = self.node_id
 
     @abc.abstractmethod
     def run(self, input_data):
         """
         Abstract method to run the logical node.
-        
+
         Args:
             input_data: Input data for the node to process.
-        
+
         Raises:
             NotImplementedError: If the method is not implemented by a subclass.
         """
@@ -53,7 +54,7 @@ class BaseNode(abc.ABC):
     def __repr__(self):
         """
         Return a string representation of the node.
-        
+
         Returns:
             str: String representation of the node.
         """

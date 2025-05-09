@@ -1,8 +1,11 @@
-from typing import Dict, Any, List
+from typing import Any, Dict
+
 import redis.asyncio as redis
-from .agent_node import BaseNode
-from ..utils.embedder import get_embedder, to_bytes
+
 from ..utils.bootstrap_memory_index import retry
+from ..utils.embedder import get_embedder, to_bytes
+from .agent_node import BaseNode
+
 
 class RAGNode(BaseNode):
     """Node for vector similarity search."""
@@ -18,32 +21,30 @@ class RAGNode(BaseNode):
         """Perform vector similarity search."""
         query = context.get("input", "")
         session_id = context.get("session_id", "default")
-        
+
         if not query:
             context.setdefault("outputs", {})[self.node_id] = {
                 "status": "success",
-                "hits": []
+                "hits": [],
             }
             return context["outputs"][self.node_id]
-        
+
         # Generate query embedding
         query_vec = self.embedder.encode(query)
         q_vec = to_bytes(query_vec)
-        
+
         # Search with retry
-        res = await retry(self.redis.ft("memory_idx").search(
-            f"*=>[KNN {self.top_k} @vector $V RETURN 3 content ts score]",
-            query_params={"V": q_vec},
-            dialect=2  # needed for KNN
-        ))
-        
+        res = await retry(
+            self.redis.ft("memory_idx").search(
+                f"*=>[KNN {self.top_k} @vector $V RETURN 3 content ts score]",
+                query_params={"V": q_vec},
+                dialect=2,  # needed for KNN
+            )
+        )
+
         # Filter results by score threshold
         hits = [
-            {
-                "content": doc.content,
-                "score": float(doc.score),
-                "ts": int(doc.ts)
-            }
+            {"content": doc.content, "score": float(doc.score), "ts": int(doc.ts)}
             for doc in res.docs
             if float(doc.score) < self.score_threshold
         ]
@@ -51,7 +52,7 @@ class RAGNode(BaseNode):
         # Store result in context
         context.setdefault("outputs", {})[self.node_id] = {
             "status": "success",
-            "hits": hits
+            "hits": hits,
         }
-        
-        return context["outputs"][self.node_id] 
+
+        return context["outputs"][self.node_id]

@@ -8,18 +8,21 @@
 #
 # Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
 # For commercial use, contact: marcosomma.work@gmail.com
-# 
+#
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 
-import os
 import pytest
 from dotenv import load_dotenv
 
 # Load environment
 load_dotenv()
 
+
 def test_base_agent_fails():
     from orka.agents.agent_base import BaseAgent
-    class Incomplete(BaseAgent): pass
+
+    class Incomplete(BaseAgent):
+        pass
+
     with pytest.raises(TypeError):
         Incomplete("id", "prompt", "queue")

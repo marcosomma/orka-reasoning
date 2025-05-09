@@ -8,12 +8,14 @@
 #
 # Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
 # For commercial use, contact: marcosomma.work@gmail.com
-# 
+#
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 
 import os
-from openai import OpenAI
+
 from dotenv import load_dotenv
+from openai import OpenAI
+
 from .agent_base import BaseAgent
 
 # Load environment variables
@@ -30,6 +32,7 @@ if not OPENAI_API_KEY:
 # Initialize OpenAI client
 client = OpenAI(api_key=OPENAI_API_KEY)
 
+
 class OpenAIAnswerBuilder(BaseAgent):
     """
     An agent that uses OpenAI's GPT models to generate answers based on a prompt.
@@ -39,10 +42,10 @@ class OpenAIAnswerBuilder(BaseAgent):
     def run(self, input_data):
         """
         Generate an answer using OpenAI's GPT model.
-        
+
         Args:
             input_data (str): Input text to process.
-        
+
         Returns:
             str: Generated answer from the model.
         """
@@ -52,11 +55,12 @@ class OpenAIAnswerBuilder(BaseAgent):
         response = client.chat.completions.create(
             model=OPENAI_MODEL,
             messages=[{"role": "user", "content": full_prompt}],
-            temperature=1.0
+            temperature=1.0,
         )
         # Extract and clean the response
         answer = response.choices[0].message.content.strip()
-        return answer 
+        return answer
+
 
 class OpenAIBinaryAgent(BaseAgent):
     """
@@ -67,10 +71,10 @@ class OpenAIBinaryAgent(BaseAgent):
     def run(self, input_data):
         """
         Perform binary classification using OpenAI's GPT model.
-        
+
         Args:
             input_data (str): Input text to classify.
-        
+
         Returns:
             bool: True if the model's response indicates positive, False otherwise.
         """
@@ -84,11 +88,12 @@ class OpenAIBinaryAgent(BaseAgent):
         response = client.chat.completions.create(
             model=OPENAI_MODEL,
             messages=[{"role": "user", "content": full_prompt}],
-            temperature=1.0  # Use deterministic output
+            temperature=1.0,  # Use deterministic output
         )
         # Parse the response into a boolean
         answer = response.choices[0].message.content.strip().lower()
         return answer in ["true", "yes", "1"]
+
 
 class OpenAIClassificationAgent(BaseAgent):
     """
@@ -99,10 +104,10 @@ class OpenAIClassificationAgent(BaseAgent):
     def run(self, input_data):
         """
         Perform multi-class classification using OpenAI's GPT model.
-        
+
         Args:
             input_data (str): Input text to classify.
-        
+
         Returns:
             str: Selected category from the available options, or "unknown" if no match.
         """
@@ -119,7 +124,7 @@ class OpenAIClassificationAgent(BaseAgent):
         response = client.chat.completions.create(
             model=OPENAI_MODEL,
             messages=[{"role": "user", "content": full_prompt}],
-            temperature=1.0  # Use deterministic output
+            temperature=1.0,  # Use deterministic output
         )
         # Parse the response and validate against options
         answer = response.choices[0].message.content.strip().lower()

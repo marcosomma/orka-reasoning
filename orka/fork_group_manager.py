@@ -8,9 +8,10 @@
 #
 # Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
 # For commercial use, contact: marcosomma.work@gmail.com
-# 
+#
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 import time
+
 
 class ForkGroupManager:
     """
@@ -21,7 +22,7 @@ class ForkGroupManager:
     def __init__(self, redis_client):
         """
         Initialize the fork group manager with a Redis client.
-        
+
         Args:
             redis_client: The Redis client instance.
         """
@@ -30,7 +31,7 @@ class ForkGroupManager:
     def create_group(self, fork_group_id, agent_ids):
         """
         Create a new fork group with the given agent IDs.
-        
+
         Args:
             fork_group_id (str): ID of the fork group.
             agent_ids (list): List of agent IDs to include in the group.
@@ -47,7 +48,7 @@ class ForkGroupManager:
     def mark_agent_done(self, fork_group_id, agent_id):
         """
         Mark an agent as done in the fork group.
-        
+
         Args:
             fork_group_id (str): ID of the fork group.
             agent_id (str): ID of the agent to mark as done.
@@ -57,10 +58,10 @@ class ForkGroupManager:
     def is_group_done(self, fork_group_id):
         """
         Check if all agents in the fork group are done.
-        
+
         Args:
             fork_group_id (str): ID of the fork group.
-        
+
         Returns:
             bool: True if all agents are done, False otherwise.
         """
@@ -69,10 +70,10 @@ class ForkGroupManager:
     def list_pending_agents(self, fork_group_id):
         """
         Get a list of agents still pending in the fork group.
-        
+
         Args:
             fork_group_id (str): ID of the fork group.
-        
+
         Returns:
             list: List of pending agent IDs.
         """
@@ -82,7 +83,7 @@ class ForkGroupManager:
     def delete_group(self, fork_group_id):
         """
         Delete the fork group from Redis.
-        
+
         Args:
             fork_group_id (str): ID of the fork group to delete.
         """
@@ -91,10 +92,10 @@ class ForkGroupManager:
     def generate_group_id(self, base_id):
         """
         Generate a unique fork group ID based on the base ID and timestamp.
-        
+
         Args:
             base_id (str): Base ID for the fork group.
-        
+
         Returns:
             str: A unique fork group ID.
         """
@@ -103,10 +104,10 @@ class ForkGroupManager:
     def _group_key(self, fork_group_id):
         """
         Generate the Redis key for a fork group.
-        
+
         Args:
             fork_group_id (str): ID of the fork group.
-        
+
         Returns:
             str: The Redis key for the fork group.
         """
@@ -115,10 +116,10 @@ class ForkGroupManager:
     def _branch_seq_key(self, fork_group_id):
         """
         Generate the Redis key for a branch sequence.
-        
+
         Args:
             fork_group_id (str): ID of the fork group.
-        
+
         Returns:
             str: The Redis key for the branch sequence.
         """
@@ -127,24 +128,24 @@ class ForkGroupManager:
     def track_branch_sequence(self, fork_group_id, agent_sequence):
         """
         Track the sequence of agents in a branch.
-        
+
         Args:
             fork_group_id (str): ID of the fork group.
             agent_sequence (list): List of agent IDs in sequence.
         """
         for i in range(len(agent_sequence) - 1):
             current = agent_sequence[i]
-            next_one = agent_sequence[i+1]
+            next_one = agent_sequence[i + 1]
             self.redis.hset(self._branch_seq_key(fork_group_id), current, next_one)
 
     def next_in_sequence(self, fork_group_id, agent_id):
         """
         Get the next agent in the sequence after the current agent.
-        
+
         Args:
             fork_group_id (str): ID of the fork group.
             agent_id (str): ID of the current agent.
-        
+
         Returns:
             str: ID of the next agent, or None if there is no next agent.
         """
