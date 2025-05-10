@@ -4,7 +4,7 @@
 
 <img src="https://orkacore.com/assets/ORKA_logo.png" alt="OrKa Logo" width="256" height="256"/>
 
-![Tests](https://github.com/marcosomma/orka-resoning/actions/workflows/tests.yml/badge.svg)
+[![Tests](https://github.com/marcosomma/orka-reasoning/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/marcosomma/orka-reasoning/actions/workflows/tests.yml)
 [![codecov](https://codecov.io/github/marcosomma/orka-reasoning/graph/badge.svg?token=V91X4WGBBZ)](https://codecov.io/github/marcosomma/orka-reasoning)
 
 [WEB](https://orkacore.com)
