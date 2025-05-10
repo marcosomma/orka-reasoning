@@ -13,9 +13,12 @@
 
 import argparse
 import asyncio
+import logging
 from typing import Any, Dict, List, Optional, TypedDict, Union
 
 from orka.orchestrator import Orchestrator
+
+logger = logging.getLogger(__name__)
 
 
 class EventPayload(TypedDict):
@@ -85,14 +88,14 @@ async def run_cli_entrypoint(
     else:
         if isinstance(result, dict):
             for agent_id, value in result.items():
-                print(f"{agent_id}: {value}")
+                logger.info(f"{agent_id}: {value}")
         elif isinstance(result, list):
             for event in result:
                 agent_id = event.get("agent_id", "unknown")
                 payload = event.get("payload", {})
-                print(f"Agent: {agent_id} | Payload: {payload}")
+                logger.info(f"Agent: {agent_id} | Payload: {payload}")
         else:
-            print(result)
+            logger.info(result)
 
     return result  # <--- VERY IMPORTANT for your test to receive it
 

@@ -18,7 +18,9 @@ dependencies = [
   "litellm",
   "jinja2",
   "google-api-python-client",
-  "async-timeout"
+  "async-timeout",
+  "sentence-transformers",
+  "numpy"
 ]
 
 classifiers = [
@@ -34,6 +36,16 @@ dev = [
   "pytest-cov",
   "ruff"
 ]
+
+[project.entry-points."orka.agents"]
+openai-builder = "orka.agents.llm_agents:OpenAIAnswerBuilder"
+memory-agent = "orka.agents.memory_agent:MemoryAgent"
+rag-agent = "orka.agents.rag_agent:RAGAgent"
+
+[project.entry-points."orka.nodes"]
+memory-writer = "orka.nodes.memory_writer_node:MemoryWriterNode"
+memory-reader = "orka.nodes.memory_reader_node:MemoryReaderNode"
+rag-node = "orka.nodes.rag_node:RAGNode"
 
 [project.urls]
 "Homepage" = "https://orkacore.com"

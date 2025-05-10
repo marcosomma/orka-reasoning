@@ -6,7 +6,7 @@ import redis.asyncio as redis
 
 from ..utils.bootstrap_memory_index import retry
 from ..utils.embedder import get_embedder, to_bytes
-from .agent_node import BaseNode
+from .base_node import BaseNode
 
 
 class MemoryWriterNode(BaseNode):

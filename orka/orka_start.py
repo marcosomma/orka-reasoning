@@ -1,8 +1,11 @@
 import asyncio
+import logging
 import os
 import subprocess
 import sys
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def get_docker_dir() -> str:
@@ -72,7 +75,7 @@ def start_redis() -> None:
     )
 
     # Start Redis
-    print("Starting containers...")
+    logger.info("Starting containers...")
     subprocess.run(
         [
             "docker",
@@ -85,7 +88,7 @@ def start_redis() -> None:
         ],
         check=True,
     )
-    print("Redis started.")
+    logger.info("Redis started.")
 
 
 def start_backend() -> subprocess.Popen:
@@ -98,16 +101,16 @@ def start_backend() -> subprocess.Popen:
     Raises:
         Exception: If backend fails to start.
     """
-    print("Starting Orka backend...")
+    logger.info("Starting Orka backend...")
     try:
         # Start the backend server
         backend_proc: subprocess.Popen = subprocess.Popen(
             [sys.executable, "-m", "orka.server"]
         )
-        print("Orka backend started.")
+        logger.info("Orka backend started.")
         return backend_proc
     except Exception as e:
-        print(f"Error starting Orka backend: {e}")
+        logger.info(f"Error starting Orka backend: {e}")
         raise
 
 
@@ -118,17 +121,17 @@ async def main() -> None:
     """
     start_redis()
     backend_proc: subprocess.Popen = start_backend()
-    print("All services started. Press Ctrl+C to stop.")
+    logger.info("All services started. Press Ctrl+C to stop.")
 
     try:
         while True:
             await asyncio.sleep(1)
             # Check if backend process is still running
             if backend_proc.poll() is not None:
-                print("Orka backend stopped unexpectedly!")
+                logger.info("Orka backend stopped unexpectedly!")
                 break
     except KeyboardInterrupt:
-        print("\nStopping services...")
+        logger.info("\nStopping services...")
         backend_proc.terminate()
         backend_proc.wait()
         subprocess.run(
@@ -141,7 +144,7 @@ async def main() -> None:
             ],
             check=False,
         )
-        print("Services stopped.")
+        logger.info("Services stopped.")
 
 
 if __name__ == "__main__":

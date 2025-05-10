@@ -8,14 +8,19 @@
 #
 # Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
 # For commercial use, contact: marcosomma.work@gmail.com
-# 
+#
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 
-import os
 import json
-import redis
+import logging
+import os
 from datetime import datetime
-from typing import Dict, List, Any, Optional, Union
+from typing import Any, Dict, List, Optional
+
+import redis
+
+logger = logging.getLogger(__name__)
+
 
 class RedisMemoryLogger:
     """
@@ -23,10 +28,12 @@ class RedisMemoryLogger:
     Supports logging events, saving logs to files, and querying recent events.
     """
 
-    def __init__(self, redis_url: Optional[str] = None, stream_key: str = "orka:memory") -> None:
+    def __init__(
+        self, redis_url: Optional[str] = None, stream_key: str = "orka:memory"
+    ) -> None:
         """
         Initialize the Redis memory logger.
-        
+
         Args:
             redis_url: URL for the Redis server. Defaults to environment variable REDIS_URL or redis service name.
             stream_key: Key for the Redis stream. Defaults to "orka:memory".
@@ -34,20 +41,29 @@ class RedisMemoryLogger:
         self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379/0")
         self.stream_key = stream_key
         self.client = redis.from_url(self.redis_url)
-        self.memory: List[Dict[str, Any]] = []  # Local memory buffer for in-memory storage
-    
+        self.memory: List[
+            Dict[str, Any]
+        ] = []  # Local memory buffer for in-memory storage
+
     @property
     def redis(self) -> redis.Redis:
         """Return the Redis client instance."""
         return self.client
 
-    def log(self, agent_id: str, event_type: str, payload: Dict[str, Any], 
-            step: Optional[int] = None, run_id: Optional[str] = None, 
-            fork_group: Optional[str] = None, parent: Optional[str] = None, 
-            previous_outputs: Optional[Dict[str, Any]] = None) -> None:
+    def log(
+        self,
+        agent_id: str,
+        event_type: str,
+        payload: Dict[str, Any],
+        step: Optional[int] = None,
+        run_id: Optional[str] = None,
+        fork_group: Optional[str] = None,
+        parent: Optional[str] = None,
+        previous_outputs: Optional[Dict[str, Any]] = None,
+    ) -> None:
         """
         Log an event to Redis and local memory.
-        
+
         Args:
             agent_id: ID of the agent generating the event.
             event_type: Type of the event.
@@ -57,7 +73,7 @@ class RedisMemoryLogger:
             fork_group: ID of the fork group.
             parent: ID of the parent event.
             previous_outputs: Previous outputs from agents.
-            
+
         Raises:
             ValueError: If agent_id is missing.
             Exception: If Redis operation fails.
@@ -69,7 +85,7 @@ class RedisMemoryLogger:
             "agent_id": agent_id,
             "event_type": event_type,
             "timestamp": datetime.utcnow().isoformat(),
-            "payload": payload
+            "payload": payload,
         }
         if step is not None:
             event["step"] = step
@@ -85,49 +101,52 @@ class RedisMemoryLogger:
         self.memory.append(event)
 
         try:
-            self.client.xadd(self.stream_key, {
-                "agent_id": agent_id,
-                "event_type": event_type,
-                "timestamp": event["timestamp"],
-                "payload": json.dumps(payload),
-                "run_id": run_id or "default",
-                "step": str(step or -1),
-            })
+            self.client.xadd(
+                self.stream_key,
+                {
+                    "agent_id": agent_id,
+                    "event_type": event_type,
+                    "timestamp": event["timestamp"],
+                    "payload": json.dumps(payload),
+                    "run_id": run_id or "default",
+                    "step": str(step or -1),
+                },
+            )
         except Exception as e:
             raise Exception(f"Failed to log event to Redis: {str(e)}")
 
     def save_to_file(self, file_path: str) -> None:
         """
         Save the logged events to a JSON file.
-        
+
         Args:
             file_path: Path to the output JSON file.
         """
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             json.dump(self.memory, f, indent=2)
-        print(f"[MemoryLogger] Logs saved to {file_path}")
+        logger.info(f"[MemoryLogger] Logs saved to {file_path}")
 
     def tail(self, count: int = 10) -> List[Dict[str, Any]]:
         """
         Retrieve the most recent events from the Redis stream.
-        
+
         Args:
             count: Number of events to retrieve.
-        
+
         Returns:
             List of recent events.
         """
         return self.client.xrevrange(self.stream_key, count=count)
-    
+
     def hset(self, name: str, key: str, value: str) -> int:
         """
         Set a field in a Redis hash.
-        
+
         Args:
             name: Name of the hash.
             key: Field key.
             value: Field value.
-        
+
         Returns:
             Number of fields added.
         """
@@ -136,11 +155,11 @@ class RedisMemoryLogger:
     def hget(self, name: str, key: str) -> Optional[str]:
         """
         Get a field from a Redis hash.
-        
+
         Args:
             name: Name of the hash.
             key: Field key.
-        
+
         Returns:
             Field value.
         """
@@ -149,10 +168,10 @@ class RedisMemoryLogger:
     def hkeys(self, name: str) -> List[str]:
         """
         Get all keys in a Redis hash.
-        
+
         Args:
             name: Name of the hash.
-        
+
         Returns:
             List of keys.
         """
@@ -161,23 +180,23 @@ class RedisMemoryLogger:
     def hdel(self, name: str, *keys: str) -> int:
         """
         Delete fields from a Redis hash.
-        
+
         Args:
             name: Name of the hash.
             *keys: Keys to delete.
-        
+
         Returns:
             Number of fields deleted.
         """
         return self.client.hdel(name, *keys)
-    
+
     def smembers(self, name: str) -> List[str]:
         """
         Get all members of a Redis set.
-        
+
         Args:
             name: Name of the set.
-        
+
         Returns:
             Set of members.
         """
@@ -190,5 +209,6 @@ class KafkaMemoryLogger:
     A placeholder for a future Kafka-based memory logger.
     Raises NotImplementedError as it is not yet implemented.
     """
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         raise NotImplementedError("Kafka backend not implemented yet")

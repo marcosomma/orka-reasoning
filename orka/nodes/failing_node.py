@@ -12,7 +12,7 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 import time
 
-from .agent_node import BaseNode
+from .base_node import BaseNode
 
 
 class FailingNode(BaseNode):

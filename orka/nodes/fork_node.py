@@ -10,7 +10,7 @@
 # For commercial use, contact: marcosomma.work@gmail.com
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
-from .agent_node import BaseNode
+from .base_node import BaseNode
 
 
 class ForkNode(BaseNode):

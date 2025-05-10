@@ -17,6 +17,8 @@ from fake_redis import FakeRedisClient
 redis.Redis = lambda *a, **kw: FakeRedisClient()
 redis.StrictRedis = lambda *a, **kw: FakeRedisClient()
 
+import logging
+
 import pytest
 import yaml
 
@@ -64,7 +66,7 @@ async def test_run_cli_entrypoint_prints_dict(tmp_path, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_run_cli_entrypoint_prints_list(tmp_path, monkeypatch, capsys):
+async def test_run_cli_entrypoint_prints_list(tmp_path, monkeypatch, caplog):
     class DummyOrchestrator:
         async def run(self, input_text):
             return [
@@ -76,14 +78,16 @@ async def test_run_cli_entrypoint_prints_list(tmp_path, monkeypatch, capsys):
         "orka.orchestrator.Orchestrator", lambda config_path: DummyOrchestrator()
     )
     config_path = make_dummy_yaml(tmp_path)
-    result = await orka_cli.run_cli_entrypoint(config_path, "input", log_to_file=False)
-    captured = capsys.readouterr()
-    assert "Agent: agent1" in captured.out
-    assert isinstance(result, list)
+    with caplog.at_level(logging.INFO):
+        result = await orka_cli.run_cli_entrypoint(
+            config_path, "input", log_to_file=False
+        )
+        assert "Agent: agent1" in caplog.text
+        assert isinstance(result, list)
 
 
 @pytest.mark.asyncio
-async def test_run_cli_entrypoint_prints_other(tmp_path, monkeypatch, capsys):
+async def test_run_cli_entrypoint_prints_other(tmp_path, monkeypatch, caplog):
     class DummyOrchestrator:
         async def run(self, input_text):
             return "just a string"
@@ -92,10 +96,12 @@ async def test_run_cli_entrypoint_prints_other(tmp_path, monkeypatch, capsys):
         "orka.orchestrator.Orchestrator", lambda config_path: DummyOrchestrator()
     )
     config_path = make_dummy_yaml(tmp_path)
-    result = await orka_cli.run_cli_entrypoint(config_path, "input", log_to_file=False)
-    captured = capsys.readouterr()
-    assert "just a string" in captured.out
-    assert result == "just a string"
+    with caplog.at_level(logging.INFO):
+        result = await orka_cli.run_cli_entrypoint(
+            config_path, "input", log_to_file=False
+        )
+        assert "just a string" in caplog.text
+        assert result == "just a string"
 
 
 @pytest.mark.asyncio

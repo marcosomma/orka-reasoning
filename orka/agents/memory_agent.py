@@ -1,149 +1,101 @@
-import json
-import time
-from typing import Any, Dict, List
+import logging
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from sentence_transformers import SentenceTransformer
+from ..contracts import Context, MemoryEntry, Registry
+from ..memory.compressor import MemoryCompressor
+from .base_agent import BaseAgent
 
-from .agent_base import BaseAgent
-from .utils.redis_client import get_redis_client
+logger = logging.getLogger(__name__)
 
 
 class MemoryAgent(BaseAgent):
-    """Stateful read/write memory node that supports both stream and vector storage."""
+    """Agent for managing memory operations."""
 
-    def __init__(self, config: Dict[str, Any]):
-        agent_id = config.get("id", "memory_agent")
-        prompt = config.get("prompt", "")
-        queue = config.get("queue", [])
-        super().__init__(agent_id=agent_id, prompt=prompt, queue=queue)
-        self.mode = config.get("mode", "hybrid")
-        self.memory_scope = config.get("memory_scope", "session")
-        self.vector_enabled = config.get("vector", False)
-        self.embedding_model = None
-        if self.vector_enabled:
-            model_name = config.get(
-                "embedding_model", "sentence-transformers/all-MiniLM-L6-v2"
+    def __init__(
+        self,
+        agent_id: str,
+        registry: Registry,
+        timeout: Optional[float] = 30.0,
+        max_concurrency: int = 10,
+        max_entries: int = 1000,
+        importance_threshold: float = 0.3,
+    ):
+        super().__init__(agent_id, registry, timeout, max_concurrency)
+        self.compressor = MemoryCompressor(
+            max_entries=max_entries, importance_threshold=importance_threshold
+        )
+        self._memory = None
+        self._embedder = None
+
+    async def initialize(self) -> None:
+        """Initialize the agent and its resources."""
+        await super().initialize()
+        self._memory = self.registry.get("memory")
+        self._embedder = self.registry.get("embedder")
+
+    async def _run_impl(self, ctx: Context) -> Dict[str, Any]:
+        """Implementation of memory operations."""
+        operation = ctx.get("operation", "read")
+
+        if operation == "write":
+            return await self._write_memory(ctx)
+        elif operation == "read":
+            return await self._read_memory(ctx)
+        elif operation == "compress":
+            return await self._compress_memory(ctx)
+        else:
+            raise ValueError(f"Unknown operation: {operation}")
+
+    async def _write_memory(self, ctx: Context) -> Dict[str, Any]:
+        """Write to memory."""
+        content = ctx.get("content")
+        if not content:
+            raise ValueError("Content is required for write operation")
+
+        entry = MemoryEntry(
+            content=content,
+            importance=ctx.get("importance", 0.5),
+            timestamp=datetime.now(),
+            metadata=ctx.get("metadata", {}),
+            is_summary=False,
+        )
+
+        # Get embedding for the content
+        embedding = await self._get_embedding(content)
+
+        # Write to memory
+        await self._memory.write(entry, embedding)
+
+        return {"status": "written", "entry": entry}
+
+    async def _read_memory(self, ctx: Context) -> Dict[str, Any]:
+        """Read from memory."""
+        query = ctx.get("query")
+        if not query:
+            raise ValueError("Query is required for read operation")
+
+        # Get embedding for the query
+        query_embedding = await self._get_embedding(query)
+
+        # Search memory
+        results = await self._memory.search(query_embedding, limit=ctx.get("limit", 10))
+
+        return {"results": results}
+
+    async def _compress_memory(self, ctx: Context) -> Dict[str, Any]:
+        """Compress memory entries."""
+        entries = await self._memory.get_all()
+
+        if self.compressor.should_compress(entries):
+            compressed = await self.compressor.compress(
+                entries, self.registry.get("llm")
             )
-            self.embedding_model = SentenceTransformer(model_name)
-        self.redis = get_redis_client()
+            await self._memory.replace_all(compressed)
+            return {"status": "compressed", "entries": compressed}
 
-    def _get_stream_key(self, session_id: str) -> str:
-        """Get the Redis stream key for the given scope and session."""
-        return f"orka:memory:{self.memory_scope}:{session_id}"
+        return {"status": "no_compression_needed", "entries": entries}
 
-    def _append_stream(self, text: str, context: Dict[str, Any]) -> str:
-        """Append a memory entry to the Redis stream."""
-        session_id = context.get("session_id", "default")
-        stream_key = self._get_stream_key(session_id)
-
-        entry = {
-            "ts": int(time.time()),
-            "agent_id": self.agent_id,
-            "type": "memory.append",
-            "session": session_id,
-            "payload": json.dumps(
-                {"content": text, "metadata": context.get("metadata", {})}
-            ),
-        }
-
-        # Add to both scoped and global streams
-        memory_id = self.redis.xadd("orka:memory", entry)
-        self.redis.xadd(stream_key, entry)
-        return memory_id
-
-    def _upsert_vector(self, text: str, context: Dict[str, Any]) -> None:
-        """Store vector embedding in Redis Search."""
-        if not self.embedding_model:
-            return
-
-        # Generate embedding
-        vector = self.embedding_model.encode(text)
-
-        # Store in Redis Search
-        doc_id = f"mem_{int(time.time())}"
-        self.redis.ft("memory_idx").add_document(
-            doc_id,
-            content=text,
-            vector=vector.tobytes(),
-            session=context.get("session_id", "default"),
-            agent=self.agent_id,
-            ts=int(time.time()),
-        )
-
-    def _query_vector(
-        self, text: str, k: int = 5, score_threshold: float = 0.25
-    ) -> List[Dict[str, Any]]:
-        """Query vector store for similar memories."""
-        if not self.embedding_model:
-            return []
-
-        # Generate query embedding
-        query_vector = self.embedding_model.encode(text)
-
-        # Search in Redis
-        results = self.redis.ft("memory_idx").search(
-            f"*=>[KNN {k} @vector $BLOB AS score]",
-            query_params={"BLOB": query_vector.tobytes()},
-            sort_by="score",
-            sort_asc=False,
-        )
-
-        # Filter and format results
-        hits = []
-        for doc in results.docs:
-            if doc.score > score_threshold:
-                hits.append(
-                    {
-                        "id": doc.id,
-                        "content": doc.content,
-                        "score": doc.score,
-                        "metadata": {
-                            "session": doc.session,
-                            "agent": doc.agent,
-                            "ts": doc.ts,
-                        },
-                    }
-                )
-        return hits
-
-    def _get_episodic(self, session_id: str, k: int = 100) -> List[Dict[str, Any]]:
-        """Get latest k episodic memories from stream."""
-        stream_key = self._get_stream_key(session_id)
-        entries = self.redis.xrange(stream_key, count=k)
-
-        memories = []
-        for entry_id, data in entries:
-            try:
-                payload = json.loads(data[b"payload"])
-                memories.append(
-                    {
-                        "id": entry_id.decode(),
-                        "content": payload["content"],
-                        "metadata": payload.get("metadata", {}),
-                        "ts": int(data[b"ts"]),
-                    }
-                )
-            except (json.JSONDecodeError, KeyError):
-                continue
-        return memories
-
-    def run(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Run the memory agent in the specified mode."""
-        text = context.get("input", "")
-        session_id = context.get("session_id", "default")
-
-        result = {"episodic": [], "semantic": []}
-
-        # Write operations
-        if self.mode in ("write", "hybrid"):
-            self._append_stream(text, context)
-            if self.vector_enabled:
-                self._upsert_vector(text, context)
-
-        # Read operations
-        if self.mode in ("read", "hybrid"):
-            result["episodic"] = self._get_episodic(session_id)
-            if self.vector_enabled:
-                result["semantic"] = self._query_vector(text)
-
-        return result
+    async def _get_embedding(self, text: str) -> List[float]:
+        """Get embedding for text using the embedder."""
+        return await self._embedder.encode(text)

@@ -1,10 +1,13 @@
 import json
+import logging
 from typing import Any, Dict
 
 import redis.asyncio as redis
 
 from ..utils.bootstrap_memory_index import retry
-from .agent_node import BaseNode
+from .base_node import BaseNode
+
+logger = logging.getLogger(__name__)
 
 
 class MemoryReaderNode(BaseNode):
@@ -49,7 +52,7 @@ class MemoryReaderNode(BaseNode):
                     }
                 )
             except (json.JSONDecodeError, KeyError, AttributeError) as e:
-                print(f"Error processing memory entry: {e}")
+                logger.error(f"Error processing memory entry: {e}")
                 continue
 
         # Store result in context

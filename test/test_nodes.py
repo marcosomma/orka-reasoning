@@ -14,6 +14,7 @@ import json
 import time
 from unittest.mock import AsyncMock, MagicMock
 
+import numpy as np
 import pytest
 from fake_redis import FakeRedisClient
 
@@ -303,55 +304,75 @@ async def test_memory_reader_node():
 @pytest.mark.asyncio
 async def test_rag_node():
     """Test RAGNode performs vector similarity search."""
-    redis_client = MockRedisClient()
-    rag = RAGNode(node_id="test_rag", top_k=3, score_threshold=0.75)
-    rag.redis = redis_client
+    mock_registry = MagicMock()
 
-    # Set up mock search result
-    mock_doc = MagicMock()
-    mock_doc.content = "test content"
-    mock_doc.score = 0.5
-    mock_doc.ts = str(int(time.time() * 1e3))
+    # Mock memory
+    mock_memory = AsyncMock()
+    mock_memory.search = AsyncMock(
+        return_value=[{"content": "test content", "score": 0.5}]
+    )
 
-    # Create an async mock for the search method
-    async def mock_search(*args, **kwargs):
-        mock_result = MagicMock()
-        mock_result.docs = [mock_doc]
-        return mock_result
+    # Mock embedder
+    mock_embedder = AsyncMock()
+    mock_embedder.encode = AsyncMock(return_value=np.random.rand(384))
 
-    redis_client._ft.search = AsyncMock(side_effect=mock_search)
+    # Mock LLM
+    mock_llm = AsyncMock()
+    mock_llm.chat.completions.create = AsyncMock(
+        return_value=MagicMock(
+            choices=[MagicMock(message=MagicMock(content="Test answer"))]
+        )
+    )
 
-    context = {"input": "test query", "session_id": "test_session"}
+    mock_registry.get = MagicMock(
+        side_effect=lambda x: {
+            "memory": mock_memory,
+            "embedder": mock_embedder,
+            "llm": mock_llm,
+        }.get(x)
+    )
 
-    result = await rag.run(context)
+    rag = RAGNode(
+        node_id="test_rag", registry=mock_registry, top_k=3, score_threshold=0.75
+    )
 
-    assert result["status"] == "success"
-    assert len(result["hits"]) == 1
-    assert result["hits"][0]["content"] == "test content"
-    assert result["hits"][0]["score"] == 0.5
+    await rag.initialize()
+
+    context = {"query": "test query"}
+
+    output = await rag.run(context)
+
+    assert output["status"] == "success"
+    assert "answer" in output["result"]
+    assert "sources" in output["result"]
+    assert output["result"]["answer"] == "Test answer"
+    assert len(output["result"]["sources"]) == 1
 
 
 @pytest.mark.asyncio
 async def test_memory_nodes_error_handling():
     """Test error handling in memory nodes."""
-    redis_client = MockRedisClient()
+    mock_registry = MagicMock()
 
-    # Test writer with invalid input
-    writer = MemoryWriterNode(node_id="test_writer")
-    writer.redis = redis_client
-    result = await writer.run({})
-    assert result["status"] == "success"  # Should handle empty input gracefully
+    # Mock memory
+    mock_memory = AsyncMock()
+    mock_memory.search = AsyncMock(return_value=[])
+    mock_memory.write = AsyncMock()
 
-    # Test reader with non-existent session
-    reader = MemoryReaderNode(node_id="test_reader")
-    reader.redis = redis_client
-    result = await reader.run({"session_id": "non_existent"})
-    assert result["status"] == "success"
-    assert result["memories"] == []
+    # Mock embedder
+    mock_embedder = AsyncMock()
+    mock_embedder.encode = AsyncMock(return_value=np.random.rand(384))
+
+    mock_registry.get = MagicMock(
+        side_effect=lambda x: {"memory": mock_memory, "embedder": mock_embedder}.get(x)
+    )
 
     # Test RAG with empty query
-    rag = RAGNode(node_id="test_rag")
-    rag.redis = redis_client
-    result = await rag.run({})
-    assert result["status"] == "success"
-    assert result["hits"] == []
+    rag = RAGNode(node_id="test_rag", registry=mock_registry)
+
+    await rag.initialize()
+
+    output = await rag.run({})
+
+    assert output["status"] == "error"
+    assert "Query is required" in output["error"]

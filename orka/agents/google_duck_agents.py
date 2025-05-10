@@ -11,12 +11,15 @@
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 
+import logging
 import os
 
 from duckduckgo_search import DDGS
 from googleapiclient.discovery import build
 
 from .agent_base import BaseAgent
+
+logger = logging.getLogger(__name__)
 
 # Google config
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
@@ -72,11 +75,15 @@ class DuckDuckGoAgent(BaseAgent):
         Returns:
             list: List of search result snippets.
         """
+        # Get initial query from prompt or input
+        query = self.prompt or input_data.get("input", "")
+        if not query:
+            return ["No query provided"]
 
-        # Replace template variables in prompt
-        query = self.prompt
-        if "{{input}}" in query:
-            query = query.replace("{{input}}", input_data["input"])
+        # Replace input variable
+        if "{{ input }}" in query:  # Note the space after {{
+            input_value = input_data.get("input", "")
+            query = query.replace("{{ input }}", input_value)
 
         # Replace any previous_outputs variables
         for key, value in input_data.get("previous_outputs", {}).items():
@@ -84,13 +91,11 @@ class DuckDuckGoAgent(BaseAgent):
             if template_var in query:
                 query = query.replace(template_var, str(value))
 
-        if not query:
-            return ["No query provided"]
         try:
             # Execute search and get top 5 results
             with DDGS() as ddgs:
                 results = [r["body"] for r in ddgs.text(query, max_results=5)]
             return results
         except Exception as e:
+            logger.error(f"DuckDuckGo search failed: {str(e)}")
             return [f"DuckDuckGo search failed: {str(e)}"]
-        print()

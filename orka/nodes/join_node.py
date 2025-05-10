@@ -14,7 +14,7 @@
 
 import json
 
-from .agent_node import BaseNode
+from .base_node import BaseNode
 
 
 class JoinNode(BaseNode):

@@ -1,173 +1,166 @@
-import json
 import time
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import numpy as np
 import pytest
 
 from orka.agents.memory_agent import MemoryAgent
+from orka.contracts import Registry
 
 
 @pytest.fixture
-def mock_redis():
-    """Create a mock Redis client."""
-    mock = MagicMock()
-    mock.xadd.return_value = "test_memory_id"
-    mock.xrange.return_value = [
-        (
-            b"test_id_1",
-            {
-                b"ts": str(int(time.time())).encode(),
-                b"payload": json.dumps(
-                    {"content": "test memory 1", "metadata": {"key": "value"}}
-                ).encode(),
-            },
-        )
-    ]
-    mock.ft.return_value = MagicMock()
-    return mock
+def mock_registry():
+    """Create a mock registry with required resources."""
+    registry = MagicMock(spec=Registry)
 
+    # Mock memory
+    mock_memory = AsyncMock()
+    mock_memory.write = AsyncMock()
+    mock_memory.search = AsyncMock(return_value=[])
+    mock_memory.get_all = AsyncMock(return_value=[])
 
-@pytest.fixture
-def mock_embedding_model():
-    """Create a mock embedding model."""
-    mock = MagicMock()
-    mock.encode.return_value = np.random.rand(384)  # MiniLM-L6-v2 dimension
-    return mock
+    # Mock embedder
+    mock_embedder = AsyncMock()
+    mock_embedder.encode = AsyncMock(return_value=np.random.rand(384))
+
+    registry.get = MagicMock(
+        side_effect=lambda x: {
+            "memory": mock_memory,
+            "embedder": mock_embedder,
+            "llm": AsyncMock(),
+        }.get(x)
+    )
+
+    return registry
 
 
 @pytest.fixture
 def memory_agent_config():
     """Create a test configuration for MemoryAgent."""
-    return {
-        "id": "test_memory",
-        "mode": "hybrid",
-        "memory_scope": "session",
-        "vector": True,
-        "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    return {"agent_id": "test_memory", "max_entries": 1000, "importance_threshold": 0.3}
+
+
+@pytest.mark.asyncio
+async def test_memory_agent_init(memory_agent_config, mock_registry):
+    """Test MemoryAgent initialization."""
+    agent = MemoryAgent(
+        agent_id=memory_agent_config["agent_id"],
+        registry=mock_registry,
+        max_entries=memory_agent_config["max_entries"],
+        importance_threshold=memory_agent_config["importance_threshold"],
+    )
+
+    await agent.initialize()
+
+    assert agent.agent_id == "test_memory"
+    assert agent.compressor.max_entries == 1000
+    assert agent.compressor.importance_threshold == 0.3
+    assert agent._memory is not None
+    assert agent._embedder is not None
+
+
+@pytest.mark.asyncio
+async def test_memory_agent_write_mode(memory_agent_config, mock_registry):
+    """Test MemoryAgent in write mode."""
+    agent = MemoryAgent(
+        agent_id=memory_agent_config["agent_id"],
+        registry=mock_registry,
+        max_entries=memory_agent_config["max_entries"],
+        importance_threshold=memory_agent_config["importance_threshold"],
+    )
+
+    await agent.initialize()
+
+    context = {
+        "operation": "write",
+        "content": "test memory",
+        "importance": 0.8,
+        "metadata": {"key": "value"},
     }
 
+    output = await agent.run(context)
 
-def test_memory_agent_init(memory_agent_config):
-    """Test MemoryAgent initialization."""
-    with patch("orka.agents.memory_agent.SentenceTransformer") as mock_st:
-        mock_st.return_value = MagicMock()
-        agent = MemoryAgent(memory_agent_config)
-
-        assert agent.mode == "hybrid"
-        assert agent.memory_scope == "session"
-        assert agent.vector_enabled is True
-        assert agent.embedding_model is not None
+    assert isinstance(output, dict)
+    assert output["status"] == "success"
+    assert output["result"]["status"] == "written"
+    assert "entry" in output["result"]
+    assert output["result"]["entry"]["content"] == "test memory"
+    assert output["result"]["entry"]["importance"] == 0.8
 
 
-def test_memory_agent_write_mode(memory_agent_config, mock_redis, mock_embedding_model):
-    """Test MemoryAgent in write mode."""
-    with (
-        patch("orka.agents.memory_agent.get_redis_client", return_value=mock_redis),
-        patch(
-            "orka.agents.memory_agent.SentenceTransformer",
-            return_value=mock_embedding_model,
-        ),
-    ):
-        config = memory_agent_config.copy()
-        config["mode"] = "write"
-        agent = MemoryAgent(config)
-
-        context = {
-            "input": "test memory",
-            "session_id": "test_session",
-            "metadata": {"key": "value"},
-        }
-
-        result = agent.run(context)
-
-        # Verify Redis calls
-        assert mock_redis.xadd.call_count == 2  # Global and scoped streams
-        assert mock_redis.ft.call_count == 1  # Vector storage
-
-        # Verify result structure
-        assert isinstance(result, dict)
-        assert "episodic" in result
-        assert "semantic" in result
-
-
-def test_memory_agent_read_mode(memory_agent_config, mock_redis, mock_embedding_model):
+@pytest.mark.asyncio
+async def test_memory_agent_read_mode(memory_agent_config, mock_registry):
     """Test MemoryAgent in read mode."""
-    with (
-        patch("orka.agents.memory_agent.get_redis_client", return_value=mock_redis),
-        patch(
-            "orka.agents.memory_agent.SentenceTransformer",
-            return_value=mock_embedding_model,
-        ),
-    ):
-        config = memory_agent_config.copy()
-        config["mode"] = "read"
-        agent = MemoryAgent(config)
+    agent = MemoryAgent(
+        agent_id=memory_agent_config["agent_id"],
+        registry=mock_registry,
+        max_entries=memory_agent_config["max_entries"],
+        importance_threshold=memory_agent_config["importance_threshold"],
+    )
 
-        context = {"input": "test query", "session_id": "test_session"}
+    await agent.initialize()
 
-        result = agent.run(context)
+    # Mock search results
+    mock_results = [
+        {"content": "test memory 1", "score": 0.9},
+        {"content": "test memory 2", "score": 0.8},
+    ]
+    mock_registry.get("memory").search.return_value = mock_results
 
-        # Verify Redis calls
-        assert mock_redis.xrange.called  # Episodic retrieval
-        assert mock_redis.ft.called  # Vector search
+    context = {"operation": "read", "query": "test query", "limit": 5}
 
-        # Verify result structure
-        assert isinstance(result, dict)
-        assert "episodic" in result
-        assert "semantic" in result
-        assert len(result["episodic"]) > 0
+    output = await agent.run(context)
 
-
-def test_memory_agent_hybrid_mode(
-    memory_agent_config, mock_redis, mock_embedding_model
-):
-    """Test MemoryAgent in hybrid mode."""
-    with (
-        patch("orka.agents.memory_agent.get_redis_client", return_value=mock_redis),
-        patch(
-            "orka.agents.memory_agent.SentenceTransformer",
-            return_value=mock_embedding_model,
-        ),
-    ):
-        agent = MemoryAgent(memory_agent_config)
-
-        context = {
-            "input": "test memory and query",
-            "session_id": "test_session",
-            "metadata": {"key": "value"},
-        }
-
-        result = agent.run(context)
-
-        # Verify Redis calls
-        assert mock_redis.xadd.call_count == 2  # Write to streams
-        assert mock_redis.xrange.called  # Read from stream
-        assert mock_redis.ft.call_count == 2  # Write and read vectors
-
-        # Verify result structure
-        assert isinstance(result, dict)
-        assert "episodic" in result
-        assert "semantic" in result
+    assert isinstance(output, dict)
+    assert output["status"] == "success"
+    assert output["result"]["results"] == mock_results
 
 
-def test_memory_agent_error_handling(memory_agent_config, mock_redis):
+@pytest.mark.asyncio
+async def test_memory_agent_compress_mode(memory_agent_config, mock_registry):
+    """Test MemoryAgent in compress mode."""
+    agent = MemoryAgent(
+        agent_id=memory_agent_config["agent_id"],
+        registry=mock_registry,
+        max_entries=memory_agent_config["max_entries"],
+        importance_threshold=memory_agent_config["importance_threshold"],
+    )
+
+    await agent.initialize()
+
+    # Mock entries that need compression
+    mock_entries = [
+        MagicMock(importance=0.2, timestamp=time.time() - 86400),  # 1 day old
+        MagicMock(importance=0.3, timestamp=time.time() - 86400),  # 1 day old
+    ]
+    mock_registry.get("memory").get_all.return_value = mock_entries
+
+    context = {"operation": "compress"}
+
+    output = await agent.run(context)
+
+    assert isinstance(output, dict)
+    assert output["status"] == "success"
+    assert output["result"]["status"] in ["compressed", "no_compression_needed"]
+
+
+@pytest.mark.asyncio
+async def test_memory_agent_error_handling(memory_agent_config, mock_registry):
     """Test MemoryAgent error handling."""
-    with patch("orka.agents.memory_agent.get_redis_client", return_value=mock_redis):
-        # Test with invalid JSON in stream
-        mock_redis.xrange.return_value = [
-            (
-                b"test_id_1",
-                {b"ts": str(int(time.time())).encode(), b"payload": b"invalid json"},
-            )
-        ]
+    agent = MemoryAgent(
+        agent_id=memory_agent_config["agent_id"],
+        registry=mock_registry,
+        max_entries=memory_agent_config["max_entries"],
+        importance_threshold=memory_agent_config["importance_threshold"],
+    )
 
-        agent = MemoryAgent(memory_agent_config)
-        context = {"input": "test", "session_id": "test_session"}
+    await agent.initialize()
 
-        result = agent.run(context)
+    # Test with invalid operation
+    context = {"operation": "invalid_operation"}
 
-        # Should handle invalid JSON gracefully
-        assert isinstance(result, dict)
-        assert "episodic" in result
-        assert len(result["episodic"]) == 0
+    output = await agent.run(context)
+
+    assert isinstance(output, dict)
+    assert output["status"] == "error"
+    assert "Unknown operation" in output["error"]
