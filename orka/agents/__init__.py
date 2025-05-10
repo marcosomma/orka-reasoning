@@ -11,8 +11,6 @@
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 
-from orka.agents.memory_agent import MemoryAgent
-
 from .agent_base import BaseAgent
 from .agents import BinaryAgent, ClassificationAgent
 from .google_duck_agents import DuckDuckGoAgent, GoogleSearchAgent
@@ -21,6 +19,7 @@ from .llm_agents import (
     OpenAIBinaryAgent,
     OpenAIClassificationAgent,
 )
+from .memory_agent import MemoryAgent
 
 AGENT_REGISTRY = {
     "memory": MemoryAgent,

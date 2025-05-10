@@ -11,6 +11,7 @@
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 
+import os
 import pprint
 import tempfile
 
@@ -46,10 +47,13 @@ async def run_execution(request: Request):
     print("\n========== [DEBUG] YAML Config String ==========")
     print(yaml_config)
 
-    # Write YAML to a temp file
-    with tempfile.NamedTemporaryFile(mode="w+", delete=False, suffix=".yml") as tmp:
+    # Create a temporary file path
+    tmp_fd, tmp_path = tempfile.mkstemp(suffix=".yml")
+    os.close(tmp_fd)  # Close the file descriptor
+
+    # Write with explicit UTF-8 encoding
+    with open(tmp_path, "w", encoding="utf-8") as tmp:
         tmp.write(yaml_config)
-        tmp_path = tmp.name
 
     print("\n========== [DEBUG] Instantiating Orchestrator ==========")
     orchestrator = Orchestrator(tmp_path)
@@ -67,4 +71,5 @@ async def run_execution(request: Request):
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.environ.get("ORKA_PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)

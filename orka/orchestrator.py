@@ -15,6 +15,7 @@
 # License: CC BY-NC 4.0
 
 import asyncio
+import inspect
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor
@@ -29,6 +30,8 @@ from .fork_group_manager import ForkGroupManager
 from .loader import YAMLLoader
 from .memory_logger import RedisMemoryLogger
 from .nodes import failing_node, failover_node, fork_node, join_node, router_node
+from .nodes.memory_reader_node import MemoryReaderNode
+from .nodes.memory_writer_node import MemoryWriterNode
 
 AGENT_TYPES = {
     "binary": agents.BinaryAgent,
@@ -43,6 +46,7 @@ AGENT_TYPES = {
     "failing": failing_node.FailingNode,
     "join": join_node.JoinNode,
     "fork": fork_node.ForkNode,
+    "memory": MemoryReaderNode,  # Will be handled specially in init_single_agent
 }
 
 
@@ -135,6 +139,24 @@ class Orchestrator:
                 return agent_cls(
                     node_id=agent_id, prompt=prompt, queue=queue, **clean_cfg
                 )
+
+            # Add a special case for memory agent type handling
+            if agent_type == "memory":
+                # Special handling for memory nodes based on operation
+                operation = cfg.get("config", {}).get("operation", "read")
+                prompt = cfg.get("prompt", None)
+                queue = cfg.get("queue", None)
+
+                if operation == "write":
+                    # Use memory writer node for write operations
+                    return MemoryWriterNode(
+                        node_id=agent_id, prompt=prompt, queue=queue
+                    )
+                else:  # default to read
+                    # Use memory reader node for read operations
+                    return MemoryReaderNode(
+                        node_id=agent_id, prompt=prompt, queue=queue
+                    )
 
             # Default agent instantiation
             prompt = cfg.get("prompt", None)
@@ -365,7 +387,12 @@ class Orchestrator:
 
             else:
                 # Normal Agent: run and handle result
-                result = agent.run(payload)
+                if agent_type in ("memoryreadernode", "memorywriternode"):
+                    # Memory nodes have async run methods
+                    result = await agent.run(payload)
+                else:
+                    # Regular synchronous agent
+                    result = agent.run(payload)
 
                 # If agent is waiting (e.g., for async input), re-queue it
                 if isinstance(result, dict) and result.get("status") == "waiting":
@@ -427,16 +454,25 @@ class Orchestrator:
         agent = self.agents[agent_id]
         payload = {"input": input_data, "previous_outputs": previous_outputs}
 
-        if isinstance(agent, router_node.BaseNode):
-            # For nodes, we need to handle them differently since they need orchestrator
-            result = agent.run(self, payload)
-            if asyncio.iscoroutine(result):
+        # Inspect the run method to see if it needs orchestrator
+        run_method = agent.run
+        sig = inspect.signature(run_method)
+        needs_orchestrator = len(sig.parameters) > 1  # More than just 'self'
+        is_async = inspect.iscoroutinefunction(run_method)
+
+        if needs_orchestrator:
+            # Node that needs orchestrator
+            result = run_method(self, payload)
+            if is_async or asyncio.iscoroutine(result):
                 result = await result
+        elif is_async:
+            # Async node/agent that doesn't need orchestrator
+            result = await run_method(payload)
         else:
-            # Run the agent in a thread pool to avoid blocking
+            # Synchronous agent
             loop = asyncio.get_event_loop()
             with ThreadPoolExecutor() as pool:
-                result = await loop.run_in_executor(pool, agent.run, payload)
+                result = await loop.run_in_executor(pool, run_method, payload)
 
         return agent_id, result
 
