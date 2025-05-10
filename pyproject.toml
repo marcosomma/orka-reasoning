@@ -53,6 +53,33 @@ rag-node = "orka.nodes.rag_node:RAGNode"
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[tool.pytest.ini_options]
+asyncio_mode = "strict"
+testpaths = ["test"]
+python_files = "test_*.py"
+python_functions = "test_*"
+pythonpath = ["."]
+addopts = "--cov=orka-reasoning --cov-report=xml --cov-report=term"
+
+[tool.coverage.run]
+source = ["orka"]
+omit = [
+    "*/site-packages/*",
+    "*/tests/*",
+    "test/*",
+    "setup.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "pass",
+    "raise ImportError",
+]
+
 [tool.ruff]
 # Enable autofix behavior
 fix = true
