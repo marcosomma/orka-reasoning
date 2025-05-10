@@ -38,8 +38,12 @@ class BaseNode(abc.ABC):
         if self.type == "failing":
             self.agent_id = self.node_id
 
+    async def initialize(self) -> None:
+        """Initialize the node and its resources."""
+        pass
+
     @abc.abstractmethod
-    def run(self, input_data):
+    async def run(self, input_data):
         """
         Abstract method to run the logical node.
 
@@ -58,4 +62,4 @@ class BaseNode(abc.ABC):
         Returns:
             str: String representation of the node.
         """
-        return f"<{self.__class__.__name__} id={self.agent_id} queue={self.queue}>"
+        return f"<{self.__class__.__name__} id={self.node_id} queue={self.queue}>"

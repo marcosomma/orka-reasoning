@@ -1,5 +1,7 @@
-import redis.asyncio as redis
 import asyncio
+
+import redis.asyncio as redis
+
 
 async def ensure_memory_index(client: redis.Redis):
     """Ensure the memory index exists in Redis Search."""
@@ -13,18 +15,16 @@ async def ensure_memory_index(client: redis.Redis):
                 redis.commands.search.field.TagField("agent"),
                 redis.commands.search.field.NumericField("ts"),
                 redis.commands.search.field.VectorField(
-                    "vector", "FLAT", {
-                        "TYPE": "FLOAT32",
-                        "DIM": 384,
-                        "DISTANCE_METRIC": "COSINE"
-                    }
-                )
+                    "vector",
+                    "FLAT",
+                    {"TYPE": "FLOAT32", "DIM": 384, "DISTANCE_METRIC": "COSINE"},
+                ),
             ),
             definition=redis.commands.search.IndexDefinition(
-                prefix=["mem:"],
-                index_type="HASH"
-            )
+                prefix=["mem:"], index_type="HASH"
+            ),
         )
+
 
 async def retry(coro, attempts=3, backoff=0.2):
     """Retry a coroutine with exponential backoff."""
@@ -34,4 +34,4 @@ async def retry(coro, attempts=3, backoff=0.2):
         except redis.ConnectionError:
             if i == attempts - 1:
                 raise
-            await asyncio.sleep(backoff * (2 ** i)) 
+            await asyncio.sleep(backoff * (2**i))

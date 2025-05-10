@@ -42,7 +42,7 @@ class MemoryWriterNode(BaseNode):
 
         # Optionally write to vector store
         if self.vector_enabled and self.embedder:
-            vector = self.embedder.encode(text)
+            vector = await self.embedder.encode(text)
             doc_id = f"mem:{time.time_ns()}"
             # Use individual hset calls for compatibility with fakeredis
             await retry(self.redis.hset(doc_id, "content", text))

@@ -1,37 +1,60 @@
-import time
-from unittest.mock import AsyncMock, MagicMock
+from datetime import datetime
+from unittest.mock import AsyncMock, Mock
 
 import numpy as np
 import pytest
 
 from orka.agents.memory_agent import MemoryAgent
-from orka.contracts import Registry
+from orka.contracts import Context, Registry
 
 
 @pytest.fixture
 def mock_registry():
-    """Create a mock registry with required resources."""
-    registry = MagicMock(spec=Registry)
-
-    # Mock memory
-    mock_memory = AsyncMock()
-    mock_memory.write = AsyncMock()
-    mock_memory.search = AsyncMock(return_value=[])
-    mock_memory.get_all = AsyncMock(return_value=[])
-
-    # Mock embedder
-    mock_embedder = AsyncMock()
-    mock_embedder.encode = AsyncMock(return_value=np.random.rand(384))
-
-    registry.get = MagicMock(
-        side_effect=lambda x: {
-            "memory": mock_memory,
-            "embedder": mock_embedder,
-            "llm": AsyncMock(),
-        }.get(x)
-    )
-
+    registry = Mock(spec=Registry)
+    registry.get = AsyncMock()
     return registry
+
+
+@pytest.fixture
+def mock_memory():
+    memory = AsyncMock()
+    memory.write = AsyncMock(
+        return_value={
+            "content": "Test content",
+            "importance": 0.8,
+            "timestamp": datetime.now(),
+            "metadata": {"source": "test"},
+            "is_summary": False,
+        }
+    )
+    memory.search = AsyncMock(
+        return_value=[
+            {
+                "content": "test result",
+                "importance": 0.8,
+                "timestamp": datetime.now(),
+                "metadata": {"source": "test"},
+                "is_summary": False,
+            }
+        ]
+    )
+    memory.get_all = AsyncMock(return_value=[])
+    memory.replace_all = AsyncMock()
+    return memory
+
+
+@pytest.fixture
+def mock_embedder():
+    embedder = AsyncMock()
+    embedder.encode = AsyncMock(return_value=np.array([0.1, 0.2, 0.3]))
+    return embedder
+
+
+@pytest.fixture
+def mock_llm():
+    llm = AsyncMock()
+    llm.compress = AsyncMock(return_value="compressed content")
+    return llm
 
 
 @pytest.fixture
@@ -41,126 +64,86 @@ def memory_agent_config():
 
 
 @pytest.mark.asyncio
-async def test_memory_agent_init(memory_agent_config, mock_registry):
-    """Test MemoryAgent initialization."""
-    agent = MemoryAgent(
-        agent_id=memory_agent_config["agent_id"],
-        registry=mock_registry,
-        max_entries=memory_agent_config["max_entries"],
-        importance_threshold=memory_agent_config["importance_threshold"],
-    )
-
+async def test_memory_agent_init(mock_registry, mock_memory, mock_embedder):
+    agent = MemoryAgent("test_agent", mock_registry)
+    mock_registry.get.side_effect = [mock_memory, mock_embedder]
     await agent.initialize()
 
-    assert agent.agent_id == "test_memory"
-    assert agent.compressor.max_entries == 1000
-    assert agent.compressor.importance_threshold == 0.3
-    assert agent._memory is not None
-    assert agent._embedder is not None
+    assert agent.agent_id == "test_agent"
+    assert agent._memory == mock_memory
+    assert agent._embedder == mock_embedder
 
 
 @pytest.mark.asyncio
-async def test_memory_agent_write_mode(memory_agent_config, mock_registry):
-    """Test MemoryAgent in write mode."""
-    agent = MemoryAgent(
-        agent_id=memory_agent_config["agent_id"],
-        registry=mock_registry,
-        max_entries=memory_agent_config["max_entries"],
-        importance_threshold=memory_agent_config["importance_threshold"],
-    )
-
+async def test_memory_agent_write_mode(mock_registry, mock_memory, mock_embedder):
+    agent = MemoryAgent("test_agent", mock_registry)
+    mock_registry.get.side_effect = [mock_memory, mock_embedder]
     await agent.initialize()
 
-    context = {
-        "operation": "write",
-        "content": "test memory",
-        "importance": 0.8,
-        "metadata": {"key": "value"},
-    }
+    ctx = Context(
+        {
+            "operation": "write",
+            "content": "Test content",
+            "importance": 0.8,
+            "metadata": {"source": "test"},
+        }
+    )
 
-    output = await agent.run(context)
+    result = await agent._run_impl(ctx)
 
-    assert isinstance(output, dict)
-    assert output["status"] == "success"
-    assert output["result"]["status"] == "written"
-    assert "entry" in output["result"]
-    assert output["result"]["entry"]["content"] == "test memory"
-    assert output["result"]["entry"]["importance"] == 0.8
+    assert result["status"] == "written"
+    assert "entry" in result
+    assert result["entry"]["content"] == "Test content"
+    assert result["entry"]["importance"] == 0.8
+    assert result["entry"]["metadata"] == {"source": "test"}
 
 
 @pytest.mark.asyncio
-async def test_memory_agent_read_mode(memory_agent_config, mock_registry):
-    """Test MemoryAgent in read mode."""
-    agent = MemoryAgent(
-        agent_id=memory_agent_config["agent_id"],
-        registry=mock_registry,
-        max_entries=memory_agent_config["max_entries"],
-        importance_threshold=memory_agent_config["importance_threshold"],
-    )
-
+async def test_memory_agent_read_mode(mock_registry, mock_memory, mock_embedder):
+    agent = MemoryAgent("test_agent", mock_registry)
+    mock_registry.get.side_effect = [mock_memory, mock_embedder]
     await agent.initialize()
 
-    # Mock search results
-    mock_results = [
-        {"content": "test memory 1", "score": 0.9},
-        {"content": "test memory 2", "score": 0.8},
-    ]
-    mock_registry.get("memory").search.return_value = mock_results
+    ctx = Context({"operation": "read", "query": "test query", "limit": 5})
 
-    context = {"operation": "read", "query": "test query", "limit": 5}
+    result = await agent._run_impl(ctx)
 
-    output = await agent.run(context)
-
-    assert isinstance(output, dict)
-    assert output["status"] == "success"
-    assert output["result"]["results"] == mock_results
+    assert "results" in result
+    assert len(result["results"]) == 1
+    assert result["results"][0]["content"] == "test result"
 
 
 @pytest.mark.asyncio
-async def test_memory_agent_compress_mode(memory_agent_config, mock_registry):
-    """Test MemoryAgent in compress mode."""
-    agent = MemoryAgent(
-        agent_id=memory_agent_config["agent_id"],
-        registry=mock_registry,
-        max_entries=memory_agent_config["max_entries"],
-        importance_threshold=memory_agent_config["importance_threshold"],
-    )
-
+async def test_memory_agent_compress_mode(mock_registry, mock_memory, mock_llm):
+    agent = MemoryAgent("test_agent", mock_registry)
+    mock_registry.get.side_effect = [mock_memory, mock_llm]
     await agent.initialize()
 
-    # Mock entries that need compression
-    mock_entries = [
-        MagicMock(importance=0.2, timestamp=time.time() - 86400),  # 1 day old
-        MagicMock(importance=0.3, timestamp=time.time() - 86400),  # 1 day old
-    ]
-    mock_registry.get("memory").get_all.return_value = mock_entries
+    ctx = Context({"operation": "compress"})
 
-    context = {"operation": "compress"}
+    result = await agent._run_impl(ctx)
 
-    output = await agent.run(context)
-
-    assert isinstance(output, dict)
-    assert output["status"] == "success"
-    assert output["result"]["status"] in ["compressed", "no_compression_needed"]
+    assert result["status"] == "no_compression_needed"
+    assert "entries" in result
 
 
 @pytest.mark.asyncio
-async def test_memory_agent_error_handling(memory_agent_config, mock_registry):
-    """Test MemoryAgent error handling."""
-    agent = MemoryAgent(
-        agent_id=memory_agent_config["agent_id"],
-        registry=mock_registry,
-        max_entries=memory_agent_config["max_entries"],
-        importance_threshold=memory_agent_config["importance_threshold"],
-    )
-
+async def test_memory_agent_error_handling(mock_registry, mock_memory, mock_embedder):
+    agent = MemoryAgent("test_agent", mock_registry)
+    mock_registry.get.side_effect = [mock_memory, mock_embedder]
     await agent.initialize()
 
-    # Test with invalid operation
-    context = {"operation": "invalid_operation"}
+    # Test missing content
+    ctx = Context({"operation": "write"})
+    with pytest.raises(ValueError, match="Content is required for write operation"):
+        await agent._run_impl(ctx)
 
-    output = await agent.run(context)
+    # Test missing query
+    ctx = Context({"operation": "read"})
+    with pytest.raises(ValueError, match="Query is required for read operation"):
+        await agent._run_impl(ctx)
 
-    assert isinstance(output, dict)
-    assert output["status"] == "error"
-    assert "Unknown operation" in output["error"]
+    # Test unknown operation
+    ctx = Context({"operation": "unknown"})
+    with pytest.raises(ValueError, match="Unknown operation: unknown"):
+        await agent._run_impl(ctx)

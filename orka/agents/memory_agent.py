@@ -1,6 +1,8 @@
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
+
+import numpy as np
 
 from ..contracts import Context, MemoryEntry, Registry
 from ..memory.compressor import MemoryCompressor
@@ -31,8 +33,8 @@ class MemoryAgent(BaseAgent):
     async def initialize(self) -> None:
         """Initialize the agent and its resources."""
         await super().initialize()
-        self._memory = self.registry.get("memory")
-        self._embedder = self.registry.get("embedder")
+        self._memory = await self.registry.get("memory")
+        self._embedder = await self.registry.get("embedder")
 
     async def _run_impl(self, ctx: Context) -> Dict[str, Any]:
         """Implementation of memory operations."""
@@ -96,6 +98,6 @@ class MemoryAgent(BaseAgent):
 
         return {"status": "no_compression_needed", "entries": entries}
 
-    async def _get_embedding(self, text: str) -> List[float]:
+    async def _get_embedding(self, text: str) -> np.ndarray:
         """Get embedding for text using the embedder."""
         return await self._embedder.encode(text)
