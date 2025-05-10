@@ -11,6 +11,7 @@
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 
+import asyncio
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
@@ -20,6 +21,7 @@ from orka.agents.base_agent import BaseAgent
 from orka.registry import ResourceRegistry, init_registry
 from orka.tools.search_tools import DuckDuckGoTool
 from orka.utils.bootstrap_memory_index import ensure_memory_index
+from orka.utils.concurrency import ConcurrencyManager
 
 
 # Tests for BaseAgent
@@ -442,3 +444,101 @@ class TestBootstrapMemory:
         # Use our test retry implementation with a coroutine factory
         with pytest.raises(redis.ConnectionError, match="Connection error"):
             await test_retry(failing_coro, attempts=3, backoff=0.1)
+
+
+# Add TestConcurrencyManager class after the existing TestBootstrapMemory class
+class TestConcurrencyManager:
+    @pytest.mark.asyncio
+    async def test_concurrency_manager_init(self):
+        """Test initialization of ConcurrencyManager"""
+        # Test with default max_concurrency
+        manager = ConcurrencyManager()
+        assert manager.semaphore._value == 10
+        assert manager._active_tasks == set()
+
+        # Test with custom max_concurrency
+        custom_manager = ConcurrencyManager(max_concurrency=5)
+        assert custom_manager.semaphore._value == 5
+
+    @pytest.mark.asyncio
+    async def test_run_with_timeout_success(self):
+        """Test successful execution with run_with_timeout"""
+        manager = ConcurrencyManager()
+
+        # Define a simple coroutine for testing
+        async def simple_coro(value):
+            return value * 2
+
+        # Run with explicit timeout
+        result = await manager.run_with_timeout(simple_coro, timeout=1.0, value=21)
+        assert result == 42
+
+        # Run without timeout
+        result = await manager.run_with_timeout(simple_coro, timeout=None, value=25)
+        assert result == 50
+
+    @pytest.mark.asyncio
+    async def test_run_with_timeout_timeout_error(self):
+        """Test timeout error with run_with_timeout"""
+        manager = ConcurrencyManager()
+
+        # Define a coroutine that takes longer than the timeout
+        async def slow_coro():
+            await asyncio.sleep(0.5)
+            return "Done"
+
+        # Verify that TimeoutError is raised with very short timeout
+        with pytest.raises(asyncio.TimeoutError):
+            await manager.run_with_timeout(slow_coro, timeout=0.1)
+
+    @pytest.mark.asyncio
+    async def test_with_concurrency_decorator(self):
+        """Test the with_concurrency decorator"""
+        manager = ConcurrencyManager()
+
+        # Define a function to decorate
+        @manager.with_concurrency(timeout=1.0)
+        async def decorated_func(value):
+            return value + 10
+
+        # Test the decorated function
+        result = await decorated_func(32)
+        assert result == 42
+
+    @pytest.mark.asyncio
+    async def test_shutdown(self):
+        """Test shutdown method cancels active tasks"""
+        manager = ConcurrencyManager()
+
+        # Create some long-running tasks
+        async def long_running_task():
+            try:
+                await asyncio.sleep(10)
+                return "Completed"
+            except asyncio.CancelledError:
+                return "Cancelled"
+
+        # Start some tasks
+        task1 = asyncio.create_task(
+            manager.run_with_timeout(long_running_task, timeout=None)
+        )
+        task2 = asyncio.create_task(
+            manager.run_with_timeout(long_running_task, timeout=None)
+        )
+
+        # Give tasks time to start
+        await asyncio.sleep(0.1)
+
+        # Verify tasks are in the active_tasks set (at least one should be)
+        assert len(manager._active_tasks) > 0
+
+        # Shut down the manager
+        await manager.shutdown()
+
+        # Verify active_tasks is empty after shutdown
+        assert manager._active_tasks == set()
+
+        # Clean up the tasks to avoid warnings
+        for task in [task1, task2]:
+            if not task.done():
+                task.cancel()
