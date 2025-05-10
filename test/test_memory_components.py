@@ -72,24 +72,32 @@ def mock_llm():
 
 @pytest.mark.asyncio
 async def test_memory_reader_node():
-    node = MemoryReaderNode("test_reader", prompt="Test prompt")
+    # Use a unique namespace and session ID to avoid interference from other tests
+    test_namespace = f"test_isolated_ns_{time.time_ns()}"
+    test_session = f"test_isolated_session_{time.time_ns()}"
+
+    node = MemoryReaderNode(
+        "test_reader", prompt="Test prompt", namespace=test_namespace
+    )
     redis_client = redis.from_url("redis://localhost:6379")
 
     # Write test data
     test_data = {"content": "Test content", "metadata": {"source": "test"}}
+    stream_key = f"orka:memory:{test_namespace}:{test_session}"
+
     await redis_client.xadd(
-        "orka:memory:test_session",
+        stream_key,
         {
             "ts": str(time.time_ns()),
             "agent_id": "test_writer",
             "type": "memory.append",
-            "session": "test_session",
+            "session": test_session,
             "payload": json.dumps(test_data),
         },
     )
 
     # Test reading
-    context = {"session_id": "test_session"}
+    context = {"session_id": test_session, "namespace": test_namespace}
     result = await node.run(context)
 
     assert result["status"] == "success"
@@ -103,22 +111,29 @@ async def test_memory_reader_node():
 
 @pytest.mark.asyncio
 async def test_memory_writer_node():
-    node = MemoryWriterNode("test_writer", prompt="Test prompt")
+    # Use a unique namespace and session ID to avoid interference from other tests
+    test_namespace = f"test_isolated_ns_{time.time_ns()}"
+    test_session = f"test_isolated_session_{time.time_ns()}"
+
+    node = MemoryWriterNode(
+        "test_writer", prompt="Test prompt", namespace=test_namespace
+    )
     redis_client = redis.from_url("redis://localhost:6379")
 
     context = {
         "input": "Test content",
-        "session_id": "test_session",
+        "session_id": test_session,
+        "namespace": test_namespace,
         "metadata": {"source": "test"},
     }
 
     result = await node.run(context)
 
     assert result["status"] == "success"
-    assert result["session"] == "test_session"
+    assert result["session"] == test_session
 
     # Verify data was written
-    stream_key = "orka:memory:test_session"
+    stream_key = f"orka:memory:{test_namespace}:{test_session}"
     entries = await redis_client.xrange(stream_key)
     assert len(entries) > 0
     entry_data = json.loads(entries[0][1][b"payload"].decode())
@@ -127,6 +142,10 @@ async def test_memory_writer_node():
 
 @pytest.mark.asyncio
 async def test_memory_writer_node_with_vector(monkeypatch):
+    # Use a unique namespace and session ID to avoid interference from other tests
+    test_namespace = f"test_isolated_ns_{time.time_ns()}"
+    test_session = f"test_isolated_session_{time.time_ns()}"
+
     # Mock the embedder to avoid HuggingFace API calls
     mock_embedder = AsyncMock()
     mock_embedder.encode = AsyncMock(return_value=np.array([0.1, 0.2, 0.3]))
@@ -188,7 +207,11 @@ async def test_memory_writer_node_with_vector(monkeypatch):
 
     # Create a node with the embedding_model parameter
     node = MemoryWriterNode(
-        "test_writer", prompt="Test prompt", vector=True, embedding_model="fake-model"
+        "test_writer",
+        prompt="Test prompt",
+        vector=True,
+        namespace=test_namespace,
+        embedding_model="fake-model",
     )
 
     # Override the node's redis client with our test client
@@ -196,18 +219,18 @@ async def test_memory_writer_node_with_vector(monkeypatch):
 
     context = {
         "input": "Test content",
-        "session_id": "test_session",
+        "session_id": test_session,
+        "namespace": test_namespace,
         "metadata": {"source": "test"},
     }
 
     result = await node.run(context)
 
     assert result["status"] == "success"
-    assert result["session"] == "test_session"
+    assert result["session"] == test_session
 
     # Verify vector data was written - the doc_id format matches the implementation in memory_writer_node.py
-    namespace = "default"  # Default namespace used in the MemoryWriterNode
-    doc_id = f"mem:{namespace}:{fixed_timestamp}"
+    doc_id = f"mem:{test_namespace}:{fixed_timestamp}"
 
     # The vector_id should be returned in the result
     assert "vector_id" in result
