@@ -530,4 +530,4 @@ We welcome contributions! Please see our [CONTRIBUTING.md](./CONTRIBUTING.md) fo
 
 ## 📜 License & Attribution
 
-This project is licensed under the CC BY-NC 4.0 License. For more details, refer to the [LICENSE](./LICENSE) file.
+This project is licensed under the Apache 2.0 License. For more details, refer to the [LICENSE](./LICENSE) file.

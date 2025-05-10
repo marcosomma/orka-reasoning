@@ -3,7 +3,7 @@
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-resoning
 #
-# Licensed under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
 # You may not use this file for commercial purposes without explicit permission.
 #
 # Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
