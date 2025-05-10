@@ -1,7 +1,7 @@
 # OrKa: Orchestrator Kit Agents
 # Copyright © 2025 Marco Somma
 #
-# This file is part of OrKa – https://github.com/marcosomma/orka
+# This file is part of OrKa – https://github.com/marcosomma/orka-resoning
 #
 # Licensed under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
 # You may not use this file for commercial purposes without explicit permission.
@@ -9,7 +9,7 @@
 # Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
 # For commercial use, contact: marcosomma.work@gmail.com
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
+# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
 Basic Agents Module
@@ -33,48 +33,48 @@ Both agent types inherit from the BaseAgent class and implement the required run
 method with simple rule-based logic.
 """
 
-from .agent_base import BaseAgent
+from .base_agent import LegacyBaseAgent as BaseAgent
 
 
 class BinaryAgent(BaseAgent):
     """
-    A simple agent that performs binary classification.
+    A simple agent that performs binary (true/false) decisions.
 
-    This agent analyzes input text and makes a true/false decision based on
-    simple pattern matching rules. It's intended for basic decision points in
-    a workflow where a binary branch is needed.
+    This agent processes input text and returns either "true" or "false"
+    based on simple text pattern matching. It demonstrates the most basic
+    form of decision-making in the OrKa framework.
 
-    The implementation is deliberately simple and rule-based, making it useful for:
-    - Testing the orchestration framework
-    - Creating workflow branches based on simple criteria
-    - Providing fallback functionality when more complex agents are unavailable
+    The current implementation checks for the presence of 'yes', 'true',
+    or 'correct' in the input to determine if the result should be true.
+    This can be extended to more complex pattern matching or rule-based
+    decision logic.
     """
 
     def run(self, input_data):
         """
-        Perform binary classification on the input.
+        Make a binary decision based on text content.
 
         Args:
-            input_data (str or dict): Input to classify. If a dict, the 'input' field is used.
+            input_data (dict): Input containing text to analyze, expected to have
+                an 'input' field with the text content.
 
         Returns:
-            bool: True if input doesn't contain 'not', False otherwise.
+            str: 'true' if input contains positive indicators, 'false' otherwise.
 
         Note:
             This is a simplified implementation for demonstration purposes.
-            In production, this would typically use a more sophisticated
-            classification algorithm or call an LLM.
+            In production, this would typically use more sophisticated rules
+            or a trained classifier.
         """
-        # Extract text from dictionary if necessary
-        if isinstance(input_data, dict):
-            text = input_data.get("input", "")
-        else:
-            text = input_data
+        text = input_data.get("input", "")
+        if isinstance(text, dict):
+            text = text.get("input", "")
 
-        # Placeholder logic: in real use, this would call an LLM or heuristic
-        if isinstance(text, str) and "not" in text.lower():
-            return False
-        return True
+        positive = ["yes", "true", "correct"]
+        if any(p in text.lower() for p in positive):
+            return "true"
+        else:
+            return "false"
 
 
 class ClassificationAgent(BaseAgent):

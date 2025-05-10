@@ -1,7 +1,7 @@
 # OrKa: Orchestrator Kit Agents
 # Copyright © 2025 Marco Somma
 #
-# This file is part of OrKa – https://github.com/marcosomma/orka
+# This file is part of OrKa – https://github.com/marcosomma/orka-resoning
 #
 # Licensed under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
 # You may not use this file for commercial purposes without explicit permission.
@@ -9,75 +9,44 @@
 # Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
 # For commercial use, contact: marcosomma.work@gmail.com
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
+# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-Agent Base Module
+Agent Base Module (Legacy Compatibility Layer)
 ===============
 
-This module defines the abstract base class for all agents in the OrKa framework.
-It establishes the core contract that all agent implementations must follow,
-ensuring consistent behavior and interoperability within orchestrated workflows.
+This module provides backward compatibility for the legacy agent pattern
+by importing the LegacyBaseAgent class from the new base_agent.py module.
 
-The BaseAgent class provides:
-- Common initialization parameters shared by all agents
-- Abstract interface definition through the run() method
-- Type identification via the agent's class name
-- String representation for debugging and logging
+This file exists solely for backward compatibility and will be deprecated
+in future versions. New code should use the BaseAgent class from base_agent.py
+directly.
 
-All agent types in the OrKa framework inherit from this base class and implement
-the abstract methods according to their specific functionality. This inheritance
-hierarchy ensures that the orchestrator can work with any agent type through a
-consistent interface.
+Example of migrating from legacy to modern pattern:
+
+Old pattern:
+```python
+from orka.agents.agent_base import BaseAgent
+
+class MyAgent(BaseAgent):
+    def run(self, input_data):
+        # synchronous implementation
+        return result
+```
+
+New pattern:
+```python
+from orka.agents.base_agent import BaseAgent
+
+class MyAgent(BaseAgent):
+    async def _run_impl(self, ctx):
+        # async implementation
+        return result
+```
 """
 
-import abc
+# Import the compatibility class from the new implementation
+from .base_agent import LegacyBaseAgent as BaseAgent
 
-
-class BaseAgent(abc.ABC):
-    """
-    Abstract base class for all agents in the OrKa framework.
-    Defines the common interface and properties that all agents must implement.
-    """
-
-    def __init__(self, agent_id, prompt, queue, **kwargs):
-        """
-        Initialize the base agent with common properties.
-
-        Args:
-            agent_id (str): Unique identifier for the agent.
-            prompt (str): Prompt or instruction for the agent.
-            queue (list): Queue of agents or nodes to be processed.
-            **kwargs: Additional parameters specific to the agent type.
-        """
-        self.agent_id = agent_id
-        self.prompt = prompt
-        self.queue = queue
-        self.params = kwargs
-        self.type = self.__class__.__name__.lower()
-
-    @abc.abstractmethod
-    def run(self, input_data):
-        """
-        Abstract method to run the agent's reasoning process.
-        Must be implemented by all concrete agent classes.
-
-        Args:
-            input_data: Input data for the agent to process.
-
-        Returns:
-            The result of the agent's processing.
-
-        Raises:
-            NotImplementedError: If not implemented by a subclass.
-        """
-        pass
-
-    def __repr__(self):
-        """
-        Return a string representation of the agent.
-
-        Returns:
-            str: String representation showing agent class, ID, and queue.
-        """
-        return f"<{self.__class__.__name__} id={self.agent_id} queue={self.queue}>"
+# Re-export for backward compatibility
+__all__ = ["BaseAgent"]

@@ -1,7 +1,7 @@
 # OrKa: Orchestrator Kit Agents
 # Copyright © 2025 Marco Somma
 #
-# This file is part of OrKa – https://github.com/marcosomma/orka
+# This file is part of OrKa – https://github.com/marcosomma/orka-resoning
 #
 # Licensed under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
 # You may not use this file for commercial purposes without explicit permission.
@@ -9,7 +9,7 @@
 # Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
 # For commercial use, contact: marcosomma.work@gmail.com
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
+# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 from orka.agents.agents import BinaryAgent, ClassificationAgent
 from orka.agents.llm_agents import (
     OpenAIAnswerBuilder,
@@ -22,7 +22,7 @@ from orka.tools.search_tools import DuckDuckGoTool
 def test_binary_agent_run():
     agent = BinaryAgent(agent_id="test_bin", prompt="Is this true?", queue="test")
     output = agent.run({"input": "Cats are mammals."})
-    assert isinstance(output, bool)
+    assert output in ["true", "false"]
 
 
 def test_classification_agent_run():
@@ -38,7 +38,7 @@ def test_openai_binary_agent_run():
         agent_id="test_openai_bin", prompt="Is this real?", queue="test"
     )
     output = agent.run({"input": "Is water wet?"})
-    assert isinstance(output, bool)
+    assert output in ["true", "false"]
 
 
 def test_openai_classification_agent_run():
@@ -46,10 +46,10 @@ def test_openai_classification_agent_run():
         agent_id="test_openai_class",
         prompt="Classify:",
         queue="test",
-        options=["yes", "no"],
+        categories=["cat", "dog"],
     )
     output = agent.run({"input": "Sky is blue"})
-    assert output in ["yes", "no"]
+    assert output in ["cat", "dog"]
 
 
 def test_openai_answer_builder_run():

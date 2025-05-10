@@ -4,7 +4,7 @@
 
 ## 1. Install
 ```bash
-git clone https://github.com/marcosomma/orka.git
+git clone https://github.com/marcosomma/orka-resoning.git
 cd orka
 python -m venv .venv
 source .venv/bin/activate

@@ -1,17 +1,16 @@
 # OrKa: Orchestrator Kit Agents
 # Copyright © 2025 Marco Somma
 #
-# This file is part of OrKa – https://github.com/marcosomma/orka
+# This file is part of OrKa – https://github.com/marcosomma/orka-resoning
 #
 # Licensed under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
 # You may not use this file for commercial purposes without explicit permission.
 #
 # Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
 # For commercial use, contact: marcosomma.work@gmail.com
-# 
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
+#
+# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 # This file is an example of how to use OrKa to build a fact-checking agent.
-
 
 orchestrator:
   id: fact-checker
@@ -19,7 +18,7 @@ orchestrator:
   queue: orka:fact-core
   agents:
     - domain_classifier # < -- 1st agent Classifies the domain "science, geography, history, technology, date check, general"
-    - is_fact # < -- 2nd agent Classifies if the input is a fact or not 
+    - is_fact # < -- 2nd agent Classifies if the input is a fact or not
     - requires_search # < -- 3rd agent Classifies if the input requires external search or not
     - router_search # < -- 4th agent Routes to either duck_search or validate_fact based on requires_search
     - duck_search #     < -- IF YES > agent Performs web search using DuckDuckGo
@@ -33,7 +32,19 @@ agents:
     type: openai-classification
     prompt: >
       Classify this question {{ input }} one of the following domains
-    options: [science, geography, history, technology, date check, general, pople, culture, politics, sports]
+    options:
+      [
+        science,
+        geography,
+        history,
+        technology,
+        date check,
+        general,
+        pople,
+        culture,
+        politics,
+        sports,
+      ]
     queue: orka:domain
 
   - id: is_fact

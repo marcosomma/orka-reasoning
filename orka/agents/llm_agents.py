@@ -1,7 +1,7 @@
 # OrKa: Orchestrator Kit Agents
 # Copyright © 2025 Marco Somma
 #
-# This file is part of OrKa – https://github.com/marcosomma/orka
+# This file is part of OrKa – https://github.com/marcosomma/orka-resoning
 #
 # Licensed under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
 # You may not use this file for commercial purposes without explicit permission.
@@ -9,14 +9,14 @@
 # Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
 # For commercial use, contact: marcosomma.work@gmail.com
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
+# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 import os
 
 from dotenv import load_dotenv
 from openai import OpenAI
 
-from .agent_base import BaseAgent
+from .base_agent import LegacyBaseAgent as BaseAgent
 
 # Load environment variables
 load_dotenv()
@@ -62,70 +62,66 @@ class OpenAIAnswerBuilder(BaseAgent):
         return answer
 
 
-class OpenAIBinaryAgent(BaseAgent):
+class OpenAIBinaryAgent(OpenAIAnswerBuilder):
     """
-    An agent that performs binary classification using OpenAI's GPT models.
-    Returns True or False based on the input and prompt.
+    An agent that uses OpenAI's models to make binary (yes/no) decisions.
+
+    This agent processes the input text with GPT and extracts a true/false decision
+    from the generated response. It uses the same mechanism as the OpenAIAnswerBuilder
+    but interprets the output as a binary decision.
     """
 
     def run(self, input_data):
         """
-        Perform binary classification using OpenAI's GPT model.
+        Make a true/false decision using OpenAI's GPT model.
+
+        Args:
+            input_data (str): Input text to process.
+
+        Returns:
+            str: "true" or "false" based on the model's response.
+        """
+        # Get the full answer from the base class
+        answer = super().run(input_data)
+
+        # Convert to binary decision
+        positive_indicators = ["yes", "true", "correct", "right", "affirmative"]
+        for indicator in positive_indicators:
+            if indicator in answer.lower():
+                return "true"
+
+        return "false"
+
+
+class OpenAIClassificationAgent(OpenAIAnswerBuilder):
+    """
+    An agent that uses OpenAI's models to classify input into categories.
+
+    This agent processes the input text with GPT and classifies it into one of the
+    predefined categories based on the model's response. The categories can be
+    customized by setting them in the agent's params.
+    """
+
+    def run(self, input_data):
+        """
+        Classify input using OpenAI's GPT model.
 
         Args:
             input_data (str): Input text to classify.
 
         Returns:
-            bool: True if the model's response indicates positive, False otherwise.
+            str: Category name based on the model's classification.
         """
-        # Construct prompt with strict constraints for binary output
-        full_prompt = f"""
-            {self.prompt}\n\n{input_data}. 
-            ###Constrains: 
-            - Answer strictly TRUE or FALSE.
-        """
-        # Make API call to OpenAI
-        response = client.chat.completions.create(
-            model=OPENAI_MODEL,
-            messages=[{"role": "user", "content": full_prompt}],
-            temperature=1.0,  # Use deterministic output
-        )
-        # Parse the response into a boolean
-        answer = response.choices[0].message.content.strip().lower()
-        return answer in ["true", "yes", "1"]
+        # Get the full answer from the base class
+        answer = super().run(input_data)
 
+        # Extract categories from params or use defaults
+        categories = self.params.get("categories", ["cat", "dog"])
 
-class OpenAIClassificationAgent(BaseAgent):
-    """
-    An agent that performs multi-class classification using OpenAI's GPT models.
-    Returns one of the specified options based on the input.
-    """
+        # Simple classification approach: check for each category in the response
+        for category in categories:
+            if category.lower() in answer.lower():
+                return category
 
-    def run(self, input_data):
-        """
-        Perform multi-class classification using OpenAI's GPT model.
-
-        Args:
-            input_data (str): Input text to classify.
-
-        Returns:
-            str: Selected category from the available options, or "unknown" if no match.
-        """
-        # Get classification options from agent parameters
-        options = self.params.get("options", [])
-        # Construct prompt with constraints for classification
-        full_prompt = f"""{self.prompt}\n\n{input_data} 
-            ###Constrains: 
-            - Answer ONLY with one word.
-            - Answer ONLY with one of the options.
-            - Only pick from those options [{options}].
-        """
-        # Make API call to OpenAI
-        response = client.chat.completions.create(
-            model=OPENAI_MODEL,
-            messages=[{"role": "user", "content": full_prompt}],
-            temperature=1.0,  # Use deterministic output
-        )
-        # Parse the response and validate against options
-        answer = response.choices[0].message.content.strip().lower()
-        return answer if answer in options else "unknown"
+        # Default to the first category if none matched
+        return categories[0]

@@ -1,10 +1,10 @@
-# OrKa
+# OrKa-Reasoning
 
 <div align="center">
 
 <img src="https://orkacore.com/assets/ORKA_logo.png" alt="OrKa Logo" width="256" height="256"/>
 
-![Tests](https://github.com/marcosomma/orka-core/actions/workflows/tests.yml/badge.svg)
+![Tests](https://github.com/marcosomma/orka-resoning/actions/workflows/tests.yml/badge.svg)
 [![codecov](https://codecov.io/github/marcosomma/orka-reasoning/graph/badge.svg?token=V91X4WGBBZ)](https://codecov.io/github/marcosomma/orka-reasoning)
 
 [WEB](https://orkacore.com)
@@ -50,7 +50,7 @@ Click the thumbnail above to watch a quick video demo of OrKa in action — how 
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/marcosomma/orka.git
+   git clone https://github.com/marcosomma/orka-resoning.git
    cd orka
    ```
 
