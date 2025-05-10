@@ -6,7 +6,7 @@
 # Licensed under the Apache License, Version 2.0 (Apache 2.0).
 # You may not use this file for commercial purposes without explicit permission.
 #
-# Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
 # For commercial use, contact: marcosomma.work@gmail.com
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
