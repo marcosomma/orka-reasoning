@@ -10,6 +10,8 @@
 # For commercial use, contact: marcosomma.work@gmail.com
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
+import asyncio
+import logging
 import os
 import sys
 import time
@@ -21,6 +23,39 @@ import redis
 from fake_redis import FakeRedisClient
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+# Set up basic logging configuration
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+
+# Check if pytest-asyncio is available
+try:
+    import pytest_asyncio
+
+    print("pytest-asyncio is installed ✓")
+except ImportError:
+    print("\nWARNING: pytest-asyncio not found. Async tests might be skipped.")
+    print("Install with: pip install pytest-asyncio\n")
+
+# Import required modules
+try:
+    from orka.nodes.fork_node import ForkGroupManager
+except ImportError:
+    # Create stub for testing
+    class ForkGroupManager:
+        def remove_group(self, group_id):
+            raise KeyError(f"Group {group_id} not found")
+
+
+try:
+    from orka import cli as orka_cli
+except ImportError:
+    # Create stub module if not available
+    import types
+
+    orka_cli = types.ModuleType("orka_cli")
+    sys.modules["orka_cli"] = orka_cli
 
 # Global flag to determine if we're using real Redis
 USE_REAL_REDIS = os.getenv("USE_REAL_REDIS", "false").lower() == "true"
@@ -124,3 +159,11 @@ def redis_client():
         # Since FakeRedisClient doesn't support flushdb, we'll clear each key type
         for key in client._keys():
             client.delete(key)
+
+
+# Define a custom event loop policy that pytest-asyncio can use
+@pytest.fixture(scope="session")
+def event_loop_policy():
+    """Return the event loop policy to use for tests."""
+    # Use the default policy for now
+    return asyncio.get_event_loop_policy()

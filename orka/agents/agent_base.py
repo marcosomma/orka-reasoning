@@ -11,6 +11,26 @@
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 
+"""
+Agent Base Module
+===============
+
+This module defines the abstract base class for all agents in the OrKa framework.
+It establishes the core contract that all agent implementations must follow,
+ensuring consistent behavior and interoperability within orchestrated workflows.
+
+The BaseAgent class provides:
+- Common initialization parameters shared by all agents
+- Abstract interface definition through the run() method
+- Type identification via the agent's class name
+- String representation for debugging and logging
+
+All agent types in the OrKa framework inherit from this base class and implement
+the abstract methods according to their specific functionality. This inheritance
+hierarchy ensures that the orchestrator can work with any agent type through a
+consistent interface.
+"""
+
 import abc
 
 

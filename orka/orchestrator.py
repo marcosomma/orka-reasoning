@@ -17,6 +17,7 @@
 import asyncio
 import inspect
 import json
+import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -33,12 +34,14 @@ from .nodes import failing_node, failover_node, fork_node, join_node, router_nod
 from .nodes.memory_reader_node import MemoryReaderNode
 from .nodes.memory_writer_node import MemoryWriterNode
 
+logger = logging.getLogger(__name__)
+
 AGENT_TYPES = {
     "binary": agents.BinaryAgent,
     "classification": agents.ClassificationAgent,
+    "openai-answer": llm_agents.OpenAIAnswerBuilder,
     "openai-binary": llm_agents.OpenAIBinaryAgent,
     "openai-classification": llm_agents.OpenAIClassificationAgent,
-    "openai-answer": llm_agents.OpenAIAnswerBuilder,
     "google-search": google_duck_agents.GoogleSearchAgent,
     "duckduckgo": google_duck_agents.DuckDuckGoAgent,
     "router": router_node.RouterNode,
@@ -46,7 +49,7 @@ AGENT_TYPES = {
     "failing": failing_node.FailingNode,
     "join": join_node.JoinNode,
     "fork": fork_node.ForkNode,
-    "memory": MemoryReaderNode,  # Will be handled specially in init_single_agent
+    "memory": "special_handler",  # This will be handled specially in init_single_agent
 }
 
 
@@ -140,8 +143,8 @@ class Orchestrator:
                     node_id=agent_id, prompt=prompt, queue=queue, **clean_cfg
                 )
 
-            # Add a special case for memory agent type handling
-            if agent_type == "memory":
+            # Special handling for memory agent type
+            if agent_type == "memory" or agent_cls == "special_handler":
                 # Special handling for memory nodes based on operation
                 operation = cfg.get("config", {}).get("operation", "read")
                 prompt = cfg.get("prompt", None)

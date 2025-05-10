@@ -11,6 +11,23 @@
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 
+"""
+OrKa Agents Package
+=================
+
+This package contains all agent implementations for the OrKa framework.
+Agents are the fundamental building blocks that perform specific tasks
+within orchestrated workflows.
+
+Available Agent Types:
+-------------------
+- Base Agent: Abstract base class that defines the agent interface
+- Binary Agent: Makes binary (yes/no) decisions based on input
+- Classification Agent: Classifies input into predefined categories
+- LLM Agents: Integrations with large language models (OpenAI)
+- Search Agents: Web search capabilities (Google, DuckDuckGo)
+"""
+
 from .agent_base import BaseAgent
 from .agents import BinaryAgent, ClassificationAgent
 from .google_duck_agents import DuckDuckGoAgent, GoogleSearchAgent
@@ -19,8 +36,3 @@ from .llm_agents import (
     OpenAIBinaryAgent,
     OpenAIClassificationAgent,
 )
-from .memory_agent import MemoryAgent
-
-AGENT_REGISTRY = {
-    "memory": MemoryAgent,
-}

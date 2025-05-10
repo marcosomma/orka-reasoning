@@ -10,6 +10,34 @@
 # For commercial use, contact: marcosomma.work@gmail.com
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
+
+"""
+Fork Group Manager
+=================
+
+The Fork Group Manager is responsible for coordinating parallel execution branches
+in the OrKa orchestration framework. It provides functionality to create, track, and
+manage groups of agents that need to run in parallel, with synchronization points
+for gathering their results.
+
+Primary responsibilities:
+------------------------
+1. Creating fork groups and registering agents within them
+2. Tracking the completion status of parallel-executing agents
+3. Determining when all branches of execution have completed
+4. Managing the sequence of agents within each execution branch
+5. Providing utilities for generating unique group IDs and Redis keys
+
+This module enables complex workflow patterns like:
+- Parallel processing of the same input with different agents
+- Fan-out/fan-in patterns where work is distributed and then collected
+- Sequential chains of agents within parallel branches
+- Dynamic branching based on intermediate results
+
+The implementation uses Redis as a coordination mechanism to ensure reliable
+operation in distributed environments.
+"""
+
 import time
 
 
@@ -17,6 +45,10 @@ class ForkGroupManager:
     """
     Manages fork groups in the OrKa orchestrator.
     Handles the creation, tracking, and cleanup of fork groups for parallel execution.
+
+    A fork group represents a set of agent execution paths that need to run in parallel
+    and eventually be synchronized. This manager keeps track of which agents are part of
+    each group and which ones have completed their execution.
     """
 
     def __init__(self, redis_client):

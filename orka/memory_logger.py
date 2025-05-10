@@ -11,6 +11,39 @@
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 
+"""
+Memory Logger
+============
+
+The Memory Logger is a critical component of the OrKa framework that provides
+persistent storage and retrieval capabilities for orchestration events, agent outputs,
+and system state. It serves as both a runtime memory system and an audit trail for
+agent workflows.
+
+Key Features:
+------------
+1. Event Logging: Records all agent activities and system events
+2. Data Persistence: Stores data in Redis streams for reliability
+3. Serialization: Handles conversion of complex Python objects to JSON-serializable formats
+4. Error Resilience: Implements fallback mechanisms for handling serialization errors
+5. Querying: Provides methods to retrieve recent events and specific data points
+6. File Export: Supports exporting memory logs to files for analysis
+
+The Memory Logger is essential for:
+- Enabling agents to access past context and outputs
+- Debugging and auditing agent workflows
+- Maintaining state across distributed components
+- Supporting complex workflow patterns like fork/join
+
+Implementation Notes:
+-------------------
+- Uses Redis streams as the primary storage backend
+- Maintains an in-memory buffer for fast access to recent events
+- Implements robust sanitization to handle non-serializable objects
+- Provides helper methods for common Redis operations
+- Includes a placeholder for future Kafka-based implementation
+"""
+
 import json
 import logging
 import os
