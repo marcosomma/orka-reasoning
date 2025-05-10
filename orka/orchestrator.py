@@ -146,16 +146,34 @@ class Orchestrator:
                 operation = cfg.get("config", {}).get("operation", "read")
                 prompt = cfg.get("prompt", None)
                 queue = cfg.get("queue", None)
+                namespace = cfg.get("namespace", "default")
+
+                # Clean the config to remove any already processed fields
+                memory_cfg = clean_cfg.copy()
 
                 if operation == "write":
                     # Use memory writer node for write operations
+                    vector_enabled = memory_cfg.get("vector", False)
                     return MemoryWriterNode(
-                        node_id=agent_id, prompt=prompt, queue=queue
+                        node_id=agent_id,
+                        prompt=prompt,
+                        queue=queue,
+                        namespace=namespace,
+                        vector=vector_enabled,
+                        key_template=cfg.get("key_template"),
+                        metadata=cfg.get("metadata", {}),
                     )
                 else:  # default to read
                     # Use memory reader node for read operations
                     return MemoryReaderNode(
-                        node_id=agent_id, prompt=prompt, queue=queue
+                        node_id=agent_id,
+                        prompt=prompt,
+                        queue=queue,
+                        namespace=namespace,
+                        limit=memory_cfg.get("limit", 10),
+                        similarity_threshold=memory_cfg.get(
+                            "similarity_threshold", 0.6
+                        ),
                     )
 
             # Default agent instantiation
