@@ -1,4 +1,4 @@
-[📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
+[📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
 
 # OrKa – Orchestrator Kit for Agentic Reasoning  ***(Patent Pending)***
 
@@ -14,7 +14,7 @@ OrKa is a lightweight SDK and orchestration runtime for defining cognitive pipel
 
 It shifts AI orchestration from monolithic prompting or hard-coded chains to a **distributed cognition model**, where each step is handled by a distinct reasoning agent: classifiers, validators, searchers and more.
 
-Every step is logged, inspectable, and overrideable. OrKa doesn’t hide the process — it **lets you observe cognition as it unfolds**.
+Every step is logged, inspectable, and overrideable. OrKa doesn't hide the process — it **lets you observe cognition as it unfolds**.
 
 ---
 
@@ -63,7 +63,7 @@ Jump into [`example.yaml`](../example.yaml) and try running:
 
 ```bash
 python test_run.py
-````
+```
 
 ## 🛣 Roadmap
 
@@ -77,7 +77,7 @@ python test_run.py
 
 ## 🤝 Collaboration & Philosophy
 OrKa is an open research framework as much as it is a dev tool.
-It’s built on the belief that AI cognition should be explainable, inspectable, and composable — not opaque.
+It's built on the belief that AI cognition should be explainable, inspectable, and composable — not opaque.
 
 This project welcomes collaboration with:
 
@@ -93,4 +93,4 @@ This project welcomes collaboration with:
 ---
 ***Built** by Marco Somma, multipotentialite, AI engineer, and builder of cognitive tools that think out loud.*
 
-[📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
+[📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)

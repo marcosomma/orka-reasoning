@@ -1,10 +1,12 @@
-[📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md)
+[📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
 
 # Agent Types in OrKa ***(Patent Pending)***
 
 In OrKa, **agents** are modular processing units that receive input and return structured output — all orchestrated via a declarative YAML configuration.
 
 Agents can represent different cognitive functions: classification, decision-making, web search, conditional routing, and more.
+
+The OrKa framework uses a unified agent base implementation that supports both modern asynchronous patterns and legacy synchronous patterns for backward compatibility.
 
 ---
 
@@ -14,7 +16,7 @@ Agents can represent different cognitive functions: classification, decision-mak
 
 ### 🔘 `binary`
 
-Returns a boolean (`True` or `False`) based on a question or statement.
+Returns a boolean (`"true"` or `"false"` as strings) based on a question or statement.
 
 **Use case:**  
 Fact checking, condition validation, flag triggering.
@@ -85,30 +87,49 @@ Branching logic, optional agent execution, fallback control.
   type: router
   decision_key: requires_search
   routing_map:
-    true: [search, validate_fact]
-    false: [validate_fact]
+    "true": [search, validate_fact]
+    "false": [validate_fact]
 ```
 
 ---
 
 ## 🛠 Custom Agents
 
-You can subclass `BaseAgent` and define your own agent type:
+OrKa supports two patterns for creating custom agents:
+
+### Modern Async Pattern (Recommended)
 
 ```python
+from orka.agents.base_agent import BaseAgent
+
+class MyCustomAgent(BaseAgent):
+    async def _run_impl(self, ctx):
+        # Process input asynchronously
+        input_data = ctx.get("input")
+        result = await self.process(input_data)
+        return result
+```
+
+### Legacy Sync Pattern (Backward Compatibility)
+
+```python
+from orka.agents.agent_base import BaseAgent  # Legacy compatibility layer
+
 class MyCustomAgent(BaseAgent):
     def run(self, input_data):
+        # Process input synchronously
         return {"result": "custom processing"}
 ```
 
-Then reference it via `type: custom` and load dynamically via plugin hooks (planned feature).
+See [Extending Agents](./extending-agents.md) for more details.
 
 ---
 
 ## 🚦 Agent Execution Rules
 
-- All agents receive either a raw `input_data` or a `payload` with previous outputs.
-- Outputs are logged to Redis stream via `MemoryLogger`
+- All agents receive either a raw `input_data` or a `ctx` with input and metadata
+- Outputs are standardized with status, result, and error information
+- Modern agents support concurrency control and timeout handling
 - Routing agents modify the orchestration queue at runtime
 
 ---
@@ -124,4 +145,4 @@ Then reference it via `type: custom` and load dynamically via plugin hooks (plan
 
 Agents are the core cognitive unit of OrKa — build your system by composing them.
 
-[📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md)
+[📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)

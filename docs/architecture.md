@@ -1,4 +1,4 @@
-[📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
+[📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
 
 # OrKa Architecture ***(Patent Pending)***
 
@@ -44,6 +44,39 @@ This document breaks down the key architectural components and how they work tog
 
 ---
 
+## 🔁 Agent Implementation
+
+OrKa uses a unified agent base implementation with two supported patterns:
+
+### Modern Async Pattern
+```python
+from orka.agents.base_agent import BaseAgent
+
+class MyAgent(BaseAgent):
+    async def _run_impl(self, ctx):
+        # Async implementation with full context
+        return result
+```
+
+### Legacy Sync Pattern
+```python
+from orka.agents.agent_base import BaseAgent  # Legacy compatibility
+
+class MyAgent(BaseAgent):
+    def run(self, input_data):
+        # Sync implementation with direct input
+        return result
+```
+
+Both patterns are supported through a unified execution model that provides:
+- Concurrency control
+- Timeout handling
+- Standardized error handling
+- Consistent output formatting
+- Resource lifecycle management
+
+---
+
 ## 🔁 Message Passing
 
 - **Queueing model:** Each agent has its own Redis channel/stream.
@@ -58,6 +91,7 @@ OrKa is fully driven by `orka.yaml`, which defines:
 - Agent IDs and types
 - Prompts and behavior
 - Execution strategy (sequential)
+- Timeout and concurrency settings (for modern agents)
 
 This allows reproducible reasoning pipelines and declarative logic.
 
@@ -74,7 +108,8 @@ All agent outputs are logged with metadata:
   "timestamp": "2024-04-12T18:00:00Z",
   "payload": {
     "input": "Was the Eiffel Tower built before 1900?",
-    "result": true
+    "result": "true",
+    "status": "success"
   }
 }
 ```
@@ -92,7 +127,7 @@ All agent outputs are logged with metadata:
 
 ---
 
-OrKa’s architecture is intentionally minimal, observable, and composable — so you can build LLM-based cognition that doesn’t disappear into a black box.
+OrKa's architecture is intentionally minimal, observable, and composable — so you can build LLM-based cognition that doesn't disappear into a black box.
 
-[📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
+[📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
 

@@ -1,4 +1,4 @@
-[📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
+[📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
 
 # Getting Started with OrKa
 
@@ -32,8 +32,31 @@ redis-cli xrevrange orka:memory + - COUNT 5
 - Change prompts
 - Add agents
 - Insert fallback paths
+- Configure timeouts and concurrency limits
 
-## 6. Need Help?
+## 6. Create Custom Agent
+```python
+# Modern async pattern (recommended)
+from orka.agents.base_agent import BaseAgent
+
+class MyCustomAgent(BaseAgent):
+    async def _run_impl(self, ctx):
+        input_data = ctx.get("input")
+        # Your custom processing logic
+        return "processed result"
+```
+
+## 7. Add to Your YAML Config
+```yaml
+- id: my_agent
+  type: my_custom_agent
+  prompt: Process this input
+  queue: orka:my_agent
+  timeout: 30.0  # Optional: Set custom timeout
+  max_concurrency: 5  # Optional: Set concurrency limit
+```
+
+## 8. Need Help?
 GitHub issues or Discord: https://discord.gg/UthTN8Xu
 
-[📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
+[📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
