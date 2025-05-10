@@ -25,12 +25,10 @@ Available Agent Types:
 - Binary Agent: Makes binary (yes/no) decisions based on input
 - Classification Agent: Classifies input into predefined categories
 - LLM Agents: Integrations with large language models (OpenAI)
-- Search Agents: Web search capabilities (Google, DuckDuckGo)
 """
 
 from .agent_base import BaseAgent
 from .agents import BinaryAgent, ClassificationAgent
-from .google_duck_agents import DuckDuckGoAgent, GoogleSearchAgent
 from .llm_agents import (
     OpenAIAnswerBuilder,
     OpenAIBinaryAgent,

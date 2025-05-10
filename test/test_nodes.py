@@ -18,7 +18,6 @@ import numpy as np
 import pytest
 from fake_redis import FakeRedisClient
 
-from orka.agents.google_duck_agents import DuckDuckGoAgent
 from orka.memory_logger import RedisMemoryLogger
 from orka.nodes.failing_node import FailingNode
 from orka.nodes.failover_node import FailoverNode
@@ -28,6 +27,7 @@ from orka.nodes.memory_reader_node import MemoryReaderNode
 from orka.nodes.memory_writer_node import MemoryWriterNode
 from orka.nodes.rag_node import RAGNode
 from orka.nodes.router_node import RouterNode
+from orka.tools.search_tools import DuckDuckGoTool
 
 
 class MockRedisClient:
@@ -142,7 +142,18 @@ def test_router_node_with_complex_condition():
 
 def test_failover_node_run():
     failing_child = FailingNode(node_id="fail", prompt="Broken", queue="test")
-    backup_child = DuckDuckGoAgent(agent_id="backup", prompt="Search", queue="test")
+
+    # Create a wrapper for DuckDuckGoTool to make it compatible with FailoverNode
+    class DuckDuckGoToolAdapter(DuckDuckGoTool):
+        def __init__(self, tool_id, prompt, queue, **kwargs):
+            super().__init__(tool_id=tool_id, prompt=prompt, queue=queue, **kwargs)
+            # Add node_id attribute that FailoverNode can identify
+            self.node_id = tool_id
+
+    backup_child = DuckDuckGoToolAdapter(
+        tool_id="backup", prompt="Search", queue="test"
+    )
+
     failover = FailoverNode(
         node_id="test_failover", children=[failing_child, backup_child], queue="test"
     )

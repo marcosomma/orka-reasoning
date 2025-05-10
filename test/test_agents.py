@@ -11,12 +11,12 @@
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka
 from orka.agents.agents import BinaryAgent, ClassificationAgent
-from orka.agents.google_duck_agents import DuckDuckGoAgent
 from orka.agents.llm_agents import (
     OpenAIAnswerBuilder,
     OpenAIBinaryAgent,
     OpenAIClassificationAgent,
 )
+from orka.tools.search_tools import DuckDuckGoTool
 
 
 def test_binary_agent_run():
@@ -61,8 +61,8 @@ def test_openai_answer_builder_run():
     assert len(output) > 5
 
 
-def test_duckduckgo_agent_run():
-    agent = DuckDuckGoAgent(agent_id="test_duck", prompt="Search:", queue="test")
-    output = agent.run({"input": "OrKa project"})
+def test_duckduckgo_tool_run():
+    tool = DuckDuckGoTool(tool_id="test_duck", prompt="Search:", queue="test")
+    output = tool.run({"input": "OrKa project"})
     assert isinstance(output, list)
     assert len(output) > 0

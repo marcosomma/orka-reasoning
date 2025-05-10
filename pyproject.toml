@@ -59,11 +59,10 @@ testpaths = ["test"]
 python_files = "test_*.py"
 python_functions = "test_*"
 pythonpath = ["."]
-addopts = "--cov=orka --cov-report=xml:coverage.xml --cov-report=term"
+addopts = "--cov=orka --cov-report=xml:coverage.xml --cov-report=term --no-cov-on-fail"
 
 [tool.coverage.run]
 source = ["orka"]
-include = ["orka/**/*.py"]
 omit = [
     "*/site-packages/*",
     "*/tests/*",

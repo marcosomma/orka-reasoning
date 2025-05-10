@@ -26,13 +26,14 @@ from uuid import uuid4
 
 from jinja2 import Template
 
-from .agents import agents, google_duck_agents, llm_agents
+from .agents import agents, llm_agents
 from .fork_group_manager import ForkGroupManager
 from .loader import YAMLLoader
 from .memory_logger import RedisMemoryLogger
 from .nodes import failing_node, failover_node, fork_node, join_node, router_node
 from .nodes.memory_reader_node import MemoryReaderNode
 from .nodes.memory_writer_node import MemoryWriterNode
+from .tools.search_tools import DuckDuckGoTool
 
 logger = logging.getLogger(__name__)
 
@@ -42,8 +43,7 @@ AGENT_TYPES = {
     "openai-answer": llm_agents.OpenAIAnswerBuilder,
     "openai-binary": llm_agents.OpenAIBinaryAgent,
     "openai-classification": llm_agents.OpenAIClassificationAgent,
-    "google-search": google_duck_agents.GoogleSearchAgent,
-    "duckduckgo": google_duck_agents.DuckDuckGoAgent,
+    "duckduckgo": DuckDuckGoTool,
     "router": router_node.RouterNode,
     "failover": failover_node.FailoverNode,
     "failing": failing_node.FailingNode,
@@ -178,6 +178,14 @@ class Orchestrator:
                             "similarity_threshold", 0.6
                         ),
                     )
+
+            # Special handling for search tools
+            if agent_type in ("duckduckgo"):
+                prompt = cfg.get("prompt", None)
+                queue = cfg.get("queue", None)
+                return agent_cls(
+                    tool_id=agent_id, prompt=prompt, queue=queue, **clean_cfg
+                )
 
             # Default agent instantiation
             prompt = cfg.get("prompt", None)
