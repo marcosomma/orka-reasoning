@@ -2,10 +2,9 @@ name: Tests
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [master, main]
   pull_request:
-    branches: [ master, main ]
-
+    branches: [master, main]
 
 jobs:
   test:
@@ -23,7 +22,7 @@ jobs:
           --health-retries 5
 
     env:
-      OPENAI_API_KEY:  ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       BASE_OPENAI_MODEL: gpt-4o-mini
 
     steps:
@@ -33,7 +32,7 @@ jobs:
       - name: 🐍 Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: "3.9"
 
       - name: 📦 Install dependencies
         run: |
@@ -43,7 +42,7 @@ jobs:
 
       - name: 🧪 Run tests with coverage
         run: |
-          pytest --cov=orka --cov-branch --cov-report=xml
+          pytest --cov=orka-reasoning --cov-branch --cov-report=xml
 
       - name: 📤 Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
