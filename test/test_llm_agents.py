@@ -22,10 +22,31 @@ try:
         OpenAIAnswerBuilder,
         OpenAIBinaryAgent,
         OpenAIClassificationAgent,
+        client,  # Import the client directly to mock it
     )
 except (ImportError, AttributeError):
     # Skip tests if imports fail
     pytest.skip("LLM agents not properly configured", allow_module_level=True)
+
+
+# Create a module-level mock so all tests use the same mock
+@pytest.fixture(autouse=True)
+def mock_openai_client():
+    with patch("orka.agents.llm_agents.client") as mock_client:
+        # Create a nested mock structure to match the OpenAI client
+        mock_chat = MagicMock()
+        mock_client.chat = mock_chat
+        mock_completions = MagicMock()
+        mock_chat.completions = mock_completions
+
+        # Setup the standard response format
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message = MagicMock()
+        mock_response.choices[0].message.content = "Test response"
+        mock_completions.create.return_value = mock_response
+
+        yield mock_client
 
 
 class TestOpenAIAnswerBuilder:
@@ -50,16 +71,12 @@ class TestOpenAIAnswerBuilder:
             assert agent.params["model"] == "gpt-3.5-turbo"
             assert agent.params["temperature"] == 0.7
 
-    # Use patch at module level where OpenAI client is actually used
-    @patch("orka.agents.llm_agents.client.chat.completions.create")
-    def test_run_with_valid_response(self, mock_create):
+    def test_run_with_valid_response(self, mock_openai_client):
         """Test OpenAI API calls"""
-        # Set up the mock response
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message = MagicMock()
-        mock_response.choices[0].message.content = "This is a test answer"
-        mock_create.return_value = mock_response
+        # Set custom response content for this test
+        mock_openai_client.chat.completions.create.return_value.choices[
+            0
+        ].message.content = "This is a test answer"
 
         # Create the agent
         agent = OpenAIAnswerBuilder(
@@ -72,23 +89,18 @@ class TestOpenAIAnswerBuilder:
         result = agent.run({"question": "What is the meaning of life?"})
 
         # Verify the API was called
-        assert mock_create.called
+        assert mock_openai_client.chat.completions.create.called
 
         # Verify the result
-        if (
-            result is not None
-        ):  # We might get None if the agent failed to parse the mock response
-            assert isinstance(result, str)
+        assert isinstance(result, str)
+        assert result == "This is a test answer"
 
-    @patch("orka.agents.llm_agents.client.chat.completions.create")
-    def test_run_with_template_variables(self, mock_create):
+    def test_run_with_template_variables(self, mock_openai_client):
         """Test template variable substitution"""
-        # Set up the mock response
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message = MagicMock()
-        mock_response.choices[0].message.content = "42"
-        mock_create.return_value = mock_response
+        # Set custom response content for this test
+        mock_openai_client.chat.completions.create.return_value.choices[
+            0
+        ].message.content = "42"
 
         # Create the agent
         agent = OpenAIAnswerBuilder(
@@ -106,17 +118,16 @@ class TestOpenAIAnswerBuilder:
         )
 
         # Verify the API was called
-        assert mock_create.called
+        assert mock_openai_client.chat.completions.create.called
 
-        # Verify the result if possible
-        if result is not None:
-            assert isinstance(result, str)
+        # Verify the result
+        assert isinstance(result, str)
+        assert result == "42"
 
-    @patch("orka.agents.llm_agents.client.chat.completions.create")
-    def test_run_with_error(self, mock_create):
+    def test_run_with_error(self, mock_openai_client):
         """Test error handling"""
         # Set the mock to raise an exception
-        mock_create.side_effect = Exception("API Error")
+        mock_openai_client.chat.completions.create.side_effect = Exception("API Error")
 
         # Create the agent
         agent = OpenAIAnswerBuilder(
@@ -125,39 +136,21 @@ class TestOpenAIAnswerBuilder:
             queue="test_queue",
         )
 
-        try:
-            # Run the agent
-            result = agent.run({"question": "What is the meaning of life?"})
+        # Run the agent and expect an exception
+        with pytest.raises(Exception) as excinfo:
+            agent.run({"question": "What is the meaning of life?"})
 
-            # If we get here, it means the agent didn't propagate the exception
-            # This could happen in two scenarios:
-            # 1. The agent caught the exception and returned an error message
-            # 2. The mock didn't work and a real API call was made
-
-            # Check if result contains an error message
-            if result and "error" in str(result).lower():
-                # Case 1: The agent caught the exception - this is good
-                pass
-            else:
-                # Case 2: The mock didn't work and we got a real response
-                # In this case, we just check that we got a string result
-                assert isinstance(result, str)
-                print("WARNING: Mock was bypassed, a real API call was made")
-        except Exception as e:
-            # If an exception was propagated, it should contain our mock error
-            assert "API Error" in str(e)
+        # Verify the correct exception was raised
+        assert "API Error" in str(excinfo.value)
 
 
 class TestOpenAIBinaryAgent:
-    @patch("orka.agents.llm_agents.client.chat.completions.create")
-    def test_binary_agent_yes_response(self, mock_create):
+    def test_binary_agent_yes_response(self, mock_openai_client):
         """Test OpenAIBinaryAgent with 'yes' response"""
-        # Set up the mock response
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message = MagicMock()
-        mock_response.choices[0].message.content = "Yes"
-        mock_create.return_value = mock_response
+        # Set custom response content for this test
+        mock_openai_client.chat.completions.create.return_value.choices[
+            0
+        ].message.content = "Yes"
 
         # Create the agent
         agent = OpenAIBinaryAgent(
@@ -173,15 +166,12 @@ class TestOpenAIBinaryAgent:
         # It might return True or "true" depending on implementation
         assert result is True or result == "true"
 
-    @patch("orka.agents.llm_agents.client.chat.completions.create")
-    def test_binary_agent_no_response(self, mock_create):
+    def test_binary_agent_no_response(self, mock_openai_client):
         """Test OpenAIBinaryAgent with 'no' response"""
-        # Set up the mock response
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message = MagicMock()
-        mock_response.choices[0].message.content = "No"
-        mock_create.return_value = mock_response
+        # Set custom response content for this test
+        mock_openai_client.chat.completions.create.return_value.choices[
+            0
+        ].message.content = "No"
 
         # Create the agent
         agent = OpenAIBinaryAgent(
@@ -197,15 +187,12 @@ class TestOpenAIBinaryAgent:
         # It might return False or "false" depending on implementation
         assert result is False or result == "false"
 
-    @patch("orka.agents.llm_agents.client.chat.completions.create")
-    def test_binary_agent_invalid_response(self, mock_create):
+    def test_binary_agent_invalid_response(self, mock_openai_client):
         """Test OpenAIBinaryAgent with invalid response"""
-        # Set up the mock response with unclear answer
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message = MagicMock()
-        mock_response.choices[0].message.content = "Maybe, it depends"
-        mock_create.return_value = mock_response
+        # Set custom response content for this test
+        mock_openai_client.chat.completions.create.return_value.choices[
+            0
+        ].message.content = "Maybe, it depends"
 
         # Create the agent
         agent = OpenAIBinaryAgent(
@@ -225,15 +212,12 @@ class TestOpenAIBinaryAgent:
 
 
 class TestOpenAIClassificationAgent:
-    @patch("orka.agents.llm_agents.client.chat.completions.create")
-    def test_classification_agent_valid_class(self, mock_create):
+    def test_classification_agent_valid_class(self, mock_openai_client):
         """Test OpenAIClassificationAgent with valid class"""
-        # Set up the mock response
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message = MagicMock()
-        mock_response.choices[0].message.content = "fruit"
-        mock_create.return_value = mock_response
+        # Set custom response content for this test
+        mock_openai_client.chat.completions.create.return_value.choices[
+            0
+        ].message.content = "fruit"
 
         # Create the agent with categories
         categories = ["fruit", "vegetable", "meat"]
@@ -252,15 +236,12 @@ class TestOpenAIClassificationAgent:
         if result is not None:
             assert isinstance(result, str)
 
-    @patch("orka.agents.llm_agents.client.chat.completions.create")
-    def test_classification_agent_invalid_class(self, mock_create):
+    def test_classification_agent_invalid_class(self, mock_openai_client):
         """Test OpenAIClassificationAgent with invalid class"""
-        # Set up the mock response with a category not in the list
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message = MagicMock()
-        mock_response.choices[0].message.content = "dessert"
-        mock_create.return_value = mock_response
+        # Set custom response content for this test
+        mock_openai_client.chat.completions.create.return_value.choices[
+            0
+        ].message.content = "dessert"
 
         # Create the agent with categories
         categories = ["fruit", "vegetable", "meat"]
@@ -277,15 +258,12 @@ class TestOpenAIClassificationAgent:
         # The implementation might return None or have a default category
         # We just verify that the call completed successfully
 
-    @patch("orka.agents.llm_agents.client.chat.completions.create")
-    def test_classification_agent_case_insensitive(self, mock_create):
+    def test_classification_agent_case_insensitive(self, mock_openai_client):
         """Test OpenAIClassificationAgent with case differences"""
-        # Set up the mock response with uppercase
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message = MagicMock()
-        mock_response.choices[0].message.content = "FRUIT"
-        mock_create.return_value = mock_response
+        # Set custom response content for this test
+        mock_openai_client.chat.completions.create.return_value.choices[
+            0
+        ].message.content = "FRUIT"
 
         # Create the agent with categories
         categories = ["fruit", "vegetable", "meat"]

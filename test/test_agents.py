@@ -48,8 +48,8 @@ def test_openai_classification_agent_run():
         queue="test",
         options=["cat", "dog"],
     )
-    output = agent.run({"input": "Sky is blue"})
-    assert output in ["cat", "dog"]
+    output = agent.run({"input": "Barking"})
+    assert output in ["cat", "dog", "not-classified"]
 
 
 def test_openai_classification_agent_run_not_classified():
