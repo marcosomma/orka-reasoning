@@ -16,36 +16,49 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-# Import the agents first to avoid circular imports
+# Import the agents directly from the package
+# Use a variable to track if imports succeeded
+llm_imports_succeeded = True
 try:
-    from orka.agents.llm_agents import (
+    from orka.agents import (
         OpenAIAnswerBuilder,
         OpenAIBinaryAgent,
         OpenAIClassificationAgent,
-        client,  # Import the client directly to mock it
     )
-except (ImportError, AttributeError):
-    # Skip tests if imports fail
+
+    # Import the client directly from the module
+    from orka.agents.llm_agents import client
+except (ImportError, AttributeError) as e:
+    print(f"WARNING: Failed to import OpenAI agents: {e}")
+    llm_imports_succeeded = False
+
+# Skip all tests if imports failed
+if not llm_imports_succeeded:
     pytest.skip("LLM agents not properly configured", allow_module_level=True)
 
 
 # Create a module-level mock so all tests use the same mock
 @pytest.fixture(autouse=True)
 def mock_openai_client():
-    with patch("orka.agents.llm_agents.client") as mock_client:
-        # Create a nested mock structure to match the OpenAI client
-        mock_chat = MagicMock()
-        mock_client.chat = mock_chat
-        mock_completions = MagicMock()
-        mock_chat.completions = mock_completions
+    # Create the mock structure
+    mock_client = MagicMock()
+    mock_chat = MagicMock()
+    mock_client.chat = mock_chat
+    mock_completions = MagicMock()
+    mock_chat.completions = mock_completions
 
-        # Setup the standard response format
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message = MagicMock()
-        mock_response.choices[0].message.content = "Test response"
-        mock_completions.create.return_value = mock_response
+    # Setup the standard response format
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock()]
+    mock_response.choices[0].message = MagicMock()
+    mock_response.choices[0].message.content = "Test response"
+    mock_completions.create.return_value = mock_response
 
+    # Patch multiple potential import paths to ensure we catch all usages
+    with (
+        patch("orka.agents.llm_agents.client", mock_client),
+        patch("orka.agents.llm_agents.OpenAI", return_value=mock_client),
+    ):
         yield mock_client
 
 
