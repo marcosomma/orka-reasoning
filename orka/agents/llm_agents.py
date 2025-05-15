@@ -116,7 +116,7 @@ class OpenAIClassificationAgent(OpenAIAnswerBuilder):
         answer = super().run(input_data)
 
         # Extract categories from params or use defaults
-        categories = self.params.get("categories", ["cat", "dog"])
+        categories = self.params.get("options", [])
 
         # Simple classification approach: check for each category in the response
         for category in categories:
@@ -124,4 +124,4 @@ class OpenAIClassificationAgent(OpenAIAnswerBuilder):
                 return category
 
         # Default to the first category if none matched
-        return categories[0]
+        return "not-classified"

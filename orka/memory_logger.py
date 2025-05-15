@@ -398,3 +398,7 @@ class KafkaMemoryLogger:
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         raise NotImplementedError("Kafka backend not implemented yet")
+
+
+# Add MemoryLogger alias for backward compatibility with tests
+MemoryLogger = RedisMemoryLogger

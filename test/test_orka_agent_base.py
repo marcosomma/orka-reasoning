@@ -20,10 +20,10 @@ load_dotenv()
 
 def test_base_agent_fails():
     """Test that incomplete legacy agent implementations fail"""
-    from orka.agents.agent_base import BaseAgent
+    from orka.agents.base_agent import LegacyBaseAgent
 
     # Abstract run method is not implemented
-    class Incomplete(BaseAgent):
+    class Incomplete(LegacyBaseAgent):
         pass
 
     with pytest.raises(TypeError):
@@ -32,9 +32,9 @@ def test_base_agent_fails():
 
 def test_legacy_base_agent_implemented():
     """Test a complete legacy agent implementation"""
-    from orka.agents.agent_base import BaseAgent
+    from orka.agents.base_agent import LegacyBaseAgent
 
-    class Complete(BaseAgent):
+    class Complete(LegacyBaseAgent):
         def run(self, input_data):
             return f"Processed: {input_data}"
 

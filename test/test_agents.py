@@ -46,10 +46,21 @@ def test_openai_classification_agent_run():
         agent_id="test_openai_class",
         prompt="Classify:",
         queue="test",
-        categories=["cat", "dog"],
+        options=["cat", "dog"],
     )
     output = agent.run({"input": "Sky is blue"})
     assert output in ["cat", "dog"]
+
+
+def test_openai_classification_agent_run_not_classified():
+    agent = OpenAIClassificationAgent(
+        agent_id="test_openai_class",
+        prompt="Classify:",
+        queue="test",
+        options=[],
+    )
+    output = agent.run({"input": "Sky is blue"})
+    assert output == "not-classified"
 
 
 def test_openai_answer_builder_run():

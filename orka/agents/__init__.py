@@ -29,11 +29,7 @@ Available Agent Types:
 - LLM Agents: Integrations with large language models (OpenAI)
 """
 
-# Import from base_agent.py directly for new code
-# Import from agent_base.py for backward compatibility
-from .agent_base import BaseAgent as LegacyBaseAgent
-
-# Regular agents
+# Import all agent types from their respective modules
 from .agents import BinaryAgent, ClassificationAgent
 from .base_agent import BaseAgent, LegacyBaseAgent
 from .llm_agents import (
