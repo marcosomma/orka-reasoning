@@ -118,12 +118,17 @@ This will classify your input and generate a response based on the classificatio
    pip install orka-reasoning
    ```
 
-2. **Install Additional Dependencies**:
+2. ** Add ENV variables **:
+   ```bash
+   export OPENAI_API_KEY=<your opena AI key>
+   ```
+
+3. **Install Additional Dependencies**:
    ```bash
    pip install fastapi uvicorn
    ```
 
-3. **Start the Services**:
+4. **Start the Services**:
    ```bash
    python -m orka.orka_start
    ```
