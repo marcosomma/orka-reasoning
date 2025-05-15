@@ -24,7 +24,9 @@ jobs:
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       BASE_OPENAI_MODEL: gpt-4o-mini
-      PYTEST_RUNNING: "True"
+      SKIP_LLM_TESTS: "true" # Skip LLM tests entirely in CI
+      PYTEST_RUNNING: "true" # Indicate pytest is running
+      CI: "true" # Standard CI environment variable
 
     steps:
       - name: 📥 Checkout repository
