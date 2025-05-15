@@ -175,9 +175,9 @@ class TestOpenAIBinaryAgent:
         # Run the agent
         result = agent.run({"input": "Tell me about yes"})
 
-        # Verify the result
-        # It might return True or "true" depending on implementation
-        assert result is True or result == "true"
+        # Verify the result is strictly a boolean True
+        assert result is True
+        assert isinstance(result, bool)
 
     def test_binary_agent_no_response(self, mock_openai_client):
         """Test OpenAIBinaryAgent with 'no' response"""
@@ -196,9 +196,9 @@ class TestOpenAIBinaryAgent:
         # Run the agent
         result = agent.run({"input": "Tell me about no"})
 
-        # Verify the result
-        # It might return False or "false" depending on implementation
-        assert result is False or result == "false"
+        # Verify the result is strictly a boolean False
+        assert result is False
+        assert isinstance(result, bool)
 
     def test_binary_agent_invalid_response(self, mock_openai_client):
         """Test OpenAIBinaryAgent with invalid response"""
@@ -214,14 +214,12 @@ class TestOpenAIBinaryAgent:
             queue="test_queue",
         )
 
-        try:
-            # Depending on implementation, might raise ValueError
-            result = agent.run({"input": "Tell me about maybe"})
-            # Or might return False for ambiguous input
-            assert result is False or result == "false"
-        except ValueError:
-            # If it raises an error, that's also acceptable
-            pass
+        # Run the agent
+        result = agent.run({"input": "Tell me about maybe"})
+
+        # Ambiguous responses should return False
+        assert result is False
+        assert isinstance(result, bool)
 
 
 class TestOpenAIClassificationAgent:

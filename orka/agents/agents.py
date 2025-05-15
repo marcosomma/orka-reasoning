@@ -72,9 +72,9 @@ class BinaryAgent(BaseAgent):
 
         positive = ["yes", "true", "correct"]
         if any(p in text.lower() for p in positive):
-            return "true"
+            return True
         else:
-            return "false"
+            return False
 
 
 class ClassificationAgent(BaseAgent):
@@ -93,22 +93,6 @@ class ClassificationAgent(BaseAgent):
 
     def run(self, input_data):
         """
-        Classify the input into categories based on question words.
-
-        Args:
-            input_data (dict): Input containing text to classify, expected to have
-                an 'input' field with the text content.
-
-        Returns:
-            str: 'cat' if input contains 'why' or 'how', 'dog' otherwise.
-
-        Note:
-            This is a simplified implementation for demonstration purposes.
-            In production, this would typically use a trained classifier
-            or a more complex rule-based system.
+        Deprecated in v 0.5.6
         """
-        text = input_data.get("input", "")
-        if "why" in text.lower() or "how" in text.lower():
-            return "cat"
-        else:
-            return "dog"
+        return "deprecated"

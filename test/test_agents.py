@@ -22,7 +22,7 @@ from orka.tools.search_tools import DuckDuckGoTool
 def test_binary_agent_run():
     agent = BinaryAgent(agent_id="test_bin", prompt="Is this true?", queue="test")
     output = agent.run({"input": "Cats are mammals."})
-    assert output in ["true", "false"]
+    assert output in [True, False]
 
 
 def test_classification_agent_run():
@@ -30,7 +30,7 @@ def test_classification_agent_run():
         agent_id="test_class", prompt="Classify:", queue="test", options=["cat", "dog"]
     )
     output = agent.run({"input": "A domestic animal"})
-    assert output in ["cat", "dog"]
+    assert output == "deprecated"
 
 
 def test_openai_binary_agent_run():
@@ -38,7 +38,7 @@ def test_openai_binary_agent_run():
         agent_id="test_openai_bin", prompt="Is this real?", queue="test"
     )
     output = agent.run({"input": "Is water wet?"})
-    assert output in ["true", "false"]
+    assert output in [True, False]
 
 
 def test_openai_classification_agent_run():

@@ -22,6 +22,9 @@ import pytest
 import redis
 from fake_redis import FakeRedisClient
 
+# Set PYTEST_RUNNING environment variable
+os.environ["PYTEST_RUNNING"] = "True"
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # Set up basic logging configuration
@@ -167,3 +170,12 @@ def event_loop_policy():
     """Return the event loop policy to use for tests."""
     # Use the default policy for now
     return asyncio.get_event_loop_policy()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def mock_openai_env():
+    """Ensure we have an OPENAI_API_KEY set for testing."""
+    with patch.dict(
+        os.environ, {"OPENAI_API_KEY": "dummy_key_for_testing"}, clear=False
+    ):
+        yield
