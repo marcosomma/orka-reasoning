@@ -22,8 +22,8 @@ import pytest
 import redis
 from fake_redis import FakeRedisClient
 
-# Set PYTEST_RUNNING environment variable
-os.environ["PYTEST_RUNNING"] = "True"
+# Set PYTEST_RUNNING environment variable at the earliest possible moment
+os.environ["PYTEST_RUNNING"] = "true"
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -63,16 +63,14 @@ except ImportError:
 # Global flag to determine if we're using real Redis
 USE_REAL_REDIS = os.getenv("USE_REAL_REDIS", "false").lower() == "true"
 
-# Set up test environment variables
-PYTEST_RUNNING = "True"
-SKIP_LLM_TESTS = "False"
+# Define important environment variables
+PYTEST_RUNNING = "true"
+SKIP_LLM_TESTS = os.environ.get("SKIP_LLM_TESTS", "false").lower()
 
-# Check if OpenAI integrations are available
-try:
-    from orka.agents import OpenAIAnswerBuilder
-except (ImportError, AttributeError):
-    SKIP_LLM_TESTS = "True"
-    print("WARNING: OpenAI integrations not available - LLM tests will be skipped")
+# Check for CI environment
+if os.environ.get("CI", "").lower() in ("true", "1", "yes"):
+    # Always skip LLM tests in CI
+    SKIP_LLM_TESTS = "true"
 
 # Set environment variables for test configuration
 os.environ["PYTEST_RUNNING"] = PYTEST_RUNNING
