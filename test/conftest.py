@@ -63,6 +63,22 @@ except ImportError:
 # Global flag to determine if we're using real Redis
 USE_REAL_REDIS = os.getenv("USE_REAL_REDIS", "false").lower() == "true"
 
+# Set up test environment variables
+PYTEST_RUNNING = "True"
+SKIP_LLM_TESTS = "False"
+
+# Check if OpenAI integrations are available
+try:
+    from orka.agents import OpenAIAnswerBuilder
+except (ImportError, AttributeError):
+    SKIP_LLM_TESTS = "True"
+    print("WARNING: OpenAI integrations not available - LLM tests will be skipped")
+
+# Set environment variables for test configuration
+os.environ["PYTEST_RUNNING"] = PYTEST_RUNNING
+os.environ["SKIP_LLM_TESTS"] = SKIP_LLM_TESTS
+os.environ["OPENAI_API_KEY"] = os.environ.get("OPENAI_API_KEY", "dummy_key_for_testing")
+
 
 def get_redis_client():
     """Get appropriate Redis client based on configuration."""

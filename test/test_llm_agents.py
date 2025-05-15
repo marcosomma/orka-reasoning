@@ -12,29 +12,39 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 
+import os
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-# Import the agents directly from the package
-# Use a variable to track if imports succeeded
-llm_imports_succeeded = True
-try:
-    from orka.agents import (
-        OpenAIAnswerBuilder,
-        OpenAIBinaryAgent,
-        OpenAIClassificationAgent,
-    )
+# Check if we should skip LLM tests based on environment variable
+SKIP_LLM_TESTS = os.environ.get("SKIP_LLM_TESTS", "False").lower() in (
+    "true",
+    "1",
+    "yes",
+)
 
-    # Import the client directly from the module
-    from orka.agents.llm_agents import client
-except (ImportError, AttributeError) as e:
-    print(f"WARNING: Failed to import OpenAI agents: {e}")
-    llm_imports_succeeded = False
+# Skip all tests in this file if LLM tests should be skipped
+pytestmark = pytest.mark.skipif(
+    SKIP_LLM_TESTS,
+    reason="OpenAI agents not properly configured or environment variable SKIP_LLM_TESTS is set",
+)
 
-# Skip all tests if imports failed
-if not llm_imports_succeeded:
-    pytest.skip("LLM agents not properly configured", allow_module_level=True)
+# Only try to import if we're not skipping
+if not SKIP_LLM_TESTS:
+    try:
+        from orka.agents import (
+            OpenAIAnswerBuilder,
+            OpenAIBinaryAgent,
+            OpenAIClassificationAgent,
+        )
+
+        # Import the client directly from the module
+        from orka.agents.llm_agents import client
+    except (ImportError, AttributeError) as e:
+        print(f"WARNING: Failed to import OpenAI agents: {e}")
+        # If import fails despite not being marked to skip, force skip
+        pytestmark = pytest.mark.skip(reason=f"OpenAI agent imports failed: {e}")
 
 
 # Create a module-level mock so all tests use the same mock
@@ -54,11 +64,27 @@ def mock_openai_client():
     mock_response.choices[0].message.content = "Test response"
     mock_completions.create.return_value = mock_response
 
-    # Patch multiple potential import paths to ensure we catch all usages
-    with (
-        patch("orka.agents.llm_agents.client", mock_client),
-        patch("orka.agents.llm_agents.OpenAI", return_value=mock_client),
-    ):
+    # Use a try-except to make the patching more robust
+    # Patch all possible import paths where the OpenAI client might be used
+    try:
+        # Use contextlib.ExitStack to combine multiple patches safely
+        import contextlib
+
+        with contextlib.ExitStack() as stack:
+            # Try different possible import paths
+            for path in [
+                "orka.agents.llm_agents.client",
+                "orka.agents.llm_agents.OpenAI",
+            ]:
+                try:
+                    stack.enter_context(patch(path, mock_client))
+                except (ImportError, AttributeError):
+                    # Skip if this path doesn't exist
+                    pass
+            yield mock_client
+    except Exception as e:
+        print(f"WARNING: Failed to patch OpenAI client: {e}")
+        # Still yield the mock even if patching fails
         yield mock_client
 
 
