@@ -227,6 +227,66 @@ OrKa supports Jinja2-style templating in prompts:
     queue: orka:summary
 ```
 
+## OpenAI Agent Configuration
+
+### OpenAI Answer Builder
+
+```yaml
+- id: research_question
+  type: openai-answer
+  prompt: |
+    Generate a detailed answer to the following question:
+    "{{ input }}"
+    
+    Include all relevant information and cite sources where appropriate.
+  queue: orka:research_answers
+  model: gpt-4
+  temperature: 0.7
+  
+### OpenAI Binary Agent
+
+```yaml
+- id: is_medical_question
+  type: openai-binary
+  prompt: |
+    Determine if the following is a medical question:
+    "{{ input }}"
+    
+    Return ONLY true or false.
+  queue: orka:binary_medical_filter
+  model: gpt-3.5-turbo
+  temperature: 0.2
+```
+
+### OpenAI Classification Agent
+
+```yaml
+- id: categorize_request
+  type: openai-classification
+  prompt: |
+    Classify the following user request into exactly one of these categories:
+    "{{ input }}"
+  options:
+    - technical_support
+    - account_related
+    - billing_question
+    - feature_request
+    - bug_report
+    - general_inquiry
+  queue: orka:request_categorizer
+  model: gpt-3.5-turbo
+  temperature: 0.3
+```
+
+### Configuration Parameters
+
+| Parameter     | Description                                | Default        | Required |
+|---------------|--------------------------------------------|--------------  |----------|
+| model         | OpenAI model to use                        | gpt-3.5-turbo  | No       |
+| temperature   | Randomness of output (0.0-1.0)             | 1.0            | No       |
+| prompt        | Template for request to the model          | -              | Yes      |
+| options       | List of choices (for classification only)  | -              | For classification |
+
 ## Complete Example
 
 ```yaml

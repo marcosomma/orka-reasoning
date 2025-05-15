@@ -10,12 +10,16 @@
 | duckduckgo   | string            | list of strings      | Search snippets                      |
 | router       | string + context  | string (next agent)  | Branching logic control              |
 | builder      | dict              | string               | Compose structured final response    |
+| openai-binary | string           | bool                 | LLM-powered yes/no decision          |
+| openai-classification | string   | string (label)       | LLM-powered multi-class classifier   |
+| openai-answer| dict/string       | string               | LLM-powered response generation      |
 
 ---
 ## Error Handling
-- All agents return JSON.
-- Use `MemoryLogger` to log status.
+- All agents return standardized output formats.
+- Use `MemoryLogger` to log status and track execution progress.
 - Malformed outputs will raise orchestration halt unless fallback is defined.
+- LLM agents gracefully handle API errors with configurable fallbacks.
 
 ---
 # 🧠 Orchestrator Example
@@ -97,7 +101,7 @@ Waits for all branches from `fork_parallel_checks` to finish before continuing.
 Tries child agents in order. If the first fails, moves to the next.
 
 ---
-# 🔍 Classification Agent Example
+# 🔍 OpenAI Classification Agent Example
 
 ```yaml
 - id: initial_classify
@@ -106,12 +110,14 @@ Tries child agents in order. If the first fails, moves to the next.
     Classify this input "{{ input }}".
   options: [tech, science, history, nonsense]
   queue: orka:domain
+  model: gpt-3.5-turbo
+  temperature: 0.7
 ```
 
 Used for multi-class reasoning tasks. Outputs one label from predefined options.
 
 ---
-# ✅ Binary Agent Example
+# ✅ OpenAI Binary Agent Example
 
 ```yaml
 - id: search_required
@@ -119,12 +125,14 @@ Used for multi-class reasoning tasks. Outputs one label from predefined options.
   prompt: >
     Is "{{ input }}" a question that requires deep internet research?
   queue: orka:need_search
+  model: gpt-3.5-turbo
+  temperature: 0.2
 ```
 
-Evaluates a yes/no question. Returns `true` or `false`.
+Evaluates a yes/no question using LLM reasoning. Returns a strict boolean value (true/false).
 
 ---
-# 🧩 Final Answer Builder Example
+# 🧩 OpenAI Answer Builder Example
 
 ```yaml
 - id: final_builder_true
@@ -134,9 +142,11 @@ Evaluates a yes/no question. Returns `true` or `false`.
     - Classification result: {{ previous_outputs.initial_classify }}
     - Search result: {{ previous_outputs.failover_search }}
   queue: orka:final_output
+  model: gpt-4
+  temperature: 0.7
 ```
 
-Builds a composed final output using previous agent results.
+Builds a composed final output using previous agent results, leveraging OpenAI's capabilities.
 
 
 [📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)

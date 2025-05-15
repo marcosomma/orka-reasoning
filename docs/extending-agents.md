@@ -37,9 +37,9 @@ class MySummarizer(BaseAgent):
 
 ### 1. Subclass `LegacyBaseAgent`
 ```python
-from orka.agents.agent_base import BaseAgent  # Uses the legacy compatibility layer
+from orka.agents.base_agent import LegacyBaseAgent  # Updated import path
 
-class MySummarizer(BaseAgent):
+class MySummarizer(LegacyBaseAgent):
     def run(self, input_data):
         # Direct synchronous processing
         result = self.summarize(input_data)
@@ -57,8 +57,42 @@ class MySummarizer(BaseAgent):
   queue: orka:summarize
 ```
 
-## 3. Register in `agent_loader`
-Add your custom class to the agent registry or import it dynamically in your fork.
+## Extending LLM Agents
+
+You can also extend existing LLM agents to customize their behavior:
+
+```python
+from orka.agents.llm_agents import OpenAIAnswerBuilder
+
+class CustomAnswerBuilder(OpenAIAnswerBuilder):
+    def run(self, input_data):
+        # Preprocess the input
+        enhanced_input = self.enhance_input(input_data)
+        
+        # Call the parent implementation
+        result = super().run(enhanced_input)
+        
+        # Post-process the result
+        return self.format_output(result)
+        
+    def enhance_input(self, input_data):
+        # Add context or modify input before sending to LLM
+        return input_data
+        
+    def format_output(self, result):
+        # Format or clean up the LLM output
+        return result
+```
+
+## 3. Register in `agent_registry`
+Add your custom class to the agent registry by registering it in your application code:
+
+```python
+from orka.registry import registry
+
+# Register your custom agent
+registry.register_agent("my_summarizer", MySummarizer)
+```
 
 ## Benefits of Modern Async Pattern
 

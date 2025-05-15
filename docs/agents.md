@@ -93,6 +93,55 @@ Branching logic, optional agent execution, fallback control.
 
 ---
 
+## 🤖 LLM Agents
+
+OrKa includes built-in integrations with large language models:
+
+### 🧠 `openai-answer`
+
+Uses OpenAI models to generate answers based on a prompt and input data.
+
+**Example config:**
+
+```yaml
+- id: generate_answer
+  type: openai-answer
+  prompt: >
+    Generate a detailed answer about {{topic}} considering {{context}}.
+  queue: orka:openai_answer
+  model: gpt-3.5-turbo
+  temperature: 0.7
+```
+
+### 🔄 `openai-binary`
+
+Leverages OpenAI models to make binary decisions (yes/no).
+
+**Example config:**
+
+```yaml
+- id: fact_check
+  type: openai-binary
+  prompt: >
+    Is the following statement correct? Answer with yes or no only.
+  queue: orka:openai_binary
+```
+
+### 📊 `openai-classification`
+
+Uses OpenAI models to classify inputs into predefined categories.
+
+**Example config:**
+
+```yaml
+- id: classify_topic
+  type: openai-classification
+  prompt: >
+    Classify the following text into one of these categories.
+  options: [technology, science, politics, entertainment, sports]
+  queue: orka:openai_classification
+```
+
 ## 🛠 Custom Agents
 
 OrKa supports two patterns for creating custom agents:
@@ -113,9 +162,9 @@ class MyCustomAgent(BaseAgent):
 ### Legacy Sync Pattern (Backward Compatibility)
 
 ```python
-from orka.agents.agent_base import BaseAgent  # Legacy compatibility layer
+from orka.agents.base_agent import LegacyBaseAgent  # Updated import path
 
-class MyCustomAgent(BaseAgent):
+class MyCustomAgent(LegacyBaseAgent):
     def run(self, input_data):
         # Process input synchronously
         return {"result": "custom processing"}

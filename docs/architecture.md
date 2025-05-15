@@ -46,34 +46,50 @@ This document breaks down the key architectural components and how they work tog
 
 ## 🔁 Agent Implementation
 
-OrKa uses a unified agent base implementation with two supported patterns:
+OrKa's agent architecture provides two key implementation patterns:
 
-### Modern Async Pattern
+1. **Modern Async Pattern (Recommended)**
+   - Inherits from `BaseAgent` in `orka.agents.base_agent`
+   - Uses `async/await` for concurrency support
+   - Full lifecycle management through initialization hooks
+   - Support for timeouts and concurrency limits
+
+2. **Legacy Sync Pattern (Backward Compatibility)**
+   - Inherits from `LegacyBaseAgent` in `orka.agents.base_agent`
+   - Simple synchronous execution model
+   - Compatible with older agent implementations
+
+### Built-in Agent Types
+
+- **Core Processing Agents**
+  - `BinaryAgent`: Yes/no decisions
+  - `ClassificationAgent`: Multi-class classification
+  - `RouterAgent`: Dynamic flow control
+
+- **LLM Integration Agents**
+  - `OpenAIAnswerBuilder`: Text generation using OpenAI models
+  - `OpenAIBinaryAgent`: Yes/no decisions using OpenAI
+  - `OpenAIClassificationAgent`: Classification using OpenAI
+
+- **Node Control Agents**
+  - `ForkNode`: Splits processing into parallel branches
+  - `JoinNode`: Combines parallel branches
+  - `FailoverNode`: Provides fallback mechanisms
+
+### Agent Registry System
+
+The agent registry system maps agent type identifiers to their implementation classes:
+
 ```python
-from orka.agents.base_agent import BaseAgent
+from orka.registry import registry
 
-class MyAgent(BaseAgent):
-    async def _run_impl(self, ctx):
-        # Async implementation with full context
-        return result
+# Built-in registrations happen at framework initialization
+registry.register_agent("binary", BinaryAgent)
+registry.register_agent("openai-binary", OpenAIBinaryAgent)
+
+# Custom agents can be registered by applications
+registry.register_agent("my_custom_agent", MyCustomAgent)
 ```
-
-### Legacy Sync Pattern
-```python
-from orka.agents.agent_base import BaseAgent  # Legacy compatibility
-
-class MyAgent(BaseAgent):
-    def run(self, input_data):
-        # Sync implementation with direct input
-        return result
-```
-
-Both patterns are supported through a unified execution model that provides:
-- Concurrency control
-- Timeout handling
-- Standardized error handling
-- Consistent output formatting
-- Resource lifecycle management
 
 ---
 
