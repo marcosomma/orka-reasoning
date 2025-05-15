@@ -118,12 +118,17 @@ This will classify your input and generate a response based on the classificatio
    pip install orka-reasoning
    ```
 
-2. **Install Additional Dependencies**:
+2. **Add ENV variables**:
+   ```bash
+   export OPENAI_API_KEY=<your opena AI key>
+   ```
+
+3. **Install Additional Dependencies**:
    ```bash
    pip install fastapi uvicorn
    ```
 
-3. **Start the Services**:
+4. **Start the Services**:
    ```bash
    python -m orka.orka_start
    ```
@@ -160,6 +165,7 @@ To run the OrkaUI locally and connect it with your local OrkaBackend:
    ```bash
    docker run -d \
      -p 8080:80 \
+     -e VITE_API_URL_LOCAL=http://localhost:8000/api/run@dist  \
      --name orka-ui \
      marcosomma/orka-ui:latest
    ```
