@@ -165,6 +165,7 @@ To run the OrkaUI locally and connect it with your local OrkaBackend:
    ```bash
    docker run -d \
      -p 8080:80 \
+     -e VITE_API_URL_LOCAL=http://localhost:8000/api/run@dist  \
      --name orka-ui \
      marcosomma/orka-ui:latest
    ```
