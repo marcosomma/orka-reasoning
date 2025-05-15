@@ -118,7 +118,7 @@ This will classify your input and generate a response based on the classificatio
    pip install orka-reasoning
    ```
 
-2. ** Add ENV variables **:
+2. **Add ENV variables**:
    ```bash
    export OPENAI_API_KEY=<your opena AI key>
    ```
