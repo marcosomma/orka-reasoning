@@ -11,6 +11,8 @@
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
+import asyncio
+
 import pytest
 from dotenv import load_dotenv
 
@@ -38,12 +40,20 @@ def test_legacy_base_agent_implemented():
         def run(self, input_data):
             return f"Processed: {input_data}"
 
-    # Should instantiate successfully
-    agent = Complete("id", "prompt", "queue")
+    # Create an event loop for this test
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
 
-    # Should run successfully
-    result = agent.run("test input")
-    assert result == "Processed: test input"
+    try:
+        # Should instantiate successfully
+        agent = Complete("id", "prompt", "queue")
 
-    # Should have the correct string representation
-    assert str(agent) == "<Complete id=id queue=queue>"
+        # Should run successfully
+        result = agent.run("test input")
+        assert result == "Processed: test input"
+
+        # Should have the correct string representation
+        assert str(agent) == "<Complete id=id queue=queue>"
+    finally:
+        # Clean up the event loop
+        loop.close()
