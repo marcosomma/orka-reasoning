@@ -3,6 +3,22 @@
 
 ---
 
+## [0.5.7] · 2025-05-18
+### Changed
+* Consolidated test suite into domain-specific files for better organization and maintenance.
+* Updated CI workflow to run domain-based tests for improved clarity and efficiency.
+* Added deprecation markers to legacy test files while preserving test coverage.
+
+---
+
+## [0.5.6] · 2025-05-17
+### Fixed
+* LLM agent test suite now uses unified mocking ensuring reliability across local runs and GitHub Actions.
+* CI workflow updated to set `PYTEST_RUNNING` early and avoid skipping coverage.
+* Documentation and import paths adjusted for `LegacyBaseAgent`.
+
+---
+
 ## [0.5.5] · 2025-05-10
 ### Changed
 * Bumped version to **0.5.5** in *pyproject.toml* / *setup.py*.  
@@ -36,9 +52,9 @@
 ## [0.3.7] · 2025-05-03
 ### Added
 * Docker artefacts (`orka/docker/*`, root `docker-compose.yml`).  
-* `orka_start.py` — one-shot CLI launcher for Redis + backend.  
+* `orka_start.py` — one-shot CLI launcher for Redis + backend.  
 ### Changed
-* README completely reorganised; clearer “PIP Installation” and YAML sample. :contentReference[oaicite:3]{index=3}  
+* README completely reorganised; clearer "PIP Installation" and YAML sample. :contentReference[oaicite:3]{index=3}  
 
 ---
 

@@ -25,6 +25,8 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       BASE_OPENAI_MODEL: gpt-4o-mini
       CI: "true" # Standard CI environment variable
+      PYTEST_RUNNING: "true" # Set early for all test stages
+      SKIP_LLM_TESTS: "true" # Skip LLM tests in CI
 
     steps:
       - name: 📥 Checkout repository
@@ -41,12 +43,10 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-cov pytest-asyncio coverage
 
-      - name: 🧪 Run tests with coverage
+      - name: 🧪 Run domain tests with coverage
         run: |
-          # Set environment variables explicitly before running tests
-          export PYTEST_RUNNING=true
-          export SKIP_LLM_TESTS=true
-          python -m pytest --cov=orka --cov-report=xml:coverage.xml --cov-report=term
+          # Run the domain tests which are now consolidated
+          python -m pytest test/test_domain_*.py --cov=orka --cov-report=xml:coverage.xml --cov-report=term
 
       - name: 📊 Verify coverage file
         run: |
@@ -58,7 +58,7 @@ jobs:
           else
             echo "Coverage file does not exist"
             # Generate coverage directly using coverage tool as fallback
-            python -m coverage run --source=orka -m pytest
+            python -m coverage run --source=orka -m pytest test/test_domain_*.py
             python -m coverage xml -o coverage.xml
             python -m coverage report
             ls -la coverage.xml
