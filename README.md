@@ -1,4 +1,4 @@
-# OrKa-Reasoning
+# OrKa-Reasoning 0.5.7
 
 <div align="center">
 
