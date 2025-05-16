@@ -45,8 +45,10 @@ jobs:
 
       - name: 🧪 Run domain tests with coverage
         run: |
-          # Run the domain tests which are now consolidated
-          python -m pytest test/test_domain_*.py --cov=orka --cov-report=xml:coverage.xml --cov-report=term
+          # Set environment variables explicitly before running tests
+          export PYTEST_RUNNING=true
+          export SKIP_LLM_TESTS=true
+          python -m pytest --cov=orka --cov-report=xml:coverage.xml --cov-report=term
 
       - name: 📊 Verify coverage file
         run: |
