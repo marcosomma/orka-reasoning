@@ -34,6 +34,7 @@ llm_skip = pytest.mark.skipif(
 
 from orka.agents.agents import BinaryAgent, ClassificationAgent
 from orka.agents.base_agent import BaseAgent, LegacyBaseAgent
+from orka.tools.search_tools import DuckDuckGoTool
 
 # Only try to import if we're not skipping
 if not SKIP_LLM_TESTS:
@@ -44,7 +45,6 @@ if not SKIP_LLM_TESTS:
             OpenAIBinaryAgent,
             OpenAIClassificationAgent,
         )
-        from orka.tools.search_tools import DuckDuckGoTool
 
         # Original methods to be patched
         original_answer_run = OpenAIAnswerBuilder.run
