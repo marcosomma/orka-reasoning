@@ -527,7 +527,8 @@ A content platform used OrKa to build a moderation system that:
 
 ## 📚 Documentation
 
-📘 [View the Documentation](./docs/index.md)  
+🐍 [Pypi Documentation](./docs/sphinx/_build/html/index.html)
+📘 [View the Idea Manifesto](./docs/index.md)  
 📝 [YAML Configuration Guide](./docs/yaml-configuration-guide.md) - Detailed examples for all agent types and nodes
 
 ## 🤝 Contributing
