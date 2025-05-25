@@ -1,0 +1,112 @@
+orchestrator:
+  id: full_nodes_test_orchestrator
+  strategy: decision-tree
+  queue: orka:test
+  agents:
+    - initial_classify
+    - search_required
+    - fork_parallel_checks
+    - join_parallel_checks
+    - router_search_path
+    - failover_search
+    - final_router
+    - final_builder_true
+    - final_builder_false
+
+agents:
+  # First simple classification
+  - id: initial_classify
+    type: openai-classification
+    prompt: >
+      Classify this input "{{ input }}" into science, history, or nonsense.
+    options: [tech, science, history, nonsense]
+    queue: orka:domain
+
+  # Is search needed?
+  - id: search_required
+    type: openai-binary
+    prompt: >
+      Is "{{ input }}" a question that requires deep internet research?
+    queue: orka:need_search
+
+  # 🔥 Fork node: splits into two parallel validation checks
+  - id: fork_parallel_checks
+    type: fork
+    targets:
+      - topic_validity_check
+      - summary_category_check
+
+  # Parallel branch 1: Check topic validity (still binary)
+  - id: topic_validity_check
+    type: openai-binary
+    prompt: >
+      Is "{{ input }}" a valid, meaningful topic to investigate?
+    queue: orka:topic_check
+
+  # Parallel branch 2: NOW classification (changed!)
+  - id: summary_category_check
+    type: openai-classification
+    prompt: >
+      Classify the input "{{ input }}" into one of: [summary, detailed, none].
+    options: [summary, detailed, none]
+    queue: orka:summary_check
+
+  # 🔥 Join node: waits for both topic_validity_check and summary_category_check
+  - id: join_parallel_checks
+    type: join
+    group: fork_parallel_checks
+
+  # Router to different paths
+  - id: router_search_path
+    type: router
+    params:
+      decision_key: search_required
+      routing_map:
+        true: ["failover_search", "final_router"]
+        false: ["info_completed", "final_router"]
+
+  # Failover node
+  - id: failover_search
+    type: failover
+    children:
+      - id: broken_search
+        type: failing
+        prompt: "This search will fail because agent is broken."
+        queue: orka:broken_search
+      - id: backup_duck_search
+        type: duckduckgo
+        prompt: Perform a backup web search for "{{ input }}"
+        queue: orka:duck_backup
+
+  # Additional info check
+  - id: info_completed
+    type: openai-binary
+    prompt: >
+      Did we retrieve extra data for this input "{{ input }}"?
+      {{ previous_outputs }}
+    queue: orka:info_completed
+
+  # Final router based on info check
+  - id: final_router
+    type: router
+    params:
+      decision_key: info_completed
+      routing_map:
+        true: ["final_builder_true"]
+        false: ["final_builder_false"]
+
+  # Final answer builders
+  - id: final_builder_true
+    type: openai-answer
+    prompt: |
+      Build a detailed answer combining:
+      - Classification result: {{ previous_outputs.initial_classify }}
+      - Search result: {{ previous_outputs.failover_search }}
+    queue: orka:final_output
+
+  - id: final_builder_false
+    type: openai-answer
+    prompt: |
+      Build a detailed answer based on the classification result:
+      - Classification result: {{ previous_outputs.initial_classify }}
+    queue: orka:final_output

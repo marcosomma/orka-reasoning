@@ -3,6 +3,24 @@
 
 ---
 
+## [0.5.8] · 2025-05-25
+### Added
+* New `ValidationAndStructuringAgent` for validating and structuring answers into memory format
+  * Supports custom memory object templates
+  * Provides validation status and reasoning
+  * Integrates with existing memory system
+### Changed
+* Enhanced LLM agent parameters:
+  * Added support for model-specific parameters in YAML config
+  * Improved temperature and model selection handling
+  * Better error handling for model responses
+### Fixed
+* Documentation now properly hosted at orkacore.web.app/docs
+* Fixed Sphinx documentation generation for new agent
+* Improved test coverage for validation agent
+
+---
+
 ## [0.5.7] · 2025-05-18
 ### Changed
 * Consolidated test suite into domain-specific files for better organization and maintenance.

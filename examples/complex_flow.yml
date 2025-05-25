@@ -1,0 +1,72 @@
+orchestrator:
+  id: temporal_classification_check
+  strategy: parallel
+  queue: orka:temporal_classification
+  agents:
+    - detect_change
+    - fork_temporal
+    - join_paths
+    - synthesize_timeline_answer
+
+agents:
+  - id: detect_change
+    type: openai-answer
+    prompt: >
+      Given the user query, identify if any important change on switch/classification/understood/definition or any kind or agetive associable to the query in the history.
+      If so, return the **date** when this change occurred.
+      Format your output strictly as: DD/MM/YYYY.
+      ## QUERY: {{ input }}
+
+      ## Costrains:
+        Only return and numerical year in teh given format DD/MM/YYYY
+
+  - id: fork_temporal
+    type: fork
+    targets:
+      - [generate_before_query, search_before]
+      - [generate_after_query, search_after]
+
+  - id: generate_before_query
+    type: openai-answer
+    prompt: >
+      Based on the user's question and the detected pivot change year, write a **search engine query** to find how the subject was classified or understood **before that year**.
+      Use phrasing like: "how was [subject] classified before [year]?"
+      ## SUBJECT: {{ input }}
+      ## YEAR: {{ previous_outputs.detect_change }}
+
+      ## Costrains:
+        Only return the search sentence
+
+  - id: generate_after_query
+    type: openai-answer
+    prompt: >
+      Based on the user's question and the detected pivot change year, write a **search engine query** to find how the subject was classified or understood **after that year**.
+      Use phrasing like: "how was [subject] classified after [year]?"
+      ## SUBJECT: {{ input }}
+      ## YEAR: {{ previous_outputs.detect_change }}
+
+      ## Costrains:
+        Only return the search sentence
+
+  - id: search_before
+    type: duckduckgo
+    prompt: "{{ previous_outputs.generate_before_query }}"
+
+  - id: search_after
+    type: duckduckgo
+    prompt: "{{ previous_outputs.generate_after_query }}"
+
+  - id: join_paths
+    type: join
+    group: fork_temporal
+
+  - id: synthesize_timeline_answer
+    type: openai-answer
+    prompt: >
+      Based on the query, the year and the extra data from both the before and after searches, write a compelling summary explaining:
+      - What the subject was classified/understood/defined or any kind or agetive associable to the query as **before** the change
+      - What it became **after** the change
+      - The context and significance of this shift
+      ## QUERY: {{ input }}
+      ## YEAR: {{ previous_outputs.detect_change }}
+      ## EXTRA DATA: {{ previous_outputs }}

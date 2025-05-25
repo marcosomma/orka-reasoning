@@ -47,18 +47,25 @@ class OpenAIAnswerBuilder(BaseAgent):
         Generate an answer using OpenAI's GPT model.
 
         Args:
-            input_data (str): Input text to process.
+            input_data (dict): Input data containing:
+                - prompt (str): The prompt to use (optional, defaults to agent's prompt)
+                - model (str): The model to use (optional, defaults to OPENAI_MODEL)
+                - temperature (float): Temperature for generation (optional, defaults to 0.7)
 
         Returns:
             str: Generated answer from the model.
         """
-        # Combine the agent's prompt with the input data
-        full_prompt = f"{self.prompt}\n\n{input_data}"
+        # Extract parameters from input_data
+        prompt = input_data.get("prompt", self.prompt)
+        model = input_data.get("model", OPENAI_MODEL)
+        temperature = float(input_data.get("temperature", 0.7))
+        full_prompt = f"{prompt}\n\n{input_data}"
+
         # Make API call to OpenAI
         response = client.chat.completions.create(
-            model=OPENAI_MODEL,
+            model=model,
             messages=[{"role": "user", "content": full_prompt}],
-            temperature=1.0,
+            temperature=temperature,
         )
         # Extract and clean the response
         answer = response.choices[0].message.content.strip()
@@ -79,7 +86,10 @@ class OpenAIBinaryAgent(OpenAIAnswerBuilder):
         Make a true/false decision using OpenAI's GPT model.
 
         Args:
-            input_data (str): Input text to process.
+            input_data (dict): Input data containing:
+                - prompt (str): The prompt to use (optional, defaults to agent's prompt)
+                - model (str): The model to use (optional, defaults to OPENAI_MODEL)
+                - temperature (float): Temperature for generation (optional, defaults to 0.7)
 
         Returns:
             bool: True or False based on the model's response.
@@ -91,17 +101,15 @@ class OpenAIBinaryAgent(OpenAIAnswerBuilder):
         )
 
         # Get the original prompt and add constraints
-        original_prompt = self.prompt
+        original_prompt = input_data.get("prompt", self.prompt)
         enhanced_prompt = f"{original_prompt}\n\n{constraints}"
 
-        # Temporarily set the enhanced prompt
-        self.prompt = enhanced_prompt
+        # Create new input_data with enhanced prompt
+        enhanced_input = input_data.copy()
+        enhanced_input["prompt"] = enhanced_prompt
 
         # Get the answer using the enhanced prompt
-        answer = super().run(input_data)
-
-        # Restore original prompt
-        self.prompt = original_prompt
+        answer = super().run(enhanced_input)
 
         # Convert to binary decision
         positive_indicators = ["yes", "true", "correct", "right", "affirmative"]
@@ -126,25 +134,28 @@ class OpenAIClassificationAgent(OpenAIAnswerBuilder):
         Classify input using OpenAI's GPT model.
 
         Args:
-            input_data (str): Input text to classify.
+            input_data (dict): Input data containing:
+                - prompt (str): The prompt to use (optional, defaults to agent's prompt)
+                - model (str): The model to use (optional, defaults to OPENAI_MODEL)
+                - temperature (float): Temperature for generation (optional, defaults to 0.7)
 
         Returns:
             str: Category name based on the model's classification.
         """
-
-        # Combine the agent's prompt with the input data
-        constrains = "**CONSTRAINS**ONLY Return values from the given options. If not return 'not-classified'"
         # Extract categories from params or use defaults
         categories = self.params.get("options", [])
-        full_prompt = (
-            f"{self.prompt} {constrains}\n Options:{categories}\n\n{input_data}"
-        )
-        # Make API call to OpenAI
-        response = client.chat.completions.create(
-            model=OPENAI_MODEL,
-            messages=[{"role": "user", "content": full_prompt}],
-            temperature=1.0,
-        )
-        # Extract and clean the response
-        answer = response.choices[0].message.content.strip()
+        constrains = "**CONSTRAINS**ONLY Return values from the given options. If not return 'not-classified'"
+
+        # Get the base prompt
+        base_prompt = input_data.get("prompt", self.prompt)
+
+        # Create enhanced prompt with categories
+        enhanced_prompt = f"{base_prompt} {constrains}\n Options:{categories}"
+
+        # Create new input_data with enhanced prompt
+        enhanced_input = input_data.copy()
+        enhanced_input["prompt"] = enhanced_prompt
+
+        # Use parent class to make the API call
+        answer = super().run(enhanced_input)
         return answer

@@ -1,0 +1,59 @@
+orchestrator:
+  id: orka-ui
+  strategy: sequential
+  queue: orka:failover
+  agents:
+    - test_failover
+    - need_answer
+    - router_answer
+    - validate_fact
+    - test_failover2
+
+agents:
+  - id: test_failover
+    type: failover
+    queue: orka:test_failover
+    children:
+      - id: failing_test_agent1
+        type: failing
+        queue: orka:failing_test_agent1
+      - id: actual_working_agent
+        type: duckduckgo
+        prompt: >
+          {{ input }}
+        queue: orka:actual_working_agent
+
+  - id: need_answer
+    type: openai-binary
+    prompt: >
+      Is this a {{ input }} is a question that requires an answer or a fact to be validated?
+      - TRUE: ia s question and requires an answer
+      - FALSE: is an assertion requires a fact to be validated
+    queue: orka:is_fact
+
+  - id: router_answer
+    type: router
+    params:
+      decision_key: need_answer
+      routing_map:
+        true: ["test_failover2"]
+        false: ["validate_fact"]
+
+  - id: validate_fact
+    type: openai-binary
+    prompt: |
+      Given the fact "{{ input }}", and the search results "{{ previous_outputs.test_failover }}"?
+    queue: orka:validation_queue
+
+  - id: test_failover2
+    type: failover
+    queue: orka:test_failover2
+    children:
+      - id: failing_test_agent2
+        type: failing
+        queue: orka:failing_test_agent2
+      - id: build_answer
+        type: openai-answer
+        prompt: |
+          Given this question "{{ input }}", and the search results "{{ previous_outputs.test_failover }}", return a compelling answer.
+        queue: orka:validation_queue

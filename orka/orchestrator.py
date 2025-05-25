@@ -26,7 +26,7 @@ from uuid import uuid4
 
 from jinja2 import Template
 
-from .agents import agents, llm_agents
+from .agents import agents, llm_agents, validation_and_structuring_agent
 from .fork_group_manager import ForkGroupManager
 from .loader import YAMLLoader
 from .memory_logger import RedisMemoryLogger
@@ -43,6 +43,7 @@ AGENT_TYPES = {
     "openai-answer": llm_agents.OpenAIAnswerBuilder,
     "openai-binary": llm_agents.OpenAIBinaryAgent,
     "openai-classification": llm_agents.OpenAIClassificationAgent,
+    "validate_and_structure": validation_and_structuring_agent.ValidationAndStructuringAgent,
     "duckduckgo": DuckDuckGoTool,
     "router": router_node.RouterNode,
     "failover": failover_node.FailoverNode,
@@ -186,6 +187,18 @@ class Orchestrator:
                 return agent_cls(
                     tool_id=agent_id, prompt=prompt, queue=queue, **clean_cfg
                 )
+
+            # Special handling for validation agent
+            if agent_type == "validate_and_structure":
+                # Create params dictionary with all configuration
+                params = {
+                    "agent_id": agent_id,
+                    "prompt": cfg.get("prompt", ""),
+                    "queue": cfg.get("queue", None),
+                    "store_structure": cfg.get("store_structure"),
+                    **clean_cfg,
+                }
+                return agent_cls(params=params)
 
             # Default agent instantiation
             prompt = cfg.get("prompt", None)

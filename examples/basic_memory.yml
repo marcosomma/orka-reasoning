@@ -1,0 +1,140 @@
+orchestrator:
+  id: orka-ui
+  strategy: parallel
+  queue: orka:generated
+  agents:
+    - memory-read_0
+    - openai-answer_2
+    - fork_3
+    - join_9
+    - openai-binary_10
+    - router_11
+    - memory-write_15
+    - memory-write_16
+
+agents:
+  - id: memory-read_0
+    type: memory
+    queue: orka:memory-read_0
+    config:
+      operation: read
+    namespace: fact_validator
+    prompt: |
+      Retrieve any stored memories about how the subject '{{ input }}'' was classified or understood in the past.
+      Return "NONE" if nothing matches.
+
+  - id: openai-answer_2
+    type: openai-answer
+    queue: orka:openai-answer_2
+    prompt: Given previous context {{ previous_outputs["memory-read_0"] }}, provide an initial detailed answer to {{ input }}.
+  - id: fork_3
+    type: fork
+    targets:
+      - - openai-binary_4
+        - openai-classification_5
+        - openai-answer_6
+      - - openai-answer_7
+        - failover_11
+
+  - id: openai-binary_4
+    type: openai-binary
+    queue: orka:openai-binary_4
+    prompt: Does the question {{ input }} require factual validation?
+
+  - id: openai-answer_7
+    type: openai-answer
+    queue: orka:openai-answer_7
+    prompt: Provide a concise summary for the question {{ input }}.
+
+  - id: openai-classification_5
+    type: openai-classification
+    queue: orka:openai-classification_5
+    prompt: "Classify the domain of the question {{ input }}"
+    options:
+      - science
+      - history
+      - technology
+      - geography
+      - culture
+      - general
+
+  - id: failover_11
+    type: failover
+    input: openai-answer_7
+    children:
+      - id: duckduckgo_12
+        type: duckduckgo
+        queue: orka:duckduckgo_12
+        prompt: "{{ input }}"
+      - id: duckduckgo_13
+        type: duckduckgo
+        queue: orka:duckduckgo_13
+        prompt: "{{ input }}"
+    depends_on:
+      - openai-answer_7
+      - duckduckgo_12
+      - duckduckgo_13
+
+  - id: openai-answer_6
+    type: openai-answer
+    queue: orka:openai-answer_6
+    prompt: |
+      Provide an alternative perspective or deeper insight into the question {{ input }} considering domain: {{ previous_outputs["openai-classification_5"] }}.
+
+  - id: join_9
+    type: join
+    group: fork_3
+
+  - id: openai-binary_10
+    type: openai-binary
+    queue: orka:openai-binary_10
+    prompt: |
+      Is the provided information coherent and complete based on outputs: {{ previous_outputs["join_9"] }}?
+    depends_on:
+      - join_9
+
+  - id: router_11
+    type: router
+    params:
+      decision_key: openai-binary_10
+      routing_map:
+        "true":
+          - openai-answer_14
+          - memory-write_final
+        "false":
+          - openai-answer_15
+          - memory-write_final
+    depends_on:
+      - openai-binary_10
+
+  - id: openai-answer_14
+    type: openai-answer
+    queue: orka:openai-answer_14
+    prompt: Given confirmed coherent inputs {{ previous_outputs["join_9"] }}, provide a polished final response to {{ input }}.
+    depends_on:
+      - router_11
+
+  - id: openai-answer_15
+    type: openai-answer
+    queue: orka:openai-answer_15
+    prompt: |2
+            Given identified gaps in coherence or completeness in {{ previous_outputs["join_9"] }}, clarify or complete the information to fully answer {{ input }}.
+    depends_on:
+      - router_11
+
+  - id: memory-write_final
+    type: memory
+    config:
+      operation: write
+    namespace: fact_validator
+    key_template: "{{ input }}"
+    prompt: >-
+      {{ previous_outputs["openai-answer_14"] or previous_outputs["openai-answer_15"] }}
+    metadata:
+      source: >-
+        {{ "openai-answer_14" if previous_outputs["openai-answer_14"] else "openai-answer_15" }}
+      result: >-
+        {{ previous_outputs["openai-answer_14"] if previous_outputs["openai-answer_14"] else previous_outputs["openai-answer_15"] }}
+    depends_on:
+      - openai-answer_14
+      - openai-answer_15
