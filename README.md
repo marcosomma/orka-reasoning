@@ -1,4 +1,6 @@
-# OrKa-Reasoning 0.5.7
+# OrKa-Reasoning
+
+> v 0.5.8
 
 <div align="center">
 
