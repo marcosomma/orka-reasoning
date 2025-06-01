@@ -1,7 +1,5 @@
 # OrKa-Reasoning
 
-> v 0.5.8
-
 <div align="center">
 
 <img src="https://orkacore.com/assets/ORKA_logo.png" alt="OrKa Logo" width="256" height="256"/>

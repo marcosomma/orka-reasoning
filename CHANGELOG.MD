@@ -3,6 +3,32 @@
 
 ---
 
+## [0.5.9] · 2025-06-01
+### Added
+* **LocalLLMAgent** - New agent type for local LLM integration
+  * Support for multiple local LLM providers: Ollama, LM Studio, OpenAI-compatible APIs
+  * Dedicated `local_llm_agents.py` module for better separation from cloud agents
+  * Template-based prompt handling with `{{ input }}` substitution
+  * Configurable model endpoints, temperature, and provider selection
+  * Full integration with OrKa agent registry and orchestrator
+* **Comprehensive example workflows**
+  * `comprehensive_research_analysis.yml` - Demonstrates all agent types and nodes
+  * Research paper analysis workflow using hybrid local + cloud processing
+  * Shows parallel processing, conditional routing, memory operations, and failover
+* **Enhanced agent modularity**
+  * Separated local LLM agents from OpenAI agents for cleaner architecture
+  * Updated agent registry and orchestrator to support new agent type
+  * Comprehensive test suite for LocalLLMAgent with multiple provider scenarios
+### Changed
+* Agent imports reorganized for better modularity and separation of concerns
+* Example configurations updated to showcase hybrid local + cloud workflows
+* Documentation expanded with local LLM integration patterns
+### Fixed
+* Improved error handling for local model connection failures
+* Better template substitution and input validation for local agents
+
+---
+
 ## [0.5.8] · 2025-05-25
 ### Added
 * New `ValidationAndStructuringAgent` for validating and structuring answers into memory format
