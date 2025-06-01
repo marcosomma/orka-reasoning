@@ -1,0 +1,29 @@
+orchestrator:
+  id: test-local-deepseek
+  strategy: sequential
+  queue: orka:fact-core
+  memory:
+    store_type: "redis"
+    url: "redis://localhost:6379"
+  agents:
+    - "deepseek_summarizer"
+    - "deepseek_analyzer"
+
+agents:
+  - id: deepseek_summarizer
+    type: local_llm
+    prompt: "Please summarize the following text in 2-3 clear sentences: {{ input }}"
+    model: "deepseek-r1:1.5b"
+    model_url: "http://localhost:11434/api/generate"
+    provider: "ollama"
+    temperature: 0.7
+    queue: ["deepseek_analyzer"]
+
+  - id: deepseek_analyzer
+    type: local_llm
+    prompt: "Based on this summary, identify the 3 most important key points: {{ input }}"
+    model: "deepseek-r1:1.5b"
+    model_url: "http://localhost:11434/api/generate"
+    provider: "ollama"
+    temperature: 0.5
+    queue: []

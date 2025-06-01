@@ -1,0 +1,268 @@
+orchestrator:
+  id: "research-analysis-system"
+  strategy: "sequential"
+  queue: "orka:research-core"
+  memory:
+    store_type: "redis"
+    url: "redis://localhost:6379"
+  agents:
+    - "document_preprocessor"
+    - "quality_gate"
+    - "analysis_router"
+
+agents:
+  # ===== PREPROCESSING PHASE =====
+  - id: document_preprocessor
+    type: local_llm
+    prompt: |
+      Clean and structure this research document for analysis. Remove any formatting artifacts, 
+      standardize section headers, and provide a clean version ready for processing: {{ input }}
+    model: "deepseek-r1:1.5b"
+    model_url: "http://localhost:11434/api/generate"
+    provider: "ollama"
+    temperature: 0.3
+    queue: ["quality_gate"]
+
+  # ===== QUALITY CONTROL =====
+  - id: quality_gate
+    type: openai-binary
+    prompt: |
+      Is this document suitable for academic analysis? Check if it contains:
+      - Clear research methodology
+      - Proper citations/references
+      - Coherent structure
+      - Sufficient content (>500 words)
+      Return true if suitable, false if not.
+    temperature: 0.2
+    queue: ["analysis_router"]
+
+  # ===== ROUTING DECISION =====
+  - id: analysis_router
+    type: router
+    params:
+      decision_key: "quality_gate"
+      routing_map:
+        "true": ["fork_analysis"]
+        "false": ["rejection_handler"]
+    queue: []
+
+  # ===== REJECTION PATH =====
+  - id: rejection_handler
+    type: local_llm
+    prompt: |
+      This document was rejected for analysis. Explain why and provide suggestions 
+      for improvement: {{ input }}
+    model: "deepseek-r1:1.5b"
+    model_url: "http://localhost:11434/api/generate"
+    provider: "ollama"
+    temperature: 0.5
+    queue: []
+
+  # ===== MEMORY INITIALIZATION =====
+  - id: memory_store_init
+    type: memory
+    config:
+      operation: "write"
+    namespace: "research_session"
+    key_template: "original_document"
+    metadata:
+      type: "source"
+      timestamp: "{{ timestamp }}"
+
+  # ===== PARALLEL ANALYSIS FORK =====
+  - id: fork_analysis
+    type: fork
+    mode: "parallel"
+    targets:
+      - ["content_analyzer", "methodology_evaluator"]
+      - ["citation_checker", "literature_search"]
+      - ["local_summary", "openai_summary"]
+    group_id: "analysis_group"
+    queue: ["join_analysis"]
+
+  # ===== CONTENT ANALYSIS BRANCH =====
+  - id: content_analyzer
+    type: openai-answer
+    prompt: |
+      Analyze the main content themes, key findings, and research contributions 
+      of this paper: {{ input }}
+    temperature: 0.4
+    queue: []
+
+  - id: methodology_evaluator
+    type: openai-classification
+    prompt: |
+      Classify the research methodology used in this paper
+    options:
+      [
+        "experimental",
+        "observational",
+        "theoretical",
+        "meta-analysis",
+        "mixed-methods",
+        "other",
+      ]
+    temperature: 0.1
+    queue: []
+
+  # ===== VALIDATION BRANCH =====
+  - id: citation_checker
+    type: validate_and_structure
+    prompt: |
+      Extract and validate all citations and references from this document. 
+      Structure them in a standardized format.
+    store_structure:
+      - field: "citations"
+        type: "list"
+        description: "List of all citations found"
+      - field: "reference_count"
+        type: "number"
+        description: "Total number of references"
+      - field: "citation_quality"
+        type: "string"
+        description: "Assessment of citation quality"
+    queue: []
+
+  - id: literature_search
+    type: duckduckgo
+    prompt: |
+      Search for recent related work on the main topic of this research: {{ input }}
+    max_results: 5
+    queue: []
+
+  # ===== SUMMARY COMPARISON BRANCH =====
+  - id: local_summary
+    type: local_llm
+    prompt: |
+      Provide a comprehensive 3-paragraph summary of this research paper, 
+      focusing on objectives, methods, and conclusions: {{ input }}
+    model: "deepseek-r1:1.5b"
+    model_url: "http://localhost:11434/api/generate"
+    provider: "ollama"
+    temperature: 0.6
+    queue: []
+
+  - id: openai_summary
+    type: openai-answer
+    prompt: |
+      Provide a comprehensive 3-paragraph summary of this research paper, 
+      focusing on objectives, methods, and conclusions: {{ input }}
+    temperature: 0.6
+    queue: []
+
+  # ===== JOIN AND SYNTHESIS =====
+  - id: join_analysis
+    type: join
+    group_id: "analysis_group"
+    timeout: 300
+    merge_strategy: "collect_all"
+    queue: ["analysis_synthesizer"]
+
+  # ===== SYNTHESIS WITH FAILOVER =====
+  - id: analysis_synthesizer
+    type: failover
+    children:
+      - id: primary_synthesizer
+        type: openai-answer
+        prompt: |
+          Synthesize all the analysis results into a comprehensive research review. 
+          Include content analysis, methodology assessment, citation evaluation, 
+          related work, and compare the local vs OpenAI summaries: {{ input }}
+        temperature: 0.4
+      - id: backup_synthesizer
+        type: local_llm
+        prompt: |
+          Create a research review combining all analysis results: {{ input }}
+        model: "deepseek-r1:1.5b"
+        model_url: "http://localhost:11434/api/generate"
+        provider: "ollama"
+        temperature: 0.4
+      - id: emergency_synthesizer
+        type: binary
+        prompt: |
+          Simple analysis complete. Was this research paper successfully processed?
+    queue: ["quality_assessor"]
+
+  # ===== QUALITY ASSESSMENT =====
+  - id: quality_assessor
+    type: openai-classification
+    prompt: |
+      Rate the overall quality of this research analysis
+    options: ["excellent", "good", "fair", "poor", "incomplete"]
+    temperature: 0.1
+    queue: ["fork_feedback"]
+
+  # ===== MEMORY STORAGE =====
+  - id: memory_store_results
+    type: memory
+    config:
+      operation: "write"
+    namespace: "research_session"
+    vector: true
+    key_template: "analysis_{{ timestamp }}"
+    metadata:
+      type: "final_analysis"
+      quality_rating: "{{ quality_assessor }}"
+
+  # ===== FEEDBACK GENERATION FORK =====
+  - id: fork_feedback
+    type: fork
+    mode: "sequential"
+    targets:
+      - ["feedback_generator", "recommendation_engine"]
+    group_id: "feedback_group"
+    queue: ["join_feedback"]
+
+  - id: feedback_generator
+    type: local_llm
+    prompt: |
+      Generate constructive feedback for the authors based on this analysis: {{ input }}
+    model: "deepseek-r1:1.5b"
+    model_url: "http://localhost:11434/api/generate"
+    provider: "ollama"
+    temperature: 0.7
+    queue: []
+
+  - id: recommendation_engine
+    type: openai-answer
+    prompt: |
+      Provide specific recommendations for improving this research paper: {{ input }}
+    temperature: 0.5
+    queue: []
+
+  # ===== FINAL JOIN =====
+  - id: join_feedback
+    type: join
+    group_id: "feedback_group"
+    timeout: 120
+    merge_strategy: "collect_all"
+    queue: ["final_report"]
+
+  # ===== FINAL REPORT =====
+  - id: final_report
+    type: validate_and_structure
+    prompt: |
+      Create a final structured research analysis report combining all results: {{ input }}
+    store_structure:
+      - field: "document_quality"
+        type: "string"
+        description: "Overall document quality assessment"
+      - field: "methodology_type"
+        type: "string"
+        description: "Research methodology classification"
+      - field: "key_findings"
+        type: "list"
+        description: "Main research findings"
+      - field: "citation_analysis"
+        type: "object"
+        description: "Citation quality and count"
+      - field: "related_work"
+        type: "list"
+        description: "Related research found"
+      - field: "recommendations"
+        type: "list"
+        description: "Improvement recommendations"
+      - field: "final_rating"
+        type: "string"
+        description: "Overall analysis rating"
+    queue: []

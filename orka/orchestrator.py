@@ -26,7 +26,12 @@ from uuid import uuid4
 
 from jinja2 import Template
 
-from .agents import agents, llm_agents, validation_and_structuring_agent
+from .agents import (
+    agents,
+    llm_agents,
+    local_llm_agents,
+    validation_and_structuring_agent,
+)
 from .fork_group_manager import ForkGroupManager
 from .loader import YAMLLoader
 from .memory_logger import RedisMemoryLogger
@@ -40,6 +45,7 @@ logger = logging.getLogger(__name__)
 AGENT_TYPES = {
     "binary": agents.BinaryAgent,
     "classification": agents.ClassificationAgent,
+    "local_llm": local_llm_agents.LocalLLMAgent,
     "openai-answer": llm_agents.OpenAIAnswerBuilder,
     "openai-binary": llm_agents.OpenAIBinaryAgent,
     "openai-classification": llm_agents.OpenAIClassificationAgent,

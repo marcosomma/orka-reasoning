@@ -26,7 +26,7 @@ Available Agent Types:
   - Legacy BaseAgent: Backward-compatible synchronous implementation
 - Binary Agent: Makes binary (yes/no) decisions based on input
 - Classification Agent: Classifies input into predefined categories
-- LLM Agents: Integrations with large language models (OpenAI)
+- LLM Agents: Integrations with large language models (OpenAI, Local LLMs)
 - Validation Agent: Validates answers and structures them into memory objects
 """
 
@@ -38,12 +38,14 @@ from .llm_agents import (
     OpenAIBinaryAgent,
     OpenAIClassificationAgent,
 )
+from .local_llm_agents import LocalLLMAgent
 from .validation_and_structuring_agent import ValidationAndStructuringAgent
 
 # Register all available agent types
 AGENT_REGISTRY = {
     "binary": BinaryAgent,
     "classification": ClassificationAgent,
+    "local_llm": LocalLLMAgent,
     "openai-builder": OpenAIAnswerBuilder,
     "openai-binary": OpenAIBinaryAgent,
     "openai-classification": OpenAIClassificationAgent,

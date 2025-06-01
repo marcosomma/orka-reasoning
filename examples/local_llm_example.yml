@@ -1,0 +1,36 @@
+orchestrator:
+  memory:
+    store_type: "redis"
+    url: "redis://localhost:6379"
+  agents:
+    - "ollama_example"
+    - "lm_studio_example"
+    - "openai_compatible_example"
+
+agents:
+  - id: ollama_example
+    type: local_llm
+    prompt: "Summarize the following text in 2-3 sentences: {{ input }}"
+    model: "mistral"
+    model_url: "http://localhost:11434/api/generate"
+    provider: "ollama"
+    temperature: 0.7
+    queue: ["lm_studio_example"]
+
+  - id: lm_studio_example
+    type: local_llm
+    prompt: "Based on the summary, provide 3 key insights: {{ input }}"
+    model: "llama-2-7b-chat"
+    model_url: "http://localhost:1234"
+    provider: "lm_studio"
+    temperature: 0.5
+    queue: ["openai_compatible_example"]
+
+  - id: openai_compatible_example
+    type: local_llm
+    prompt: "Rate the insights from 1-10 and explain why: {{ input }}"
+    model: "gpt-3.5-turbo"
+    model_url: "http://localhost:8000/v1/chat/completions"
+    provider: "openai_compatible"
+    temperature: 0.3
+    queue: []
