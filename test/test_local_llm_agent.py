@@ -9,10 +9,27 @@ Tests the LocalLLMAgent class functionality including:
 """
 
 import json
+import os
 from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
+
+# Set environment variable for testing
+os.environ["PYTEST_RUNNING"] = "true"
+
+# Check if we should skip LLM tests
+SKIP_LLM_TESTS = os.environ.get("SKIP_LLM_TESTS", "false").lower() in (
+    "true",
+    "1",
+    "yes",
+)
+
+# Skip all tests if LLM tests should be skipped
+pytestmark = pytest.mark.skipif(
+    SKIP_LLM_TESTS,
+    reason="Local LLM tests skipped - SKIP_LLM_TESTS environment variable is set (usually in CI environments)",
+)
 
 from orka.agents.local_llm_agents import LocalLLMAgent
 

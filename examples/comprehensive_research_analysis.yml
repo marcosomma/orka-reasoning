@@ -1,10 +1,13 @@
 orchestrator:
   id: "research-analysis-system"
-  strategy: "sequential"
+  strategy: "parallel"
   queue: "orka:research-core"
   memory:
     store_type: "redis"
     url: "redis://localhost:6379"
+    # Read existing research context at start
+    read_namespace: "research_session"
+    read_key: "previous_analyses"
   agents:
     - "document_preprocessor"
     - "quality_gate"
@@ -57,17 +60,6 @@ agents:
     provider: "ollama"
     temperature: 0.5
     queue: []
-
-  # ===== MEMORY INITIALIZATION =====
-  - id: memory_store_init
-    type: memory
-    config:
-      operation: "write"
-    namespace: "research_session"
-    key_template: "original_document"
-    metadata:
-      type: "source"
-      timestamp: "{{ timestamp }}"
 
   # ===== PARALLEL ANALYSIS FORK =====
   - id: fork_analysis
@@ -177,10 +169,6 @@ agents:
         model_url: "http://localhost:11434/api/generate"
         provider: "ollama"
         temperature: 0.4
-      - id: emergency_synthesizer
-        type: binary
-        prompt: |
-          Simple analysis complete. Was this research paper successfully processed?
     queue: ["quality_assessor"]
 
   # ===== QUALITY ASSESSMENT =====
@@ -192,22 +180,10 @@ agents:
     temperature: 0.1
     queue: ["fork_feedback"]
 
-  # ===== MEMORY STORAGE =====
-  - id: memory_store_results
-    type: memory
-    config:
-      operation: "write"
-    namespace: "research_session"
-    vector: true
-    key_template: "analysis_{{ timestamp }}"
-    metadata:
-      type: "final_analysis"
-      quality_rating: "{{ quality_assessor }}"
-
   # ===== FEEDBACK GENERATION FORK =====
   - id: fork_feedback
     type: fork
-    mode: "sequential"
+    mode: "parallel"
     targets:
       - ["feedback_generator", "recommendation_engine"]
     group_id: "feedback_group"
@@ -238,7 +214,7 @@ agents:
     merge_strategy: "collect_all"
     queue: ["final_report"]
 
-  # ===== FINAL REPORT =====
+  # ===== FINAL REPORT WITH CONDITIONAL MEMORY STORAGE =====
   - id: final_report
     type: validate_and_structure
     prompt: |
@@ -265,4 +241,15 @@ agents:
       - field: "final_rating"
         type: "string"
         description: "Overall analysis rating"
+    # Memory storage happens here based on validation success
+    memory_config:
+      operation: "write"
+      namespace: "research_session"
+      key_template: "analysis_{{ timestamp }}"
+      vector: true
+      metadata:
+        type: "final_analysis"
+        quality_rating: "{{ quality_assessor }}"
+        validation_status: "{{ validation_status }}"
+      condition: "validation_passed" # Only store if validation passes
     queue: []
