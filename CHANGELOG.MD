@@ -3,6 +3,69 @@
 
 ---
 
+## [0.6.1] · 2025-06-07
+### Fixed
+* **Critical Search Tool Bug**
+  * Fixed DuckDuckGo search tool receiving raw template strings instead of formatted prompts
+  * Search queries now properly resolve template variables (e.g., `{{ previous_outputs['agent_id'] }}`)
+  * Orchestrator now renders prompts **before** agent execution instead of after
+  * Search results now correctly match the intended search queries
+* **Orchestrator Execution Flow**
+  * Fixed incomplete `if` statement in parallel agent execution causing syntax errors
+  * Added formatted prompts to payload data across all execution paths (RouterNode, ForkNode, JoinNode, normal agents)
+  * Fixed `previous_outputs` update timing in parallel execution - agents now see only results from previously completed agents
+  * Improved error handling for prompt template rendering with graceful fallbacks
+* **Code Quality Improvements**
+  * Refactored duplicated prompt handling code into reusable helper methods (`_render_agent_prompt`, `_add_prompt_to_payload`)
+  * Fixed timezone-aware datetime usage for UTC timestamps (replaced deprecated `datetime.utcnow()`)
+  * Enhanced payload data consistency across sequential and parallel execution paths
+### Changed
+* **Prompt Processing Architecture**
+  * Template rendering now occurs before agent execution for immediate availability
+  * Search tools prioritize `formatted_prompt` from orchestrator over raw prompt templates
+  * Improved separation of concerns between execution-time and logging-time prompt handling
+
+## [0.6.0] · 2025-06-07
+### Added
+* **Kafka Memory Backend Support**
+  * Comprehensive `KafkaMemoryLogger` implementation with full feature parity to Redis backend
+  * Support for hash operations, set operations, key-value storage, and event logging via Kafka
+  * Factory function `create_memory_logger()` for dynamic backend selection via environment variables
+  * Docker configuration and documentation for Kafka setup and integration
+  * 21 comprehensive test cases covering initialization, logging, data operations, and error handling
+* **Enhanced Resource Registry System**  
+  * Complete test coverage (0% → 98%) for `ResourceRegistry` with 20 new test cases
+  * Support for Redis, OpenAI, SentenceTransformer, and custom resource types
+  * Comprehensive error handling and resource lifecycle management testing
+  * Dynamic resource initialization with proper cleanup and connection management
+* **Robust Test Infrastructure**
+  * **295 total tests** passing with **73% overall coverage** (improved from 71%)
+  * Fork Group Manager coverage improved from 51% → 99% with 32 comprehensive tests
+  * Fixed critical recursion errors in memory logger JSON sanitization
+  * Enhanced mock strategies for Kafka integration without requiring actual Kafka installation
+  * Improved test isolation and reliability across different environments
+### Changed
+* **Dependency Management**
+  * Made DuckDuckGo search import optional to resolve PyO3 compatibility issues
+  * Enhanced error handling for missing optional dependencies (sentence-transformers, huggingface-hub)
+  * Coverage calculation now excludes start scripts (start_kafka.py, start_redis.py) for cleaner metrics
+* **Memory Logger Architecture**
+  * Improved JSON sanitization with cycle detection to prevent infinite recursion
+  * Enhanced logging error handling during system shutdown to prevent I/O operation errors
+  * Better error messages and graceful degradation for missing dependencies
+### Fixed
+* **Test Suite Stability**
+  * Resolved JoinNode test failures with proper mock `hget`/`hset` method implementations  
+  * Fixed memory logger recursion errors when sanitizing Mock objects with circular references
+  * Improved start script testing without problematic import dependencies
+  * Enhanced fork/join node functionality with proper retry count handling
+* **Logging and Error Handling**
+  * Fixed logging system shutdown errors in RedisMemoryLogger and KafkaMemoryLogger
+  * Improved error handling for resource cleanup during application termination
+  * Better exception handling and error reporting across memory backend operations
+
+---
+
 ## [0.5.9] · 2025-06-01
 ### Added
 * **LocalLLMAgent** - New agent type for local LLM integration

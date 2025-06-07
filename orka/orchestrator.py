@@ -20,7 +20,7 @@ import json
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
+from datetime import datetime, timezone
 from time import time
 from uuid import uuid4
 
@@ -247,6 +247,41 @@ class Orchestrator:
             )
         return Template(template_str).render(**payload)
 
+    def _add_prompt_to_payload(self, agent, payload_out, payload):
+        """
+        Add prompt and formatted_prompt to payload_out if agent has a prompt.
+
+        Args:
+            agent: The agent instance
+            payload_out: The payload dictionary to modify
+            payload: The context payload for template rendering
+        """
+        if hasattr(agent, "prompt") and agent.prompt:
+            payload_out["prompt"] = agent.prompt
+            # If the agent has a prompt, render it with the current payload context
+            try:
+                formatted_prompt = self.render_prompt(agent.prompt, payload)
+                payload_out["formatted_prompt"] = formatted_prompt
+            except Exception:
+                # If rendering fails, keep the original prompt
+                payload_out["formatted_prompt"] = agent.prompt
+
+    def _render_agent_prompt(self, agent, payload):
+        """
+        Render agent's prompt and add formatted_prompt to payload for agent execution.
+
+        Args:
+            agent: The agent instance
+            payload: The payload dictionary to modify
+        """
+        if hasattr(agent, "prompt") and agent.prompt:
+            try:
+                formatted_prompt = self.render_prompt(agent.prompt, payload)
+                payload["formatted_prompt"] = formatted_prompt
+            except Exception:
+                # If rendering fails, use the original prompt
+                payload["formatted_prompt"] = agent.prompt
+
     @staticmethod
     def normalize_bool(value):
         """
@@ -317,7 +352,7 @@ class Orchestrator:
             log_entry = {
                 "agent_id": agent_id,
                 "event_type": agent.__class__.__name__,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 
             start_time = time()
@@ -345,6 +380,7 @@ class Orchestrator:
                     "routing_map": str(routing_map),
                     "next_agents": str(next_agents),
                 }
+                self._add_prompt_to_payload(agent, payload_out, payload)
 
             # Handle ForkNode: run multiple agents in parallel branches
             elif agent_type == "forknode":
@@ -377,6 +413,8 @@ class Orchestrator:
                     "fork_group": fork_group_id,
                     "fork_targets": fork_targets,
                 }
+                self._add_prompt_to_payload(agent, payload_out, payload)
+
                 self.memory.log(
                     agent_id,
                     agent.__class__.__name__,
@@ -414,6 +452,8 @@ class Orchestrator:
                     "fork_group_id": fork_group_id,
                     "result": result,
                 }
+                self._add_prompt_to_payload(agent, payload_out, payload)
+
                 if not fork_group_id:
                     raise ValueError(
                         f"JoinNode '{agent_id}' missing required group_id."
@@ -454,6 +494,10 @@ class Orchestrator:
 
             else:
                 # Normal Agent: run and handle result
+
+                # Render prompt before running agent if agent has a prompt
+                self._render_agent_prompt(agent, payload)
+
                 if agent_type in ("memoryreadernode", "memorywriternode"):
                     # Memory nodes have async run methods
                     result = await agent.run(payload)
@@ -483,8 +527,7 @@ class Orchestrator:
                     self.enqueue_fork([next_agent], fork_group)
 
                 payload_out = {"input": input_data, "result": result}
-                if hasattr(agent, "prompt") and agent.prompt:
-                    payload_out["prompt"] = agent.prompt
+                self._add_prompt_to_payload(agent, payload_out, payload)
 
             # Log the result and timing for this step
             duration = round(time() - start_time, 4)
@@ -520,6 +563,9 @@ class Orchestrator:
         """
         agent = self.agents[agent_id]
         payload = {"input": input_data, "previous_outputs": previous_outputs}
+
+        # Render prompt before running agent if agent has a prompt
+        self._render_agent_prompt(agent, payload)
 
         # Inspect the run method to see if it needs orchestrator
         run_method = agent.run
@@ -584,6 +630,7 @@ class Orchestrator:
         # Process results and create logs
         forked_step_index = 0
         result_logs = []
+        updated_previous_outputs = previous_outputs.copy()
 
         # Flatten branch results into a single list of (agent_id, result) pairs
         all_results = []
@@ -602,13 +649,21 @@ class Orchestrator:
             join_state_key = "waitfor:join_parallel_checks:inputs"
             self.memory.hset(join_state_key, agent_id, json.dumps(result))
 
-            # Create log entry
+            # Create log entry with current previous_outputs (before updating with this agent's result)
+            payload_data = {"result": result}
+            agent = self.agents[agent_id]
+            payload_context = {
+                "input": input_data,
+                "previous_outputs": updated_previous_outputs,
+            }
+            self._add_prompt_to_payload(agent, payload_data, payload_context)
+
             log_data = {
                 "agent_id": agent_id,
                 "event_type": f"ForkedAgent-{self.agents[agent_id].__class__.__name__}",
-                "timestamp": datetime.utcnow().isoformat(),
-                "payload": {"result": result},
-                "previous_outputs": previous_outputs,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "payload": payload_data,
+                "previous_outputs": updated_previous_outputs.copy(),
                 "step": step_index,
                 "run_id": self.run_id,
             }
@@ -618,10 +673,13 @@ class Orchestrator:
             self.memory.log(
                 agent_id,
                 f"ForkedAgent-{self.agents[agent_id].__class__.__name__}",
-                {"result": result},
+                payload_data,
                 step=step_index,
                 run_id=self.run_id,
-                previous_outputs=previous_outputs,
+                previous_outputs=updated_previous_outputs.copy(),
             )
+
+            # Update previous_outputs with this agent's result AFTER logging
+            updated_previous_outputs[agent_id] = result
 
         return result_logs

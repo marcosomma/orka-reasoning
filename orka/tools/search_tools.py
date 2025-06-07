@@ -65,31 +65,30 @@ class DuckDuckGoTool(BaseTool):
                 "DuckDuckGo search not available - duckduckgo_search package not installed"
             ]
 
-        # Get initial query from prompt or input
-        if hasattr(self, "prompt") and self.prompt:
-            query = self.prompt
-        elif isinstance(input_data, dict):
-            query = input_data.get("input", "")
+        # Get query - prioritize formatted_prompt from orchestrator, then fallback to other sources
+        query = ""
+
+        if isinstance(input_data, dict):
+            # First check if orchestrator has provided a formatted_prompt via payload
+            if "formatted_prompt" in input_data:
+                query = input_data["formatted_prompt"]
+            # Then check if we have a prompt that was rendered by orchestrator
+            elif hasattr(self, "formatted_prompt"):
+                query = self.formatted_prompt
+            # Fall back to the raw prompt (which should be rendered by orchestrator)
+            elif hasattr(self, "prompt") and self.prompt:
+                query = self.prompt
+            # Finally, try to get from input data
+            else:
+                query = input_data.get("input") or input_data.get("query") or ""
         else:
             query = input_data
 
         if not query:
             return ["No query provided"]
 
-        # Replace input variable if prompt template is used
-        if isinstance(query, str) and "{{ input }}" in query:
-            if isinstance(input_data, dict):
-                input_value = input_data.get("input", "")
-            else:
-                input_value = input_data
-            query = query.replace("{{ input }}", str(input_value))
-
-        # Replace any previous_outputs variables if available
-        if isinstance(input_data, dict) and isinstance(query, str):
-            for key, value in input_data.get("previous_outputs", {}).items():
-                template_var = f"{{{{ previous_outputs.{key} }}}}"
-                if template_var in query:
-                    query = query.replace(template_var, str(value))
+        # Convert to string if needed
+        query = str(query)
 
         try:
             # Execute search and get top 5 results
