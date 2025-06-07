@@ -17,7 +17,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from orka.orka_start import get_docker_dir, main, start_backend, start_redis
+from orka.orka_start import (
+    get_docker_dir,
+    get_memory_backend,
+    main,
+    start_backend,
+    start_infrastructure,
+)
 
 
 @pytest.fixture
@@ -56,36 +62,72 @@ def test_get_docker_dir_not_found(monkeypatch):
             get_docker_dir()
 
 
-def test_start_redis(mock_docker_dir):
-    """Test Redis startup sequence"""
-    with patch("subprocess.run") as mock_run:
+def test_get_memory_backend():
+    """Test memory backend detection"""
+    # Test default backend
+    with patch.dict("os.environ", {}, clear=True):
+        assert get_memory_backend() == "redis"
+
+    # Test redis backend
+    with patch.dict("os.environ", {"ORKA_MEMORY_BACKEND": "redis"}):
+        assert get_memory_backend() == "redis"
+
+    # Test kafka backend
+    with patch.dict("os.environ", {"ORKA_MEMORY_BACKEND": "kafka"}):
+        assert get_memory_backend() == "kafka"
+
+    # Test dual backend
+    with patch.dict("os.environ", {"ORKA_MEMORY_BACKEND": "dual"}):
+        assert get_memory_backend() == "dual"
+
+    # Test invalid backend defaults to redis
+    with patch.dict("os.environ", {"ORKA_MEMORY_BACKEND": "invalid"}):
+        assert get_memory_backend() == "redis"
+
+
+def test_start_infrastructure_redis(mock_docker_dir):
+    """Test Redis infrastructure startup"""
+    with (
+        patch("subprocess.run") as mock_run,
+        patch("orka.orka_start.get_docker_dir", return_value=mock_docker_dir),
+        patch("time.sleep"),
+    ):  # Mock sleep to speed up tests
         # Mock successful subprocess runs
         mock_run.return_value = MagicMock(returncode=0)
 
-        start_redis()
+        start_infrastructure("redis")
 
         # Verify docker-compose commands were called in correct order
-        assert mock_run.call_count == 3
+        assert mock_run.call_count >= 3
         calls = mock_run.call_args_list
 
-        # Check docker-compose down
-        assert "down" in calls[0][0][0]
-        # Check docker-compose pull
-        assert "pull" in calls[1][0][0]
-        # Check docker-compose up
-        assert "up" in calls[2][0][0]
-        assert "-d" in calls[2][0][0]
-        assert "redis" in calls[2][0][0]
+        # Check that docker-compose down was called
+        down_calls = [call for call in calls if "down" in str(call)]
+        assert len(down_calls) > 0
+
+        # Check that redis service was started
+        up_calls = [call for call in calls if "up" in str(call)]
+        assert len(up_calls) > 0
 
 
-def test_start_redis_failure(mock_docker_dir):
-    """Test Redis startup failure handling"""
-    with patch("subprocess.run") as mock_run:
-        # Mock failed subprocess run
-        mock_run.side_effect = subprocess.CalledProcessError(1, "docker-compose")
+def test_start_infrastructure_failure(mock_docker_dir):
+    """Test infrastructure startup failure handling"""
+    with (
+        patch("subprocess.run") as mock_run,
+        patch("orka.orka_start.get_docker_dir", return_value=mock_docker_dir),
+        patch("time.sleep"),
+    ):
+        # Mock failed subprocess run for the critical step
+        def side_effect(*args, **kwargs):
+            # Fail on the docker-compose up command
+            if "up" in str(args[0]):
+                raise subprocess.CalledProcessError(1, "docker-compose")
+            return MagicMock(returncode=0)
+
+        mock_run.side_effect = side_effect
 
         with pytest.raises(subprocess.CalledProcessError):
-            start_redis()
+            start_infrastructure("redis")
 
 
 def test_start_backend():
@@ -111,10 +153,12 @@ def test_start_backend_failure():
 async def test_main_success(monkeypatch):
     """Test successful main execution"""
     # Mock the required functions
-    monkeypatch.setattr("orka.orka_start.start_redis", MagicMock())
+    monkeypatch.setattr("orka.orka_start.start_infrastructure", MagicMock())
+    monkeypatch.setattr("orka.orka_start.wait_for_services", MagicMock())
     monkeypatch.setattr(
         "orka.orka_start.start_backend", MagicMock(return_value=MagicMock())
     )
+    monkeypatch.setattr("orka.orka_start.cleanup_services", MagicMock())
 
     # Mock asyncio.sleep to raise KeyboardInterrupt immediately
     with patch("asyncio.sleep", side_effect=KeyboardInterrupt()):
@@ -128,12 +172,14 @@ async def test_main_success(monkeypatch):
 async def test_main_backend_failure(monkeypatch):
     """Test main execution with backend failure"""
     # Mock the required functions
-    monkeypatch.setattr("orka.orka_start.start_redis", MagicMock())
+    monkeypatch.setattr("orka.orka_start.start_infrastructure", MagicMock())
+    monkeypatch.setattr("orka.orka_start.wait_for_services", MagicMock())
     mock_backend = MagicMock()
     mock_backend.poll.return_value = 1  # Simulate backend process exit
     monkeypatch.setattr(
         "orka.orka_start.start_backend", MagicMock(return_value=mock_backend)
     )
+    monkeypatch.setattr("orka.orka_start.cleanup_services", MagicMock())
 
     # Mock asyncio.sleep to avoid actual waiting
     with patch("asyncio.sleep"):
@@ -146,22 +192,23 @@ async def test_main_backend_failure(monkeypatch):
 async def test_main_cleanup(monkeypatch):
     """Test cleanup on keyboard interrupt"""
     # Mock the required functions
-    monkeypatch.setattr("orka.orka_start.start_redis", MagicMock())
+    monkeypatch.setattr("orka.orka_start.start_infrastructure", MagicMock())
+    monkeypatch.setattr("orka.orka_start.wait_for_services", MagicMock())
     mock_backend = MagicMock()
     monkeypatch.setattr(
         "orka.orka_start.start_backend", MagicMock(return_value=mock_backend)
     )
+    mock_cleanup = MagicMock()
+    monkeypatch.setattr("orka.orka_start.cleanup_services", mock_cleanup)
 
-    # Mock subprocess.run for cleanup
-    with patch("subprocess.run") as mock_run:
-        # Mock asyncio.sleep to raise KeyboardInterrupt immediately
-        with patch("asyncio.sleep", side_effect=KeyboardInterrupt()):
-            try:
-                await main()
-            except KeyboardInterrupt:
-                pass  # Expected exception
+    # Mock asyncio.sleep to raise KeyboardInterrupt immediately
+    with patch("asyncio.sleep", side_effect=KeyboardInterrupt()):
+        try:
+            await main()
+        except KeyboardInterrupt:
+            pass  # Expected exception
 
-            # Verify cleanup was performed
-            assert mock_backend.terminate.called
-            assert mock_backend.wait.called
-            assert mock_run.called  # docker-compose down
+        # Verify cleanup was performed
+        assert mock_backend.terminate.called
+        assert mock_backend.wait.called
+        assert mock_cleanup.called

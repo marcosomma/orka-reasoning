@@ -66,16 +66,19 @@ def test_run_cli_entrypoint(mock_yaml_loader):
 # Orchestrator Tests
 @pytest.mark.asyncio
 @patch("orka.orchestrator.YAMLLoader", autospec=True)
-@patch("orka.orchestrator.RedisMemoryLogger", autospec=True)
+@patch("orka.orchestrator.create_memory_logger", autospec=True)
 @patch("orka.orchestrator.ForkGroupManager", autospec=True)
+@patch("orka.orchestrator.SimpleForkGroupManager", autospec=True)
 async def test_orchestrator_initialization(
-    mock_fork_manager, mock_memory_logger, mock_loader
+    mock_simple_fork_manager, mock_fork_manager, mock_memory_logger, mock_loader
 ):
     """Test initialization of the Orchestrator."""
     # Setup mocks
     mock_loader_instance = MagicMock()
     mock_loader.return_value = mock_loader_instance
     mock_memory_instance = MagicMock()
+    # Add redis property to mock for compatibility
+    mock_memory_instance.redis = MagicMock()
     mock_memory_logger.return_value = mock_memory_instance
 
     # Mock loader methods
@@ -95,10 +98,11 @@ async def test_orchestrator_initialization(
 
 @pytest.mark.asyncio
 @patch("orka.orchestrator.YAMLLoader", autospec=True)
-@patch("orka.orchestrator.RedisMemoryLogger", autospec=True)
+@patch("orka.orchestrator.create_memory_logger", autospec=True)
 @patch("orka.orchestrator.ForkGroupManager", autospec=True)
+@patch("orka.orchestrator.SimpleForkGroupManager", autospec=True)
 async def test_orchestrator_with_agents(
-    mock_fork_manager, mock_memory_logger, mock_loader
+    mock_simple_fork_manager, mock_fork_manager, mock_memory_logger, mock_loader
 ):
     """Test Orchestrator with agents configuration."""
     # Setup mocks

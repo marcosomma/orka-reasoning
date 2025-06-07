@@ -32,9 +32,9 @@ from .agents import (
     local_llm_agents,
     validation_and_structuring_agent,
 )
-from .fork_group_manager import ForkGroupManager
+from .fork_group_manager import ForkGroupManager, SimpleForkGroupManager
 from .loader import YAMLLoader
-from .memory_logger import RedisMemoryLogger
+from .memory_logger import create_memory_logger
 from .nodes import failing_node, failover_node, fork_node, join_node, router_node
 from .nodes.memory_reader_node import MemoryReaderNode
 from .nodes.memory_writer_node import MemoryWriterNode
@@ -78,8 +78,27 @@ class Orchestrator:
         self.orchestrator_cfg = self.loader.get_orchestrator()
         self.agent_cfgs = self.loader.get_agents()
 
-        self.memory = RedisMemoryLogger()
-        self.fork_manager = ForkGroupManager(self.memory.redis)
+        # Configure memory backend
+        memory_backend = os.getenv("ORKA_MEMORY_BACKEND", "redis").lower()
+
+        if memory_backend == "kafka":
+            self.memory = create_memory_logger(
+                backend="kafka",
+                bootstrap_servers=os.getenv(
+                    "KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"
+                ),
+                topic_prefix=os.getenv("KAFKA_TOPIC_PREFIX", "orka-memory"),
+            )
+            # For Kafka, we'll use a simple in-memory fork manager since Kafka doesn't have Redis-like operations
+            self.fork_manager = SimpleForkGroupManager()
+        else:
+            self.memory = create_memory_logger(
+                backend="redis",
+                redis_url=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
+            )
+            # For Redis, use the existing Redis-based fork manager
+            self.fork_manager = ForkGroupManager(self.memory.redis)
+
         self.queue = self.orchestrator_cfg["agents"][:]  # Initial agent execution queue
         self.agents = self._init_agents()  # Dict of agent_id -> agent instance
         self.run_id = str(uuid4())  # Unique run/session ID
@@ -376,8 +395,8 @@ class Orchestrator:
 
             # Handle JoinNode: wait for all forked agents to finish, then join results
             elif agent_type == "joinnode":
-                fork_group_id = self.memory.redis.get(
-                    f"fork_group_mapping:{agent.group_id}"
+                fork_group_id = self.memory.hget(
+                    f"fork_group_mapping:{agent.group_id}", "group_id"
                 )
                 if fork_group_id:
                     fork_group_id = (
@@ -546,9 +565,10 @@ class Orchestrator:
         Returns a list of log entries for each forked agent.
         """
         # Get the fork node to understand the branch structure
-        fork_node_id = (
-            fork_group_id.split("_")[0] + "_" + fork_group_id.split("_")[1]
-        )  # Get 'fork_temporal' from 'fork_temporal_1746645176'
+        # Fork group ID format: {node_id}_{timestamp}, so we need to remove the timestamp
+        fork_node_id = "_".join(
+            fork_group_id.split("_")[:-1]
+        )  # Remove the last part (timestamp)
         fork_node = self.agents[fork_node_id]
         branches = fork_node.targets
 

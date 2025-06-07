@@ -35,13 +35,13 @@ class JoinNode(BaseNode):
         fork_group_id = input_data.get("fork_group_id", self.group_id)
         state_key = "waitfor:join_parallel_checks:inputs"
 
-        # Get or increment retry count in Redis
-        retry_count = self.memory_logger.redis.get(self._retry_key)
-        if retry_count is None:
+        # Get or increment retry count using backend-agnostic hash operations
+        retry_count_str = self.memory_logger.hget("join_retry_counts", self._retry_key)
+        if retry_count_str is None:
             retry_count = 3
         else:
-            retry_count = int(retry_count) + 1
-        self.memory_logger.redis.set(self._retry_key, retry_count)
+            retry_count = int(retry_count_str) + 1
+        self.memory_logger.hset("join_retry_counts", self._retry_key, str(retry_count))
 
         # Get list of received inputs and expected targets
         inputs_received = self.memory_logger.hkeys(state_key)
@@ -52,12 +52,12 @@ class JoinNode(BaseNode):
 
         # Check if all expected agents have completed
         if not pending:
-            self.memory_logger.redis.delete(self._retry_key)
+            self.memory_logger.hdel("join_retry_counts", self._retry_key)
             return self._complete(fork_targets, state_key)
 
         # Check for max retries
         if retry_count >= self.max_retries:
-            self.memory_logger.redis.delete(self._retry_key)
+            self.memory_logger.hdel("join_retry_counts", self._retry_key)
             return {
                 "status": "timeout",
                 "pending": pending,
@@ -79,9 +79,10 @@ class JoinNode(BaseNode):
             agent_id: json.loads(self.memory_logger.hget(state_key, agent_id))
             for agent_id in fork_targets
         }
-        self.memory_logger.redis.set(self.output_key, json.dumps(merged))
-        self.memory_logger.redis.delete(state_key)
-        self.memory_logger.redis.delete(
-            f"fork_group:{fork_targets[0] if fork_targets else ''}"
-        )
+        # Store output using hash operations
+        self.memory_logger.hset("join_outputs", self.output_key, json.dumps(merged))
+        # Clean up state using hash operations
+        self.memory_logger.hdel(state_key, *fork_targets)
+        # Note: For now, we'll leave the fork group cleanup to the orchestrator
+        # since the delete operation isn't available in the base interface yet
         return {"status": "done", "merged": merged}

@@ -83,9 +83,9 @@ class ForkNode(BaseNode):
             # Create the fork group with all agents
             orchestrator.fork_manager.create_group(fork_group_id, all_flat_agents)
 
-        # Store fork group mapping and agent list in Redis
-        self.memory_logger.redis.set(
-            f"fork_group_mapping:{self.node_id}", fork_group_id
+        # Store fork group mapping and agent list using backend-agnostic methods
+        self.memory_logger.hset(
+            f"fork_group_mapping:{self.node_id}", "group_id", fork_group_id
         )
-        self.memory_logger.redis.sadd(f"fork_group:{fork_group_id}", *all_flat_agents)
+        self.memory_logger.sadd(f"fork_group:{fork_group_id}", *all_flat_agents)
         return {"status": "forked", "fork_group": fork_group_id}

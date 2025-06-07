@@ -163,10 +163,18 @@ class TestJoinNode:
         mock_memory_logger.redis.get.return_value = None  # First retry
         mock_memory_logger.hkeys.return_value = ["branch1", "branch2"]
         mock_memory_logger.smembers.return_value = ["branch1", "branch2"]
-        # Set up the hget method to return valid JSON strings
-        mock_memory_logger.hget = MagicMock(
-            side_effect=lambda key, branch_id: '{"result": "data_' + branch_id + '"}'
-        )
+
+        # Set up the hget method to handle different hash keys appropriately
+        def mock_hget(hash_key, field):
+            if hash_key == "join_retry_counts":
+                return None  # First retry, no previous count
+            else:
+                # Return JSON strings for state data
+                return '{"result": "data_' + field + '"}'
+
+        mock_memory_logger.hget = MagicMock(side_effect=mock_hget)
+        mock_memory_logger.hset = MagicMock()  # Add missing hset mock
+        mock_memory_logger.hdel = MagicMock()  # Add missing hdel mock
         mock_memory_logger_class.return_value = mock_memory_logger
 
         # Create a JoinNode with the mock memory logger

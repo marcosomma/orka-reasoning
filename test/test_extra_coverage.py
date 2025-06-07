@@ -110,6 +110,15 @@ def test_join_node_complete_merges_and_cleans():
         def hget(self, state_key, agent_id):
             return self._h[agent_id]
 
+        def hset(self, hash_key, field, value):
+            """Add missing hset method for JoinNode._complete()"""
+            self.set_keys.append((hash_key, field, value))
+
+        def hdel(self, hash_key, *fields):
+            """Add missing hdel method for JoinNode._complete()"""
+            for field in fields:
+                self.deleted.append((hash_key, field))
+
         def set(self, key, val):
             self.set_keys.append((key, val))
 

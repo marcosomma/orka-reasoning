@@ -1,0 +1,44 @@
+orchestrator:
+  id: "kafka-memory-example"
+  strategy: "parallel"
+  queue: "orka:kafka-test"
+  memory:
+    store_type: "kafka"
+    bootstrap_servers: "localhost:9092"
+    topic_prefix: "orka-memory"
+  agents:
+    - "text_processor"
+    - "sentiment_analyzer"
+    - "summary_generator"
+
+agents:
+  - id: text_processor
+    type: local_llm
+    prompt: "Clean and preprocess this text: {{ input }}"
+    model: "mistral"
+    model_url: "http://localhost:11434/api/generate"
+    provider: "ollama"
+    temperature: 0.3
+    queue: ["sentiment_analyzer"]
+
+  - id: sentiment_analyzer
+    type: local_llm
+    prompt: "Analyze the sentiment of this text and provide a score from -1 to 1: {{ input }}"
+    model: "llama3"
+    model_url: "http://localhost:11434/api/generate"
+    provider: "ollama"
+    temperature: 0.1
+    queue: ["summary_generator"]
+
+  - id: summary_generator
+    type: local_llm
+    prompt: |
+      Create a comprehensive summary including:
+      - Original text: {{ previous_outputs.text_processor }}
+      - Sentiment analysis: {{ previous_outputs.sentiment_analyzer }}
+      - Final summary: {{ input }}
+    model: "deepseek-r1:1.5b"
+    model_url: "http://localhost:11434/api/generate"
+    provider: "ollama"
+    temperature: 0.5
+    queue: []

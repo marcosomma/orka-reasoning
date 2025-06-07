@@ -173,30 +173,90 @@ async def test_memory_writer_node_with_vector(monkeypatch):
     # Mock all the necessary imports
     monkeypatch.setattr("orka.utils.embedder.AsyncEmbedder", MockAsyncEmbedder)
     monkeypatch.setattr("orka.utils.embedder.get_embedder", lambda x: mock_embedder)
-    monkeypatch.setattr(
-        "sentence_transformers.SentenceTransformer", MockSentenceTransformer
-    )
 
-    # Mock all HuggingFace Hub API calls
-    monkeypatch.setattr(
-        "huggingface_hub.file_download.hf_hub_download",
-        lambda *args, **kwargs: "mock_path",
-    )
-    monkeypatch.setattr(
-        "huggingface_hub.file_download.get_hf_file_metadata", lambda *args, **kwargs: {}
-    )
-    monkeypatch.setattr(
-        "huggingface_hub.utils._http.hf_raise_for_status", lambda *args, **kwargs: None
-    )
-    monkeypatch.setattr(
-        "transformers.utils.hub.cached_file", lambda *args, **kwargs: "mock_path"
-    )
-    monkeypatch.setattr(
-        "transformers.utils.hub.cached_files", lambda *args, **kwargs: ["mock_path"]
-    )
+    # Only mock sentence_transformers if available, otherwise create it in sys.modules
+    try:
+        import sentence_transformers
 
-    # Set local_files_only to True to avoid network calls
-    monkeypatch.setattr("transformers.utils.hub.is_offline_mode", lambda: True)
+        monkeypatch.setattr(
+            "sentence_transformers.SentenceTransformer", MockSentenceTransformer
+        )
+    except ImportError:
+        # Create a mock module if sentence_transformers is not available
+        import sys
+        import types
+
+        mock_module = types.ModuleType("sentence_transformers")
+        mock_module.SentenceTransformer = MockSentenceTransformer
+        sys.modules["sentence_transformers"] = mock_module
+
+    # Mock HuggingFace Hub API calls only if available
+    try:
+        import huggingface_hub
+
+        monkeypatch.setattr(
+            "huggingface_hub.file_download.hf_hub_download",
+            lambda *args, **kwargs: "mock_path",
+        )
+        monkeypatch.setattr(
+            "huggingface_hub.file_download.get_hf_file_metadata",
+            lambda *args, **kwargs: {},
+        )
+        monkeypatch.setattr(
+            "huggingface_hub.utils._http.hf_raise_for_status",
+            lambda *args, **kwargs: None,
+        )
+    except ImportError:
+        # Create mock modules if not available
+        import sys
+        import types
+
+        # Mock huggingface_hub
+        mock_hf_hub = types.ModuleType("huggingface_hub")
+        mock_file_download = types.ModuleType("file_download")
+        mock_file_download.hf_hub_download = lambda *args, **kwargs: "mock_path"
+        mock_file_download.get_hf_file_metadata = lambda *args, **kwargs: {}
+        mock_hf_hub.file_download = mock_file_download
+
+        mock_utils = types.ModuleType("utils")
+        mock_http = types.ModuleType("_http")
+        mock_http.hf_raise_for_status = lambda *args, **kwargs: None
+        mock_utils._http = mock_http
+        mock_hf_hub.utils = mock_utils
+
+        sys.modules["huggingface_hub"] = mock_hf_hub
+        sys.modules["huggingface_hub.file_download"] = mock_file_download
+        sys.modules["huggingface_hub.utils"] = mock_utils
+        sys.modules["huggingface_hub.utils._http"] = mock_http
+
+    # Mock transformers utils if available
+    try:
+        import transformers
+
+        monkeypatch.setattr(
+            "transformers.utils.hub.cached_file", lambda *args, **kwargs: "mock_path"
+        )
+        monkeypatch.setattr(
+            "transformers.utils.hub.cached_files", lambda *args, **kwargs: ["mock_path"]
+        )
+        monkeypatch.setattr("transformers.utils.hub.is_offline_mode", lambda: True)
+    except ImportError:
+        # Create mock transformers module if not available
+        import sys
+        import types
+
+        mock_transformers = types.ModuleType("transformers")
+        mock_utils = types.ModuleType("utils")
+        mock_hub = types.ModuleType("hub")
+        mock_hub.cached_file = lambda *args, **kwargs: "mock_path"
+        mock_hub.cached_files = lambda *args, **kwargs: ["mock_path"]
+        mock_hub.is_offline_mode = lambda: True
+        mock_utils.hub = mock_hub
+        mock_transformers.utils = mock_utils
+
+        sys.modules["transformers"] = mock_transformers
+        sys.modules["transformers.utils"] = mock_utils
+        sys.modules["transformers.utils.hub"] = mock_hub
 
     # Create a redis mock with real redis client
     redis_client = redis.from_url("redis://localhost:6379")

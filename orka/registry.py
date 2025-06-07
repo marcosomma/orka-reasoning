@@ -46,11 +46,22 @@ from typing import Any, Dict
 
 import redis.asyncio as redis
 from openai import AsyncOpenAI
-from sentence_transformers import SentenceTransformer
 
 from .contracts import ResourceConfig
 
 logger = logging.getLogger(__name__)
+
+# Optional dependencies
+try:
+    from sentence_transformers import SentenceTransformer
+
+    HAS_SENTENCE_TRANSFORMERS = True
+except ImportError:
+    SentenceTransformer = None
+    HAS_SENTENCE_TRANSFORMERS = False
+    logger.warning(
+        "sentence_transformers not available. Install with: pip install sentence-transformers"
+    )
 
 
 class ResourceRegistry:
@@ -115,6 +126,10 @@ class ResourceRegistry:
         resource_config = config["config"]
 
         if resource_type == "sentence_transformer":
+            if not HAS_SENTENCE_TRANSFORMERS:
+                raise ImportError(
+                    "sentence_transformers is required for sentence_transformer resource. Install with: pip install sentence-transformers"
+                )
             return SentenceTransformer(resource_config["model_name"])
 
         elif resource_type == "redis":

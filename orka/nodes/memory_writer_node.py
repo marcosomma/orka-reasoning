@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import time
 from typing import Any, Dict
 
@@ -45,7 +46,9 @@ class MemoryWriterNode(BaseNode):
                 logger.error(f"Failed to initialize fallback embedder: {str(e2)}")
                 self.vector_enabled = False
 
-        self.redis = redis.from_url("redis://localhost:6379", decode_responses=False)
+        # Use environment variable for Redis URL
+        redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+        self.redis = redis.from_url(redis_url, decode_responses=False)
         self.type = "memorywriternode"  # Used for agent type identification
 
     async def run(self, context: Dict[str, Any]) -> Dict[str, Any]:

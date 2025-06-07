@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import re
 from typing import Any, Dict
 
@@ -21,7 +22,10 @@ class MemoryReaderNode(BaseNode):
         self.namespace = kwargs.get("namespace", "default")
         self.similarity_threshold = kwargs.get("similarity_threshold", 0.6)
         self.embedding_model = kwargs.get("embedding_model", None)
-        self.redis = redis.from_url("redis://localhost:6379", decode_responses=False)
+
+        # Use environment variable for Redis URL
+        redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+        self.redis = redis.from_url(redis_url, decode_responses=False)
         self.embedder = get_embedder(self.embedding_model)
         self.type = "memoryreadernode"  # Used for agent type identification
 

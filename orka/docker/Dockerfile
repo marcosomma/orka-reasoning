@@ -2,16 +2,18 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-# Install the package and its dependencies
-RUN pip install orka-reasoning
+# Copy the entire project (build context is parent directory)
+COPY . .
 
-# Copy the docker configuration files
-COPY docker-compose.yml .
-COPY Dockerfile .
+# Install minimal dependencies (avoid heavy ML packages for Docker)
+RUN pip install --no-cache-dir -r orka/requirements-minimal.txt
 
-# Show what was copied
-RUN echo "=== Contents of /app ===" && ls -la && echo "=== End of contents ==="
+# Install OrKa package in development mode
+RUN pip install --no-cache-dir -e .
 
 EXPOSE 8000
+
+# Set PYTHONPATH to ensure modules can be found
+ENV PYTHONPATH=/app
 
 CMD ["python", "-m", "orka.server"] 

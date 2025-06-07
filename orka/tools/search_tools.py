@@ -29,7 +29,14 @@ be present in their training data.
 
 import logging
 
-from duckduckgo_search import DDGS
+# Optional import for DuckDuckGo search
+try:
+    from duckduckgo_search import DDGS
+
+    HAS_DUCKDUCKGO = True
+except ImportError:
+    DDGS = None
+    HAS_DUCKDUCKGO = False
 
 from .base_tool import BaseTool
 
@@ -52,6 +59,12 @@ class DuckDuckGoTool(BaseTool):
         Returns:
             list: List of search result snippets.
         """
+        # Check if DuckDuckGo is available
+        if not HAS_DUCKDUCKGO:
+            return [
+                "DuckDuckGo search not available - duckduckgo_search package not installed"
+            ]
+
         # Get initial query from prompt or input
         if hasattr(self, "prompt") and self.prompt:
             query = self.prompt

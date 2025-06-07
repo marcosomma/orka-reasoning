@@ -1,5 +1,23 @@
-version: '3.8'
 services:
+  # ===================
+  # Cleanup Service
+  # ===================
+  cleanup:
+    image: docker:24-cli
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: >
+      sh -c "
+        echo 'Cleaning up previous containers...' &&
+        docker container prune -f &&
+        docker system prune -f &&
+        docker network prune -f &&
+        echo 'Cleanup completed!'
+      "
+
+  # ===================
+  # Redis Infrastructure
+  # ===================
   redis:
     image: redis:7.2-alpine
     ports:
@@ -8,18 +26,160 @@ services:
       - redis_data:/data
     command: redis-server --appendonly yes
     restart: always
+    networks:
+      - orka-redis-network
 
-  orka-backend:
+  # ===================
+  # Kafka Infrastructure  
+  # ===================
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - orka-kafka-network
+    restart: always
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    networks:
+      - orka-kafka-network
+    restart: always
+
+  # ===================
+  # Schema Registry
+  # ===================
+  schema-registry:
+    image: confluentinc/cp-schema-registry:latest
+    depends_on:
+      - kafka
+      - zookeeper
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:29092
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas
+      SCHEMA_REGISTRY_DEBUG: 'true'
+    networks:
+      - orka-kafka-network
+    restart: always
+    profiles:
+      - kafka
+      - dual
+
+  # ===================
+  # Optional: Schema Registry UI
+  # ===================
+  schema-registry-ui:
+    image: landoop/schema-registry-ui:latest
+    depends_on:
+      - schema-registry
+    ports:
+      - "8082:8000"
+    environment:
+      SCHEMAREGISTRY_URL: http://schema-registry:8081
+      PROXY: 'true'
+    networks:
+      - orka-kafka-network
+    restart: always
+    profiles:
+      - kafka
+      - dual
+
+  # ===================
+  # Orka Services
+  # ===================
+  orka-start-redis:
     build:
-      context: .
-      dockerfile: docker/Dockerfile
+      context: ../..
+      dockerfile: orka/docker/Dockerfile
     ports:
       - "8000:8000"
     environment:
+      - ORKA_MEMORY_BACKEND=redis
       - REDIS_URL=redis://redis:6379/0
+      - ORKA_PORT=8000
     depends_on:
       - redis
+      - cleanup
     restart: always
+    networks:
+      - orka-redis-network
+    profiles:
+      - redis
+
+  orka-start-kafka:
+    build:
+      context: ../..
+      dockerfile: orka/docker/Dockerfile
+    ports:
+      - "8001:8000"  # Different port to avoid conflicts
+    environment:
+      - ORKA_MEMORY_BACKEND=kafka
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - KAFKA_TOPIC_PREFIX=orka-memory
+      - KAFKA_SCHEMA_REGISTRY_URL=http://schema-registry:8081
+      - ORKA_PORT=8000
+    depends_on:
+      - kafka
+      - zookeeper
+      - schema-registry
+      - cleanup
+    restart: always
+    networks:
+      - orka-kafka-network
+    profiles:
+      - kafka
+
+  # ===================
+  # Optional: Combined service for testing both backends
+  # ===================
+  orka-dual-backend:
+    build:
+      context: ../..
+      dockerfile: orka/docker/Dockerfile
+    ports:
+      - "8002:8000"
+    environment:
+      - ORKA_MEMORY_BACKEND=redis  # Default to Redis, can be overridden
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - KAFKA_TOPIC_PREFIX=orka-memory
+      - KAFKA_SCHEMA_REGISTRY_URL=http://schema-registry:8081
+      - ORKA_PORT=8000
+    depends_on:
+      - redis
+      - kafka
+      - zookeeper
+      - schema-registry
+      - cleanup
+    restart: always
+    networks:
+      - orka-redis-network
+      - orka-kafka-network
+    profiles:
+      - dual
 
 volumes:
   redis_data:
+
+networks:
+  orka-redis-network:
+    driver: bridge
+  orka-kafka-network:
+    driver: bridge

@@ -185,3 +185,141 @@ class ForkGroupManager:
         if next_one:
             return next_one.decode() if isinstance(next_one, bytes) else next_one
         return None
+
+
+class SimpleForkGroupManager:
+    """
+    A simple in-memory fork group manager for use with non-Redis backends like Kafka.
+    Provides the same interface as ForkGroupManager but stores data in memory.
+
+    Note: This implementation is not distributed and will not work across multiple
+    orchestrator instances. Use only for single-instance deployments with Kafka.
+    """
+
+    def __init__(self):
+        """Initialize the simple fork group manager with in-memory storage."""
+        self._groups = {}  # fork_group_id -> set of agent_ids
+        self._branch_sequences = {}  # fork_group_id -> {agent_id -> next_agent_id}
+
+    def create_group(self, fork_group_id, agent_ids):
+        """
+        Create a new fork group with the given agent IDs.
+
+        Args:
+            fork_group_id (str): ID of the fork group.
+            agent_ids (list): List of agent IDs to include in the group.
+        """
+        # Flatten any nested branch sequences (e.g., [[a, b, c], [x, y]])
+        flat_ids = []
+        for el in agent_ids:
+            if isinstance(el, list):
+                flat_ids.extend(el)
+            else:
+                flat_ids.append(el)
+        self._groups[fork_group_id] = set(flat_ids)
+
+    def mark_agent_done(self, fork_group_id, agent_id):
+        """
+        Mark an agent as done in the fork group.
+
+        Args:
+            fork_group_id (str): ID of the fork group.
+            agent_id (str): ID of the agent to mark as done.
+        """
+        if fork_group_id in self._groups:
+            self._groups[fork_group_id].discard(agent_id)
+
+    def is_group_done(self, fork_group_id):
+        """
+        Check if all agents in the fork group are done.
+
+        Args:
+            fork_group_id (str): ID of the fork group.
+
+        Returns:
+            bool: True if all agents are done, False otherwise.
+        """
+        if fork_group_id not in self._groups:
+            return True
+        return len(self._groups[fork_group_id]) == 0
+
+    def list_pending_agents(self, fork_group_id):
+        """
+        Get a list of agents still pending in the fork group.
+
+        Args:
+            fork_group_id (str): ID of the fork group.
+
+        Returns:
+            list: List of pending agent IDs.
+        """
+        if fork_group_id not in self._groups:
+            return []
+        return list(self._groups[fork_group_id])
+
+    def delete_group(self, fork_group_id):
+        """
+        Delete the fork group from memory.
+
+        Args:
+            fork_group_id (str): ID of the fork group to delete.
+        """
+        self._groups.pop(fork_group_id, None)
+        self._branch_sequences.pop(fork_group_id, None)
+
+    def generate_group_id(self, base_id):
+        """
+        Generate a unique fork group ID based on the base ID and timestamp.
+
+        Args:
+            base_id (str): Base ID for the fork group.
+
+        Returns:
+            str: A unique fork group ID.
+        """
+        return f"{base_id}_{int(time.time())}"
+
+    def track_branch_sequence(self, fork_group_id, agent_sequence):
+        """
+        Track the sequence of agents in a branch.
+
+        Args:
+            fork_group_id (str): ID of the fork group.
+            agent_sequence (list): List of agent IDs in sequence.
+        """
+        if fork_group_id not in self._branch_sequences:
+            self._branch_sequences[fork_group_id] = {}
+
+        for i in range(len(agent_sequence) - 1):
+            current = agent_sequence[i]
+            next_one = agent_sequence[i + 1]
+            self._branch_sequences[fork_group_id][current] = next_one
+
+    def next_in_sequence(self, fork_group_id, agent_id):
+        """
+        Get the next agent in the sequence after the current agent.
+
+        Args:
+            fork_group_id (str): ID of the fork group.
+            agent_id (str): ID of the current agent.
+
+        Returns:
+            str: ID of the next agent, or None if there is no next agent.
+        """
+        if fork_group_id not in self._branch_sequences:
+            return None
+        return self._branch_sequences[fork_group_id].get(agent_id)
+
+    def remove_group(self, group_id):
+        """
+        Remove a group (for compatibility with existing code).
+
+        Args:
+            group_id (str): ID of the group to remove.
+
+        Raises:
+            KeyError: If the group doesn't exist.
+        """
+        if group_id not in self._groups:
+            raise KeyError(f"Group {group_id} not found")
+        self.delete_group(group_id)
