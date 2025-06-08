@@ -6,12 +6,12 @@
 
 [![Tests](https://github.com/marcosomma/orka-reasoning/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/marcosomma/orka-reasoning/actions/workflows/tests.yml)
 [![codecov](https://codecov.io/github/marcosomma/orka-reasoning/graph/badge.svg?token=V91X4WGBBZ)](https://codecov.io/github/marcosomma/orka-reasoning)
-![PyPI - License](https://img.shields.io/pypi/l/orka-reasoning?color=green)
+![PyPI - License](https://img.shields.io/pypi/l/orka-reasoning?color=blue)
 
-![PyPI - Downloads](https://img.shields.io/pypi/dd/orka-reasoning?label=downloads&color=green)
-![PyPI - Downloads](https://img.shields.io/pypi/dw/orka-reasoning?label=downloads&color=green)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/orka-reasoning?label=downloads&color=green)
-![Pepy Total Downloads](https://img.shields.io/pepy/dt/orka-reasoning?label=Total%20Download&color=green)
+![PyPI - Downloads](https://img.shields.io/pypi/dd/orka-reasoning?label=downloads&color=green&link=https%3A%2F%2Fpypistats.org%2Fpackages%2Forka-reasoning)
+![PyPI - Downloads](https://img.shields.io/pypi/dw/orka-reasoning?label=downloads&color=green&link=https%3A%2F%2Fpypistats.org%2Fpackages%2Forka-reasoning)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/orka-reasoning?label=downloads&color=green&link=https%3A%2F%2Fpypistats.org%2Fpackages%2Forka-reasoning)
+![Pepy Total Downloads](https://img.shields.io/pepy/dt/orka-reasoning?label=Total%20Download&color=green&link=https%3A%2F%2Fpypistats.org%2Fpackages%2Forka-reasoning)
 
 
 
