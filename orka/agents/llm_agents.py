@@ -13,6 +13,7 @@
 
 import os
 import re
+from typing import Optional
 
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -37,7 +38,7 @@ if not PYTEST_RUNNING and not OPENAI_API_KEY:
 client = OpenAI(api_key=OPENAI_API_KEY or "dummy_key_for_testing")
 
 
-def _extract_reasoning(text) -> tuple[str, str]:
+def _extract_reasoning(text) -> tuple:
     """Extract reasoning content from <think> blocks."""
     if "<think>" not in text or "</think>" not in text:
         return "", text
@@ -69,7 +70,7 @@ def _extract_json_content(text) -> str:
     return brace_match.group(0) if brace_match else text
 
 
-def _parse_json_safely(json_content) -> dict | None:
+def _parse_json_safely(json_content) -> Optional[dict]:
     """Safely parse JSON with fallback for malformed content."""
     import json
 
@@ -83,7 +84,7 @@ def _parse_json_safely(json_content) -> dict | None:
             return None
 
 
-def _build_response_dict(parsed_json, fallback_text) -> dict[str, str]:
+def _build_response_dict(parsed_json, fallback_text) -> dict:
     """Build standardized response dictionary from parsed JSON or fallback text."""
     if not parsed_json or not isinstance(parsed_json, dict):
         return {
@@ -137,7 +138,7 @@ def parse_llm_json_response(
     response_text,
     error_tracker=None,
     agent_id="unknown",
-) -> dict[str, str]:
+) -> dict:
     """
     Parse JSON response from LLM that may contain reasoning (<think> blocks) or be in various formats.
 
@@ -294,7 +295,7 @@ def _calculate_openai_cost(model: str, prompt_tokens: int, completion_tokens: in
     return total_cost
 
 
-def _simple_json_parse(response_text) -> dict[str, str]:
+def _simple_json_parse(response_text) -> dict:
     """
     Simple JSON parser for OpenAI models (no reasoning support).
 
