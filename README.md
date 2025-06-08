@@ -8,13 +8,13 @@
 [![codecov](https://codecov.io/github/marcosomma/orka-reasoning/graph/badge.svg?token=V91X4WGBBZ)](https://codecov.io/github/marcosomma/orka-reasoning)
 ![PyPI - License](https://img.shields.io/pypi/l/orka-reasoning?color=blue)
 
-<a href="https://pypistats.org/packages/orka-reasoning" target="_blank"><img src="https://img.shields.io/pypi/dd/orka-reasoning?label=downloads&color=green&link=https%3A%2F%2Fpypistats.org%2Fpackages%2Forka-reasoning" alt="PyPI - Downloads"></a>
-<a href="https://pypistats.org/packages/orka-reasoning" target="_blank"><img src="https://img.shields.io/pypi/dw/orka-reasoning?label=downloads&color=green&link=https%3A%2F%2Fpypistats.org%2Fpackages%2Forka-reasoning" alt="PyPI - Downloads"></a>
-<a href="https://pypistats.org/packages/orka-reasoning" target="_blank"><img src="https://img.shields.io/pypi/dm/orka-reasoning?label=downloads&color=green&link=https%3A%2F%2Fpypistats.org%2Fpackages%2Forka-reasoning" alt="PyPI - Downloads"></a>
-<a href="https://pypistats.org/packages/orka-reasoning" target="_blank"><img src="https://img.shields.io/pepy/dt/orka-reasoning?label=Total%20Download&color=green&link=https%3A%2F%2Fpypistats.org%2Fpackages%2Forka-reasoning" alt="Pepy Total Downloads"></a>
+[![PyPI - Downloads](https://img.shields.io/pypi/dd/orka-reasoning?label=downloads&color=green&link=https%3A%2F%2Fpypistats.org%2Fpackages%2Forka-reasoning)](https://pypistats.org/packages/orka-reasoning)
+[![PyPI - Downloads](https://img.shields.io/pypi/dw/orka-reasoning?label=downloads&color=green&link=https%3A%2F%2Fpypistats.org%2Fpackages%2Forka-reasoning)](https://pypistats.org/packages/orka-reasoning)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/orka-reasoning?label=downloads&color=green&link=https%3A%2F%2Fpypistats.org%2Fpackages%2Forka-reasoning)](https://pypistats.org/packages/orka-reasoning)
+[![Pepy Total Downloads](https://img.shields.io/pepy/dt/orka-reasoning?label=Total%20Download&color=green&link=https%3A%2F%2Fpypistats.org%2Fpackages%2Forka-reasoning)](https://pypistats.org/packages/orka-reasoning)
 
-<a href="https://pypi.org/project/orka-reasoning/" target="_blank"><img src="https://img.shields.io/badge/pypi-%23ececec.svg?style=for-the-badge&logo=pypi&logoColor=1f73b7" alt="PyPi"></a> <a href="https://hub.docker.com/r/marcosomma/orka-ui" target="_blank"><img src="https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white" alt="Docker"></a>
-<a href="https://orkacore.com/" target="_blank"><img src="https://img.shields.io/badge/orkacore-.com-green?labelColor=blue&style=for-the-badge&link=https://orkacore.com/" alt="orkacore"></a>
+[![PyPi](https://img.shields.io/badge/pypi-%23ececec.svg?style=for-the-badge&logo=pypi&logoColor=1f73b7)](https://pypi.org/project/orka-reasoning/) [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://hub.docker.com/r/marcosomma/orka-ui)
+[![orkacore](https://img.shields.io/badge/orkacore-.com-green?labelColor=blue&style=for-the-badge&link=https://orkacore.com/)](https://orkacore.com/)
 
 </div>
 
