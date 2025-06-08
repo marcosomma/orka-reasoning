@@ -27,7 +27,8 @@ class RAGNode(BaseNode):
             node_id=node_id,
             prompt=prompt,
             queue=queue,
-            **{"timeout": timeout, "max_concurrency": max_concurrency},
+            timeout=timeout,
+            max_concurrency=max_concurrency,
         )
         self.registry = registry
         self.top_k = top_k
@@ -35,6 +36,7 @@ class RAGNode(BaseNode):
         self._memory = None
         self._embedder = None
         self._llm = None
+        self._initialized = False
 
     async def initialize(self) -> None:
         """Initialize the node and its resources."""
@@ -57,7 +59,7 @@ class RAGNode(BaseNode):
                 "metadata": {"node_id": self.node_id},
             }
         except Exception as e:
-            logger.error(f"RAGNode {self.node_id} failed: {str(e)}")
+            logger.error(f"RAGNode {self.node_id} failed: {e!s}")
             return {
                 "result": None,
                 "status": "error",
@@ -76,7 +78,9 @@ class RAGNode(BaseNode):
 
         # Search memory for relevant documents
         results = await self._memory.search(
-            query_embedding, limit=self.top_k, score_threshold=self.score_threshold
+            query_embedding,
+            limit=self.top_k,
+            score_threshold=self.score_threshold,
         )
 
         if not results:
