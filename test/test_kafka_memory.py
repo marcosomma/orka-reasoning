@@ -16,6 +16,7 @@ Test cases for KafkaMemoryLogger
 """
 
 import os
+import sys
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
@@ -30,16 +31,33 @@ class TestKafkaMemoryLogger:
     @pytest.fixture
     def mock_kafka_producer(self):
         """Mock Kafka producer for testing"""
-        # Create a mock kafka module and KafkaProducer class
+        # Create comprehensive kafka module mock
         mock_kafka_module = MagicMock()
+        mock_errors_module = MagicMock()
         mock_producer_class = MagicMock()
         mock_producer = MagicMock()
-        mock_producer_class.return_value = mock_producer
-        mock_kafka_module.KafkaProducer = mock_producer_class
 
-        # Mock the entire kafka module import
-        with patch.dict("sys.modules", {"kafka": mock_kafka_module}):
-            yield mock_producer
+        # Setup producer mock
+        mock_producer_class.return_value = mock_producer
+        mock_producer.send.return_value = MagicMock()
+        mock_producer._metadata = MagicMock()
+
+        # Setup kafka module structure
+        mock_kafka_module.KafkaProducer = mock_producer_class
+        mock_kafka_module.errors = mock_errors_module
+        mock_errors_module.KafkaError = Exception  # Use base Exception as KafkaError
+
+        # Mock the entire kafka ecosystem
+        with patch.dict(
+            "sys.modules",
+            {
+                "kafka": mock_kafka_module,
+                "kafka.errors": mock_errors_module,
+            },
+        ):
+            # Also disable schema registry to avoid confluent_kafka import issues
+            with patch.dict(os.environ, {"KAFKA_USE_SCHEMA_REGISTRY": "false"}):
+                yield mock_producer
 
     @pytest.fixture
     def kafka_logger(self, mock_kafka_producer):
@@ -73,15 +91,37 @@ class TestKafkaMemoryLogger:
 
     def test_initialization_kafka_import_error(self):
         """Test initialization when kafka-python is not available"""
-        # Mock an import error for the kafka module
-        with patch.dict("sys.modules", {"kafka": None}):
-            with patch(
-                "builtins.__import__", side_effect=ImportError("No module named kafka")
-            ):
-                with pytest.raises(
-                    ImportError, match="kafka-python package is required"
-                ):
-                    KafkaMemoryLogger()
+        # Mock an import error for the kafka module - this should be the real behavior
+        # when kafka-python is not installed
+
+        # Store original modules if they exist
+        orig_kafka = sys.modules.get("kafka")
+        orig_kafka_errors = sys.modules.get("kafka.errors")
+
+        try:
+            # Remove kafka modules from sys.modules completely
+            if "kafka" in sys.modules:
+                del sys.modules["kafka"]
+            if "kafka.errors" in sys.modules:
+                del sys.modules["kafka.errors"]
+
+            # Mock the import to raise ImportError
+            def mock_import(name, *args, **kwargs):
+                if name == "kafka" or name.startswith("kafka."):
+                    raise ImportError(f"No module named '{name}'")
+                return __builtins__.__import__(name, *args, **kwargs)
+
+            # Also disable schema registry to force using kafka-python path
+            with patch.dict(os.environ, {"KAFKA_USE_SCHEMA_REGISTRY": "false"}):
+                with patch("builtins.__import__", side_effect=mock_import):
+                    with pytest.raises(ImportError, match="kafka-python package is required"):
+                        KafkaMemoryLogger()
+        finally:
+            # Restore original modules
+            if orig_kafka is not None:
+                sys.modules["kafka"] = orig_kafka
+            if orig_kafka_errors is not None:
+                sys.modules["kafka.errors"] = orig_kafka_errors
 
     def test_log_event_success(self, kafka_logger, mock_kafka_producer):
         """Test successful event logging"""
@@ -129,7 +169,9 @@ class TestKafkaMemoryLogger:
         """Test logging with missing agent_id"""
         with pytest.raises(ValueError, match="Event must contain 'agent_id'"):
             kafka_logger.log(
-                agent_id="", event_type="test_event", payload={"data": "test"}
+                agent_id="",
+                event_type="test_event",
+                payload={"data": "test"},
             )
 
     def test_log_event_kafka_failure(self, kafka_logger, mock_kafka_producer):
@@ -138,7 +180,9 @@ class TestKafkaMemoryLogger:
 
         # Should not raise, but log error and try fallback
         kafka_logger.log(
-            agent_id="test_agent", event_type="test_event", payload={"data": "test"}
+            agent_id="test_agent",
+            event_type="test_event",
+            payload={"data": "test"},
         )
 
         # Event should still be in memory
@@ -154,7 +198,9 @@ class TestKafkaMemoryLogger:
         }
 
         kafka_logger.log(
-            agent_id="test_agent", event_type="complex_event", payload=complex_payload
+            agent_id="test_agent",
+            event_type="complex_event",
+            payload=complex_payload,
         )
 
         # Verify sanitization worked
@@ -167,7 +213,9 @@ class TestKafkaMemoryLogger:
         # Add multiple events
         for i in range(15):
             kafka_logger.log(
-                agent_id=f"agent_{i}", event_type="test_event", payload={"count": i}
+                agent_id=f"agent_{i}",
+                event_type="test_event",
+                payload={"count": i},
             )
 
         # Test default tail (10 events)
@@ -286,7 +334,8 @@ class TestKafkaMemoryLogger:
     def test_redis_property_error(self, kafka_logger):
         """Test that accessing redis property raises an error"""
         with pytest.raises(
-            AttributeError, match="KafkaMemoryLogger does not have a Redis client"
+            AttributeError,
+            match="KafkaMemoryLogger does not have a Redis client",
         ):
             _ = kafka_logger.redis
 
@@ -325,12 +374,15 @@ class TestMemoryLoggerFactory:
         mock_kafka_class.return_value = mock_logger
 
         result = create_memory_logger(
-            backend="kafka", bootstrap_servers="test:9092", topic_prefix="test-prefix"
+            backend="kafka",
+            bootstrap_servers="test:9092",
+            topic_prefix="test-prefix",
         )
 
         assert result == mock_logger
         mock_kafka_class.assert_called_once_with(
-            bootstrap_servers="test:9092", topic_prefix="test-prefix"
+            bootstrap_servers="test:9092",
+            topic_prefix="test-prefix",
         )
 
     @patch("orka.memory_logger.RedisMemoryLogger")
@@ -340,7 +392,8 @@ class TestMemoryLoggerFactory:
         mock_redis_class.return_value = mock_logger
 
         result = create_memory_logger(
-            backend="redis", redis_url="redis://localhost:6379"
+            backend="redis",
+            redis_url="redis://localhost:6379",
         )
 
         assert result == mock_logger
@@ -358,25 +411,39 @@ class TestKafkaMemoryLoggerIntegration:
     @pytest.fixture
     def mock_kafka_environment(self):
         """Mock environment for Kafka integration tests"""
-        # Create a mock kafka module and KafkaProducer class
+        # Create comprehensive kafka module mock
         mock_kafka_module = MagicMock()
+        mock_errors_module = MagicMock()
         mock_producer_class = MagicMock()
         mock_producer = MagicMock()
+
+        # Setup producer mock
         mock_producer_class.return_value = mock_producer
+        mock_producer.send.return_value = MagicMock()
+        mock_producer._metadata = MagicMock()
+
+        # Setup kafka module structure
         mock_kafka_module.KafkaProducer = mock_producer_class
+        mock_kafka_module.errors = mock_errors_module
+        mock_errors_module.KafkaError = Exception  # Use base Exception as KafkaError
 
-        # Mock successful send
-        mock_future = MagicMock()
-        mock_producer.send.return_value = mock_future
-
-        # Mock the entire kafka module import
-        with patch.dict("sys.modules", {"kafka": mock_kafka_module}):
-            yield mock_producer
+        # Mock the entire kafka ecosystem
+        with patch.dict(
+            "sys.modules",
+            {
+                "kafka": mock_kafka_module,
+                "kafka.errors": mock_errors_module,
+            },
+        ):
+            # Also disable schema registry to avoid confluent_kafka import issues
+            with patch.dict(os.environ, {"KAFKA_USE_SCHEMA_REGISTRY": "false"}):
+                yield mock_producer
 
     def test_full_workflow(self, mock_kafka_environment):
         """Test a complete workflow with KafkaMemoryLogger"""
         logger = KafkaMemoryLogger(
-            bootstrap_servers="localhost:9092", topic_prefix="workflow-test"
+            bootstrap_servers="localhost:9092",
+            topic_prefix="workflow-test",
         )
 
         # Simulate orchestration workflow

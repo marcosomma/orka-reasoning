@@ -176,8 +176,23 @@ async def test_parallel_execution_with_empty_branches(parallel_config):
         mock_memory_logger.log = MagicMock()
         orchestrator.memory = mock_memory_logger
 
-        with pytest.raises(ValueError, match="requires non-empty 'targets'"):
-            await orchestrator.run("Test input")
+        # The orchestrator should handle this gracefully now, not raise an exception
+        result = await orchestrator.run("Test input")
+
+        # Check that the fork_parallel agent failed with the expected error
+        assert result is not None
+        fork_result = None
+        for entry in result:
+            if entry.get("agent_id") == "fork_parallel":
+                fork_result = entry
+                break
+
+        assert fork_result is not None
+        # The status is nested inside payload.result
+        payload = fork_result.get("payload", {})
+        agent_result = payload.get("result", {})
+        assert agent_result.get("status") == "failed"
+        assert "requires non-empty 'targets'" in agent_result.get("error", "")
 
 
 @pytest.mark.asyncio
@@ -188,5 +203,20 @@ async def test_parallel_execution_with_invalid_branch(parallel_config):
         # Set invalid target
         orchestrator.agents["fork_parallel"].targets = ["nonexistent_agent"]
 
-        with pytest.raises(KeyError):
-            await orchestrator.run("Test input")
+        # The orchestrator should handle this gracefully now, not raise an exception
+        result = await orchestrator.run("Test input")
+
+        # Check that the fork_parallel agent failed due to the invalid target
+        assert result is not None
+        fork_result = None
+        for entry in result:
+            if entry.get("agent_id") == "fork_parallel":
+                fork_result = entry
+                break
+
+        assert fork_result is not None
+        # The status is nested inside payload.result
+        payload = fork_result.get("payload", {})
+        agent_result = payload.get("result", {})
+        assert agent_result.get("status") == "failed"
+        # The error might be a KeyError or similar issue related to the invalid target

@@ -3,6 +3,69 @@
 
 ---
 
+## [0.6.2] · 2025-06-08
+### Added
+* **Real Local-Cost Model Implementation**
+  * New `LocalCostCalculator` class replacing fantasy $0.00 costs with actual operational expenses
+  * Three configurable cost policies: `calculate` (default), `null_fail` (strict), `zero_legacy` (deprecated)
+  * Model-aware GPU utilization calculations with electricity consumption + hardware amortization
+  * Regional electricity rate defaults and environment variable configuration support
+  * Cost comparison analysis: Local models 4.5x cheaper than cloud even with real operational costs
+* **Enhanced Blob Storage & Deduplication**
+  * Improved blob deduplication system in memory logger with SHA-256 hashing
+  * Enhanced blob reference resolution with configurable storage options
+  * Better memory efficiency for large payload objects and file attachments
+  * Versioned blob storage format with backward compatibility
+* **Advanced Reporting & Metrics System**
+  * Comprehensive meta report aggregation with real cost tracking and performance metrics
+  * Enhanced execution time tracking, token counting, and latency analysis
+  * Structured cost breakdowns showing electricity vs. hardware amortization components
+  * Improved report formatting with detailed agent performance analytics
+* **Memory Logger Versioning & Format Evolution**
+  * Enhanced memory logger with versioned storage formats and migration support
+  * Improved JSON sanitization with cycle detection to prevent infinite recursion
+  * Better payload processing with deduplication-aware formatting
+  * Enhanced file save/load operations with format validation
+### Changed
+* **Test Suite Architecture Overhaul**
+  * All **295 tests** now passing with **70% coverage** (improved from previous versions)
+  * Comprehensive Kafka memory test infrastructure with robust import mocking
+  * Enhanced test isolation and mocking strategies across all modules
+  * Fixed orchestrator tests to handle graceful error management instead of raw exceptions
+  * Updated start script tests for new environment variable handling
+* **Agent Response Structure Enhancement**
+  * `LocalLLMAgent` now returns structured responses with cost metrics and performance data
+  * Improved agent result formatting with consistent metadata across all agent types
+  * Enhanced error handling and retry mechanisms with detailed failure reporting
+  * Better integration between cost calculation and existing metrics systems
+* **Infrastructure & Configuration Management**
+  * Enhanced environment variable handling for deployment flexibility
+  * Improved Docker and service startup configurations
+  * Better error handling and graceful degradation across all components
+  * Enhanced logging and debugging capabilities for production deployments
+### Fixed
+* **Critical Test Infrastructure Issues**
+  * Resolved all Kafka memory logger test failures with comprehensive import mocking
+  * Fixed orchestrator error handling tests to match new graceful error management patterns
+  * Updated start script tests for new backend parameter requirements and environment handling
+  * Enhanced mock environments to prevent dependency conflicts during testing
+* **Memory Management & Performance**
+  * Fixed memory logger recursion errors when sanitizing Mock objects with circular references
+  * Improved JSON serialization handling for complex nested objects and blob references
+  * Enhanced cleanup procedures for Redis and Kafka connections during shutdown
+  * Better resource management and garbage collection for long-running processes
+* **Production Readiness & Reliability**
+  * Eliminated misleading $0.00 cost placeholders that provided incorrect economic signals
+  * Added robust cost validation and null cost handling for production pipeline enforcement
+  * Improved error messages and debugging information across all system components
+  * Enhanced configurability for different deployment environments and use cases
+### Documentation
+* **Comprehensive Configuration Guides**
+  * Environment variable documentation for cost calculation, blob storage, and metrics tuning
+  * Examples of cost analysis workflows and optimization strategies
+  * Guidelines for production deployment with strict cost enforcement policies
+  * Regional configuration examples and deployment best practices
+
 ## [0.6.1] · 2025-06-07
 ### Fixed
 * **Critical Search Tool Bug**

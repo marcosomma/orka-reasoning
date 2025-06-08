@@ -1,0 +1,25 @@
+orchestrator:
+  id: debug-orchestrator
+  strategy: parallel
+  # Debug configuration
+  debug:
+    keep_previous_outputs: true # Set to true to keep previous_outputs in log files for debugging
+  agents:
+    - search-agent
+    - answer-agent
+
+agents:
+  - id: search-agent
+    type: openai-answer
+    prompt: |
+      Search for information about: {{ input }}
+      Provide a brief summary of what you find.
+
+  - id: answer-agent
+    type: openai-answer
+    prompt: |
+      Based on the search results, provide a comprehensive answer to: {{ input }}
+
+      Search results: {{ previous_outputs['search-agent'] }}
+    depends_on:
+      - search-agent

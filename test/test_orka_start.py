@@ -33,7 +33,7 @@ def mock_docker_dir(tmp_path):
     docker_dir.mkdir()
     compose_file = docker_dir / "docker-compose.yml"
     compose_file.write_text(
-        "version: '3'\nservices:\n  redis:\n    image: redis:latest"
+        "version: '3'\nservices:\n  redis:\n    image: redis:latest",
     )
     return str(docker_dir)
 
@@ -136,17 +136,22 @@ def test_start_backend():
         mock_process = MagicMock()
         mock_popen.return_value = mock_process
 
-        result = start_backend()
+        result = start_backend("redis")
 
         assert result == mock_process
-        mock_popen.assert_called_once_with([sys.executable, "-m", "orka.server"])
+        # Check that Popen was called with the correct command and env parameter
+        mock_popen.assert_called_once()
+        call_args = mock_popen.call_args
+        assert call_args[0][0] == [sys.executable, "-m", "orka.server"]
+        assert "env" in call_args[1]
+        assert call_args[1]["env"]["ORKA_MEMORY_BACKEND"] == "redis"
 
 
 def test_start_backend_failure():
     """Test backend startup failure"""
     with patch("subprocess.Popen", side_effect=Exception("Failed to start")):
         with pytest.raises(Exception, match="Failed to start"):
-            start_backend()
+            start_backend("redis")
 
 
 @pytest.mark.asyncio
@@ -156,7 +161,8 @@ async def test_main_success(monkeypatch):
     monkeypatch.setattr("orka.orka_start.start_infrastructure", MagicMock())
     monkeypatch.setattr("orka.orka_start.wait_for_services", MagicMock())
     monkeypatch.setattr(
-        "orka.orka_start.start_backend", MagicMock(return_value=MagicMock())
+        "orka.orka_start.start_backend",
+        MagicMock(return_value=MagicMock()),
     )
     monkeypatch.setattr("orka.orka_start.cleanup_services", MagicMock())
 
@@ -177,7 +183,8 @@ async def test_main_backend_failure(monkeypatch):
     mock_backend = MagicMock()
     mock_backend.poll.return_value = 1  # Simulate backend process exit
     monkeypatch.setattr(
-        "orka.orka_start.start_backend", MagicMock(return_value=mock_backend)
+        "orka.orka_start.start_backend",
+        MagicMock(return_value=mock_backend),
     )
     monkeypatch.setattr("orka.orka_start.cleanup_services", MagicMock())
 
@@ -196,7 +203,8 @@ async def test_main_cleanup(monkeypatch):
     monkeypatch.setattr("orka.orka_start.wait_for_services", MagicMock())
     mock_backend = MagicMock()
     monkeypatch.setattr(
-        "orka.orka_start.start_backend", MagicMock(return_value=mock_backend)
+        "orka.orka_start.start_backend",
+        MagicMock(return_value=mock_backend),
     )
     mock_cleanup = MagicMock()
     monkeypatch.setattr("orka.orka_start.cleanup_services", mock_cleanup)

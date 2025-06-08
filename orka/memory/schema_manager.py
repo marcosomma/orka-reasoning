@@ -25,7 +25,7 @@ try:
 except ImportError:
     AVRO_AVAILABLE = False
     logging.warning(
-        "Avro dependencies not available. Install with: pip install confluent-kafka[avro]"
+        "Avro dependencies not available. Install with: pip install confluent-kafka[avro]",
     )
 
 try:
@@ -39,7 +39,7 @@ try:
 except ImportError:
     PROTOBUF_AVAILABLE = False
     logging.warning(
-        "Protobuf dependencies not available. Install with: pip install confluent-kafka[protobuf]"
+        "Protobuf dependencies not available. Install with: pip install confluent-kafka[protobuf]",
     )
 
 logger = logging.getLogger(__name__)
@@ -56,7 +56,9 @@ class SchemaConfig:
     registry_url: str
     format: SchemaFormat = SchemaFormat.AVRO
     schemas_dir: str = "orka/schemas"
-    subject_name_strategy: str = "TopicNameStrategy"  # TopicNameStrategy, RecordNameStrategy, TopicRecordNameStrategy
+    subject_name_strategy: str = (
+        "TopicNameStrategy"  # TopicNameStrategy, RecordNameStrategy, TopicRecordNameStrategy
+    )
 
 
 class SchemaManager:
@@ -75,7 +77,7 @@ class SchemaManager:
         """Initialize connection to Schema Registry."""
         if not AVRO_AVAILABLE and not PROTOBUF_AVAILABLE:
             raise RuntimeError(
-                "Neither Avro nor Protobuf dependencies are available. Please install: pip install confluent-kafka[avro] confluent-kafka[protobuf]"
+                "Neither Avro nor Protobuf dependencies are available. Please install: pip install confluent-kafka[avro] confluent-kafka[protobuf]",
             )
 
         try:
@@ -83,7 +85,7 @@ class SchemaManager:
             from confluent_kafka.schema_registry import SchemaRegistryClient
 
             self.registry_client = SchemaRegistryClient(
-                {"url": self.config.registry_url}
+                {"url": self.config.registry_url},
             )
             logger.info(f"Connected to Schema Registry at {self.config.registry_url}")
         except Exception as e:
@@ -93,10 +95,12 @@ class SchemaManager:
     def _load_avro_schema(self, schema_name: str) -> str:
         """Load Avro schema from file."""
         schema_path = os.path.join(
-            self.config.schemas_dir, "avro", f"{schema_name}.avsc"
+            self.config.schemas_dir,
+            "avro",
+            f"{schema_name}.avsc",
         )
         try:
-            with open(schema_path, "r") as f:
+            with open(schema_path) as f:
                 return f.read()
         except FileNotFoundError:
             raise FileNotFoundError(f"Avro schema not found: {schema_path}")
@@ -104,10 +108,12 @@ class SchemaManager:
     def _load_protobuf_schema(self, schema_name: str) -> str:
         """Load Protobuf schema from file."""
         schema_path = os.path.join(
-            self.config.schemas_dir, "protobuf", f"{schema_name}.proto"
+            self.config.schemas_dir,
+            "protobuf",
+            f"{schema_name}.proto",
         )
         try:
-            with open(schema_path, "r") as f:
+            with open(schema_path) as f:
                 return f.read()
         except FileNotFoundError:
             raise FileNotFoundError(f"Protobuf schema not found: {schema_path}")
@@ -127,7 +133,9 @@ class SchemaManager:
             from confluent_kafka.schema_registry.avro import AvroSerializer
 
             serializer = AvroSerializer(
-                self.registry_client, schema_str, self._memory_to_dict
+                self.registry_client,
+                schema_str,
+                self._memory_to_dict,
             )
 
         elif self.config.format == SchemaFormat.PROTOBUF:
@@ -172,7 +180,9 @@ class SchemaManager:
         return deserializer
 
     def _memory_to_dict(
-        self, memory_obj: Dict[str, Any], ctx: "SerializationContext"
+        self,
+        memory_obj: Dict[str, Any],
+        ctx: "SerializationContext",
     ) -> Dict[str, Any]:
         """Convert memory object to dict for Avro serialization."""
         # Transform your memory object to match the Avro schema
@@ -182,18 +192,18 @@ class SchemaManager:
             "metadata": {
                 "source": memory_obj.get("metadata", {}).get("source", ""),
                 "confidence": float(
-                    memory_obj.get("metadata", {}).get("confidence", 0.0)
+                    memory_obj.get("metadata", {}).get("confidence", 0.0),
                 ),
                 "reason": memory_obj.get("metadata", {}).get("reason"),
                 "fact": memory_obj.get("metadata", {}).get("fact"),
                 "timestamp": float(
-                    memory_obj.get("metadata", {}).get("timestamp", 0.0)
+                    memory_obj.get("metadata", {}).get("timestamp", 0.0),
                 ),
                 "agent_id": memory_obj.get("metadata", {}).get("agent_id", ""),
                 "query": memory_obj.get("metadata", {}).get("query"),
                 "tags": memory_obj.get("metadata", {}).get("tags", []),
                 "vector_embedding": memory_obj.get("metadata", {}).get(
-                    "vector_embedding"
+                    "vector_embedding",
                 ),
             },
             "similarity": memory_obj.get("similarity"),
@@ -203,19 +213,25 @@ class SchemaManager:
         }
 
     def _dict_to_memory(
-        self, avro_dict: Dict[str, Any], ctx: "SerializationContext"
+        self,
+        avro_dict: Dict[str, Any],
+        ctx: "SerializationContext",
     ) -> Dict[str, Any]:
         """Convert Avro dict back to memory object."""
         return avro_dict  # Or transform back to your internal format
 
     def _json_serializer(
-        self, obj: Dict[str, Any], ctx: "SerializationContext"
+        self,
+        obj: Dict[str, Any],
+        ctx: "SerializationContext",
     ) -> bytes:
         """Fallback JSON serializer."""
         return json.dumps(obj).encode("utf-8")
 
     def _json_deserializer(
-        self, data: bytes, ctx: "SerializationContext"
+        self,
+        data: bytes,
+        ctx: "SerializationContext",
     ) -> Dict[str, Any]:
         """Fallback JSON deserializer."""
         return json.loads(data.decode("utf-8"))
@@ -225,36 +241,44 @@ class SchemaManager:
         if not self.registry_client:
             raise RuntimeError("Schema Registry not initialized")
 
-        if self.config.format == SchemaFormat.AVRO:
-            schema_str = self._load_avro_schema(schema_name)
-            import avro.schema
-
-            schema = avro.schema.parse(schema_str)
-
-        elif self.config.format == SchemaFormat.PROTOBUF:
-            schema_str = self._load_protobuf_schema(schema_name)
-            # For Protobuf, you'd register the .proto content
-
-        else:
-            raise ValueError("Cannot register JSON schemas")
-
         try:
+            if self.config.format == SchemaFormat.AVRO:
+                schema_str = self._load_avro_schema(schema_name)
+
+                # Use confluent_kafka's Schema class for registration
+                from confluent_kafka.schema_registry import Schema
+
+                schema = Schema(schema_str, schema_type="AVRO")
+
+            elif self.config.format == SchemaFormat.PROTOBUF:
+                schema_str = self._load_protobuf_schema(schema_name)
+
+                from confluent_kafka.schema_registry import Schema
+
+                schema = Schema(schema_str, schema_type="PROTOBUF")
+
+            else:
+                raise ValueError("Cannot register JSON schemas")
+
             schema_id = self.registry_client.register_schema(subject, schema)
             logger.info(
-                f"Registered schema {schema_name} for subject {subject} with ID {schema_id}"
+                f"Registered schema {schema_name} for subject {subject} with ID {schema_id}",
             )
             return schema_id
+
         except Exception as e:
             logger.error(f"Failed to register schema: {e}")
             raise
 
 
 def create_schema_manager(
-    registry_url: Optional[str] = None, format: SchemaFormat = SchemaFormat.AVRO
+    registry_url: Optional[str] = None,
+    format: SchemaFormat = SchemaFormat.AVRO,
 ) -> SchemaManager:
     """Create a schema manager with configuration from environment or parameters."""
     registry_url = registry_url or os.getenv(
-        "KAFKA_SCHEMA_REGISTRY_URL", "http://localhost:8081"
+        "KAFKA_SCHEMA_REGISTRY_URL",
+        "http://localhost:8081",
     )
 
     config = SchemaConfig(registry_url=registry_url, format=format)

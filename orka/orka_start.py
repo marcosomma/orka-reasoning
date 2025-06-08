@@ -389,14 +389,35 @@ def wait_for_services(backend: str) -> None:
                     logger.error("Kafka failed to start properly")
                     raise
 
+        # Wait for Schema Registry to be ready
+        print("⏳ Waiting for Schema Registry to be ready...")
+        for attempt in range(10):
+            try:
+                import requests
 
-def start_backend() -> subprocess.Popen:
+                response = requests.get("http://localhost:8081/subjects", timeout=5)
+                if response.status_code == 200:
+                    print("✅ Schema Registry is ready!")
+                    break
+            except Exception:
+                if attempt < 9:
+                    print(f"Schema Registry not ready yet, waiting... (attempt {attempt + 1}/10)")
+                    time.sleep(2)
+                else:
+                    logger.warning("Schema Registry may not be fully ready, but continuing...")
+                    break
+
+
+def start_backend(backend: str) -> subprocess.Popen:
     """
     Start the OrKa backend server as a separate process.
 
     This function launches the OrKa server module in a subprocess,
     allowing it to run independently while still being monitored by
     this parent process.
+
+    Args:
+        backend: The backend type ('redis', 'kafka', or 'dual')
 
     Returns:
         subprocess.Popen: The process object representing the running backend
@@ -406,9 +427,28 @@ def start_backend() -> subprocess.Popen:
     """
     logger.info("Starting Orka backend...")
     try:
-        # Start the backend server
+        # Prepare environment variables for the backend process
+        env = os.environ.copy()
+
+        # Set backend-specific environment variables
+        env["ORKA_MEMORY_BACKEND"] = backend
+
+        if backend in ["kafka", "dual"]:
+            # Configure Kafka with Schema Registry
+            env["KAFKA_BOOTSTRAP_SERVERS"] = "localhost:9092"
+            env["KAFKA_SCHEMA_REGISTRY_URL"] = "http://localhost:8081"
+            env["KAFKA_USE_SCHEMA_REGISTRY"] = "true"
+            env["KAFKA_TOPIC_PREFIX"] = "orka-memory"
+            logger.info("🔧 Schema Registry enabled for Kafka backend")
+
+        if backend in ["redis", "dual"]:
+            # Configure Redis
+            env["REDIS_URL"] = "redis://localhost:6379/0"
+
+        # Start the backend server with configured environment
         backend_proc: subprocess.Popen = subprocess.Popen(
-            [sys.executable, "-m", "orka.server"]
+            [sys.executable, "-m", "orka.server"],
+            env=env,
         )
         logger.info("Orka backend started.")
         return backend_proc
@@ -473,15 +513,19 @@ async def main() -> None:
         print("   • Redis:    localhost:6379")
     elif backend == "kafka":
         print("📍 Service Endpoints:")
-        print("   • Orka API:    http://localhost:8001")
-        print("   • Kafka:       localhost:9092")
-        print("   • Zookeeper:   localhost:2181")
+        print("   • Orka API:         http://localhost:8001")
+        print("   • Kafka:            localhost:9092")
+        print("   • Zookeeper:        localhost:2181")
+        print("   • Schema Registry:  http://localhost:8081")
+        print("   • Schema UI:        http://localhost:8082")
     elif backend == "dual":
         print("📍 Service Endpoints:")
-        print("   • Orka API (Dual): http://localhost:8002")
-        print("   • Redis:           localhost:6379")
-        print("   • Kafka:           localhost:9092")
-        print("   • Zookeeper:       localhost:2181")
+        print("   • Orka API (Dual):  http://localhost:8002")
+        print("   • Redis:            localhost:6379")
+        print("   • Kafka:            localhost:9092")
+        print("   • Zookeeper:        localhost:2181")
+        print("   • Schema Registry:  http://localhost:8081")
+        print("   • Schema UI:        http://localhost:8082")
 
     print("=" * 80)
 
@@ -492,7 +536,7 @@ async def main() -> None:
     wait_for_services(backend)
 
     # Start Orka backend
-    backend_proc: subprocess.Popen = start_backend()
+    backend_proc: subprocess.Popen = start_backend(backend)
 
     print("")
     print("✅ All services started successfully!")

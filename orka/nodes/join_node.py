@@ -82,7 +82,8 @@ class JoinNode(BaseNode):
         # Store output using hash operations
         self.memory_logger.hset("join_outputs", self.output_key, json.dumps(merged))
         # Clean up state using hash operations
-        self.memory_logger.hdel(state_key, *fork_targets)
+        if fork_targets:  # Only call hdel (hash delete) if there are keys to delete
+            self.memory_logger.hdel(state_key, *fork_targets)
         # Note: For now, we'll leave the fork group cleanup to the orchestrator
         # since the delete operation isn't available in the base interface yet
         return {"status": "done", "merged": merged}

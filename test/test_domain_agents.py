@@ -76,7 +76,21 @@ def patch_openai_agents(monkeypatch):
     # Custom implementation that replaces the real methods
     def mocked_answer_run(self, input_data):
         mock_tracker()  # Track that this was called
-        return mock_tracker.response_content
+        # Return structured response to match new OpenAIAnswerBuilder format
+        return {
+            "response": mock_tracker.response_content,
+            "confidence": "0.9",
+            "internal_reasoning": "Mock response for testing",
+            "_metrics": {
+                "tokens": 100,
+                "prompt_tokens": 50,
+                "completion_tokens": 50,
+                "latency_ms": 500,
+                "cost_usd": 0.001,
+                "model": "gpt-4o-mini",
+                "status_code": 200,
+            },
+        }
 
     def mocked_binary_run(self, input_data):
         mock_tracker()  # Track that this was called
@@ -241,7 +255,9 @@ class TestBinaryAgent:
     def test_yes_response(self):
         """Test BinaryAgent with 'yes' input"""
         agent = BinaryAgent(
-            agent_id="test_binary", prompt="Is this a yes?", queue="test_queue"
+            agent_id="test_binary",
+            prompt="Is this a yes?",
+            queue="test_queue",
         )
         result = agent.run({"input": "yes"})
         assert result == "true" or result is True  # Handle both string and boolean
@@ -249,7 +265,9 @@ class TestBinaryAgent:
     def test_no_response(self):
         """Test BinaryAgent with 'no' input"""
         agent = BinaryAgent(
-            agent_id="test_binary", prompt="Is this a no?", queue="test_queue"
+            agent_id="test_binary",
+            prompt="Is this a no?",
+            queue="test_queue",
         )
         result = agent.run({"input": "no"})
         assert result == False or result is False  # Handle both string and boolean
@@ -257,7 +275,9 @@ class TestBinaryAgent:
     def test_ambiguous_response(self):
         """Test BinaryAgent with ambiguous input"""
         agent = BinaryAgent(
-            agent_id="test_binary", prompt="Is this clear?", queue="test_queue"
+            agent_id="test_binary",
+            prompt="Is this clear?",
+            queue="test_queue",
         )
         # For ambiguous responses, it might return False instead of raising
         # an error in the current implementation
@@ -273,7 +293,10 @@ def test_binary_agent_run():
 
 def test_classification_agent_run():
     agent = ClassificationAgent(
-        agent_id="test_class", prompt="Classify:", queue="test", options=["cat", "dog"]
+        agent_id="test_class",
+        prompt="Classify:",
+        queue="test",
+        options=["cat", "dog"],
     )
     output = agent.run({"input": "A domestic animal"})
     assert output == "deprecated"
@@ -328,9 +351,10 @@ class TestOpenAIAnswerBuilder:
         # Verify the mock was called
         assert patch_openai_agents.called
 
-        # Verify the result
-        assert isinstance(result, str)
-        assert result == "This is a test answer"
+        # Verify the result - OpenAIAnswerBuilder now returns structured response
+        assert isinstance(result, dict)
+        assert "response" in result
+        assert result["response"] == "This is a test answer"
 
     def test_run_with_template_variables(self, patch_openai_agents):
         """Test template variable substitution"""
@@ -349,15 +373,16 @@ class TestOpenAIAnswerBuilder:
             {
                 "question": "What is the meaning of life?",
                 "context": "philosophical perspective",
-            }
+            },
         )
 
         # Verify the mock was called
         assert patch_openai_agents.called
 
-        # Verify the result
-        assert isinstance(result, str)
-        assert result == "42"
+        # Verify the result - OpenAIAnswerBuilder now returns structured response
+        assert isinstance(result, dict)
+        assert "response" in result
+        assert result["response"] == "42"
 
     def test_run_with_error(self, patch_openai_agents):
         """Test error handling"""
@@ -432,9 +457,7 @@ class TestOpenAIBinaryAgent:
     def test_binary_agent_invalid_response(self, patch_openai_agents):
         """Test OpenAIBinaryAgent with invalid response"""
         # Set custom response content for this test with affirmative indicator "correct"
-        patch_openai_agents.response_content = (
-            "Maybe, it depends but I think it's correct"
-        )
+        patch_openai_agents.response_content = "Maybe, it depends but I think it's correct"
 
         # Create the agent
         agent = OpenAIBinaryAgent(
@@ -533,7 +556,9 @@ class TestOpenAIClassificationAgent:
 @llm_skip
 def test_openai_binary_agent_run():
     agent = OpenAIBinaryAgent(
-        agent_id="test_openai_bin", prompt="Is this real?", queue="test"
+        agent_id="test_openai_bin",
+        prompt="Is this real?",
+        queue="test",
     )
     output = agent.run({"input": "Is water wet?"})
     assert output in [True, False]
@@ -566,8 +591,13 @@ def test_openai_classification_agent_run_not_classified():
 @llm_skip
 def test_openai_answer_builder_run():
     agent = OpenAIAnswerBuilder(
-        agent_id="test_builder", prompt="Answer this:", queue="test"
+        agent_id="test_builder",
+        prompt="Answer this:",
+        queue="test",
     )
     output = agent.run({"input": "What is AI?"})
-    assert isinstance(output, str)
-    assert len(output) > 5
+    # OpenAIAnswerBuilder now returns structured response with metrics
+    assert isinstance(output, dict)
+    assert "response" in output
+    assert "_metrics" in output
+    assert len(output["response"]) > 5

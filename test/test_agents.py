@@ -27,7 +27,10 @@ def test_binary_agent_run():
 
 def test_classification_agent_run():
     agent = ClassificationAgent(
-        agent_id="test_class", prompt="Classify:", queue="test", options=["cat", "dog"]
+        agent_id="test_class",
+        prompt="Classify:",
+        queue="test",
+        options=["cat", "dog"],
     )
     output = agent.run({"input": "A domestic animal"})
     assert output == "deprecated"
@@ -35,7 +38,9 @@ def test_classification_agent_run():
 
 def test_openai_binary_agent_run():
     agent = OpenAIBinaryAgent(
-        agent_id="test_openai_bin", prompt="Is this real?", queue="test"
+        agent_id="test_openai_bin",
+        prompt="Is this real?",
+        queue="test",
     )
     output = agent.run({"input": "Is water wet?"})
     assert output in [True, False]
@@ -65,11 +70,16 @@ def test_openai_classification_agent_run_not_classified():
 
 def test_openai_answer_builder_run():
     agent = OpenAIAnswerBuilder(
-        agent_id="test_builder", prompt="Answer this:", queue="test"
+        agent_id="test_builder",
+        prompt="Answer this:",
+        queue="test",
     )
     output = agent.run({"input": "What is AI?"})
-    assert isinstance(output, str)
-    assert len(output) > 5
+    # OpenAIAnswerBuilder now returns structured response with metrics
+    assert isinstance(output, dict)
+    assert "response" in output
+    assert "_metrics" in output
+    assert len(output["response"]) > 5
 
 
 def test_duckduckgo_tool_run():

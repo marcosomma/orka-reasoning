@@ -59,7 +59,9 @@ class TestLocalLLMAgent:
     def test_build_prompt(self):
         """Test prompt template building."""
         agent = LocalLLMAgent(
-            agent_id="test_agent", prompt="Process this: {{ input }}", queue=None
+            agent_id="test_agent",
+            prompt="Process this: {{ input }}",
+            queue=None,
         )
 
         result = agent.build_prompt("Hello world")
@@ -94,13 +96,18 @@ class TestLocalLLMAgent:
 
         result = agent.run("Hello world")
 
-        assert result == "This is a test response"
+        # LocalLLMAgent now returns structured response with metrics
+        assert isinstance(result, dict)
+        assert result["response"] == "This is a test response"
+        assert "_metrics" in result
+        assert result["_metrics"]["model"] == "llama3"
         mock_post.assert_called_once()
 
         # Check the request payload
         call_args = mock_post.call_args
         assert call_args[1]["json"]["model"] == "llama3"
-        assert call_args[1]["json"]["prompt"] == "Echo: Hello world"
+        # Prompt now includes self-evaluation instructions, so check it contains our core prompt
+        assert "Echo: Hello world" in call_args[1]["json"]["prompt"]
         assert call_args[1]["json"]["stream"] is False
 
     @patch("requests.post")
@@ -110,7 +117,7 @@ class TestLocalLLMAgent:
         mock_response = MagicMock()
         mock_response.raise_for_status.return_value = None
         mock_response.json.return_value = {
-            "choices": [{"message": {"content": "LM Studio response"}}]
+            "choices": [{"message": {"content": "LM Studio response"}}],
         }
         mock_post.return_value = mock_response
 
@@ -125,7 +132,11 @@ class TestLocalLLMAgent:
 
         result = agent.run("Hello world")
 
-        assert result == "LM Studio response"
+        # LocalLLMAgent now returns structured response with metrics
+        assert isinstance(result, dict)
+        assert result["response"] == "LM Studio response"
+        assert "_metrics" in result
+        assert result["_metrics"]["model"] == "mistral"
         mock_post.assert_called_once()
 
         # Check the URL was properly formatted
@@ -135,7 +146,8 @@ class TestLocalLLMAgent:
         # Check the request payload
         payload = call_args[1]["json"]
         assert payload["model"] == "mistral"
-        assert payload["messages"][0]["content"] == "Echo: Hello world"
+        # Message content now includes self-evaluation instructions, so check it contains our core prompt
+        assert "Echo: Hello world" in payload["messages"][0]["content"]
 
     @patch("requests.post")
     def test_openai_compatible_call_success(self, mock_post):
@@ -144,7 +156,7 @@ class TestLocalLLMAgent:
         mock_response = MagicMock()
         mock_response.raise_for_status.return_value = None
         mock_response.json.return_value = {
-            "choices": [{"message": {"content": "OpenAI compatible response"}}]
+            "choices": [{"message": {"content": "OpenAI compatible response"}}],
         }
         mock_post.return_value = mock_response
 
@@ -159,7 +171,11 @@ class TestLocalLLMAgent:
 
         result = agent.run("Hello world")
 
-        assert result == "OpenAI compatible response"
+        # LocalLLMAgent now returns structured response with metrics
+        assert isinstance(result, dict)
+        assert result["response"] == "OpenAI compatible response"
+        assert "_metrics" in result
+        assert result["_metrics"]["model"] == "gpt-3.5-turbo"
         mock_post.assert_called_once()
 
     @patch("requests.post")
@@ -179,8 +195,12 @@ class TestLocalLLMAgent:
 
         result = agent.run("Hello world")
 
-        assert "[LocalLLMAgent error:" in result
-        assert "Connection failed" in result
+        # LocalLLMAgent now returns structured response with metrics even for errors
+        assert isinstance(result, dict)
+        assert "[LocalLLMAgent error:" in result["response"]
+        assert "Connection failed" in result["response"]
+        assert "_metrics" in result
+        assert result["_metrics"]["error"] is True
 
     @patch("requests.post")
     def test_http_error_handling(self, mock_post):
@@ -201,8 +221,12 @@ class TestLocalLLMAgent:
 
         result = agent.run("Hello world")
 
-        assert "[LocalLLMAgent error:" in result
-        assert "404 Not Found" in result
+        # LocalLLMAgent now returns structured response with metrics even for errors
+        assert isinstance(result, dict)
+        assert "[LocalLLMAgent error:" in result["response"]
+        assert "404 Not Found" in result["response"]
+        assert "_metrics" in result
+        assert result["_metrics"]["error"] is True
 
     @patch("requests.post")
     def test_invalid_json_response(self, mock_post):
@@ -224,7 +248,11 @@ class TestLocalLLMAgent:
 
         result = agent.run("Hello world")
 
-        assert "[LocalLLMAgent error:" in result
+        # LocalLLMAgent now returns structured response with metrics even for errors
+        assert isinstance(result, dict)
+        assert "[LocalLLMAgent error:" in result["response"]
+        assert "_metrics" in result
+        assert result["_metrics"]["error"] is True
 
     def test_string_input_handling(self):
         """Test handling of string input vs dict input."""
@@ -243,11 +271,15 @@ class TestLocalLLMAgent:
 
             # Test string input
             result = agent.run("Hello world")
-            assert result == "Test response"
+            assert isinstance(result, dict)
+            assert result["response"] == "Test response"
+            assert "_metrics" in result
 
             # Test dict input
             result = agent.run({"content": "Hello world", "temperature": 0.8})
-            assert result == "Test response"
+            assert isinstance(result, dict)
+            assert result["response"] == "Test response"
+            assert "_metrics" in result
 
     def test_default_provider_fallback(self):
         """Test that unknown providers fall back to Ollama format."""
@@ -266,7 +298,9 @@ class TestLocalLLMAgent:
             )
 
             result = agent.run("Hello world")
-            assert result == "Fallback response"
+            assert isinstance(result, dict)
+            assert result["response"] == "Fallback response"
+            assert "_metrics" in result
 
             # Should have called with Ollama format
             call_args = mock_post.call_args
@@ -300,7 +334,9 @@ class TestLocalLLMAgent:
     def test_model_url_defaults(self):
         """Test default model URL behavior."""
         agent = LocalLLMAgent(
-            agent_id="test_agent", prompt="Echo: {{ input }}", queue=None
+            agent_id="test_agent",
+            prompt="Echo: {{ input }}",
+            queue=None,
         )
 
         # Should default to Ollama URL
