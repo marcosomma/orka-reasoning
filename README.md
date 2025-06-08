@@ -8,9 +8,9 @@
 [![codecov](https://codecov.io/github/marcosomma/orka-reasoning/graph/badge.svg?token=V91X4WGBBZ)](https://codecov.io/github/marcosomma/orka-reasoning)
 ![PyPI - License](https://img.shields.io/pypi/l/orka-reasoning?color=green)
 
-![PyPI - Downloads](https://img.shields.io/pypi/dd/orka-reasoning?color=green)
-![PyPI - Downloads](https://img.shields.io/pypi/dw/orka-reasoning?color=green)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/orka-reasoning?color=green)
+![PyPI - Downloads](https://img.shields.io/pypi/dd/orka-reasoning?label=downloads&color=green)
+![PyPI - Downloads](https://img.shields.io/pypi/dw/orka-reasoning?label=downloads&color=green)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/orka-reasoning?label=downloads&color=green)
 ![Pepy Total Downloads](https://img.shields.io/pepy/dt/orka-reasoning?label=Total%20Download&color=green)
 
 
@@ -19,7 +19,8 @@
 
 [![PyPi](https://img.shields.io/badge/pypi-%23ececec.svg?style=for-the-badge&logo=pypi&logoColor=1f73b7)](https://pypi.org/project/orka-reasoning/) [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://hub.docker.com/r/marcosomma/orka-ui)
 
-[WEB](https://orkacore.com)
+[![orkacore](https://img.shields.io/badge/orkacore-.com-green?labelColor=blue&style=for-the-badge&link=https://orkacore.com/)](https://orkacore.com/)
+
 </div>
 
 **Orchestrator Kit for Agentic Reasoning** - OrKa is a modular AI orchestration system that transforms Large Language Models (LLMs) into composable agents capable of reasoning, fact-checking, and constructing answers with transparent traceability.
