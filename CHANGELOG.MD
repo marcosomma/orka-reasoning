@@ -3,6 +3,19 @@
 
 ---
 
+## [0.6.3] · 2025-01-27
+### Fixed
+* **Critical Docker Integration Bug**
+  * Fixed "docker-compose file not available" error when running `orka.orka_start` after pip installation
+  * Enhanced package distribution configuration to properly include docker directory and all its contents
+  * Updated `MANIFEST.in` to explicitly include `orka/docker/*` files in the package
+  * Improved `setup.py` and `pyproject.toml` package data configuration with recursive docker file inclusion
+  * Docker-compose.yml and related infrastructure files now properly bundled with pip installations
+* **Package Distribution Improvements**
+  * Enhanced setuptools configuration for better file inclusion in wheel distributions
+  * Added comprehensive package data patterns to ensure all necessary docker files are included
+  * Improved reliability of `get_docker_dir()` function for both development and production environments
+
 ## [0.6.2] · 2025-06-08
 ### Added
 * **Real Local-Cost Model Implementation**
