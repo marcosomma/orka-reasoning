@@ -146,7 +146,7 @@ async def test_parallel_execution(parallel_config):
         orchestrator = Orchestrator(parallel_config)
 
         # Mock the agent responses
-        async def mock_run(*args, **kwargs):
+        def mock_run(*args, **kwargs):
             return {"result": "test result"}
 
         for agent_id in [

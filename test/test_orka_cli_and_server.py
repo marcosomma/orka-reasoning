@@ -22,7 +22,7 @@ import logging
 import pytest
 import yaml
 
-import orka.orka_cli as orka_cli
+from orka import orka_cli
 
 # --- orka_cli.py ---
 
@@ -41,10 +41,13 @@ def make_dummy_yaml(tmp_path):
                 "type": "openai-binary",
                 "prompt": "Is '{{ input }}' a valid project?",
                 "queue": "orka:dummy",
-            }
+            },
         ],
     }
-    file = tmp_path / "dummy.yml"
+    # Create the directory first
+    workflows_dir = tmp_path / "test_workflows"
+    workflows_dir.mkdir(exist_ok=True)
+    file = workflows_dir / "dummy.yml"
     file.write_text(yaml.dump(config))
     return str(file)
 
@@ -75,12 +78,15 @@ async def test_run_cli_entrypoint_prints_list(tmp_path, monkeypatch, caplog):
             ]
 
     monkeypatch.setattr(
-        "orka.orchestrator.Orchestrator", lambda config_path: DummyOrchestrator()
+        "orka.orchestrator.Orchestrator",
+        lambda config_path: DummyOrchestrator(),
     )
     config_path = make_dummy_yaml(tmp_path)
     with caplog.at_level(logging.INFO):
         result = await orka_cli.run_cli_entrypoint(
-            config_path, "input", log_to_file=False
+            config_path,
+            "input",
+            log_to_file=False,
         )
         assert "Agent: agent1" in caplog.text
         assert isinstance(result, list)
@@ -93,12 +99,15 @@ async def test_run_cli_entrypoint_prints_other(tmp_path, monkeypatch, caplog):
             return "just a string"
 
     monkeypatch.setattr(
-        "orka.orchestrator.Orchestrator", lambda config_path: DummyOrchestrator()
+        "orka.orchestrator.Orchestrator",
+        lambda config_path: DummyOrchestrator(),
     )
     config_path = make_dummy_yaml(tmp_path)
     with caplog.at_level(logging.INFO):
         result = await orka_cli.run_cli_entrypoint(
-            config_path, "input", log_to_file=False
+            config_path,
+            "input",
+            log_to_file=False,
         )
         assert "just a string" in caplog.text
         assert result == "just a string"
@@ -111,7 +120,8 @@ async def test_run_cli_entrypoint_log_to_file(tmp_path, monkeypatch):
             return {"foo": "bar"}
 
     monkeypatch.setattr(
-        "orka.orchestrator.Orchestrator", lambda config_path: DummyOrchestrator()
+        "orka.orchestrator.Orchestrator",
+        lambda config_path: DummyOrchestrator(),
     )
     config_path = make_dummy_yaml(tmp_path)
     import os
@@ -120,7 +130,9 @@ async def test_run_cli_entrypoint_log_to_file(tmp_path, monkeypatch):
     os.chdir(tmp_path)
     try:
         result = await orka_cli.run_cli_entrypoint(
-            config_path, "input", log_to_file=True
+            config_path,
+            "input",
+            log_to_file=True,
         )
         with open("orka_trace.log") as f:
             content = f.read()

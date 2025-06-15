@@ -52,12 +52,12 @@ def test_run_cli_entrypoint(mock_yaml_loader):
         import asyncio
 
         result = asyncio.run(
-            run_cli_entrypoint("test.yml", "Test input", log_to_file=False)
+            run_cli_entrypoint("test/test_workflows/test.yml", "Test input", log_to_file=False),
         )
 
         # Verify Orchestrator was created with the config path
         assert mock_orch_class.called
-        mock_orch_class.assert_called_once_with("test.yml")
+        mock_orch_class.assert_called_once_with("test/test_workflows/test.yml")
 
         # Check the result
         assert result == "Test result"
@@ -70,7 +70,10 @@ def test_run_cli_entrypoint(mock_yaml_loader):
 @patch("orka.orchestrator.ForkGroupManager", autospec=True)
 @patch("orka.orchestrator.SimpleForkGroupManager", autospec=True)
 async def test_orchestrator_initialization(
-    mock_simple_fork_manager, mock_fork_manager, mock_memory_logger, mock_loader
+    mock_simple_fork_manager,
+    mock_fork_manager,
+    mock_memory_logger,
+    mock_loader,
 ):
     """Test initialization of the Orchestrator."""
     # Setup mocks
@@ -87,7 +90,7 @@ async def test_orchestrator_initialization(
     mock_loader_instance.validate.return_value = None
 
     # Create orchestrator
-    orchestrator = Orchestrator("test.yml")
+    orchestrator = Orchestrator("test/test_workflows/test.yml")
 
     # Basic assertions
     assert orchestrator is not None
@@ -102,7 +105,10 @@ async def test_orchestrator_initialization(
 @patch("orka.orchestrator.ForkGroupManager", autospec=True)
 @patch("orka.orchestrator.SimpleForkGroupManager", autospec=True)
 async def test_orchestrator_with_agents(
-    mock_simple_fork_manager, mock_fork_manager, mock_memory_logger, mock_loader
+    mock_simple_fork_manager,
+    mock_fork_manager,
+    mock_memory_logger,
+    mock_loader,
 ):
     """Test Orchestrator with agents configuration."""
     # Setup mocks
@@ -113,7 +119,7 @@ async def test_orchestrator_with_agents(
 
     # Mock loader methods
     mock_loader_instance.get_orchestrator.return_value = {
-        "agents": ["agent1", "agent2"]
+        "agents": ["agent1", "agent2"],
     }
     mock_loader_instance.get_agents.return_value = [
         {"id": "agent1", "type": "binary", "prompt": "Test prompt", "queue": "test"},
@@ -139,7 +145,7 @@ async def test_orchestrator_with_agents(
         mock_class_agent.return_value = mock_agent2
 
         # Create orchestrator with mocked dependencies
-        orchestrator = Orchestrator("test.yml")
+        orchestrator = Orchestrator("test/test_workflows/test.yml")
 
         # Check if agents were initialized
         assert len(orchestrator.agents) == 2
@@ -163,7 +169,8 @@ async def test_orchestrator_run():
     # Create a custom monkeypatch object for this test
     with (
         patch(
-            "orka.orchestrator.Orchestrator.__init__", return_value=None
+            "orka.orchestrator.Orchestrator.__init__",
+            return_value=None,
         ) as mock_init,
         patch("orka.orchestrator.json.dumps", return_value="{}") as mock_json_dumps,
     ):
