@@ -1,0 +1,195 @@
+orchestrator:
+  id: orka-ui
+  strategy: parallel
+  queue: orka:generated
+  agents:
+    - answer_17
+    - duckduckgo_18
+    - fork_0
+    - join_3
+    - eval_4
+    - fork_5
+    - join_8
+    - eval_9
+    - fork_10
+    - join_13
+    - eval_14
+    - classification_22
+    - answer_21
+agents:
+  - id: answer_17
+    type: openai-answer
+    queue: orka:answer_17
+    prompt: "based on the input build a sentence to introduce in an internet search engine.INPUT: {{ input }} **constrains**ONLY RETURN THE SEARCH SENTENCE. not other wording around"
+  - id: duckduckgo_18
+    type: duckduckgo
+    queue: orka:duckduckgo_18
+    prompt: "{{ previous_outputs['answer_17'].result.response }}"
+    depends_on:
+      - answer_17
+  - id: fork_0
+    type: fork
+    targets:
+      - - local_llm_1
+      - - gpt4o_2
+      - - local_llm_19
+    depends_on:
+      - duckduckgo_18
+  - id: local_llm_1
+    type: local_llm
+    queue: orka:local_llm_1
+    prompt: "Clean and structure this research document for analysis. Remove formatting artifacts, standardize section headers, and return a clear markdown version: {{ input }} Use also thos data from internet: [ {{ previous_outputs['duckduckgo_18'].result }} "
+    model: deepseek-r1:7b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    depends_on:
+      - fork_0
+  - id: gpt4o_2
+    type: openai-answer
+    queue: orka:gpt4o_2
+    prompt: "Clean and structure this research document for analysis. Remove formatting artifacts, standardize section headers, and return a clear markdown version: {{ input }}"
+    model: gpt-4o-mini
+    temperature: 0.7
+    depends_on:
+      - fork_0
+  - id: local_llm_19
+    type: local_llm
+    queue: orka:local_llm_19
+    prompt: "Clean and structure this research document for analysis. Remove formatting artifacts, standardize section headers, and return a clear markdown version: {{ input }} Use also thos data from internet: [ {{ previous_outputs['duckduckgo_18'].result }} "
+    model: llama3.2
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    depends_on:
+      - fork_0
+  - id: join_3
+    type: join
+    group: fork_0
+  - id: eval_4
+    type: openai-classification
+    queue: orka:eval_4
+    prompt: "Two agents processed the same research document. Evaluate which output is better in terms of clarity, formatting, and readiness for analysis. Respond based on which version you prefer. Use this structure: --- deepseek-r1:1.5b_output: {{ previous_outputs['local_llm_1'].result.response }} gpt-4o-mini_output: {{ previous_outputs['gpt4o_2'].result.response }} llama3.2_output: {{ previous_outputs['local_llm_19'].result.response }} ---"
+    options:
+      - deepseek-r1:7b
+      - gpt-4o-mini
+      - llama3.2
+    model: gpt-3.5-turbo
+    depends_on:
+      - join_3
+  - id: fork_5
+    type: fork
+    targets:
+      - - local_llm_6
+      - - gpt4o_7
+      - - local_llm_20
+    depends_on:
+      - eval_4
+  - id: local_llm_6
+    type: local_llm
+    queue: orka:local_llm_6
+    prompt: "Provide a comprehensive 3-paragraph summary of this research paper, focusing on objectives, methods, and conclusions: {{ input }} Use also thos data from internet: [ {{ previous_outputs['duckduckgo_18'].result }} "
+    model: deepseek-r1:7b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    depends_on:
+      - fork_5
+  - id: gpt4o_7
+    type: openai-answer
+    queue: orka:gpt4o_7
+    prompt: "Provide a comprehensive 3-paragraph summary of this research paper, focusing on objectives, methods, and conclusions: {{ input }}"
+    model: gpt-4o-mini
+    temperature: 0.7
+    depends_on:
+      - fork_5
+  - id: local_llm_20
+    type: local_llm
+    queue: orka:local_llm_20
+    prompt: "Provide a comprehensive 3-paragraph summary of this research paper, focusing on objectives, methods, and conclusions: {{ input }} Use also thos data from internet: [ {{ previous_outputs['duckduckgo_18'].result }} "
+    model: llama3.2
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    depends_on:
+      - fork_5
+  - id: join_8
+    type: join
+    group: fork_5
+  - id: eval_9
+    type: openai-classification
+    queue: orka:eval_9
+    prompt: "Compare two summaries of a research paper. Which one is clearer, more informative, and better structured?deepseek-r1:7b_summary: {{ previous_outputs['local_llm_6'].result.response }} gpt-4o-mini_summary: {{ previous_outputs['gpt4o_7'].result.response }} llama3.2_output: {{ previous_outputs['local_llm_20'].result.response }} ---"
+    options:
+      - llama3.2
+      - gpt-4o-mini
+      - deepseek-r1:7b
+    model: gpt-3.5-turbo
+    depends_on:
+      - join_8
+  - id: fork_10
+    type: fork
+    targets:
+      - - local_llm_11
+      - - gpt4o_12
+      - - local_llm_21
+    depends_on:
+      - eval_9
+  - id: local_llm_11
+    type: local_llm
+    queue: orka:local_llm_11
+    prompt: "Generate constructive feedback for the author of this research document, focusing on clarity, scientific rigor, and formatting: {{ input }} Use also thos data from internet: [ {{ previous_outputs['duckduckgo_18'].result }} "
+    model: deepseek-r1:7b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    depends_on:
+      - fork_10
+  - id: gpt4o_12
+    type: openai-answer
+    queue: orka:gpt4o_12
+    prompt: "Generate constructive feedback for the author of this research document, focusing on clarity, scientific rigor, and formatting: {{ input }}"
+    model: gpt-4o-mini
+    temperature: 0.7
+    depends_on:
+      - fork_10
+  - id: local_llm_21
+    type: local_llm
+    queue: orka:local_llm_21
+    prompt: "Generate constructive feedback for the author of this research document, focusing on clarity, scientific rigor, and formatting: {{ input }} Use also thos data from internet: [ {{ previous_outputs['duckduckgo_18'].result }} "
+    model: llama3.2
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    depends_on:
+      - fork_10
+  - id: join_13
+    type: join
+    group: fork_10
+  - id: eval_14
+    type: openai-classification
+    queue: orka:eval_14
+    prompt: "Which feedback is more useful, specific, and actionable for improving the research paper?. --- deepseek-r1:7b_feedback: {{ previous_outputs['local_llm_11'].result.response }} gpt-4o-mini_feedback: {{ previous_outputs['gpt4o_12'].result.response }} llama3.2_output: {{ previous_outputs['local_llm_21'].result.response }} ---"
+    options:
+      - deepseek-r1:7b
+      - gpt-4o-mini
+      - llama3.2
+    model: gpt-3.5-turbo
+    depends_on:
+      - join_13
+  - id: classification_22
+    type: openai-classification
+    queue: orka:classification_22
+    prompt: "Based on three evaluations (cleaning, summarization, feedback), determine the overall better model solution: local (deepseek-r1:7b/llama3.2) or online (gpt-4o-mini). Count wins, explain why each was chosen, and declare the overall winner.Inputs: - eval_1: {{ previous_outputs['eval_4'] }} - eval_2: {{ previous_outputs['eval_9'] }} - eval_3: {{ previous_outputs['eval_14'] }}Also compare consistency of answer between 2 models run solution across all the executions: {{ previous_outputs}}"
+    options:
+      - local
+      - online
+    depends_on:
+      - eval_14
+  - id: answer_21
+    type: openai-answer
+    queue: orka:answer_21
+    prompt: 'Analyze {{ previous_outputs }} and {{ input }}. Rank every proposed models from best to worst.Report results as a blunt podium plus a full list.FORMAT (exactly):<Winner> - <one-sentence verdict>Why it wins: <reason 1><reason 2><Runner-up> - <one-sentence verdict>Key flaw: <short phrase><Third place> - <one-sentence verdict>Key flaw: <short phrase>Full ranking<ordered list of all solutions, each as "N. Solution - terse rationale">Confidence: <0-1>No fluff, no apologies, no mention of tools or agents.'
+    model: gpt-3.5-turbo
+    depends_on:
+      - classification_22

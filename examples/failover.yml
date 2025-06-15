@@ -1,59 +1,67 @@
 orchestrator:
   id: orka-ui
-  strategy: sequential
-  queue: orka:failover
+  strategy: decision-tree
+  queue: orka:generated
   agents:
+    - answer_9
     - test_failover
     - need_answer
     - router_answer
-    - validate_fact
-    - test_failover2
-
 agents:
+  - id: answer_9
+    type: openai-answer
+    queue: orka:answer_9
+    prompt: Frase this input in a more undestandable way."{{ input }}"
   - id: test_failover
     type: failover
-    queue: orka:test_failover
+    input: answer_9
     children:
       - id: failing_test_agent1
         type: failing
         queue: orka:failing_test_agent1
       - id: actual_working_agent
         type: duckduckgo
-        prompt: >
-          {{ input }}
         queue: orka:actual_working_agent
-
+        prompt: "{{ input }}"
+    depends_on:
+      - failing_test_agent1
+      - actual_working_agent
+      - answer_9
   - id: need_answer
     type: openai-binary
-    prompt: >
-      Is this a {{ input }} is a question that requires an answer or a fact to be validated?
-      - TRUE: ia s question and requires an answer
-      - FALSE: is an assertion requires a fact to be validated
     queue: orka:is_fact
-
+    prompt: "Is this a {{ input }} is a question that requires an answer or a fact to be validated? - TRUE: ia s question and requires an answer - FALSE: is an assertion requires a fact to be validated"
+    depends_on:
+      - test_failover
   - id: router_answer
     type: router
     params:
       decision_key: need_answer
       routing_map:
-        true: ["test_failover2"]
-        false: ["validate_fact"]
-
-  - id: validate_fact
-    type: openai-binary
-    prompt: |
-      Given the fact "{{ input }}", and the search results "{{ previous_outputs.test_failover }}"?
-    queue: orka:validation_queue
-
+        "true":
+          - test_failover2
+        "false":
+          - validate_fact
+    depends_on:
+      - need_answer
   - id: test_failover2
     type: failover
-    queue: orka:test_failover2
+    input: router_answer
     children:
       - id: failing_test_agent2
         type: failing
         queue: orka:failing_test_agent2
       - id: build_answer
         type: openai-answer
-        prompt: |
-          Given this question "{{ input }}", and the search results "{{ previous_outputs.test_failover }}", return a compelling answer.
         queue: orka:validation_queue
+        prompt: Given this question "{{ input }}", and the search results "{{ previous_outputs.test_failover.result.response }}", return a compelling answer.
+    depends_on:
+      - router_answer
+      - failing_test_agent2
+      - build_answer
+  - id: validate_fact
+    type: openai-binary
+    queue: orka:validation_queue
+    prompt: Given the fact "{{ input }}", and the search results "{{ previous_outputs.test_failover.result.response }}"?
+    depends_on:
+      - router_answer

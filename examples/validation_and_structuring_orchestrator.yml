@@ -1,17 +1,12 @@
 orchestrator:
-  id: validation-orchestrator
-  strategy: parallel
+  id: orka-ui
+  strategy: decision-tree
   queue: orka:generated
   agents:
     - memory-reader
     - memory-check
     - router
-    - memory-path
-    - context-collector
-    - answer-builder
-    - validation-guard
     - memory-writer
-
 agents:
   - id: memory-reader
     type: memory
@@ -19,27 +14,11 @@ agents:
     config:
       operation: read
     namespace: landmarks
-    prompt: |
-      Retrieve any stored memories about {{ input }}.
-      Return "NONE" if nothing matches.
-
+    prompt: Retrieve any stored memories about {{ input }}.Return "NONE" if nothing matches.
   - id: memory-check
     type: openai-binary
     queue: orka:memory-check
-    prompt: |
-      Check if the following memory data is relevant to the question and has high confidence:
-      Question: {{ input }}
-      Memory: {{ previous_outputs['memory-reader'].memories if previous_outputs['memory-reader'].memories else 'NONE' }}
-
-      Return true if:
-      1. The memory contains relevant information about the question
-      2. The memory has a confidence score higher than 0.89
-      3. The memory is not "NONE"
-
-      Return false otherwise.
-    depends_on:
-      - memory-reader
-
+    prompt: 'Check if the following memory data is relevant to the question and has high confidence:Question: {{ input }}Memory: {{ previous_outputs[''memory-reader''].memories if previous_outputs[''memory-reader''].memories else ''NONE'' }}Return true if:1. The memory contains relevant information about the question2. The memory has a confidence score higher than 0.893. The memory is not "NONE"Return false otherwise.'
   - id: router
     type: router
     params:
@@ -47,66 +26,50 @@ agents:
       routing_map:
         "true":
           - memory-path
+          - memory-writer
         "false":
           - context-collector
           - answer-builder
           - validation-guard
           - memory-writer
-
+    depends_on:
+      - memory-check
   - id: memory-path
     type: openai-answer
     queue: orka:memory-path
-    prompt: |
-      Format the stored memory information about the {{ input }} into a clear answer:
-      {{ previous_outputs['memory-reader'].memories if previous_outputs['memory-reader'].memories else 'NONE' }}
-
+    prompt: Format the stored memory information about the {{ input }} into a clear answer:{{ previous_outputs['memory-reader'].memories if previous_outputs['memory-reader'].memories else 'NONE' }}
+    depends_on:
+      - router
   - id: context-collector
     type: openai-answer
     queue: orka:context-collector
-    prompt: |
-      Based on the question "{{ input }}", collect relevant context and background information.
-      Focus on gathering factual information that will help validate the answer.
-
+    prompt: Based on the question "{{ input }}", collect relevant context and background information.Focus on gathering factual information that will help validate the answer.
+    depends_on:
+      - router
   - id: answer-builder
     type: openai-answer
     queue: orka:answer-builder
-    prompt: |
-      Using the context: {{ previous_outputs['context-collector'] }}
-      Provide a detailed answer to: {{ input }}
+    prompt: "Using the context: {{ previous_outputs['context-collector'] }}Provide a detailed answer to: {{ input }}"
     depends_on:
       - context-collector
-
   - id: validation-guard
     type: validate_and_structure
     queue: orka:validation-guard
-    prompt: |
-      Validate the answer and structure it into a memory format.
-      Question: {{ input }}
-      Answer to validate: {{ previous_outputs['answer-builder'] }}
-    store_structure: |
-      {
-        "fact": "string",
-        "reason": "string",
-        "confidence": "number",
-        "source": "string"
-      }
+    prompt: "Validate the answer and structure it into a memory format.Question: {{ input }}Answer to validate: {{ previous_outputs['answer-builder'] }}"
     depends_on:
       - answer-builder
       - context-collector
-
+    store_structure: '{  "fact": "string",  "reason": "string",  "confidence": "number",  "source": "string"}'
   - id: memory-writer
     type: memory
     queue: orka:memory-writer
     config:
       operation: write
     namespace: landmarks
-    key_template: "{{ input }}"
-    prompt: >-
-      {{ previous_outputs['validation-guard'].memory_object.fact if previous_outputs['validation-guard'].valid else 'NONE' }}
+    prompt: "{{ previous_outputs['validation-guard'].memory_object.fact if previous_outputs['validation-guard'].valid else 'NONE' }}"
     metadata:
-      source: "validation-guard"
+      source: validation-guard
       confidence: "{{ previous_outputs['validation-guard'].memory_object.confidence if previous_outputs['validation-guard'].valid else 0 }}"
       reason: "{{ previous_outputs['validation-guard'].memory_object.reason if previous_outputs['validation-guard'].valid else 'unknown' }}"
       fact: "{{ previous_outputs['validation-guard'].memory_object.fact if previous_outputs['validation-guard'].valid else 'unknown' }}"
-    depends_on:
-      - validation-guard
+    key_template: "{{ input }}"
