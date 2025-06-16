@@ -26,7 +26,7 @@ async def test_run_cli_entrypoint(tmp_path):
     fake_redis = FakeRedisClient()
 
     # Patch RedisMemoryLogger to inject fake client
-    with patch("orka.memory_logger.redis.from_url", return_value=fake_redis):
+    with patch("orka.memory.redis_logger.redis.from_url", return_value=fake_redis):
         example_yaml = {
             "orchestrator": {
                 "id": "test_orchestrator",
@@ -40,7 +40,7 @@ async def test_run_cli_entrypoint(tmp_path):
                     "type": "openai-binary",
                     "prompt": "Is '{{ input }}' a valid project?",
                     "queue": "orka:dummy",
-                }
+                },
             ],
         }
 
@@ -48,7 +48,9 @@ async def test_run_cli_entrypoint(tmp_path):
         config_file.write_text(yaml.dump(example_yaml))
 
         result = await run_cli_entrypoint(
-            str(config_file), "Is OrKa a project?", log_to_file=False
+            str(config_file),
+            "Is OrKa a project?",
+            log_to_file=False,
         )
 
         assert isinstance(result, list)
@@ -57,7 +59,9 @@ async def test_run_cli_entrypoint(tmp_path):
         logfile_path = tmp_path / "orka_trace.log"
         os.chdir(tmp_path)
         await run_cli_entrypoint(
-            str(config_file), "Another question?", log_to_file=True
+            str(config_file),
+            "Another question?",
+            log_to_file=True,
         )
 
         assert logfile_path.exists()

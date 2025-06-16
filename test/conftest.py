@@ -15,7 +15,6 @@ import logging
 import os
 import sys
 import time
-from typing import Generator
 from unittest.mock import patch
 
 import pytest
@@ -29,7 +28,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 # Set up basic logging configuration
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
 # Check if pytest-asyncio is available
@@ -89,7 +89,7 @@ def get_redis_client():
 def patch_redis_globally():
     """Patch Redis globally unless using real Redis."""
     if not USE_REAL_REDIS:
-        with patch("orka.memory_logger.redis.from_url", return_value=FakeRedisClient()):
+        with patch("orka.memory.redis_logger.redis.from_url", return_value=FakeRedisClient()):
             yield
     else:
         yield
@@ -114,7 +114,9 @@ def test_main_invokes_asyncio(monkeypatch):
         monkeypatch.setattr(
             "orka.orchestrator.Orchestrator",
             lambda config_path: type(
-                "DummyOrchestrator", (), {"run": lambda self, x: None}
+                "DummyOrchestrator",
+                (),
+                {"run": lambda self, x: None},
             )(),
         )
         import importlib
@@ -126,7 +128,9 @@ def test_main_invokes_asyncio(monkeypatch):
 
 
 def wait_for_redis(
-    redis_url: str, max_retries: int = 5, retry_delay: float = 1.0
+    redis_url: str,
+    max_retries: int = 5,
+    retry_delay: float = 1.0,
 ) -> bool:
     """
     Wait for Redis to be available.
@@ -150,7 +154,7 @@ def wait_for_redis(
 
 
 @pytest.fixture(scope="session", autouse=True)
-def ensure_redis() -> Generator[None, None, None]:
+def ensure_redis() -> None:
     """
     Ensure Redis is available before running tests.
     This fixture runs automatically for all tests.
@@ -159,7 +163,6 @@ def ensure_redis() -> Generator[None, None, None]:
         redis_url = "redis://localhost:6379/0"
         if not wait_for_redis(redis_url):
             pytest.skip("Redis is not available")
-    yield
 
 
 @pytest.fixture(scope="function")
@@ -190,6 +193,8 @@ def event_loop_policy():
 def mock_openai_env():
     """Ensure we have an OPENAI_API_KEY set for testing."""
     with patch.dict(
-        os.environ, {"OPENAI_API_KEY": "dummy_key_for_testing"}, clear=False
+        os.environ,
+        {"OPENAI_API_KEY": "dummy_key_for_testing"},
+        clear=False,
     ):
         yield

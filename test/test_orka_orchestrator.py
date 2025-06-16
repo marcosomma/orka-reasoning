@@ -58,7 +58,7 @@ agents:
 
     fake_redis = FakeRedisClient()
 
-    with patch("orka.memory_logger.redis.from_url", return_value=fake_redis):
+    with patch("orka.memory.redis_logger.redis.from_url", return_value=fake_redis):
         orchestrator.AGENT_TYPES["dummy"] = DummyAgent
         o = Orchestrator(str(file))
         result = await o.run("msg")
@@ -142,7 +142,7 @@ async def test_parallel_execution(parallel_config):
     mock_redis.get = MagicMock(return_value=None)
     mock_redis.set = MagicMock()
 
-    with patch("orka.memory_logger.redis.from_url", return_value=mock_redis):
+    with patch("orka.memory.redis_logger.redis.from_url", return_value=mock_redis):
         orchestrator = Orchestrator(parallel_config)
 
         # Mock the agent responses
@@ -165,7 +165,7 @@ async def test_parallel_execution(parallel_config):
 
 @pytest.mark.asyncio
 async def test_parallel_execution_with_empty_branches(parallel_config):
-    with patch("orka.memory_logger.redis.from_url", return_value=MagicMock()):
+    with patch("orka.memory.redis_logger.redis.from_url", return_value=MagicMock()):
         orchestrator = Orchestrator(parallel_config)
 
         # Set empty targets
@@ -197,7 +197,7 @@ async def test_parallel_execution_with_empty_branches(parallel_config):
 
 @pytest.mark.asyncio
 async def test_parallel_execution_with_invalid_branch(parallel_config):
-    with patch("orka.memory_logger.redis.from_url", return_value=MagicMock()):
+    with patch("orka.memory.redis_logger.redis.from_url", return_value=MagicMock()):
         orchestrator = Orchestrator(parallel_config)
 
         # Set invalid target
