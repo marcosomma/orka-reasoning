@@ -470,14 +470,20 @@ class OpenAIAnswerBuilder(BaseAgent):
                     "openai_json_parsing_fallback",
                     f"OpenAI response was not valid JSON, using raw text: {answer[:100]}...",
                 )
+        else:
+            # When JSON parsing is disabled, return raw response in expected format
+            parsed_response = {
+                "response": answer,
+                "confidence": "0.5",
+                "internal_reasoning": "Raw response without JSON parsing",
+            }
 
-            # Add metrics to parsed response
-            parsed_response["_metrics"] = metrics
-            return parsed_response
-
-        # For non-JSON responses, we need to return both answer and metrics
-        # We'll return a dict that preserves the string for backward compatibility
-        return {"response": answer, "_metrics": metrics}
+        # Add metrics and formatted_prompt to parsed response
+        parsed_response["_metrics"] = metrics
+        parsed_response["formatted_prompt"] = (
+            prompt  # Store only the rendered prompt, not the full context
+        )
+        return parsed_response
 
 
 class OpenAIBinaryAgent(OpenAIAnswerBuilder):
@@ -514,17 +520,38 @@ class OpenAIBinaryAgent(OpenAIAnswerBuilder):
         enhanced_input = input_data.copy()
         enhanced_input["prompt"] = enhanced_prompt
 
+        # Store the agent-enhanced prompt with template variables resolved
+        # We need to render the enhanced prompt with the input data to show the actual prompt sent
+        try:
+            from jinja2 import Template
+
+            template = Template(enhanced_prompt)
+            rendered_enhanced_prompt = template.render(input=input_data.get("input", ""))
+            self._last_formatted_prompt = rendered_enhanced_prompt
+        except:
+            # Fallback: simple replacement if Jinja2 fails
+            self._last_formatted_prompt = enhanced_prompt.replace(
+                "{{ input }}",
+                str(input_data.get("input", "")),
+            )
+
         # Get the answer using the enhanced prompt
         response_data = super().run(enhanced_input)
 
-        # Extract answer and preserve metrics
+        # Extract answer and preserve metrics and LLM response details
         if isinstance(response_data, dict):
             answer = response_data.get("response", "")
-            # Preserve metrics for bubbling up
+            # Preserve metrics and LLM response details for bubbling up
             self._last_metrics = response_data.get("_metrics", {})
+            self._last_response = response_data.get("response", "")
+            self._last_confidence = response_data.get("confidence", "0.0")
+            self._last_internal_reasoning = response_data.get("internal_reasoning", "")
         else:
             answer = str(response_data)
             self._last_metrics = {}
+            self._last_response = answer
+            self._last_confidence = "0.0"
+            self._last_internal_reasoning = "Non-JSON response from LLM"
 
         # Convert to binary decision
         positive_indicators = ["yes", "true", "correct", "right", "affirmative"]
@@ -571,16 +598,37 @@ class OpenAIClassificationAgent(OpenAIAnswerBuilder):
         enhanced_input = input_data.copy()
         enhanced_input["prompt"] = enhanced_prompt
 
+        # Store the agent-enhanced prompt with template variables resolved
+        # We need to render the enhanced prompt with the input data to show the actual prompt sent
+        try:
+            from jinja2 import Template
+
+            template = Template(enhanced_prompt)
+            rendered_enhanced_prompt = template.render(input=input_data.get("input", ""))
+            self._last_formatted_prompt = rendered_enhanced_prompt
+        except:
+            # Fallback: simple replacement if Jinja2 fails
+            self._last_formatted_prompt = enhanced_prompt.replace(
+                "{{ input }}",
+                str(input_data.get("input", "")),
+            )
+
         # Use parent class to make the API call
         response_data = super().run(enhanced_input)
 
-        # Extract answer and preserve metrics
+        # Extract answer and preserve metrics and LLM response details
         if isinstance(response_data, dict):
             answer = response_data.get("response", "")
-            # Preserve metrics for bubbling up
+            # Preserve metrics and LLM response details for bubbling up
             self._last_metrics = response_data.get("_metrics", {})
+            self._last_response = response_data.get("response", "")
+            self._last_confidence = response_data.get("confidence", "0.0")
+            self._last_internal_reasoning = response_data.get("internal_reasoning", "")
         else:
             answer = str(response_data)
             self._last_metrics = {}
+            self._last_response = answer
+            self._last_confidence = "0.0"
+            self._last_internal_reasoning = "Non-JSON response from LLM"
 
         return answer

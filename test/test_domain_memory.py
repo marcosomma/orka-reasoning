@@ -26,7 +26,8 @@ from orka.nodes.memory_writer_node import MemoryWriterNode
 
 # Set up logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ async def test_memory_system():
     # Write to memory
     logger.info(f"Writing content to memory: {content[:50]}...")
     write_result = await writer.run(
-        {"input": content, "session_id": "test_session", "namespace": "test_namespace"}
+        {"input": content, "session_id": "test_session", "namespace": "test_namespace"},
     )
     logger.info(f"Write result: {write_result}")
 
@@ -75,7 +76,7 @@ async def test_memory_system():
                 "input": query,
                 "session_id": "test_session",
                 "namespace": "test_namespace",
-            }
+            },
         )
 
         # Ensure the read operation was successful
@@ -143,7 +144,9 @@ def test_memory_logger_log_multiple_events(memory_logger):
 
     for event_type, payload in events:
         memory_logger.log(
-            agent_id=payload["agent_id"], event_type=event_type, payload=payload
+            agent_id=payload["agent_id"],
+            event_type=event_type,
+            payload=payload,
         )
 
     # Verify events were stored in Redis stream
@@ -178,7 +181,9 @@ def test_memory_logger_invalid_event(memory_logger):
 
     with pytest.raises(ValueError, match="Event must contain 'agent_id'"):
         memory_logger.log(
-            agent_id="", event_type="test_event", payload={"data": "test"}
+            agent_id="",
+            event_type="test_event",
+            payload={"data": "test"},
         )
 
 
@@ -203,7 +208,9 @@ def test_memory_logger_get_events_by_agent(memory_logger):
 
     for event_type, payload in events:
         memory_logger.log(
-            agent_id=payload["agent_id"], event_type=event_type, payload=payload
+            agent_id=payload["agent_id"],
+            event_type=event_type,
+            payload=payload,
         )
 
     # Get all events and filter by agent
@@ -247,7 +254,8 @@ def test_memory_logger_get_latest_event_nonexistent(memory_logger):
 
 def test_memory_logger_redis_connection_error():
     with patch(
-        "orka.memory_logger.redis.from_url", side_effect=Exception("Connection error")
+        "orka.memory.redis_logger.redis.from_url",
+        side_effect=Exception("Connection error"),
     ):
         with pytest.raises(Exception):
             RedisMemoryLogger("redis://localhost:6379")

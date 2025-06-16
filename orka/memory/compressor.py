@@ -40,7 +40,7 @@ class MemoryCompressor:
             return False
 
         # Check if mean importance is below threshold
-        importances = [entry.importance for entry in entries]
+        importances = [entry["importance"] for entry in entries]
         if np.mean(importances) < self.importance_threshold:
             return True
 
@@ -56,12 +56,12 @@ class MemoryCompressor:
             return entries
 
         # Sort by timestamp
-        sorted_entries = sorted(entries, key=lambda x: x.timestamp)
+        sorted_entries = sorted(entries, key=lambda x: x["timestamp"])
 
         # Split into recent and old entries
         cutoff_time = datetime.now() - self.time_window
-        recent_entries = [e for e in sorted_entries if e.timestamp > cutoff_time]
-        old_entries = [e for e in sorted_entries if e.timestamp <= cutoff_time]
+        recent_entries = [e for e in sorted_entries if e["timestamp"] > cutoff_time]
+        old_entries = [e for e in sorted_entries if e["timestamp"] <= cutoff_time]
 
         if not old_entries:
             return entries
@@ -69,13 +69,13 @@ class MemoryCompressor:
         # Create summary of old entries
         try:
             summary = await self._create_summary(old_entries, summarizer)
-            summary_entry = MemoryEntry(
-                content=summary,
-                importance=1.0,  # High importance for summaries
-                timestamp=datetime.now(),
-                metadata={"is_summary": True, "summarized_entries": len(old_entries)},
-                is_summary=True,
-            )
+            summary_entry = {
+                "content": summary,
+                "importance": 1.0,  # High importance for summaries
+                "timestamp": datetime.now(),
+                "metadata": {"is_summary": True, "summarized_entries": len(old_entries)},
+                "is_summary": True,
+            }
 
             # Return recent entries + summary
             return recent_entries + [summary_entry]
@@ -87,14 +87,14 @@ class MemoryCompressor:
     async def _create_summary(self, entries: List[MemoryEntry], summarizer: Any) -> str:
         """Create a summary of multiple memory entries."""
         # Combine all content
-        combined_content = "\n".join(entry.content for entry in entries)
+        combined_content = "\n".join(entry["content"] for entry in entries)
 
         # Use summarizer to create summary
         if hasattr(summarizer, "summarize"):
             return await summarizer.summarize(combined_content)
         elif hasattr(summarizer, "generate"):
             return await summarizer.generate(
-                f"Summarize the following text concisely:\n\n{combined_content}"
+                f"Summarize the following text concisely:\n\n{combined_content}",
             )
         else:
             raise ValueError("Summarizer must have summarize() or generate() method")

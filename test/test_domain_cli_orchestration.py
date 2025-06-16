@@ -28,7 +28,7 @@ def test_orka_cli_module_imports(mock_run_cli):
     assert hasattr(orka.orka_cli, "run_cli_entrypoint")
 
 
-@patch("orka.orchestrator.YAMLLoader", autospec=True)
+@patch("orka.loader.YAMLLoader", autospec=True)
 def test_run_cli_entrypoint(mock_yaml_loader):
     """Test the run_cli_entrypoint function in orka_cli.py"""
     # Mock YAMLLoader to avoid file not found error
@@ -52,7 +52,7 @@ def test_run_cli_entrypoint(mock_yaml_loader):
         import asyncio
 
         result = asyncio.run(
-            run_cli_entrypoint("test.yml", "Test input", log_to_file=False)
+            run_cli_entrypoint("test.yml", "Test input", log_to_file=False),
         )
 
         # Verify Orchestrator was created with the config path
@@ -65,12 +65,15 @@ def test_run_cli_entrypoint(mock_yaml_loader):
 
 # Orchestrator Tests
 @pytest.mark.asyncio
-@patch("orka.orchestrator.YAMLLoader", autospec=True)
-@patch("orka.orchestrator.create_memory_logger", autospec=True)
-@patch("orka.orchestrator.ForkGroupManager", autospec=True)
-@patch("orka.orchestrator.SimpleForkGroupManager", autospec=True)
+@patch("orka.orchestrator.base.YAMLLoader", autospec=True)
+@patch("orka.memory_logger.create_memory_logger", autospec=True)
+@patch("orka.fork_group_manager.ForkGroupManager", autospec=True)
+@patch("orka.fork_group_manager.SimpleForkGroupManager", autospec=True)
 async def test_orchestrator_initialization(
-    mock_simple_fork_manager, mock_fork_manager, mock_memory_logger, mock_loader
+    mock_simple_fork_manager,
+    mock_fork_manager,
+    mock_memory_logger,
+    mock_loader,
 ):
     """Test initialization of the Orchestrator."""
     # Setup mocks
@@ -97,12 +100,15 @@ async def test_orchestrator_initialization(
 
 
 @pytest.mark.asyncio
-@patch("orka.orchestrator.YAMLLoader", autospec=True)
-@patch("orka.orchestrator.create_memory_logger", autospec=True)
-@patch("orka.orchestrator.ForkGroupManager", autospec=True)
-@patch("orka.orchestrator.SimpleForkGroupManager", autospec=True)
+@patch("orka.orchestrator.base.YAMLLoader", autospec=True)
+@patch("orka.memory_logger.create_memory_logger", autospec=True)
+@patch("orka.fork_group_manager.ForkGroupManager", autospec=True)
+@patch("orka.fork_group_manager.SimpleForkGroupManager", autospec=True)
 async def test_orchestrator_with_agents(
-    mock_simple_fork_manager, mock_fork_manager, mock_memory_logger, mock_loader
+    mock_simple_fork_manager,
+    mock_fork_manager,
+    mock_memory_logger,
+    mock_loader,
 ):
     """Test Orchestrator with agents configuration."""
     # Setup mocks
@@ -113,7 +119,7 @@ async def test_orchestrator_with_agents(
 
     # Mock loader methods
     mock_loader_instance.get_orchestrator.return_value = {
-        "agents": ["agent1", "agent2"]
+        "agents": ["agent1", "agent2"],
     }
     mock_loader_instance.get_agents.return_value = [
         {"id": "agent1", "type": "binary", "prompt": "Test prompt", "queue": "test"},
@@ -129,8 +135,8 @@ async def test_orchestrator_with_agents(
 
     # Patch agent types to prevent actual initialization
     with (
-        patch("orka.orchestrator.agents.BinaryAgent") as mock_binary_agent,
-        patch("orka.orchestrator.agents.ClassificationAgent") as mock_class_agent,
+        patch("orka.agents.BinaryAgent") as mock_binary_agent,
+        patch("orka.agents.ClassificationAgent") as mock_class_agent,
     ):
         # Create mock agent instances
         mock_agent1 = MagicMock()
@@ -163,9 +169,13 @@ async def test_orchestrator_run():
     # Create a custom monkeypatch object for this test
     with (
         patch(
-            "orka.orchestrator.Orchestrator.__init__", return_value=None
+            "orka.orchestrator.Orchestrator.__init__",
+            return_value=None,
         ) as mock_init,
-        patch("orka.orchestrator.json.dumps", return_value="{}") as mock_json_dumps,
+        patch(
+            "orka.orchestrator.execution_engine.json.dumps",
+            return_value="{}",
+        ) as mock_json_dumps,
     ):
         # Create the orchestrator instance without calling __init__
         orchestrator = Orchestrator.__new__(Orchestrator)
