@@ -13,44 +13,44 @@
 
 """
 OrKa CLI Interface
-================
+==================
 
 This module provides a command-line interface (CLI) for the OrKa orchestration framework,
 allowing users to run OrKa workflows directly from the terminal. It handles command-line
 argument parsing, workflow initialization, and result presentation.
 
-Usage:
+Usage
 -----
-```bash
-python -m orka.orka_cli path/to/config.yml "Your input query"
-```
+.. code-block:: bash
 
-Command-line arguments:
----------------------
-- config: Path to the YAML configuration file (required)
-- input: Query or input text to process (required)
-- --log-to-file: Save execution trace to a JSON log file (optional)
+    python -m orka.orka_cli path/to/config.yml "Your input query"
+
+Command-line Arguments
+----------------------
+* ``config`` - Path to the YAML configuration file (required)
+* ``input`` - Query or input text to process (required)
+* ``--log-to-file`` - Save execution trace to a JSON log file (optional)
 
 The CLI supports both direct console usage and programmatic invocation through the
-`run_cli_entrypoint` function, which can be used by other applications to embed
+``run_cli_entrypoint`` function, which can be used by other applications to embed
 OrKa functionality.
 
-Example:
+Example
 -------
-```python
-import asyncio
-from orka.orka_cli import run_cli_entrypoint
+.. code-block:: python
 
-async def run_workflow():
-    result = await run_cli_entrypoint(
-        "workflows/qa_pipeline.yml",
-        "What is the capital of France?",
-        log_to_file=True
-    )
-    print(result)
+    import asyncio
+    from orka.orka_cli import run_cli_entrypoint
 
-asyncio.run(run_workflow())
-```
+    async def run_workflow():
+        result = await run_cli_entrypoint(
+            "workflows/qa_pipeline.yml",
+            "What is the capital of France?",
+            log_to_file=True
+        )
+        print(result)
+
+    asyncio.run(run_workflow())
 """
 
 import argparse
@@ -115,11 +115,12 @@ async def main() -> None:
         --log-to-file: Flag to save output to a log file instead of console
     """
     parser: argparse.ArgumentParser = argparse.ArgumentParser(
-        description="Run OrKa with a YAML configuration."
+        description="Run OrKa with a YAML configuration.",
     )
     parser.add_argument("config", help="Path to the YAML configuration file.")
     parser.add_argument(
-        "input", help="Input question or statement for the orchestrator."
+        "input",
+        help="Input question or statement for the orchestrator.",
     )
     parser.add_argument(
         "--log-to-file",
@@ -133,7 +134,9 @@ async def main() -> None:
 
 
 async def run_cli_entrypoint(
-    config_path: str, input_text: str, log_to_file: bool = False
+    config_path: str,
+    input_text: str,
+    log_to_file: bool = False,
 ) -> Union[Dict[str, Any], List[Event], str]:
     """
     Run the OrKa orchestrator with the given configuration and input.
@@ -149,18 +152,19 @@ async def run_cli_entrypoint(
 
     Returns:
         The result of the orchestration run, which can be:
-        - A dictionary mapping agent IDs to their outputs
-        - A list of event records from the execution
-        - A simple string output for basic workflows
+
+        * A dictionary mapping agent IDs to their outputs
+        * A list of event records from the execution
+        * A simple string output for basic workflows
 
     Example:
-        ```python
-        result = await run_cli_entrypoint(
-            "configs/qa_workflow.yml",
-            "Who was the first person on the moon?",
-            log_to_file=True
-        )
-        ```
+        .. code-block:: python
+
+            result = await run_cli_entrypoint(
+                "configs/qa_workflow.yml",
+                "Who was the first person on the moon?",
+                log_to_file=True
+            )
     """
     from orka.orchestrator import Orchestrator
 
@@ -170,17 +174,16 @@ async def run_cli_entrypoint(
     if log_to_file:
         with open("orka_trace.log", "w") as f:
             f.write(str(result))
+    elif isinstance(result, dict):
+        for agent_id, value in result.items():
+            logger.info(f"{agent_id}: {value}")
+    elif isinstance(result, list):
+        for event in result:
+            agent_id = event.get("agent_id", "unknown")
+            payload = event.get("payload", {})
+            logger.info(f"Agent: {agent_id} | Payload: {payload}")
     else:
-        if isinstance(result, dict):
-            for agent_id, value in result.items():
-                logger.info(f"{agent_id}: {value}")
-        elif isinstance(result, list):
-            for event in result:
-                agent_id = event.get("agent_id", "unknown")
-                payload = event.get("payload", {})
-                logger.info(f"Agent: {agent_id} | Payload: {payload}")
-        else:
-            logger.info(result)
+        logger.info(result)
 
     return result  # <--- VERY IMPORTANT for your test to receive it
 

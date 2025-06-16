@@ -12,7 +12,92 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-Orchestrator package for OrKa orchestration components.
+Orchestrator Package
+===================
+
+The orchestrator package contains the modular components that make up OrKa's core
+orchestration engine. The orchestrator was designed with a modular architecture
+for specialized components while maintaining 100% backward compatibility.
+
+Architecture Overview
+---------------------
+
+The orchestrator uses a **multiple inheritance composition pattern** to combine
+specialized functionality from focused components:
+
+**Core Components**
+
+:class:`~orka.orchestrator.base.OrchestratorBase`
+    Handles initialization, configuration loading, and basic setup
+
+:class:`~orka.orchestrator.agent_factory.AgentFactory`
+    Manages agent registry, instantiation, and the AGENT_TYPES mapping
+
+:class:`~orka.orchestrator.execution_engine.ExecutionEngine`
+    Contains the main execution loop, agent coordination, and workflow management
+
+:class:`~orka.orchestrator.prompt_rendering.PromptRenderer`
+    Handles Jinja2 template rendering and prompt formatting
+
+:class:`~orka.orchestrator.error_handling.ErrorHandler`
+    Provides comprehensive error tracking, retry logic, and failure reporting
+
+:class:`~orka.orchestrator.metrics.MetricsCollector`
+    Collects LLM metrics, runtime information, and generates performance reports
+
+Composition Strategy
+--------------------
+
+The main :class:`Orchestrator` class inherits from all components using multiple
+inheritance, ensuring that:
+
+1. **Method Resolution Order** is preserved for consistent behavior
+2. **All functionality** remains accessible through the same interface
+3. **Zero breaking changes** are introduced for existing code
+4. **Internal modularity** improves maintainability and testing
+
+Usage Example
+-------------
+
+.. code-block:: python
+
+    from orka.orchestrator import Orchestrator
+
+    # Initialize with YAML configuration
+    orchestrator = Orchestrator("workflow.yml")
+
+    # Run the workflow (uses all components seamlessly)
+    result = await orchestrator.run("input data")
+
+Module Components
+-----------------
+
+**Available Modules:**
+
+* ``base`` - Core initialization and configuration
+* ``agent_factory`` - Agent registry and instantiation
+* ``execution_engine`` - Main execution loop and coordination
+* ``prompt_rendering`` - Template processing and formatting
+* ``error_handling`` - Error tracking and retry logic
+* ``metrics`` - Performance metrics and reporting
+
+Benefits of Modular Design
+--------------------------
+
+**Maintainability**
+    Each component has a single, focused responsibility
+
+**Testability**
+    Components can be tested in isolation
+
+**Extensibility**
+    New functionality can be added without affecting other components
+
+**Code Organization**
+    Related functionality is grouped together logically
+
+**Backward Compatibility**
+    Existing code continues to work without modification
 """
 
 from .agent_factory import AGENT_TYPES, AgentFactory

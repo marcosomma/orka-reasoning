@@ -12,10 +12,49 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-Prompt Rendering
-===============
+Prompt Rendering Module
+=======================
 
-Handles Jinja2 template rendering for dynamic prompt construction.
+This module provides Jinja2-based template rendering capabilities for dynamic prompt
+construction in the OrKa orchestration framework. It handles the rendering of agent
+prompts with dynamic context data and provides utilities for processing agent responses.
+
+The :class:`PromptRenderer` class is integrated into the main orchestrator through
+multiple inheritance composition, providing seamless template processing capabilities
+throughout the workflow execution.
+
+Key Features
+------------
+
+**Dynamic Template Rendering**
+    Uses Jinja2 templating engine for flexible prompt construction
+
+**Context Integration**
+    Automatically injects previous agent outputs and workflow state into templates
+
+**Response Processing**
+    Handles complex agent response structures and extracts relevant data
+
+**Error Resilience**
+    Gracefully handles template rendering failures to prevent workflow interruption
+
+Usage Example
+-------------
+
+.. code-block:: python
+
+    from orka.orchestrator.prompt_rendering import PromptRenderer
+
+    renderer = PromptRenderer()
+
+    # Render a template with context
+    result = renderer.render_prompt(
+        "Answer this question: {{ input }} using {{ previous_outputs.retriever }}",
+        {
+            "input": "What is Python?",
+            "previous_outputs": {"retriever": "Python is a programming language"}
+        }
+    )
 """
 
 from jinja2 import Template
@@ -23,13 +62,41 @@ from jinja2 import Template
 
 class PromptRenderer:
     """
-    Handles prompt rendering and template processing.
+    Handles prompt rendering and template processing using Jinja2.
+
+    This class provides methods for rendering dynamic prompts with context data,
+    processing agent responses, and managing template-related operations within
+    the orchestrator workflow.
+
+    The renderer supports complex template structures and provides robust error
+    handling to ensure that template failures don't interrupt workflow execution.
     """
 
     def render_prompt(self, template_str, payload):
         """
         Render a Jinja2 template string with the given payload.
-        Used for dynamic prompt construction.
+
+        This method is the core template rendering functionality, taking a template
+        string and context payload to produce a rendered prompt for agent execution.
+
+        Args:
+            template_str (str): The Jinja2 template string to render
+            payload (dict): Context data for template variable substitution
+
+        Returns:
+            str: The rendered template with variables substituted
+
+        Raises:
+            ValueError: If template_str is not a string
+            jinja2.TemplateError: If template syntax is invalid
+
+        Example:
+            .. code-block:: python
+
+                template = "Hello {{ name }}, you have {{ count }} messages"
+                context = {"name": "Alice", "count": 5}
+                result = renderer.render_prompt(template, context)
+                # Returns: "Hello Alice, you have 5 messages"
         """
         if not isinstance(template_str, str):
             raise ValueError(
@@ -40,12 +107,19 @@ class PromptRenderer:
     def _add_prompt_to_payload(self, agent, payload_out, payload):
         """
         Add prompt and formatted_prompt to payload_out if agent has a prompt.
-        Also capture LLM response details (confidence, internal_reasoning) if available.
+
+        This internal method enriches the output payload with prompt information
+        and captures additional LLM response details when available. It's used
+        during workflow execution to preserve prompt and response metadata.
 
         Args:
-            agent: The agent instance
-            payload_out: The payload dictionary to modify
-            payload: The context payload for template rendering
+            agent: The agent instance being processed
+            payload_out (dict): The output payload dictionary to modify
+            payload (dict): The current context payload for template rendering
+
+        Note:
+            This method also captures enhanced response data including confidence
+            scores and internal reasoning when available from specialized agents.
         """
         if hasattr(agent, "prompt") and agent.prompt:
             payload_out["prompt"] = agent.prompt
@@ -74,9 +148,17 @@ class PromptRenderer:
         """
         Render agent's prompt and add formatted_prompt to payload for agent execution.
 
+        This method prepares the agent's prompt for execution by rendering any
+        template variables and adding the result to the payload under the
+        'formatted_prompt' key.
+
         Args:
-            agent: The agent instance
-            payload: The payload dictionary to modify
+            agent: The agent instance whose prompt should be rendered
+            payload (dict): The payload dictionary to modify with the rendered prompt
+
+        Note:
+            If template rendering fails, the original prompt is used as a fallback
+            to ensure workflow continuity.
         """
         if hasattr(agent, "prompt") and agent.prompt:
             try:
@@ -89,8 +171,35 @@ class PromptRenderer:
     @staticmethod
     def normalize_bool(value):
         """
-        Normalize a value to boolean.
-        Accepts bools, strings like 'true', 'yes', etc., or complex objects with 'result' field.
+        Normalize a value to boolean with support for complex agent responses.
+
+        This utility method handles the conversion of various data types to boolean
+        values, with special support for complex agent response structures that may
+        contain nested results.
+
+        Args:
+            value: The value to normalize (bool, str, dict, or other)
+
+        Returns:
+            bool: The normalized boolean value
+
+        Supported Input Types:
+            * **bool**: Returned as-is
+            * **str**: 'true', 'yes' (case-insensitive) → True, others → False
+            * **dict**: Extracts from 'result' or 'response' keys with recursive processing
+            * **other**: Defaults to False
+
+        Example:
+            .. code-block:: python
+
+                # Simple cases
+                assert PromptRenderer.normalize_bool(True) == True
+                assert PromptRenderer.normalize_bool("yes") == True
+                assert PromptRenderer.normalize_bool("false") == False
+
+                # Complex agent response
+                response = {"result": {"response": "true"}}
+                assert PromptRenderer.normalize_bool(response) == True
         """
         if isinstance(value, bool):
             return value

@@ -13,52 +13,84 @@
 
 """
 YAML Configuration Loader
-========================
+==========================
 
 The YAML Loader is responsible for loading, parsing, and validating configuration
 files for OrKa workflows. It serves as the bridge between the declarative YAML
 specifications and the runtime orchestration system.
 
-Configuration Structure:
-----------------------
+Configuration Structure
+-----------------------
+
 OrKa configuration files consist of two main sections:
-1. `orchestrator`: Global settings for the orchestration engine
-   - id: Unique identifier for the workflow
-   - strategy: Execution strategy (e.g., sequential, parallel)
-   - queue: Initial execution queue for agents
-   - agents: List of agent IDs in execution order
 
-2. `agents`: List of agent definitions, each containing:
-   - id: Unique identifier for the agent
-   - type: Agent type (e.g., llm, search, memory)
-   - prompt: Template string for agent input
-   - config: Type-specific configuration options
-   - Additional agent-specific fields
+**Orchestrator Section**
+    Global settings for the orchestration engine:
 
-Example Configuration:
---------------------
-```yaml
-orchestrator:
-  id: knowledge_qa
-  strategy: sequential
-  queue: orka:knowledge_qa
-  agents: [retriever, answerer]
+    * ``id`` - Unique identifier for the workflow
+    * ``strategy`` - Execution strategy (e.g., sequential, parallel)
+    * ``queue`` - Initial execution queue for agents
+    * ``agents`` - List of agent IDs in execution order
 
-agents:
-  - id: retriever
-    type: memory
-    config:
-      operation: read
-    namespace: knowledge_base
-    prompt: "Retrieve information about {{ input }}"
+**Agents Section**
+    List of agent definitions, each containing:
 
-  - id: answerer
-    type: openai-answer
-    prompt: "Answer the question based on this context: {{ previous_outputs.retriever }}"
-```
+    * ``id`` - Unique identifier for the agent
+    * ``type`` - Agent type (e.g., llm, search, memory)
+    * ``prompt`` - Template string for agent input
+    * ``config`` - Type-specific configuration options
+    * Additional agent-specific fields
 
-The YAMLLoader validates this configuration to ensure all required fields are present
-and properly formatted before the Orchestrator initializes the workflow.
+Example Configuration
+---------------------
+
+.. code-block:: yaml
+
+    orchestrator:
+      id: knowledge_qa
+      strategy: sequential
+      queue: orka:knowledge_qa
+      agents: [retriever, answerer]
+
+    agents:
+      - id: retriever
+        type: memory
+        config:
+          operation: read
+        namespace: knowledge_base
+        prompt: "Retrieve information about {{ input }}"
+
+      - id: answerer
+        type: openai-answer
+        prompt: "Answer the question based on this context: {{ previous_outputs.retriever }}"
+
+Validation Features
+-------------------
+
+The YAMLLoader validates configuration to ensure:
+
+* All required sections are present
+* Data types are correct
+* Agent references are valid
+* Template syntax is properly formatted
+
+This validation happens before the Orchestrator initializes the workflow,
+preventing runtime errors from malformed configurations.
+
+Usage Example
+-------------
+
+.. code-block:: python
+
+    from orka.loader import YAMLLoader
+
+    # Load and validate configuration
+    loader = YAMLLoader("workflow.yml")
+    loader.validate()
+
+    # Access configuration sections
+    orchestrator_config = loader.get_orchestrator()
+    agents_config = loader.get_agents()
 """
 
 from typing import Any, Dict, List
@@ -89,7 +121,7 @@ class YAMLLoader:
         Returns:
             The loaded YAML configuration.
         """
-        with open(self.path, "r") as f:
+        with open(self.path) as f:
             return yaml.safe_load(f)
 
     def get_orchestrator(self) -> Dict[str, Any]:

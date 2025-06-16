@@ -12,10 +12,33 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-Base Orchestrator
-================
+Base Orchestrator Module
+========================
 
-Core orchestrator class with initialization and configuration management.
+This module contains the core orchestrator base class that handles initialization,
+configuration management, and setup of core infrastructure components including
+memory backends, fork management, and error tracking.
+
+The :class:`OrchestratorBase` class serves as the foundation for the main
+:class:`~orka.orchestrator.Orchestrator` class through multiple inheritance composition.
+
+Core Responsibilities
+--------------------
+
+**Configuration Management**
+    * Loads and validates YAML configuration files
+    * Extracts orchestrator and agent configurations
+    * Handles environment variable overrides
+
+**Infrastructure Setup**
+    * Initializes memory backend (Redis or Kafka)
+    * Configures fork group management for parallel execution
+    * Sets up error tracking and telemetry systems
+
+**Runtime State Management**
+    * Maintains execution queue and step counters
+    * Generates unique run identifiers for traceability
+    * Tracks overall execution status and metrics
 """
 
 import os
@@ -29,12 +52,44 @@ from ..memory_logger import create_memory_logger
 class OrchestratorBase:
     """
     Base orchestrator class that handles initialization and configuration.
+
+    This class provides the foundational infrastructure for the OrKa orchestration
+    framework, including configuration loading, memory backend setup, and core
+    state management. It is designed to be composed with other specialized classes
+    through multiple inheritance.
+
+    The class automatically configures the appropriate backend based on environment
+    variables and provides comprehensive error tracking capabilities for monitoring
+    and debugging orchestration runs.
+
+    Attributes:
+        loader (:class:`~orka.loader.YAMLLoader`): Configuration file loader and validator
+        orchestrator_cfg (dict): Orchestrator-specific configuration settings
+        agent_cfgs (list): List of agent configuration objects
+        memory: Memory backend instance (Redis or Kafka)
+        fork_manager: Fork group manager for parallel execution
+        queue (list): Current agent execution queue
+        run_id (str): Unique identifier for this orchestration run
+        step_index (int): Current step counter for traceability
+        error_telemetry (dict): Comprehensive error tracking and metrics
     """
 
     def __init__(self, config_path):
         """
         Initialize the Orchestrator with a YAML config file.
-        Loads orchestrator and agent configs, sets up memory and fork management.
+
+        Sets up all core infrastructure including configuration loading,
+        memory backend selection, fork management, and error tracking systems.
+
+        Args:
+            config_path (str): Path to the YAML configuration file
+
+        Environment Variables:
+            ORKA_MEMORY_BACKEND: Memory backend type ('redis' or 'kafka', default: 'redis')
+            ORKA_DEBUG_KEEP_PREVIOUS_OUTPUTS: Keep previous outputs for debugging ('true'/'false')
+            KAFKA_BOOTSTRAP_SERVERS: Kafka broker addresses (for Kafka backend)
+            KAFKA_TOPIC_PREFIX: Topic prefix for Kafka topics (default: 'orka-memory')
+            REDIS_URL: Redis connection URL (default: 'redis://localhost:6379/0')
         """
         self.loader = YAMLLoader(config_path)
         self.loader.validate()
