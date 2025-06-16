@@ -5,7 +5,7 @@
 <img src="https://orkacore.com/assets/ORKA_logo.png" alt="OrKa Logo" width="256" height="256"/>
 
 [![Tests](https://github.com/marcosomma/orka-reasoning/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/marcosomma/orka-reasoning/actions/workflows/tests.yml)
-[![codecov](https://codecov.io/github/marcosomma/orka-reasoning/graph/badge.svg?token=V91X4WGBBZ)](https://codecov.io/github/marcosomma/orka-reasoning)
+[![codecov](https://codecov.io/gh/marcosomma/orka-reasoning/branch/master/graph/badge.svg?token=V91X4WGBBZ)](https://codecov.io/gh/marcosomma/orka-reasoning)
 ![PyPI - License](https://img.shields.io/pypi/l/orka-reasoning?color=blue)
 
 [![PyPI - Downloads](https://img.shields.io/pypi/dd/orka-reasoning?label=downloads&color=green&link=https%3A%2F%2Fpypistats.org%2Fpackages%2Forka-reasoning)](https://pypistats.org/packages/orka-reasoning)
