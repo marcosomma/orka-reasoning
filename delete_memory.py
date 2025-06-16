@@ -13,29 +13,29 @@ async def delete_memories():
         vector_keys = await r.keys("mem:*")
 
         print(
-            f"Found {len(memory_keys)} memory streams and {len(vector_keys)} vector memories"
+            f"Found {len(memory_keys)} memory streams and {len(vector_keys)} vector memories",
         )
 
         # Delete memory streams
         for key in memory_keys:
             await r.delete(key)
             print(
-                f"Deleted memory stream: {key.decode() if isinstance(key, bytes) else key}"
+                f"Deleted memory stream: {key.decode() if isinstance(key, bytes) else key}",
             )
 
         # Delete vector memories
         for key in vector_keys:
             await r.delete(key)
             print(
-                f"Deleted vector memory: {key.decode() if isinstance(key, bytes) else key}"
+                f"Deleted vector memory: {key.decode() if isinstance(key, bytes) else key}",
             )
 
         print("All memories have been deleted successfully!")
 
     except Exception as e:
-        print(f"Error deleting memories: {str(e)}")
+        print(f"Error deleting memories: {e!s}")
     finally:
-        await r.close()
+        await r.aclose()
 
 
 if __name__ == "__main__":

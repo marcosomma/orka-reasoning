@@ -12,27 +12,18 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-Orchestrator
-============
-
-The main orchestrator class that coordinates all components for workflow execution.
-This file now uses modular components while maintaining 100% backward compatibility.
+Orchestrator package for OrKa orchestration components.
 """
 
-import logging
-
-from .orchestrator import (
-    AgentFactory,
-    ErrorHandler,
-    ExecutionEngine,
-    MetricsCollector,
-    OrchestratorBase,
-    PromptRenderer,
-)
-
-logger = logging.getLogger(__name__)
+from .agent_factory import AGENT_TYPES, AgentFactory
+from .base import OrchestratorBase
+from .error_handling import ErrorHandler
+from .execution_engine import ExecutionEngine
+from .metrics import MetricsCollector
+from .prompt_rendering import PromptRenderer
 
 
+# Create the main Orchestrator class using multiple inheritance
 class Orchestrator(
     OrchestratorBase,
     AgentFactory,
@@ -60,3 +51,15 @@ class Orchestrator(
 
         # Initialize agents using the agent factory
         self.agents = self._init_agents()  # Dict of agent_id -> agent instance
+
+
+__all__ = [
+    "AGENT_TYPES",
+    "AgentFactory",
+    "ErrorHandler",
+    "ExecutionEngine",
+    "MetricsCollector",
+    "Orchestrator",
+    "OrchestratorBase",
+    "PromptRenderer",
+]

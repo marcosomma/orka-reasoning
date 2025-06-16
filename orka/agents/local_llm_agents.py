@@ -268,7 +268,7 @@ class LocalLLMAgent(BaseAgent):
                 logger.warning(f"Failed to calculate local LLM cost: {cost_error}")
                 cost_usd = None
 
-            # Add local LLM metrics with real cost calculation
+            # Add local LLM metrics with real cost calculation and formatted_prompt
             parsed_response["_metrics"] = {
                 "tokens": total_tokens,
                 "prompt_tokens": prompt_tokens,
@@ -278,6 +278,7 @@ class LocalLLMAgent(BaseAgent):
                 "model": model,
                 "provider": provider,
             }
+            parsed_response["formatted_prompt"] = full_prompt
 
             return parsed_response
 
@@ -318,6 +319,9 @@ class LocalLLMAgent(BaseAgent):
                     "provider": self.params.get("provider", "unknown"),
                     "error": True,
                 },
+                "formatted_prompt": full_prompt
+                if "full_prompt" in locals()
+                else "Error: prompt not available",
             }
 
     def build_prompt(self, input_text, template=None, full_context=None):

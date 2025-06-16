@@ -54,12 +54,12 @@ class ValidationAndStructuringAgent(BaseAgent):
         super().__init__(params)
         # Initialize LLM agent with required parameters
         prompt = params.get("prompt", "") if params else ""
-        queue = params.get("queue", None) if params else None
-        agent_id = (
-            params.get("agent_id", "validation_agent") if params else "validation_agent"
-        )
+        queue = params.get("queue") if params else None
+        agent_id = params.get("agent_id", "validation_agent") if params else "validation_agent"
         self.llm_agent = OpenAIAnswerBuilder(
-            agent_id=f"{agent_id}_llm", prompt=prompt, queue=queue
+            agent_id=f"{agent_id}_llm",
+            prompt=prompt,
+            queue=queue,
         )
 
     def run(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -92,13 +92,46 @@ class ValidationAndStructuringAgent(BaseAgent):
         # Get response from LLM
         response = self.llm_agent.run(llm_input)
 
+        # The OpenAIAnswerBuilder returns a dict with 'response' field directly
+        if isinstance(response, dict) and "response" in response:
+            llm_output = response["response"]
+        else:
+            llm_output = response
+
         try:
-            return json.loads(response)
+            # If the output is already a dict, return it directly
+            if isinstance(llm_output, dict):
+                result = llm_output
+            else:
+                # If it's a string, try to extract JSON from code blocks first
+                import re
+
+                if isinstance(llm_output, str):
+                    # Look for JSON in markdown code blocks
+                    json_match = re.search(r"```json\s*(.*?)\s*```", llm_output, re.DOTALL)
+                    if json_match:
+                        json_text = json_match.group(1).strip()
+                    else:
+                        json_text = llm_output.strip()
+
+                    # Try to parse the extracted JSON
+                    result = json.loads(json_text)
+                else:
+                    result = json.loads(llm_output)
+
+            # Add prompt information for debugging
+            result["prompt"] = prompt
+            result["formatted_prompt"] = prompt
+            return result
+
         except Exception as e:
             return {
                 "valid": False,
-                "reason": f"Failed to parse model output: {e}",
+                "reason": f"Failed to parse model output: {e}. Raw output: {llm_output}",
                 "memory_object": None,
+                "prompt": prompt,
+                "formatted_prompt": prompt,
+                "raw_llm_output": str(llm_output),
             }
 
     def build_prompt(

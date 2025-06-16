@@ -407,6 +407,43 @@ def wait_for_services(backend: str) -> None:
                     logger.warning("Schema Registry may not be fully ready, but continuing...")
                     break
 
+        # Initialize Schema Registry schemas at startup
+        if backend in ["kafka", "dual"]:
+            _initialize_schema_registry()
+
+
+def _initialize_schema_registry() -> None:
+    """
+    Initialize schema registry by creating a temporary KafkaMemoryLogger.
+    This ensures schemas are registered at startup time.
+    """
+    try:
+        print("🔧 Initializing Schema Registry schemas...")
+
+        # Set environment variables for schema registry
+        os.environ["KAFKA_USE_SCHEMA_REGISTRY"] = "true"
+        os.environ["KAFKA_SCHEMA_REGISTRY_URL"] = "http://localhost:8081"
+        os.environ["KAFKA_BOOTSTRAP_SERVERS"] = "localhost:9092"
+
+        # Import here to avoid circular imports
+        from orka.memory_logger import create_memory_logger
+
+        # Create a temporary Kafka memory logger to trigger schema registration
+        memory_logger = create_memory_logger(
+            backend="kafka",
+            bootstrap_servers="localhost:9092",
+        )
+
+        # Close the logger immediately since we only needed it for initialization
+        if hasattr(memory_logger, "close"):
+            memory_logger.close()
+
+        print("✅ Schema Registry schemas initialized successfully!")
+
+    except Exception as e:
+        logger.warning(f"Schema Registry initialization failed: {e}")
+        logger.warning("Schemas will be registered on first use instead")
+
 
 def start_backend(backend: str) -> subprocess.Popen:
     """
