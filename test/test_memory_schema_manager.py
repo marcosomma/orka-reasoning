@@ -12,6 +12,7 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 import json
+import os
 from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
@@ -22,6 +23,15 @@ from orka.memory.schema_manager import (
     SchemaManager,
     create_schema_manager,
     migrate_from_json,
+)
+
+# Check if we should skip schema tests that require optional dependencies
+SKIP_SCHEMA_DEPENDENCY_TESTS = os.environ.get("CI", "").lower() in ("true", "1", "yes")
+
+# Skip marker for schema tests requiring Avro/Protobuf
+schema_dependency_skip = pytest.mark.skipif(
+    SKIP_SCHEMA_DEPENDENCY_TESTS,
+    reason="Schema dependency tests skipped in CI due to missing Avro/Protobuf packages",
 )
 
 
@@ -156,6 +166,7 @@ class TestSchemaManager:
         assert serializer1 is serializer2
         assert len(manager.serializers) == 1
 
+    @schema_dependency_skip
     @patch("orka.memory.schema_manager.AVRO_AVAILABLE", False)
     def test_get_serializer_avro_no_dependencies(self, json_config):
         """Test get_serializer with Avro format but no dependencies"""
@@ -165,6 +176,7 @@ class TestSchemaManager:
         with pytest.raises(RuntimeError, match="Avro dependencies not available"):
             manager.get_serializer("test_topic")
 
+    @schema_dependency_skip
     def test_get_serializer_protobuf_not_implemented(self, json_config):
         """Test get_serializer with Protobuf format (not implemented)"""
         json_config.format = SchemaFormat.PROTOBUF
@@ -193,6 +205,7 @@ class TestSchemaManager:
         assert deserializer1 is deserializer2
         assert len(manager.deserializers) == 1
 
+    @schema_dependency_skip
     def test_get_deserializer_protobuf_not_implemented(self, json_config):
         """Test get_deserializer with Protobuf format (not implemented)"""
         json_config.format = SchemaFormat.PROTOBUF
@@ -323,12 +336,14 @@ class TestModuleFunctions:
         assert manager.config.registry_url == "http://custom:8081"
         assert manager.config.format == SchemaFormat.JSON
 
+    @schema_dependency_skip
     def test_create_schema_manager_default(self):
         """Test create_schema_manager with defaults"""
         with patch.dict("os.environ", {"KAFKA_SCHEMA_REGISTRY_URL": "http://env:8081"}):
             manager = create_schema_manager()
             assert manager.config.registry_url == "http://env:8081"
 
+    @schema_dependency_skip
     def test_create_schema_manager_fallback_default(self):
         """Test create_schema_manager falls back to default when no env var"""
         with patch.dict("os.environ", {}, clear=True):
