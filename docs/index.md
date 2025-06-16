@@ -41,6 +41,7 @@ Every step is logged, inspectable, and overrideable. OrKa doesn't hide the proce
 ✅ Kafka-ready memory layer (planned)  
 ✅ Compatible with local or remote LLMs (via LiteLLM)  
 ✅ Roadmap for visual orchestration via Tiamat-GenAI
+✅ **Modular Architecture (v0.6.4+)** - Refactored core components for better maintainability
 
 ---
 
@@ -51,6 +52,7 @@ Unlike LangChain, CrewAI, or Flowise, OrKa is not just a wrapper for LLM APIs. I
 - 🧱 **Modular by default** — Agents are black-box-optional, testable, and swappable.
 - 🕸 **Traceable and introspectable** — Every thought path is logged.
 - 🔄 **Designed for cognitive experimentation** — Emergent behaviors, agent conflict resolution, and agent memory are on the roadmap.
+- 🏗️ **Architecturally sound** — Refactored into focused, maintainable components while preserving 100% API compatibility.
 
 ---
 

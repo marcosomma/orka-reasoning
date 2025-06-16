@@ -17,6 +17,37 @@ This document breaks down the key architectural components and how they work tog
 
 ---
 
+## 🏗️ Modular Architecture (v0.6.4+)
+
+Starting with version 0.6.4, OrKa's core components have been refactored into a modular architecture for improved maintainability and extensibility:
+
+### Memory Logger Package (`orka/memory_logger/`)
+The memory logging system is now split into focused components:
+
+- **`base_logger.py`** - Abstract base class defining the memory logger interface
+- **`serialization.py`** - JSON sanitization and memory processing utilities  
+- **`file_operations.py`** - Save/load functionality and file I/O operations
+- **`redis_logger.py`** - Complete Redis backend implementation
+- **`__init__.py`** - Package initialization and factory functions
+
+### Orchestrator Package (`orka/orchestrator/`)
+The orchestration engine is decomposed into specialized modules:
+
+- **`base.py`** - Core orchestrator initialization and configuration
+- **`agent_factory.py`** - Agent registry and initialization logic
+- **`prompt_rendering.py`** - Jinja2 template processing for prompts
+- **`error_handling.py`** - Comprehensive error tracking and reporting
+- **`metrics.py`** - LLM metrics collection and runtime analysis
+- **`execution_engine.py`** - Main execution loop and agent coordination
+- **`__init__.py`** - Package composition using multiple inheritance
+
+### Backward Compatibility
+- **100% API Compatibility**: All existing imports continue to work unchanged
+- **Factory Functions**: `create_memory_logger()` and `Orchestrator()` provide seamless access
+- **Zero Migration Required**: Existing code works without modification
+
+---
+
 ## 📐 Component Diagram
 
 ```

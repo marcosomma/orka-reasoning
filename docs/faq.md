@@ -29,4 +29,10 @@ Convert your `run(input_data)` method to an async `_run_impl(ctx)` method. Acces
 ### What's the difference between "true"/"false" strings and boolean values?
 Modern agents use string values ("true"/"false") for binary decisions to maintain consistency across different agent implementations. This allows for more reliable routing and decision logic.
 
+### What changed in the modular architecture (v0.6.4+)?
+OrKa's core components were refactored from monolithic files into focused modules for better maintainability. The memory logger and orchestrator are now split into specialized components, but all existing imports and APIs remain unchanged. This means your existing code continues to work while new development benefits from the improved internal structure.
+
+### Do I need to change my imports after the modular refactoring?
+No. All existing imports like `from orka.orchestrator import Orchestrator` and `from orka.memory_logger import create_memory_logger` continue to work exactly as before. The refactoring was designed with 100% backward compatibility.
+
 [📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)

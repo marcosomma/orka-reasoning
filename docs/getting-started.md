@@ -59,4 +59,17 @@ class MyCustomAgent(BaseAgent):
 ## 8. Need Help?
 GitHub issues or Discord: https://discord.gg/UthTN8Xu
 
+---
+
+## 🏗️ For Developers: Modular Architecture
+
+Starting with v0.6.4, OrKa uses a modular architecture internally while maintaining full backward compatibility:
+
+- **Memory Logger**: Split into `orka/memory_logger/` package with focused components
+- **Orchestrator**: Decomposed into `orka/orchestrator/` package with specialized modules
+- **Imports**: All existing `from orka.orchestrator import Orchestrator` patterns work unchanged
+- **Extensibility**: New modular structure makes contributing and extending much easier
+
+See [Architecture](./architecture.md) for detailed information about the internal module organization.
+
 [📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
