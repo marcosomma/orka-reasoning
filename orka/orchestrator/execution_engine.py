@@ -423,8 +423,8 @@ class ExecutionEngine:
             # Render prompt before running agent if agent has a prompt
             self._render_agent_prompt(agent, payload)
 
-            if agent_type in ("memoryreadernode", "memorywriternode"):
-                # Memory nodes have async run methods
+            if agent_type in ("memoryreadernode", "memorywriternode", "failovernode"):
+                # Memory nodes and failover nodes have async run methods
                 result = await agent.run(payload)
             else:
                 # Regular synchronous agent

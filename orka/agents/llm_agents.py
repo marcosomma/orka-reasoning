@@ -470,10 +470,19 @@ class OpenAIAnswerBuilder(BaseAgent):
                     "openai_json_parsing_fallback",
                     f"OpenAI response was not valid JSON, using raw text: {answer[:100]}...",
                 )
+        else:
+            # When JSON parsing is disabled, return raw response in expected format
+            parsed_response = {
+                "response": answer,
+                "confidence": "0.5",
+                "internal_reasoning": "Raw response without JSON parsing",
+            }
 
-                # Add metrics and formatted_prompt to parsed response
+        # Add metrics and formatted_prompt to parsed response
         parsed_response["_metrics"] = metrics
-        parsed_response["formatted_prompt"] = full_prompt
+        parsed_response["formatted_prompt"] = (
+            prompt  # Store only the rendered prompt, not the full context
+        )
         return parsed_response
 
 

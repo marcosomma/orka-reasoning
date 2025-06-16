@@ -21,7 +21,7 @@ agents:
   - id: openai-answer_2
     type: openai-answer
     queue: orka:openai-answer_2
-    prompt: Given previous context {{ previous_outputs['memory-read_0'] }}, provide an initial detailed answer to {{ input }}.
+    prompt: Given previous context {{ previous_outputs['memory-read_0'].result.memories }}, provide an initial detailed answer to {{ input }}.
   - id: fork_3
     type: fork
     targets:
@@ -76,7 +76,7 @@ agents:
   - id: openai-answer_6
     type: openai-answer
     queue: orka:openai-answer_6
-    prompt: "Provide an alternative perspective or deeper insight into the question {{ input }} considering domain: {{ previous_outputs['openai-classification_5'] }}."
+    prompt: "Provide an alternative perspective or deeper insight into the question {{ input }} considering domain: {{ previous_outputs['openai-classification_5'].result }}."
     depends_on:
       - openai-classification_5
   - id: join_9
@@ -85,7 +85,7 @@ agents:
   - id: openai-binary_10
     type: openai-binary
     queue: orka:openai-binary_10
-    prompt: "Is the provided information coherent and complete based on outputs: {{ previous_outputs['join_9'] }}?"
+    prompt: "Is the provided information coherent and complete based on outputs: {{ previous_outputs['join_9'].result.merged }}?"
     depends_on:
       - join_9
   - id: router_11
@@ -104,13 +104,13 @@ agents:
   - id: openai-answer_14
     type: openai-answer
     queue: orka:openai-answer_14
-    prompt: Given confirmed coherent inputs {{ previous_outputs['join_9'] }}, provide a polished final response to {{ input }}.
+    prompt: Given confirmed coherent inputs {{ previous_outputs['join_9'].result.merged }}, provide a polished final response to {{ input }}.
     depends_on:
       - router_11
   - id: openai-answer_15
     type: openai-answer
     queue: orka:openai-answer_15
-    prompt: "      Given identified gaps in coherence or completeness in {{ previous_outputs['join_9'] }}, clarify or complete the information to fully answer {{ input }}."
+    prompt: "      Given identified gaps in coherence or completeness in  {{ previous_outputs['join_9'].result.merged }}, clarify or complete the information to fully answer {{ input }}."
     depends_on:
       - router_11
   - id: memory-write_final
