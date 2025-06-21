@@ -1,0 +1,132 @@
+orchestrator:
+  id: memory-decay-demo
+  strategy: sequential
+  queue: orka:decay-demo
+  # Global memory decay configuration
+  memory:
+    decay:
+      enabled: true
+      default_short_term_hours: 0.025 # 1.5 minutes for demo
+      default_long_term_hours: 0.1 # 6 hours for demo
+      check_interval_minutes: 1 # Check every minute for demo
+      # Remove global memory_type_rules to let agent-specific settings work
+      importance_rules:
+        base_score: 0.6
+        event_type_boosts:
+          write: 0.3
+          success: 0.2
+          completion: 0.2
+          result: 0.15
+          final_answer: 0.25
+        agent_type_boosts:
+          memory: 0.2
+          openai-answer: 0.15
+  agents:
+    - memory-reader
+    - classifier
+    - memory-writer-short
+    - memory-writer-long
+
+agents:
+  # Read existing memories (no memory creation - just retrieval)
+  - id: memory-reader
+    type: memory
+    queue: orka:memory-reader
+    config:
+      operation: read
+      # Disable memory logging for this agent to prevent extra entries
+      disable_memory_logging: true
+    namespace: demo_knowledge
+    prompt: "Search for any existing knowledge about: {{ input }}"
+
+  # Classify the importance and type of the input (no memory creation)
+  - id: classifier
+    type: openai-classification
+    queue: orka:classifier
+    # Disable memory logging for this agent to prevent extra entries
+    config:
+      disable_memory_logging: true
+    prompt: >
+      Classify the following query based on its importance and expected lifespan:
+      Query: {{ input }}
+
+      Consider:
+      - Is this a factual question that should be remembered long-term?
+      - Is this a temporary or debugging query?
+      - How important is this information for future reference?
+    options:
+      - "important_factual" # Long-term, high importance
+      - "general_question" # Medium-term, medium importance
+      - "temporary_debug" # Short-term, low importance
+      - "personal_preference" # Long-term, medium importance
+
+  # Write short-term memory with custom decay settings
+  - id: memory-writer-short
+    type: memory
+    queue: orka:memory-writer-short
+    config:
+      operation: write
+    namespace: demo_knowledge
+    # Agent-level decay configuration overrides global settings
+    decay:
+      enabled: true
+      default_long_term: false # Force short-term classification
+      short_term_hours: 0.025 # 1.5 minutes retention
+      long_term_hours: 0.1 # 30 minutes max even for long-term
+      importance_rules:
+        base_score: 0.3 # Lower base score for this agent
+        event_type_boosts:
+          write: 0.2
+    prompt: >
+      Temporary note about: {{ input }}
+
+      Classification: {{ previous_outputs['classifier'].result }}
+      Existing knowledge: {{ previous_outputs['memory-reader'].result.memories }}
+
+      This is a short-term memory entry that will expire quickly.
+    metadata:
+      source: "short_term_writer"
+      classification: "{{ previous_outputs['classifier'].result }}"
+      confidence: 0.7
+    key_template: "short_{{ input | hash }}"
+
+  # Write long-term memory with different decay settings
+  - id: memory-writer-long
+    type: memory
+    queue: orka:memory-writer-long
+    config:
+      operation: write
+    namespace: demo_knowledge
+    # Agent-level decay configuration for long-term storage
+    decay:
+      enabled: true
+      default_long_term: true # Force long-term classification
+      short_term_hours: 0.025 # 1.5 minutes retention
+      long_term_hours: .1 # 4 hours retention
+      memory_type_rules:
+        long_term_events: ["write", "result", "completion"] # More aggressive long-term classification
+        short_term_events: ["debug"] # Only debug is short-term
+      importance_rules:
+        base_score: 0.8 # Higher base score for this agent
+        event_type_boosts:
+          write: 0.2
+        agent_type_boosts:
+          memory: 0.3 # Boost for memory agents
+    prompt: >
+      Long-term knowledge about: {{ input }}
+
+      Classification: {{ previous_outputs['classifier'].result }}
+      Existing knowledge: {{ previous_outputs['memory-reader'].result.memories }}
+
+      Key insights:
+      - Original query: {{ input }}
+      - Classification result: {{ previous_outputs['classifier'].result }}
+      - Timestamp: {{ timestamp }}
+
+      This entry is designed for long-term retention and will be preserved longer.
+    metadata:
+      source: "long_term_writer"
+      classification: "{{ previous_outputs['classifier'].result }}"
+      confidence: 0.9
+      retention_priority: "high"
+    key_template: "long_{{ input | hash }}"

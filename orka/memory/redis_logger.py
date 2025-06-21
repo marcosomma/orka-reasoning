@@ -21,7 +21,7 @@ Redis-based memory logger that uses Redis streams for event storage.
 import json
 import logging
 import os
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any, Dict, List, Optional, Union
 
 import redis
@@ -42,6 +42,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
         redis_url: Optional[str] = None,
         stream_key: str = "orka:memory",
         debug_keep_previous_outputs: bool = False,
+        decay_config: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Initialize the Redis memory logger.
@@ -50,8 +51,9 @@ class RedisMemoryLogger(BaseMemoryLogger):
             redis_url: URL for the Redis server. Defaults to environment variable REDIS_URL or redis service name.
             stream_key: Key for the Redis stream. Defaults to "orka:memory".
             debug_keep_previous_outputs: If True, keeps previous_outputs in log files for debugging.
+            decay_config: Configuration for memory decay functionality.
         """
-        super().__init__(stream_key, debug_keep_previous_outputs)
+        super().__init__(stream_key, debug_keep_previous_outputs, decay_config)
         self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379/0")
         self.client = redis.from_url(self.redis_url)
 
@@ -73,23 +75,24 @@ class RedisMemoryLogger(BaseMemoryLogger):
         fork_group: Optional[str] = None,
         parent: Optional[str] = None,
         previous_outputs: Optional[Dict[str, Any]] = None,
+        agent_decay_config: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
-        Log an event to Redis and local memory.
+        Log an event to the Redis stream.
 
         Args:
             agent_id: ID of the agent generating the event.
-            event_type: Type of the event.
+            event_type: Type of event.
             payload: Event payload.
-            step: Step number in the orchestration.
-            run_id: ID of the orchestration run.
-            fork_group: ID of the fork group.
-            parent: ID of the parent event.
-            previous_outputs: Previous outputs from agents.
+            step: Execution step number.
+            run_id: Unique run identifier.
+            fork_group: Fork group identifier.
+            parent: Parent agent identifier.
+            previous_outputs: Previous agent outputs.
+            agent_decay_config: Agent-specific decay configuration overrides.
 
         Raises:
             ValueError: If agent_id is missing.
-            Exception: If Redis operation fails.
         """
         if not agent_id:
             raise ValueError("Event must contain 'agent_id'")
@@ -97,10 +100,69 @@ class RedisMemoryLogger(BaseMemoryLogger):
         # Create a copy of the payload to avoid modifying the original
         safe_payload = self._sanitize_for_json(payload)
 
+        # Determine which decay config to use
+        effective_decay_config = self.decay_config.copy()
+        if agent_decay_config:
+            # Merge agent-specific decay config with global config
+            effective_decay_config.update(agent_decay_config)
+
+        # Calculate decay metadata if decay is enabled (globally or for this agent)
+        decay_metadata = {}
+        decay_enabled = self.decay_config.get("enabled", False) or (
+            agent_decay_config and agent_decay_config.get("enabled", False)
+        )
+
+        if decay_enabled:
+            # Use effective config for calculations
+            old_config = self.decay_config
+            self.decay_config = effective_decay_config
+
+            try:
+                importance_score = self._calculate_importance_score(
+                    event_type,
+                    agent_id,
+                    safe_payload,
+                )
+
+                # Check for agent-specific default memory type first
+                if "default_long_term" in effective_decay_config:
+                    if effective_decay_config["default_long_term"]:
+                        memory_type = "long_term"
+                    else:
+                        memory_type = "short_term"
+                else:
+                    # Fall back to standard classification
+                    memory_type = self._classify_memory_type(event_type, importance_score)
+
+                # Calculate expiration time
+                current_time = datetime.now(UTC)
+                if memory_type == "short_term":
+                    expire_hours = effective_decay_config.get(
+                        "short_term_hours",
+                        effective_decay_config["default_short_term_hours"],
+                    )
+                else:
+                    expire_hours = effective_decay_config.get(
+                        "long_term_hours",
+                        effective_decay_config["default_long_term_hours"],
+                    )
+
+                expire_time = current_time + timedelta(hours=expire_hours)
+
+                decay_metadata = {
+                    "orka_importance_score": str(importance_score),
+                    "orka_memory_type": memory_type,
+                    "orka_expire_time": expire_time.isoformat(),
+                    "orka_created_time": current_time.isoformat(),
+                }
+            finally:
+                # Restore original config
+                self.decay_config = old_config
+
         event: Dict[str, Any] = {
             "agent_id": agent_id,
             "event_type": event_type,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "payload": safe_payload,
         }
         if step is not None:
@@ -139,6 +201,9 @@ class RedisMemoryLogger(BaseMemoryLogger):
                 "step": str(step or -1),
             }
 
+            # Add decay metadata if decay is enabled
+            redis_entry.update(decay_metadata)
+
             # Safely serialize the payload
             try:
                 redis_entry["payload"] = json.dumps(safe_payload)
@@ -163,17 +228,17 @@ class RedisMemoryLogger(BaseMemoryLogger):
                 simplified_payload = {
                     "error": f"Original payload contained non-serializable objects: {e!s}",
                 }
-                self.client.xadd(
-                    self.stream_key,
-                    {
-                        "agent_id": agent_id,
-                        "event_type": event_type,
-                        "timestamp": event["timestamp"],
-                        "payload": json.dumps(simplified_payload),
-                        "run_id": run_id or "default",
-                        "step": str(step or -1),
-                    },
-                )
+                simplified_entry = {
+                    "agent_id": agent_id,
+                    "event_type": event_type,
+                    "timestamp": event["timestamp"],
+                    "payload": json.dumps(simplified_payload),
+                    "run_id": run_id or "default",
+                    "step": str(step or -1),
+                }
+                simplified_entry.update(decay_metadata)
+
+                self.client.xadd(self.stream_key, simplified_entry)
                 logger.info("Logged simplified error payload instead")
             except Exception as inner_e:
                 logger.error(
@@ -426,3 +491,238 @@ class RedisMemoryLogger(BaseMemoryLogger):
         except Exception as e:
             logger.error(f"Failed to clean up Redis key '{key}': {e!s}")
             return False
+
+    def cleanup_expired_memories(self, dry_run: bool = False) -> Dict[str, Any]:
+        """
+        Clean up expired memory entries based on decay configuration.
+
+        Args:
+            dry_run: If True, return what would be deleted without actually deleting
+
+        Returns:
+            Dictionary containing cleanup statistics
+        """
+        if not self.decay_config.get("enabled", False):
+            return {"status": "decay_disabled", "deleted_count": 0}
+
+        try:
+            current_time = datetime.now(UTC)
+            stats = {
+                "start_time": current_time.isoformat(),
+                "dry_run": dry_run,
+                "deleted_count": 0,
+                "deleted_entries": [],
+                "error_count": 0,
+                "streams_processed": 0,
+                "total_entries_checked": 0,
+            }
+
+            # Get all stream keys that match our pattern
+            stream_patterns = [
+                self.stream_key,
+                f"{self.stream_key}:*",  # Namespace-specific streams
+                "orka:memory:*",  # All Orka memory streams
+            ]
+
+            processed_streams = set()
+            for pattern in stream_patterns:
+                stream_keys = self.client.keys(pattern)
+
+                for stream_key in stream_keys:
+                    if stream_key.decode() in processed_streams:
+                        continue
+                    processed_streams.add(stream_key.decode())
+
+                    try:
+                        # Get all entries from the stream
+                        entries = self.client.xrange(stream_key)
+                        stats["streams_processed"] += 1
+                        stats["total_entries_checked"] += len(entries)
+
+                        for entry_id, entry_data in entries:
+                            expire_time_str = entry_data.get(b"orka_expire_time")
+                            if not expire_time_str:
+                                continue  # Skip entries without expiration time
+
+                            try:
+                                expire_time = datetime.fromisoformat(expire_time_str.decode())
+                                if current_time > expire_time:
+                                    # Entry has expired
+                                    entry_info = {
+                                        "stream": stream_key.decode(),
+                                        "entry_id": entry_id.decode(),
+                                        "agent_id": entry_data.get(
+                                            b"agent_id",
+                                            b"unknown",
+                                        ).decode(),
+                                        "event_type": entry_data.get(
+                                            b"event_type",
+                                            b"unknown",
+                                        ).decode(),
+                                        "expire_time": expire_time_str.decode(),
+                                        "memory_type": entry_data.get(
+                                            b"orka_memory_type",
+                                            b"unknown",
+                                        ).decode(),
+                                    }
+
+                                    if not dry_run:
+                                        # Actually delete the entry
+                                        self.client.xdel(stream_key, entry_id)
+
+                                    stats["deleted_entries"].append(entry_info)
+                                    stats["deleted_count"] += 1
+
+                            except (ValueError, TypeError) as e:
+                                logger.warning(
+                                    f"Invalid expire_time format in entry {entry_id}: {e}",
+                                )
+                                stats["error_count"] += 1
+
+                    except Exception as e:
+                        logger.error(f"Error processing stream {stream_key}: {e}")
+                        stats["error_count"] += 1
+
+            stats["end_time"] = datetime.now(UTC).isoformat()
+            stats["duration_seconds"] = (datetime.now(UTC) - current_time).total_seconds()
+
+            # Update last decay check time
+            if not dry_run:
+                self._last_decay_check = current_time
+
+            logger.info(
+                f"Memory decay cleanup completed. Deleted {stats['deleted_count']} entries "
+                f"from {stats['streams_processed']} streams (dry_run={dry_run})",
+            )
+
+            return stats
+
+        except Exception as e:
+            logger.error(f"Error during memory decay cleanup: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "deleted_count": 0,
+            }
+
+    def get_memory_stats(self) -> Dict[str, Any]:
+        """
+        Get memory usage statistics.
+
+        Returns:
+            Dictionary containing memory statistics
+        """
+        try:
+            current_time = datetime.now(UTC)
+            stats = {
+                "timestamp": current_time.isoformat(),
+                "decay_enabled": self.decay_config.get("enabled", False),
+                "total_streams": 0,
+                "total_entries": 0,
+                "entries_by_type": {},
+                "entries_by_memory_type": {"short_term": 0, "long_term": 0, "unknown": 0},
+                "expired_entries": 0,
+                "streams_detail": [],
+            }
+
+            # Get all stream keys that match our pattern
+            stream_patterns = [
+                self.stream_key,
+                f"{self.stream_key}:*",
+                "orka:memory:*",
+            ]
+
+            processed_streams = set()
+            for pattern in stream_patterns:
+                stream_keys = self.client.keys(pattern)
+
+                for stream_key in stream_keys:
+                    if stream_key.decode() in processed_streams:
+                        continue
+                    processed_streams.add(stream_key.decode())
+
+                    try:
+                        # Get stream info
+                        stream_info = self.client.xinfo_stream(stream_key)
+                        entries = self.client.xrange(stream_key)
+
+                        stream_stats = {
+                            "stream": stream_key.decode(),
+                            "length": stream_info.get("length", 0),
+                            "entries_by_type": {},
+                            "entries_by_memory_type": {
+                                "short_term": 0,
+                                "long_term": 0,
+                                "unknown": 0,
+                            },
+                            "expired_entries": 0,
+                            "active_entries": 0,  # Track active entries separately
+                        }
+
+                        stats["total_streams"] += 1
+                        # Don't count total entries here - we'll count active ones below
+
+                        for entry_id, entry_data in entries:
+                            # Check if expired first
+                            is_expired = False
+                            expire_time_str = entry_data.get(b"orka_expire_time")
+                            if expire_time_str:
+                                try:
+                                    expire_time = datetime.fromisoformat(expire_time_str.decode())
+                                    if current_time > expire_time:
+                                        is_expired = True
+                                        stream_stats["expired_entries"] += 1
+                                        stats["expired_entries"] += 1
+                                except (ValueError, TypeError):
+                                    pass  # Skip invalid dates
+
+                            # Only count non-expired entries in the main statistics
+                            if not is_expired:
+                                stream_stats["active_entries"] += 1
+                                stats["total_entries"] += 1
+
+                                # Count by event type
+                                event_type = entry_data.get(b"event_type", b"unknown").decode()
+                                stream_stats["entries_by_type"][event_type] = (
+                                    stream_stats["entries_by_type"].get(event_type, 0) + 1
+                                )
+                                stats["entries_by_type"][event_type] = (
+                                    stats["entries_by_type"].get(event_type, 0) + 1
+                                )
+
+                                # Count by memory type
+                                memory_type = entry_data.get(
+                                    b"orka_memory_type",
+                                    b"unknown",
+                                ).decode()
+                                if memory_type in stream_stats["entries_by_memory_type"]:
+                                    stream_stats["entries_by_memory_type"][memory_type] += 1
+                                    stats["entries_by_memory_type"][memory_type] += 1
+                                else:
+                                    stream_stats["entries_by_memory_type"]["unknown"] += 1
+                                    stats["entries_by_memory_type"]["unknown"] += 1
+
+                        stats["streams_detail"].append(stream_stats)
+
+                    except Exception as e:
+                        logger.error(f"Error getting stats for stream {stream_key}: {e}")
+
+            # Add decay configuration info
+            if self.decay_config.get("enabled", False):
+                stats["decay_config"] = {
+                    "short_term_hours": self.decay_config["default_short_term_hours"],
+                    "long_term_hours": self.decay_config["default_long_term_hours"],
+                    "check_interval_minutes": self.decay_config["check_interval_minutes"],
+                    "last_decay_check": self._last_decay_check.isoformat()
+                    if self._last_decay_check
+                    else None,
+                }
+
+            return stats
+
+        except Exception as e:
+            logger.error(f"Error getting memory statistics: {e}")
+            return {
+                "error": str(e),
+                "timestamp": datetime.now(UTC).isoformat(),
+            }

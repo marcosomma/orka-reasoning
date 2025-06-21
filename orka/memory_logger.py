@@ -158,35 +158,92 @@ Implementation Notes
 """
 
 # Import all components from the new memory package
+from typing import Any, Dict, Optional
+
 from .memory.base_logger import BaseMemoryLogger
 from .memory.kafka_logger import KafkaMemoryLogger
 from .memory.redis_logger import RedisMemoryLogger
 
 
-def create_memory_logger(backend: str = "redis", **kwargs) -> BaseMemoryLogger:
+def create_memory_logger(
+    backend: str = "redis",
+    redis_url: Optional[str] = None,
+    bootstrap_servers: Optional[str] = None,
+    topic_prefix: str = "orka-memory",
+    stream_key: str = "orka:memory",
+    synchronous_send: bool = False,
+    debug_keep_previous_outputs: bool = False,
+    decay_config: Optional[Dict[str, Any]] = None,
+) -> BaseMemoryLogger:
     """
-    Factory function to create a memory logger based on backend type.
+    Factory function to create memory logger instances.
+
+    This function provides a unified interface for creating memory loggers
+    across different backends (Redis, Kafka) with automatic fallback handling
+    and environment variable integration.
 
     Args:
         backend: Backend type ("redis" or "kafka")
-        **kwargs: Backend-specific configuration
+        redis_url: Redis connection URL (for Redis backend)
+        bootstrap_servers: Kafka bootstrap servers (for Kafka backend)
+        topic_prefix: Kafka topic prefix (for Kafka backend)
+        stream_key: Stream key for memory logging
+        synchronous_send: Whether to wait for message delivery confirmation
+        debug_keep_previous_outputs: Keep previous outputs for debugging
+        decay_config: Configuration for memory decay functionality
 
     Returns:
-        Memory logger instance
+        Configured memory logger instance
 
     Raises:
-        ValueError: If backend type is not supported
-    """
-    backend = backend.lower()
+        ValueError: If backend type is unsupported
+        ImportError: If required dependencies are missing
 
-    if backend == "redis":
-        return RedisMemoryLogger(**kwargs)
-    elif backend == "kafka":
-        return KafkaMemoryLogger(**kwargs)
-    else:
-        raise ValueError(
-            f"Unsupported memory backend: {backend}. Supported backends: redis, kafka",
+    Examples:
+        Basic Redis logger:
+
+        .. code-block:: python
+
+            memory = create_memory_logger("redis")
+
+        Redis with decay enabled:
+
+        .. code-block:: python
+
+            decay_config = {
+                "enabled": True,
+                "default_short_term_hours": 2.0,
+                "default_long_term_hours": 48.0
+            }
+            memory = create_memory_logger("redis", decay_config=decay_config)
+
+        Kafka logger:
+
+        .. code-block:: python
+
+            memory = create_memory_logger(
+                "kafka",
+                bootstrap_servers="localhost:9092"
+            )
+    """
+    if backend.lower() == "redis":
+        return RedisMemoryLogger(
+            redis_url=redis_url,
+            stream_key=stream_key,
+            debug_keep_previous_outputs=debug_keep_previous_outputs,
+            decay_config=decay_config,
         )
+    elif backend.lower() == "kafka":
+        return KafkaMemoryLogger(
+            bootstrap_servers=bootstrap_servers,
+            topic_prefix=topic_prefix,
+            stream_key=stream_key,
+            synchronous_send=synchronous_send,
+            debug_keep_previous_outputs=debug_keep_previous_outputs,
+            decay_config=decay_config,
+        )
+    else:
+        raise ValueError(f"Unsupported backend: {backend}")
 
 
 # Add MemoryLogger alias for backward compatibility with tests

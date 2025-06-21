@@ -19,31 +19,36 @@ class MemoryWriterNode(BaseNode):
     def __init__(self, node_id: str, prompt: str = None, queue: list = None, **kwargs):
         super().__init__(node_id=node_id, prompt=prompt, queue=queue, **kwargs)
         self.vector_enabled = kwargs.get(
-            "vector", True
+            "vector",
+            True,
         )  # Enable vector storage by default
         self.namespace = kwargs.get("namespace", "default")
         self.key_template = kwargs.get("key_template", "")
         self.metadata = kwargs.get("metadata", {})
 
+        # Store agent-level decay configuration
+        self.decay_config = kwargs.get("decay_config", {})
+
+        # Store memory logger for decay-aware logging
+        self.memory_logger = kwargs.get("memory_logger")
+
         # Initialize embedder if vector storage is enabled
         try:
             self.embedder = (
-                get_embedder(kwargs.get("embedding_model"))
-                if self.vector_enabled
-                else None
+                get_embedder(kwargs.get("embedding_model")) if self.vector_enabled else None
             )
         except Exception as e:
-            logger.error(f"Failed to initialize embedder: {str(e)}")
+            logger.error(f"Failed to initialize embedder: {e!s}")
             self.embedder = None
             # Still try to initialize a fallback embedder if possible
             try:
                 self.embedder = get_embedder(None)  # Try with default model
                 self.vector_enabled = True
                 logger.info(
-                    "Initialized fallback embedder after primary embedder failed"
+                    "Initialized fallback embedder after primary embedder failed",
                 )
             except Exception as e2:
-                logger.error(f"Failed to initialize fallback embedder: {str(e2)}")
+                logger.error(f"Failed to initialize fallback embedder: {e2!s}")
                 self.vector_enabled = False
 
         # Use environment variable for Redis URL
@@ -67,10 +72,10 @@ class MemoryWriterNode(BaseNode):
                         template = Template(self.prompt)
                         text = template.render(**context)
                         logger.info(
-                            f"Resolved text from prompt template: {text[:100]}..."
+                            f"Resolved text from prompt template: {text[:100]}...",
                         )
                     except Exception as e:
-                        logger.error(f"Error processing prompt template: {str(e)}")
+                        logger.error(f"Error processing prompt template: {e!s}")
 
                 # If still no text, try common output fields
                 if not text and context.get("previous_outputs"):
@@ -111,11 +116,11 @@ class MemoryWriterNode(BaseNode):
                             resolved_value = template.render(**context)
                             metadata[key] = resolved_value
                             logger.info(
-                                f"Resolved metadata variable {key}={resolved_value}"
+                                f"Resolved metadata variable {key}={resolved_value}",
                             )
                         except Exception as e:
                             logger.error(
-                                f"Error resolving metadata template {key}: {str(e)}"
+                                f"Error resolving metadata template {key}: {e!s}",
                             )
                             # Fallback: direct extraction from previous_outputs
                             if "previous_outputs." in value:
@@ -124,11 +129,9 @@ class MemoryWriterNode(BaseNode):
                                     "previous_outputs" in context
                                     and var_path in context["previous_outputs"]
                                 ):
-                                    metadata[key] = context["previous_outputs"][
-                                        var_path
-                                    ]
+                                    metadata[key] = context["previous_outputs"][var_path]
                                     logger.info(
-                                        f"Fallback resolved metadata variable {key}={metadata[key]}"
+                                        f"Fallback resolved metadata variable {key}={metadata[key]}",
                                     )
 
             # Add additional metadata for better retrieval
@@ -147,7 +150,7 @@ class MemoryWriterNode(BaseNode):
                     entry_key = template.render(**context)
                     logger.info(f"Generated key from template: {entry_key}")
                 except Exception as e:
-                    logger.error(f"Error processing key template: {str(e)}")
+                    logger.error(f"Error processing key template: {e!s}")
 
             # If no key template or error, use a timestamp-based key
             if not entry_key:
@@ -156,50 +159,74 @@ class MemoryWriterNode(BaseNode):
 
             logger.info(f"Writing memory in namespace '{namespace}': {text[:100]}...")
 
-            # Prepare stream entry with more detailed metadata
-            entry = {
-                "ts": str(time.time_ns()),
-                "agent_id": self.node_id,
-                "type": "memory.append",
-                "session": session_id,
-                "payload": json.dumps(
-                    {
+            # Define stream_key for use in both paths
+            stream_key = f"orka:memory:{namespace}:{session_id}"
+
+            # Use memory logger if available (for decay-aware logging)
+            if self.memory_logger:
+                # Use the memory logger for decay-aware storage
+                self.memory_logger.log(
+                    agent_id=self.node_id,
+                    event_type="write",
+                    payload={
                         "content": text,
                         "metadata": metadata,
                         "query": context.get("input", ""),
                         "timestamp": time.time(),
                         "key": entry_key,
-                    }
-                ),
-            }
-
-            # Write to stream with retry
-            stream_key = f"orka:memory:{namespace}:{session_id}"
-            entry_id = await retry(self.redis.xadd(stream_key, entry))
-            logger.info(f"Written to stream: {stream_key} with entry ID: {entry_id}")
-
-            # Verify the stream entry was written successfully
-            try:
-                last_entry = await retry(
-                    self.redis.xrevrange(stream_key, "+", "-", count=1)
+                        "namespace": namespace,
+                        "session": session_id,
+                    },
+                    run_id=session_id,
+                    agent_decay_config=self.decay_config,
                 )
-                if last_entry:
-                    last_id, last_data = last_entry[0]
-                    logger.info(f"Verified write: Last entry ID: {last_id}")
-                    payload = (
-                        last_data.get(b"payload", b"{}").decode()
-                        if isinstance(last_data.get(b"payload"), bytes)
-                        else last_data.get("payload", "{}")
+                entry_id = f"memory_logger_{time.time_ns()}"  # Placeholder ID for memory logger
+                logger.info(f"Written to memory logger with entry: {entry_id}")
+            else:
+                # Fallback to direct Redis stream writing (legacy behavior)
+                # Prepare stream entry with more detailed metadata
+                entry = {
+                    "ts": str(time.time_ns()),
+                    "agent_id": self.node_id,
+                    "type": "memory.append",
+                    "session": session_id,
+                    "payload": json.dumps(
+                        {
+                            "content": text,
+                            "metadata": metadata,
+                            "query": context.get("input", ""),
+                            "timestamp": time.time(),
+                            "key": entry_key,
+                        },
+                    ),
+                }
+
+                # Write to stream with retry
+                entry_id = await retry(self.redis.xadd(stream_key, entry))
+                logger.info(f"Written to stream: {stream_key} with entry ID: {entry_id}")
+
+                # Verify the stream entry was written successfully
+                try:
+                    last_entry = await retry(
+                        self.redis.xrevrange(stream_key, "+", "-", count=1),
                     )
-                    logger.info(
-                        f"Verified write: Last entry payload sample: {payload[:50]}..."
-                    )
-                else:
-                    logger.warning(
-                        f"Could not verify stream write - no entries in {stream_key}"
-                    )
-            except Exception as e:
-                logger.error(f"Error verifying stream write: {str(e)}")
+                    if last_entry:
+                        last_id, last_data = last_entry[0]
+                        logger.info(f"Verified write: Last entry ID: {last_id}")
+                        payload = (
+                            last_data.get(b"payload", b"{}").decode()
+                            if isinstance(last_data.get(b"payload"), bytes)
+                            else last_data.get("payload", "{}")
+                        )
+                        logger.info(
+                            f"Verified write: Last entry payload sample: {payload[:50]}...",
+                        )
+                    else:
+                        logger.warning(
+                            f"Could not verify stream write - no entries in {stream_key}",
+                        )
+                except Exception as e:
+                    logger.error(f"Error verifying stream write: {e!s}")
 
             # Optionally write to vector store
             doc_id = None
@@ -210,7 +237,7 @@ class MemoryWriterNode(BaseNode):
                         vector = await self.embedder.encode(text)
                     except Exception as e:
                         logger.error(
-                            f"Failed to encode text for vector storage: {str(e)}"
+                            f"Failed to encode text for vector storage: {e!s}",
                         )
                         # Use fallback method
                         try:
@@ -220,7 +247,7 @@ class MemoryWriterNode(BaseNode):
                             vector = await fallback_embedder.encode(text)
                             logger.info("Successfully generated fallback embedding")
                         except Exception as e2:
-                            logger.error(f"Fallback embedding also failed: {str(e2)}")
+                            logger.error(f"Fallback embedding also failed: {e2!s}")
                             raise e2
 
                     doc_id = f"mem:{namespace}:{int(time.time() * 1e6)}"
@@ -233,7 +260,7 @@ class MemoryWriterNode(BaseNode):
                     await retry(self.redis.hset(doc_id, "agent", self.node_id))
                     await retry(self.redis.hset(doc_id, "key", entry_key))
                     await retry(
-                        self.redis.hset(doc_id, "ts", str(int(time.time() * 1e3)))
+                        self.redis.hset(doc_id, "ts", str(int(time.time() * 1e3))),
                     )
 
                     # Store enhanced metadata
@@ -245,13 +272,15 @@ class MemoryWriterNode(BaseNode):
                             "stream_entry_id": entry_id.decode()
                             if isinstance(entry_id, bytes)
                             else entry_id,
-                        }
+                        },
                     )
 
                     await retry(
                         self.redis.hset(
-                            doc_id, "metadata", json.dumps(enhanced_metadata)
-                        )
+                            doc_id,
+                            "metadata",
+                            json.dumps(enhanced_metadata),
+                        ),
                     )
                     logger.info(f"Written to vector store with ID: {doc_id}")
 
@@ -259,7 +288,7 @@ class MemoryWriterNode(BaseNode):
                     stored_vector = await retry(self.redis.hget(doc_id, "vector"))
                     if stored_vector:
                         logger.info(
-                            f"Vector successfully stored with length {len(stored_vector)} bytes"
+                            f"Vector successfully stored with length {len(stored_vector)} bytes",
                         )
                     else:
                         logger.warning("Vector was not stored correctly")
@@ -273,13 +302,13 @@ class MemoryWriterNode(BaseNode):
                             else stored_content
                         )
                         logger.info(
-                            f"Content successfully stored: {content_str[:50]}..."
+                            f"Content successfully stored: {content_str[:50]}...",
                         )
                     else:
                         logger.warning("Content was not stored correctly")
 
                 except Exception as e:
-                    logger.error(f"Failed to store vector embedding: {str(e)}")
+                    logger.error(f"Failed to store vector embedding: {e!s}")
 
             # Store result in context
             result = {
@@ -297,7 +326,7 @@ class MemoryWriterNode(BaseNode):
             return result
 
         except Exception as e:
-            logger.error(f"Error writing to memory: {str(e)}")
+            logger.error(f"Error writing to memory: {e!s}")
             error_result = {
                 "status": "error",
                 "error": str(e),

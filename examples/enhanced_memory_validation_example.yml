@@ -1,0 +1,175 @@
+orchestrator:
+  id: enhanced-memory-validation
+  strategy: parallel
+  queue: orka:generated
+  memory:
+    decay:
+      enabled: true
+      default_short_term_hours: 0.025 # 1.5 minutes for demo
+      default_long_term_hours: 0.05 # 3 minutes for demo
+      check_interval_minutes: 1 # Check every minute for demo.
+      memory_type_rules:
+        long_term_events: [] # Empty
+        short_term_events: [
+            "debug",
+            "processing",
+            "start",
+            "progress",
+            "write",
+            # Add all agent class names that create events:
+            "OpenAIBinaryAgent",
+            "OpenAIAnswerBuilder",
+            "DuckDuckGoTool",
+            "MemoryWriterNode",
+            "MetaReport",
+            "RouterNode",
+          ]
+      importance_rules:
+        base_score: 0.4
+        event_type_boosts:
+          write: 0.3
+          success: 0.2
+          completion: 0.2
+          result: 0.15
+          final_answer: 0.25
+        agent_type_boosts:
+          memory: 0.2
+          openai-answer: 0.15
+  agents:
+    - memory_reader
+    - memory_validator
+    - answer_router
+
+agents:
+  # Step 1: Read memories using enhanced context-aware search
+  - id: memory_reader
+    type: memory
+    queue: orka:memory_reader
+    config:
+      operation: read
+      namespace: user_queries
+      limit: 5
+      similarity_threshold: 0.6
+      # Enhanced search configuration
+      context_weight: 0.3
+      temporal_weight: 0.2
+      enable_context_search: true
+      enable_temporal_ranking: true
+      context_window_size: 5
+      temporal_decay_hours: 24
+    prompt: "{{ input }}"
+
+  # Step 2: Validate memory quality using OpenAI
+  - id: memory_validator
+    type: openai-binary
+    queue: orka:memory_validator
+    prompt: |
+      You are a memory quality validator. Analyze the retrieved memories and determine if they provide valuable, accurate, and relevant information to answer the user's query.
+
+      User Query: {{ input }}
+      Retrieved Memories: {{ previous_outputs['memory_reader'].result.memories }}
+
+      Evaluation Criteria:
+      1. Relevance: Do the memories directly relate to the user's query?
+      2. Completeness: Do the memories provide sufficient information to answer the query?
+      3. Accuracy: Do the memories appear to contain accurate information?
+      4. Recency: Are the memories recent enough to be still valid?
+
+      Return 'true' if the memories are VALUABLE and sufficient to answer the query.
+      Return 'false' if the memories are INSUFFICIENT or not valuable enough.
+    depends_on:
+      - memory_reader
+
+  # Step 3: Router to decide between memory-based answer or search fallback
+  - id: answer_router
+    type: router
+    params:
+      decision_key: memory_validator
+      routing_map:
+        "true":
+          - answer_builder
+          - memory_writer
+        "false":
+          - search_fallback
+          - search_answer_builder
+          - memory_writer
+    depends_on:
+      - memory_validator
+
+  # Step 3a: Build answer from valuable memories
+  - id: answer_builder
+    type: openai-answer
+    queue: orka:answer_builder
+    prompt: |
+      Based on the validated memories, provide a comprehensive answer to the user's query.
+
+      User Query: {{ input }}
+      Validated Memories: {{ previous_outputs['memory_reader'].result.memories }}
+      Memory Validation: VALUABLE
+
+      Instructions:
+      - Use the information from the memories to construct your answer
+      - Be specific and cite relevant details from the memories
+      - If the memories are incomplete, acknowledge the limitations
+      - Provide a clear, well-structured response
+
+      Answer:
+    depends_on:
+      - answer_router
+
+  # Step 3b: Fallback to internet search if memories are insufficient
+  - id: search_fallback
+    type: duckduckgo
+    queue: orka:search_fallback
+    prompt: "{{ input }}"
+    depends_on:
+      - answer_router
+
+  # Step 4: Build answer from search results
+  - id: search_answer_builder
+    type: openai-answer
+    queue: orka:search_answer_builder
+    prompt: |
+      Based on the search results, provide a comprehensive answer to the user's query.
+
+      User Query: {{ input }}
+      Search Results: {{ previous_outputs['search_fallback'].result }}
+      Memory Validation: INSUFFICIENT
+
+      Instructions:
+      - Use the search results to construct your answer
+      - Synthesize information from multiple sources if available
+      - Provide a clear, accurate, and well-structured response
+      - Include relevant details and context
+
+      Answer:
+    depends_on:
+      - search_fallback
+
+  # Step 5: Store the answer in short-term memory (1 minute expiration)
+  - id: memory_writer
+    type: memory
+    queue: orka:memory_writer
+    config:
+      operation: write
+      namespace: short_term_answers
+      vector: true
+      key_template: "answer_{{ session_id }}_{{ timestamp }}"
+      default_long_term: false # Force short-term classification
+    prompt: |
+      Query: {{ input }}
+
+      Answer: {{ previous_outputs['answer_builder'].result.response if previous_outputs['answer_builder'] else previous_outputs['search_answer_builder'].result.response }}
+
+      Source: {{ 'Retrieved from validated memories' if previous_outputs['answer_builder'] else 'Generated from internet search' }}
+
+      Validation Details: {{ 'VALUABLE - Memories were sufficient' if previous_outputs['answer_builder'] else 'INSUFFICIENT - Required internet search' }}
+    metadata:
+      source: memory_validation_workflow
+      query: "{{ input }}"
+      memory_was_valuable: "{{ 'true' if previous_outputs['answer_builder'] else 'false' }}"
+      answer_source: "{{ 'memory' if previous_outputs['answer_builder'] else 'search' }}"
+      expires_at: "{{ timestamp + 60 }}"
+      confidence: 0.9
+    depends_on:
+      - answer_router

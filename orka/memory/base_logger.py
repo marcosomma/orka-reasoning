@@ -22,7 +22,9 @@ implemented by all memory backends.
 import hashlib
 import json
 import logging
+import threading
 from abc import ABC, abstractmethod
+from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional, Union
 
 from .file_operations import FileOperationsMixin
@@ -41,6 +43,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         self,
         stream_key: str = "orka:memory",
         debug_keep_previous_outputs: bool = False,
+        decay_config: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Initialize the memory logger.
@@ -48,10 +51,23 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         Args:
             stream_key: Key for the memory stream. Defaults to "orka:memory".
             debug_keep_previous_outputs: If True, keeps previous_outputs in log files for debugging.
+            decay_config: Configuration for memory decay functionality.
         """
         self.stream_key = stream_key
         self.memory: List[Dict[str, Any]] = []  # Local memory buffer
         self.debug_keep_previous_outputs = debug_keep_previous_outputs
+
+        # Initialize decay configuration
+        self.decay_config = self._init_decay_config(decay_config or {})
+
+        # Decay state management
+        self._decay_thread = None
+        self._decay_stop_event = threading.Event()
+        self._last_decay_check = datetime.now(UTC)
+
+        # Initialize automatic decay if enabled
+        if self.decay_config.get("enabled", False):
+            self._start_decay_scheduler()
 
         # Blob deduplication storage: SHA256 -> actual blob content
         self._blob_store: Dict[str, Any] = {}
@@ -59,6 +75,161 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         self._blob_usage: Dict[str, int] = {}
         # Minimum size threshold for blob deduplication (in chars)
         self._blob_threshold = 200
+
+    def _init_decay_config(self, decay_config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Initialize decay configuration with defaults.
+
+        Args:
+            decay_config: Raw decay configuration
+
+        Returns:
+            Processed decay configuration with defaults applied
+        """
+        default_config = {
+            "enabled": True,  # Enable by default for better memory management
+            "default_short_term_hours": 1.0,
+            "default_long_term_hours": 24.0,
+            "check_interval_minutes": 30,
+            "memory_type_rules": {
+                "long_term_events": ["success", "completion", "write", "result"],
+                "short_term_events": ["debug", "processing", "start", "progress"],
+            },
+            "importance_rules": {
+                "base_score": 0.5,
+                "event_type_boosts": {
+                    "write": 0.3,
+                    "success": 0.2,
+                    "completion": 0.2,
+                    "result": 0.1,
+                },
+                "agent_type_boosts": {
+                    "memory": 0.2,
+                    "openai-answer": 0.1,
+                },
+            },
+        }
+
+        # Deep merge with defaults
+        merged_config = default_config.copy()
+        for key, value in decay_config.items():
+            if isinstance(value, dict) and key in merged_config:
+                merged_config[key].update(value)
+            else:
+                merged_config[key] = value
+
+        return merged_config
+
+    def _calculate_importance_score(
+        self,
+        event_type: str,
+        agent_id: str,
+        payload: Dict[str, Any],
+    ) -> float:
+        """
+        Calculate importance score for a memory entry.
+
+        Args:
+            event_type: Type of the event
+            agent_id: ID of the agent generating the event
+            payload: Event payload
+
+        Returns:
+            Importance score between 0.0 and 1.0
+        """
+        rules = self.decay_config["importance_rules"]
+        score = rules["base_score"]
+
+        # Apply event type boosts
+        event_boost = rules["event_type_boosts"].get(event_type, 0.0)
+        score += event_boost
+
+        # Apply agent type boosts
+        for agent_type, boost in rules["agent_type_boosts"].items():
+            if agent_type in agent_id:
+                score += boost
+                break
+
+        # Check payload for result indicators
+        if isinstance(payload, dict):
+            if payload.get("result") or payload.get("response"):
+                score += 0.1
+            if payload.get("error"):
+                score -= 0.1
+
+        # Clamp score between 0.0 and 1.0
+        return max(0.0, min(1.0, score))
+
+    def _classify_memory_type(self, event_type: str, importance_score: float) -> str:
+        """
+        Classify memory entry as short-term or long-term.
+
+        Args:
+            event_type: Type of the event
+            importance_score: Calculated importance score
+
+        Returns:
+            "short_term" or "long_term"
+        """
+        rules = self.decay_config["memory_type_rules"]
+
+        # Check explicit rules first
+        if event_type in rules["long_term_events"]:
+            return "long_term"
+        if event_type in rules["short_term_events"]:
+            return "short_term"
+
+        # Fallback to importance score
+        return "long_term" if importance_score >= 0.7 else "short_term"
+
+    def _start_decay_scheduler(self):
+        """Start the automatic decay scheduler thread."""
+        if self._decay_thread is not None:
+            return  # Already running
+
+        def decay_scheduler():
+            interval_seconds = self.decay_config["check_interval_minutes"] * 60
+
+            while not self._decay_stop_event.wait(interval_seconds):
+                try:
+                    self.cleanup_expired_memories()
+                except Exception as e:
+                    logger.error(f"Error during automatic memory decay: {e}")
+
+        self._decay_thread = threading.Thread(target=decay_scheduler, daemon=True)
+        self._decay_thread.start()
+        logger.info(
+            f"Started automatic memory decay scheduler (interval: {self.decay_config['check_interval_minutes']} minutes)",
+        )
+
+    def stop_decay_scheduler(self):
+        """Stop the automatic decay scheduler."""
+        if self._decay_thread is not None:
+            self._decay_stop_event.set()
+            self._decay_thread.join(timeout=5)
+            self._decay_thread = None
+            logger.info("Stopped automatic memory decay scheduler")
+
+    @abstractmethod
+    def cleanup_expired_memories(self, dry_run: bool = False) -> Dict[str, Any]:
+        """
+        Clean up expired memory entries based on decay configuration.
+
+        Args:
+            dry_run: If True, return what would be deleted without actually deleting
+
+        Returns:
+            Dictionary containing cleanup statistics
+        """
+
+    @abstractmethod
+    def get_memory_stats(self) -> Dict[str, Any]:
+        """
+        Get memory usage statistics.
+
+        Returns:
+            Dictionary containing memory statistics
+        """
 
     @abstractmethod
     def log(
@@ -71,6 +242,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         fork_group: Optional[str] = None,
         parent: Optional[str] = None,
         previous_outputs: Optional[Dict[str, Any]] = None,
+        agent_decay_config: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Log an event to the memory backend."""
 

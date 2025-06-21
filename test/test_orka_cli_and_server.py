@@ -22,7 +22,7 @@ import logging
 import pytest
 import yaml
 
-import orka.orka_cli as orka_cli
+from orka import orka_cli
 
 # --- orka_cli.py ---
 
@@ -41,7 +41,7 @@ def make_dummy_yaml(tmp_path):
                 "type": "openai-binary",
                 "prompt": "Is '{{ input }}' a valid project?",
                 "queue": "orka:dummy",
-            }
+            },
         ],
     }
     file = tmp_path / "dummy.yml"
@@ -58,7 +58,8 @@ async def test_run_cli_entrypoint_prints_dict(tmp_path, monkeypatch):
         async def run(self, input_text):
             return {"agent1": "result1", "agent2": "result2"}
 
-    monkeypatch.setattr("orka.orchestrator.Orchestrator", DummyOrchestrator)
+    # Patch the Orchestrator in the orka_cli module where it's imported
+    monkeypatch.setattr("orka.orka_cli.Orchestrator", DummyOrchestrator)
     config_path = make_dummy_yaml(tmp_path)
     result = await orka_cli.run_cli_entrypoint(config_path, "input", log_to_file=False)
     assert isinstance(result, dict)
@@ -68,19 +69,23 @@ async def test_run_cli_entrypoint_prints_dict(tmp_path, monkeypatch):
 @pytest.mark.asyncio
 async def test_run_cli_entrypoint_prints_list(tmp_path, monkeypatch, caplog):
     class DummyOrchestrator:
+        def __init__(self, config_path):
+            pass
+
         async def run(self, input_text):
             return [
                 {"agent_id": "agent1", "payload": {"foo": "bar"}},
                 {"agent_id": "agent2", "payload": {"baz": "qux"}},
             ]
 
-    monkeypatch.setattr(
-        "orka.orchestrator.Orchestrator", lambda config_path: DummyOrchestrator()
-    )
+    # Patch the Orchestrator in the orka_cli module where it's imported
+    monkeypatch.setattr("orka.orka_cli.Orchestrator", DummyOrchestrator)
     config_path = make_dummy_yaml(tmp_path)
     with caplog.at_level(logging.INFO):
         result = await orka_cli.run_cli_entrypoint(
-            config_path, "input", log_to_file=False
+            config_path,
+            "input",
+            log_to_file=False,
         )
         assert "Agent: agent1" in caplog.text
         assert isinstance(result, list)
@@ -89,16 +94,20 @@ async def test_run_cli_entrypoint_prints_list(tmp_path, monkeypatch, caplog):
 @pytest.mark.asyncio
 async def test_run_cli_entrypoint_prints_other(tmp_path, monkeypatch, caplog):
     class DummyOrchestrator:
+        def __init__(self, config_path):
+            pass
+
         async def run(self, input_text):
             return "just a string"
 
-    monkeypatch.setattr(
-        "orka.orchestrator.Orchestrator", lambda config_path: DummyOrchestrator()
-    )
+    # Patch the Orchestrator in the orka_cli module where it's imported
+    monkeypatch.setattr("orka.orka_cli.Orchestrator", DummyOrchestrator)
     config_path = make_dummy_yaml(tmp_path)
     with caplog.at_level(logging.INFO):
         result = await orka_cli.run_cli_entrypoint(
-            config_path, "input", log_to_file=False
+            config_path,
+            "input",
+            log_to_file=False,
         )
         assert "just a string" in caplog.text
         assert result == "just a string"
@@ -107,12 +116,14 @@ async def test_run_cli_entrypoint_prints_other(tmp_path, monkeypatch, caplog):
 @pytest.mark.asyncio
 async def test_run_cli_entrypoint_log_to_file(tmp_path, monkeypatch):
     class DummyOrchestrator:
+        def __init__(self, config_path):
+            pass
+
         async def run(self, input_text):
             return {"foo": "bar"}
 
-    monkeypatch.setattr(
-        "orka.orchestrator.Orchestrator", lambda config_path: DummyOrchestrator()
-    )
+    # Patch the Orchestrator in the orka_cli module where it's imported
+    monkeypatch.setattr("orka.orka_cli.Orchestrator", DummyOrchestrator)
     config_path = make_dummy_yaml(tmp_path)
     import os
 
@@ -120,7 +131,9 @@ async def test_run_cli_entrypoint_log_to_file(tmp_path, monkeypatch):
     os.chdir(tmp_path)
     try:
         result = await orka_cli.run_cli_entrypoint(
-            config_path, "input", log_to_file=True
+            config_path,
+            "input",
+            log_to_file=True,
         )
         with open("orka_trace.log") as f:
             content = f.read()

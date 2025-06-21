@@ -19,7 +19,7 @@ This document breaks down the key architectural components and how they work tog
 
 ## 🏗️ Modular Architecture (v0.6.4+)
 
-Starting with version 0.6.4, OrKa's core components have been refactored into a modular architecture for improved maintainability and extensibility:
+Starting with version 0.6.4, OrKa's core components have been refactored into a modular architecture for improved maintainability and extensibility. Version 0.6.5 adds intelligent memory decay capabilities:
 
 ### Memory Logger Package (`orka/memory_logger/`)
 The memory logging system is now split into focused components:
