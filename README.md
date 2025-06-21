@@ -8,18 +8,47 @@
 [![codecov](https://codecov.io/gh/marcosomma/orka-reasoning/branch/master/graph/badge.svg?token=V91X4WGBBZ)](https://codecov.io/gh/marcosomma/orka-reasoning)
 ![PyPI - License](https://img.shields.io/pypi/l/orka-reasoning?color=blue) [![orka-reasoning](https://snyk.io/advisor/python/orka-reasoning/badge.svg)](https://snyk.io/advisor/python/orka-reasoning)
 
-[![orka-reasoning Package Age](https://assets.piptrends.com/get-age-badge/orka-reasoning.svg 'orka-reasoning Package Age by pip Trends')](https://piptrends.com/package/orka-reasoning)
+[![orka-reasoning Package Age](https://assets.piptrends.com/get-age-badge/orka-reasoning.svg 'orka-reasoning Package Age by pip Trends')](https://piptrends.com/package/orka-reasoning)[![orka-reasoning Average Daily Downloads](https://assets.piptrends.com/get-average-downloads-badge/orka-reasoning.svg 'orka-reasoning Average Daily Downloads by pip Trends')](https://piptrends.com/package/orka-reasoning) [![orka-reasoning Downloads Last Week](https://assets.piptrends.com/get-last-week-downloads-badge/orka-reasoning.svg 'orka-reasoning Downloads Last Week by pip Trends')](https://piptrends.com/package/orka-reasoning) [![orka-reasoning Downloads Last Month](https://assets.piptrends.com/get-last-month-downloads-badge/orka-reasoning.svg 'orka-reasoning Downloads Last Month by pip Trends')](https://piptrends.com/package/orka-reasoning)
 
-[![orka-reasoning Average Daily Downloads](https://assets.piptrends.com/get-average-downloads-badge/orka-reasoning.svg 'orka-reasoning Average Daily Downloads by pip Trends')](https://piptrends.com/package/orka-reasoning) [![orka-reasoning Downloads Last Week](https://assets.piptrends.com/get-last-week-downloads-badge/orka-reasoning.svg 'orka-reasoning Downloads Last Week by pip Trends')](https://piptrends.com/package/orka-reasoning) [![orka-reasoning Downloads Last Week](https://assets.piptrends.com/get-last-week-downloads-badge/orka-reasoning.svg 'orka-reasoning Downloads Last Week by pip Trends')](https://piptrends.com/package/orka-reasoning)
+![Pepy Total Downloads](https://img.shields.io/pepy/dt/orka-reasoning?style=for-the-badge&label=Total%20Downloads&labelColor=%231e1e1e&color=%2338a0ff&link=https%3A%2F%2Fpiptrends.com%2Fpackage%2Forka-reasoning)
 
-[![PyPI Downloads](https://static.pepy.tech/badge/orka-reasoning)](https://pepy.tech/projects/orka-reasoning)
 
 [![PyPi](https://img.shields.io/badge/pypi-%23ececec.svg?style=for-the-badge&logo=pypi&logoColor=1f73b7)](https://pypi.org/project/orka-reasoning/) [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://hub.docker.com/r/marcosomma/orka-ui)
+
+
 [![orkacore](https://img.shields.io/badge/orkacore-.com-green?labelColor=blue&style=for-the-badge&link=https://orkacore.com/)](https://orkacore.com/)
 
+
+
+[![orka-reasoning Widget](https://assets.piptrends.com/get-widget/orka-reasoning.svg 'orka-reasoning Widget by pip Trends')](https://piptrends.com/package/orka-reasoning)
 </div>
 
 **Orchestrator Kit for Agentic Reasoning** - OrKa is a modular AI orchestration system that transforms Large Language Models (LLMs) into composable agents capable of reasoning, fact-checking, and constructing answers with transparent traceability.
+
+---
+
+## 📋 Table of Contents
+
+- [🚀 Features](#-features)
+- [🎥 OrKa Video Overview](#-orka-video-overview)
+- [🏆 Why Choose OrKa?](#-why-choose-orka)
+- [⚡ 5-Minute Quickstart](#-5-minute-quickstart)
+- [🛠️ Installation](#️-installation)
+- [📚 Common Patterns & Recipes](#-common-patterns--recipes)
+- [⚙️ Agent Configuration Examples](#️-agent-configuration-examples)
+- [📝 YAML Configuration Structure](#-yaml-configuration-structure)
+- [🧠 Memory Management & Intelligent Decay](#-memory-management--intelligent-decay)
+- [🧪 Example](#-example)
+- [🔧 Requirements](#-requirements)
+- [📄 Usage](#-usage)
+- [🔍 Troubleshooting](#-troubleshooting)
+- [📊 Performance & Scalability](#-performance--scalability)
+- [🏢 Case Studies & Success Stories](#-case-studies--success-stories)
+- [📚 Documentation](#-documentation)
+- [🤝 Contributing](#-contributing)
+- [📜 License & Attribution](#-license--attribution)
+
+---
 
 ## 🚀 Features
 
