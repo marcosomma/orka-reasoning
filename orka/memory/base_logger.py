@@ -87,7 +87,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
             Processed decay configuration with defaults applied
         """
         default_config = {
-            "enabled": False,  # Opt-in by default for backward compatibility
+            "enabled": True,  # Enable by default for better memory management
             "default_short_term_hours": 1.0,
             "default_long_term_hours": 24.0,
             "check_interval_minutes": 30,

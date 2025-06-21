@@ -1,0 +1,10 @@
+id: test-default-decay
+strategy: sequential
+queue: orka:test-default
+
+agents:
+  - id: test-agent
+    type: openai-classification
+    queue: orka:test-agent
+    prompt: "Classify this query: {{ input }}"
+    options: ["important", "normal", "debug"]
