@@ -41,6 +41,7 @@ setup(
         "uvicorn>=0.15.0",
         "pydantic>=1.8.0",
         "httpx>=0.24.0",
+        "rich>=13.0.0",
     ],
     extras_require={"dev": ["pytest", "coverage", "pytest-cov"]},
     classifiers=[

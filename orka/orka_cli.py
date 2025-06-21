@@ -58,6 +58,8 @@ import json
 import logging
 import os
 import sys
+import time
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, TypedDict, Union
 
@@ -330,6 +332,289 @@ async def run_orchestrator(args):
         return 1
 
 
+def memory_watch(args):
+    """Watch memory statistics in real-time with rich terminal UI."""
+    try:
+        # Get backend from environment or args
+        backend = args.backend or os.getenv("ORKA_MEMORY_BACKEND", "redis")
+
+        # Create memory logger
+        memory = create_memory_logger(backend=backend)
+
+        if args.json:
+            # JSON mode - simple output without rich
+            return _memory_watch_json(memory, backend, args)
+
+        # Try to use rich for better terminal UI
+        try:
+            from rich import box
+            from rich.columns import Columns
+            from rich.console import Console
+            from rich.layout import Layout
+            from rich.live import Live
+            from rich.panel import Panel
+            from rich.progress import BarColumn, Progress, TextColumn
+            from rich.table import Table
+            from rich.text import Text
+
+            console = Console()
+
+            def create_display():
+                """Create the rich display layout."""
+                # Get current statistics
+                stats = memory.get_memory_stats()
+                current_time = datetime.now().strftime("%H:%M:%S")
+
+                # Create main layout
+                layout = Layout()
+
+                # Header
+                header_text = Text(f"OrKa Memory Watch - {current_time}", style="bold cyan")
+                header_text.append(f" | Backend: {backend}", style="dim")
+                header_text.append(f" | Refresh: {args.interval}s", style="dim")
+
+                # Main stats panel - compact layout for efficiency
+                main_stats = Table.grid(padding=0)
+                main_stats.add_column(style="bold", ratio=1)
+                main_stats.add_column(style="green", ratio=1)
+                main_stats.add_column(style="bold", ratio=1)
+                main_stats.add_column(style="green", ratio=1)
+
+                # Arrange stats in 2 columns to save vertical space
+                main_stats.add_row(
+                    "🔧 Backend:",
+                    str(stats.get("backend", backend)),
+                    "⚡ Decay:",
+                    str(stats.get("decay_enabled", False)),
+                )
+                main_stats.add_row(
+                    "📊 Streams:",
+                    str(stats.get("total_streams", 0)),
+                    "📝 Entries:",
+                    str(stats.get("total_entries", 0)),
+                )
+                main_stats.add_row(
+                    "🗑️ Expired:",
+                    str(stats.get("expired_entries", 0)),
+                    "",
+                    "",  # Empty cells for alignment
+                )
+
+                # Add memory types summary in compact format
+                memory_types_summary = stats.get("entries_by_memory_type", {})
+                if memory_types_summary:
+                    # Create compact memory type display
+                    short_term = memory_types_summary.get("short_term", 0)
+                    long_term = memory_types_summary.get("long_term", 0)
+                    unknown = memory_types_summary.get("unknown", 0)
+
+                    if short_term > 0 or long_term > 0:
+                        main_stats.add_row(
+                            "🔥 Short-term:",
+                            f"{short_term}" if short_term > 0 else "[dim]0[/dim]",
+                            "💾 Long-term:",
+                            f"{long_term}" if long_term > 0 else "[dim]0[/dim]",
+                        )
+
+                    if unknown > 0:
+                        main_stats.add_row(
+                            "❓ Unknown:",
+                            f"{unknown}",
+                            "",
+                            "",
+                        )
+                else:
+                    main_stats.add_row("🧠 Memory:", "[dim]No entries[/dim]", "", "")
+
+                # Create entry types table - optimized for long lists
+                entries_table = Table(title="Entries by Type", box=box.ROUNDED, show_lines=False)
+                entries_table.add_column("Type", style="cyan", no_wrap=True, ratio=2)
+                entries_table.add_column("Count", justify="right", style="magenta", width=6)
+                entries_table.add_column("Progress", min_width=15, ratio=1)
+
+                if stats.get("entries_by_type"):
+                    total_entries = max(stats.get("total_entries", 1), 1)
+                    type_items = sorted(
+                        stats["entries_by_type"].items(),
+                        key=lambda x: x[1],
+                        reverse=True,
+                    )
+
+                    for event_type, count in type_items:
+                        # Create progress bar
+                        percentage = (count / total_entries) * 100
+                        bar_filled = int((count / total_entries) * 15)  # Shorter bar for space
+                        bar = "█" * bar_filled + "░" * (15 - bar_filled)
+
+                        entries_table.add_row(
+                            event_type,
+                            str(count),
+                            f"[green]{bar}[/green] {percentage:.1f}%",
+                        )
+                else:
+                    entries_table.add_row("[dim]No entries[/dim]", "[dim]0[/dim]", "[dim]N/A[/dim]")
+
+                # Create memory types table - optimized layout
+                memory_table = Table(title="Memory Types", box=box.ROUNDED, show_lines=False)
+                memory_table.add_column("Type", style="cyan", ratio=2)
+                memory_table.add_column("Count", justify="right", style="magenta", width=6)
+                memory_table.add_column("Status", style="bold", ratio=1)
+
+                # Force populate memory types table
+                memory_types_data = stats.get("entries_by_memory_type", {})
+                if memory_types_data and any(count > 0 for count in memory_types_data.values()):
+                    # Sort by count, then by type name for consistent display
+                    sorted_memory_types = sorted(
+                        memory_types_data.items(),
+                        key=lambda x: (-x[1], x[0]),  # Sort by count desc, then name asc
+                    )
+
+                    for memory_type, count in sorted_memory_types:
+                        if count > 0:  # Only show types with actual entries
+                            if memory_type == "short_term":
+                                status = "[yellow]Fast Decay[/yellow]"
+                            elif memory_type == "long_term":
+                                status = "[green]Persistent[/green]"
+                            else:
+                                status = "[red]Unknown[/red]"
+
+                            memory_table.add_row(memory_type, str(count), status)
+                else:
+                    # Only add placeholder when we truly have no data
+                    memory_table.add_row(
+                        "[dim]No memory entries[/dim]",
+                        "[dim]0[/dim]",
+                        "[dim]N/A[/dim]",
+                    )
+
+                # Create layout structure - make it dynamic and content-aware
+                # Adjust ratios based on content size
+                entry_count = len(stats.get("entries_by_type", {}))
+                memory_type_count = len(
+                    [x for x in stats.get("entries_by_memory_type", {}).values() if x > 0],
+                )
+
+                # Use compact mode if requested or if there are many entries
+                is_compact = getattr(args, "compact", False) or entry_count > 6
+
+                if is_compact:
+                    # Compact mode: less space for stats, more for tables
+                    stats_ratio = 1
+                    tables_ratio = 5
+                    stats_min_size = 4
+                else:
+                    # Normal mode: balanced layout
+                    stats_ratio = 1
+                    tables_ratio = 3
+                    stats_min_size = 6
+
+                layout.split_column(
+                    Layout(Panel(header_text, style="bold blue"), size=3),
+                    Layout(
+                        Panel(main_stats, title="Statistics", style="green"),
+                        ratio=stats_ratio,
+                        minimum_size=stats_min_size,
+                    ),
+                    Layout(
+                        Columns([entries_table, memory_table], equal=True),
+                        ratio=tables_ratio,  # Dynamic ratio based on content
+                        minimum_size=8,  # Ensure minimum visibility
+                    ),
+                    Layout(
+                        Panel(
+                            Text("Press Ctrl+C to exit", style="dim italic", justify="center"),
+                            style="dim",
+                        ),
+                        size=3,
+                    ),
+                )
+
+                return layout
+
+            # Use Rich Live to update display
+            with Live(
+                create_display(),
+                refresh_per_second=1 / args.interval,
+                console=console,
+            ) as live:
+                try:
+                    while True:
+                        time.sleep(args.interval)
+                        live.update(create_display())
+                except KeyboardInterrupt:
+                    pass
+
+            console.print("\n🛑 [bold red]OrKa Memory Watch stopped by user.[/bold red]")
+            return 0
+
+        except ImportError:
+            console.print("❌ [yellow]Rich library not available. Using simple mode.[/yellow]")
+            return _memory_watch_simple(memory, backend, args)
+
+    except Exception as e:
+        print(f"❌ Error watching memory: {e}", file=sys.stderr)
+        return 1
+
+
+def _memory_watch_json(memory, backend, args):
+    """JSON mode for memory watch - simple output without curses."""
+    prev_stats = {}
+    iteration = 0
+
+    try:
+        while True:
+            iteration += 1
+            stats = memory.get_memory_stats()
+            current_time = datetime.now().strftime("%H:%M:%S")
+
+            output = {
+                "timestamp": current_time,
+                "iteration": iteration,
+                "backend": backend,
+                "stats": stats,
+            }
+
+            print(json.dumps(output, indent=2))
+            time.sleep(args.interval)
+
+    except KeyboardInterrupt:
+        return 0
+
+
+def _memory_watch_simple(memory, backend, args):
+    """Simple fallback mode without curses."""
+    print(f"OrKa Memory Watch (Backend: {backend}) - Press Ctrl+C to exit")
+    print("Note: Using simple mode - install curses for better display")
+    print("-" * 60)
+
+    prev_stats = {}
+    iteration = 0
+
+    try:
+        while True:
+            iteration += 1
+            stats = memory.get_memory_stats()
+            current_time = datetime.now().strftime("%H:%M:%S")
+
+            print(f"\n[{current_time}] Iteration #{iteration}")
+            print(
+                f"Entries: {stats.get('total_entries', 0)} | Expired: {stats.get('expired_entries', 0)} | Decay: {stats.get('decay_enabled', False)}",
+            )
+
+            if stats.get("entries_by_memory_type"):
+                types_str = " | ".join(
+                    [f"{k}: {v}" for k, v in stats["entries_by_memory_type"].items()],
+                )
+                print(f"Types: {types_str}")
+
+            prev_stats = stats.copy()
+            time.sleep(args.interval)
+
+    except KeyboardInterrupt:
+        print("\n🛑 Watch stopped.")
+        return 0
+
+
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -388,6 +673,34 @@ def main():
         help="Memory backend to use",
     )
     config_parser.set_defaults(func=memory_configure)
+
+    # Memory watch
+    watch_parser = memory_subparsers.add_parser(
+        "watch",
+        help="Watch memory statistics in real-time",
+    )
+    watch_parser.add_argument(
+        "--backend",
+        choices=["redis", "kafka"],
+        help="Memory backend to use",
+    )
+    watch_parser.add_argument(
+        "--interval",
+        type=float,
+        default=5,
+        help="Refresh interval in seconds",
+    )
+    watch_parser.add_argument(
+        "--no-clear",
+        action="store_true",
+        help="Do not clear screen between updates",
+    )
+    watch_parser.add_argument(
+        "--compact",
+        action="store_true",
+        help="Use compact layout for long workflows",
+    )
+    watch_parser.set_defaults(func=memory_watch)
 
     # Parse arguments
     args = parser.parse_args()
