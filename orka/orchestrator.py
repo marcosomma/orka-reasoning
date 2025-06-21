@@ -108,14 +108,12 @@ and that all functionality remains accessible through the main interface.
 
 import logging
 
-from .orchestrator import (
-    AgentFactory,
-    ErrorHandler,
-    ExecutionEngine,
-    MetricsCollector,
-    OrchestratorBase,
-    PromptRenderer,
-)
+from orka.orchestrator.agent_factory import AgentFactory
+from orka.orchestrator.base import OrchestratorBase
+from orka.orchestrator.error_handling import ErrorHandler
+from orka.orchestrator.execution_engine import ExecutionEngine
+from orka.orchestrator.metrics import MetricsCollector
+from orka.orchestrator.prompt_rendering import PromptRenderer
 
 logger = logging.getLogger(__name__)
 

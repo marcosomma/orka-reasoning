@@ -21,7 +21,7 @@ Redis-based memory logger that uses Redis streams for event storage.
 import json
 import logging
 import os
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any, Dict, List, Optional, Union
 
 import redis
@@ -135,7 +135,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
                     memory_type = self._classify_memory_type(event_type, importance_score)
 
                 # Calculate expiration time
-                current_time = datetime.utcnow()
+                current_time = datetime.now(UTC)
                 if memory_type == "short_term":
                     expire_hours = effective_decay_config.get(
                         "short_term_hours",
@@ -162,7 +162,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
         event: Dict[str, Any] = {
             "agent_id": agent_id,
             "event_type": event_type,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "payload": safe_payload,
         }
         if step is not None:
@@ -506,7 +506,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
             return {"status": "decay_disabled", "deleted_count": 0}
 
         try:
-            current_time = datetime.utcnow()
+            current_time = datetime.now(UTC)
             stats = {
                 "start_time": current_time.isoformat(),
                 "dry_run": dry_run,
@@ -583,8 +583,8 @@ class RedisMemoryLogger(BaseMemoryLogger):
                         logger.error(f"Error processing stream {stream_key}: {e}")
                         stats["error_count"] += 1
 
-            stats["end_time"] = datetime.utcnow().isoformat()
-            stats["duration_seconds"] = (datetime.utcnow() - current_time).total_seconds()
+            stats["end_time"] = datetime.now(UTC).isoformat()
+            stats["duration_seconds"] = (datetime.now(UTC) - current_time).total_seconds()
 
             # Update last decay check time
             if not dry_run:
@@ -613,7 +613,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
             Dictionary containing memory statistics
         """
         try:
-            current_time = datetime.utcnow()
+            current_time = datetime.now(UTC)
             stats = {
                 "timestamp": current_time.isoformat(),
                 "decay_enabled": self.decay_config.get("enabled", False),
@@ -724,5 +724,5 @@ class RedisMemoryLogger(BaseMemoryLogger):
             logger.error(f"Error getting memory statistics: {e}")
             return {
                 "error": str(e),
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }

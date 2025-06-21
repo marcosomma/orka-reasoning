@@ -24,7 +24,7 @@ import json
 import logging
 import threading
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional, Union
 
 from .file_operations import FileOperationsMixin
@@ -63,7 +63,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         # Decay state management
         self._decay_thread = None
         self._decay_stop_event = threading.Event()
-        self._last_decay_check = datetime.utcnow()
+        self._last_decay_check = datetime.now(UTC)
 
         # Initialize automatic decay if enabled
         if self.decay_config.get("enabled", False):

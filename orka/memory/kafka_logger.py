@@ -23,7 +23,7 @@ and in-memory storage for Redis-like operations.
 import json
 import logging
 import os
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any, Dict, List, Optional, Union
 
 from .base_logger import BaseMemoryLogger
@@ -232,7 +232,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
                     memory_type = self._classify_memory_type(event_type, importance_score)
 
                 # Calculate expiration time
-                current_time = datetime.utcnow()
+                current_time = datetime.now(UTC)
                 if memory_type == "short_term":
                     expire_hours = effective_decay_config.get(
                         "short_term_hours",
@@ -265,7 +265,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
             "run_id": run_id,
             "fork_group": fork_group,
             "parent": parent,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
         # Add decay metadata to the event
@@ -472,7 +472,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         try:
             from datetime import datetime
 
-            current_time = datetime.utcnow()
+            current_time = datetime.now(UTC)
             stats = {
                 "timestamp": current_time.isoformat(),
                 "backend": "kafka",
@@ -529,7 +529,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
             return {
                 "error": str(e),
                 "backend": "kafka",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "deleted_count": 0,
             }
 
@@ -546,7 +546,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         try:
             from datetime import datetime
 
-            current_time = datetime.utcnow()
+            current_time = datetime.now(UTC)
             stats = {
                 "timestamp": current_time.isoformat(),
                 "backend": "kafka",
@@ -628,5 +628,5 @@ class KafkaMemoryLogger(BaseMemoryLogger):
             return {
                 "error": str(e),
                 "backend": "kafka",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }

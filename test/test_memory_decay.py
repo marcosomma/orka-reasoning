@@ -2,7 +2,7 @@
 Tests for memory decay functionality across all memory backends.
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from unittest.mock import Mock, patch
 
 from orka.memory.base_logger import BaseMemoryLogger
@@ -207,8 +207,8 @@ class TestRedisMemoryDecay:
         mock_redis.return_value = mock_client
 
         # Mock stream data with expired entries
-        past_time = (datetime.utcnow() - timedelta(hours=2)).isoformat()
-        future_time = (datetime.utcnow() + timedelta(hours=2)).isoformat()
+        past_time = (datetime.now(UTC) - timedelta(hours=2)).isoformat()
+        future_time = (datetime.now(UTC) + timedelta(hours=2)).isoformat()
 
         mock_stream_data = [
             (
@@ -291,8 +291,8 @@ class TestKafkaMemoryDecay:
         )
 
         # Add test data with expired and active entries
-        past_time = (datetime.utcnow() - timedelta(hours=2)).isoformat()
-        future_time = (datetime.utcnow() + timedelta(hours=2)).isoformat()
+        past_time = (datetime.now(UTC) - timedelta(hours=2)).isoformat()
+        future_time = (datetime.now(UTC) + timedelta(hours=2)).isoformat()
 
         logger.memory = [
             {

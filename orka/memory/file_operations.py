@@ -17,7 +17,7 @@ File operations for memory loggers.
 
 import json
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
@@ -92,7 +92,7 @@ class FileOperationsMixin:
                         "blob_threshold_chars": self._blob_threshold,
                         "total_blobs_stored": len(self._blob_store),
                         "stats": blob_stats,
-                        "generated_at": datetime.utcnow().isoformat(),
+                        "generated_at": datetime.now(UTC).isoformat(),
                     },
                     "blob_store": self._blob_store if self._blob_store else {},
                     "events": deduplicated_memory,
@@ -142,7 +142,7 @@ class FileOperationsMixin:
                         "event_type": entry.get("event_type", "unknown"),
                         "timestamp": entry.get(
                             "timestamp",
-                            datetime.utcnow().isoformat(),
+                            datetime.now(UTC).isoformat(),
                         ),
                         "error": "Original entry contained non-serializable data",
                         # Preserve optimization info if present
@@ -160,7 +160,7 @@ class FileOperationsMixin:
                         "version": "1.0",
                         "deduplication_enabled": False,
                         "error": "Deduplication failed, using simplified format",
-                        "generated_at": datetime.utcnow().isoformat(),
+                        "generated_at": datetime.now(UTC).isoformat(),
                     },
                     "events": simplified_memory,
                 }

@@ -62,14 +62,20 @@ build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
 testpaths = ["test"]
 python_files = "test_*.py"
 python_functions = "test_*"
 pythonpath = ["."]
 addopts = "--cov=orka --cov-report=xml:coverage.xml --cov-report=term --no-cov-on-fail"
+filterwarnings = [
+    "ignore::RuntimeWarning:unittest.mock",
+    "ignore::DeprecationWarning:datetime",
+]
 
 [tool.coverage.run]
 source = ["orka"]
+branch = true
 omit = [
     "*/site-packages/*",
     "*/tests/*",
