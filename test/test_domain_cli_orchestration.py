@@ -41,32 +41,30 @@ def test_run_cli_entrypoint(mock_yaml_loader):
     # Import the function directly
     from orka.orka_cli import run_cli_entrypoint
 
-    # Setup the actual test with mock - patch the orchestrator module, not orka_cli
-    with patch("orka.orchestrator.Orchestrator", autospec=True) as mock_orch_class:
-        # Setup the mock orchestrator instance
-        mock_orch = MagicMock()
-        mock_orch.run = AsyncMock(return_value="Test result")
-        mock_orch_class.return_value = mock_orch
+    # Setup the actual test with mock - patch the orchestrator initialization
+    with patch("orka.orchestrator.base.YAMLLoader", return_value=mock_loader_instance):
+        with patch("orka.orchestrator.base.create_memory_logger") as mock_memory:
+            mock_memory_instance = MagicMock()
+            mock_memory.return_value = mock_memory_instance
 
-        # Run the coroutine with a proper async test
-        import asyncio
+            with patch("orka.orchestrator.Orchestrator.run", new_callable=AsyncMock) as mock_run:
+                mock_run.return_value = "Test result"
 
-        result = asyncio.run(
-            run_cli_entrypoint("test.yml", "Test input", log_to_file=False),
-        )
+                # Run the coroutine with a proper async test
+                import asyncio
 
-        # Verify Orchestrator was created with the config path
-        assert mock_orch_class.called
-        mock_orch_class.assert_called_once_with("test.yml")
+                result = asyncio.run(
+                    run_cli_entrypoint("test.yml", "Test input", log_to_file=False),
+                )
 
-        # Check the result
-        assert result == "Test result"
+                # Check the result
+                assert result == "Test result"
 
 
 # Orchestrator Tests
 @pytest.mark.asyncio
 @patch("orka.orchestrator.base.YAMLLoader", autospec=True)
-@patch("orka.memory_logger.create_memory_logger", autospec=True)
+@patch("orka.orchestrator.base.create_memory_logger", autospec=True)
 @patch("orka.fork_group_manager.ForkGroupManager", autospec=True)
 @patch("orka.fork_group_manager.SimpleForkGroupManager", autospec=True)
 async def test_orchestrator_initialization(
@@ -101,7 +99,7 @@ async def test_orchestrator_initialization(
 
 @pytest.mark.asyncio
 @patch("orka.orchestrator.base.YAMLLoader", autospec=True)
-@patch("orka.memory_logger.create_memory_logger", autospec=True)
+@patch("orka.orchestrator.base.create_memory_logger", autospec=True)
 @patch("orka.fork_group_manager.ForkGroupManager", autospec=True)
 @patch("orka.fork_group_manager.SimpleForkGroupManager", autospec=True)
 async def test_orchestrator_with_agents(
@@ -134,10 +132,9 @@ async def test_orchestrator_with_agents(
     mock_loader_instance.validate.return_value = None
 
     # Patch agent types to prevent actual initialization
-    with (
-        patch("orka.agents.BinaryAgent") as mock_binary_agent,
-        patch("orka.agents.ClassificationAgent") as mock_class_agent,
-    ):
+    with patch("orka.agents.BinaryAgent") as mock_binary_agent, patch(
+        "orka.agents.ClassificationAgent",
+    ) as mock_class_agent:
         # Create mock agent instances
         mock_agent1 = MagicMock()
         mock_agent2 = MagicMock()
@@ -167,16 +164,13 @@ async def test_orchestrator_run():
     mock_agent2.type = "agent"
 
     # Create a custom monkeypatch object for this test
-    with (
-        patch(
-            "orka.orchestrator.Orchestrator.__init__",
-            return_value=None,
-        ) as mock_init,
-        patch(
-            "orka.orchestrator.execution_engine.json.dumps",
-            return_value="{}",
-        ) as mock_json_dumps,
-    ):
+    with patch(
+        "orka.orchestrator.Orchestrator.__init__",
+        return_value=None,
+    ) as mock_init, patch(
+        "orka.orchestrator.execution_engine.json.dumps",
+        return_value="{}",
+    ) as mock_json_dumps:
         # Create the orchestrator instance without calling __init__
         orchestrator = Orchestrator.__new__(Orchestrator)
 

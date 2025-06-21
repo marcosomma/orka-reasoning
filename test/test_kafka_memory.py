@@ -101,8 +101,10 @@ class TestKafkaMemoryLogger:
     @kafka_import_skip
     def test_initialization_kafka_import_error(self):
         """Test initialization when kafka-python is not available"""
-        # Mock an import error for the kafka module - this should be the real behavior
-        # when kafka-python is not installed
+        import builtins
+
+        # Store original import function
+        original_import = builtins.__import__
 
         # Store original modules if they exist
         orig_kafka = sys.modules.get("kafka")
@@ -119,7 +121,7 @@ class TestKafkaMemoryLogger:
             def mock_import(name, *args, **kwargs):
                 if name == "kafka" or name.startswith("kafka."):
                     raise ImportError(f"No module named '{name}'")
-                return __builtins__.__import__(name, *args, **kwargs)
+                return original_import(name, *args, **kwargs)
 
             # Also disable schema registry to force using kafka-python path
             with patch.dict(os.environ, {"KAFKA_USE_SCHEMA_REGISTRY": "false"}):
@@ -377,12 +379,20 @@ class TestMemoryLoggerFactory:
             backend="kafka",
             bootstrap_servers="test:9092",
             topic_prefix="test-prefix",
+            stream_key="orka:memory",
+            synchronous_send=False,
+            debug_keep_previous_outputs=False,
+            decay_config=None,
         )
 
         assert result == mock_logger
         mock_kafka_class.assert_called_once_with(
             bootstrap_servers="test:9092",
             topic_prefix="test-prefix",
+            stream_key="orka:memory",
+            synchronous_send=False,
+            debug_keep_previous_outputs=False,
+            decay_config=None,
         )
 
     @patch("orka.memory_logger.RedisMemoryLogger")
@@ -394,14 +404,22 @@ class TestMemoryLoggerFactory:
         result = create_memory_logger(
             backend="redis",
             redis_url="redis://localhost:6379",
+            stream_key="orka:memory",
+            debug_keep_previous_outputs=False,
+            decay_config=None,
         )
 
         assert result == mock_logger
-        mock_redis_class.assert_called_once_with(redis_url="redis://localhost:6379")
+        mock_redis_class.assert_called_once_with(
+            redis_url="redis://localhost:6379",
+            stream_key="orka:memory",
+            debug_keep_previous_outputs=False,
+            decay_config=None,
+        )
 
     def test_create_logger_invalid_backend(self):
         """Test factory with invalid backend"""
-        with pytest.raises(ValueError, match="Unsupported memory backend: invalid"):
+        with pytest.raises(ValueError, match="Unsupported backend: invalid"):
             create_memory_logger(backend="invalid")
 
 

@@ -161,6 +161,7 @@ Implementation Notes
 from typing import Any, Dict, Optional
 
 from .memory.base_logger import BaseMemoryLogger
+from .memory.kafka_logger import KafkaMemoryLogger
 from .memory.redis_logger import RedisMemoryLogger
 
 
@@ -226,8 +227,6 @@ def create_memory_logger(
             )
     """
     if backend.lower() == "redis":
-        from .memory.redis_logger import RedisMemoryLogger
-
         return RedisMemoryLogger(
             redis_url=redis_url,
             stream_key=stream_key,
@@ -235,8 +234,6 @@ def create_memory_logger(
             decay_config=decay_config,
         )
     elif backend.lower() == "kafka":
-        from .memory.kafka_logger import KafkaMemoryLogger
-
         return KafkaMemoryLogger(
             bootstrap_servers=bootstrap_servers,
             topic_prefix=topic_prefix,
