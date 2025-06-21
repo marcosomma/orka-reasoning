@@ -21,7 +21,10 @@ class MemoryReaderNode(BaseNode):
         self.limit = kwargs.get("limit", 10)
         self.namespace = kwargs.get("namespace", "default")
         self.similarity_threshold = kwargs.get("similarity_threshold", 0.6)
-        self.embedding_model = kwargs.get("embedding_model", None)
+        self.embedding_model = kwargs.get("embedding_model")
+
+        # Store agent-level decay configuration
+        self.decay_config = kwargs.get("decay_config", {})
 
         # Use environment variable for Redis URL
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
@@ -73,22 +76,24 @@ class MemoryReaderNode(BaseNode):
                     query_embedding = await self.embedder.encode(variation)
                     logger.info(f"Successfully encoded query: '{variation}'")
                 except Exception as e:
-                    logger.error(f"Error encoding query '{variation}': {str(e)}")
+                    logger.error(f"Error encoding query '{variation}': {e!s}")
                     continue
 
                 # Try vector search first
                 variation_memories = await self._vector_search(
-                    query_embedding, namespace, threshold=effective_threshold
+                    query_embedding,
+                    namespace,
+                    threshold=effective_threshold,
                 )
                 logger.info(
-                    f"Vector search returned {len(variation_memories)} results for '{variation}'"
+                    f"Vector search returned {len(variation_memories)} results for '{variation}'",
                 )
                 memories.extend(variation_memories)
 
                 # Try simple keyword search
                 keyword_memories = await self._keyword_search(namespace, variation)
                 logger.info(
-                    f"Keyword search returned {len(keyword_memories)} results for '{variation}'"
+                    f"Keyword search returned {len(keyword_memories)} results for '{variation}'",
                 )
                 memories.extend(keyword_memories)
 
@@ -100,21 +105,21 @@ class MemoryReaderNode(BaseNode):
                     threshold=effective_threshold,
                 )
                 logger.info(
-                    f"Stream search returned {len(stream_memories)} results for '{variation}'"
+                    f"Stream search returned {len(stream_memories)} results for '{variation}'",
                 )
                 memories.extend(stream_memories)
 
                 # If we found memories with this variation, don't keep trying others
                 if memories:
                     logger.info(
-                        f"Found memories with variation '{variation}', stopping search"
+                        f"Found memories with variation '{variation}', stopping search",
                     )
                     break
 
             # If still no memories, try a broader search across all streams
             if not memories:
                 logger.info(
-                    "No memories found in the specified namespace, trying all streams"
+                    "No memories found in the specified namespace, trying all streams",
                 )
                 for key in stream_keys:
                     decoded_key = key.decode() if isinstance(key, bytes) else key
@@ -131,12 +136,12 @@ class MemoryReaderNode(BaseNode):
                             )
                             if stream_memories:
                                 logger.info(
-                                    f"Found {len(stream_memories)} memories in alternative stream"
+                                    f"Found {len(stream_memories)} memories in alternative stream",
                                 )
                                 memories.extend(stream_memories)
                         except Exception as e:
                             logger.error(
-                                f"Error searching alternative stream: {str(e)}"
+                                f"Error searching alternative stream: {e!s}",
                             )
 
             # Deduplicate memories based on content
@@ -156,16 +161,16 @@ class MemoryReaderNode(BaseNode):
 
             if not filtered_memories and memories:
                 logger.warning(
-                    "No relevant memories found after filtering. Using all retrieved memories."
+                    "No relevant memories found after filtering. Using all retrieved memories.",
                 )
                 filtered_memories = memories
 
             logger.info(
-                f"Found {len(filtered_memories)} relevant memories for query: '{original_query}'"
+                f"Found {len(filtered_memories)} relevant memories for query: '{original_query}'",
             )
 
         except Exception as e:
-            logger.error(f"Error retrieving memories: {str(e)}")
+            logger.error(f"Error retrieving memories: {e!s}")
             filtered_memories = []
 
         # Return NONE if no memories found
@@ -252,9 +257,7 @@ class MemoryReaderNode(BaseNode):
                         content = await retry(self.redis.hget(key, "content"))
                         if content:
                             content_str = (
-                                content.decode()
-                                if isinstance(content, bytes)
-                                else content
+                                content.decode() if isinstance(content, bytes) else content
                             )
                             content_words = set(content_str.lower().split())
 
@@ -263,7 +266,7 @@ class MemoryReaderNode(BaseNode):
                             if overlap > 0:
                                 # Get metadata if available
                                 metadata_raw = await retry(
-                                    self.redis.hget(key, "metadata")
+                                    self.redis.hget(key, "metadata"),
                                 )
                                 metadata = {}
                                 if metadata_raw:
@@ -280,18 +283,16 @@ class MemoryReaderNode(BaseNode):
                                 # Add to results
                                 results.append(
                                     {
-                                        "id": key.decode()
-                                        if isinstance(key, bytes)
-                                        else key,
+                                        "id": key.decode() if isinstance(key, bytes) else key,
                                         "content": content_str,
                                         "metadata": metadata,
                                         "similarity": overlap / len(query_words),
                                         "match_type": "keyword",
-                                    }
+                                    },
                                 )
                 except Exception as e:
                     logger.error(
-                        f"Error processing key {key} in keyword search: {str(e)}"
+                        f"Error processing key {key} in keyword search: {e!s}",
                     )
 
             # Sort by similarity
@@ -301,7 +302,7 @@ class MemoryReaderNode(BaseNode):
             return results[: self.limit]
 
         except Exception as e:
-            logger.error(f"Error in keyword search: {str(e)}")
+            logger.error(f"Error in keyword search: {e!s}")
             return []
 
     async def _vector_search(self, query_embedding, namespace, threshold=None):
@@ -326,20 +327,19 @@ class MemoryReaderNode(BaseNode):
                             vector = from_bytes(vector_bytes)
                             # Calculate similarity
                             similarity = self._cosine_similarity(
-                                query_embedding, vector
+                                query_embedding,
+                                vector,
                             )
 
                             if similarity >= threshold:
                                 # Get content and metadata
                                 content = await retry(self.redis.hget(key, "content"))
                                 content_str = (
-                                    content.decode()
-                                    if isinstance(content, bytes)
-                                    else content
+                                    content.decode() if isinstance(content, bytes) else content
                                 )
 
                                 metadata_raw = await retry(
-                                    self.redis.hget(key, "metadata")
+                                    self.redis.hget(key, "metadata"),
                                 )
                                 metadata = {}
                                 if metadata_raw:
@@ -356,18 +356,16 @@ class MemoryReaderNode(BaseNode):
                                 # Add to results
                                 results.append(
                                     {
-                                        "id": key.decode()
-                                        if isinstance(key, bytes)
-                                        else key,
+                                        "id": key.decode() if isinstance(key, bytes) else key,
                                         "content": content_str,
                                         "metadata": metadata,
                                         "similarity": float(similarity),
                                         "match_type": "vector",
-                                    }
+                                    },
                                 )
                 except Exception as e:
                     logger.error(
-                        f"Error processing key {key} in vector search: {str(e)}"
+                        f"Error processing key {key} in vector search: {e!s}",
                     )
 
             # Sort by similarity
@@ -377,7 +375,7 @@ class MemoryReaderNode(BaseNode):
             return results[: self.limit]
 
         except Exception as e:
-            logger.error(f"Error in vector search: {str(e)}")
+            logger.error(f"Error in vector search: {e!s}")
             return []
 
     async def _stream_search(self, stream_key, query, query_embedding, threshold=None):
@@ -416,7 +414,7 @@ class MemoryReaderNode(BaseNode):
                     else:
                         # Extract query keywords (words longer than 3 characters)
                         query_words = set(
-                            [w for w in query_lower.split() if len(w) > 3]
+                            [w for w in query_lower.split() if len(w) > 3],
                         )
                         # If no substantial keywords, use all words
                         if not query_words:
@@ -434,11 +432,12 @@ class MemoryReaderNode(BaseNode):
                             try:
                                 content_embedding = await self.embedder.encode(content)
                                 similarity = self._cosine_similarity(
-                                    query_embedding, content_embedding
+                                    query_embedding,
+                                    content_embedding,
                                 )
                             except Exception as e:
                                 logger.error(
-                                    f"Error encoding content for similarity: {str(e)}"
+                                    f"Error encoding content for similarity: {e!s}",
                                 )
                                 similarity = 0
 
@@ -456,9 +455,7 @@ class MemoryReaderNode(BaseNode):
 
                         # Decode entry_id if needed
                         entry_id_str = (
-                            entry_id.decode()
-                            if isinstance(entry_id, bytes)
-                            else entry_id
+                            entry_id.decode() if isinstance(entry_id, bytes) else entry_id
                         )
 
                         memories.append(
@@ -470,10 +467,10 @@ class MemoryReaderNode(BaseNode):
                                 "ts": ts,
                                 "match_type": "stream",
                                 "stream_key": stream_key,
-                            }
+                            },
                         )
                 except Exception as e:
-                    logger.error(f"Error processing stream entry {entry_id}: {str(e)}")
+                    logger.error(f"Error processing stream entry {entry_id}: {e!s}")
 
             # Sort by similarity
             memories.sort(key=lambda x: x["similarity"], reverse=True)
@@ -482,7 +479,7 @@ class MemoryReaderNode(BaseNode):
             return memories[: self.limit]
 
         except Exception as e:
-            logger.error(f"Error in stream search: {str(e)}")
+            logger.error(f"Error in stream search: {e!s}")
             return []
 
     def _filter_relevant_memories(self, memories, query):
@@ -532,7 +529,7 @@ class MemoryReaderNode(BaseNode):
             # Ensure vectors have the same shape
             if vec1.shape != vec2.shape:
                 logger.warning(
-                    f"Vector shapes do not match: {vec1.shape} vs {vec2.shape}"
+                    f"Vector shapes do not match: {vec1.shape} vs {vec2.shape}",
                 )
                 # If different shapes, can't compute similarity
                 return 0
@@ -548,5 +545,5 @@ class MemoryReaderNode(BaseNode):
 
             return dot / (norm1 * norm2)
         except Exception as e:
-            logger.error(f"Error calculating cosine similarity: {str(e)}")
+            logger.error(f"Error calculating cosine similarity: {e!s}")
             return 0

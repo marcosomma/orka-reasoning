@@ -44,6 +44,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         stream_key: str = "orka:memory",
         synchronous_send: bool = False,
         debug_keep_previous_outputs: bool = False,
+        decay_config: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Initialize the Kafka memory logger.
@@ -54,8 +55,9 @@ class KafkaMemoryLogger(BaseMemoryLogger):
             stream_key: Key for the memory stream. Defaults to "orka:memory".
             synchronous_send: Whether to wait for message confirmation. Defaults to False for performance.
             debug_keep_previous_outputs: If True, keeps previous_outputs in log files for debugging.
+            decay_config: Configuration for memory decay functionality.
         """
-        super().__init__(stream_key, debug_keep_previous_outputs)
+        super().__init__(stream_key, debug_keep_previous_outputs, decay_config)
 
         # Configuration
         self.bootstrap_servers = bootstrap_servers or os.getenv(
@@ -170,8 +172,25 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         fork_group: Optional[str] = None,
         parent: Optional[str] = None,
         previous_outputs: Optional[Dict[str, Any]] = None,
+        agent_decay_config: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """Log an event to Kafka and in-memory storage."""
+        """
+        Log an event to Kafka.
+
+        Args:
+            agent_id: ID of the agent generating the event.
+            event_type: Type of the event.
+            payload: Event payload.
+            step: Step number in the orchestration.
+            run_id: ID of the orchestration run.
+            fork_group: ID of the fork group.
+            parent: ID of the parent event.
+            previous_outputs: Previous outputs from agents.
+            agent_decay_config: Agent-specific decay configuration (not implemented for Kafka yet).
+
+        Raises:
+            ValueError: If agent_id is missing.
+        """
         if not agent_id:
             raise ValueError("Event must contain 'agent_id'")
 
@@ -370,3 +389,62 @@ class KafkaMemoryLogger(BaseMemoryLogger):
     def __del__(self):
         """Cleanup on object deletion."""
         self.close()
+
+    def cleanup_expired_memories(self, dry_run: bool = False) -> Dict[str, Any]:
+        """
+        Clean up expired memory entries based on decay configuration.
+
+        Note: Full Kafka decay implementation will be added in Phase 2.
+        For now, this returns a placeholder response.
+
+        Args:
+            dry_run: If True, return what would be deleted without actually deleting
+
+        Returns:
+            Dictionary containing cleanup statistics
+        """
+        return {
+            "status": "kafka_decay_not_implemented",
+            "message": "Kafka memory decay will be implemented in Phase 2",
+            "deleted_count": 0,
+            "backend": "kafka",
+        }
+
+    def get_memory_stats(self) -> Dict[str, Any]:
+        """
+        Get memory usage statistics.
+
+        Note: Full Kafka stats implementation will be enhanced in Phase 2.
+        For now, this returns basic in-memory statistics.
+
+        Returns:
+            Dictionary containing memory statistics
+        """
+        try:
+            from datetime import datetime
+
+            stats = {
+                "timestamp": datetime.utcnow().isoformat(),
+                "backend": "kafka",
+                "decay_enabled": self.decay_config.get("enabled", False),
+                "total_entries": len(self.memory),
+                "entries_by_type": {},
+                "note": "Full Kafka statistics will be implemented in Phase 2",
+            }
+
+            # Count entries by event type from in-memory buffer
+            for entry in self.memory:
+                event_type = entry.get("event_type", "unknown")
+                stats["entries_by_type"][event_type] = (
+                    stats["entries_by_type"].get(event_type, 0) + 1
+                )
+
+            return stats
+
+        except Exception as e:
+            logger.error(f"Error getting Kafka memory statistics: {e}")
+            return {
+                "error": str(e),
+                "backend": "kafka",
+                "timestamp": datetime.utcnow().isoformat(),
+            }

@@ -134,8 +134,37 @@ class AgentFactory:
                 queue = cfg.get("queue", None)
                 namespace = cfg.get("namespace", "default")
 
+                # Extract agent-level decay configuration and merge with global config
+                agent_decay_config = cfg.get("decay", {})
+                merged_decay_config = {}
+
+                if hasattr(self, "memory") and hasattr(self.memory, "decay_config"):
+                    # Start with global decay config as base
+                    merged_decay_config = self.memory.decay_config.copy()
+
+                    if agent_decay_config:
+                        # Deep merge agent-specific decay config
+                        for key, value in agent_decay_config.items():
+                            if (
+                                key in merged_decay_config
+                                and isinstance(merged_decay_config[key], dict)
+                                and isinstance(value, dict)
+                            ):
+                                # Deep merge nested dictionaries
+                                merged_decay_config[key].update(value)
+                            else:
+                                # Direct override for non-dict values
+                                merged_decay_config[key] = value
+                else:
+                    # No global config available, use agent config as-is (with defaults)
+                    merged_decay_config = agent_decay_config
+
                 # Clean the config to remove any already processed fields
                 memory_cfg = clean_cfg.copy()
+                memory_cfg.pop(
+                    "decay",
+                    None,
+                )  # Remove decay from clean_cfg as it's handled separately
 
                 if operation == "write":
                     # Use memory writer node for write operations
@@ -148,6 +177,8 @@ class AgentFactory:
                         vector=vector_enabled,
                         key_template=cfg.get("key_template"),
                         metadata=cfg.get("metadata", {}),
+                        decay_config=merged_decay_config,
+                        memory_logger=self.memory,
                     )
                 else:  # default to read
                     # Use memory reader node for read operations
@@ -161,6 +192,7 @@ class AgentFactory:
                             "similarity_threshold",
                             0.6,
                         ),
+                        decay_config=merged_decay_config,
                     )
 
             # Special handling for search tools
