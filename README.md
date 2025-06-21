@@ -6,12 +6,11 @@
 
 [![Tests](https://github.com/marcosomma/orka-reasoning/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/marcosomma/orka-reasoning/actions/workflows/tests.yml)
 [![codecov](https://codecov.io/gh/marcosomma/orka-reasoning/branch/master/graph/badge.svg?token=V91X4WGBBZ)](https://codecov.io/gh/marcosomma/orka-reasoning)
-![PyPI - License](https://img.shields.io/pypi/l/orka-reasoning?color=blue)
+![PyPI - License](https://img.shields.io/pypi/l/orka-reasoning?color=blue)[![orka-reasoning Package Age](https://assets.piptrends.com/get-age-badge/orka-reasoning.svg 'orka-reasoning Package Age by pip Trends')](https://piptrends.com/package/orka-reasoning)
 
-[![PyPI - Downloads](https://img.shields.io/pypi/dd/orka-reasoning?label=downloads&color=green&link=https%3A%2F%2Fpypistats.org%2Fpackages%2Forka-reasoning)](https://pypistats.org/packages/orka-reasoning)
-[![PyPI - Downloads](https://img.shields.io/pypi/dw/orka-reasoning?label=downloads&color=green&link=https%3A%2F%2Fpypistats.org%2Fpackages%2Forka-reasoning)](https://pypistats.org/packages/orka-reasoning)
-[![PyPI - Downloads](https://img.shields.io/pypi/dm/orka-reasoning?label=downloads&color=green&link=https%3A%2F%2Fpypistats.org%2Fpackages%2Forka-reasoning)](https://pypistats.org/packages/orka-reasoning)
-[![Pepy Total Downloads](https://img.shields.io/pepy/dt/orka-reasoning?label=Total%20Download&color=green&link=https%3A%2F%2Fpypistats.org%2Fpackages%2Forka-reasoning)](https://pypistats.org/packages/orka-reasoning)
+[![orka-reasoning Average Daily Downloads](https://assets.piptrends.com/get-average-downloads-badge/orka-reasoning.svg 'orka-reasoning Average Daily Downloads by pip Trends')](https://piptrends.com/package/orka-reasoning)[![orka-reasoning Downloads Last Week](https://assets.piptrends.com/get-last-week-downloads-badge/orka-reasoning.svg 'orka-reasoning Downloads Last Week by pip Trends')](https://piptrends.com/package/orka-reasoning)[![orka-reasoning Downloads Last Week](https://assets.piptrends.com/get-last-week-downloads-badge/orka-reasoning.svg 'orka-reasoning Downloads Last Week by pip Trends')](https://piptrends.com/package/orka-reasoning)
+
+[![PyPI Downloads](https://static.pepy.tech/badge/orka-reasoning)](https://pepy.tech/projects/orka-reasoning)
 
 [![PyPi](https://img.shields.io/badge/pypi-%23ececec.svg?style=for-the-badge&logo=pypi&logoColor=1f73b7)](https://pypi.org/project/orka-reasoning/) [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://hub.docker.com/r/marcosomma/orka-ui)
 [![orkacore](https://img.shields.io/badge/orkacore-.com-green?labelColor=blue&style=for-the-badge&link=https://orkacore.com/)](https://orkacore.com/)
