@@ -23,7 +23,7 @@ and in-memory storage for Redis-like operations.
 import json
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Union
 
 from .base_logger import BaseMemoryLogger
@@ -186,7 +186,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
             fork_group: ID of the fork group.
             parent: ID of the parent event.
             previous_outputs: Previous outputs from agents.
-            agent_decay_config: Agent-specific decay configuration (not implemented for Kafka yet).
+            agent_decay_config: Agent-specific decay configuration overrides.
 
         Raises:
             ValueError: If agent_id is missing.
@@ -194,17 +194,82 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         if not agent_id:
             raise ValueError("Event must contain 'agent_id'")
 
-        # Create event record
+        # Create a copy of the payload to avoid modifying the original
+        safe_payload = self._sanitize_payload(payload)
+
+        # Determine which decay config to use
+        effective_decay_config = self.decay_config.copy()
+        if agent_decay_config:
+            # Merge agent-specific decay config with global config
+            effective_decay_config.update(agent_decay_config)
+
+        # Calculate decay metadata if decay is enabled (globally or for this agent)
+        decay_metadata = {}
+        decay_enabled = self.decay_config.get("enabled", False) or (
+            agent_decay_config and agent_decay_config.get("enabled", False)
+        )
+
+        if decay_enabled:
+            # Use effective config for calculations
+            old_config = self.decay_config
+            self.decay_config = effective_decay_config
+
+            try:
+                importance_score = self._calculate_importance_score(
+                    event_type,
+                    agent_id,
+                    safe_payload,
+                )
+
+                # Check for agent-specific default memory type first
+                if "default_long_term" in effective_decay_config:
+                    if effective_decay_config["default_long_term"]:
+                        memory_type = "long_term"
+                    else:
+                        memory_type = "short_term"
+                else:
+                    # Fall back to standard classification
+                    memory_type = self._classify_memory_type(event_type, importance_score)
+
+                # Calculate expiration time
+                current_time = datetime.utcnow()
+                if memory_type == "short_term":
+                    expire_hours = effective_decay_config.get(
+                        "short_term_hours",
+                        effective_decay_config["default_short_term_hours"],
+                    )
+                else:
+                    expire_hours = effective_decay_config.get(
+                        "long_term_hours",
+                        effective_decay_config["default_long_term_hours"],
+                    )
+
+                expire_time = current_time + timedelta(hours=expire_hours)
+
+                decay_metadata = {
+                    "orka_importance_score": str(importance_score),
+                    "orka_memory_type": memory_type,
+                    "orka_expire_time": expire_time.isoformat(),
+                    "orka_created_time": current_time.isoformat(),
+                }
+            finally:
+                # Restore original config
+                self.decay_config = old_config
+
+        # Create event record with decay metadata
         event = {
             "agent_id": agent_id,
             "event_type": event_type,
-            "payload": self._sanitize_payload(payload),
+            "payload": safe_payload,
             "step": step,
             "run_id": run_id,
             "fork_group": fork_group,
             "parent": parent,
             "timestamp": datetime.utcnow().isoformat(),
         }
+
+        # Add decay metadata to the event
+        event.update(decay_metadata)
 
         # Store in memory
         self.memory.append(event)
@@ -394,8 +459,9 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         """
         Clean up expired memory entries based on decay configuration.
 
-        Note: Full Kafka decay implementation will be added in Phase 2.
-        For now, this returns a placeholder response.
+        For Kafka backend, this cleans up the in-memory storage. In a production
+        Kafka setup, you would typically use Kafka's built-in retention policies
+        for topic-level cleanup.
 
         Args:
             dry_run: If True, return what would be deleted without actually deleting
@@ -403,19 +469,76 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         Returns:
             Dictionary containing cleanup statistics
         """
-        return {
-            "status": "kafka_decay_not_implemented",
-            "message": "Kafka memory decay will be implemented in Phase 2",
-            "deleted_count": 0,
-            "backend": "kafka",
-        }
+        try:
+            from datetime import datetime
+
+            current_time = datetime.utcnow()
+            stats = {
+                "timestamp": current_time.isoformat(),
+                "backend": "kafka",
+                "decay_enabled": self.decay_config.get("enabled", False),
+                "deleted_count": 0,
+                "error_count": 0,
+                "deleted_entries": [],
+                "total_entries_before": len(self.memory),
+                "total_entries_after": 0,
+            }
+
+            if not self.decay_config.get("enabled", False):
+                stats["message"] = "Memory decay is disabled"
+                stats["total_entries_after"] = len(self.memory)
+                return stats
+
+            # Find expired entries
+            expired_indices = []
+            for i, entry in enumerate(self.memory):
+                expire_time_str = entry.get("orka_expire_time")
+                if expire_time_str:
+                    try:
+                        expire_time = datetime.fromisoformat(expire_time_str)
+                        if current_time > expire_time:
+                            # Entry has expired
+                            entry_info = {
+                                "index": i,
+                                "agent_id": entry.get("agent_id", "unknown"),
+                                "event_type": entry.get("event_type", "unknown"),
+                                "expire_time": expire_time_str,
+                                "memory_type": entry.get("orka_memory_type", "unknown"),
+                                "run_id": entry.get("run_id", "unknown"),
+                            }
+                            expired_indices.append(i)
+                            stats["deleted_entries"].append(entry_info)
+                            stats["deleted_count"] += 1
+
+                    except (ValueError, TypeError) as e:
+                        logger.warning(f"Invalid expire_time format in entry {i}: {e}")
+                        stats["error_count"] += 1
+
+            # Actually remove expired entries if not dry run
+            if not dry_run and expired_indices:
+                # Remove entries in reverse order to maintain indices
+                for i in reversed(expired_indices):
+                    del self.memory[i]
+                logger.info(f"Cleaned up {len(expired_indices)} expired Kafka memory entries")
+
+            stats["total_entries_after"] = len(self.memory)
+            return stats
+
+        except Exception as e:
+            logger.error(f"Error during Kafka memory cleanup: {e}")
+            return {
+                "error": str(e),
+                "backend": "kafka",
+                "timestamp": datetime.utcnow().isoformat(),
+                "deleted_count": 0,
+            }
 
     def get_memory_stats(self) -> Dict[str, Any]:
         """
         Get memory usage statistics.
 
-        Note: Full Kafka stats implementation will be enhanced in Phase 2.
-        For now, this returns basic in-memory statistics.
+        Returns comprehensive memory statistics including decay information
+        for the Kafka backend.
 
         Returns:
             Dictionary containing memory statistics
@@ -423,21 +546,80 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         try:
             from datetime import datetime
 
+            current_time = datetime.utcnow()
             stats = {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": current_time.isoformat(),
                 "backend": "kafka",
                 "decay_enabled": self.decay_config.get("enabled", False),
-                "total_entries": len(self.memory),
+                "total_entries": 0,  # Will be calculated as active entries only
                 "entries_by_type": {},
-                "note": "Full Kafka statistics will be implemented in Phase 2",
+                "entries_by_memory_type": {"short_term": 0, "long_term": 0, "unknown": 0},
+                "expired_entries": 0,
+                "entries_detail": [],
             }
 
-            # Count entries by event type from in-memory buffer
+            # Process all entries
+            active_entries = 0
+            expired_entries = 0
+
             for entry in self.memory:
-                event_type = entry.get("event_type", "unknown")
-                stats["entries_by_type"][event_type] = (
-                    stats["entries_by_type"].get(event_type, 0) + 1
-                )
+                # Check if entry is expired
+                is_expired = False
+                expire_time_str = entry.get("orka_expire_time")
+                if expire_time_str:
+                    try:
+                        expire_time = datetime.fromisoformat(expire_time_str)
+                        if current_time > expire_time:
+                            is_expired = True
+                            expired_entries += 1
+                        else:
+                            active_entries += 1
+                    except (ValueError, TypeError):
+                        # If we can't parse expire time, consider it active
+                        active_entries += 1
+                else:
+                    # No expire time means it's active (no decay metadata)
+                    active_entries += 1
+
+                # Only count active entries in main statistics
+                if not is_expired:
+                    # Count by event type
+                    event_type = entry.get("event_type", "unknown")
+                    stats["entries_by_type"][event_type] = (
+                        stats["entries_by_type"].get(event_type, 0) + 1
+                    )
+
+                    # Count by memory type
+                    memory_type = entry.get("orka_memory_type", "unknown")
+                    if memory_type in stats["entries_by_memory_type"]:
+                        stats["entries_by_memory_type"][memory_type] += 1
+
+                # Add entry details for debugging
+                entry_detail = {
+                    "agent_id": entry.get("agent_id", "unknown"),
+                    "event_type": entry.get("event_type", "unknown"),
+                    "memory_type": entry.get("orka_memory_type", "unknown"),
+                    "importance_score": entry.get("orka_importance_score", "unknown"),
+                    "created_time": entry.get("orka_created_time", "unknown"),
+                    "expire_time": expire_time_str or "no_expiry",
+                    "is_expired": is_expired,
+                    "run_id": entry.get("run_id", "unknown"),
+                }
+                stats["entries_detail"].append(entry_detail)
+
+            stats["total_entries"] = active_entries
+            stats["expired_entries"] = expired_entries
+
+            # Add decay configuration info if enabled
+            if self.decay_config.get("enabled", False):
+                stats["decay_config"] = {
+                    "short_term_hours": self.decay_config["default_short_term_hours"],
+                    "long_term_hours": self.decay_config["default_long_term_hours"],
+                    "check_interval_minutes": self.decay_config["check_interval_minutes"],
+                    "last_decay_check": self._last_decay_check.isoformat()
+                    if hasattr(self, "_last_decay_check") and self._last_decay_check
+                    else None,
+                }
 
             return stats
 

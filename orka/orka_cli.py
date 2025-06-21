@@ -109,7 +109,7 @@ class Event(TypedDict):
 
 
 def setup_logging(verbose: bool = False):
-    """Set up logging configuration."""
+    """Setup logging configuration."""
     level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(
         level=level,
@@ -173,10 +173,8 @@ async def run_cli_entrypoint(
 def memory_stats(args):
     """Display memory usage statistics."""
     try:
-        # Get backend from environment or args
-        backend = args.backend or os.getenv("ORKA_MEMORY_BACKEND", "redis")
-
-        # Create memory logger
+        # Get backend from args or environment
+        backend = getattr(args, "backend", None) or os.getenv("ORKA_MEMORY_BACKEND", "redis")
         memory = create_memory_logger(backend=backend)
 
         # Get statistics
@@ -184,7 +182,8 @@ def memory_stats(args):
 
         # Display results
         if args.json:
-            print(json.dumps(stats, indent=2))
+            output = {"stats": stats}
+            print(json.dumps(output, indent=2))
         else:
             print("=== OrKa Memory Statistics ===")
             print(f"Backend: {stats.get('backend', backend)}")
@@ -222,10 +221,8 @@ def memory_stats(args):
 def memory_cleanup(args):
     """Clean up expired memory entries."""
     try:
-        # Get backend from environment or args
-        backend = args.backend or os.getenv("ORKA_MEMORY_BACKEND", "redis")
-
-        # Create memory logger
+        # Get backend from args or environment
+        backend = getattr(args, "backend", None) or os.getenv("ORKA_MEMORY_BACKEND", "redis")
         memory = create_memory_logger(backend=backend)
 
         # Perform cleanup
@@ -238,8 +235,10 @@ def memory_cleanup(args):
 
         # Display results
         if args.json:
-            print(json.dumps(result, indent=2))
+            output = {"cleanup_result": result}
+            print(json.dumps(output, indent=2))
         else:
+            print(f"Backend: {backend}")
             print(f"Status: {result.get('status', 'completed')}")
             print(f"Deleted Entries: {result.get('deleted_count', 0)}")
             print(f"Streams Processed: {result.get('streams_processed', 0)}")
@@ -254,7 +253,13 @@ def memory_cleanup(args):
             if args.verbose and result.get("deleted_entries"):
                 print("\nDeleted Entries:")
                 for entry in result["deleted_entries"][:10]:  # Show first 10
-                    print(f"  {entry['stream']}: {entry['agent_id']} - {entry['event_type']}")
+                    entry_desc = (
+                        f"{entry.get('agent_id', 'unknown')} - {entry.get('event_type', 'unknown')}"
+                    )
+                    if "stream" in entry:
+                        print(f"  {entry['stream']}: {entry_desc}")
+                    else:
+                        print(f"  {entry_desc}")
                 if len(result["deleted_entries"]) > 10:
                     print(f"  ... and {len(result['deleted_entries']) - 10} more")
 
@@ -335,10 +340,29 @@ async def run_orchestrator(args):
 def memory_watch(args):
     """Watch memory statistics in real-time with rich terminal UI."""
     try:
-        # Get backend from environment or args
-        backend = args.backend or os.getenv("ORKA_MEMORY_BACKEND", "redis")
+        # Get backend from args or environment
+        backend = getattr(args, "backend", None) or os.getenv("ORKA_MEMORY_BACKEND", "redis")
 
-        # Create memory logger
+        # Check for Kafka backend limitation
+        if backend.lower() == "kafka":
+            print("🚫 Kafka Memory Watch Limitation")
+            print("=" * 50)
+            print("❌ Cannot observe Kafka memory across different sessions/processes.")
+            print("📋 Kafka memory logger stores data in-memory per Python process,")
+            print("   so memory entries created by orchestrator runs are not visible")
+            print("   to separate CLI processes.")
+            print()
+            print("💡 Recommended Solutions:")
+            print("   1. Use Redis backend for development monitoring:")
+            print('      $env:ORKA_MEMORY_BACKEND="redis"; python -m orka.orka_cli memory watch')
+            print(
+                "   2. Redis provides identical decay functionality with cross-session visibility",
+            )
+            print("   3. For production Kafka usage, implement monitoring within your orchestrator")
+            print()
+            print("✅ Both Redis and Kafka backends have identical TTL/decay functionality!")
+            return 1
+
         memory = create_memory_logger(backend=backend)
 
         if args.json:
