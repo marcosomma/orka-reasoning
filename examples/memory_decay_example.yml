@@ -6,14 +6,10 @@ orchestrator:
   memory:
     decay:
       enabled: true
-      default_short_term_hours: 0.1 # 6 minutes for demo
-      default_long_term_hours: 0.5 # 30 hours for demo
-      check_interval_minutes: 3 # Check every 10 minutes for demo
-      memory_type_rules:
-        long_term_events:
-          ["success", "completion", "write", "result", "final_answer"]
-        short_term_events:
-          ["debug", "processing", "start", "progress", "intermediate"]
+      default_short_term_hours: 0.025 # 1.5 minutes for demo
+      default_long_term_hours: 0.1 # 6 hours for demo
+      check_interval_minutes: 1 # Check every minute for demo
+      # Remove global memory_type_rules to let agent-specific settings work
       importance_rules:
         base_score: 0.6
         event_type_boosts:
@@ -32,19 +28,24 @@ orchestrator:
     - memory-writer-long
 
 agents:
-  # Read existing memories (no specific decay config - uses global defaults)
+  # Read existing memories (no memory creation - just retrieval)
   - id: memory-reader
     type: memory
     queue: orka:memory-reader
     config:
       operation: read
+      # Disable memory logging for this agent to prevent extra entries
+      disable_memory_logging: true
     namespace: demo_knowledge
     prompt: "Search for any existing knowledge about: {{ input }}"
 
-  # Classify the importance and type of the input
+  # Classify the importance and type of the input (no memory creation)
   - id: classifier
     type: openai-classification
     queue: orka:classifier
+    # Disable memory logging for this agent to prevent extra entries
+    config:
+      disable_memory_logging: true
     prompt: >
       Classify the following query based on its importance and expected lifespan:
       Query: {{ input }}
@@ -70,8 +71,8 @@ agents:
     decay:
       enabled: true
       default_long_term: false # Force short-term classification
-      short_term_hours: 0.1 # 6 minutes retention
-      long_term_hours: 0.5 # 30 minutes max even for long-term
+      short_term_hours: 0.025 # 1.5 minutes retention
+      long_term_hours: 0.1 # 30 minutes max even for long-term
       importance_rules:
         base_score: 0.3 # Lower base score for this agent
         event_type_boosts:
@@ -100,8 +101,8 @@ agents:
     decay:
       enabled: true
       default_long_term: true # Force long-term classification
-      short_term_hours: 1.0 # Even short-term lasts longer
-      long_term_hours: 4.0 # 4 hours retention
+      short_term_hours: 0.025 # 1.5 minutes retention
+      long_term_hours: .1 # 4 hours retention
       memory_type_rules:
         long_term_events: ["write", "result", "completion"] # More aggressive long-term classification
         short_term_events: ["debug"] # Only debug is short-term

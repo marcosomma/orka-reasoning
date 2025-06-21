@@ -42,6 +42,7 @@ Every step is logged, inspectable, and overrideable. OrKa doesn't hide the proce
 ✅ Compatible with local or remote LLMs (via LiteLLM)  
 ✅ Roadmap for visual orchestration via Tiamat-GenAI
 ✅ **Modular Architecture (v0.6.4+)** - Refactored core components for better maintainability
+✅ **Memory Decay System (v0.6.5+)** - Smart memory management with short-term and long-term retention
 
 ---
 

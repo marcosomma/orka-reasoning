@@ -345,7 +345,7 @@ def memory_watch(args):
             # JSON mode - simple output without rich
             return _memory_watch_json(memory, backend, args)
 
-        # Try to use rich for better terminal UI
+        # Rich-based interface
         try:
             from rich import box
             from rich.columns import Columns
@@ -353,7 +353,6 @@ def memory_watch(args):
             from rich.layout import Layout
             from rich.live import Live
             from rich.panel import Panel
-            from rich.progress import BarColumn, Progress, TextColumn
             from rich.table import Table
             from rich.text import Text
 
@@ -426,7 +425,7 @@ def memory_watch(args):
                 else:
                     main_stats.add_row("🧠 Memory:", "[dim]No entries[/dim]", "", "")
 
-                # Create entry types table - optimized for long lists
+                # Create entry types table - optimized for long lists with stable sizing
                 entries_table = Table(title="Entries by Type", box=box.ROUNDED, show_lines=False)
                 entries_table.add_column("Type", style="cyan", no_wrap=True, ratio=2)
                 entries_table.add_column("Count", justify="right", style="magenta", width=6)
@@ -451,10 +450,19 @@ def memory_watch(args):
                             str(count),
                             f"[green]{bar}[/green] {percentage:.1f}%",
                         )
+
+                    # Add padding rows to maintain consistent height
+                    current_rows = len(type_items)
+                    min_rows = 3
+                    for _ in range(max(0, min_rows - current_rows)):
+                        entries_table.add_row("", "", "")
                 else:
                     entries_table.add_row("[dim]No entries[/dim]", "[dim]0[/dim]", "[dim]N/A[/dim]")
+                    # Add padding for consistent height
+                    for _ in range(2):
+                        entries_table.add_row("", "", "")
 
-                # Create memory types table - optimized layout
+                # Create memory types table - optimized layout with stable sizing
                 memory_table = Table(title="Memory Types", box=box.ROUNDED, show_lines=False)
                 memory_table.add_column("Type", style="cyan", ratio=2)
                 memory_table.add_column("Count", justify="right", style="magenta", width=6)
@@ -469,6 +477,7 @@ def memory_watch(args):
                         key=lambda x: (-x[1], x[0]),  # Sort by count desc, then name asc
                     )
 
+                    rows_added = 0
                     for memory_type, count in sorted_memory_types:
                         if count > 0:  # Only show types with actual entries
                             if memory_type == "short_term":
@@ -479,6 +488,12 @@ def memory_watch(args):
                                 status = "[red]Unknown[/red]"
 
                             memory_table.add_row(memory_type, str(count), status)
+                            rows_added += 1
+
+                    # Add padding rows to maintain consistent height
+                    min_rows = 3
+                    for _ in range(max(0, min_rows - rows_added)):
+                        memory_table.add_row("", "", "")
                 else:
                     # Only add placeholder when we truly have no data
                     memory_table.add_row(
@@ -486,6 +501,9 @@ def memory_watch(args):
                         "[dim]0[/dim]",
                         "[dim]N/A[/dim]",
                     )
+                    # Add padding for consistent height
+                    for _ in range(2):
+                        memory_table.add_row("", "", "")
 
                 # Create layout structure - make it dynamic and content-aware
                 # Adjust ratios based on content size
@@ -497,28 +515,13 @@ def memory_watch(args):
                 # Use compact mode if requested or if there are many entries
                 is_compact = getattr(args, "compact", False) or entry_count > 6
 
-                if is_compact:
-                    # Compact mode: less space for stats, more for tables
-                    stats_ratio = 1
-                    tables_ratio = 5
-                    stats_min_size = 4
-                else:
-                    # Normal mode: balanced layout
-                    stats_ratio = 1
-                    tables_ratio = 3
-                    stats_min_size = 6
-
+                # Fixed layout to prevent jumping - use absolute sizes
                 layout.split_column(
                     Layout(Panel(header_text, style="bold blue"), size=3),
-                    Layout(
-                        Panel(main_stats, title="Statistics", style="green"),
-                        ratio=stats_ratio,
-                        minimum_size=stats_min_size,
-                    ),
+                    Layout(Panel(main_stats, title="Statistics", style="green"), size=6),
                     Layout(
                         Columns([entries_table, memory_table], equal=True),
-                        ratio=tables_ratio,  # Dynamic ratio based on content
-                        minimum_size=8,  # Ensure minimum visibility
+                        size=15,  # Fixed size to prevent jumping
                     ),
                     Layout(
                         Panel(
@@ -531,21 +534,46 @@ def memory_watch(args):
 
                 return layout
 
-            # Use Rich Live to update display
-            with Live(
-                create_display(),
-                refresh_per_second=1 / args.interval,
-                console=console,
-            ) as live:
+            # Alternative approach: Clear screen and redraw instead of Live
+            if args.no_clear:
+                # Use Live display for no-clear mode
+                try:
+                    with Live(
+                        create_display(),
+                        refresh_per_second=0.3,  # Slower refresh
+                        console=console,
+                        screen=True,
+                        auto_refresh=True,
+                    ) as live:
+                        try:
+                            while True:
+                                time.sleep(args.interval)
+                                live.update(create_display())
+                        except KeyboardInterrupt:
+                            pass
+
+                    console.print("\n🛑 [bold red]OrKa Memory Watch stopped by user.[/bold red]")
+                    return 0
+                except Exception as e:
+                    console.print(f"❌ [red]Rich display error: {e}[/red]")
+                    return _memory_watch_simple(memory, backend, args)
+            else:
+                # Use clear screen approach to eliminate jumping
                 try:
                     while True:
+                        # Clear screen
+                        if os.name == "nt":  # Windows
+                            os.system("cls")
+                        else:  # Unix/Linux/Mac
+                            os.system("clear")
+
+                        # Render the display
+                        console.print(create_display())
+
+                        # Wait for next refresh
                         time.sleep(args.interval)
-                        live.update(create_display())
                 except KeyboardInterrupt:
                     pass
-
-            console.print("\n🛑 [bold red]OrKa Memory Watch stopped by user.[/bold red]")
-            return 0
 
         except ImportError:
             console.print("❌ [yellow]Rich library not available. Using simple mode.[/yellow]")

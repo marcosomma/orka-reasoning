@@ -3,6 +3,56 @@
 
 ---
 
+## [0.6.5] · 2025-01-29
+### Added
+* **Memory Decay System - Intelligent Memory Management**
+  * **Automatic Memory Classification** - Smart classification of memory entries as short-term or long-term based on importance and event type
+  * **Agent-Level Decay Configuration** - Per-agent decay settings that override global configuration for fine-grained control
+  * **Configurable Retention Policies** - Separate retention periods for short-term and long-term memories with hour-based precision
+  * **Importance Scoring Algorithm** - Dynamic importance calculation based on event types, agent types, and payload content
+  * **Background Cleanup Scheduler** - Automatic cleanup of expired memories with configurable check intervals
+  * **Memory Type Rules Engine** - Configurable rules for classifying events as long-term or short-term based on event types
+  * **Decay Metadata Tracking** - Comprehensive metadata including importance scores, memory types, creation time, and expiration time
+* **Enhanced CLI Memory Management Interface**
+  * **Real-time Memory Monitoring** - `orka memory watch` command with professional dashboard using Rich library
+  * **Memory Statistics** - `orka memory stats` command showing detailed memory usage and decay configuration
+  * **Manual Cleanup** - `orka memory cleanup` command for on-demand expired memory removal
+  * **Configuration Display** - `orka memory configure` command showing current decay settings and environment variables
+  * **Adaptive Layout** - Compact mode and dynamic sizing for different workflow complexities
+  * **Color-coded Memory Types** - Visual distinction between short-term (🔥), long-term (💾), and unknown (❓) memories
+* **Advanced Memory Configuration Options**
+  * **Global Decay Configuration** - Orchestrator-level settings for default retention periods and importance rules
+  * **Agent-Specific Overrides** - Individual agent decay settings that merge with global configuration
+  * **Environment Variable Support** - Full configuration via environment variables for deployment flexibility
+  * **Memory Type Forcing** - `default_long_term` setting to force agent memories into specific retention categories
+  * **Flexible Time Configuration** - Support for fractional hours (e.g., 0.025 hours = 1.5 minutes) for testing and fine-tuning
+### Changed
+* **Memory Logger Architecture Enhancement**
+  * **Decay-Aware Logging** - All memory loggers now support decay metadata and agent-specific configuration
+  * **Deep Configuration Merging** - Intelligent merging of global and agent-level decay settings
+  * **Enabled by Default** - Memory decay now enabled by default for better memory management
+  * **Backward Compatibility** - Existing configurations continue to work without modification
+* **Agent Factory Integration**
+  * **Automatic Decay Injection** - Agent factory automatically extracts and injects decay configuration into memory nodes
+  * **Memory Logger Passing** - Memory writer nodes now receive memory logger instances for decay-aware storage
+  * **Configuration Validation** - Enhanced validation of decay configuration parameters
+### Fixed
+* **Memory Writer Node Integration**
+  * **Proper Decay Application** - Memory writer nodes now use memory logger for decay-aware storage instead of direct Redis writes
+  * **Agent-Level Configuration Support** - Fixed agent-specific decay settings not being applied to memory entries
+  * **Memory Type Classification** - Corrected memory type classification to respect agent-level `default_long_term` settings
+* **Statistics Accuracy**
+  * **Active Entry Counting** - Memory statistics now correctly count only active (non-expired) entries
+  * **Expired Entry Tracking** - Separate tracking of expired entries without inflating active counts
+  * **Memory Type Distribution** - Accurate distribution counts for short-term, long-term, and unknown memory types
+### Technical Details
+* **Decay Algorithm Implementation** - Sophisticated importance scoring with configurable boost factors for different event and agent types
+* **Thread-Safe Background Processing** - Daemon thread scheduler for automatic cleanup with proper shutdown handling
+* **Rich UI Integration** - Professional terminal interface with live updates, progress bars, and adaptive layouts
+* **Cross-Platform Compatibility** - Full Windows, macOS, and Linux support with fallback modes for terminal limitations
+* **Comprehensive Testing** - Extensive test coverage for decay functionality, CLI commands, and edge cases
+* **Performance Optimization** - Efficient memory scanning and cleanup with minimal impact on orchestration performance
+
 ## [0.6.4] · 2025-01-28
 ### Changed
 * **Major Architectural Refactoring - Monolithic File Decomposition**

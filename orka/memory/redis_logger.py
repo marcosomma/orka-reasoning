@@ -656,40 +656,51 @@ class RedisMemoryLogger(BaseMemoryLogger):
                                 "unknown": 0,
                             },
                             "expired_entries": 0,
+                            "active_entries": 0,  # Track active entries separately
                         }
 
                         stats["total_streams"] += 1
-                        stats["total_entries"] += len(entries)
+                        # Don't count total entries here - we'll count active ones below
 
                         for entry_id, entry_data in entries:
-                            # Count by event type
-                            event_type = entry_data.get(b"event_type", b"unknown").decode()
-                            stream_stats["entries_by_type"][event_type] = (
-                                stream_stats["entries_by_type"].get(event_type, 0) + 1
-                            )
-                            stats["entries_by_type"][event_type] = (
-                                stats["entries_by_type"].get(event_type, 0) + 1
-                            )
-
-                            # Count by memory type
-                            memory_type = entry_data.get(b"orka_memory_type", b"unknown").decode()
-                            if memory_type in stream_stats["entries_by_memory_type"]:
-                                stream_stats["entries_by_memory_type"][memory_type] += 1
-                                stats["entries_by_memory_type"][memory_type] += 1
-                            else:
-                                stream_stats["entries_by_memory_type"]["unknown"] += 1
-                                stats["entries_by_memory_type"]["unknown"] += 1
-
-                            # Check if expired
+                            # Check if expired first
+                            is_expired = False
                             expire_time_str = entry_data.get(b"orka_expire_time")
                             if expire_time_str:
                                 try:
                                     expire_time = datetime.fromisoformat(expire_time_str.decode())
                                     if current_time > expire_time:
+                                        is_expired = True
                                         stream_stats["expired_entries"] += 1
                                         stats["expired_entries"] += 1
                                 except (ValueError, TypeError):
                                     pass  # Skip invalid dates
+
+                            # Only count non-expired entries in the main statistics
+                            if not is_expired:
+                                stream_stats["active_entries"] += 1
+                                stats["total_entries"] += 1
+
+                                # Count by event type
+                                event_type = entry_data.get(b"event_type", b"unknown").decode()
+                                stream_stats["entries_by_type"][event_type] = (
+                                    stream_stats["entries_by_type"].get(event_type, 0) + 1
+                                )
+                                stats["entries_by_type"][event_type] = (
+                                    stats["entries_by_type"].get(event_type, 0) + 1
+                                )
+
+                                # Count by memory type
+                                memory_type = entry_data.get(
+                                    b"orka_memory_type",
+                                    b"unknown",
+                                ).decode()
+                                if memory_type in stream_stats["entries_by_memory_type"]:
+                                    stream_stats["entries_by_memory_type"][memory_type] += 1
+                                    stats["entries_by_memory_type"][memory_type] += 1
+                                else:
+                                    stream_stats["entries_by_memory_type"]["unknown"] += 1
+                                    stats["entries_by_memory_type"]["unknown"] += 1
 
                         stats["streams_detail"].append(stream_stats)
 
