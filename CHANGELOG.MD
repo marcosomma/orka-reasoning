@@ -13,6 +13,14 @@
   * **Background Cleanup Scheduler** - Automatic cleanup of expired memories with configurable check intervals
   * **Memory Type Rules Engine** - Configurable rules for classifying events as long-term or short-term based on event types
   * **Decay Metadata Tracking** - Comprehensive metadata including importance scores, memory types, creation time, and expiration time
+* **Enhanced Memory Reader System - Advanced Context-Aware Search**
+  * **Context-Enhanced Search** - Memory reader now uses conversation history and previous outputs for more relevant memory retrieval
+  * **Hybrid Scoring Algorithm** - Combines semantic similarity, keyword matching, context overlap, and temporal decay for optimal relevance ranking
+  * **Enhanced Query Variations** - Intelligent generation of query variations using entity extraction and context keywords for broader search coverage
+  * **Temporal Ranking** - Time-based scoring that prioritizes recent memories while maintaining relevance to older important memories
+  * **Advanced Filtering** - Multi-criteria filtering with configurable thresholds for semantic similarity, keyword matching, and context relevance
+  * **Deterministic Search Results** - Consistent and reproducible search results with proper handling of edge cases and timestamp variations
+  * **Backward Compatibility** - Enhanced features are opt-in with full compatibility for existing memory reader configurations
 * **Enhanced CLI Memory Management Interface**
   * **Real-time Memory Monitoring** - `orka memory watch` command with professional dashboard using Rich library
   * **Memory Statistics** - `orka memory stats` command showing detailed memory usage and decay configuration
@@ -32,6 +40,11 @@
   * **Deep Configuration Merging** - Intelligent merging of global and agent-level decay settings
   * **Enabled by Default** - Memory decay now enabled by default for better memory management
   * **Backward Compatibility** - Existing configurations continue to work without modification
+* **Memory Reader Node Improvements**
+  * **Enhanced Search Capabilities** - Memory reader now supports context-aware search with conversation history integration
+  * **Improved Relevance Scoring** - Advanced hybrid scoring combining multiple relevance factors for better memory retrieval
+  * **Configurable Search Parameters** - New configuration options for context weight, temporal weight, and search thresholds
+  * **Performance Optimization** - More efficient memory scanning and relevance calculation for faster search results
 * **Agent Factory Integration**
   * **Automatic Decay Injection** - Agent factory automatically extracts and injects decay configuration into memory nodes
   * **Memory Logger Passing** - Memory writer nodes now receive memory logger instances for decay-aware storage
@@ -41,16 +54,22 @@
   * **Proper Decay Application** - Memory writer nodes now use memory logger for decay-aware storage instead of direct Redis writes
   * **Agent-Level Configuration Support** - Fixed agent-specific decay settings not being applied to memory entries
   * **Memory Type Classification** - Corrected memory type classification to respect agent-level `default_long_term` settings
+* **Memory Reader Search Accuracy**
+  * **Query Variation Generation** - Fixed entity extraction and punctuation handling for more accurate query variations
+  * **Namespace Consistency** - Resolved namespace mismatch issues between memory storage and retrieval
+  * **Temporal Scoring Precision** - Fixed timestamp conversion thresholds for accurate temporal decay calculations
+  * **Context Integration** - Improved context keyword extraction and deterministic ordering for consistent search results
 * **Statistics Accuracy**
   * **Active Entry Counting** - Memory statistics now correctly count only active (non-expired) entries
   * **Expired Entry Tracking** - Separate tracking of expired entries without inflating active counts
   * **Memory Type Distribution** - Accurate distribution counts for short-term, long-term, and unknown memory types
 ### Technical Details
 * **Decay Algorithm Implementation** - Sophisticated importance scoring with configurable boost factors for different event and agent types
+* **Enhanced Memory Search Algorithm** - Multi-factor relevance scoring with semantic, keyword, context, and temporal components
 * **Thread-Safe Background Processing** - Daemon thread scheduler for automatic cleanup with proper shutdown handling
 * **Rich UI Integration** - Professional terminal interface with live updates, progress bars, and adaptive layouts
 * **Cross-Platform Compatibility** - Full Windows, macOS, and Linux support with fallback modes for terminal limitations
-* **Comprehensive Testing** - Extensive test coverage for decay functionality, CLI commands, and edge cases
+* **Comprehensive Testing** - Extensive test coverage for decay functionality, enhanced memory reader, CLI commands, and edge cases
 * **Performance Optimization** - Efficient memory scanning and cleanup with minimal impact on orchestration performance
 
 ## [0.6.4] · 2025-01-28

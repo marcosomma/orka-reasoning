@@ -41,4 +41,43 @@ OrKa now automatically manages memory with intelligent decay. Memories are class
 ### Can I control memory retention for specific agents?
 Yes. Each agent can have its own `decay:` configuration that overrides global settings. You can force memories to be short-term or long-term using `default_long_term: true/false`, set custom retention periods, and define importance rules. This allows fine-grained control over what gets remembered and for how long.
 
+## 💾 Memory System
+
+**Q: How does memory decay work?**
+A: OrKa automatically manages memory lifecycle using configurable decay rules. Short-term memories expire quickly (default 2 hours), while long-term memories persist longer (default 1 week). The system uses importance factors to boost critical information and reduce routine queries.
+
+**Q: Can I disable memory decay?**
+A: Yes, set `decay.enabled: false` in your orchestrator configuration, or use `default_long_term: true` for specific agents to force long-term storage.
+
+**Q: How accurate is context-aware search?**
+A: The hybrid scoring algorithm combines semantic similarity (40%), keyword matching (30%), context similarity (configurable), and temporal decay (configurable) for highly relevant results.
+
+**Q: What's the difference between vector and non-vector memory?**
+A: Vector-enabled memory supports semantic search using embeddings, while non-vector memory uses keyword-based search. Vector search is more intelligent but requires more resources.
+
+## 🏠 Local LLM Integration
+
+**Q: Which local LLM providers are supported?**
+A: OrKa supports Ollama, LM Studio, and any OpenAI-compatible API endpoint. Popular models include Llama 3.2, Mistral, DeepSeek, and Qwen.
+
+**Q: How do I set up Ollama with OrKa?**
+A: Install Ollama, pull a model (`ollama pull llama3.2`), then configure your agent with `provider: "ollama"` and `model_url: "http://localhost:11434/api/generate"`.
+
+**Q: Can I mix local and cloud LLMs in one workflow?**
+A: Absolutely! You can use local LLMs for privacy-sensitive tasks and cloud LLMs for complex reasoning in the same workflow.
+
+**Q: What are the performance differences?**
+A: Local LLMs provide privacy and cost benefits but may be slower and less capable than cloud models. Use failover patterns to combine both approaches.
+
+## 🔧 Advanced Configuration
+
+**Q: How do I handle agent failures gracefully?**
+A: Use `failover` nodes to define backup strategies. If the primary agent fails, OrKa automatically tries the next agent in the chain.
+
+**Q: Can I run agents in parallel?**
+A: Yes, use `fork` nodes to split execution into parallel branches, then `join` nodes to aggregate results.
+
+**Q: How do I debug complex workflows?**
+A: Enable verbose logging (`--verbose`), use the OrKa UI for visualization, and check Redis streams for detailed execution traces.
+
 [📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)

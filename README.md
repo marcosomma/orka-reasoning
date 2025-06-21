@@ -23,10 +23,13 @@
 ## 🚀 Features
 
 - **Modular Agent Orchestration**: Define and manage agents using intuitive YAML configurations.
+- **Intelligent Memory System**: Advanced memory management with context-aware search, intelligent decay, and automatic classification.
 - **Configurable Reasoning Paths**: Utilize Redis streams to set up dynamic reasoning workflows.
+- **Context-Aware Memory Retrieval**: Enhanced memory reader with semantic similarity, keyword matching, and temporal ranking.
+- **Automatic Memory Decay**: Smart memory lifecycle management with short-term and long-term retention policies.
 - **Comprehensive Logging**: Record and trace every step of the reasoning process for transparency.
 - **Built-in Integrations**: Support for OpenAI agents, web search functionalities, routers, and validation mechanisms.
-- **Command-Line Interface (CLI)**: Execute YAML-defined workflows with ease.
+- **Command-Line Interface (CLI)**: Execute YAML-defined workflows with ease and monitor memory usage in real-time.
 
 ## 🎥 OrKa Video Overview
 
@@ -220,7 +223,66 @@ agents:
       {% endif %}
 ```
 
-### 2. Content Moderation Pipeline
+### 2. Memory-Enhanced Conversational System
+
+```yaml
+orchestrator:
+  id: memory-conversation
+  strategy: sequential
+  memory_config:
+    decay:
+      enabled: true
+      default_short_term_hours: 2
+      default_long_term_hours: 168  # 1 week
+  agents:
+    - memory_reader
+    - context_classifier
+    - memory_writer
+    - response_generator
+
+agents:
+  - id: memory_reader
+    type: memory-reader
+    namespace: conversation
+    params:
+      limit: 5
+      enable_context_search: true
+      context_weight: 0.3
+      temporal_weight: 0.2
+      enable_temporal_ranking: true
+    prompt: Find relevant memories about this conversation topic
+
+  - id: context_classifier
+    type: openai-classification
+    prompt: |
+      Based on the conversation context and memories:
+      Memories: {{ previous_outputs.memory_reader }}
+      
+      Classify this interaction as:
+    options: [question, followup, new_topic, clarification]
+
+  - id: memory_writer
+    type: memory-writer
+    namespace: conversation
+    params:
+      memory_type: auto  # Will be classified as short-term or long-term
+    prompt: |
+      Store this interaction:
+      User: {{ input }}
+      Context: {{ previous_outputs.context_classifier }}
+
+  - id: response_generator
+    type: openai-answer
+    prompt: |
+      Generate a response using:
+      - Current input: {{ input }}
+      - Relevant memories: {{ previous_outputs.memory_reader }}
+      - Interaction type: {{ previous_outputs.context_classifier }}
+      
+      Provide a contextually aware response.
+```
+
+### 3. Content Moderation Pipeline
 
 ```yaml
 orchestrator:
@@ -248,7 +310,69 @@ agents:
   # ... other agents
 ```
 
-### 3. Complex Decision Tree
+### 4. Intelligent Knowledge Base with Memory Decay
+
+```yaml
+orchestrator:
+  id: knowledge-base
+  strategy: sequential
+  memory_config:
+    decay:
+      enabled: true
+      default_short_term_hours: 24
+      default_long_term_hours: 720  # 30 days
+      importance_rules:
+        critical_info: 2.0
+        user_feedback: 1.5
+        routine_query: 0.8
+  agents:
+    - query_analyzer
+    - memory_search
+    - knowledge_updater
+    - response_builder
+
+agents:
+  - id: query_analyzer
+    type: openai-classification
+    prompt: Analyze this query type
+    options: [factual_lookup, how_to_guide, troubleshooting, feedback]
+
+  - id: memory_search
+    type: memory-reader
+    namespace: knowledge_base
+    params:
+      limit: 10
+      enable_context_search: true
+      enable_temporal_ranking: true
+      context_window_size: 5
+    prompt: |
+      Search for relevant information about: {{ input }}
+      Query type: {{ previous_outputs.query_analyzer }}
+
+  - id: knowledge_updater
+    type: memory-writer
+    namespace: knowledge_base
+    decay_config:
+      enabled: true
+      default_long_term: true  # Force important queries to long-term
+    prompt: |
+      Store this knowledge interaction:
+      Query: {{ input }}
+      Type: {{ previous_outputs.query_analyzer }}
+      Retrieved: {{ previous_outputs.memory_search }}
+
+  - id: response_builder
+    type: openai-answer
+    prompt: |
+      Build a comprehensive response using:
+      - Query: {{ input }}
+      - Query type: {{ previous_outputs.query_analyzer }}
+      - Knowledge base results: {{ previous_outputs.memory_search }}
+      
+      If no relevant information found, indicate that clearly.
+```
+
+### 5. Complex Decision Tree
 
 ```yaml
 orchestrator:
@@ -267,6 +391,116 @@ agents:
         "approved": [notify_success]
         "needs_revision": [request_changes]
         "rejected": [notify_rejection]
+```
+
+## ⚙️ Agent Configuration Examples
+
+### Basic Agent Types
+
+```yaml
+# Binary Classification
+- id: fact_checker
+  type: openai-binary
+  prompt: "Is this statement factually accurate? Return TRUE or FALSE: {{ input }}"
+  queue: orka:facts
+
+# Multi-class Classification  
+- id: topic_classifier
+  type: openai-classification
+  prompt: "Classify this into one category"
+  options: [science, technology, history, politics]
+  queue: orka:classify
+
+# Local LLM Processing
+- id: local_summarizer
+  type: local_llm
+  prompt: "Summarize this text: {{ input }}"
+  model: "llama3.2:latest"
+  model_url: "http://localhost:11434/api/generate"
+  provider: "ollama"
+  temperature: 0.7
+  queue: orka:local
+
+# Answer Generation
+- id: answer_builder
+  type: openai-answer
+  prompt: |
+    Based on the classification: {{ previous_outputs.topic_classifier }}
+    And search results: {{ previous_outputs.web_search }}
+    Provide a comprehensive answer to: {{ input }}
+  queue: orka:answer
+```
+
+### Memory Management
+
+```yaml
+# Memory Reader with Context Enhancement
+- id: context_memory
+  type: memory
+  namespace: conversations
+  config:
+    operation: read
+    limit: 10
+    enable_context_search: true
+    context_weight: 0.3
+    temporal_weight: 0.2
+    enable_temporal_ranking: true
+  prompt: "Find relevant memories about: {{ input }}"
+
+# Memory Writer with Decay Configuration
+- id: store_interaction
+  type: memory
+  namespace: user_sessions
+  config:
+    operation: write
+    memory_type: auto
+    vector: true
+  decay_config:
+    enabled: true
+    default_long_term: true
+    default_long_term_hours: 720  # 30 days
+  prompt: "Store this interaction: {{ input }}"
+```
+
+### Advanced Nodes
+
+```yaml
+# Dynamic Routing
+- id: content_router
+  type: router
+  params:
+    decision_key: content_type
+    routing_map:
+      "question": [search_agent, answer_builder]
+      "statement": [fact_checker, validator]
+      "request": [task_processor]
+
+# Parallel Processing
+- id: multi_validator
+  type: fork
+  targets:
+    - [sentiment_check]
+    - [toxicity_check] 
+    - [fact_validation]
+  mode: parallel
+
+# Results Aggregation
+- id: validation_merger
+  type: join
+  prompt: "Combine validation results from parallel checks"
+
+# Resilient Processing
+- id: search_with_fallback
+  type: failover
+  children:
+    - id: primary_search
+      type: duckduckgo
+      prompt: "Search: {{ input }}"
+    - id: backup_search  
+      type: duckduckgo
+      prompt: "Backup search: {{ input }}"
+      params:
+        region: "us-en"
 ```
 
 ## 📝 YAML Configuration Structure
@@ -337,6 +571,86 @@ This provides transparency, reusability, and easier debugging at each step.
 
 Settings such as the model and API keys are loaded from the `.env` file, keeping your configuration secure and flexible.
 
+## 🧠 Memory Management & Intelligent Decay
+
+OrKa v0.6.5 introduces an advanced memory system with intelligent decay management for building context-aware applications.
+
+### Memory Decay Configuration
+
+Configure memory decay at the orchestrator level for automatic memory lifecycle management:
+
+```yaml
+orchestrator:
+  id: my-workflow
+  memory_config:
+    decay:
+      enabled: true
+      default_short_term_hours: 2      # Short-term memories expire after 2 hours
+      default_long_term_hours: 168     # Long-term memories expire after 1 week
+      importance_rules:
+        critical_info: 2.0             # Boost factor for critical information
+        user_feedback: 1.5             # Boost factor for user feedback
+        routine_query: 0.8             # Reduce factor for routine queries
+```
+
+### Agent-Level Memory Configuration
+
+Override global settings for specific agents:
+
+```yaml
+agents:
+  - id: important_memory_writer
+    type: memory-writer
+    namespace: critical_data
+    decay_config:
+      enabled: true
+      default_long_term: true          # Force all memories to long-term
+      default_long_term_hours: 720     # Keep for 30 days
+```
+
+### Memory CLI Commands
+
+OrKa provides powerful CLI commands for memory management:
+
+```bash
+# Real-time memory monitoring with professional dashboard
+orka memory watch
+
+# View detailed memory statistics and decay configuration
+orka memory stats
+
+# Manual cleanup of expired memories
+orka memory cleanup
+
+# Display current decay configuration
+orka memory configure
+```
+
+### Context-Aware Memory Search
+
+The enhanced memory reader uses multiple relevance factors:
+
+- **Semantic Similarity**: Vector-based content matching
+- **Keyword Matching**: Exact term matching with TF-IDF scoring
+- **Context Overlap**: Relevance to recent conversation history
+- **Temporal Decay**: Time-based relevance scoring
+
+Example configuration for advanced memory search:
+
+```yaml
+agents:
+  - id: enhanced_memory_search
+    type: memory-reader
+    namespace: conversations
+    params:
+      limit: 10
+      enable_context_search: true      # Use conversation history
+      context_weight: 0.3              # 30% weight for context similarity
+      temporal_weight: 0.2             # 20% weight for recency
+      enable_temporal_ranking: true    # Enable time-based scoring
+      context_window_size: 5           # Use last 5 agent outputs
+```
+
 ## 🧪 Example
 
 To see OrKa in action, use the provided `example.yml` configuration:
@@ -403,11 +717,73 @@ This will execute the workflow defined in `example.yml` with the input question,
 - **Output**: A full textual answer.
 - **Typical Use**: "Answer a question combining search results and classifications."
 
-##### DuckDuckGoAgent
+##### DuckDuckGoTool
 - **Purpose**: Perform a real-time web search using DuckDuckGo.
 - **Input**: Dict with "input" (the query string).
 - **Output**: A list of search result strings.
 - **Typical Use**: "Search for latest information about OrKa project."
+
+##### LocalLLMAgent
+- **Purpose**: Interface with locally running large language models (Ollama, LM Studio, etc.).
+- **Input**: Dict with "input" (text to process) and optional model parameters.
+- **Output**: Generated response from the local model with confidence score and reasoning.
+- **Configuration**:
+  - `model`: Model name (e.g., "llama3.2:latest", "mistral")
+  - `model_url`: Local endpoint URL (e.g., "http://localhost:11434/api/generate")
+  - `provider`: "ollama", "lm_studio", or "openai_compatible"
+  - `temperature`: Sampling temperature (0.0-1.0)
+- **Typical Use**: "Generate responses using privacy-preserving local models without cloud dependencies."
+
+##### ValidationAndStructuringAgent
+- **Purpose**: Validate answers for correctness and structure them into memory objects.
+- **Input**: Dict with "input" (question) and "previous_outputs" containing context and answers.
+- **Output**: Dict with validation status, reason, and structured memory object.
+- **Configuration**:
+  - `store_structure`: Optional template for memory object structure
+- **Typical Use**: "Validate generated answers before storing them in memory with proper structure."
+
+##### Memory Agent (Read Operation)
+- **Purpose**: Search and retrieve relevant memories from the memory backend using advanced context-aware algorithms.
+- **Type**: `memory` with `config.operation: read`
+- **Input**: Dict with "input" (search query) and optional "previous_outputs" for context enhancement.
+- **Output**: A list of relevant memory entries ranked by relevance score.
+- **Configuration**:
+  - `namespace`: Memory namespace to search in
+  - `config.limit`: Maximum number of memories to return (default: 10)
+  - `config.enable_context_search`: Use conversation history for enhanced search (default: false)
+  - `config.context_weight`: Weight for context similarity in scoring (default: 0.3)
+  - `config.temporal_weight`: Weight for temporal decay in scoring (default: 0.2)
+  - `config.enable_temporal_ranking`: Enable time-based ranking (default: false)
+  - `config.similarity_threshold`: Minimum similarity score for retrieval (default: 0.6)
+- **Typical Use**: "Find relevant past conversations about machine learning topics."
+
+##### Memory Agent (Write Operation)
+- **Purpose**: Store information in the memory backend with intelligent decay management.
+- **Type**: `memory` with `config.operation: write`
+- **Input**: Dict with "input" and "previous_outputs" to store as memory.
+- **Output**: Confirmation of memory storage with metadata.
+- **Configuration**:
+  - `namespace`: Memory namespace to store in
+  - `config.memory_type`: "short_term", "long_term", or "auto" for automatic classification
+  - `config.vector`: Enable vector embeddings for semantic search (default: false)
+  - `key_template`: Template for generating memory keys
+  - `metadata`: Additional metadata to store with memory
+  - `decay_config`: Agent-specific decay settings that override global configuration
+- **Typical Use**: "Store user interaction with classification for future reference."
+
+---
+
+#### 🔧 Tools
+
+##### DuckDuckGoTool
+- **Purpose**: Perform real-time web search using DuckDuckGo search engine.
+- **Input**: Dict with "input" (the search query string).
+- **Output**: A list of search result strings with titles, snippets, and URLs.
+- **Configuration**:
+  - `num_results`: Number of search results to return (default: 5)
+  - `region`: Search region (e.g., "us-en", "uk-en")
+  - `safe_search`: Safe search setting ("on", "moderate", "off")
+- **Typical Use**: "Search for latest information about quantum computing developments."
 
 ---
 
@@ -444,7 +820,17 @@ This will execute the workflow defined in `example.yml` with the input question,
 - **Purpose**: Wait for multiple forked agents to complete, then merge their outputs.
 - **Input**: Dict including `fork_group_id` (forked group name).
 - **Behavior**: Suspends execution until all required forked agents have completed. Then aggregates their outputs.
-- **Typical Use**: "Wait for parallel validations to finish before deciding next step.""
+- **Typical Use**: "Wait for parallel validations to finish before deciding next step."
+
+##### **RAGNode**
+- **Purpose**: Perform Retrieval-Augmented Generation (RAG) operations with vector search and LLM generation.
+- **Input**: Dict with "query" for the search question.
+- **Output**: Dict with generated answer and source documents.
+- **Configuration**:
+  - `top_k`: Number of documents to retrieve (default: 5)
+  - `score_threshold`: Minimum similarity score for retrieval (default: 0.7)
+- **Behavior**: Searches memory using embeddings, formats context, and generates answers using LLM.
+- **Typical Use**: "Answer questions using relevant documents from a knowledge base."
 
 ---
 
@@ -453,17 +839,21 @@ This will execute the workflow defined in `example.yml` with the input question,
 | Name | Type | Core Purpose |
 |:---|:---|:---|
 | BinaryAgent | Agent | True/False classification |
-| ClassificationAgent | Agent | Category classification |
+| ClassificationAgent | Agent | Category classification (deprecated) |
 | OpenAIBinaryAgent | Agent | LLM-backed binary decision |
 | OpenAIClassificationAgent | Agent | LLM-backed category decision |
 | OpenAIAnswerBuilder | Agent | Compose detailed answer |
-| DuckDuckGoAgent | Agent | Perform web search |
+| LocalLLMAgent | Agent | Local LLM inference |
+| ValidationAndStructuringAgent | Agent | Answer validation and structuring |
+| DuckDuckGoTool | Tool | Perform web search |
+| Memory (read) | Node | Context-aware memory retrieval |
+| Memory (write) | Node | Intelligent memory storage |
+| RAGNode | Node | Retrieval-augmented generation |
 | RouterNode | Node | Dynamically route next steps |
 | FailoverNode | Node | Resilient sequential fallback |
 | FailingNode | Node | Simulate failure |
-| WaitForNode | Node | Wait for multiple dependencies |
-| ForkNode | Node	| Parallel execution split | 
-| JoinNode | Node | Parallel execution merge | 
+| ForkNode | Node | Parallel execution split |
+| JoinNode | Node | Parallel execution merge |
 
 ## 🔍 Troubleshooting
 
