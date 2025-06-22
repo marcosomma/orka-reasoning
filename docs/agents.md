@@ -184,7 +184,7 @@ Stores information with intelligent decay management and automatic classificatio
   namespace: user_sessions
   config:
     operation: write
-    memory_type: auto
+            # memory_type automatically classified based on content and importance
     vector: true
   decay_config:
     enabled: true

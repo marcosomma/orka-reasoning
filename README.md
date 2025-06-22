@@ -27,10 +27,10 @@
 - [🏆 Why Choose OrKa?](#-why-choose-orka)
 - [⚡ 5-Minute Quickstart](#-5-minute-quickstart)
 - [🛠️ Installation](#️-installation)
+- [🧠 Intelligent Memory System](#-intelligent-memory-system)
 - [📚 Common Patterns & Recipes](#-common-patterns--recipes)
 - [⚙️ Agent Configuration Examples](#️-agent-configuration-examples)
 - [📝 YAML Configuration Structure](#-yaml-configuration-structure)
-- [🧠 Memory Management & Intelligent Decay](#-memory-management--intelligent-decay)
 - [🧪 Example](#-example)
 - [🔧 Requirements](#-requirements)
 - [📄 Usage](#-usage)
@@ -206,6 +206,366 @@ To run the OrkaUI locally and connect it with your local OrkaBackend:
 
 This will start the OrkaUI on port 8080, connected to your local OrkaBackend running on port 8000.
 
+---
+
+## 🧠 Intelligent Memory System
+
+OrKa's memory system is one of its most powerful features, providing cognitive science-inspired memory management that makes your AI agents truly intelligent and contextually aware.
+
+### 🎯 Why Memory Matters
+
+Traditional AI systems are stateless - they forget everything between interactions. OrKa's memory system enables:
+
+- **Contextual Conversations**: Agents remember previous interactions and build on them
+- **Learning from Experience**: Agents improve responses based on past successes and failures
+- **Efficient Processing**: Avoid re-computing the same information repeatedly
+- **Transparent Reasoning**: Full audit trail of how decisions were made
+- **Intelligent Forgetting**: Automatic cleanup of outdated or irrelevant information
+
+### 🔄 Intelligent Memory Decay
+
+OrKa implements a sophisticated memory decay system inspired by human cognitive science:
+
+```yaml
+orchestrator:
+  id: smart-assistant
+  strategy: sequential
+  memory_config:
+    decay:
+      enabled: true
+      default_short_term_hours: 2      # Temporary working memory
+      default_long_term_hours: 168     # Long-term knowledge (1 week)
+      check_interval_minutes: 30       # How often to clean up
+      importance_rules:
+        critical_info: 2.0             # Keep critical information longer
+        user_feedback: 1.5             # Value user corrections
+        routine_query: 0.8             # Routine queries decay faster
+        error_event: 0.5               # Errors decay quickly
+```
+
+**Memory Types Explained:**
+
+- **Short-term Memory**: Temporary context (conversations, intermediate results)
+- **Long-term Memory**: Important knowledge (facts, successful patterns, user preferences)
+- **Auto-classification**: OrKa automatically determines memory type based on content (when memory_type is not specified)
+
+### 📊 Memory Backends
+
+Choose the right backend for your needs:
+
+| Backend | Best For | Features |
+|---------|----------|----------|
+| **Redis** | Development, Single-node | Fast, Full features, Easy setup |
+| **Kafka** | Production, Distributed | Scalable, Event streaming, Fault-tolerant |
+
+**Redis Setup (Recommended for getting started):**
+```bash
+# Install Redis
+brew install redis  # macOS
+sudo apt install redis-server  # Ubuntu
+
+# Start Redis
+redis-server
+
+# Configure OrKa
+export ORKA_MEMORY_BACKEND=redis
+export REDIS_URL=redis://localhost:6379/0
+```
+
+**Kafka Setup (For production):**
+```bash
+# Using Docker Compose
+version: '3.8'
+services:
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+    ports:
+      - "9092:9092"
+
+# Configure OrKa
+export ORKA_MEMORY_BACKEND=kafka
+export KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+```
+
+### 🔍 Context-Aware Memory Search
+
+OrKa's memory search is incredibly sophisticated, using multiple relevance factors:
+
+```yaml
+agents:
+  - id: smart_memory_search
+    type: memory-reader
+    namespace: knowledge_base
+    params:
+      limit: 10                        # Max memories to retrieve
+      enable_context_search: true      # Use conversation context
+      context_weight: 0.4              # How much context matters (40%)
+      temporal_weight: 0.3             # How much recency matters (30%)
+      similarity_threshold: 0.7        # Minimum relevance score
+      enable_temporal_ranking: true    # Boost recent memories
+      context_window_size: 5           # Look at last 5 agent outputs
+    prompt: |
+      Find information relevant to: {{ input }}
+      
+      Consider the recent conversation context when searching.
+```
+
+**Search Algorithm:**
+1. **Semantic Similarity**: Vector embeddings match meaning, not just keywords
+2. **Keyword Matching**: TF-IDF scoring for exact term matches
+3. **Context Overlap**: How well memories relate to recent conversation
+4. **Temporal Decay**: Recent memories get boosted relevance
+5. **Importance Scoring**: Critical information ranks higher
+
+### 💾 Memory Storage Patterns
+
+> **🚨 Important**: Every `memory-writer` agent **MUST** include metadata that gets stored with the memory. This metadata enables enhanced search, analytics, decay management, and debugging capabilities.
+
+**Pattern 1: Conversation Memory**
+```yaml
+- id: conversation_memory
+  type: memory-writer
+  namespace: chat_sessions
+  params:
+            # memory_type automatically classified based on content and importance
+    vector: true                   # Enable semantic search
+    key_template: "chat_{timestamp}_{user_id}"
+    metadata:
+      interaction_type: "{{ previous_outputs.context_classifier }}"
+      user_id: "{{ user_id | default('anonymous') }}"
+      session_id: "{{ session_id | default('unknown') }}"
+      timestamp: "{{ now() }}"
+      response_quality: "pending_feedback"
+  decay_config:
+    enabled: true
+    default_short_term_hours: 2    # Conversations fade after 2 hours
+    default_long_term_hours: 72    # Important conversations last 3 days
+  prompt: |
+    Store this interaction:
+    User: {{ input }}
+    Assistant: {{ previous_outputs.response_generator }}
+    Context: {{ previous_outputs.context_classifier }}
+```
+
+**Pattern 2: Knowledge Base**
+```yaml
+- id: knowledge_storage
+  type: memory-writer
+  namespace: knowledge_base
+  params:
+    memory_type: long_term         # Force long-term storage
+    vector: true
+    metadata:
+      source: "user_input"
+      confidence: "{{ previous_outputs.fact_checker }}"
+  decay_config:
+    enabled: true
+    default_long_term_hours: 720   # Keep knowledge for 30 days
+  prompt: |
+    Store this verified information:
+    Topic: {{ previous_outputs.topic_classifier }}
+    Fact: {{ input }}
+    Verification: {{ previous_outputs.fact_checker }}
+```
+
+**Pattern 3: Learning from Mistakes**
+```yaml
+- id: error_learning
+  type: memory-writer
+  namespace: error_patterns
+  params:
+    memory_type: short_term        # Errors are temporary
+    vector: true
+    metadata:
+      error_type: "{{ previous_outputs.error_handler.type | default('unknown') }}"
+      correction_applied: "{{ previous_outputs.correction_agent | length > 0 }}"
+      severity: "{{ previous_outputs.error_handler.severity | default('medium') }}"
+      timestamp: "{{ now() }}"
+      input_length: "{{ input | length }}"
+  decay_config:
+    enabled: true
+    default_short_term_hours: 24   # Learn from errors for 1 day
+  prompt: |
+    Record this error pattern for learning:
+    Input: {{ input }}
+    Error: {{ previous_outputs.error_handler }}
+    Correction: {{ previous_outputs.correction_agent }}
+```
+
+### 🎛️ Memory Management CLI
+
+OrKa provides powerful CLI tools for memory management:
+
+```bash
+# Real-time memory monitoring (like 'top' for memory)
+orka memory watch
+
+# Detailed memory statistics
+orka memory stats
+# Output:
+# === OrKa Memory Statistics ===
+# Backend: redis
+# Total Streams: 15
+# Total Entries: 1,247
+# Expired Entries: 23
+# 
+# Entries by Type:
+#   success: 892
+#   error: 12
+#   classification: 343
+# 
+# Memory Types:
+#   short_term: 156 (12.5%)
+#   long_term: 1,091 (87.5%)
+
+# Manual cleanup of expired memories
+orka memory cleanup
+
+# View current configuration
+orka memory configure
+```
+
+### 🔄 Memory Lifecycle Example
+
+Here's how memory works in a real conversation:
+
+```yaml
+orchestrator:
+  id: conversational-ai
+  strategy: sequential
+  memory_config:
+    decay:
+      enabled: true
+      default_short_term_hours: 1
+      default_long_term_hours: 168
+
+agents:
+  # 1. Retrieve relevant conversation history
+  - id: conversation_context
+    type: memory-reader
+    namespace: user_conversations
+    params:
+      limit: 5
+      enable_context_search: true
+      temporal_weight: 0.4
+    prompt: "Find relevant conversation history for: {{ input }}"
+
+  # 2. Classify the current interaction
+  - id: interaction_classifier
+    type: openai-classification
+    prompt: |
+      Based on conversation history: {{ previous_outputs.conversation_context }}
+      Current input: {{ input }}
+      
+      Classify this interaction:
+    options: [question, followup, correction, new_topic, feedback]
+
+  # 3. Generate contextually aware response
+  - id: response_generator
+    type: openai-answer
+    prompt: |
+      Conversation history: {{ previous_outputs.conversation_context }}
+      Interaction type: {{ previous_outputs.interaction_classifier }}
+      Current input: {{ input }}
+      
+      Generate a response that:
+      - Acknowledges the conversation history
+      - Addresses the current input appropriately
+      - Maintains conversation continuity
+
+  # 4. Store the interaction with intelligent classification
+  - id: memory_storage
+    type: memory-writer
+    namespace: user_conversations
+    params:
+              # memory_type automatically classified based on content and importance
+      vector: true
+      metadata:
+        interaction_type: "{{ previous_outputs.interaction_classifier }}"
+        response_length: "{{ previous_outputs.response_generator | length }}"
+        has_history: "{{ previous_outputs.conversation_context | length > 0 }}"
+        timestamp: "{{ now() }}"
+        session_id: "{{ session_id | default('unknown') }}"
+    prompt: |
+      User: {{ input }}
+      Type: {{ previous_outputs.interaction_classifier }}
+      Assistant: {{ previous_outputs.response_generator }}
+```
+
+**What happens behind the scenes:**
+
+1. **First interaction**: No history found, creates new memory entry (short-term)
+2. **Follow-up questions**: Finds relevant history, builds on context
+3. **Important information**: Auto-promoted to long-term memory
+4. **Routine queries**: Remain short-term, automatically cleaned up
+5. **User corrections**: Stored as high-importance, longer retention
+
+### 🎯 Advanced Memory Patterns
+
+**Pattern 1: Multi-Agent Memory Sharing**
+```yaml
+# Agent A stores information
+- id: researcher
+  type: openai-answer
+  # ... research logic ...
+
+- id: research_storage
+  type: memory-writer
+  namespace: shared_research
+  params:
+    memory_type: long_term
+    vector: true
+    metadata:
+      agent: "researcher"
+      topic: "{{ previous_outputs.topic_classifier }}"
+      research_phase: "initial"
+      confidence: "{{ previous_outputs.researcher.confidence | default('medium') }}"
+      timestamp: "{{ now() }}"
+      source_count: "{{ previous_outputs.researcher.sources | length | default(0) }}"
+
+# Agent B retrieves shared information
+- id: writer
+  type: memory-reader
+  namespace: shared_research
+  params:
+    enable_context_search: true
+  # ... uses research for writing ...
+```
+
+**Pattern 2: Hierarchical Memory Organization**
+```yaml
+# Top-level topics
+- id: topic_memory
+  type: memory-writer
+  namespace: topics
+  params:
+    memory_type: long_term
+
+# Detailed information under topics
+- id: detail_memory
+  type: memory-writer
+  namespace: "topic_{{ previous_outputs.topic_classifier }}"
+  params:
+    # memory_type automatically classified based on content and importance
+```
+
+**Pattern 3: Memory-Driven Routing**
+```yaml
+- id: experience_router
+  type: router
+  params:
+    decision_key: memory_search
+    routing_map:
+      "high_confidence": [direct_answer]
+      "medium_confidence": [verify_and_answer]
+      "low_confidence": [research_and_answer]
+```
+
+This intelligent memory system makes OrKa agents truly cognitive, enabling them to learn, remember, and improve over time while automatically managing information lifecycle for optimal performance.
+
 ## 📚 Common Patterns & Recipes
 
 ### 1. Question-Answering with Web Search
@@ -288,7 +648,13 @@ agents:
     type: memory-writer
     namespace: conversation
     params:
-      memory_type: auto  # Will be classified as short-term or long-term
+              # memory_type automatically classified as short-term or long-term
+      vector: true       # Enable semantic search
+      metadata:
+        interaction_type: "{{ previous_outputs.context_classifier }}"
+        has_context: "{{ previous_outputs.memory_reader | length > 0 }}"
+        timestamp: "{{ now() }}"
+        confidence: "auto_classified"
     prompt: |
       Store this interaction:
       User: {{ input }}
@@ -375,6 +741,15 @@ agents:
   - id: knowledge_updater
     type: memory-writer
     namespace: knowledge_base
+    params:
+      memory_type: long_term
+      vector: true
+      metadata:
+        query_type: "{{ previous_outputs.query_analyzer }}"
+        knowledge_found: "{{ previous_outputs.memory_search | length > 0 }}"
+        confidence: "high"
+        source: "knowledge_base_update"
+        timestamp: "{{ now() }}"
     decay_config:
       enabled: true
       default_long_term: true  # Force important queries to long-term
@@ -459,25 +834,30 @@ agents:
 ```yaml
 # Memory Reader with Context Enhancement
 - id: context_memory
-  type: memory
+  type: memory-reader
   namespace: conversations
-  config:
-    operation: read
+  params:
     limit: 10
     enable_context_search: true
     context_weight: 0.3
     temporal_weight: 0.2
     enable_temporal_ranking: true
+    similarity_threshold: 0.7
   prompt: "Find relevant memories about: {{ input }}"
 
 # Memory Writer with Decay Configuration
 - id: store_interaction
-  type: memory
+  type: memory-writer
   namespace: user_sessions
-  config:
-    operation: write
-    memory_type: auto
+  params:
+    # memory_type automatically classified based on content and importance
     vector: true
+    metadata:
+      interaction_type: "user_session"
+      timestamp: "{{ now() }}"
+      session_duration: "{{ session_duration | default('unknown') }}"
+      user_id: "{{ user_id | default('anonymous') }}"
+      confidence: "auto_classified"
   decay_config:
     enabled: true
     default_long_term: true
@@ -594,86 +974,6 @@ This provides transparency, reusability, and easier debugging at each step.
 
 Settings such as the model and API keys are loaded from the `.env` file, keeping your configuration secure and flexible.
 
-## 🧠 Memory Management & Intelligent Decay
-
-OrKa v0.6.5 introduces an advanced memory system with intelligent decay management for building context-aware applications.
-
-### Memory Decay Configuration
-
-Configure memory decay at the orchestrator level for automatic memory lifecycle management:
-
-```yaml
-orchestrator:
-  id: my-workflow
-  memory_config:
-    decay:
-      enabled: true
-      default_short_term_hours: 2      # Short-term memories expire after 2 hours
-      default_long_term_hours: 168     # Long-term memories expire after 1 week
-      importance_rules:
-        critical_info: 2.0             # Boost factor for critical information
-        user_feedback: 1.5             # Boost factor for user feedback
-        routine_query: 0.8             # Reduce factor for routine queries
-```
-
-### Agent-Level Memory Configuration
-
-Override global settings for specific agents:
-
-```yaml
-agents:
-  - id: important_memory_writer
-    type: memory-writer
-    namespace: critical_data
-    decay_config:
-      enabled: true
-      default_long_term: true          # Force all memories to long-term
-      default_long_term_hours: 720     # Keep for 30 days
-```
-
-### Memory CLI Commands
-
-OrKa provides powerful CLI commands for memory management:
-
-```bash
-# Real-time memory monitoring with professional dashboard
-orka memory watch
-
-# View detailed memory statistics and decay configuration
-orka memory stats
-
-# Manual cleanup of expired memories
-orka memory cleanup
-
-# Display current decay configuration
-orka memory configure
-```
-
-### Context-Aware Memory Search
-
-The enhanced memory reader uses multiple relevance factors:
-
-- **Semantic Similarity**: Vector-based content matching
-- **Keyword Matching**: Exact term matching with TF-IDF scoring
-- **Context Overlap**: Relevance to recent conversation history
-- **Temporal Decay**: Time-based relevance scoring
-
-Example configuration for advanced memory search:
-
-```yaml
-agents:
-  - id: enhanced_memory_search
-    type: memory-reader
-    namespace: conversations
-    params:
-      limit: 10
-      enable_context_search: true      # Use conversation history
-      context_weight: 0.3              # 30% weight for context similarity
-      temporal_weight: 0.2             # 20% weight for recency
-      enable_temporal_ranking: true    # Enable time-based scoring
-      context_window_size: 5           # Use last 5 agent outputs
-```
-
 ## 🧪 Example
 
 To see OrKa in action, use the provided `example.yml` configuration:
@@ -787,7 +1087,7 @@ This will execute the workflow defined in `example.yml` with the input question,
 - **Output**: Confirmation of memory storage with metadata.
 - **Configuration**:
   - `namespace`: Memory namespace to store in
-  - `config.memory_type`: "short_term", "long_term", or "auto" for automatic classification
+  - `config.memory_type`: "short_term" or "long_term" (omit for automatic classification)
   - `config.vector`: Enable vector embeddings for semantic search (default: false)
   - `key_template`: Template for generating memory keys
   - `metadata`: Additional metadata to store with memory

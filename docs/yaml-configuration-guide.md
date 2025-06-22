@@ -34,6 +34,545 @@ agents:
     # agent-specific configuration
 ```
 
+## 🧠 Memory System Configuration
+
+OrKa's memory system is its most powerful feature. Here's how to configure it properly:
+
+### Global Memory Configuration
+
+Configure memory settings at the orchestrator level:
+
+```yaml
+orchestrator:
+  id: intelligent-assistant
+  strategy: sequential
+  memory_config:
+    # Memory backend configuration
+    backend: redis  # or "kafka"
+    
+    # Decay configuration - inspired by human memory
+    decay:
+      enabled: true
+      default_short_term_hours: 2      # Working memory duration
+      default_long_term_hours: 168     # Long-term knowledge (1 week)
+      check_interval_minutes: 30       # Cleanup frequency
+      
+      # Importance-based retention rules
+      importance_rules:
+        critical_info: 2.0             # Critical info lasts 2x longer
+        user_feedback: 1.8             # User corrections are valuable
+        successful_pattern: 1.5        # Learn from successes
+        routine_query: 0.8             # Routine queries decay faster
+        error_event: 0.6               # Errors decay quickly
+        
+    # Vector embeddings for semantic search
+    embeddings:
+      enabled: true
+      model: "text-embedding-ada-002"  # OpenAI embedding model
+      dimension: 1536
+      
+    # Memory organization
+    namespaces:
+      default_namespace: "general"
+      auto_create: true
+      
+  agents:
+    - memory_reader
+    - processor
+    - memory_writer
+```
+
+### Memory Agent Types
+
+#### Memory Reader - Intelligent Retrieval
+
+```yaml
+- id: context_aware_search
+  type: memory-reader
+  namespace: knowledge_base  # Memory namespace to search
+  params:
+    # Basic retrieval settings
+    limit: 10                          # Max memories to return
+    similarity_threshold: 0.7          # Minimum relevance score (0.0-1.0)
+    
+    # Context-aware search (game-changer for conversations)
+    enable_context_search: true        # Use conversation history
+    context_weight: 0.4                # Context importance (40%)
+    context_window_size: 5             # Look at last 5 agent outputs
+    
+    # Temporal relevance (recent memories matter more)
+    enable_temporal_ranking: true      # Boost recent memories
+    temporal_weight: 0.3               # Recency importance (30%)
+    temporal_decay_hours: 24           # How fast memories lose recency boost
+    
+    # Advanced filtering
+    memory_type_filter: "all"          # "short_term", "long_term", or "all"
+    memory_category_filter: "stored"   # Only retrievable memories
+    
+    # Performance tuning
+    max_search_time_seconds: 5         # Search timeout
+    enable_caching: true               # Cache frequent searches
+    
+  prompt: |
+    Find information relevant to: {{ input }}
+    
+    Consider the conversation context:
+    {% for output in previous_outputs %}
+    - {{ output }}
+    {% endfor %}
+    
+  timeout: 20
+```
+
+#### Memory Writer - Intelligent Storage
+
+```yaml
+- id: intelligent_storage
+  type: memory-writer
+  namespace: user_interactions
+      params:
+      # Memory classification (ONLY "short_term" and "long_term" are valid)
+      # If not specified, OrKa automatically classifies based on:
+      # - Event type (success/completion → long_term, debug/processing → short_term)
+      # - Importance score (≥0.7 → long_term, <0.7 → short_term) 
+      # - Memory category ("stored" memories can be long_term, "log" entries are always short_term)
+      memory_type: short_term          # Optional: "short_term" or "long_term" only
+      
+      # Vector embeddings for semantic search
+    vector: true                       # Enable semantic search
+    
+    # Memory organization
+    key_template: "interaction_{timestamp}_{user_id}"
+    
+    # Metadata for rich memory context
+    metadata:
+      source: "user_input"
+      agent_chain: "{{ agent_sequence }}"
+      confidence: "{{ previous_outputs.confidence_scorer }}"
+      topic: "{{ previous_outputs.topic_classifier }}"
+      
+    # Storage optimization
+    compress: true                     # Compress large memories
+    deduplicate: true                  # Avoid storing duplicates
+    
+  # Agent-specific decay overrides
+  decay_config:
+    enabled: true
+    default_long_term: false           # Don't force long-term
+    default_short_term_hours: 4        # Override global setting
+    default_long_term_hours: 336       # 2 weeks for this agent
+    
+    # Custom importance rules for this agent
+    importance_rules:
+      user_correction: 3.0             # User corrections are critical
+      positive_feedback: 2.0           # Learn from positive feedback
+      
+  prompt: |
+    Store this interaction with context:
+    
+    User Input: {{ input }}
+    Processing Chain: {{ previous_outputs | keys | join(' → ') }}
+    Final Result: {{ previous_outputs.final_processor }}
+    
+    Context Classification: {{ previous_outputs.context_classifier }}
+    Confidence Score: {{ previous_outputs.confidence_scorer }}
+    
+  timeout: 15
+```
+
+### Advanced Memory Patterns
+
+#### Pattern 1: Conversational Memory with Context
+
+```yaml
+orchestrator:
+  id: conversational-ai
+  memory_config:
+    decay:
+      enabled: true
+      default_short_term_hours: 2
+      default_long_term_hours: 168
+
+agents:
+  # Step 1: Retrieve conversation history
+  - id: conversation_retrieval
+    type: memory-reader
+    namespace: conversations
+    params:
+      limit: 8
+      enable_context_search: true
+      context_weight: 0.5              # Conversation context is very important
+      temporal_weight: 0.4             # Recent conversations matter
+      similarity_threshold: 0.6        # Lower threshold for conversation context
+    prompt: |
+      Find relevant conversation history for: {{ input }}
+      
+      Look for:
+      - Similar topics discussed
+      - Previous questions from this user
+      - Related context from recent chats
+
+  # Step 2: Classify interaction type
+  - id: interaction_type
+    type: openai-classification
+    prompt: |
+      Based on conversation history: {{ previous_outputs.conversation_retrieval }}
+      Current input: {{ input }}
+      
+      Classify this interaction:
+    options: [new_question, followup, clarification, correction, feedback, off_topic]
+
+  # Step 3: Generate contextually aware response
+  - id: contextual_response
+    type: openai-answer
+    prompt: |
+      Conversation History:
+      {{ previous_outputs.conversation_retrieval }}
+      
+      Interaction Type: {{ previous_outputs.interaction_type }}
+      Current Input: {{ input }}
+      
+      Generate a response that:
+      1. Acknowledges relevant conversation history
+      2. Addresses the current input appropriately
+      3. Maintains conversation continuity
+      4. References previous context when helpful
+
+  # Step 4: Store the complete interaction
+  - id: conversation_storage
+    type: memory-writer
+    namespace: conversations
+    params:
+              # memory_type automatically classified based on content and importance
+      vector: true
+      metadata:
+        interaction_type: "{{ previous_outputs.interaction_type }}"
+        has_history: "{{ previous_outputs.conversation_retrieval | length > 0 }}"
+        timestamp: "{{ now() }}"
+    prompt: |
+      User: {{ input }}
+      Type: {{ previous_outputs.interaction_type }}
+      History Found: {{ previous_outputs.conversation_retrieval | length }} items
+      Assistant: {{ previous_outputs.contextual_response }}
+```
+
+#### Pattern 2: Knowledge Base with Intelligent Updates
+
+```yaml
+orchestrator:
+  id: knowledge-base-system
+  memory_config:
+    decay:
+      enabled: true
+      default_short_term_hours: 24     # Queries are short-term
+      default_long_term_hours: 2160    # Knowledge lasts 90 days
+      importance_rules:
+        verified_fact: 3.0             # Verified facts are very important
+        user_contributed: 2.0          # User contributions matter
+        frequently_accessed: 1.8       # Popular knowledge stays longer
+
+agents:
+  # Step 1: Analyze the query
+  - id: query_analyzer
+    type: openai-classification
+    prompt: |
+      Analyze this query: {{ input }}
+      
+      What type of knowledge interaction is this?
+    options: [factual_lookup, how_to_guide, troubleshooting, definition, comparison, update_request]
+
+  # Step 2: Search existing knowledge
+  - id: knowledge_search
+    type: memory-reader
+    namespace: knowledge_base
+    params:
+      limit: 15
+      enable_context_search: false     # Don't use conversation context for facts
+      temporal_weight: 0.1             # Facts don't age much
+      similarity_threshold: 0.75       # High threshold for factual accuracy
+      memory_type_filter: "long_term"  # Only search established knowledge
+    prompt: |
+      Search for information about: {{ input }}
+      Query type: {{ previous_outputs.query_analyzer }}
+
+  # Step 3: Determine if knowledge needs updating
+  - id: knowledge_freshness_check
+    type: openai-binary
+    prompt: |
+      Existing knowledge: {{ previous_outputs.knowledge_search }}
+      New query: {{ input }}
+      Query type: {{ previous_outputs.query_analyzer }}
+      
+      Does the existing knowledge need updating or is new information required?
+      Consider:
+      - Is the existing information outdated?
+      - Does the query ask for information not covered?
+      - Is there conflicting information?
+
+  # Step 4: Router based on knowledge freshness
+  - id: knowledge_router
+    type: router
+    params:
+      decision_key: knowledge_freshness_check
+      routing_map:
+        "true": [web_search, fact_verification, knowledge_updater]
+        "false": [knowledge_responder]
+
+  # Step 5a: Web search for new information (if needed)
+  - id: web_search
+    type: duckduckgo
+    prompt: |
+      Search for current information about: {{ input }}
+      Focus on: {{ previous_outputs.query_analyzer }}
+
+  # Step 5b: Verify new information
+  - id: fact_verification
+    type: openai-answer
+    prompt: |
+      Verify and structure this information:
+      
+      Query: {{ input }}
+      Existing Knowledge: {{ previous_outputs.knowledge_search }}
+      New Information: {{ previous_outputs.web_search }}
+      
+      Provide:
+      1. Verified facts
+      2. Confidence level (0-100)
+      3. Sources
+      4. What changed from existing knowledge
+
+  # Step 5c: Update knowledge base
+  - id: knowledge_updater
+    type: memory-writer
+    namespace: knowledge_base
+    params:
+      memory_type: long_term           # Force long-term storage
+      vector: true
+      metadata:
+        query_type: "{{ previous_outputs.query_analyzer }}"
+        confidence: "{{ previous_outputs.fact_verification.confidence }}"
+        sources: "{{ previous_outputs.web_search.sources }}"
+        last_updated: "{{ now() }}"
+        verification_status: "verified"
+    decay_config:
+      enabled: true
+      default_long_term_hours: 2160    # 90 days for verified knowledge
+    prompt: |
+      Updated Knowledge Entry:
+      
+      Topic: {{ input }}
+      Type: {{ previous_outputs.query_analyzer }}
+      Verified Information: {{ previous_outputs.fact_verification }}
+      Sources: {{ previous_outputs.web_search }}
+      
+      Previous Knowledge: {{ previous_outputs.knowledge_search }}
+
+  # Step 5d: Respond with existing knowledge
+  - id: knowledge_responder
+    type: openai-answer
+    prompt: |
+      Based on existing knowledge: {{ previous_outputs.knowledge_search }}
+      Answer the query: {{ input }}
+      
+      Provide a comprehensive response using the stored knowledge.
+
+  # Step 6: Store the query interaction
+  - id: query_storage
+    type: memory-writer
+    namespace: query_log
+    params:
+      memory_type: short_term          # Queries are temporary
+      vector: false                    # Don't need vector search for logs
+      metadata:
+        query_type: "{{ previous_outputs.query_analyzer }}"
+        knowledge_found: "{{ previous_outputs.knowledge_search | length > 0 }}"
+        needed_update: "{{ previous_outputs.knowledge_freshness_check }}"
+    prompt: |
+      Query Log:
+      User Query: {{ input }}
+      Type: {{ previous_outputs.query_analyzer }}
+      Knowledge Found: {{ previous_outputs.knowledge_search | length }} entries
+      Update Needed: {{ previous_outputs.knowledge_freshness_check }}
+```
+
+#### Pattern 3: Multi-Agent Memory Sharing
+
+```yaml
+orchestrator:
+  id: collaborative-research
+  memory_config:
+    decay:
+      enabled: true
+      default_short_term_hours: 6
+      default_long_term_hours: 720     # 30 days for research
+      
+agents:
+  # Research Agent - Gathers information
+  - id: researcher
+    type: openai-answer
+    prompt: |
+      Research this topic thoroughly: {{ input }}
+      
+      Provide:
+      1. Key facts and findings
+      2. Important sources
+      3. Areas needing further investigation
+      4. Confidence level in findings
+
+  # Store research findings
+  - id: research_storage
+    type: memory-writer
+    namespace: shared_research
+    params:
+      memory_type: long_term
+      vector: true
+      metadata:
+        research_phase: "initial"
+        agent: "researcher"
+        topic: "{{ input }}"
+        confidence: "{{ previous_outputs.researcher.confidence }}"
+    prompt: |
+      Research Findings:
+      Topic: {{ input }}
+      Findings: {{ previous_outputs.researcher }}
+      Research Date: {{ now() }}
+
+  # Analysis Agent - Retrieves and analyzes research
+  - id: research_retrieval
+    type: memory-reader
+    namespace: shared_research
+    params:
+      limit: 20
+      enable_context_search: true
+      similarity_threshold: 0.7
+      temporal_weight: 0.2             # Recent research is more relevant
+    prompt: |
+      Find all research related to: {{ input }}
+      Include related topics and cross-references
+
+  - id: analyzer
+    type: openai-answer
+    prompt: |
+      Analyze the research findings:
+      
+      Current Topic: {{ input }}
+      Research Findings: {{ previous_outputs.research_retrieval }}
+      
+      Provide:
+      1. Key insights and patterns
+      2. Gaps in research
+      3. Recommendations
+      4. Confidence in analysis
+
+  # Store analysis
+  - id: analysis_storage
+    type: memory-writer
+    namespace: shared_research
+    params:
+      memory_type: long_term
+      vector: true
+      metadata:
+        research_phase: "analysis"
+        agent: "analyzer"
+        based_on_research: "{{ previous_outputs.research_retrieval | length }}"
+    prompt: |
+      Research Analysis:
+      Topic: {{ input }}
+      Analysis: {{ previous_outputs.analyzer }}
+      Based on {{ previous_outputs.research_retrieval | length }} research items
+
+  # Synthesis Agent - Creates final output
+  - id: synthesis_retrieval
+    type: memory-reader
+    namespace: shared_research
+    params:
+      limit: 50                        # Get comprehensive view
+      enable_context_search: true
+      similarity_threshold: 0.6        # Broader search for synthesis
+    prompt: |
+      Retrieve all research and analysis for: {{ input }}
+
+  - id: synthesizer
+    type: openai-answer
+    prompt: |
+      Create a comprehensive synthesis:
+      
+      Topic: {{ input }}
+      All Research & Analysis: {{ previous_outputs.synthesis_retrieval }}
+      
+      Provide:
+      1. Executive summary
+      2. Detailed findings
+      3. Recommendations
+      4. Future research directions
+      5. Confidence assessment
+
+  # Store final synthesis
+  - id: synthesis_storage
+    type: memory-writer
+    namespace: final_reports
+    params:
+      memory_type: long_term
+      vector: true
+      metadata:
+        document_type: "synthesis"
+        based_on_items: "{{ previous_outputs.synthesis_retrieval | length }}"
+        completion_date: "{{ now() }}"
+    decay_config:
+      enabled: true
+      default_long_term_hours: 2160    # Keep final reports for 90 days
+    prompt: |
+      Final Research Synthesis:
+      Topic: {{ input }}
+      Synthesis: {{ previous_outputs.synthesizer }}
+      Based on {{ previous_outputs.synthesis_retrieval | length }} research items
+```
+
+### Memory Namespace Organization
+
+Organize your memories logically:
+
+```yaml
+orchestrator:
+  id: organized-system
+  memory_config:
+    # Define namespace hierarchy
+    namespaces:
+      # User interactions
+      conversations: "user_chats"
+      feedback: "user_feedback"
+      corrections: "user_corrections"
+      
+      # Knowledge management
+      facts: "verified_facts"
+      procedures: "how_to_guides"
+      definitions: "term_definitions"
+      
+      # System operations
+      errors: "error_logs"
+      performance: "system_metrics"
+      debugging: "debug_traces"
+      
+      # Collaborative work
+      research: "shared_research"
+      analysis: "data_analysis"
+      reports: "final_outputs"
+
+agents:
+  # Use specific namespaces for different types of memory
+  - id: user_memory
+    type: memory-reader
+    namespace: conversations        # Only search user conversations
+    
+  - id: fact_memory
+    type: memory-reader
+    namespace: facts               # Only search verified facts
+    
+  - id: error_memory
+    type: memory-writer
+    namespace: errors              # Store errors separately
+```
+
 ## Core Agent Types
 
 ### Binary Agents
@@ -170,64 +709,6 @@ Answer validation with structured output:
       "validity": "assessment of answer quality"
     }
   queue: orka:validate
-```
-
-## Memory Management
-
-### Advanced Memory Reading
-
-Context-aware memory retrieval:
-
-```yaml
-- id: enhanced_memory_search
-  type: memory
-  namespace: knowledge_base
-  config:
-    operation: read
-    limit: 15
-    enable_context_search: true
-    context_weight: 0.4
-    temporal_weight: 0.3
-    enable_temporal_ranking: true
-    context_window_size: 7
-    similarity_threshold: 0.65
-  prompt: |
-    Search for relevant information about: {{ input }}
-    
-    Context from conversation: {{ previous_outputs | join(', ') }}
-  timeout: 20.0
-```
-
-### Intelligent Memory Writing
-
-Memory storage with decay management:
-
-```yaml
-- id: smart_memory_writer
-  type: memory
-  namespace: user_interactions
-  config:
-    operation: write
-    memory_type: auto  # Will classify as short-term or long-term
-    vector: true       # Enable semantic search
-  key_template: "user_{{ user_id }}_{{ timestamp }}"
-  metadata:
-    user_id: "{{ user_id }}"
-    session_id: "{{ session_id }}"
-    interaction_type: "{{ previous_outputs.classifier }}"
-  decay_config:
-    enabled: true
-    default_short_term_hours: 4
-    default_long_term_hours: 336  # 2 weeks
-    importance_rules:
-      critical_info: 2.0
-      user_feedback: 1.8
-      routine_query: 0.6
-  prompt: |
-    Store this interaction:
-    User: {{ input }}
-    Response: {{ previous_outputs.answer_builder }}
-    Classification: {{ previous_outputs.topic_classifier }}
 ```
 
 ## Search and Tools
