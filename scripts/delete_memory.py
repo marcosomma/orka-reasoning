@@ -41,7 +41,7 @@ async def cleanup_expired_memories():
                 print(f"    * {entry['agent_id']} ({entry['memory_type']}) from {entry['stream']}")
 
         logger.client.close()
-        print("✓ Memory decay cleanup completed\n")
+        print("[OK] Memory decay cleanup completed\n")
 
         return stats.get("deleted_count", 0)
 
@@ -104,15 +104,15 @@ async def delete_memories():
                 if result > 0:
                     deleted_count += 1
                     key_name = key.decode() if isinstance(key, bytes) else key
-                    print(f"✓ Deleted: {key_name}")
+                    print(f"[OK] Deleted: {key_name}")
                 else:
                     failed_count += 1
                     key_name = key.decode() if isinstance(key, bytes) else key
-                    print(f"✗ Failed to delete: {key_name} (key may not exist)")
+                    print(f"[FAIL] Failed to delete: {key_name} (key may not exist)")
             except Exception as e:
                 failed_count += 1
                 key_name = key.decode() if isinstance(key, bytes) else key
-                print(f"✗ Error deleting {key_name}: {e!s}")
+                print(f"[ERROR] Error deleting {key_name}: {e!s}")
 
         print("\nFull deletion complete!")
         print(f"Successfully deleted: {deleted_count} keys")
@@ -131,7 +131,7 @@ async def delete_memories():
                 key_name = key.decode() if isinstance(key, bytes) else key
                 print(f"  - {key_name}")
         else:
-            print("\n✓ All OrKa memory keys have been successfully deleted!")
+            print("\n[OK] All OrKa memory keys have been successfully deleted!")
 
         return deleted_count
 
@@ -157,7 +157,7 @@ async def main():
     print("CLEANUP SUMMARY")
     print(f"Expired memories removed by decay cleanup: {decay_deleted}")
     print(f"Total keys removed by full deletion: {full_deleted}")
-    print("✓ Memory cleanup completed successfully!")
+    print("[OK] Memory cleanup completed successfully!")
 
 
 if __name__ == "__main__":

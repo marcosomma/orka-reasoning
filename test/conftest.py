@@ -99,39 +99,39 @@ def patch_redis_globally():
 @pytest.fixture(scope="session", autouse=True)
 def cleanup_memory_after_tests():
     """
-    Fixture that runs delete_memory.py script after all tests complete.
-    This ensures proper cleanup of memory data.
+    Session-scoped fixture that automatically runs memory cleanup after all tests complete.
+    This ensures that test data doesn't persist between test runs.
     """
-    yield  # Let all tests run first
+    # Setup: This runs before all tests
+    yield  # This is where all the tests run
 
-    # Only run cleanup if using real Redis
-    if USE_REAL_REDIS:
-        try:
-            script_path = os.path.join(
-                os.path.dirname(__file__),
-                "..",
-                "scripts",
-                "delete_memory.py",
-            )
-            if os.path.exists(script_path):
-                print("\n🧹 Running memory cleanup after tests...")
-                result = subprocess.run(
-                    [sys.executable, script_path],
-                    check=False,
-                    capture_output=True,
-                    text=True,
-                    timeout=30,
-                )
-                if result.returncode == 0:
-                    print("✅ Memory cleanup completed successfully")
-                else:
-                    print(f"⚠️ Memory cleanup completed with warnings: {result.stderr}")
-            else:
-                print(f"⚠️ Memory cleanup script not found at: {script_path}")
-        except subprocess.TimeoutExpired:
-            print("⚠️ Memory cleanup timed out after 30 seconds")
-        except Exception as e:
-            print(f"⚠️ Error during memory cleanup: {e}")
+    # Teardown: This runs after all tests complete
+    try:
+        print("\n🧹 Cleaning up memory after test session...")
+
+        # Run the delete_memory.py script
+        script_path = os.path.join(os.path.dirname(__file__), "..", "scripts", "delete_memory.py")
+        result = subprocess.run(
+            [sys.executable, script_path],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=30,  # 30 second timeout
+        )
+
+        if result.returncode == 0:
+            print("✅ Memory cleanup completed successfully")
+            if result.stdout.strip():
+                print(f"   Output: {result.stdout.strip()}")
+        else:
+            print(f"⚠️ Memory cleanup finished with return code {result.returncode}")
+            if result.stderr.strip():
+                print(f"   Error: {result.stderr.strip()}")
+
+    except subprocess.TimeoutExpired:
+        print("⏰ Memory cleanup timed out after 30 seconds")
+    except Exception as e:
+        print(f"❌ Error during memory cleanup: {e}")
 
 
 def test_remove_group_keyerror():
@@ -220,12 +220,9 @@ def redis_client():
             client.delete(key)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def valid_orka_yaml():
-    """
-    Fixture providing a valid OrKa YAML configuration for testing.
-    This ensures all tests use proper YAML structure.
-    """
+    """Provide valid OrKa YAML configuration for tests."""
     return """
 orchestrator:
   id: test_orchestrator
@@ -236,7 +233,7 @@ orchestrator:
 
 agents:
   - id: test_agent
-    type: openai-binary
+    type: openai-answer
     queue: orka:test_queue
     prompt: "Test prompt: {{ input }}"
 """
