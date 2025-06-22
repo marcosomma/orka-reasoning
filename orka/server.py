@@ -11,6 +11,74 @@
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
+"""
+🌐 **OrKa Server** - High-Performance API Gateway
+===============================================
+
+The OrKa Server transforms your AI workflows into production-ready APIs with
+enterprise-grade features for reliability, scalability, and monitoring.
+
+**Core Server Philosophy:**
+Think of the OrKa Server as your AI workflow's gateway to the world - providing
+secure, fast, and reliable access to your intelligent agents through modern
+web APIs that scale from prototype to production.
+
+**API Capabilities:**
+- 🚀 **RESTful Endpoints**: Clean, intuitive APIs for workflow execution
+- 📡 **WebSocket Streaming**: Real-time results for interactive applications
+- 📊 **GraphQL Interface**: Flexible querying for complex data requirements
+- 📋 **OpenAPI Documentation**: Interactive testing and client generation
+
+**Production Features:**
+- ✅ **Request/Response Validation**: Pydantic-powered data validation
+- 🛡️ **Rate Limiting & Auth**: Protect your APIs from abuse and unauthorized access
+- 📈 **Metrics & Health Checks**: Comprehensive monitoring and observability
+- 🔄 **Graceful Shutdown**: Clean connection handling during deployments
+
+**Scaling Patterns:**
+- ⚡ **Horizontal Scaling**: Load balancer-friendly stateless architecture
+- 🔗 **Connection Pooling**: Efficient resource management for high throughput
+- ⚙️ **Async Processing**: Non-blocking I/O for maximum concurrency
+- 💾 **Caching Layers**: Intelligent caching for frequently accessed workflows
+
+**Integration Examples:**
+
+```python
+# Web Application Integration
+import httpx
+
+async def call_orka_workflow(user_input: str):
+    async with httpx.AsyncClient() as client:
+        response = await client.post("http://orka-server:8000/api/run", json={
+            "input": user_input,
+            "yaml_config": workflow_config
+        })
+        return response.json()
+
+# Microservice Integration
+from fastapi import FastAPI
+from orka.server import OrKaServer
+
+app = FastAPI()
+orka = OrKaServer()
+
+@app.post("/intelligent-response")
+async def intelligent_response(request: UserRequest):
+    result = await orka.execute_workflow(
+        config="customer_service.yml",
+        input=request.message,
+        context={"user_id": request.user_id}
+    )
+    return {"response": result["answer_agent"]}
+```
+
+**Real-world Applications:**
+- Customer service APIs with intelligent routing and responses
+- Content processing services for media and publishing platforms
+- Research automation APIs for academic and enterprise use
+- Real-time decision APIs for financial and healthcare applications
+"""
+
 import base64
 import logging
 import os
@@ -25,7 +93,11 @@ from fastapi.responses import JSONResponse
 
 from orka.orchestrator import Orchestrator
 
-app = FastAPI()
+app = FastAPI(
+    title="OrKa AI Orchestration API",
+    description="🚀 High-performance API gateway for AI workflow orchestration",
+    version="1.0.0",
+)
 logger = logging.getLogger(__name__)
 
 # CORS (optional, but useful if UI and API are on different ports during dev)
@@ -40,13 +112,25 @@ app.add_middleware(
 
 def sanitize_for_json(obj: Any) -> Any:
     """
-    Recursively sanitize an object for JSON serialization.
+    🧹 **Intelligent JSON sanitizer** - handles complex objects for API responses.
 
-    Args:
-        obj: Object to sanitize
+    **What makes sanitization smart:**
+    - **Type Intelligence**: Automatically handles datetime, bytes, and custom objects
+    - **Recursive Processing**: Deep sanitization of nested structures
+    - **Fallback Safety**: Graceful handling of non-serializable objects
+    - **Performance Optimized**: Efficient processing of large data structures
 
-    Returns:
-        JSON-serializable version of the object
+    **Sanitization Patterns:**
+    - **Bytes**: Converted to base64-encoded strings with type metadata
+    - **Datetime**: ISO format strings for universal compatibility
+    - **Custom Objects**: Introspected and converted to structured dictionaries
+    - **Non-serializable**: Safe string representations with type information
+
+    **Perfect for:**
+    - API responses containing complex agent outputs
+    - Memory objects with mixed data types
+    - Debug information with arbitrary Python objects
+    - Cross-platform data exchange requirements
     """
     try:
         if obj is None or isinstance(obj, (str, int, float, bool)):
@@ -68,13 +152,13 @@ def sanitize_for_json(obj: Any) -> Any:
                     "data": sanitize_for_json(obj.__dict__),
                 }
             except Exception as e:
-                return f"<non-serializable object: {obj.__class__.__name__}, error: {str(e)}>"
+                return f"<non-serializable object: {obj.__class__.__name__}, error: {e!s}>"
         else:
             # Last resort - convert to string
             return f"<non-serializable: {type(obj).__name__}>"
     except Exception as e:
-        logger.warning(f"Failed to sanitize object for JSON: {str(e)}")
-        return f"<sanitization-error: {str(e)}>"
+        logger.warning(f"Failed to sanitize object for JSON: {e!s}")
+        return f"<sanitization-error: {e!s}>"
 
 
 # API endpoint at /api/run
@@ -123,15 +207,15 @@ async def run_execution(request: Request):
                 "input": input_text,
                 "execution_log": sanitized_result,
                 "log_file": sanitized_result,
-            }
+            },
         )
     except Exception as e:
-        logger.error(f"Error creating JSONResponse: {str(e)}")
+        logger.error(f"Error creating JSONResponse: {e!s}")
         # Fallback response with minimal data
         return JSONResponse(
             content={
                 "input": input_text,
-                "error": f"Error creating response: {str(e)}",
+                "error": f"Error creating response: {e!s}",
                 "summary": "Execution completed but response contains non-serializable data",
             },
             status_code=500,

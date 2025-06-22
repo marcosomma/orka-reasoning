@@ -11,13 +11,90 @@
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
+"""
+🚦 **Router Node** - Intelligent Traffic Controller
+================================================
+
+The RouterNode is the intelligent traffic controller of OrKa workflows, enabling
+sophisticated branching logic based on dynamic conditions and previous outputs.
+
+**Core Capabilities:**
+- **Dynamic Routing**: Route execution paths based on runtime decisions
+- **Multi-path Logic**: Support complex branching with multiple destinations
+- **Flexible Matching**: Handle various data types and formats seamlessly
+- **Fallback Handling**: Graceful degradation when no routes match
+
+**Real-world Applications:**
+- Customer service escalation based on urgency classification
+- Content processing pipelines with quality-based routing
+- Multi-language support with language-specific agent routing
+- A/B testing with random or criteria-based routing
+"""
+
 from .base_node import BaseNode
 
 
 class RouterNode(BaseNode):
     """
-    A node that routes the workflow based on a decision value from previous outputs.
-    Supports flexible matching of decision values and routing maps.
+    🚦 **The intelligent traffic controller** - routes execution based on dynamic conditions.
+
+    **What makes routing powerful:**
+    - **Context-Aware Decisions**: Routes based on previous agent outputs and classifications
+    - **Flexible Matching**: Handles strings, booleans, numbers, and complex conditions
+    - **Multi-destination Support**: Can route to multiple agents simultaneously
+    - **Fallback Safety**: Provides default routes when conditions don't match
+
+    **Routing Patterns:**
+
+    **1. Binary Routing** (most common):
+    ```yaml
+    - id: content_router
+      type: router
+      params:
+        decision_key: safety_check
+        routing_map:
+          "true": [content_processor, quality_checker]
+          "false": [content_moderator, human_review]
+    ```
+
+    **2. Multi-way Classification Routing**:
+    ```yaml
+    - id: intent_router
+      type: router
+      params:
+        decision_key: intent_classifier
+        routing_map:
+          "question": [search_agent, answer_builder]
+          "complaint": [escalation_agent, sentiment_analyzer]
+          "compliment": [thank_you_generator]
+          "request": [request_processor, validation_agent]
+    ```
+
+    **3. Priority-based Routing**:
+    ```yaml
+    - id: priority_router
+      type: router
+      params:
+        decision_key: urgency_classifier
+        routing_map:
+          "critical": [immediate_response, alert_manager]
+          "high": [priority_queue, escalation_check]
+          "medium": [standard_processor]
+          "low": [batch_processor]
+    ```
+
+    **Advanced Features:**
+    - **Intelligent Type Conversion**: Automatically handles "true"/"false" strings vs boolean values
+    - **Case-Insensitive Matching**: Robust matching regardless of case variations
+    - **Empty Route Handling**: Graceful handling when no routes are defined
+    - **Multi-agent Routing**: Single decision can trigger multiple parallel paths
+
+    **Perfect for:**
+    - Workflow branching based on AI agent decisions
+    - Quality gates and approval workflows
+    - Multi-language or multi-domain routing
+    - Error handling and fallback logic
+    - A/B testing and experimentation
     """
 
     def __init__(self, node_id, params=None, **kwargs):
@@ -36,7 +113,7 @@ class RouterNode(BaseNode):
         super().__init__(node_id=node_id, prompt=None, queue=None, **kwargs)
         if params is None:
             raise ValueError(
-                "RouterAgent requires 'params' with 'decision_key' and 'routing_map'."
+                "RouterAgent requires 'params' with 'decision_key' and 'routing_map'.",
             )
         self.params = params
 

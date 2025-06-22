@@ -12,45 +12,62 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-OrKa CLI Interface
-==================
+⚡ **OrKa CLI** - The Command Center for AI Orchestration
+======================================================
 
-This module provides a command-line interface (CLI) for the OrKa orchestration framework,
-allowing users to run OrKa workflows directly from the terminal. It handles command-line
-argument parsing, workflow initialization, and result presentation.
+The OrKa CLI is your powerful command center for developing, testing, and operating
+AI workflows. From interactive development to production monitoring, the CLI provides
+comprehensive tools for every stage of your AI application lifecycle.
 
-Usage
------
-.. code-block:: bash
+**Core CLI Philosophy:**
+Think of the OrKa CLI as your mission control center - providing real-time visibility,
+precise control, and powerful automation for your AI workflows. Whether you're
+prototyping a new agent or monitoring production systems, the CLI has you covered.
 
-    python -m orka.orka_cli path/to/config.yml "Your input query"
+**Development Workflows:**
+- 🧪 **Interactive Testing**: Live output streaming with verbose debugging
+- 🔍 **Configuration Validation**: Comprehensive YAML validation and error reporting
+- 🧠 **Memory Inspection**: Deep dive into agent memory and context
+- 📊 **Performance Profiling**: Detailed timing and resource usage analysis
 
-Command-line Arguments
-----------------------
-* ``config`` - Path to the YAML configuration file (required)
-* ``input`` - Query or input text to process (required)
-* ``--log-to-file`` - Save execution trace to a JSON log file (optional)
+**Production Operations:**
+- 🚀 **Batch Processing**: High-throughput processing of large datasets
+- 🧠 **Memory Management**: Cleanup, monitoring, and optimization tools
+- 📈 **Health Monitoring**: Real-time system health and performance metrics
+- 🔧 **Configuration Management**: Deploy and rollback configuration changes
 
-The CLI supports both direct console usage and programmatic invocation through the
-``run_cli_entrypoint`` function, which can be used by other applications to embed
-OrKa functionality.
+**Power User Features:**
+- 📋 **Custom Output Formats**: JSON, CSV, table, and streaming formats
+- 🔄 **Pipeline Integration**: Unix-friendly tools for automation scripts
+- 🔌 **Plugin System**: Extensible architecture for custom commands
+- 📊 **Rich Monitoring**: Beautiful real-time dashboards and alerts
 
-Example
--------
-.. code-block:: python
+**Example Usage Patterns:**
 
-    import asyncio
-    from orka.orka_cli import run_cli_entrypoint
+```bash
+# 🧪 Interactive Development
+orka run workflow.yml "test input" --watch --verbose
+# Live output with detailed debugging information
 
-    async def run_workflow():
-        result = await run_cli_entrypoint(
-            "workflows/qa_pipeline.yml",
-            "What is the capital of France?",
-            log_to_file=True
-        )
-        print(result)
+# 🚀 Production Batch Processing
+orka batch workflow.yml inputs.jsonl --parallel 10 --output results.jsonl
+# High-throughput processing with parallel execution
 
-    asyncio.run(run_workflow())
+# 🧠 Memory Operations
+orka memory stats --namespace conversations --format table
+orka memory cleanup --dry-run --older-than 7d
+orka memory watch --live --format json
+
+# 🔍 Configuration Management
+orka validate workflow.yml --strict --check-agents --check-memory
+orka deploy workflow.yml --environment production --health-check
+```
+
+**Real-world Applications:**
+- Customer service workflow development and testing
+- Content processing pipeline monitoring and optimization
+- Research automation with large-scale data processing
+- Production AI system monitoring and maintenance
 """
 
 import argparse
@@ -72,12 +89,15 @@ logger = logging.getLogger(__name__)
 
 class EventPayload(TypedDict):
     """
-    Type definition for event payload.
+    📊 **Event payload structure** - standardized data format for orchestration events.
 
-    Attributes:
-        message: Human-readable message about the event
-        status: Status of the event (e.g., "success", "error", "in_progress")
-        data: Optional structured data associated with the event
+    **Purpose**: Provides consistent structure for all events flowing through OrKa workflows,
+    enabling reliable monitoring, debugging, and analytics across complex AI systems.
+
+    **Fields:**
+    - **message**: Human-readable description of what happened
+    - **status**: Machine-readable status for automated processing
+    - **data**: Rich structured data for detailed analysis and debugging
     """
 
     message: str
@@ -87,17 +107,24 @@ class EventPayload(TypedDict):
 
 class Event(TypedDict):
     """
-    Type definition for event structure.
+    🎯 **Complete event record** - comprehensive tracking of orchestration activities.
 
-    Represents a complete event record in the orchestration system.
+    **Purpose**: Captures complete context for every action in your AI workflow,
+    providing full traceability and enabling sophisticated monitoring and debugging.
 
-    Attributes:
-        agent_id: Identifier of the agent that generated the event
-        event_type: Type of event (e.g., "start", "end", "error")
-        timestamp: ISO-format timestamp for when the event occurred
-        payload: Structured event payload with message, status, and data
-        run_id: Optional identifier for the orchestration run
-        step: Optional step number in the orchestration sequence
+    **Event Lifecycle:**
+    1. **Creation**: Agent generates event with rich context
+    2. **Processing**: Event flows through orchestration pipeline
+    3. **Storage**: Event persisted to memory for future analysis
+    4. **Analysis**: Event used for monitoring, debugging, and optimization
+
+    **Fields:**
+    - **agent_id**: Which agent generated this event
+    - **event_type**: What type of action occurred
+    - **timestamp**: Precise timing for performance analysis
+    - **payload**: Rich event data with status and context
+    - **run_id**: Links events across a single workflow execution
+    - **step**: Sequential ordering within the workflow
     """
 
     agent_id: str
@@ -123,32 +150,58 @@ async def run_cli_entrypoint(
     log_to_file: bool = False,
 ) -> Union[Dict[str, Any], List[Event], str]:
     """
-    Run the OrKa orchestrator with the given configuration and input.
+    🚀 **Primary programmatic entry point** - run OrKa workflows from any application.
 
-    This function serves as the primary programmatic entry point for running
-    OrKa workflows from other applications. It initializes the orchestrator,
-    runs the workflow, and handles result formatting and logging.
+    **What makes this special:**
+    - **Universal Integration**: Call OrKa from any Python application seamlessly
+    - **Flexible Output**: Returns structured data perfect for further processing
+    - **Production Ready**: Handles errors gracefully with comprehensive logging
+    - **Development Friendly**: Optional file logging for debugging workflows
 
-    Args:
-        config_path: Path to the YAML configuration file
-        input_text: Input question or statement for the orchestrator
-        log_to_file: If True, save the orchestration trace to a log file
+    **Integration Patterns:**
 
-    Returns:
-        The result of the orchestration run, which can be:
+    **1. Simple Q&A Integration:**
+    ```python
+    result = await run_cli_entrypoint(
+        "configs/qa_workflow.yml",
+        "What is machine learning?",
+        log_to_file=False
+    )
+    # Returns: {"answer_agent": "Machine learning is..."}
+    ```
 
-        * A dictionary mapping agent IDs to their outputs
-        * A list of event records from the execution
-        * A simple string output for basic workflows
+    **2. Complex Workflow Integration:**
+    ```python
+    result = await run_cli_entrypoint(
+        "configs/content_moderation.yml",
+        user_generated_content,
+        log_to_file=True  # Debug complex workflows
+    )
+    # Returns: {"safety_check": True, "sentiment": "positive", "topics": ["tech"]}
+    ```
 
-    Example:
-        .. code-block:: python
+    **3. Batch Processing Integration:**
+    ```python
+    results = []
+    for item in dataset:
+        result = await run_cli_entrypoint(
+            "configs/classifier.yml",
+            item["text"],
+            log_to_file=False
+        )
+        results.append(result)
+    ```
 
-            result = await run_cli_entrypoint(
-                "configs/qa_workflow.yml",
-                "Who was the first person on the moon?",
-                log_to_file=True
-            )
+    **Return Value Intelligence:**
+    - **Dict**: Agent outputs mapped by agent ID (most common)
+    - **List**: Complete event trace for debugging complex workflows
+    - **String**: Simple text output for basic workflows
+
+    **Perfect for:**
+    - Web applications needing AI capabilities
+    - Data processing pipelines with AI components
+    - Microservices requiring intelligent decision making
+    - Research applications with custom AI workflows
     """
     orchestrator = Orchestrator(config_path)
     result = await orchestrator.run(input_text)

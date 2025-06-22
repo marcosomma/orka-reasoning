@@ -11,6 +11,44 @@
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
+"""
+🤖 **LLM Agents** - Cloud-Powered Intelligent Processing
+======================================================
+
+This module contains specialized agents that leverage cloud LLMs (OpenAI GPT models)
+for sophisticated natural language understanding and generation tasks.
+
+**Core LLM Agent Types:**
+
+🎨 **OpenAIAnswerBuilder**: The master craftsman of responses
+- Synthesizes multiple data sources into coherent answers
+- Perfect for final response generation in complex workflows
+- Handles context-aware formatting and detailed explanations
+
+🎯 **OpenAIClassificationAgent**: The intelligent router
+- Classifies inputs into predefined categories with high precision
+- Essential for workflow branching and content routing
+- Supports complex multi-class classification scenarios
+
+✅ **OpenAIBinaryAgent**: The precise decision maker
+- Makes accurate true/false determinations
+- Ideal for validation, filtering, and gate-keeping logic
+- Optimized for clear yes/no decision points
+
+**Advanced Features:**
+- 🧠 **Reasoning Extraction**: Captures internal reasoning from <think> blocks
+- 📊 **Cost Tracking**: Automatic token usage and cost calculation
+- 🔧 **JSON Parsing**: Robust handling of structured LLM responses
+- ⚡ **Error Recovery**: Graceful degradation for malformed responses
+- 🎛️ **Flexible Prompting**: Jinja2 template support for dynamic prompts
+
+**Real-world Applications:**
+- Customer service with intelligent intent classification
+- Content moderation with nuanced decision making
+- Research synthesis combining multiple information sources
+- Multi-step reasoning workflows with transparent logic
+"""
+
 import os
 import re
 from typing import Optional
@@ -349,8 +387,40 @@ def _simple_json_parse(response_text) -> dict:
 
 class OpenAIAnswerBuilder(BaseAgent):
     """
-    An agent that uses OpenAI's GPT models to generate answers based on a prompt.
-    This is a base class for various OpenAI-powered agents.
+    🎨 **The master craftsman of responses** - builds comprehensive answers from complex inputs.
+
+    **What makes it special:**
+    - **Multi-source Synthesis**: Combines search results, context, and knowledge seamlessly
+    - **Context Awareness**: Understands conversation history and user intent
+    - **Structured Output**: Generates well-formatted, coherent responses
+    - **Template Power**: Uses Jinja2 for dynamic prompt construction
+    - **Cost Optimization**: Tracks token usage and provides cost insights
+
+    **Perfect for:**
+    - Final answer generation in research workflows
+    - Customer service response crafting
+    - Content creation with multiple input sources
+    - Detailed explanations combining technical and user-friendly language
+
+    **Example Use Cases:**
+    ```yaml
+    # Comprehensive Q&A system
+    - id: answer_builder
+      type: openai-answer
+      prompt: |
+        Create a comprehensive answer using:
+        - Search results: {{ previous_outputs.web_search }}
+        - User context: {{ previous_outputs.user_profile }}
+        - Classification: {{ previous_outputs.intent_classifier }}
+
+        Provide a helpful, accurate response that addresses the user's specific needs.
+    ```
+
+    **Advanced Features:**
+    - Automatic reasoning extraction from <think> blocks
+    - Confidence scoring for answer quality assessment
+    - JSON response parsing with fallback handling
+    - Template variable resolution with rich context
     """
 
     def run(self, input_data) -> dict:
@@ -488,11 +558,42 @@ class OpenAIAnswerBuilder(BaseAgent):
 
 class OpenAIBinaryAgent(OpenAIAnswerBuilder):
     """
-    An agent that uses OpenAI's models to make binary (yes/no) decisions.
+    ✅ **The precise decision maker** - makes accurate true/false determinations.
 
-    This agent processes the input text with GPT and extracts a true/false decision
-    from the generated response. It uses the same mechanism as the OpenAIAnswerBuilder
-    but interprets the output as a binary decision.
+    **Decision-making excellence:**
+    - **High Precision**: Optimized for clear binary classifications
+    - **Context Sensitive**: Considers full context for nuanced decisions
+    - **Confidence Scoring**: Provides certainty metrics for decisions
+    - **Fast Processing**: Streamlined for quick yes/no determinations
+
+    **Essential for:**
+    - Content moderation (toxic/safe, appropriate/inappropriate)
+    - Workflow gating (proceed/stop, valid/invalid)
+    - Quality assurance (pass/fail, correct/incorrect)
+    - User intent validation (question/statement, urgent/routine)
+
+    **Real-world scenarios:**
+    ```yaml
+    # Content safety check
+    - id: safety_check
+      type: openai-binary
+      prompt: "Is this content safe for all audiences? {{ input }}"
+
+    # Search requirement detection
+    - id: needs_search
+      type: openai-binary
+      prompt: "Does this question require current information? {{ input }}"
+
+    # Priority classification
+    - id: is_urgent
+      type: openai-binary
+      prompt: "Is this request urgent based on content and context? {{ input }}"
+    ```
+
+    **Decision Quality:**
+    - Leverages full GPT reasoning capabilities
+    - Provides transparent decision rationale
+    - Handles edge cases and ambiguous inputs gracefully
     """
 
     def run(self, input_data) -> bool:
@@ -564,11 +665,48 @@ class OpenAIBinaryAgent(OpenAIAnswerBuilder):
 
 class OpenAIClassificationAgent(OpenAIAnswerBuilder):
     """
-    An agent that uses OpenAI's models to classify input into categories.
+    🎯 **The intelligent router** - classifies inputs into predefined categories with precision.
 
-    This agent processes the input text with GPT and classifies it into one of the
-    predefined categories based on the model's response. The categories can be
-    customized by setting them in the agent's params.
+    **Classification superpowers:**
+    - **Multi-class Intelligence**: Handles complex category systems with ease
+    - **Context Awareness**: Uses conversation history for better classification
+    - **Confidence Metrics**: Provides certainty scores for each classification
+    - **Dynamic Categories**: Supports runtime category adjustment
+    - **Fallback Handling**: Graceful degradation for unknown categories
+
+    **Essential for:**
+    - Intent detection in conversational AI
+    - Content categorization and routing
+    - Topic classification for knowledge systems
+    - Sentiment and emotion analysis
+    - Domain-specific classification tasks
+
+    **Classification patterns:**
+    ```yaml
+    # Customer service routing
+    - id: intent_classifier
+      type: openai-classification
+      options: [question, complaint, compliment, request, technical_issue]
+      prompt: "Classify customer intent: {{ input }}"
+
+    # Content categorization
+    - id: topic_classifier
+      type: openai-classification
+      options: [technology, science, business, entertainment, sports]
+      prompt: "What topic does this article discuss? {{ input }}"
+
+    # Urgency assessment
+    - id: priority_classifier
+      type: openai-classification
+      options: [low, medium, high, critical]
+      prompt: "Assess priority level based on content and context: {{ input }}"
+    ```
+
+    **Advanced capabilities:**
+    - Hierarchical classification support
+    - Multi-label classification for complex content
+    - Confidence thresholding for quality control
+    - Custom category definitions with examples
     """
 
     def run(self, input_data) -> str:

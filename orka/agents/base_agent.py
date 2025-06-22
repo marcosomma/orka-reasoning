@@ -12,23 +12,35 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-Base Agent Module
-===============
+🧠 **Agents Domain** - Intelligent Processing Units
+================================================
 
-This module defines the base agent classes for the OrKa framework,
-providing both modern async and legacy sync implementations for
-backward compatibility.
+This module defines the foundation for all OrKa agents - the cognitive building blocks
+of your AI workflows. Agents are specialized processing units that transform inputs
+into structured outputs while maintaining context and handling errors gracefully.
 
-The BaseAgent class provides:
-- Asynchronous execution with timeout handling
-- Concurrency control for limiting parallel executions
-- Resource lifecycle management (initialization and cleanup)
-- Standardized error handling and result formatting
-- Integration with the resource registry for dependency injection
-- Backward compatibility with legacy sync agents
+**Core Agent Philosophy:**
+Think of agents as expert consultants in your workflow - each with specialized knowledge
+and capabilities, working together to solve complex problems. They provide:
 
-This unified implementation supports both the modern async pattern
-and the legacy synchronous pattern for backward compatibility.
+- 🎯 **Specialized Intelligence**: Each agent excels at specific tasks
+- 🧠 **Context Awareness**: Maintains conversation and processing context
+- 🔄 **Error Resilience**: Graceful failure handling with fallback strategies
+- ⚡ **Performance**: Async execution with concurrency control
+- 🔧 **Flexibility**: Support for both cloud LLMs and local models
+
+**Agent Types:**
+- **Classification Agents**: Route and categorize inputs intelligently
+- **Answer Builders**: Synthesize complex information into coherent responses
+- **Binary Agents**: Make precise true/false decisions
+- **Memory Agents**: Store and retrieve contextual information
+- **Tool Agents**: Integrate with external services and APIs
+
+**Real-world Applications:**
+- Customer service workflows with intelligent routing
+- Content moderation with multi-stage validation
+- Research assistants that combine search and synthesis
+- Conversational AI with persistent memory
 """
 
 import abc
@@ -47,13 +59,43 @@ T = TypeVar("T")
 
 class BaseAgent:
     """
-    Base class for all modern agents in the OrKa framework.
+    🧠 **Foundation for all OrKa agents** - the cognitive building blocks of your workflows.
 
-    Provides common functionality for asynchronous execution, concurrency control,
-    error handling, and resource management that all derived agent classes inherit.
+    **What makes agents special:**
+    - **Intelligent Processing**: Transform raw inputs into structured, meaningful outputs
+    - **Context Preservation**: Maintain conversation flow and processing history
+    - **Async Performance**: Non-blocking execution with timeout and concurrency control
+    - **Error Intelligence**: Graceful failure handling with detailed diagnostics
+    - **Resource Management**: Automatic initialization and cleanup of dependencies
 
-    This class supports both modern async patterns and legacy sync patterns
-    for backward compatibility.
+    **Agent Lifecycle:**
+    1. **Initialization**: Set up resources and validate configuration
+    2. **Execution**: Process inputs with full context awareness
+    3. **Result Handling**: Structure outputs for downstream processing
+    4. **Cleanup**: Release resources and maintain system health
+
+    **Perfect for building:**
+    - Multi-step reasoning workflows
+    - Intelligent content processing pipelines
+    - Context-aware conversational systems
+    - Fault-tolerant distributed AI applications
+
+    **Example Usage:**
+    ```python
+    # Create a specialized agent
+    classifier = OpenAIClassificationAgent(
+        agent_id="intent_classifier",
+        options=["question", "request", "complaint"],
+        prompt="Classify user intent: {{ input }}"
+    )
+
+    # Execute with context
+    result = await classifier.run({
+        "input": "How do I reset my password?",
+        "user_id": "user123",
+        "session_context": previous_interactions
+    })
+    ```
     """
 
     def __init__(
@@ -142,7 +184,9 @@ class BaseAgent:
         try:
             # Use concurrency manager to run the agent
             result = await self.concurrency.run_with_timeout(
-                self._run_impl, self.timeout, ctx
+                self._run_impl,
+                self.timeout,
+                ctx,
             )
             return Output(
                 result=result,
@@ -151,7 +195,7 @@ class BaseAgent:
                 metadata={"agent_id": self.agent_id},
             )
         except Exception as e:
-            logger.error(f"Agent {self.agent_id} failed: {str(e)}")
+            logger.error(f"Agent {self.agent_id} failed: {e!s}")
             return Output(
                 result=None,
                 status="error",
@@ -192,7 +236,7 @@ class BaseAgent:
             NotImplementedError: If not implemented by a subclass that needs legacy support
         """
         raise NotImplementedError(
-            "Legacy agents must implement _run_legacy or override run"
+            "Legacy agents must implement _run_legacy or override run",
         )
 
     async def cleanup(self) -> None:
@@ -256,4 +300,3 @@ class LegacyBaseAgent(abc.ABC, BaseAgent):
         Raises:
             NotImplementedError: If not implemented by a subclass.
         """
-        pass
