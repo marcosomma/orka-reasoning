@@ -160,27 +160,72 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         # Clamp score between 0.0 and 1.0
         return max(0.0, min(1.0, score))
 
-    def _classify_memory_type(self, event_type: str, importance_score: float) -> str:
+    def _classify_memory_type(
+        self,
+        event_type: str,
+        importance_score: float,
+        category: str = "log",
+    ) -> str:
         """
         Classify memory entry as short-term or long-term.
 
         Args:
             event_type: Type of the event
             importance_score: Calculated importance score
+            category: Memory category ("stored" or "log")
 
         Returns:
             "short_term" or "long_term"
         """
+        # CRITICAL: Only "stored" memories should be classified as long-term
+        # Orchestration logs should always be short-term to avoid confusion
+        if category == "log":
+            return "short_term"
+
         rules = self.decay_config["memory_type_rules"]
 
-        # Check explicit rules first
+        # Check explicit rules first (only for stored memories)
         if event_type in rules["long_term_events"]:
             return "long_term"
         if event_type in rules["short_term_events"]:
             return "short_term"
 
-        # Fallback to importance score
+        # Fallback to importance score (only for stored memories)
         return "long_term" if importance_score >= 0.7 else "short_term"
+
+    def _classify_memory_category(
+        self,
+        event_type: str,
+        agent_id: str,
+        payload: Dict[str, Any],
+    ) -> str:
+        """
+        Classify memory entry category for separation between logs and stored memories.
+
+        Args:
+            event_type: Type of the event
+            agent_id: ID of the agent generating the event
+            payload: Event payload
+
+        Returns:
+            "stored" for memory writer outputs, "log" for other events
+        """
+        # Memory writes from memory writer nodes should be categorized as "stored"
+        if event_type == "write" and ("memory" in agent_id.lower() or "writer" in agent_id.lower()):
+            return "stored"
+
+        # Check payload for memory content indicators
+        if isinstance(payload, dict):
+            # If payload contains content field, it's likely stored memory
+            if payload.get("content") and payload.get("metadata"):
+                return "stored"
+
+            # If it's a memory operation result
+            if payload.get("memory_object") or payload.get("memories"):
+                return "stored"
+
+        # Default to log for orchestration events
+        return "log"
 
     def _start_decay_scheduler(self):
         """Start the automatic decay scheduler thread."""

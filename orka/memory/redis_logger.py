@@ -124,6 +124,9 @@ class RedisMemoryLogger(BaseMemoryLogger):
                     safe_payload,
                 )
 
+                # Classify memory category for separation first
+                memory_category = self._classify_memory_category(event_type, agent_id, safe_payload)
+
                 # Check for agent-specific default memory type first
                 if "default_long_term" in effective_decay_config:
                     if effective_decay_config["default_long_term"]:
@@ -131,8 +134,12 @@ class RedisMemoryLogger(BaseMemoryLogger):
                     else:
                         memory_type = "short_term"
                 else:
-                    # Fall back to standard classification
-                    memory_type = self._classify_memory_type(event_type, importance_score)
+                    # Fall back to standard classification with category context
+                    memory_type = self._classify_memory_type(
+                        event_type,
+                        importance_score,
+                        memory_category,
+                    )
 
                 # Calculate expiration time
                 current_time = datetime.now(UTC)
@@ -152,6 +159,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
                 decay_metadata = {
                     "orka_importance_score": str(importance_score),
                     "orka_memory_type": memory_type,
+                    "orka_memory_category": memory_category,
                     "orka_expire_time": expire_time.isoformat(),
                     "orka_created_time": current_time.isoformat(),
                 }
@@ -177,6 +185,29 @@ class RedisMemoryLogger(BaseMemoryLogger):
             event["previous_outputs"] = self._sanitize_for_json(previous_outputs)
 
         self.memory.append(event)
+
+        # Determine which stream(s) to write to based on memory category
+        streams_to_write = []
+
+        # Get memory category from decay metadata
+        memory_category = decay_metadata.get("orka_memory_category", "log")
+
+        if memory_category == "stored" and event_type == "write" and isinstance(safe_payload, dict):
+            # For stored memories, only write to namespace-specific stream
+            namespace = safe_payload.get("namespace")
+            session = safe_payload.get("session", "default")
+            if namespace:
+                namespace_stream = f"orka:memory:{namespace}:{session}"
+                streams_to_write.append(namespace_stream)
+                logger.info(
+                    f"Writing stored memory to namespace-specific stream: {namespace_stream}",
+                )
+            else:
+                # Fallback to general stream if no namespace
+                streams_to_write.append(self.stream_key)
+        else:
+            # For orchestration logs and other events, write to general stream
+            streams_to_write.append(self.stream_key)
 
         try:
             # Sanitize previous outputs if present
@@ -217,8 +248,13 @@ class RedisMemoryLogger(BaseMemoryLogger):
             if safe_previous_outputs:
                 redis_entry["previous_outputs"] = safe_previous_outputs
 
-            # Add the entry to Redis
-            self.client.xadd(self.stream_key, redis_entry)
+            # Write to all determined streams
+            for stream_key in streams_to_write:
+                try:
+                    self.client.xadd(stream_key, redis_entry)
+                    logger.debug(f"Successfully wrote to stream: {stream_key}")
+                except Exception as stream_e:
+                    logger.error(f"Failed to write to stream {stream_key}: {stream_e!s}")
 
         except Exception as e:
             logger.error(f"Failed to log event to Redis: {e!s}")
@@ -238,7 +274,14 @@ class RedisMemoryLogger(BaseMemoryLogger):
                 }
                 simplified_entry.update(decay_metadata)
 
-                self.client.xadd(self.stream_key, simplified_entry)
+                # Write simplified entry to all streams
+                for stream_key in streams_to_write:
+                    try:
+                        self.client.xadd(stream_key, simplified_entry)
+                    except Exception as stream_e:
+                        logger.error(
+                            f"Failed to write simplified entry to stream {stream_key}: {stream_e!s}",
+                        )
                 logger.info("Logged simplified error payload instead")
             except Exception as inner_e:
                 logger.error(
@@ -621,6 +664,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
                 "total_entries": 0,
                 "entries_by_type": {},
                 "entries_by_memory_type": {"short_term": 0, "long_term": 0, "unknown": 0},
+                "entries_by_category": {"stored": 0, "log": 0, "unknown": 0},
                 "expired_entries": 0,
                 "streams_detail": [],
             }
@@ -653,6 +697,11 @@ class RedisMemoryLogger(BaseMemoryLogger):
                             "entries_by_memory_type": {
                                 "short_term": 0,
                                 "long_term": 0,
+                                "unknown": 0,
+                            },
+                            "entries_by_category": {
+                                "stored": 0,
+                                "log": 0,
                                 "unknown": 0,
                             },
                             "expired_entries": 0,
@@ -690,17 +739,31 @@ class RedisMemoryLogger(BaseMemoryLogger):
                                     stats["entries_by_type"].get(event_type, 0) + 1
                                 )
 
-                                # Count by memory type
-                                memory_type = entry_data.get(
-                                    b"orka_memory_type",
+                                # Count by memory category first
+                                memory_category = entry_data.get(
+                                    b"orka_memory_category",
                                     b"unknown",
                                 ).decode()
-                                if memory_type in stream_stats["entries_by_memory_type"]:
-                                    stream_stats["entries_by_memory_type"][memory_type] += 1
-                                    stats["entries_by_memory_type"][memory_type] += 1
+                                if memory_category in stream_stats["entries_by_category"]:
+                                    stream_stats["entries_by_category"][memory_category] += 1
+                                    stats["entries_by_category"][memory_category] += 1
                                 else:
-                                    stream_stats["entries_by_memory_type"]["unknown"] += 1
-                                    stats["entries_by_memory_type"]["unknown"] += 1
+                                    stream_stats["entries_by_category"]["unknown"] += 1
+                                    stats["entries_by_category"]["unknown"] += 1
+
+                                # Count by memory type ONLY for non-log entries
+                                # Logs should be excluded from memory type statistics
+                                if memory_category != "log":
+                                    memory_type = entry_data.get(
+                                        b"orka_memory_type",
+                                        b"unknown",
+                                    ).decode()
+                                    if memory_type in stream_stats["entries_by_memory_type"]:
+                                        stream_stats["entries_by_memory_type"][memory_type] += 1
+                                        stats["entries_by_memory_type"][memory_type] += 1
+                                    else:
+                                        stream_stats["entries_by_memory_type"]["unknown"] += 1
+                                        stats["entries_by_memory_type"]["unknown"] += 1
 
                         stats["streams_detail"].append(stream_stats)
 

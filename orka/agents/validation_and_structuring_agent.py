@@ -16,6 +16,8 @@ ValidationAndStructuringAgent
 import json
 from typing import Any, Dict, Optional
 
+from jinja2 import Template
+
 from .base_agent import BaseAgent
 from .llm_agents import OpenAIAnswerBuilder
 
@@ -96,7 +98,22 @@ class ValidationAndStructuringAgent(BaseAgent):
 
         store_structure = self.params.get("store_structure")
 
-        prompt = self.build_prompt(question, context, answer, store_structure)
+        # Check if we have a custom prompt that needs template rendering
+        if (
+            hasattr(self.llm_agent, "prompt")
+            and self.llm_agent.prompt
+            and self.llm_agent.prompt.strip()
+        ):
+            # Use custom prompt with template rendering
+            try:
+                template = Template(self.llm_agent.prompt)
+                prompt = template.render(**input_data)
+            except Exception:
+                # Fallback to original prompt if rendering fails
+                prompt = self.llm_agent.prompt
+        else:
+            # Use default prompt building logic
+            prompt = self.build_prompt(question, context, answer, store_structure)
 
         # Create LLM input with prompt but disable automatic JSON parsing
         # We'll handle JSON parsing manually since we expect a different schema
@@ -204,6 +221,17 @@ class ValidationAndStructuringAgent(BaseAgent):
         Returns:
             The complete prompt for the LLM
         """
+        # If we have a custom prompt from the configuration, use it instead of the default logic
+        if (
+            hasattr(self.llm_agent, "prompt")
+            and self.llm_agent.prompt
+            and self.llm_agent.prompt.strip()
+        ):
+            # Use the custom prompt from the YAML configuration
+            # The custom prompt should handle template variables itself
+            return self.llm_agent.prompt
+
+        # Fallback to default prompt building logic if no custom prompt is provided
         # Handle cases where context or answer is "NONE" or empty
         if context in ["NONE", "", None]:
             context = "No context available"
@@ -283,6 +311,6 @@ Ensure all required fields are present and properly formatted."""
         else:
             return """Structure the memory object with these fields:
 - fact: The validated fact or information
-- category: The category or type of information
+- category: The category or type of information (e.g., 'fact', 'opinion', 'data')
 - confidence: A number between 0 and 1 indicating confidence in the fact
 - source: The source of the information (e.g., 'context', 'answer', 'inferred')"""

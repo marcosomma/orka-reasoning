@@ -152,6 +152,7 @@ class MemoryEntry(TypedDict):
         timestamp: When this memory was created or last updated
         metadata: Additional information about the memory's source and context
         is_summary: Whether this entry is a summary of other memories
+        category: Category for memory separation (log, stored, etc.)
     """
 
     content: str
@@ -159,3 +160,4 @@ class MemoryEntry(TypedDict):
     timestamp: datetime
     metadata: Dict[str, Any]
     is_summary: bool
+    category: Optional[str]

@@ -202,6 +202,12 @@ def memory_stats(args):
                 for memory_type, count in stats["entries_by_memory_type"].items():
                     print(f"  {memory_type}: {count}")
 
+            if stats.get("entries_by_category"):
+                print("\nEntries by Category:")
+                for category, count in stats["entries_by_category"].items():
+                    if count > 0:  # Only show categories with entries
+                        print(f"  {category}: {count}")
+
             if stats.get("decay_config"):
                 print("\nDecay Configuration:")
                 config = stats["decay_config"]
@@ -380,6 +386,7 @@ def memory_watch(args):
             from rich.table import Table
             from rich.text import Text
 
+            # Create console with reduced height (2 lines smaller than terminal)
             console = Console()
 
             def create_display():
@@ -391,10 +398,15 @@ def memory_watch(args):
                 # Create main layout
                 layout = Layout()
 
-                # Header
+                # Compact header that fits in terminal width
+                terminal_width = console.size.width
                 header_text = Text(f"OrKa Memory Watch - {current_time}", style="bold cyan")
-                header_text.append(f" | Backend: {backend}", style="dim")
-                header_text.append(f" | Refresh: {args.interval}s", style="dim")
+
+                # Only add backend and refresh info if there's space
+                if terminal_width > 60:
+                    header_text.append(f" | Backend: {backend}", style="dim")
+                    if terminal_width > 80:
+                        header_text.append(f" | Refresh: {args.interval}s", style="dim")
 
                 # Main stats panel - compact layout for efficiency
                 main_stats = Table.grid(padding=0)
@@ -477,7 +489,7 @@ def memory_watch(args):
 
                     # Add padding rows to maintain consistent height
                     current_rows = len(type_items)
-                    min_rows = 3
+                    min_rows = 1
                     for _ in range(max(0, min_rows - current_rows)):
                         entries_table.add_row("", "", "")
                 else:
@@ -515,7 +527,7 @@ def memory_watch(args):
                             rows_added += 1
 
                     # Add padding rows to maintain consistent height
-                    min_rows = 3
+                    min_rows = 1
                     for _ in range(max(0, min_rows - rows_added)):
                         memory_table.add_row("", "", "")
                 else:
@@ -529,31 +541,154 @@ def memory_watch(args):
                     for _ in range(2):
                         memory_table.add_row("", "", "")
 
-                # Create layout structure - make it dynamic and content-aware
-                # Adjust ratios based on content size
-                entry_count = len(stats.get("entries_by_type", {}))
-                memory_type_count = len(
-                    [x for x in stats.get("entries_by_memory_type", {}).values() if x > 0],
+                # Create category table for log/stored separation
+                category_table = Table(title="Memory Categories", box=box.ROUNDED, show_lines=False)
+                category_table.add_column("Category", style="cyan", ratio=2)
+                category_table.add_column("Count", justify="right", style="magenta", width=6)
+                category_table.add_column("Purpose", style="bold", ratio=1)
+
+                # Populate category table
+                category_data = stats.get("entries_by_category", {})
+                if category_data and any(count > 0 for count in category_data.values()):
+                    # Sort by count, then by category name for consistent display
+                    sorted_categories = sorted(
+                        category_data.items(),
+                        key=lambda x: (-x[1], x[0]),  # Sort by count desc, then name asc
+                    )
+
+                    rows_added = 0
+                    for category, count in sorted_categories:
+                        if count > 0:  # Only show categories with actual entries
+                            if category == "stored":
+                                purpose = "[blue]Retrievable[/blue]"
+                            elif category == "log":
+                                purpose = "[yellow]Orchestration[/yellow]"
+                            else:
+                                purpose = "[red]Unknown[/red]"
+
+                            category_table.add_row(category, str(count), purpose)
+                            rows_added += 1
+
+                    # Add padding rows to maintain consistent height
+                    min_rows = 3
+                    for _ in range(max(0, min_rows - rows_added)):
+                        category_table.add_row("", "", "")
+                else:
+                    # Only add placeholder when we truly have no data
+                    category_table.add_row(
+                        "[dim]No categories[/dim]",
+                        "[dim]0[/dim]",
+                        "[dim]N/A[/dim]",
+                    )
+                    # Add padding for consistent height
+                    for _ in range(2):
+                        category_table.add_row("", "", "")
+
+                # Create unified single-box layout that scales properly
+                # Combine all information into one cohesive display
+
+                # Create a unified table combining all key information
+                unified_table = Table(
+                    title="OrKa Memory Dashboard",
+                    box=box.ROUNDED,
+                    show_lines=True,  # Remove lines for cleaner look
+                    expand=True,  # Don't expand to full width
+                    width=min(
+                        console.size.width - 6,
+                        console.size.width - 1,
+                    ),  # Limit width to prevent overflow
                 )
 
-                # Use compact mode if requested or if there are many entries
-                is_compact = getattr(args, "compact", False) or entry_count > 6
+                # Add columns with fixed widths to prevent overflow
+                unified_table.add_column("Metric", style="bold cyan", width=20, no_wrap=True)
+                unified_table.add_column(
+                    "Value",
+                    justify="right",
+                    style="green",
+                    width=8,
+                    no_wrap=True,
+                )
+                unified_table.add_column("Details", style="dim", min_width=20, max_width=40)
 
-                # Fixed layout to prevent jumping - use absolute sizes
+                # Add main stats rows
+                unified_table.add_row(
+                    "🔧 Backend",
+                    str(stats.get("backend", backend)),
+                    f"Decay: {'✅ Enabled' if stats.get('decay_enabled', False) else '❌ Disabled'}",
+                )
+
+                unified_table.add_row(
+                    "📊 Total Streams",
+                    str(stats.get("total_streams", 0)),
+                    f"Entries: {stats.get('total_entries', 0)} | Expired: {stats.get('expired_entries', 0)}",
+                )
+
+                # Add memory type breakdown - always show, even with 0 values
+                memory_types_summary = stats.get("entries_by_memory_type", {})
+                short_term = memory_types_summary.get("short_term", 0)
+                long_term = memory_types_summary.get("long_term", 0)
+                unknown = memory_types_summary.get("unknown", 0)
+                total_memory_types = short_term + long_term + unknown
+
+                unified_table.add_row(
+                    "🧠 Memory Types",
+                    f"{total_memory_types}",
+                    f"🔥 Short: {short_term} | 💾 Long: {long_term}"
+                    + (f" | ❓ Unknown: {unknown}" if unknown > 0 else ""),
+                )
+
+                # Add category breakdown - always show, even with 0 values
+                category_data = stats.get("entries_by_category", {})
+                stored_count = category_data.get("stored", 0)
+                log_count = category_data.get("log", 0)
+                unknown_count = category_data.get("unknown", 0)
+                total_categories = stored_count + log_count + unknown_count
+
+                unified_table.add_row(
+                    "📂 Categories",
+                    f"{total_categories}",
+                    f"🗃️ Stored: {stored_count} | 📝 Logs: {log_count}"
+                    + (f" | ❓ Unknown: {unknown_count}" if unknown_count > 0 else ""),
+                )
+
+                # Add separator
+                unified_table.add_row("[bold]Entry Types Breakdown[/bold]", "", "")
+
+                # Add entry types with progress bars
+                if stats.get("entries_by_type"):
+                    total_entries = max(stats.get("total_entries", 1), 1)
+                    type_items = sorted(
+                        stats["entries_by_type"].items(),
+                        key=lambda x: x[1],
+                        reverse=True,
+                    )
+
+                    for event_type, count in type_items[:8]:  # Show top 8 types
+                        # Create progress bar
+                        percentage = (count / total_entries) * 100
+                        bar_filled = int((count / total_entries) * 20)  # Longer bar for detail
+                        bar = "█" * bar_filled + "░" * (20 - bar_filled)
+
+                        unified_table.add_row(
+                            f"  └─ {event_type}",
+                            str(count),
+                            f"[green]{bar}[/green] {percentage:.1f}%",
+                        )
+
+                    # Show remaining count if there are more types
+                    if len(type_items) > 8:
+                        remaining = len(type_items) - 8
+                        remaining_count = sum(count for _, count in type_items[8:])
+                        unified_table.add_row(
+                            f"  └─ +{remaining} more types",
+                            str(remaining_count),
+                            "[dim]Use --verbose for full list[/dim]",
+                        )
+
+                # Single unified layout
                 layout.split_column(
-                    Layout(Panel(header_text, style="bold blue"), size=3),
-                    Layout(Panel(main_stats, title="Statistics", style="green"), size=6),
-                    Layout(
-                        Columns([entries_table, memory_table], equal=True),
-                        size=15,  # Fixed size to prevent jumping
-                    ),
-                    Layout(
-                        Panel(
-                            Text("Press Ctrl+C to exit", style="dim italic", justify="center"),
-                            style="dim",
-                        ),
-                        size=3,
-                    ),
+                    Layout(Panel(header_text, style="bold cyan"), name="header", size=3),
+                    Layout(Panel(unified_table, padding=(1, 2)), name="unified_content"),
                 )
 
                 return layout

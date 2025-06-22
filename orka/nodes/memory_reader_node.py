@@ -41,6 +41,10 @@ class MemoryReaderNode(BaseNode):
             24,
         )  # Hours for temporal decay
 
+        # Memory category filtering - disabled by default for backward compatibility
+        # Set to "stored" if you want to only retrieve stored memories and filter out logs
+        self.memory_category_filter = kwargs.get("memory_category_filter")
+
         # Store agent-level decay configuration
         self.decay_config = kwargs.get("decay_config", {})
 
@@ -798,51 +802,133 @@ class MemoryReaderNode(BaseNode):
         query: str,
         conversation_context: List[Dict[str, Any]],
     ) -> List[Dict[str, Any]]:
-        """Enhanced filtering that considers context and hybrid scores."""
-        query_keywords = set([w.lower() for w in query.split() if len(w) > 3])
-        if not query_keywords:
-            query_keywords = set(query.lower().split())
+        """
+        Filter memories by enhanced relevance criteria including category filtering.
 
-        # Extract context keywords
-        context_keywords = set()
-        for ctx_item in conversation_context:
-            content_words = [w.lower() for w in ctx_item.get("content", "").split() if len(w) > 3]
-            context_keywords.update(content_words[:5])
+        Args:
+            memories: List of memory objects
+            query: Original query
+            conversation_context: Conversation context for relevance scoring
 
-        filtered = []
+        Returns:
+            List of filtered memory objects
+        """
+        if not memories:
+            return []
+
+        filtered_memories = []
+
         for memory in memories:
-            # Accept memories with high hybrid scores
-            hybrid_score = memory.get("hybrid_score", memory.get("similarity", 0))
-            if hybrid_score >= 0.4:  # Higher threshold for hybrid score
-                filtered.append(memory)
-                continue
+            try:
+                # Category-based filtering - only include stored memories for retrieval
+                if self.memory_category_filter:
+                    memory_category = memory.get("metadata", {}).get("category", "unknown")
 
-            # Accept memories with good base similarity
-            if memory.get("similarity", 0) >= 0.3:  # Lower threshold for base similarity
-                filtered.append(memory)
-                continue
+                    # For backward compatibility, if category is unknown/unset, treat as "stored"
+                    # This ensures existing memories without category field can still be retrieved
+                    if memory_category == "unknown":
+                        memory_category = "stored"
 
-            # Check for keyword presence (query or context)
-            content_lower = memory.get("content", "").lower()
-            content_words = set(content_lower.split())
+                    if memory_category != self.memory_category_filter:
+                        logger.debug(
+                            f"Filtered out {memory_category} memory, keeping only {self.memory_category_filter}",
+                        )
+                        continue
 
-            if query_keywords.intersection(content_words):
-                filtered.append(memory)
-                continue
+                # Enhanced relevance scoring
+                content = memory.get("content", "")
+                similarity = memory.get("similarity", 0.0)
 
-            if context_keywords and context_keywords.intersection(content_words):
-                filtered.append(memory)
-                continue
+                # Basic relevance check
+                if similarity < self.similarity_threshold * 0.3:  # Very low threshold for recall
+                    continue
 
-            # Check if direct substrings match
-            for keyword in query_keywords:
-                if len(keyword) > 3 and keyword in content_lower:
-                    filtered.append(memory)
-                    break
+                # Content relevance check
+                query_words = set(query.lower().split())
+                content_words = set(content.lower().split())
+                word_overlap = len(query_words.intersection(content_words))
 
-        # Sort by hybrid score
-        filtered.sort(key=lambda x: x.get("hybrid_score", x.get("similarity", 0)), reverse=True)
-        return filtered
+                # Context relevance check
+                context_relevance = 0.0
+                if conversation_context:
+                    for ctx_item in conversation_context:
+                        ctx_content = ctx_item.get("content", "")
+                        if ctx_content:
+                            ctx_words = set(ctx_content.lower().split())
+                            ctx_overlap = len(content_words.intersection(ctx_words))
+                            context_relevance += ctx_overlap / max(len(ctx_words), 1)
+
+                # Combined relevance score
+                combined_relevance = (
+                    similarity * 0.5  # Semantic similarity
+                    + (word_overlap / max(len(query_words), 1)) * 0.3  # Query overlap
+                    + context_relevance * 0.2  # Context relevance
+                )
+
+                # Apply enhanced filtering
+                if combined_relevance >= 0.1:  # Low threshold for high recall
+                    memory["combined_relevance"] = combined_relevance
+                    filtered_memories.append(memory)
+
+            except Exception as e:
+                logger.error(f"Error filtering memory: {e!s}")
+                # Include memory on error to be safe
+                filtered_memories.append(memory)
+
+        # Sort by combined relevance if available, otherwise by similarity
+        filtered_memories.sort(
+            key=lambda x: x.get("combined_relevance", x.get("similarity", 0.0)),
+            reverse=True,
+        )
+
+        return filtered_memories[: self.limit]
+
+    def _filter_by_category(self, memories: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Filter memories by category to separate stored memories from orchestration logs.
+
+        Args:
+            memories: List of memory objects
+
+        Returns:
+            List of filtered memory objects matching the category filter
+        """
+        if not self.memory_category_filter or not memories:
+            return memories
+
+        filtered_memories = []
+
+        for memory in memories:
+            try:
+                # Check memory category in metadata or direct field
+                memory_category = memory.get("metadata", {}).get("category", "unknown")
+
+                # Also check direct category field for backward compatibility
+                if memory_category == "unknown":
+                    memory_category = memory.get("category", "unknown")
+
+                # For backward compatibility, if category is still unknown/unset, treat as "stored"
+                # This ensures existing memories without category field can still be retrieved
+                if memory_category == "unknown":
+                    memory_category = "stored"
+
+                # Apply category filter
+                if memory_category == self.memory_category_filter:
+                    filtered_memories.append(memory)
+                    logger.debug(
+                        f"Included {memory_category} memory matching filter {self.memory_category_filter}",
+                    )
+                else:
+                    logger.debug(
+                        f"Filtered out {memory_category} memory, keeping only {self.memory_category_filter}",
+                    )
+
+            except Exception as e:
+                logger.error(f"Error checking memory category: {e!s}")
+                # Include memory on error to be safe
+                filtered_memories.append(memory)
+
+        return filtered_memories
 
     async def _keyword_search(self, namespace, query):
         """Search for memories using simple keyword matching."""

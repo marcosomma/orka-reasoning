@@ -1,0 +1,234 @@
+orchestrator:
+  id: test-routing-memory-writers
+  strategy: decision-tree
+  queue: orka:test-routing-memory
+  memory:
+    enabled: false
+  agents:
+    - memory_reader
+    - binary_answer_classifier
+    - memory_check_router
+
+agents:
+  - id: memory_reader
+    type: memory
+    queue: orka:memory-reader
+    config:
+      operation: read
+      limit: 5
+      enable_context_search: true
+      similarity_threshold: 0.3
+    namespace: processed_numbers
+    prompt: "Search for previous analysis of number: {{ input }}"
+
+  - id: binary_answer_classifier
+    type: openai-binary
+    prompt: "Can the previous memory provide a complete answer to this question? ##QUESTION: Is {{ input }} greater than 5? ##MEMORY: {{ previous_outputs.memory_reader.result }}. Return true if the memory contains analysis for this specific number that can answer the question, false if memory is empty or irrelevant."
+    queue: orka:classify
+
+  - id: memory_check_router
+    type: router
+    params:
+      decision_key: binary_answer_classifier
+      routing_map:
+        "false": [binary_classifier, classification_router] # No existing memory found, process normally
+        "true": [answer_returner] # Memory found, return stored answer
+
+  - id: answer_returner
+    type: openai-answer
+    prompt: |
+      Based on previously stored analysis:
+      {{ previous_outputs.memory_reader }}
+
+      Return the cached result for input "{{ input }}" without reprocessing.
+
+  - id: binary_classifier
+    type: openai-binary
+    prompt: "Is the number in this input greater than 5? Return true or false: {{ input }}"
+    queue: orka:classify
+
+  - id: classification_router
+    type: router
+    params:
+      decision_key: binary_classifier
+      routing_map:
+        "true": [true_validation_guardian, true_memory_writer]
+        "false": [false_validation_guardian, false_memory_writer]
+
+  - id: true_validation_guardian
+    type: validate_and_structure
+    queue: orka:validation-guardian-true
+    prompt: |
+      Validate and structure the following number classification result for memory storage:
+
+      Question: Is the number {{ input }} greater than 5?
+      Answer: Yes, {{ input }} IS greater than 5
+      Classification Result: TRUE
+      Binary Classifier Output: {{ previous_outputs.binary_classifier }}
+
+      This is a valid mathematical analysis. Please validate this result and structure it for memory storage.
+
+      The analysis shows that {{ input }} > 5, which makes the "greater than 5" condition TRUE.
+
+      IMPORTANT: You MUST respond with the exact JSON format specified below. Do not use any other format.
+
+      Return your response in the following JSON format:
+      {
+          "valid": true,
+          "reason": "The mathematical analysis is correct - {{ input }} is indeed > 5",
+          "memory_object": {
+              "number": "{{ input }}",
+              "result": "true",
+              "condition": "greater_than_5",
+              "analysis_type": "number_comparison",
+              "confidence": {{ previous_outputs.binary_classifier.confidence }},
+              "category": "mathematical_analysis",
+              "validation_status": "validated",
+              "validation_reason": "Correct mathematical classification"
+          }
+      }
+    depends_on:
+      - binary_classifier
+    store_structure: |
+      {
+        "number": "string",
+        "result": "string", 
+        "condition": "string",
+        "analysis_type": "string",
+        "confidence": "number",
+        "category": "string",
+        "validation_status": "string",
+        "validation_reason": "string"
+      }
+
+  - id: false_validation_guardian
+    type: validate_and_structure
+    queue: orka:validation-guardian-false
+    prompt: |
+      Validate and structure the following number classification result for memory storage:
+
+      Question: Is the number {{ input }} greater than 5?
+      Answer: No, {{ input }} is NOT greater than 5 (it is less than or equal to 5)
+      Classification Result: FALSE
+      Binary Classifier Output: {{ previous_outputs.binary_classifier }}
+
+      This is a valid mathematical analysis. Please validate this result and structure it for memory storage.
+
+      The analysis shows that {{ input }} ≤ 5, which makes the "greater than 5" condition FALSE.
+
+      IMPORTANT: You MUST respond with the exact JSON format specified below. Do not use any other format.
+
+      Return your response in the following JSON format:
+      {
+          "valid": true,
+          "reason": "The mathematical analysis is correct - {{ input }} is indeed ≤ 5",
+          "memory_object": {
+              "number": "{{ input }}",
+              "result": "false",
+              "condition": "less_than_or_equal_5",
+              "analysis_type": "number_comparison",
+              "confidence": {{ previous_outputs.binary_classifier.confidence }},
+              "category": "mathematical_analysis",
+              "validation_status": "validated",
+              "validation_reason": "Correct mathematical classification"
+          }
+      }
+    depends_on:
+      - binary_classifier
+    store_structure: |
+      {
+        "number": "string",
+        "result": "string",
+        "condition": "string", 
+        "analysis_type": "string",
+        "confidence": "number",
+        "category": "string",
+        "validation_status": "string",
+        "validation_reason": "string"
+      }
+
+  - id: true_memory_writer
+    type: memory
+    queue: orka:memory-writer-short
+    config:
+      operation: write
+      memory_type: short_term
+      vector: true # Enable semantic search
+    namespace: processed_numbers
+    # Agent-level decay configuration overrides global settings
+    decay:
+      enabled: true
+      default_long_term: false # Store for future retrieval
+      short_term_hours: 0.025 # 1.5 min retention
+      long_term_hours: 0.05 # 3 min max retention
+      check_interval_minutes: 0.5 # Check every 30 seconds for testing
+      importance_rules:
+        base_score: 0.8 # Higher base score for caching
+        event_type_boosts:
+          write: 0.3
+    prompt: |
+      Number {{ input }} Analysis Result: {{ input }} > 5 (TRUE - greater than 5)
+
+      Classification: {{ previous_outputs.binary_classifier.result }}
+      Confidence: {{ previous_outputs.binary_classifier.confidence }}
+      Validation: {{ previous_outputs.true_validation_guardian.result.valid }}
+
+      CACHED RESULT: The number {{ input }} IS greater than 5. Classification result is TRUE.
+    metadata:
+      number: "{{ input }}"
+      result: "true"
+      condition: "greater_than_5"
+      analysis_type: "number_comparison"
+      confidence: "{{ previous_outputs.binary_classifier.result.confidence | default('1.0') }}"
+      category: "mathematical_analysis"
+      processed_by: "binary_classifier"
+      validated_by: "true_validation_guardian"
+      validation_status: "{{ previous_outputs.true_validation_guardian.result.valid }}"
+      validation_reason: "{{ previous_outputs.true_validation_guardian.result.reason }}"
+      validation_confidence: "{{ previous_outputs.true_validation_guardian.result.memory_object.confidence }}"
+      structured_data: "{{ previous_outputs.true_validation_guardian.result.memory_object }}"
+      timestamp: "{{ timestamp }}"
+    key_template: "validated_number_analysis_{{ input }}_gt5"
+
+  - id: false_memory_writer
+    type: memory
+    queue: orka:memory-writer-short
+    config:
+      operation: write
+      memory_type: short_term
+      vector: true # Enable semantic search
+    namespace: processed_numbers
+    # Agent-level decay configuration overrides global settings
+    decay:
+      enabled: true
+      default_long_term: false # Store for future retrieval
+      short_term_hours: 0.025 # 1.5 min retention
+      long_term_hours: 0.05 # 3 min max retention
+      check_interval_minutes: 0.5 # Check every 30 seconds for testing
+      importance_rules:
+        base_score: 0.8 # Higher base score for caching
+        event_type_boosts:
+          write: 0.3
+    prompt: |
+      Number {{ input }} Analysis Result: {{ input }} ≤ 5 (FALSE - not greater than 5)
+
+      Classification: {{ previous_outputs.binary_classifier.result }}
+      Confidence: {{ previous_outputs.binary_classifier.confidence }}
+      Validation: {{ previous_outputs.false_validation_guardian.result.valid }}
+
+      CACHED RESULT: The number {{ input }} is NOT greater than 5. Classification result is FALSE.
+    metadata:
+      number: "{{ input }}"
+      result: "false"
+      condition: "less_than_or_equal_5"
+      analysis_type: "number_comparison"
+      confidence: "{{ previous_outputs.binary_classifier.result.confidence | default('1.0') }}"
+      category: "mathematical_analysis"
+      processed_by: "binary_classifier"
+      validated_by: "false_validation_guardian"
+      validation_status: "{{ previous_outputs.false_validation_guardian.result.valid }}"
+      validation_reason: "{{ previous_outputs.false_validation_guardian.result.reason }}"
+      validation_confidence: "{{ previous_outputs.false_validation_guardian.result.memory_object.confidence }}"
+      structured_data: "{{ previous_outputs.false_validation_guardian.result.memory_object }}"
+      timestamp: "{{ timestamp }}"
+    key_template: "validated_number_analysis_{{ input }}_lte5"

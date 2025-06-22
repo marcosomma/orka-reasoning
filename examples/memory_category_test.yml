@@ -1,0 +1,40 @@
+orchestrator:
+  id: memory-category-test
+  memory_config:
+    backend: redis
+    decay:
+      enabled: true
+      default_short_term_hours: 1
+      default_long_term_hours: 24
+  agents:
+    - test-memory-writer
+    - test-memory-reader
+agents:
+  - id: test-memory-writer
+    type: memory
+    queue: orka:memory-writer
+    config:
+      operation: write
+    namespace: test_category
+    prompt: "This is a stored memory entry for testing category separation"
+    metadata:
+      source: test-writer
+      confidence: 0.9
+      category: stored
+
+  - id: test-memory-reader
+    type: memory
+    queue: orka:memory-reader
+    config:
+      operation: read
+      memory_category_filter: stored
+    namespace: test_category
+    prompt: "testing category"
+
+workflow:
+  - from: input
+    to: test-memory-writer
+  - from: test-memory-writer
+    to: test-memory-reader
+  - from: test-memory-reader
+    to: output

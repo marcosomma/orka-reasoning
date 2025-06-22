@@ -140,6 +140,9 @@ class MemoryWriterNode(BaseNode):
             if "input" in context:
                 metadata["query"] = context["input"]
 
+            # Set memory category to "stored" for memory writer nodes
+            metadata["category"] = "stored"
+
             # Use key_template if provided
             entry_key = None
             if self.key_template:

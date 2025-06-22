@@ -221,6 +221,9 @@ class KafkaMemoryLogger(BaseMemoryLogger):
                     safe_payload,
                 )
 
+                # Classify memory category for separation first
+                memory_category = self._classify_memory_category(event_type, agent_id, safe_payload)
+
                 # Check for agent-specific default memory type first
                 if "default_long_term" in effective_decay_config:
                     if effective_decay_config["default_long_term"]:
@@ -228,8 +231,12 @@ class KafkaMemoryLogger(BaseMemoryLogger):
                     else:
                         memory_type = "short_term"
                 else:
-                    # Fall back to standard classification
-                    memory_type = self._classify_memory_type(event_type, importance_score)
+                    # Fall back to standard classification with category context
+                    memory_type = self._classify_memory_type(
+                        event_type,
+                        importance_score,
+                        memory_category,
+                    )
 
                 # Calculate expiration time
                 current_time = datetime.now(UTC)
@@ -249,6 +256,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
                 decay_metadata = {
                     "orka_importance_score": str(importance_score),
                     "orka_memory_type": memory_type,
+                    "orka_memory_category": memory_category,
                     "orka_expire_time": expire_time.isoformat(),
                     "orka_created_time": current_time.isoformat(),
                 }
@@ -554,6 +562,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
                 "total_entries": 0,  # Will be calculated as active entries only
                 "entries_by_type": {},
                 "entries_by_memory_type": {"short_term": 0, "long_term": 0, "unknown": 0},
+                "entries_by_category": {"stored": 0, "log": 0, "unknown": 0},
                 "expired_entries": 0,
                 "entries_detail": [],
             }
@@ -589,16 +598,28 @@ class KafkaMemoryLogger(BaseMemoryLogger):
                         stats["entries_by_type"].get(event_type, 0) + 1
                     )
 
-                    # Count by memory type
-                    memory_type = entry.get("orka_memory_type", "unknown")
-                    if memory_type in stats["entries_by_memory_type"]:
-                        stats["entries_by_memory_type"][memory_type] += 1
+                    # Count by memory category first
+                    memory_category = entry.get("orka_memory_category", "unknown")
+                    if memory_category in stats["entries_by_category"]:
+                        stats["entries_by_category"][memory_category] += 1
+                    else:
+                        stats["entries_by_category"]["unknown"] += 1
+
+                    # Count by memory type ONLY for non-log entries
+                    # Logs should be excluded from memory type statistics
+                    if memory_category != "log":
+                        memory_type = entry.get("orka_memory_type", "unknown")
+                        if memory_type in stats["entries_by_memory_type"]:
+                            stats["entries_by_memory_type"][memory_type] += 1
+                        else:
+                            stats["entries_by_memory_type"]["unknown"] += 1
 
                 # Add entry details for debugging
                 entry_detail = {
                     "agent_id": entry.get("agent_id", "unknown"),
                     "event_type": entry.get("event_type", "unknown"),
                     "memory_type": entry.get("orka_memory_type", "unknown"),
+                    "memory_category": entry.get("orka_memory_category", "unknown"),
                     "importance_score": entry.get("orka_importance_score", "unknown"),
                     "created_time": entry.get("orka_created_time", "unknown"),
                     "expire_time": expire_time_str or "no_expiry",
