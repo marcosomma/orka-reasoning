@@ -166,13 +166,18 @@ class TestServerAPI:
     async def test_run_execution_success(self):
         """Test successful execution via API"""
         yaml_config = """
-        nodes:
-          - id: test_node
-            type: router
-            prompt: "Test prompt"
-            routes:
-              - condition: "true"
-                target: "end"
+orchestrator:
+  id: test_orchestrator
+  strategy: sequential
+  queue: orka:test
+  agents:
+    - test_agent
+
+agents:
+  - id: test_agent
+    type: openai-binary
+    queue: orka:test_queue
+    prompt: "Test prompt: {{ input }}"
         """
 
         request_data = {
@@ -198,10 +203,18 @@ class TestServerAPI:
     async def test_run_execution_with_complex_result(self):
         """Test execution with complex result data"""
         yaml_config = """
-        nodes:
-          - id: test_node
-            type: router
-            prompt: "Test prompt"
+orchestrator:
+  id: test_orchestrator
+  strategy: sequential
+  queue: orka:test
+  agents:
+    - test_agent
+
+agents:
+  - id: test_agent
+    type: openai-answer
+    queue: orka:test_queue
+    prompt: "Test prompt: {{ input }}"
         """
 
         request_data = {
@@ -239,9 +252,18 @@ class TestServerAPI:
     async def test_run_execution_orchestrator_error(self):
         """Test execution when orchestrator raises an error"""
         yaml_config = """
-        nodes:
-          - id: test_node
-            type: router
+orchestrator:
+  id: test_orchestrator
+  strategy: sequential
+  queue: orka:test
+  agents:
+    - test_agent
+
+agents:
+  - id: test_agent
+    type: openai-binary
+    queue: orka:test_queue
+    prompt: "Test prompt: {{ input }}"
         """
 
         request_data = {
@@ -262,9 +284,18 @@ class TestServerAPI:
     async def test_run_execution_json_serialization_error(self):
         """Test execution when JSON serialization fails"""
         yaml_config = """
-        nodes:
-          - id: test_node
-            type: router
+orchestrator:
+  id: test_orchestrator
+  strategy: sequential
+  queue: orka:test
+  agents:
+    - test_agent
+
+agents:
+  - id: test_agent
+    type: openai-binary
+    queue: orka:test_queue
+    prompt: "Test prompt: {{ input }}"
         """
 
         request_data = {
@@ -294,7 +325,20 @@ class TestServerAPI:
     @pytest.mark.asyncio
     async def test_run_execution_temp_file_cleanup(self):
         """Test that temporary files are cleaned up"""
-        yaml_config = "nodes: []"
+        yaml_config = """
+orchestrator:
+  id: test_orchestrator
+  strategy: sequential
+  queue: orka:test
+  agents:
+    - test_agent
+
+agents:
+  - id: test_agent
+    type: openai-binary
+    queue: orka:test_queue
+    prompt: "Test prompt: {{ input }}"
+        """
 
         request_data = {
             "input": "test input",
@@ -328,7 +372,20 @@ class TestServerAPI:
     @pytest.mark.asyncio
     async def test_run_execution_temp_file_cleanup_failure(self):
         """Test behavior when temp file cleanup fails"""
-        yaml_config = "nodes: []"
+        yaml_config = """
+orchestrator:
+  id: test_orchestrator
+  strategy: sequential
+  queue: orka:test
+  agents:
+    - test_agent
+
+agents:
+  - id: test_agent
+    type: openai-binary
+    queue: orka:test_queue
+    prompt: "Test prompt: {{ input }}"
+        """
 
         request_data = {
             "input": "test input",

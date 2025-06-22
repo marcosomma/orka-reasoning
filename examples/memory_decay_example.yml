@@ -34,6 +34,7 @@ agents:
     queue: orka:memory-reader
     config:
       operation: read
+      memory_category_filter: stored
       # Disable memory logging for this agent to prevent extra entries
       disable_memory_logging: true
     namespace: demo_knowledge
@@ -81,13 +82,14 @@ agents:
       Temporary note about: {{ input }}
 
       Classification: {{ previous_outputs['classifier'].result }}
-      Existing knowledge: {{ previous_outputs['memory-reader'].result.memories }}
+      Existing knowledge: {{ previous_outputs['memory-reader'].memories }}
 
       This is a short-term memory entry that will expire quickly.
     metadata:
       source: "short_term_writer"
       classification: "{{ previous_outputs['classifier'].result }}"
       confidence: 0.7
+      category: stored
     key_template: "short_{{ input | hash }}"
 
   # Write long-term memory with different decay settings
@@ -116,7 +118,7 @@ agents:
       Long-term knowledge about: {{ input }}
 
       Classification: {{ previous_outputs['classifier'].result }}
-      Existing knowledge: {{ previous_outputs['memory-reader'].result.memories }}
+      Existing knowledge: {{ previous_outputs['memory-reader'].memories }}
 
       Key insights:
       - Original query: {{ input }}
@@ -129,4 +131,5 @@ agents:
       classification: "{{ previous_outputs['classifier'].result }}"
       confidence: 0.9
       retention_priority: "high"
+      category: stored
     key_template: "long_{{ input | hash }}"

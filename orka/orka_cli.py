@@ -632,9 +632,8 @@ def memory_watch(args):
 
                 unified_table.add_row(
                     "🧠 Memory Types",
-                    f"{total_memory_types}",
-                    f"🔥 Short: {short_term} | 💾 Long: {long_term}"
-                    + (f" | ❓ Unknown: {unknown}" if unknown > 0 else ""),
+                    f"{total_memory_types - (unknown or 0)}",
+                    f"🔥 Short: {short_term} | 💾 Long: {long_term}",
                 )
 
                 # Add category breakdown - always show, even with 0 values

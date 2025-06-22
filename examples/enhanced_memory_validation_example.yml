@@ -50,6 +50,7 @@ agents:
       namespace: user_queries
       limit: 5
       similarity_threshold: 0.6
+      memory_category_filter: stored
       # Enhanced search configuration
       context_weight: 0.3
       temporal_weight: 0.2
@@ -67,7 +68,7 @@ agents:
       You are a memory quality validator. Analyze the retrieved memories and determine if they provide valuable, accurate, and relevant information to answer the user's query.
 
       User Query: {{ input }}
-      Retrieved Memories: {{ previous_outputs['memory_reader'].result.memories }}
+      Retrieved Memories: {{ previous_outputs['memory_reader'].memories }}
 
       Evaluation Criteria:
       1. Relevance: Do the memories directly relate to the user's query?
@@ -104,7 +105,7 @@ agents:
       Based on the validated memories, provide a comprehensive answer to the user's query.
 
       User Query: {{ input }}
-      Validated Memories: {{ previous_outputs['memory_reader'].result.memories }}
+      Validated Memories: {{ previous_outputs['memory_reader'].memories }}
       Memory Validation: VALUABLE
 
       Instructions:
@@ -159,17 +160,18 @@ agents:
     prompt: |
       Query: {{ input }}
 
-      Answer: {{ previous_outputs['answer_builder'].result.response if previous_outputs['answer_builder'] else previous_outputs['search_answer_builder'].result.response }}
+      Answer: {{ previous_outputs['answer_builder'].result.response if previous_outputs.get('answer_builder') else previous_outputs['search_answer_builder'].result.response }}
 
-      Source: {{ 'Retrieved from validated memories' if previous_outputs['answer_builder'] else 'Generated from internet search' }}
+      Source: {{ 'Retrieved from validated memories' if previous_outputs.get('answer_builder') else 'Generated from internet search' }}
 
-      Validation Details: {{ 'VALUABLE - Memories were sufficient' if previous_outputs['answer_builder'] else 'INSUFFICIENT - Required internet search' }}
+      Validation Details: {{ 'VALUABLE - Memories were sufficient' if previous_outputs.get('answer_builder') else 'INSUFFICIENT - Required internet search' }}
     metadata:
       source: memory_validation_workflow
       query: "{{ input }}"
-      memory_was_valuable: "{{ 'true' if previous_outputs['answer_builder'] else 'false' }}"
-      answer_source: "{{ 'memory' if previous_outputs['answer_builder'] else 'search' }}"
+      memory_was_valuable: "{{ 'true' if previous_outputs.get('answer_builder') else 'false' }}"
+      answer_source: "{{ 'memory' if previous_outputs.get('answer_builder') else 'search' }}"
       expires_at: "{{ timestamp + 60 }}"
       confidence: 0.9
+      category: stored
     depends_on:
       - answer_router

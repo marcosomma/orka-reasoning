@@ -23,7 +23,18 @@ agents:
 
   - id: binary_answer_classifier
     type: openai-binary
-    prompt: "Can the previous memory provide a complete answer to this question? ##QUESTION: Is {{ input }} greater than 5? ##MEMORY: {{ previous_outputs.memory_reader.result }}. Return true if the memory contains analysis for this specific number that can answer the question, false if memory is empty or irrelevant."
+    prompt: |
+      Can the previous memory provide a complete answer to this question?
+
+      QUESTION: Is {{ input }} greater than 5?
+      MEMORY: {{ previous_outputs.memory_reader.memories }}
+
+      The memory contains stored analysis results. If the memory shows analysis for this specific number {{ input }}, 
+      return true (memory can answer the question). If memory is empty ("NONE") or contains analysis for different numbers, 
+      return false (need to process this number).
+
+      IMPORTANT: If you found actual memory entries (not "NONE"), that means we have a cached result and you should return TRUE.
+      Only return FALSE if the memory is "NONE" or empty.
     queue: orka:classify
 
   - id: memory_check_router
@@ -38,7 +49,7 @@ agents:
     type: openai-answer
     prompt: |
       Based on previously stored analysis:
-      {{ previous_outputs.memory_reader }}
+      {{ previous_outputs.memory_reader.memories }}
 
       Return the cached result for input "{{ input }}" without reprocessing.
 
@@ -81,7 +92,7 @@ agents:
               "result": "true",
               "condition": "greater_than_5",
               "analysis_type": "number_comparison",
-              "confidence": {{ previous_outputs.binary_classifier.confidence }},
+              "confidence": {{ previous_outputs.binary_classifier.confidence | default(1.0) }},
               "category": "mathematical_analysis",
               "validation_status": "validated",
               "validation_reason": "Correct mathematical classification"
@@ -127,7 +138,7 @@ agents:
               "result": "false",
               "condition": "less_than_or_equal_5",
               "analysis_type": "number_comparison",
-              "confidence": {{ previous_outputs.binary_classifier.confidence }},
+              "confidence": {{ previous_outputs.binary_classifier.confidence | default(1.0) }},
               "category": "mathematical_analysis",
               "validation_status": "validated",
               "validation_reason": "Correct mathematical classification"
@@ -170,7 +181,7 @@ agents:
       Number {{ input }} Analysis Result: {{ input }} > 5 (TRUE - greater than 5)
 
       Classification: {{ previous_outputs.binary_classifier.result }}
-      Confidence: {{ previous_outputs.binary_classifier.confidence }}
+      Confidence: {{ previous_outputs.binary_classifier.confidence | default(1.0) }}
       Validation: {{ previous_outputs.true_validation_guardian.result.valid }}
 
       CACHED RESULT: The number {{ input }} IS greater than 5. Classification result is TRUE.
@@ -213,7 +224,7 @@ agents:
       Number {{ input }} Analysis Result: {{ input }} ≤ 5 (FALSE - not greater than 5)
 
       Classification: {{ previous_outputs.binary_classifier.result }}
-      Confidence: {{ previous_outputs.binary_classifier.confidence }}
+      Confidence: {{ previous_outputs.binary_classifier.confidence | default(1.0) }}
       Validation: {{ previous_outputs.false_validation_guardian.result.valid }}
 
       CACHED RESULT: The number {{ input }} is NOT greater than 5. Classification result is FALSE.

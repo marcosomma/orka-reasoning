@@ -13,12 +13,13 @@ agents:
     queue: orka:memory-reader
     config:
       operation: read
+      memory_category_filter: stored
     namespace: landmarks
     prompt: Retrieve any stored memories about {{ input }}.Return "NONE" if nothing matches.
   - id: memory-check
     type: openai-binary
     queue: orka:memory-check
-    prompt: 'Check if the following memory data is relevant to the question and has high confidence:Question: {{ input }}Memory: {{ previous_outputs[''memory-reader''].result.memories }}Return true if:1. The memory contains relevant information about the question2. The memory has a confidence score higher than 0.893. The memory is not "NONE"Return false otherwise.'
+    prompt: 'Check if the following memory data is relevant to the question and has high confidence:Question: {{ input }}Memory: {{ previous_outputs[''memory-reader''].memories }}Return true if:1. The memory contains relevant information about the question2. The memory has a confidence score higher than 0.893. The memory is not "NONE"Return false otherwise.'
   - id: router
     type: router
     params:
@@ -66,11 +67,11 @@ agents:
     config:
       operation: write
     namespace: landmarks
-    prompt: "{{ previous_outputs['validation-guard'].memory_object.fact if previous_outputs['validation-guard'].valid else 'NONE' }}"
+    prompt: "{{ previous_outputs['validation-guard'].result.memory_object.fact if previous_outputs.get('validation-guard') and previous_outputs['validation-guard'].result.valid else 'NONE' }}"
     metadata:
       source: validation-guard
-      confidence: "{{ previous_outputs['validation-guard'].result.memory_object.confidence if previous_outputs['validation-guard'].result.valid else 0 }}"
-      reason: "{{ previous_outputs['validation-guard'].result.reason if previous_outputs['validation-guard'].result.valid else 'unknown' }}"
-      fact: "{{ previous_outputs['validation-guard'].result.memory_object.fact if previous_outputs['validation-guard'].result.valid else 'unknown' }}"
-      category: "{{ previous_outputs['validation-guard'].result.memory_object.category if previous_outputs['validation-guard'].result.valid else 'unknown' }}"
+      confidence: "{{ previous_outputs['validation-guard'].result.memory_object.confidence if previous_outputs.get('validation-guard') and previous_outputs['validation-guard'].result.valid else 0 }}"
+      reason: "{{ previous_outputs['validation-guard'].result.reason if previous_outputs.get('validation-guard') and previous_outputs['validation-guard'].result.valid else 'unknown' }}"
+      fact: "{{ previous_outputs['validation-guard'].result.memory_object.fact if previous_outputs.get('validation-guard') and previous_outputs['validation-guard'].result.valid else 'unknown' }}"
+      category: "stored"
     key_template: "{{ input }}"

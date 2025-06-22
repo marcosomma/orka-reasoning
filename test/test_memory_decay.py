@@ -180,20 +180,24 @@ class TestMemoryDecayBaseLogger:
 
         logger = TestLogger()
 
-        # Long-term event type
-        memory_type = logger._classify_memory_type("success", 0.5)
+        # Long-term event type for stored memories
+        memory_type = logger._classify_memory_type("success", 0.1, "stored")
         assert memory_type == "long_term"
 
-        # Short-term event type
-        memory_type = logger._classify_memory_type("debug", 0.9)
+        # Short-term event type for stored memories
+        memory_type = logger._classify_memory_type("debug", 0.1, "stored")
         assert memory_type == "short_term"
 
-        # High importance score fallback
-        memory_type = logger._classify_memory_type("unknown", 0.8)
+        # High importance score fallback for stored memories
+        memory_type = logger._classify_memory_type("unknown", 0.8, "stored")
         assert memory_type == "long_term"
 
-        # Low importance score fallback
-        memory_type = logger._classify_memory_type("unknown", 0.5)
+        # Low importance score fallback for stored memories
+        memory_type = logger._classify_memory_type("unknown", 0.1, "stored")
+        assert memory_type == "short_term"
+
+        # Log category should always be short-term regardless of importance
+        memory_type = logger._classify_memory_type("success", 0.9, "log")
         assert memory_type == "short_term"
 
 

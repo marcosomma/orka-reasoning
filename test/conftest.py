@@ -13,6 +13,7 @@
 import asyncio
 import logging
 import os
+import subprocess
 import sys
 import time
 from unittest.mock import patch
@@ -93,6 +94,44 @@ def patch_redis_globally():
             yield
     else:
         yield
+
+
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_memory_after_tests():
+    """
+    Fixture that runs delete_memory.py script after all tests complete.
+    This ensures proper cleanup of memory data.
+    """
+    yield  # Let all tests run first
+
+    # Only run cleanup if using real Redis
+    if USE_REAL_REDIS:
+        try:
+            script_path = os.path.join(
+                os.path.dirname(__file__),
+                "..",
+                "scripts",
+                "delete_memory.py",
+            )
+            if os.path.exists(script_path):
+                print("\n🧹 Running memory cleanup after tests...")
+                result = subprocess.run(
+                    [sys.executable, script_path],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
+                if result.returncode == 0:
+                    print("✅ Memory cleanup completed successfully")
+                else:
+                    print(f"⚠️ Memory cleanup completed with warnings: {result.stderr}")
+            else:
+                print(f"⚠️ Memory cleanup script not found at: {script_path}")
+        except subprocess.TimeoutExpired:
+            print("⚠️ Memory cleanup timed out after 30 seconds")
+        except Exception as e:
+            print(f"⚠️ Error during memory cleanup: {e}")
 
 
 def test_remove_group_keyerror():
@@ -179,6 +218,73 @@ def redis_client():
         # Since FakeRedisClient doesn't support flushdb, we'll clear each key type
         for key in client._keys():
             client.delete(key)
+
+
+@pytest.fixture
+def valid_orka_yaml():
+    """
+    Fixture providing a valid OrKa YAML configuration for testing.
+    This ensures all tests use proper YAML structure.
+    """
+    return """
+orchestrator:
+  id: test_orchestrator
+  strategy: sequential
+  queue: orka:test
+  agents:
+    - test_agent
+
+agents:
+  - id: test_agent
+    type: openai-binary
+    queue: orka:test_queue
+    prompt: "Test prompt: {{ input }}"
+"""
+
+
+@pytest.fixture
+def complex_orka_yaml():
+    """
+    Fixture providing a more complex valid OrKa YAML configuration for testing.
+    """
+    return """
+orchestrator:
+  id: complex_test_orchestrator
+  strategy: parallel
+  queue: orka:test
+  agents:
+    - classifier
+    - router
+    - answer_builder
+
+agents:
+  - id: classifier
+    type: openai-classification
+    queue: orka:classifier
+    prompt: "Classify this input: {{ input }}"
+    options:
+      - tech
+      - science
+      - general
+
+  - id: router
+    type: router
+    params:
+      decision_key: classifier
+      routing_map:
+        tech: ["answer_builder"]
+        science: ["answer_builder"]
+        general: ["answer_builder"]
+    depends_on:
+      - classifier
+
+  - id: answer_builder
+    type: openai-answer
+    queue: orka:answer
+    prompt: "Provide an answer for: {{ input }}"
+    depends_on:
+      - router
+"""
 
 
 # Define a custom event loop policy that pytest-asyncio can use

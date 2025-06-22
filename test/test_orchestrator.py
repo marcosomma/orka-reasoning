@@ -85,21 +85,17 @@ class TestOrchestratorPyFile:
             # Create a temporary YAML config file
             config_content = """
 orchestrator:
+  id: test_orchestrator
+  strategy: sequential
+  queue: orka:test
   agents:
-    - agent_id: test_agent
-      type: openai-answer
-      model: gpt-3.5-turbo
-      api_key: test_key
-      prompt: "Test prompt"
-      
-  nodes:
-    - node_id: start
-      type: agent
-      agent_id: test_agent
-      
-  connections:
-    - from: start
-      to: end
+    - test_agent
+
+agents:
+  - id: test_agent
+    type: openai-answer
+    queue: orka:test_queue
+    prompt: "Test prompt: {{ input }}"
 """
 
             with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:

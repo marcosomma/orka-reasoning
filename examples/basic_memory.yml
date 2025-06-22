@@ -16,12 +16,13 @@ agents:
     queue: orka:memory-read_0
     config:
       operation: read
+      memory_category_filter: stored
     namespace: fact_validator
     prompt: Retrieve any stored memories about how the subject '{{ input }}'' was classified or understood in the past.Return "NONE" if nothing matches.
   - id: openai-answer_2
     type: openai-answer
     queue: orka:openai-answer_2
-    prompt: Given previous context {{ previous_outputs['memory-read_0'].result.memories }}, provide an initial detailed answer to {{ input }}.
+    prompt: Given previous context {{ previous_outputs['memory-read_0'].memories }}, provide an initial detailed answer to {{ input }}.
   - id: fork_3
     type: fork
     targets:
@@ -119,8 +120,9 @@ agents:
     config:
       operation: write
     namespace: fact_validator
-    prompt: "{{ previous_outputs['openai-answer_14'] or previous_outputs['openai-answer_15'] }}"
+    prompt: "{{ previous_outputs['openai-answer_14'].result.response if previous_outputs.get('openai-answer_14') else previous_outputs['openai-answer_15'].result.response }}"
     metadata:
-      source: '{{ "openai-answer_14" if previous_outputs[''openai-answer_14''] else "openai-answer_15" }}'
-      result: "{{ previous_outputs['openai-answer_14'] if previous_outputs['openai-answer_14'] else previous_outputs['openai-answer_15'] }}"
+      source: '{{ "openai-answer_14" if previous_outputs.get("openai-answer_14") else "openai-answer_15" }}'
+      result: "{{ previous_outputs['openai-answer_14'].result.response if previous_outputs.get('openai-answer_14') else previous_outputs['openai-answer_15'].result.response }}"
+      category: stored
     key_template: "{{ input }}"

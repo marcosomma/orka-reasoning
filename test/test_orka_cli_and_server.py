@@ -160,7 +160,23 @@ async def test_run_execution(monkeypatch):
     # Fake request
     class DummyRequest:
         async def json(self):
-            return {"input": "question", "yaml_config": "agents: []"}
+            return {
+                "input": "question",
+                "yaml_config": """
+orchestrator:
+  id: test_orchestrator
+  strategy: sequential
+  queue: orka:test
+  agents:
+    - test_agent
+
+agents:
+  - id: test_agent
+    type: openai-binary
+    queue: orka:test_queue
+    prompt: "Test prompt: {{ input }}"
+                """,
+            }
 
     response = await orka_server.run_execution(DummyRequest())
     data = response.body.decode()

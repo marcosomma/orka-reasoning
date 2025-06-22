@@ -189,6 +189,20 @@ class MemoryReaderNode(BaseNode):
             logger.info(f"After deduplication: {len(unique_memories)} unique memories")
             memories = unique_memories
 
+            # Apply category filtering if configured
+            if self.memory_category_filter:
+                memories = self._filter_by_category(memories)
+                logger.info(f"After category filtering: {len(memories)} memories")
+
+            # Apply expiration filtering to remove expired memories
+            memories = self._filter_expired_memories(memories)
+            logger.info(f"After expiration filtering: {len(memories)} active memories")
+
+            # If no memories after filtering, return early
+            if not memories:
+                logger.warning(f"No active memories found for query: '{original_query}'")
+                return {"status": "success", "memories": "NONE"}
+
             # Apply hybrid similarity scoring
             scored_memories = self._apply_hybrid_scoring(
                 memories,
@@ -707,19 +721,36 @@ class MemoryReaderNode(BaseNode):
                             entry_id.decode() if isinstance(entry_id, bytes) else entry_id
                         )
 
-                        memories.append(
-                            {
-                                "id": entry_id_str,
-                                "content": content,
-                                "metadata": metadata,
-                                "similarity": float(combined_similarity),
-                                "primary_similarity": float(primary_similarity),
-                                "context_similarity": float(context_similarity),
-                                "ts": ts,
-                                "match_type": "context_aware_stream",
-                                "stream_key": stream_key,
-                            },
+                        # Extract expiration time from entry data if available
+                        expire_time = None
+                        expire_time_field = data.get(b"orka_expire_time") or data.get(
+                            "orka_expire_time"
                         )
+                        if expire_time_field:
+                            expire_time = (
+                                expire_time_field.decode()
+                                if isinstance(expire_time_field, bytes)
+                                else expire_time_field
+                            )
+
+                        # Create memory object with expiration time preserved
+                        memory_obj = {
+                            "id": entry_id_str,
+                            "content": content,
+                            "metadata": metadata,
+                            "similarity": float(combined_similarity),
+                            "primary_similarity": float(primary_similarity),
+                            "context_similarity": float(context_similarity),
+                            "ts": ts,
+                            "match_type": "context_aware_stream",
+                            "stream_key": stream_key,
+                        }
+
+                        # Add expiration time if available
+                        if expire_time:
+                            memory_obj["orka_expire_time"] = expire_time
+
+                        memories.append(memory_obj)
                 except Exception as e:
                     logger.error(f"Error processing stream entry {entry_id}: {e!s}")
 
@@ -838,17 +869,21 @@ class MemoryReaderNode(BaseNode):
                 # Enhanced relevance scoring
                 content = memory.get("content", "")
                 similarity = memory.get("similarity", 0.0)
+                hybrid_score = memory.get("hybrid_score", 0.0)
 
-                # Basic relevance check
-                if similarity < self.similarity_threshold * 0.3:  # Very low threshold for recall
-                    continue
+                # More selective filtering based on hybrid score and similarity thresholds
+                # Check if memory meets minimum quality thresholds
+                meets_hybrid_threshold = hybrid_score >= 0.4
+                meets_similarity_threshold = similarity >= 0.3
 
-                # Content relevance check
+                # Content relevance check for keyword matching
                 query_words = set(query.lower().split())
                 content_words = set(content.lower().split())
                 word_overlap = len(query_words.intersection(content_words))
+                has_keyword_match = word_overlap > 0
 
                 # Context relevance check
+                has_context_match = False
                 context_relevance = 0.0
                 if conversation_context:
                     for ctx_item in conversation_context:
@@ -856,7 +891,9 @@ class MemoryReaderNode(BaseNode):
                         if ctx_content:
                             ctx_words = set(ctx_content.lower().split())
                             ctx_overlap = len(content_words.intersection(ctx_words))
-                            context_relevance += ctx_overlap / max(len(ctx_words), 1)
+                            if ctx_overlap > 0:
+                                has_context_match = True
+                                context_relevance += ctx_overlap / max(len(ctx_words), 1)
 
                 # Combined relevance score
                 combined_relevance = (
@@ -865,8 +902,19 @@ class MemoryReaderNode(BaseNode):
                     + context_relevance * 0.2  # Context relevance
                 )
 
-                # Apply enhanced filtering
-                if combined_relevance >= 0.1:  # Low threshold for high recall
+                # Apply more selective filtering logic based on test expectations
+                should_include = False
+
+                # Include if it meets hybrid score or similarity thresholds
+                if (
+                    meets_hybrid_threshold
+                    or meets_similarity_threshold
+                    or (has_keyword_match and combined_relevance >= 0.15)
+                    or (has_context_match and combined_relevance >= 0.15)
+                ):
+                    should_include = True
+
+                if should_include:
                     memory["combined_relevance"] = combined_relevance
                     filtered_memories.append(memory)
 
@@ -929,6 +977,75 @@ class MemoryReaderNode(BaseNode):
                 filtered_memories.append(memory)
 
         return filtered_memories
+
+    def _filter_expired_memories(self, memories: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Filter out expired memories based on their expiration time.
+
+        This provides client-side expiration checking to ensure expired memories
+        are not returned even if automatic cleanup hasn't run yet.
+
+        Args:
+            memories: List of memory objects
+
+        Returns:
+            List of non-expired memory objects
+        """
+        if not memories:
+            return memories
+
+        from datetime import UTC, datetime
+
+        current_time = datetime.now(UTC)
+        active_memories = []
+        expired_count = 0
+
+        for memory in memories:
+            try:
+                # Check for expiration time in metadata
+                expire_time_str = None
+
+                # Look for expiration time in metadata first
+                metadata = memory.get("metadata", {})
+                if isinstance(metadata, dict):
+                    expire_time_str = metadata.get("orka_expire_time")
+
+                # If not found in metadata, check direct field (for backward compatibility)
+                if not expire_time_str:
+                    expire_time_str = memory.get("orka_expire_time")
+
+                # If no expiration time is set, treat as non-expiring (active)
+                if not expire_time_str:
+                    active_memories.append(memory)
+                    continue
+
+                # Parse and check expiration time
+                try:
+                    expire_time = datetime.fromisoformat(expire_time_str)
+                    if current_time <= expire_time:
+                        # Memory is still active
+                        active_memories.append(memory)
+                        logger.debug(f"Memory active until {expire_time_str}")
+                    else:
+                        # Memory has expired
+                        expired_count += 1
+                        logger.debug(f"Filtered out expired memory (expired at {expire_time_str})")
+                except (ValueError, TypeError) as e:
+                    # If we can't parse the expiration time, include the memory to be safe
+                    logger.warning(f"Could not parse expiration time '{expire_time_str}': {e}")
+                    active_memories.append(memory)
+
+            except Exception as e:
+                logger.error(f"Error checking memory expiration: {e}")
+                # Include memory on error to be safe
+                active_memories.append(memory)
+
+        if expired_count > 0:
+            logger.info(
+                f"Filtered out {expired_count} expired memories, {len(active_memories)} active memories remain",
+            )
+
+        return active_memories
 
     async def _keyword_search(self, namespace, query):
         """Search for memories using simple keyword matching."""
