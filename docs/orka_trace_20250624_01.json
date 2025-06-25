@@ -1,0 +1,267 @@
+{
+  "_metadata": {
+    "version": "1.0",
+    "deduplication_enabled": true,
+    "blob_threshold_chars": 200,
+    "total_blobs_stored": 7,
+    "stats": {
+      "total_entries": 8,
+      "deduplicated_blobs": 7,
+      "size_reduction": 8627
+    },
+    "generated_at": "2025-06-25T05:55:57.124836+00:00"
+  },
+  "blob_store": {
+    "d3e7e3b79f533381e22eb4be987b1c6e7d5bcdce98de81b7b529e8cfe84b5076": {
+      "input": 9,
+      "result": {
+        "input": 9,
+        "result": {
+          "status": "success",
+          "memories": "NONE"
+        },
+        "prompt": "Search for previous analysis of number: {{ input }}",
+        "formatted_prompt": "Search for previous analysis of number: 9"
+      }
+    },
+    "d766eeac9f45a7d689124e3fc67eb2f6ea22479262f728f93e874905113a6b0d": {
+      "input": 9,
+      "result": {
+        "input": 9,
+        "result": false,
+        "prompt": "Can the previous memory provide a complete answer to this question?\n\nQUESTION: Is {{ input }} greater than 5?\nMEMORY: {{ previous_outputs.memory_reader.memories }}\n\nThe memory contains stored analysis results. If the memory shows analysis for this specific number {{ input }}, \nreturn true (memory can answer the question). If memory is empty (\"NONE\") or contains analysis for different numbers, \nreturn false (need to process this number).\n\nIMPORTANT: If you found actual memory entries (not \"NONE\"), that means we have a cached result and you should return TRUE.\nOnly return FALSE if the memory is \"NONE\" or empty.\n",
+        "formatted_prompt": "Can the previous memory provide a complete answer to this question?\n\nQUESTION: Is 9 greater than 5?\nMEMORY: {{ previous_outputs.memory_reader.memories }}\n\nThe memory contains stored analysis results. If the memory shows analysis for this specific number 9, \nreturn true (memory can answer the question). If memory is empty (\"NONE\") or contains analysis for different numbers, \nreturn false (need to process this number).\n\nIMPORTANT: If you found actual memory entries (not \"NONE\"), that means we have a cached result and you should return TRUE.\nOnly return FALSE if the memory is \"NONE\" or empty.\n\n\n**CONSTRAINTS** ONLY and STRICTLY Return boolean 'true' or 'false' value.",
+        "response": "false",
+        "confidence": "1",
+        "internal_reasoning": "The memory result is 'NONE', indicating that there is no cached analysis for the number 9. Therefore, we cannot provide a complete answer based on the memory."
+      }
+    },
+    "d7392fcb48764aafcb326006b435de617d635cf7b70297a65822559e79267854": {
+      "input": 9,
+      "result": {
+        "input": 9,
+        "decision_key": "binary_answer_classifier",
+        "decision_value": "false",
+        "raw_decision_value": "{'input': 9, 'result': False, 'prompt': 'Can the previous memory provide a complete answer to this question?\\n\\nQUESTION: Is {{ input }} greater than 5?\\nMEMORY: {{ previous_outputs.memory_reader.memories }}\\n\\nThe memory contains stored analysis results. If the memory shows analysis for this specific number {{ input }}, \\nreturn true (memory can answer the question). If memory is empty (\"NONE\") or contains analysis for different numbers, \\nreturn false (need to process this number).\\n\\nIMPORTANT: If you found actual memory entries (not \"NONE\"), that means we have a cached result and you should return TRUE.\\nOnly return FALSE if the memory is \"NONE\" or empty.\\n', 'formatted_prompt': 'Can the previous memory provide a complete answer to this question?\\n\\nQUESTION: Is 9 greater than 5?\\nMEMORY: {{ previous_outputs.memory_reader.memories }}\\n\\nThe memory contains stored analysis results. If the memory shows analysis for this specific number 9, \\nreturn true (memory can answer the question). If memory is empty (\"NONE\") or contains analysis for different numbers, \\nreturn false (need to process this number).\\n\\nIMPORTANT: If you found actual memory entries (not \"NONE\"), that means we have a cached result and you should return TRUE.\\nOnly return FALSE if the memory is \"NONE\" or empty.\\n\\n\\n**CONSTRAINTS** ONLY and STRICTLY Return boolean \\'true\\' or \\'false\\' value.', 'response': 'false', 'confidence': '1', 'internal_reasoning': \"The memory result is 'NONE', indicating that there is no cached analysis for the number 9. Therefore, we cannot provide a complete answer based on the memory.\"}",
+        "routing_map": "{'false': ['binary_classifier', 'classification_router'], 'true': ['answer_returner']}",
+        "next_agents": "['binary_classifier', 'classification_router']"
+      }
+    },
+    "71cda02c110579618a0799220cb284d160f6c2cc5449e88b923f03cb844b9ac3": {
+      "input": 9,
+      "result": {
+        "input": 9,
+        "result": true,
+        "prompt": "Is the number in this input greater than 5? Return true or false: {{ input }}",
+        "formatted_prompt": "Is the number in this input greater than 5? Return true or false: 9\n\n**CONSTRAINTS** ONLY and STRICTLY Return boolean 'true' or 'false' value.",
+        "response": "true",
+        "confidence": "0.9",
+        "internal_reasoning": "The input number 9 is greater than 5 based on mathematical comparison."
+      }
+    },
+    "18661b0e98114e00ba5122247764d159244cf07a839a46ef4b0ab64bab358fe8": {
+      "input": 9,
+      "result": {
+        "input": 9,
+        "decision_key": "binary_classifier",
+        "decision_value": "true",
+        "raw_decision_value": "{'input': 9, 'result': True, 'prompt': 'Is the number in this input greater than 5? Return true or false: {{ input }}', 'formatted_prompt': \"Is the number in this input greater than 5? Return true or false: 9\\n\\n**CONSTRAINTS** ONLY and STRICTLY Return boolean 'true' or 'false' value.\", 'response': 'true', 'confidence': '0.9', 'internal_reasoning': 'The input number 9 is greater than 5 based on mathematical comparison.'}",
+        "routing_map": "{'true': ['true_validation_guardian', 'true_memory_writer'], 'false': ['false_validation_guardian', 'false_memory_writer']}",
+        "next_agents": "['true_validation_guardian', 'true_memory_writer']"
+      }
+    },
+    "f9b6fd6643e00ec1582987ba9720b16d4b76d996275fb65a93d9d12875329ca4": {
+      "input": 9,
+      "result": {
+        "input": 9,
+        "result": {
+          "valid": true,
+          "reason": "The mathematical analysis is correct - 9 is indeed > 5",
+          "memory_object": {
+            "number": "9",
+            "result": "true",
+            "condition": "greater_than_5",
+            "analysis_type": "number_comparison",
+            "confidence": 0.9,
+            "category": "mathematical_analysis",
+            "validation_status": "validated",
+            "validation_reason": "Correct mathematical classification"
+          },
+          "prompt": "Validate and structure the following number classification result for memory storage:\n\nQuestion: Is the number 9 greater than 5?\nAnswer: Yes, 9 IS greater than 5\nClassification Result: TRUE\nBinary Classifier Output: {'input': 9, 'result': True, 'prompt': 'Is the number in this input greater than 5? Return true or false: {{ input }}', 'formatted_prompt': \"Is the number in this input greater than 5? Return true or false: 9\\n\\n**CONSTRAINTS** ONLY and STRICTLY Return boolean 'true' or 'false' value.\", 'response': 'true', 'confidence': '0.9', 'internal_reasoning': 'The input number 9 is greater than 5 based on mathematical comparison.'}\n\nThis is a valid mathematical analysis. Please validate this result and structure it for memory storage.\n\nThe analysis shows that 9 > 5, which makes the \"greater than 5\" condition TRUE.\n\nIMPORTANT: You MUST respond with the exact JSON format specified below. Do not use any other format.\n\nReturn your response in the following JSON format:\n{\n    \"valid\": true,\n    \"reason\": \"The mathematical analysis is correct - 9 is indeed > 5\",\n    \"memory_object\": {\n        \"number\": \"9\",\n        \"result\": \"true\",\n        \"condition\": \"greater_than_5\",\n        \"analysis_type\": \"number_comparison\",\n        \"confidence\": 0.9,\n        \"category\": \"mathematical_analysis\",\n        \"validation_status\": \"validated\",\n        \"validation_reason\": \"Correct mathematical classification\"\n    }\n}",
+          "formatted_prompt": "Validate and structure the following number classification result for memory storage:\n\nQuestion: Is the number 9 greater than 5?\nAnswer: Yes, 9 IS greater than 5\nClassification Result: TRUE\nBinary Classifier Output: {'input': 9, 'result': True, 'prompt': 'Is the number in this input greater than 5? Return true or false: {{ input }}', 'formatted_prompt': \"Is the number in this input greater than 5? Return true or false: 9\\n\\n**CONSTRAINTS** ONLY and STRICTLY Return boolean 'true' or 'false' value.\", 'response': 'true', 'confidence': '0.9', 'internal_reasoning': 'The input number 9 is greater than 5 based on mathematical comparison.'}\n\nThis is a valid mathematical analysis. Please validate this result and structure it for memory storage.\n\nThe analysis shows that 9 > 5, which makes the \"greater than 5\" condition TRUE.\n\nIMPORTANT: You MUST respond with the exact JSON format specified below. Do not use any other format.\n\nReturn your response in the following JSON format:\n{\n    \"valid\": true,\n    \"reason\": \"The mathematical analysis is correct - 9 is indeed > 5\",\n    \"memory_object\": {\n        \"number\": \"9\",\n        \"result\": \"true\",\n        \"condition\": \"greater_than_5\",\n        \"analysis_type\": \"number_comparison\",\n        \"confidence\": 0.9,\n        \"category\": \"mathematical_analysis\",\n        \"validation_status\": \"validated\",\n        \"validation_reason\": \"Correct mathematical classification\"\n    }\n}",
+          "raw_llm_output": "{\n    \"valid\": true,\n    \"reason\": \"The mathematical analysis is correct - 9 is indeed > 5\",\n    \"memory_object\": {\n        \"number\": \"9\",\n        \"result\": \"true\",\n        \"condition\": \"greater_than_5\",\n        \"analysis_type\": \"number_comparison\",\n        \"confidence\": 0.9,\n        \"category\": \"mathematical_analysis\",\n        \"validation_status\": \"validated\",\n        \"validation_reason\": \"Correct mathematical classification\"\n    }\n}"
+        }
+      }
+    },
+    "5a3454ec11bb2fcd574b62eb3eff2bb9e0f5527cba3b4ffb87274b0238302c4e": {
+      "input": 9,
+      "result": {
+        "input": 9,
+        "result": {
+          "status": "error",
+          "error": "'int' object is not subscriptable"
+        },
+        "prompt": "Number {{ input }} Analysis Result: {{ input }} > 5 (TRUE - greater than 5)\n\nClassification: {{ previous_outputs.binary_classifier.result }}\nConfidence: {{ previous_outputs.binary_classifier.confidence | default(1.0) }}\nValidation: {{ previous_outputs.true_validation_guardian.result.valid }}\n\nCACHED RESULT: The number {{ input }} IS greater than 5. Classification result is TRUE.\n",
+        "formatted_prompt": "Number 9 Analysis Result: 9 > 5 (TRUE - greater than 5)\n\nClassification: True\nConfidence: 0.9\nValidation: True\n\nCACHED RESULT: The number 9 IS greater than 5. Classification result is TRUE."
+      }
+    }
+  },
+  "events": [
+    {
+      "agent_id": "memory_reader",
+      "event_type": "MemoryReaderNode",
+      "timestamp": "2025-06-25T05:55:52.175085+00:00",
+      "payload": {
+        "ref": "d3e7e3b79f533381e22eb4be987b1c6e7d5bcdce98de81b7b529e8cfe84b5076",
+        "_type": "blob_reference",
+        "_original_keys": [
+          "input",
+          "result"
+        ]
+      },
+      "step": 1,
+      "run_id": "7dfde7ce-cde6-4478-9728-ad3b4a139151"
+    },
+    {
+      "agent_id": "binary_answer_classifier",
+      "event_type": "OpenAIBinaryAgent",
+      "timestamp": "2025-06-25T05:55:54.000949+00:00",
+      "payload": {
+        "ref": "d766eeac9f45a7d689124e3fc67eb2f6ea22479262f728f93e874905113a6b0d",
+        "_type": "blob_reference",
+        "_original_keys": [
+          "input",
+          "result"
+        ]
+      },
+      "step": 2,
+      "run_id": "7dfde7ce-cde6-4478-9728-ad3b4a139151"
+    },
+    {
+      "agent_id": "memory_check_router",
+      "event_type": "RouterNode",
+      "timestamp": "2025-06-25T05:55:54.002204+00:00",
+      "payload": {
+        "ref": "d7392fcb48764aafcb326006b435de617d635cf7b70297a65822559e79267854",
+        "_type": "blob_reference",
+        "_original_keys": [
+          "input",
+          "result"
+        ]
+      },
+      "step": 3,
+      "run_id": "7dfde7ce-cde6-4478-9728-ad3b4a139151"
+    },
+    {
+      "agent_id": "binary_classifier",
+      "event_type": "OpenAIBinaryAgent",
+      "timestamp": "2025-06-25T05:55:55.167540+00:00",
+      "payload": {
+        "ref": "71cda02c110579618a0799220cb284d160f6c2cc5449e88b923f03cb844b9ac3",
+        "_type": "blob_reference",
+        "_original_keys": [
+          "input",
+          "result"
+        ]
+      },
+      "step": 4,
+      "run_id": "7dfde7ce-cde6-4478-9728-ad3b4a139151"
+    },
+    {
+      "agent_id": "classification_router",
+      "event_type": "RouterNode",
+      "timestamp": "2025-06-25T05:55:55.168923+00:00",
+      "payload": {
+        "ref": "18661b0e98114e00ba5122247764d159244cf07a839a46ef4b0ab64bab358fe8",
+        "_type": "blob_reference",
+        "_original_keys": [
+          "input",
+          "result"
+        ]
+      },
+      "step": 5,
+      "run_id": "7dfde7ce-cde6-4478-9728-ad3b4a139151"
+    },
+    {
+      "agent_id": "true_validation_guardian",
+      "event_type": "ValidationAndStructuringAgent",
+      "timestamp": "2025-06-25T05:55:57.071429+00:00",
+      "payload": {
+        "ref": "f9b6fd6643e00ec1582987ba9720b16d4b76d996275fb65a93d9d12875329ca4",
+        "_type": "blob_reference",
+        "_original_keys": [
+          "input",
+          "result"
+        ]
+      },
+      "step": 6,
+      "run_id": "7dfde7ce-cde6-4478-9728-ad3b4a139151"
+    },
+    {
+      "agent_id": "true_memory_writer",
+      "event_type": "MemoryWriterNode",
+      "timestamp": "2025-06-25T05:55:57.082874+00:00",
+      "payload": {
+        "ref": "5a3454ec11bb2fcd574b62eb3eff2bb9e0f5527cba3b4ffb87274b0238302c4e",
+        "_type": "blob_reference",
+        "_original_keys": [
+          "input",
+          "result"
+        ]
+      },
+      "step": 7,
+      "run_id": "7dfde7ce-cde6-4478-9728-ad3b4a139151"
+    },
+    {
+      "agent_id": "meta_report",
+      "event_type": "MetaReport",
+      "timestamp": "2025-06-25T05:55:57.124117+00:00",
+      "payload": {
+        "meta_report": {
+          "total_duration": 4.909,
+          "total_llm_calls": 2,
+          "total_tokens": 1822,
+          "total_cost_usd": 0.001008,
+          "avg_latency_ms": 1491.05,
+          "agent_breakdown": {
+            "binary_answer_classifier": {
+              "calls": 1,
+              "tokens": 663,
+              "cost_usd": 0.000388,
+              "avg_latency_ms": 1821.07
+            },
+            "binary_classifier": {
+              "calls": 1,
+              "tokens": 1159,
+              "cost_usd": 0.00062,
+              "avg_latency_ms": 1161.02
+            }
+          },
+          "model_usage": {
+            "gpt-3.5-turbo": {
+              "calls": 2,
+              "tokens": 1822,
+              "cost_usd": 0.001008
+            }
+          },
+          "runtime_environment": {
+            "platform": "macOS-15.5-arm64-arm-64bit",
+            "python_version": "3.12.3",
+            "timestamp": "2025-06-25T05:55:57.084607+00:00",
+            "git_sha": "unknown",
+            "docker_image": null,
+            "gpu_type": "unknown",
+            "pricing_version": "2025-01"
+          },
+          "execution_stats": {
+            "total_agents_executed": 7,
+            "run_id": "7dfde7ce-cde6-4478-9728-ad3b4a139151",
+            "generated_at": "2025-06-25T05:55:57.123960+00:00"
+          }
+        },
+        "run_id": "7dfde7ce-cde6-4478-9728-ad3b4a139151",
+        "timestamp": "20250625_075557"
+      }
+    }
+  ]
+}

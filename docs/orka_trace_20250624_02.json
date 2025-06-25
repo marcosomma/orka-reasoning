@@ -1,0 +1,211 @@
+{
+  "_metadata": {
+    "version": "1.0",
+    "deduplication_enabled": true,
+    "blob_threshold_chars": 200,
+    "total_blobs_stored": 4,
+    "stats": {
+      "total_entries": 5,
+      "deduplicated_blobs": 4,
+      "size_reduction": 4930
+    },
+    "generated_at": "2025-06-25T05:56:34.797782+00:00"
+  },
+  "blob_store": {
+    "1864a5996bd6e9bf779a85a0fb24112dd91426dd645477f60afb0899bbc3dfc4": {
+      "input": "9",
+      "result": {
+        "input": "9",
+        "result": {
+          "status": "success",
+          "memories": [
+            {
+              "id": "1748792851928-0",
+              "content": "test",
+              "metadata": {
+                "source": "validation-guard",
+                "confidence": "{{ previous_outputs['validation-guard'].memory_object.confidence if previous_outputs['validation-guard'].valid else 0 }}",
+                "reason": "{{ previous_outputs['validation-guard'].memory_object.reason if previous_outputs['validation-guard'].valid else 'unknown' }}",
+                "fact": "{{ previous_outputs['validation-guard'].memory_object.fact if previous_outputs['validation-guard'].valid else 'unknown' }}",
+                "timestamp": 1748792851.925178,
+                "agent_id": "memory-writer",
+                "query": "test"
+              },
+              "similarity": 0.3215736150741577,
+              "primary_similarity": 0.3215736150741577,
+              "context_similarity": 0.0,
+              "ts": 1748792851925472000,
+              "match_type": "context_aware_stream",
+              "stream_key": "orka:memory:landmarks:default",
+              "hybrid_score": 0.16278680753707886,
+              "temporal_score": 0.01,
+              "keyword_bonus": 0,
+              "combined_relevance": 0.16078680753707886
+            }
+          ]
+        },
+        "prompt": "Search for previous analysis of number: {{ input }}",
+        "formatted_prompt": "Search for previous analysis of number: 9"
+      }
+    },
+    "c355454890a418c0cd5ad1d5552c37e152a6b8f680724030ce67575fbda9ed62": {
+      "input": "9",
+      "result": {
+        "input": "9",
+        "result": true,
+        "prompt": "Can the previous memory provide a complete answer to this question?\n\nQUESTION: Is {{ input }} greater than 5?\nMEMORY: {{ previous_outputs.memory_reader.memories }}\n\nThe memory contains stored analysis results. If the memory shows analysis for this specific number {{ input }}, \nreturn true (memory can answer the question). If memory is empty (\"NONE\") or contains analysis for different numbers, \nreturn false (need to process this number).\n\nIMPORTANT: If you found actual memory entries (not \"NONE\"), that means we have a cached result and you should return TRUE.\nOnly return FALSE if the memory is \"NONE\" or empty.\n",
+        "formatted_prompt": "Can the previous memory provide a complete answer to this question?\n\nQUESTION: Is 9 greater than 5?\nMEMORY: {{ previous_outputs.memory_reader.memories }}\n\nThe memory contains stored analysis results. If the memory shows analysis for this specific number 9, \nreturn true (memory can answer the question). If memory is empty (\"NONE\") or contains analysis for different numbers, \nreturn false (need to process this number).\n\nIMPORTANT: If you found actual memory entries (not \"NONE\"), that means we have a cached result and you should return TRUE.\nOnly return FALSE if the memory is \"NONE\" or empty.\n\n\n**CONSTRAINTS** ONLY and STRICTLY Return boolean 'true' or 'false' value.",
+        "response": "true",
+        "confidence": "0.9",
+        "internal_reasoning": "The memory contains analysis results for the specific number 9, indicating that it can answer the question with a high level of confidence."
+      }
+    },
+    "d6cb37cc8bf17a913a4321641d96539b9189bd840f2606595aa5db3d0ad9917c": {
+      "input": "9",
+      "result": {
+        "input": "9",
+        "decision_key": "binary_answer_classifier",
+        "decision_value": "true",
+        "raw_decision_value": "{'input': '9', 'result': True, 'prompt': 'Can the previous memory provide a complete answer to this question?\\n\\nQUESTION: Is {{ input }} greater than 5?\\nMEMORY: {{ previous_outputs.memory_reader.memories }}\\n\\nThe memory contains stored analysis results. If the memory shows analysis for this specific number {{ input }}, \\nreturn true (memory can answer the question). If memory is empty (\"NONE\") or contains analysis for different numbers, \\nreturn false (need to process this number).\\n\\nIMPORTANT: If you found actual memory entries (not \"NONE\"), that means we have a cached result and you should return TRUE.\\nOnly return FALSE if the memory is \"NONE\" or empty.\\n', 'formatted_prompt': 'Can the previous memory provide a complete answer to this question?\\n\\nQUESTION: Is 9 greater than 5?\\nMEMORY: {{ previous_outputs.memory_reader.memories }}\\n\\nThe memory contains stored analysis results. If the memory shows analysis for this specific number 9, \\nreturn true (memory can answer the question). If memory is empty (\"NONE\") or contains analysis for different numbers, \\nreturn false (need to process this number).\\n\\nIMPORTANT: If you found actual memory entries (not \"NONE\"), that means we have a cached result and you should return TRUE.\\nOnly return FALSE if the memory is \"NONE\" or empty.\\n\\n\\n**CONSTRAINTS** ONLY and STRICTLY Return boolean \\'true\\' or \\'false\\' value.', 'response': 'true', 'confidence': '0.9', 'internal_reasoning': 'The memory contains analysis results for the specific number 9, indicating that it can answer the question with a high level of confidence.'}",
+        "routing_map": "{'false': ['binary_classifier', 'classification_router'], 'true': ['answer_returner']}",
+        "next_agents": "['answer_returner']"
+      }
+    },
+    "6f24e00c689d599fa0b801d05577e3958a2fa90804e2eecac441d78dd36a2929": {
+      "input": "9",
+      "result": {
+        "input": "9",
+        "result": {
+          "response": "true",
+          "confidence": "0.9",
+          "internal_reasoning": "The memory contains analysis results for the specific number 9, indicating that it can answer the question with a high level of confidence.",
+          "_metrics": {
+            "tokens": 1359,
+            "prompt_tokens": 1308,
+            "completion_tokens": 51,
+            "latency_ms": 962.53,
+            "cost_usd": 0.000731,
+            "model": "gpt-3.5-turbo",
+            "status_code": 200
+          },
+          "formatted_prompt": "Based on previously stored analysis:\n{{ previous_outputs.memory_reader.memories }}\n\nReturn the cached result for input \"{{ input }}\" without reprocessing.\n"
+        },
+        "prompt": "Based on previously stored analysis:\n{{ previous_outputs.memory_reader.memories }}\n\nReturn the cached result for input \"{{ input }}\" without reprocessing.\n",
+        "formatted_prompt": "Based on previously stored analysis:\n\n\nReturn the cached result for input \"9\" without reprocessing."
+      }
+    }
+  },
+  "events": [
+    {
+      "agent_id": "memory_reader",
+      "event_type": "MemoryReaderNode",
+      "timestamp": "2025-06-25T05:56:32.765860+00:00",
+      "payload": {
+        "ref": "1864a5996bd6e9bf779a85a0fb24112dd91426dd645477f60afb0899bbc3dfc4",
+        "_type": "blob_reference",
+        "_original_keys": [
+          "input",
+          "result"
+        ]
+      },
+      "step": 1,
+      "run_id": "16f0e102-e97a-407f-8722-baf1ea3a0037"
+    },
+    {
+      "agent_id": "binary_answer_classifier",
+      "event_type": "OpenAIBinaryAgent",
+      "timestamp": "2025-06-25T05:56:33.812685+00:00",
+      "payload": {
+        "ref": "c355454890a418c0cd5ad1d5552c37e152a6b8f680724030ce67575fbda9ed62",
+        "_type": "blob_reference",
+        "_original_keys": [
+          "input",
+          "result"
+        ]
+      },
+      "step": 2,
+      "run_id": "16f0e102-e97a-407f-8722-baf1ea3a0037"
+    },
+    {
+      "agent_id": "memory_check_router",
+      "event_type": "RouterNode",
+      "timestamp": "2025-06-25T05:56:33.813622+00:00",
+      "payload": {
+        "ref": "d6cb37cc8bf17a913a4321641d96539b9189bd840f2606595aa5db3d0ad9917c",
+        "_type": "blob_reference",
+        "_original_keys": [
+          "input",
+          "result"
+        ]
+      },
+      "step": 3,
+      "run_id": "16f0e102-e97a-407f-8722-baf1ea3a0037"
+    },
+    {
+      "agent_id": "answer_returner",
+      "event_type": "OpenAIAnswerBuilder",
+      "timestamp": "2025-06-25T05:56:34.779395+00:00",
+      "payload": {
+        "ref": "6f24e00c689d599fa0b801d05577e3958a2fa90804e2eecac441d78dd36a2929",
+        "_type": "blob_reference",
+        "_original_keys": [
+          "input",
+          "result"
+        ]
+      },
+      "step": 4,
+      "run_id": "16f0e102-e97a-407f-8722-baf1ea3a0037"
+    },
+    {
+      "agent_id": "meta_report",
+      "event_type": "MetaReport",
+      "timestamp": "2025-06-25T05:56:34.797477+00:00",
+      "payload": {
+        "meta_report": {
+          "total_duration": 2.428,
+          "total_llm_calls": 2,
+          "total_tokens": 2273,
+          "total_cost_usd": 0.001239,
+          "avg_latency_ms": 1002.99,
+          "agent_breakdown": {
+            "binary_answer_classifier": {
+              "calls": 1,
+              "tokens": 914,
+              "cost_usd": 0.000508,
+              "avg_latency_ms": 1043.44
+            },
+            "answer_returner": {
+              "calls": 1,
+              "tokens": 1359,
+              "cost_usd": 0.000731,
+              "avg_latency_ms": 962.53
+            }
+          },
+          "model_usage": {
+            "gpt-3.5-turbo": {
+              "calls": 2,
+              "tokens": 2273,
+              "cost_usd": 0.001239
+            }
+          },
+          "runtime_environment": {
+            "platform": "macOS-15.5-arm64-arm-64bit",
+            "python_version": "3.12.3",
+            "timestamp": "2025-06-25T05:56:34.780457+00:00",
+            "git_sha": "unknown",
+            "docker_image": null,
+            "gpu_type": "unknown",
+            "pricing_version": "2025-01"
+          },
+          "execution_stats": {
+            "total_agents_executed": 4,
+            "run_id": "16f0e102-e97a-407f-8722-baf1ea3a0037",
+            "generated_at": "2025-06-25T05:56:34.797408+00:00"
+          }
+        },
+        "run_id": "16f0e102-e97a-407f-8722-baf1ea3a0037",
+        "timestamp": "20250625_075634"
+      }
+    }
+  ]
+}
