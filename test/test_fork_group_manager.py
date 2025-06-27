@@ -42,9 +42,11 @@ class TestForkGroupManager:
 
         # Verify agents were added to the set
         members = redis_client.smembers("fork_group:group1")
-        assert "agent1" in members
-        assert "agent2" in members
-        assert "agent3" in members
+        # Convert bytes to strings for comparison
+        members_str = {m.decode() if isinstance(m, bytes) else m for m in members}
+        assert "agent1" in members_str
+        assert "agent2" in members_str
+        assert "agent3" in members_str
 
     def test_create_group_nested_ids(self):
         """Test creating a group with nested agent IDs"""
@@ -56,9 +58,11 @@ class TestForkGroupManager:
 
         # Verify all agents were flattened and added
         members = redis_client.smembers("fork_group:group1")
-        assert "agent1" in members
-        assert "agent2" in members
-        assert "agent3" in members
+        # Convert bytes to strings for comparison
+        members_str = {m.decode() if isinstance(m, bytes) else m for m in members}
+        assert "agent1" in members_str
+        assert "agent2" in members_str
+        assert "agent3" in members_str
 
     def test_mark_agent_done(self):
         """Test marking an agent as done"""
@@ -71,8 +75,10 @@ class TestForkGroupManager:
 
         # Verify agent was removed
         members = redis_client.smembers("fork_group:group1")
-        assert "agent1" not in members
-        assert "agent2" in members
+        # Convert bytes to strings for comparison
+        members_str = {m.decode() if isinstance(m, bytes) else m for m in members}
+        assert "agent1" not in members_str
+        assert "agent2" in members_str
 
     def test_is_group_done(self):
         """Test checking if group is done"""
@@ -138,9 +144,7 @@ class TestForkGroupManager:
         # Test with time - should contain timestamp
         current_time = int(time.time())
         group_id = manager.generate_group_id("test")
-        assert (
-            f"test_{current_time}" in group_id or f"test_{current_time + 1}" in group_id
-        )
+        assert f"test_{current_time}" in group_id or f"test_{current_time + 1}" in group_id
 
     def test_group_key(self):
         """Test _group_key method"""
@@ -168,9 +172,9 @@ class TestForkGroupManager:
 
         # Verify sequence was stored correctly
         next_agent = redis_client.hget("fork_branch:group1", "agent1")
-        assert next_agent == "agent2"
+        assert next_agent == b"agent2"  # FakeRedisClient returns bytes like real Redis
         next_agent = redis_client.hget("fork_branch:group1", "agent2")
-        assert next_agent == "agent3"
+        assert next_agent == b"agent3"
         next_agent = redis_client.hget("fork_branch:group1", "agent3")
         assert next_agent is None
 
@@ -320,9 +324,7 @@ class TestSimpleForkGroupManager:
         # Test with time - should contain timestamp
         current_time = int(time.time())
         group_id = manager.generate_group_id("test")
-        assert (
-            f"test_{current_time}" in group_id or f"test_{current_time + 1}" in group_id
-        )
+        assert f"test_{current_time}" in group_id or f"test_{current_time + 1}" in group_id
 
     def test_track_branch_sequence(self):
         """Test tracking branch sequences"""

@@ -1,19 +1,32 @@
 @echo off
-REM Orka Kafka Backend Startup Script (Windows)
-REM This script starts Orka with Kafka as the memory backend
+REM Orka Kafka + Redis Hybrid Backend Startup Script (Windows)
+REM This script starts Orka with Kafka for event streaming and Redis for memory operations
 
-echo 🚀 Starting Orka with Kafka Backend...
+echo 🚀 Starting Orka with Kafka + Redis Hybrid Backend...
 echo ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 REM Stop any existing services
-echo 🛑 Stopping any existing Kafka services...
+echo 🛑 Stopping any existing services...
 docker-compose --profile kafka down >nul 2>&1
 
-REM Build and start Kafka services
-echo 🔧 Building and starting Kafka services...
+REM Build and start hybrid services (Kafka + Redis)
+echo 🔧 Building and starting Kafka + Redis services...
 docker-compose --profile kafka up --build -d
 
 REM Wait for services to be ready
+echo ⏳ Waiting for Redis to be ready...
+timeout /t 5 >nul
+
+REM Check if Redis is responding
+echo 🔍 Testing Redis connection...
+docker-compose exec redis redis-cli ping >nul 2>&1
+if %errorlevel% equ 0 (
+    echo ✅ Redis is ready!
+) else (
+    echo ❌ Redis connection failed
+    exit /b 1
+)
+
 echo ⏳ Waiting for Zookeeper to be ready...
 timeout /t 10 >nul
 
@@ -48,21 +61,24 @@ echo 📋 Services Status:
 docker-compose --profile kafka ps
 
 echo.
-echo ✅ Orka Kafka Backend is now running!
+echo ✅ Orka Kafka + Redis Hybrid Backend is now running!
 echo.
 echo 📍 Service Endpoints:
-echo    • Orka API:    http://localhost:8001
-echo    • Kafka:       localhost:9092
-echo    • Zookeeper:   localhost:2181
+echo    • Orka API:         http://localhost:8001
+echo    • Kafka (Events):   localhost:9092
+echo    • Redis (Memory):   localhost:6379
+echo    • Zookeeper:        localhost:2181
 echo.
 echo 🛠️  Management Commands:
 echo    • View logs:        docker-compose --profile kafka logs -f
 echo    • Stop services:    docker-compose --profile kafka down
 echo    • List topics:      docker-compose exec kafka kafka-topics --bootstrap-server localhost:29092 --list
 echo    • View messages:    docker-compose exec kafka kafka-console-consumer --bootstrap-server localhost:29092 --topic orka-memory-events --from-beginning
+echo    • Redis CLI:        docker-compose exec redis redis-cli
 echo.
 echo 🔧 Environment Variables:
 echo    • ORKA_MEMORY_BACKEND=kafka
 echo    • KAFKA_BOOTSTRAP_SERVERS=kafka:29092
 echo    • KAFKA_TOPIC_PREFIX=orka-memory
+echo    • REDIS_URL=redis://redis:6379/0
 echo. 

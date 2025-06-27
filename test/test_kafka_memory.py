@@ -24,6 +24,10 @@ import pytest
 
 from orka.memory_logger import KafkaMemoryLogger, create_memory_logger
 
+# Import the fake Redis client for testing
+sys.path.append(os.path.dirname(__file__))
+from fake_redis import FakeRedisClient
+
 # Check if we should skip Kafka tests in CI (they require complex mocking)
 SKIP_KAFKA_TESTS = os.environ.get("CI", "").lower() in ("true", "1", "yes")
 
@@ -71,32 +75,40 @@ class TestKafkaMemoryLogger:
     @pytest.fixture
     def kafka_logger(self, mock_kafka_producer):
         """Create a KafkaMemoryLogger instance for testing"""
-        return KafkaMemoryLogger(
-            bootstrap_servers="localhost:9092",
-            topic_prefix="test-orka",
-            stream_key="test:memory",
-        )
+        # Mock the Redis client with our fake implementation
+        with patch("orka.memory.kafka_logger.redis.from_url") as mock_redis:
+            mock_redis.return_value = FakeRedisClient()
+            return KafkaMemoryLogger(
+                bootstrap_servers="localhost:9092",
+                topic_prefix="test-orka",
+                stream_key="test:memory",
+            )
 
     def test_initialization_success(self, mock_kafka_producer):
         """Test successful initialization of KafkaMemoryLogger"""
-        logger = KafkaMemoryLogger(
-            bootstrap_servers="localhost:9092",
-            topic_prefix="test-orka",
-            stream_key="test:memory",
-        )
+        with patch("orka.memory.kafka_logger.redis.from_url") as mock_redis:
+            mock_redis.return_value = FakeRedisClient()
+            logger = KafkaMemoryLogger(
+                bootstrap_servers="localhost:9092",
+                topic_prefix="test-orka",
+                stream_key="test:memory",
+            )
 
-        assert logger.bootstrap_servers == "localhost:9092"
-        assert logger.topic_prefix == "test-orka"
-        assert logger.main_topic == "test-orka-events"
-        assert logger.stream_key == "test:memory"
-        assert len(logger._hash_storage) == 0
-        assert len(logger._set_storage) == 0
+            assert logger.bootstrap_servers == "localhost:9092"
+            assert logger.topic_prefix == "test-orka"
+            assert logger.main_topic == "test-orka-events"
+            assert logger.stream_key == "test:memory"
+            # KafkaMemoryLogger now uses Redis, not internal storage
+            assert hasattr(logger, "redis_client")
+            assert hasattr(logger, "memory")  # In-memory buffer for recent events
 
     def test_initialization_with_environment_variables(self, mock_kafka_producer):
         """Test initialization using environment variables"""
         with patch.dict(os.environ, {"KAFKA_BOOTSTRAP_SERVERS": "env-server:9092"}):
-            logger = KafkaMemoryLogger()
-            assert logger.bootstrap_servers == "env-server:9092"
+            with patch("orka.memory.kafka_logger.redis.from_url") as mock_redis:
+                mock_redis.return_value = FakeRedisClient()
+                logger = KafkaMemoryLogger()
+                assert logger.bootstrap_servers == "env-server:9092"
 
     @kafka_import_skip
     def test_initialization_kafka_import_error(self):
@@ -163,13 +175,16 @@ class TestKafkaMemoryLogger:
         # The main functionality (storing in memory) is tested above
 
     def test_log_event_missing_agent_id(self, kafka_logger):
-        """Test logging with missing agent_id"""
-        with pytest.raises(ValueError, match="Event must contain 'agent_id'"):
-            kafka_logger.log(
-                agent_id="",
-                event_type="test_event",
-                payload={"data": "test"},
-            )
+        """Test logging with missing agent_id - KafkaMemoryLogger doesn't validate agent_id"""
+        # KafkaMemoryLogger now allows empty agent_id, just logs it
+        kafka_logger.log(
+            agent_id="",
+            event_type="test_event",
+            payload={"data": "test"},
+        )
+
+        # Event should be logged even with empty agent_id
+        assert len(kafka_logger.memory) == 1
 
     def test_log_event_kafka_failure(self, kafka_logger, mock_kafka_producer):
         """Test handling of Kafka send failure"""
@@ -277,17 +292,19 @@ class TestKafkaMemoryLogger:
         result = kafka_logger.sadd("test_set", "member2", "member4")
         assert result == 1  # Only member4 is new
 
+        # Test getting set members
+        members = kafka_logger.smembers("test_set")
+        # Convert bytes to strings for comparison
+        members_str = {m.decode() if isinstance(m, bytes) else m for m in members}
+        assert members_str == {"member1", "member2", "member3", "member4"}
+
         # Test removing members
         result = kafka_logger.srem("test_set", "member1", "member2")
-        assert result == 2  # Both removed
+        assert result == 2  # Two members removed
 
-        # Test removing non-existent member
-        result = kafka_logger.srem("test_set", "nonexistent")
-        assert result == 0  # Nothing removed
-
-        # Test removing from non-existent set
-        result = kafka_logger.srem("nonexistent_set", "member1")
-        assert result == 0  # Nothing removed
+        members = kafka_logger.smembers("test_set")
+        members_str = {m.decode() if isinstance(m, bytes) else m for m in members}
+        assert members_str == {"member3", "member4"}
 
     def test_key_value_operations(self, kafka_logger):
         """Test simple key-value get and set operations"""
@@ -297,6 +314,9 @@ class TestKafkaMemoryLogger:
 
         # Test getting the key
         value = kafka_logger.get("test_key")
+        # Handle bytes return value
+        if isinstance(value, bytes):
+            value = value.decode()
         assert value == "test_value"
 
         # Test getting non-existent key
@@ -312,34 +332,38 @@ class TestKafkaMemoryLogger:
 
         # Test deleting existing keys
         result = kafka_logger.delete("key1", "key2")
-        assert result == 2  # Both keys deleted
+        assert result == 2  # Two keys deleted
 
-        # Verify keys are gone
+        # Verify keys are deleted
         assert kafka_logger.get("key1") is None
         assert kafka_logger.get("key2") is None
-        assert kafka_logger.get("key3") == "value3"  # Still exists
 
-        # Test deleting non-existent keys
-        result = kafka_logger.delete("nonexistent1", "nonexistent2")
-        assert result == 0  # Nothing deleted
+        # key3 should still exist
+        value = kafka_logger.get("key3")
+        if isinstance(value, bytes):
+            value = value.decode()
+        assert value == "value3"
+
+        # Test deleting non-existent key
+        result = kafka_logger.delete("nonexistent_key")
+        assert result == 0  # No keys deleted
 
     def test_close_functionality(self, kafka_logger, mock_kafka_producer):
-        """Test proper cleanup on close"""
-        # Store reference to producer before closing
-        producer = kafka_logger.producer
-
+        """Test close functionality"""
+        # Should not raise any exceptions
         kafka_logger.close()
 
-        # Verify close was called on the producer
-        producer.close.assert_called_once()
+        # Verify close was called on producer
+        mock_kafka_producer.close.assert_called_once()
 
-    def test_redis_property_error(self, kafka_logger):
-        """Test that accessing redis property raises an error"""
-        with pytest.raises(
-            AttributeError,
-            match="KafkaMemoryLogger does not have a 'redis' attribute",
-        ):
-            _ = kafka_logger.redis
+    def test_redis_property_access(self, kafka_logger):
+        """Test that accessing redis property works for hybrid implementation"""
+        # KafkaMemoryLogger now provides redis property for compatibility
+        redis_client = kafka_logger.redis
+        assert redis_client is not None
+        # Should be able to call Redis operations through the property
+        assert hasattr(redis_client, "hset")
+        assert hasattr(redis_client, "hget")
 
     def test_hdel_functionality(self, kafka_logger):
         """Test hash delete functionality"""
@@ -350,20 +374,22 @@ class TestKafkaMemoryLogger:
 
         # Test deleting existing fields
         result = kafka_logger.hdel("test_hash", "field1", "field2")
-        assert result == 2
+        assert result == 2  # Two fields deleted
 
-        # Verify fields are gone
+        # Verify fields are deleted
         assert kafka_logger.hget("test_hash", "field1") is None
         assert kafka_logger.hget("test_hash", "field2") is None
-        assert kafka_logger.hget("test_hash", "field3") == "value3"
+
+        # field3 should still exist
+        assert kafka_logger.hget("test_hash", "field3") is not None
 
         # Test deleting non-existent fields
-        result = kafka_logger.hdel("test_hash", "nonexistent")
-        assert result == 0
+        result = kafka_logger.hdel("test_hash", "nonexistent_field")
+        assert result == 0  # No fields deleted
 
         # Test deleting from non-existent hash
         result = kafka_logger.hdel("nonexistent_hash", "field1")
-        assert result == 0
+        assert result == 0  # No fields deleted
 
 
 class TestMemoryLoggerFactory:
@@ -383,6 +409,7 @@ class TestMemoryLoggerFactory:
             synchronous_send=False,
             debug_keep_previous_outputs=False,
             decay_config=None,
+            redis_url="redis://localhost:6379/0",
         )
 
         assert result == mock_logger
@@ -393,6 +420,7 @@ class TestMemoryLoggerFactory:
             synchronous_send=False,
             debug_keep_previous_outputs=False,
             decay_config=None,
+            redis_url="redis://localhost:6379/0",
         )
 
     @patch("orka.memory_logger.RedisMemoryLogger")

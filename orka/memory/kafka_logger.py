@@ -15,9 +15,10 @@
 Kafka Memory Logger Implementation
 =================================
 
-This file contains the complete KafkaMemoryLogger implementation that was
-working before the refactoring. It uses Kafka topics for event streaming
-and in-memory storage for Redis-like operations.
+This file contains the hybrid KafkaMemoryLogger implementation that uses
+Kafka topics for event streaming and Redis for memory operations.
+This provides the best of both worlds: Kafka's event streaming capabilities
+with Redis's fast memory operations.
 """
 
 import json
@@ -26,6 +27,8 @@ import os
 from datetime import UTC, datetime, timedelta
 from typing import Any, Dict, List, Optional, Union
 
+import redis
+
 from .base_logger import BaseMemoryLogger
 
 logger = logging.getLogger(__name__)
@@ -33,8 +36,13 @@ logger = logging.getLogger(__name__)
 
 class KafkaMemoryLogger(BaseMemoryLogger):
     """
-    A memory logger that uses Kafka to store and retrieve orchestration events.
-    Uses Kafka topics for event streaming and in-memory storage for hash/set operations.
+    A hybrid memory logger that uses Kafka for event streaming and Redis for memory operations.
+
+    This implementation combines:
+    - Kafka topics for persistent event streaming and audit trails
+    - Redis for fast memory operations (hset, hget, sadd, etc.) and fork/join coordination
+
+    This approach provides both the scalability of Kafka and the performance of Redis.
     """
 
     def __init__(
@@ -45,9 +53,10 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         synchronous_send: bool = False,
         debug_keep_previous_outputs: bool = False,
         decay_config: Optional[Dict[str, Any]] = None,
+        redis_url: Optional[str] = None,
     ) -> None:
         """
-        Initialize the Kafka memory logger.
+        Initialize the hybrid Kafka + Redis memory logger.
 
         Args:
             bootstrap_servers: Kafka bootstrap servers. Defaults to environment variable KAFKA_BOOTSTRAP_SERVERS.
@@ -56,10 +65,11 @@ class KafkaMemoryLogger(BaseMemoryLogger):
             synchronous_send: Whether to wait for message confirmation. Defaults to False for performance.
             debug_keep_previous_outputs: If True, keeps previous_outputs in log files for debugging.
             decay_config: Configuration for memory decay functionality.
+            redis_url: Redis connection URL. Defaults to environment variable REDIS_URL.
         """
         super().__init__(stream_key, debug_keep_previous_outputs, decay_config)
 
-        # Configuration
+        # Kafka configuration
         self.bootstrap_servers = bootstrap_servers or os.getenv(
             "KAFKA_BOOTSTRAP_SERVERS",
             "localhost:9092",
@@ -72,11 +82,12 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         self.use_schema_registry = os.getenv("KAFKA_USE_SCHEMA_REGISTRY", "false").lower() == "true"
         self.schema_registry_url = os.getenv("KAFKA_SCHEMA_REGISTRY_URL", "http://localhost:8081")
 
-        # In-memory storage for Redis-like operations
+        # Redis configuration for memory operations
+        self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379/0")
+        self.redis_client = redis.from_url(self.redis_url)
+
+        # In-memory storage for recent events (for tail operations)
         self.memory: List[Dict[str, Any]] = []
-        self._hash_storage: Dict[str, Dict[str, str]] = {}
-        self._set_storage: Dict[str, set] = {}
-        self._key_value_storage: Dict[str, str] = {}
 
         # Initialize schema manager and producer
         self.schema_manager = None
@@ -85,6 +96,14 @@ class KafkaMemoryLogger(BaseMemoryLogger):
             self._init_schema_registry()
 
         self.producer = self._init_kafka_producer()
+
+    @property
+    def redis(self) -> redis.Redis:
+        """
+        Return the Redis client for compatibility.
+        This allows the KafkaMemoryLogger to work with Redis-based fork managers.
+        """
+        return self.redis_client
 
     def _init_schema_registry(self):
         """Initialize schema registry and register schemas."""
@@ -175,83 +194,49 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         agent_decay_config: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
-        Log an event to Kafka.
+        Log an event to both Kafka (for streaming) and Redis (for memory operations).
 
-        Args:
-            agent_id: ID of the agent generating the event.
-            event_type: Type of the event.
-            payload: Event payload.
-            step: Step number in the orchestration.
-            run_id: ID of the orchestration run.
-            fork_group: ID of the fork group.
-            parent: ID of the parent event.
-            previous_outputs: Previous outputs from agents.
-            agent_decay_config: Agent-specific decay configuration overrides.
-
-        Raises:
-            ValueError: If agent_id is missing.
+        This hybrid approach ensures events are durably stored in Kafka while also
+        being available in Redis for fast memory operations and coordination.
         """
-        if not agent_id:
-            raise ValueError("Event must contain 'agent_id'")
+        # Sanitize payload
+        safe_payload = self._sanitize_for_json(payload)
 
-        # Create a copy of the payload to avoid modifying the original
-        safe_payload = self._sanitize_payload(payload)
-
-        # Determine which decay config to use
-        effective_decay_config = self.decay_config.copy()
-        if agent_decay_config:
-            # Merge agent-specific decay config with global config
-            effective_decay_config.update(agent_decay_config)
-
-        # Calculate decay metadata if decay is enabled (globally or for this agent)
+        # Handle decay configuration
         decay_metadata = {}
-        decay_enabled = self.decay_config.get("enabled", False) or (
-            agent_decay_config and agent_decay_config.get("enabled", False)
-        )
-
-        if decay_enabled:
-            # Use effective config for calculations
+        if self.decay_config.get("enabled", False):
+            # Temporarily merge agent-specific decay config
             old_config = self.decay_config
-            self.decay_config = effective_decay_config
-
             try:
+                if agent_decay_config:
+                    # Create temporary merged config
+                    merged_config = {**self.decay_config}
+                    merged_config.update(agent_decay_config)
+                    self.decay_config = merged_config
+
+                # Calculate importance score and memory type
                 importance_score = self._calculate_importance_score(
-                    event_type,
                     agent_id,
+                    event_type,
                     safe_payload,
                 )
-
-                # Classify memory category for separation first
+                memory_type = self._classify_memory_type(
+                    event_type,
+                    importance_score,
+                    self._classify_memory_category(event_type, agent_id, safe_payload),
+                )
                 memory_category = self._classify_memory_category(event_type, agent_id, safe_payload)
-
-                # Check for agent-specific default memory type first
-                if "default_long_term" in effective_decay_config:
-                    if effective_decay_config["default_long_term"]:
-                        memory_type = "long_term"
-                    else:
-                        memory_type = "short_term"
-                else:
-                    # Fall back to standard classification with category context
-                    memory_type = self._classify_memory_type(
-                        event_type,
-                        importance_score,
-                        memory_category,
-                    )
 
                 # Calculate expiration time
                 current_time = datetime.now(UTC)
                 if memory_type == "short_term":
-                    expire_hours = effective_decay_config.get(
-                        "short_term_hours",
-                        effective_decay_config["default_short_term_hours"],
+                    expire_time = current_time + timedelta(
+                        hours=self.decay_config["default_short_term_hours"],
                     )
-                else:
-                    expire_hours = effective_decay_config.get(
-                        "long_term_hours",
-                        effective_decay_config["default_long_term_hours"],
+                else:  # long_term
+                    expire_time = current_time + timedelta(
+                        hours=self.decay_config["default_long_term_hours"],
                     )
-
-                expire_time = current_time + timedelta(hours=expire_hours)
 
                 decay_metadata = {
                     "orka_importance_score": str(importance_score),
@@ -279,10 +264,25 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         # Add decay metadata to the event
         event.update(decay_metadata)
 
-        # Store in memory
+        # Store in memory buffer for tail operations
         self.memory.append(event)
 
-        # Send to Kafka
+        # Send to Kafka for event streaming
+        self._send_to_kafka(event, run_id, agent_id)
+
+        # Store in Redis for memory operations (similar to RedisMemoryLogger)
+        self._store_in_redis(
+            event,
+            step,
+            run_id,
+            fork_group,
+            parent,
+            previous_outputs,
+            decay_metadata,
+        )
+
+    def _send_to_kafka(self, event: dict, run_id: Optional[str], agent_id: str):
+        """Send event to Kafka for streaming."""
         try:
             message_key = f"{run_id}:{agent_id}" if run_id else agent_id
 
@@ -306,7 +306,9 @@ class KafkaMemoryLogger(BaseMemoryLogger):
                     if self.synchronous_send:
                         self.producer.flush()
 
-                    logger.debug(f"Sent event to Kafka with schema: {agent_id}:{event_type}")
+                    logger.debug(
+                        f"Sent event to Kafka with schema: {agent_id}:{event['event_type']}",
+                    )
 
                 except Exception as schema_error:
                     logger.warning(
@@ -320,7 +322,94 @@ class KafkaMemoryLogger(BaseMemoryLogger):
 
         except Exception as e:
             logger.error(f"Failed to send event to Kafka: {e}")
-            # Event is still stored in memory, so we can continue
+            # Event is still stored in Redis, so we can continue
+
+    def _store_in_redis(
+        self,
+        event: dict,
+        step: Optional[int],
+        run_id: Optional[str],
+        fork_group: Optional[str],
+        parent: Optional[str],
+        previous_outputs: Optional[Dict[str, Any]],
+        decay_metadata: dict,
+    ):
+        """Store event in Redis streams (similar to RedisMemoryLogger)."""
+        try:
+            # Determine which stream(s) to write to based on memory category
+            streams_to_write = []
+            memory_category = decay_metadata.get("orka_memory_category", "log")
+
+            if (
+                memory_category == "stored"
+                and event["event_type"] == "write"
+                and isinstance(event["payload"], dict)
+            ):
+                # For stored memories, only write to namespace-specific stream
+                namespace = event["payload"].get("namespace")
+                session = event["payload"].get("session", "default")
+                if namespace:
+                    namespace_stream = f"orka:memory:{namespace}:{session}"
+                    streams_to_write.append(namespace_stream)
+                    logger.info(
+                        f"Writing stored memory to namespace-specific stream: {namespace_stream}",
+                    )
+                else:
+                    # Fallback to general stream if no namespace
+                    streams_to_write.append(self.stream_key)
+            else:
+                # For orchestration logs and other events, write to general stream
+                streams_to_write.append(self.stream_key)
+
+            # Sanitize previous outputs if present
+            safe_previous_outputs = None
+            if previous_outputs:
+                try:
+                    safe_previous_outputs = json.dumps(
+                        self._sanitize_for_json(previous_outputs),
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to serialize previous_outputs: {e!s}")
+                    safe_previous_outputs = json.dumps(
+                        {"error": f"Serialization error: {e!s}"},
+                    )
+
+            # Prepare the Redis entry
+            redis_entry = {
+                "agent_id": event["agent_id"],
+                "event_type": event["event_type"],
+                "timestamp": event["timestamp"],
+                "run_id": run_id or "default",
+                "step": str(step or -1),
+            }
+
+            # Add decay metadata if decay is enabled
+            redis_entry.update(decay_metadata)
+
+            # Safely serialize the payload
+            try:
+                redis_entry["payload"] = json.dumps(event["payload"])
+            except Exception as e:
+                logger.error(f"Failed to serialize payload: {e!s}")
+                redis_entry["payload"] = json.dumps(
+                    {"error": "Original payload contained non-serializable objects"},
+                )
+
+            # Only add previous_outputs if it exists and is not None
+            if safe_previous_outputs:
+                redis_entry["previous_outputs"] = safe_previous_outputs
+
+            # Write to all determined streams
+            for stream_key in streams_to_write:
+                try:
+                    self.redis_client.xadd(stream_key, redis_entry)
+                    logger.debug(f"Successfully wrote to Redis stream: {stream_key}")
+                except Exception as stream_e:
+                    logger.error(f"Failed to write to Redis stream {stream_key}: {stream_e!s}")
+
+        except Exception as e:
+            logger.error(f"Failed to store event in Redis: {e}")
+            # Continue execution since event is still in Kafka
 
     def _send_json_message(self, message_key: str, event: dict):
         """Send message using JSON serialization (fallback)."""
@@ -360,90 +449,55 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         return sanitized
 
     def tail(self, count: int = 10) -> List[Dict[str, Any]]:
-        """Retrieve recent events from memory."""
+        """Retrieve recent events from memory buffer."""
         return self.memory[-count:] if self.memory else []
 
+    # Redis operations - delegate to actual Redis client
     def hset(self, name: str, key: str, value: Union[str, bytes, int, float]) -> int:
-        """Set a hash field."""
-        if name not in self._hash_storage:
-            self._hash_storage[name] = {}
-
-        is_new = key not in self._hash_storage[name]
-        self._hash_storage[name][key] = str(value)
-        return 1 if is_new else 0
+        """Set a hash field using Redis."""
+        return self.redis_client.hset(name, key, value)
 
     def hget(self, name: str, key: str) -> Optional[str]:
-        """Get a hash field."""
-        return self._hash_storage.get(name, {}).get(key)
+        """Get a hash field using Redis."""
+        result = self.redis_client.hget(name, key)
+        return result.decode() if result else None
 
     def hkeys(self, name: str) -> List[str]:
-        """Get hash keys."""
-        return list(self._hash_storage.get(name, {}).keys())
+        """Get hash keys using Redis."""
+        return [key.decode() for key in self.redis_client.hkeys(name)]
 
     def hdel(self, name: str, *keys: str) -> int:
-        """Delete hash fields."""
-        if name not in self._hash_storage:
-            return 0
-
-        deleted_count = 0
-        for key in keys:
-            if key in self._hash_storage[name]:
-                del self._hash_storage[name][key]
-                deleted_count += 1
-
-        return deleted_count
+        """Delete hash fields using Redis."""
+        return self.redis_client.hdel(name, *keys)
 
     def smembers(self, name: str) -> List[str]:
-        """Get set members."""
-        return list(self._set_storage.get(name, set()))
+        """Get set members using Redis."""
+        return [member.decode() for member in self.redis_client.smembers(name)]
 
     def sadd(self, name: str, *values: str) -> int:
-        """Add to set."""
-        if name not in self._set_storage:
-            self._set_storage[name] = set()
-
-        added_count = 0
-        for value in values:
-            if value not in self._set_storage[name]:
-                self._set_storage[name].add(value)
-                added_count += 1
-
-        return added_count
+        """Add to set using Redis."""
+        return self.redis_client.sadd(name, *values)
 
     def srem(self, name: str, *values: str) -> int:
-        """Remove from set."""
-        if name not in self._set_storage:
-            return 0
-
-        removed_count = 0
-        for value in values:
-            if value in self._set_storage[name]:
-                self._set_storage[name].remove(value)
-                removed_count += 1
-
-        return removed_count
+        """Remove from set using Redis."""
+        return self.redis_client.srem(name, *values)
 
     def get(self, key: str) -> Optional[str]:
-        """Get a value."""
-        return self._key_value_storage.get(key)
+        """Get a value using Redis."""
+        result = self.redis_client.get(key)
+        return result.decode() if result else None
 
     def set(self, key: str, value: Union[str, bytes, int, float]) -> bool:
-        """Set a value."""
-        self._key_value_storage[key] = str(value)
-        return True
+        """Set a value using Redis."""
+        return self.redis_client.set(key, value)
 
     def delete(self, *keys: str) -> int:
-        """Delete keys."""
-        deleted_count = 0
-        for key in keys:
-            if key in self._key_value_storage:
-                del self._key_value_storage[key]
-                deleted_count += 1
-
-        return deleted_count
+        """Delete keys using Redis."""
+        return self.redis_client.delete(*keys)
 
     def close(self) -> None:
-        """Close the Kafka producer."""
+        """Close both Kafka producer and Redis connection."""
+        # Close Kafka producer
         if self.producer:
             try:
                 if hasattr(self.producer, "close"):  # kafka-python
@@ -454,10 +508,12 @@ class KafkaMemoryLogger(BaseMemoryLogger):
             except Exception as e:
                 logger.error(f"Error closing Kafka producer: {e}")
 
-    @property
-    def redis(self):
-        """Compatibility property - raises error since this is Kafka backend."""
-        raise AttributeError("KafkaMemoryLogger does not have a 'redis' attribute")
+        # Close Redis connection
+        try:
+            self.redis_client.close()
+            logger.info("Redis connection closed")
+        except Exception as e:
+            logger.error(f"Error closing Redis connection: {e}")
 
     def __del__(self):
         """Cleanup on object deletion."""
@@ -465,189 +521,84 @@ class KafkaMemoryLogger(BaseMemoryLogger):
 
     def cleanup_expired_memories(self, dry_run: bool = False) -> Dict[str, Any]:
         """
-        Clean up expired memory entries based on decay configuration.
+        Clean up expired memory entries using Redis-based approach.
 
-        For Kafka backend, this cleans up the in-memory storage. In a production
-        Kafka setup, you would typically use Kafka's built-in retention policies
-        for topic-level cleanup.
-
-        Args:
-            dry_run: If True, return what would be deleted without actually deleting
-
-        Returns:
-            Dictionary containing cleanup statistics
+        This delegates to Redis for cleanup while also cleaning the in-memory buffer.
         """
         try:
-            from datetime import datetime
+            # Import Redis memory logger for cleanup logic
+            from .redis_logger import RedisMemoryLogger
 
-            current_time = datetime.now(UTC)
-            stats = {
-                "timestamp": current_time.isoformat(),
-                "backend": "kafka",
-                "decay_enabled": self.decay_config.get("enabled", False),
-                "deleted_count": 0,
-                "error_count": 0,
-                "deleted_entries": [],
-                "total_entries_before": len(self.memory),
-                "total_entries_after": 0,
-            }
+            # Create a temporary Redis logger to reuse cleanup logic
+            temp_redis_logger = RedisMemoryLogger(
+                redis_url=self.redis_url,
+                stream_key=self.stream_key,
+                decay_config=self.decay_config,
+            )
 
-            if not self.decay_config.get("enabled", False):
-                stats["message"] = "Memory decay is disabled"
-                stats["total_entries_after"] = len(self.memory)
-                return stats
+            # Use Redis cleanup logic
+            stats = temp_redis_logger.cleanup_expired_memories(dry_run=dry_run)
+            stats["backend"] = "kafka+redis"
 
-            # Find expired entries
-            expired_indices = []
-            for i, entry in enumerate(self.memory):
-                expire_time_str = entry.get("orka_expire_time")
-                if expire_time_str:
-                    try:
-                        expire_time = datetime.fromisoformat(expire_time_str)
-                        if current_time > expire_time:
-                            # Entry has expired
-                            entry_info = {
-                                "index": i,
-                                "agent_id": entry.get("agent_id", "unknown"),
-                                "event_type": entry.get("event_type", "unknown"),
-                                "expire_time": expire_time_str,
-                                "memory_type": entry.get("orka_memory_type", "unknown"),
-                                "run_id": entry.get("run_id", "unknown"),
-                            }
-                            expired_indices.append(i)
-                            stats["deleted_entries"].append(entry_info)
-                            stats["deleted_count"] += 1
+            # Also clean up in-memory buffer if decay is enabled and not dry run
+            if not dry_run and self.decay_config.get("enabled", False):
+                current_time = datetime.now(UTC)
+                expired_indices = []
 
-                    except (ValueError, TypeError) as e:
-                        logger.warning(f"Invalid expire_time format in entry {i}: {e}")
-                        stats["error_count"] += 1
+                for i, entry in enumerate(self.memory):
+                    expire_time_str = entry.get("orka_expire_time")
+                    if expire_time_str:
+                        try:
+                            expire_time = datetime.fromisoformat(expire_time_str)
+                            if current_time > expire_time:
+                                expired_indices.append(i)
+                        except (ValueError, TypeError):
+                            continue
 
-            # Actually remove expired entries if not dry run
-            if not dry_run and expired_indices:
-                # Remove entries in reverse order to maintain indices
+                # Remove expired entries from memory buffer
                 for i in reversed(expired_indices):
                     del self.memory[i]
-                logger.info(f"Cleaned up {len(expired_indices)} expired Kafka memory entries")
 
-            stats["total_entries_after"] = len(self.memory)
+                logger.info(f"Cleaned up {len(expired_indices)} expired entries from memory buffer")
+
             return stats
 
         except Exception as e:
-            logger.error(f"Error during Kafka memory cleanup: {e}")
+            logger.error(f"Error during hybrid memory cleanup: {e}")
             return {
                 "error": str(e),
-                "backend": "kafka",
+                "backend": "kafka+redis",
                 "timestamp": datetime.now(UTC).isoformat(),
                 "deleted_count": 0,
             }
 
     def get_memory_stats(self) -> Dict[str, Any]:
         """
-        Get memory usage statistics.
-
-        Returns comprehensive memory statistics including decay information
-        for the Kafka backend.
-
-        Returns:
-            Dictionary containing memory statistics
+        Get memory usage statistics from Redis backend.
         """
         try:
-            from datetime import datetime
+            # Import Redis memory logger for stats logic
+            from .redis_logger import RedisMemoryLogger
 
-            current_time = datetime.now(UTC)
-            stats = {
-                "timestamp": current_time.isoformat(),
-                "backend": "kafka",
-                "decay_enabled": self.decay_config.get("enabled", False),
-                "total_entries": 0,  # Will be calculated as active entries only
-                "entries_by_type": {},
-                "entries_by_memory_type": {"short_term": 0, "long_term": 0, "unknown": 0},
-                "entries_by_category": {"stored": 0, "log": 0, "unknown": 0},
-                "expired_entries": 0,
-                "entries_detail": [],
-            }
+            # Create a temporary Redis logger to reuse stats logic
+            temp_redis_logger = RedisMemoryLogger(
+                redis_url=self.redis_url,
+                stream_key=self.stream_key,
+                decay_config=self.decay_config,
+            )
 
-            # Process all entries
-            active_entries = 0
-            expired_entries = 0
-
-            for entry in self.memory:
-                # Check if entry is expired
-                is_expired = False
-                expire_time_str = entry.get("orka_expire_time")
-                if expire_time_str:
-                    try:
-                        expire_time = datetime.fromisoformat(expire_time_str)
-                        if current_time > expire_time:
-                            is_expired = True
-                            expired_entries += 1
-                        else:
-                            active_entries += 1
-                    except (ValueError, TypeError):
-                        # If we can't parse expire time, consider it active
-                        active_entries += 1
-                else:
-                    # No expire time means it's active (no decay metadata)
-                    active_entries += 1
-
-                # Only count active entries in main statistics
-                if not is_expired:
-                    # Count by event type
-                    event_type = entry.get("event_type", "unknown")
-                    stats["entries_by_type"][event_type] = (
-                        stats["entries_by_type"].get(event_type, 0) + 1
-                    )
-
-                    # Count by memory category first
-                    memory_category = entry.get("orka_memory_category", "unknown")
-                    if memory_category in stats["entries_by_category"]:
-                        stats["entries_by_category"][memory_category] += 1
-                    else:
-                        stats["entries_by_category"]["unknown"] += 1
-
-                    # Count by memory type ONLY for non-log entries
-                    # Logs should be excluded from memory type statistics
-                    if memory_category != "log":
-                        memory_type = entry.get("orka_memory_type", "unknown")
-                        if memory_type in stats["entries_by_memory_type"]:
-                            stats["entries_by_memory_type"][memory_type] += 1
-                        else:
-                            stats["entries_by_memory_type"]["unknown"] += 1
-
-                # Add entry details for debugging
-                entry_detail = {
-                    "agent_id": entry.get("agent_id", "unknown"),
-                    "event_type": entry.get("event_type", "unknown"),
-                    "memory_type": entry.get("orka_memory_type", "unknown"),
-                    "memory_category": entry.get("orka_memory_category", "unknown"),
-                    "importance_score": entry.get("orka_importance_score", "unknown"),
-                    "created_time": entry.get("orka_created_time", "unknown"),
-                    "expire_time": expire_time_str or "no_expiry",
-                    "is_expired": is_expired,
-                    "run_id": entry.get("run_id", "unknown"),
-                }
-                stats["entries_detail"].append(entry_detail)
-
-            stats["total_entries"] = active_entries
-            stats["expired_entries"] = expired_entries
-
-            # Add decay configuration info if enabled
-            if self.decay_config.get("enabled", False):
-                stats["decay_config"] = {
-                    "short_term_hours": self.decay_config["default_short_term_hours"],
-                    "long_term_hours": self.decay_config["default_long_term_hours"],
-                    "check_interval_minutes": self.decay_config["check_interval_minutes"],
-                    "last_decay_check": self._last_decay_check.isoformat()
-                    if hasattr(self, "_last_decay_check") and self._last_decay_check
-                    else None,
-                }
+            # Use Redis stats logic
+            stats = temp_redis_logger.get_memory_stats()
+            stats["backend"] = "kafka+redis"
+            stats["kafka_topic"] = self.main_topic
+            stats["memory_buffer_size"] = len(self.memory)
 
             return stats
 
         except Exception as e:
-            logger.error(f"Error getting Kafka memory statistics: {e}")
+            logger.error(f"Error getting hybrid memory statistics: {e}")
             return {
                 "error": str(e),
-                "backend": "kafka",
+                "backend": "kafka+redis",
                 "timestamp": datetime.now(UTC).isoformat(),
             }

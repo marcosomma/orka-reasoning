@@ -68,15 +68,27 @@ class FailoverNode(BaseNode):
                 f"{datetime.now()} > [ORKA][NODE][FAILOVER][INFO] Trying child {i + 1}/{len(self.children)}: {child_id}",
             )
             try:
+                # Render prompt for child before running (fix for {{ input }} template access)
+                child_payload = input_data.copy()
+                if hasattr(child, "prompt") and child.prompt:
+                    try:
+                        from jinja2 import Template
+
+                        formatted_prompt = Template(child.prompt).render(**input_data)
+                        child_payload["formatted_prompt"] = formatted_prompt
+                    except Exception:
+                        # If rendering fails, use original prompt as fallback
+                        child_payload["formatted_prompt"] = child.prompt
+
                 # Try running the current child node
                 if hasattr(child, "run") and callable(child.run):
                     # Check if the child's run method is async
                     import asyncio
 
                     if asyncio.iscoroutinefunction(child.run):
-                        result = await child.run(input_data)
+                        result = await child.run(child_payload)
                     else:
-                        result = child.run(input_data)
+                        result = child.run(child_payload)
                 else:
                     print(
                         f"{datetime.now()} > [ORKA][NODE][FAILOVER][ERROR] Child '{child_id}' has no run method",

@@ -28,6 +28,10 @@ services:
     restart: always
     networks:
       - orka-redis-network
+    profiles:
+      - redis
+      - kafka  # Include Redis in Kafka profile for hybrid backend
+      - dual
 
   # ===================
   # Kafka Infrastructure  
@@ -40,6 +44,9 @@ services:
     networks:
       - orka-kafka-network
     restart: always
+    profiles:
+      - kafka
+      - dual
 
   kafka:
     image: confluentinc/cp-kafka:7.4.0
@@ -60,6 +67,9 @@ services:
     networks:
       - orka-kafka-network
     restart: always
+    profiles:
+      - kafka
+      - dual
 
   # ===================
   # Schema Registry
@@ -136,15 +146,18 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - KAFKA_TOPIC_PREFIX=orka-memory
       - KAFKA_SCHEMA_REGISTRY_URL=http://schema-registry:8081
+      - REDIS_URL=redis://redis:6379/0  # Redis for memory operations
       - ORKA_PORT=8000
     depends_on:
       - kafka
       - zookeeper
       - schema-registry
+      - redis  # Now depends on Redis for memory operations
       - cleanup
     restart: always
     networks:
       - orka-kafka-network
+      - orka-redis-network  # Connect to Redis network too
     profiles:
       - kafka
 

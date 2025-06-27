@@ -3,6 +3,48 @@
 
 ---
 
+## [0.6.6] · 2025-01-30
+### Added
+* **Kafka Hybrid Backend Implementation**
+  * **Streamlined Architecture** - Kafka now automatically uses Redis for memory operations while handling event streaming
+  * **Hybrid Memory Logger** - New KafkaMemoryLogger that intelligently routes memory operations to Redis while streaming events to Kafka
+  * **Simplified Command Interface** - `start_kafka` command now automatically configures both Kafka and Redis backends without manual dual setup
+  * **Enhanced Docker Integration** - Updated docker-compose.yml and startup scripts for seamless hybrid backend deployment
+  * **Comprehensive Test Coverage** - New test files for hybrid backend validation and comprehensive component testing:
+    * `test_kafka_hybrid_backend.py` - Complete hybrid backend functionality testing
+    * `test_failover_node_comprehensive.py` - Enhanced failover node testing
+    * `test_orka_cli_comprehensive.py` - Extended CLI functionality testing  
+    * `test_redis_logger_comprehensive.py` - Comprehensive Redis logger testing
+### Changed
+* **Memory Backend Architecture**
+  * **Unified Backend Strategy** - Eliminated confusion between dual backend and hybrid backend approaches
+  * **Automatic Backend Selection** - Kafka startup now automatically enables hybrid mode without additional configuration
+  * **Enhanced Memory Logger Factory** - Improved backend selection logic with better error handling and validation
+  * **Docker Configuration Updates** - Modified startup scripts (start-kafka.bat, start-kafka.sh) for hybrid backend support
+* **Test Infrastructure Improvements**
+  * **Enhanced FakeRedisClient** - Improved mock Redis client with better method compatibility and error handling
+  * **Fixed Test Suite Compatibility** - Resolved all failing tests after hybrid backend implementation
+  * **Improved Test Isolation** - Better test separation and cleanup procedures for hybrid backend scenarios
+  * **Enhanced Coverage Reporting** - Updated coverage configuration and reporting for new test files
+### Fixed
+* **Critical Backend Integration Issues**
+  * **Kafka Memory Logger Compatibility** - Fixed missing methods and improper method calls in KafkaMemoryLogger
+  * **Redis Integration** - Resolved byte/string encoding issues in FakeRedisClient for test compatibility
+  * **Test Suite Stability** - Fixed 12 failing tests related to hybrid backend changes, ensuring 100% test pass rate
+  * **Import Path Resolution** - Corrected import paths and method references across test files
+* **Infrastructure and Configuration**
+  * **Docker Startup Issues** - Fixed startup script compatibility across Windows and Unix platforms
+  * **Memory Logger Factory** - Resolved backend selection logic and error handling edge cases
+  * **Failover Node Stability** - Enhanced failover node error handling and recovery mechanisms
+  * **CLI Command Integration** - Fixed OrKa CLI compatibility with hybrid backend architecture
+### Technical Details
+* **Hybrid Backend Implementation** - Seamless integration of Kafka event streaming with Redis memory operations
+* **Zero-Impact Migration** - Existing workflows continue to function without modification while gaining Kafka streaming capabilities
+* **Enhanced Error Handling** - Improved error reporting and recovery mechanisms across all backend operations
+* **Performance Optimization** - Optimized memory operations routing and event streaming for better throughput
+* **Cross-Platform Support** - Enhanced Windows and Unix compatibility for Docker and startup scripts
+* **Comprehensive Testing** - Extended test coverage to 639+ tests with focus on hybrid backend scenarios
+
 ## [0.6.5] · 2025-01-29
 ### Added
 * **Memory Decay System - Intelligent Memory Management**

@@ -402,25 +402,7 @@ def memory_watch(args):
         # Get backend from args or environment
         backend = getattr(args, "backend", None) or os.getenv("ORKA_MEMORY_BACKEND", "redis")
 
-        # Check for Kafka backend limitation
-        if backend.lower() == "kafka":
-            print("🚫 Kafka Memory Watch Limitation")
-            print("=" * 50)
-            print("❌ Cannot observe Kafka memory across different sessions/processes.")
-            print("📋 Kafka memory logger stores data in-memory per Python process,")
-            print("   so memory entries created by orchestrator runs are not visible")
-            print("   to separate CLI processes.")
-            print()
-            print("💡 Recommended Solutions:")
-            print("   1. Use Redis backend for development monitoring:")
-            print('      $env:ORKA_MEMORY_BACKEND="redis"; python -m orka.orka_cli memory watch')
-            print(
-                "   2. Redis provides identical decay functionality with cross-session visibility",
-            )
-            print("   3. For production Kafka usage, implement monitoring within your orchestrator")
-            print()
-            print("✅ Both Redis and Kafka backends have identical TTL/decay functionality!")
-            return 1
+        # Kafka backend now uses Redis for memory operations, so no limitations
 
         memory = create_memory_logger(backend=backend)
 

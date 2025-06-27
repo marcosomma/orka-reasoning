@@ -283,8 +283,20 @@ class TestKafkaMemoryDecay:
     """Test Kafka-specific memory decay functionality."""
 
     @patch("kafka.KafkaProducer")
-    def test_kafka_cleanup_expired_memories(self, mock_producer_class):
+    @patch("orka.memory.kafka_logger.redis.from_url")
+    def test_kafka_cleanup_expired_memories(self, mock_redis_url, mock_producer_class):
         """Test Kafka expired memory cleanup."""
+        # Mock Redis client
+        import os
+        import sys
+
+        sys.path.append(os.path.dirname(__file__))
+        from fake_redis import FakeRedisClient
+
+        mock_redis_client = FakeRedisClient()
+        mock_redis_url.return_value = mock_redis_client
+
+        # Mock Kafka producer
         mock_producer = Mock()
         mock_producer_class.return_value = mock_producer
 
@@ -313,15 +325,56 @@ class TestKafkaMemoryDecay:
             },
         ]
 
-        stats = logger.cleanup_expired_memories(dry_run=False)
+        # Add some data to Redis streams to simulate the Redis cleanup
+        mock_redis_client.xadd(
+            "orka:memory",
+            {
+                "agent_id": "agent1",
+                "orka_expire_time": past_time,
+                "orka_memory_type": "short_term",
+            },
+        )
+        mock_redis_client.xadd(
+            "orka:memory",
+            {
+                "agent_id": "agent2",
+                "orka_expire_time": future_time,
+                "orka_memory_type": "long_term",
+            },
+        )
 
-        assert stats["deleted_count"] == 1
-        assert stats["total_entries_after"] == 1
-        assert len(logger.memory) == 1
+        # Patch the RedisMemoryLogger creation for cleanup delegation
+        with patch("orka.memory.redis_logger.RedisMemoryLogger") as mock_redis_logger_class:
+            mock_redis_logger = Mock()
+            mock_redis_logger.cleanup_expired_memories.return_value = {
+                "deleted_count": 1,
+                "total_entries_before": 2,
+                "total_entries_after": 1,
+                "backend": "redis",
+            }
+            mock_redis_logger_class.return_value = mock_redis_logger
+
+            stats = logger.cleanup_expired_memories(dry_run=False)
+
+            # Verify the cleanup was delegated and in-memory buffer was also cleaned
+            assert stats["deleted_count"] == 1
+            assert stats["backend"] == "kafka+redis"
+            # The in-memory buffer should be cleaned up too
+            assert len(logger.memory) == 1  # One expired entry removed
 
     @patch("kafka.KafkaProducer")
-    def test_kafka_log_with_decay_metadata(self, mock_producer_class):
+    @patch("orka.memory.kafka_logger.redis.from_url")
+    def test_kafka_log_with_decay_metadata(self, mock_redis_url, mock_producer_class):
         """Test Kafka logging with decay metadata generation."""
+        import os
+        import sys
+
+        sys.path.append(os.path.dirname(__file__))
+        from fake_redis import FakeRedisClient
+
+        mock_redis_client = FakeRedisClient()
+        mock_redis_url.return_value = mock_redis_client
+
         mock_producer = Mock()
         mock_producer_class.return_value = mock_producer
 

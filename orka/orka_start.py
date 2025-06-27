@@ -188,7 +188,20 @@ def start_infrastructure(backend: str) -> None:
         logger.info("Redis infrastructure started.")
 
     elif backend == "kafka":
-        # Start Kafka services step by step to avoid dependency conflicts
+        # Start hybrid Kafka + Redis infrastructure
+        print("Starting Redis for memory operations...")
+        subprocess.run(
+            [
+                "docker-compose",
+                "-f",
+                compose_file,
+                "up",
+                "-d",
+                "redis",
+            ],
+            check=True,
+        )
+
         print("Starting Zookeeper...")
         subprocess.run(
             [
@@ -241,7 +254,7 @@ def start_infrastructure(backend: str) -> None:
             check=True,
         )
 
-        logger.info("Kafka infrastructure started.")
+        logger.info("Kafka + Redis hybrid infrastructure started.")
 
     elif backend == "dual":
         # Start both Redis and Kafka step by step
@@ -356,6 +369,38 @@ def wait_for_services(backend: str) -> None:
                     raise
 
     if backend in ["kafka", "dual"]:
+        # For Kafka backend, also wait for Redis since it's now required for memory operations
+        if backend == "kafka":
+            print("⏳ Waiting for Redis to be ready...")
+            import time
+
+            time.sleep(5)
+            for attempt in range(5):
+                try:
+                    subprocess.run(
+                        [
+                            "docker-compose",
+                            "-f",
+                            compose_file,
+                            "exec",
+                            "-T",
+                            "redis",
+                            "redis-cli",
+                            "ping",
+                        ],
+                        check=True,
+                        capture_output=True,
+                    )
+                    print("✅ Redis is ready!")
+                    break
+                except subprocess.CalledProcessError:
+                    if attempt < 4:
+                        print(f"Redis not ready yet, waiting... (attempt {attempt + 1}/5)")
+                        time.sleep(2)
+                    else:
+                        logger.error("Redis failed to start properly")
+                        raise
+
         print("⏳ Waiting for Kafka to be ready...")
         import time
 
@@ -478,8 +523,8 @@ def start_backend(backend: str) -> subprocess.Popen:
             env["KAFKA_TOPIC_PREFIX"] = "orka-memory"
             logger.info("🔧 Schema Registry enabled for Kafka backend")
 
-        if backend in ["redis", "dual"]:
-            # Configure Redis
+        if backend in ["redis", "kafka", "dual"]:
+            # Configure Redis (now required for all backends including Kafka for memory operations)
             env["REDIS_URL"] = "redis://localhost:6379/0"
 
         # Start the backend server with configured environment
@@ -549,9 +594,10 @@ async def main() -> None:
         print("   • Orka API: http://localhost:8000")
         print("   • Redis:    localhost:6379")
     elif backend == "kafka":
-        print("📍 Service Endpoints:")
+        print("📍 Service Endpoints (Hybrid Kafka + Redis):")
         print("   • Orka API:         http://localhost:8001")
-        print("   • Kafka:            localhost:9092")
+        print("   • Kafka (Events):   localhost:9092")
+        print("   • Redis (Memory):   localhost:6379")
         print("   • Zookeeper:        localhost:2181")
         print("   • Schema Registry:  http://localhost:8081")
         print("   • Schema UI:        http://localhost:8082")

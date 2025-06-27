@@ -184,7 +184,7 @@ def create_memory_logger(
 
     Args:
         backend: Backend type ("redis" or "kafka")
-        redis_url: Redis connection URL (for Redis backend)
+        redis_url: Redis connection URL (for Redis backend, and also used by Kafka backend for memory operations)
         bootstrap_servers: Kafka bootstrap servers (for Kafka backend)
         topic_prefix: Kafka topic prefix (for Kafka backend)
         stream_key: Stream key for memory logging
@@ -217,13 +217,14 @@ def create_memory_logger(
             }
             memory = create_memory_logger("redis", decay_config=decay_config)
 
-        Kafka logger:
+        Kafka logger (now uses Redis for memory operations):
 
         .. code-block:: python
 
             memory = create_memory_logger(
                 "kafka",
-                bootstrap_servers="localhost:9092"
+                bootstrap_servers="localhost:9092",
+                redis_url="redis://localhost:6379/0"  # Redis used for memory ops
             )
     """
     if backend.lower() == "redis":
@@ -241,6 +242,7 @@ def create_memory_logger(
             synchronous_send=synchronous_send,
             debug_keep_previous_outputs=debug_keep_previous_outputs,
             decay_config=decay_config,
+            redis_url=redis_url,  # Pass Redis URL for memory operations
         )
     else:
         raise ValueError(f"Unsupported backend: {backend}")

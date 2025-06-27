@@ -42,9 +42,10 @@ orka\docker\start-kafka.bat
 - **Orka API**: http://localhost:8000
 - **Redis**: localhost:6379
 
-### Kafka Backend
+### Kafka Backend (Hybrid with Redis)
 - **Orka API**: http://localhost:8001
-- **Kafka**: localhost:9092
+- **Kafka (Events)**: localhost:9092
+- **Redis (Memory)**: localhost:6379  
 - **Zookeeper**: localhost:2181
 
 ### Dual Backend
@@ -151,10 +152,10 @@ docker-compose exec kafka kafka-topics --bootstrap-server localhost:29092 --list
 - **Features**: Fast in-memory operations, simple setup
 - **Limitations**: Single point of failure, memory-bound storage
 
-### Kafka Backend  
-- **Best for**: Production, distributed systems, high-throughput scenarios
-- **Features**: Persistent event log, horizontal scaling, fault tolerance
-- **Limitations**: More complex setup, higher resource usage
+### Kafka Backend (Hybrid with Redis)
+- **Best for**: Production, distributed systems, high-throughput scenarios with persistent audit trails
+- **Features**: Kafka for persistent event streaming + Redis for fast memory operations and fork/join coordination
+- **Limitations**: More complex setup, requires both Kafka and Redis infrastructure
 
 ### Dual Backend
 - **Best for**: Testing, migration scenarios, comparing performance
@@ -191,6 +192,6 @@ from orka.memory_logger import create_memory_logger
 # Redis
 memory = create_memory_logger("redis", redis_url="redis://localhost:6379")
 
-# Kafka  
-memory = create_memory_logger("kafka", bootstrap_servers="localhost:9092")
+# Kafka (hybrid with Redis)
+memory = create_memory_logger("kafka", bootstrap_servers="localhost:9092", redis_url="redis://localhost:6379")
 ``` 

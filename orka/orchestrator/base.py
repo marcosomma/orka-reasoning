@@ -46,7 +46,7 @@ import os
 from typing import Any, Dict
 from uuid import uuid4
 
-from ..fork_group_manager import ForkGroupManager, SimpleForkGroupManager
+from ..fork_group_manager import ForkGroupManager
 from ..loader import YAMLLoader
 from ..memory_logger import create_memory_logger
 
@@ -127,9 +127,13 @@ class OrchestratorBase:
                 topic_prefix=os.getenv("KAFKA_TOPIC_PREFIX", "orka-memory"),
                 debug_keep_previous_outputs=debug_keep_previous_outputs,
                 decay_config=decay_config,
+                redis_url=os.getenv(
+                    "REDIS_URL",
+                    "redis://localhost:6379/0",
+                ),  # Redis for memory operations
             )
-            # For Kafka, we'll use a simple in-memory fork manager since Kafka doesn't have Redis-like operations
-            self.fork_manager = SimpleForkGroupManager()
+            # For Kafka backend, now use Redis-based fork manager since we have Redis for memory
+            self.fork_manager = ForkGroupManager(self.memory.redis)
         else:
             self.memory = create_memory_logger(
                 backend="redis",
