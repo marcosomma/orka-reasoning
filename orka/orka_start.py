@@ -92,16 +92,11 @@ def get_docker_dir() -> str:
 
 
 def get_memory_backend() -> str:
-    """
-    Get the configured memory backend from environment variables.
-
-    Returns:
-        str: The memory backend type ('redis', 'kafka', or 'dual')
-    """
-    backend = os.getenv("ORKA_MEMORY_BACKEND", "redis").lower()
-    if backend not in ["redis", "kafka", "dual"]:
-        logger.warning(f"Unknown backend '{backend}', defaulting to Redis")
-        return "redis"
+    """Get the configured memory backend, defaulting to RedisStack."""
+    backend = os.getenv("ORKA_MEMORY_BACKEND", "redisstack").lower()
+    if backend not in ["redis", "redisstack", "kafka", "dual"]:
+        logger.warning(f"Unknown backend '{backend}', defaulting to RedisStack")
+        return "redisstack"
     return backend
 
 
@@ -525,7 +520,7 @@ def start_backend(backend: str) -> subprocess.Popen:
 
         if backend in ["redis", "kafka", "dual"]:
             # Configure Redis (now required for all backends including Kafka for memory operations)
-            env["REDIS_URL"] = "redis://localhost:6379/0"
+            env["REDIS_URL"] = "redis://localhost:6380/0"
 
         # Start the backend server with configured environment
         backend_proc: subprocess.Popen = subprocess.Popen(
@@ -592,19 +587,19 @@ async def main() -> None:
     if backend == "redis":
         print("📍 Service Endpoints:")
         print("   • Orka API: http://localhost:8000")
-        print("   • Redis:    localhost:6379")
+        print("   • Redis:    localhost:6380")
     elif backend == "kafka":
         print("📍 Service Endpoints (Hybrid Kafka + Redis):")
         print("   • Orka API:         http://localhost:8001")
         print("   • Kafka (Events):   localhost:9092")
-        print("   • Redis (Memory):   localhost:6379")
+        print("   • Redis (Memory):   localhost:6380")
         print("   • Zookeeper:        localhost:2181")
         print("   • Schema Registry:  http://localhost:8081")
         print("   • Schema UI:        http://localhost:8082")
     elif backend == "dual":
         print("📍 Service Endpoints:")
         print("   • Orka API (Dual):  http://localhost:8002")
-        print("   • Redis:            localhost:6379")
+        print("   • Redis:            localhost:6380")
         print("   • Kafka:            localhost:9092")
         print("   • Zookeeper:        localhost:2181")
         print("   • Schema Registry:  http://localhost:8081")

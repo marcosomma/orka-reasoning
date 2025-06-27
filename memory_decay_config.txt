@@ -1,0 +1,20 @@
+# OrKa Memory Decay Configuration Reference
+# ========================================
+
+# OPTION 1: Disable memory decay completely (RECOMMENDED for development)
+set ORKA_MEMORY_DECAY_ENABLED=false
+
+# OPTION 2: Enable with custom retention times
+set ORKA_MEMORY_DECAY_ENABLED=true
+set ORKA_MEMORY_DECAY_SHORT_TERM_HOURS=24     # Keep logs for 24 hours instead of 1
+set ORKA_MEMORY_DECAY_LONG_TERM_HOURS=168     # Keep important memories for 1 week  
+set ORKA_MEMORY_DECAY_CHECK_INTERVAL_MINUTES=60  # Check every hour instead of 30 min
+
+# OPTION 3: Production settings (balanced retention)
+set ORKA_MEMORY_DECAY_ENABLED=true
+set ORKA_MEMORY_DECAY_SHORT_TERM_HOURS=8      # 8 hours for logs
+set ORKA_MEMORY_DECAY_LONG_TERM_HOURS=72      # 3 days for important data
+set ORKA_MEMORY_DECAY_CHECK_INTERVAL_MINUTES=120  # Check every 2 hours
+
+# To use RedisStack on port 6380 (if needed):
+set REDIS_URL=redis://localhost:6380/0 

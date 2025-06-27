@@ -7,7 +7,7 @@ authors = [
 ]
 readme = "README.md"
 license = { text = "Apache 2.0" }
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 
 dependencies = [
   "python-dotenv",
@@ -82,7 +82,7 @@ omit = [
     "test/*",
     "setup.py",
     "orka/start_kafka.py",
-    "orka/start_redis.py",
+    "orka/start_redis_only.py",
     "orka/orka_start.py",
 ]
 
@@ -196,3 +196,9 @@ max-complexity = 10
 [tool.ruff.per-file-ignores]
 "__init__.py" = ["F401"]
 "test_*.py" = ["S101"]
+
+[tool.poetry.scripts]
+orka = "orka.orka_cli:main"
+orka-start = "orka.orka_start:main"
+orka-kafka = "orka.start_kafka:main"
+orka-redis = "orka.start_redis_only:main"

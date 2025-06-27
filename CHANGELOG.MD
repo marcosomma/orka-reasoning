@@ -281,7 +281,7 @@
 * **Dependency Management**
   * Made DuckDuckGo search import optional to resolve PyO3 compatibility issues
   * Enhanced error handling for missing optional dependencies (sentence-transformers, huggingface-hub)
-  * Coverage calculation now excludes start scripts (start_kafka.py, start_redis.py) for cleaner metrics
+  * Coverage calculation now excludes start scripts (start_kafka.py, start_redis_only.py) for cleaner metrics
 * **Memory Logger Architecture**
   * Improved JSON sanitization with cycle detection to prevent infinite recursion
   * Enhanced logging error handling during system shutdown to prevent I/O operation errors

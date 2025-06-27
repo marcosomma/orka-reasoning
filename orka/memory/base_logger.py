@@ -87,7 +87,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
             Processed decay configuration with defaults applied
         """
         default_config = {
-            "enabled": True,  # Enable by default for better memory management
+            "enabled": False,  # Disable by default to prevent logs from disappearing
             "default_short_term_hours": 1.0,
             "default_long_term_hours": 24.0,
             "check_interval_minutes": 30,
@@ -198,6 +198,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         event_type: str,
         agent_id: str,
         payload: Dict[str, Any],
+        log_type: str = "log",
     ) -> str:
         """
         Classify memory entry category for separation between logs and stored memories.
@@ -206,10 +207,18 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
             event_type: Type of the event
             agent_id: ID of the agent generating the event
             payload: Event payload
+            log_type: Explicit log type ("log" or "memory")
 
         Returns:
             "stored" for memory writer outputs, "log" for other events
         """
+        # 🎯 CRITICAL: Use explicit log_type parameter first
+        if log_type == "memory":
+            return "stored"
+        elif log_type == "log":
+            return "log"
+
+        # Fallback to legacy detection (for backward compatibility)
         # Memory writes from memory writer nodes should be categorized as "stored"
         if event_type == "write" and ("memory" in agent_id.lower() or "writer" in agent_id.lower()):
             return "stored"
@@ -288,6 +297,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         parent: Optional[str] = None,
         previous_outputs: Optional[Dict[str, Any]] = None,
         agent_decay_config: Optional[Dict[str, Any]] = None,
+        log_type: str = "log",  # 🎯 NEW: "log" for orchestration, "memory" for stored memories
     ) -> None:
         """Log an event to the memory backend."""
 

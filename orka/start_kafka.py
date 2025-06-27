@@ -11,7 +11,7 @@ This provides the best of both worlds:
 - Redis for fast memory operations and fork/join coordination
 
 This is equivalent to running:
-    ORKA_MEMORY_BACKEND=kafka REDIS_URL=redis://localhost:6379/0 python -m orka.orka_start
+    ORKA_MEMORY_BACKEND=kafka REDIS_URL=redis://localhost:6380/0 python -m orka.orka_start
 """
 
 import os
@@ -23,7 +23,7 @@ os.environ["ORKA_MEMORY_BACKEND"] = "kafka"
 
 # Ensure Redis is configured for memory operations
 if "REDIS_URL" not in os.environ:
-    os.environ["REDIS_URL"] = "redis://localhost:6379/0"
+    os.environ["REDIS_URL"] = "redis://localhost:6380/0"
 
 # Set default Kafka configuration if not already set
 if "KAFKA_BOOTSTRAP_SERVERS" not in os.environ:

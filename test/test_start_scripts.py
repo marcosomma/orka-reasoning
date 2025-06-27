@@ -23,26 +23,32 @@ import pytest
 def test_start_kafka_script_exists():
     """Test that start_kafka.py script exists and is readable"""
     script_path = os.path.join(
-        os.path.dirname(__file__), "..", "orka", "start_kafka.py"
+        os.path.dirname(__file__),
+        "..",
+        "orka",
+        "start_kafka.py",
     )
     assert os.path.exists(script_path)
 
     # Test that the file contains the expected environment setting
-    with open(script_path, "r") as f:
+    with open(script_path) as f:
         content = f.read()
         assert 'os.environ["ORKA_MEMORY_BACKEND"] = "kafka"' in content
         assert "from orka.orka_start import main" in content
 
 
-def test_start_redis_script_exists():
-    """Test that start_redis.py script exists and is readable"""
+def test_start_redis_only_script_exists():
+    """Test that start_redis_only.py script exists and is readable"""
     script_path = os.path.join(
-        os.path.dirname(__file__), "..", "orka", "start_redis.py"
+        os.path.dirname(__file__),
+        "..",
+        "orka",
+        "start_redis_only.py",
     )
     assert os.path.exists(script_path)
 
     # Test that the file contains the expected environment setting
-    with open(script_path, "r") as f:
+    with open(script_path) as f:
         content = f.read()
         assert 'os.environ["ORKA_MEMORY_BACKEND"] = "redis"' in content
         assert "from orka.orka_start import main" in content
@@ -51,10 +57,13 @@ def test_start_redis_script_exists():
 def test_start_kafka_script_structure():
     """Test that start_kafka.py has the expected structure"""
     script_path = os.path.join(
-        os.path.dirname(__file__), "..", "orka", "start_kafka.py"
+        os.path.dirname(__file__),
+        "..",
+        "orka",
+        "start_kafka.py",
     )
 
-    with open(script_path, "r") as f:
+    with open(script_path) as f:
         content = f.read()
 
     # Test key elements of the script
@@ -66,13 +75,16 @@ def test_start_kafka_script_structure():
     assert "asyncio.run(main())" in content
 
 
-def test_start_redis_script_structure():
-    """Test that start_redis.py has the expected structure"""
+def test_start_redis_only_script_structure():
+    """Test that start_redis_only.py has the expected structure"""
     script_path = os.path.join(
-        os.path.dirname(__file__), "..", "orka", "start_redis.py"
+        os.path.dirname(__file__),
+        "..",
+        "orka",
+        "start_redis_only.py",
     )
 
-    with open(script_path, "r") as f:
+    with open(script_path) as f:
         content = f.read()
 
     # Test key elements of the script
@@ -104,7 +116,7 @@ def test_start_kafka_env_setting():
             del os.environ["ORKA_MEMORY_BACKEND"]
 
 
-def test_start_redis_env_setting():
+def test_start_redis_only_env_setting():
     """Test environment variable setting for redis script"""
     # Store original environment
     original_value = os.environ.get("ORKA_MEMORY_BACKEND")
@@ -127,10 +139,13 @@ def test_start_redis_env_setting():
 def test_start_kafka_import_attempts():
     """Test that start_kafka.py has proper import structure"""
     script_path = os.path.join(
-        os.path.dirname(__file__), "..", "orka", "start_kafka.py"
+        os.path.dirname(__file__),
+        "..",
+        "orka",
+        "start_kafka.py",
     )
 
-    with open(script_path, "r") as f:
+    with open(script_path) as f:
         content = f.read()
 
     # Check that both import paths are present
@@ -139,13 +154,16 @@ def test_start_kafka_import_attempts():
     assert "except ImportError:" in content
 
 
-def test_start_redis_import_attempts():
-    """Test that start_redis.py has proper import structure"""
+def test_start_redis_only_import_attempts():
+    """Test that start_redis_only.py has proper import structure"""
     script_path = os.path.join(
-        os.path.dirname(__file__), "..", "orka", "start_redis.py"
+        os.path.dirname(__file__),
+        "..",
+        "orka",
+        "start_redis_only.py",
     )
 
-    with open(script_path, "r") as f:
+    with open(script_path) as f:
         content = f.read()
 
     # Check that both import paths are present
@@ -189,7 +207,7 @@ def test_start_scripts_code_coverage():
     assert os.path.exists(kafka_script)
 
     # Test redis script exists and can be read
-    redis_script = os.path.join(script_dir, "start_redis.py")
+    redis_script = os.path.join(script_dir, "start_redis_only.py")
     assert os.path.exists(redis_script)
 
     # Execute the core logic of the scripts without importing OrKa
@@ -197,7 +215,7 @@ def test_start_scripts_code_coverage():
 
     try:
         # Read and execute kafka script environment setting
-        with open(kafka_script, "r") as f:
+        with open(kafka_script) as f:
             kafka_content = f.read()
 
         # Find the line that sets the environment
@@ -209,7 +227,7 @@ def test_start_scripts_code_coverage():
         assert os.environ.get("ORKA_MEMORY_BACKEND") == "kafka"
 
         # Read and execute redis script environment setting
-        with open(redis_script, "r") as f:
+        with open(redis_script) as f:
             redis_content = f.read()
 
         # Find the line that sets the environment

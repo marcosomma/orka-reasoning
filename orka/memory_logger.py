@@ -158,94 +158,184 @@ Implementation Notes
 """
 
 # Import all components from the new memory package
+import logging
+import os
 from typing import Any, Dict, Optional
 
 from .memory.base_logger import BaseMemoryLogger
-from .memory.kafka_logger import KafkaMemoryLogger
 from .memory.redis_logger import RedisMemoryLogger
+
+logger = logging.getLogger(__name__)
 
 
 def create_memory_logger(
-    backend: str = "redis",
+    backend: str = "redisstack",
     redis_url: Optional[str] = None,
     bootstrap_servers: Optional[str] = None,
     topic_prefix: str = "orka-memory",
     stream_key: str = "orka:memory",
-    synchronous_send: bool = False,
     debug_keep_previous_outputs: bool = False,
     decay_config: Optional[Dict[str, Any]] = None,
+    enable_hnsw: bool = True,
+    vector_params: Optional[Dict[str, Any]] = None,
+    **kwargs,
 ) -> BaseMemoryLogger:
     """
-    Factory function to create memory logger instances.
+    Enhanced factory with RedisStack as primary backend.
 
-    This function provides a unified interface for creating memory loggers
-    across different backends (Redis, Kafka) with automatic fallback handling
-    and environment variable integration.
+    Creates a memory logger instance based on the specified backend.
+    Defaults to RedisStack for optimal performance with automatic fallback.
 
     Args:
-        backend: Backend type ("redis" or "kafka")
-        redis_url: Redis connection URL (for Redis backend, and also used by Kafka backend for memory operations)
+        backend: Memory backend type ("redisstack", "redis", "kafka")
+        redis_url: Redis connection URL
         bootstrap_servers: Kafka bootstrap servers (for Kafka backend)
         topic_prefix: Kafka topic prefix (for Kafka backend)
-        stream_key: Stream key for memory logging
-        synchronous_send: Whether to wait for message delivery confirmation
-        debug_keep_previous_outputs: Keep previous outputs for debugging
-        decay_config: Configuration for memory decay functionality
+        stream_key: Redis stream key for logging
+        debug_keep_previous_outputs: Whether to keep previous outputs in logs
+        decay_config: Memory decay configuration
+        enable_hnsw: Enable HNSW vector indexing (RedisStack only)
+        vector_params: HNSW configuration parameters
+        **kwargs: Additional parameters for backward compatibility
 
     Returns:
         Configured memory logger instance
 
     Raises:
-        ValueError: If backend type is unsupported
-        ImportError: If required dependencies are missing
-
-    Examples:
-        Basic Redis logger:
-
-        .. code-block:: python
-
-            memory = create_memory_logger("redis")
-
-        Redis with decay enabled:
-
-        .. code-block:: python
-
-            decay_config = {
-                "enabled": True,
-                "default_short_term_hours": 2.0,
-                "default_long_term_hours": 48.0
-            }
-            memory = create_memory_logger("redis", decay_config=decay_config)
-
-        Kafka logger (now uses Redis for memory operations):
-
-        .. code-block:: python
-
-            memory = create_memory_logger(
-                "kafka",
-                bootstrap_servers="localhost:9092",
-                redis_url="redis://localhost:6379/0"  # Redis used for memory ops
-            )
+        ImportError: If required dependencies are not available
+        ConnectionError: If backend connection fails
     """
-    if backend.lower() == "redis":
-        return RedisMemoryLogger(
-            redis_url=redis_url,
-            stream_key=stream_key,
-            debug_keep_previous_outputs=debug_keep_previous_outputs,
-            decay_config=decay_config,
-        )
-    elif backend.lower() == "kafka":
-        return KafkaMemoryLogger(
-            bootstrap_servers=bootstrap_servers,
-            topic_prefix=topic_prefix,
-            stream_key=stream_key,
-            synchronous_send=synchronous_send,
-            debug_keep_previous_outputs=debug_keep_previous_outputs,
-            decay_config=decay_config,
-            redis_url=redis_url,  # Pass Redis URL for memory operations
-        )
-    else:
-        raise ValueError(f"Unsupported backend: {backend}")
+    # Normalize backend name
+    backend = backend.lower()
+
+    # Set default decay configuration if not provided
+    if decay_config is None:
+        decay_config = {
+            "enabled": True,
+            "default_short_term_hours": 1.0,
+            "default_long_term_hours": 24.0,
+            "check_interval_minutes": 30,
+        }
+
+    # ✅ Handle force basic Redis flag
+    force_basic_redis = os.getenv("ORKA_FORCE_BASIC_REDIS", "false").lower() == "true"
+
+    if force_basic_redis and backend in ["redis", "redisstack"]:
+        # Force basic Redis when explicitly requested
+        logging.getLogger(__name__).info("🔧 Force basic Redis mode enabled")
+        try:
+            from .memory.redis_logger import RedisMemoryLogger
+
+            return RedisMemoryLogger(
+                redis_url=redis_url,
+                stream_key=stream_key,
+                debug_keep_previous_outputs=debug_keep_previous_outputs,
+                decay_config=decay_config,
+            )
+        except ImportError as e:
+            raise ImportError(f"Basic Redis backend not available: {e}") from e
+
+    # PRIORITY: Try RedisStack first for redis/redisstack backends
+    if backend in ["redisstack", "redis"]:
+        try:
+            from .memory.redisstack_logger import RedisStackMemoryLogger
+
+            # 🎯 CRITICAL: Initialize embedder for vector search
+            embedder = None
+            try:
+                from .utils.embedder import get_embedder
+
+                embedder = get_embedder()
+                logger.info("✅ Embedder initialized for vector search")
+            except Exception as e:
+                logger.warning(f"⚠️ Could not initialize embedder: {e}")
+                logger.warning("Vector search will not be available")
+
+            logger_instance = RedisStackMemoryLogger(
+                redis_url=redis_url,
+                embedder=embedder,  # 🎯 NEW: Pass embedder for vector search
+                stream_key=stream_key,
+                debug_keep_previous_outputs=debug_keep_previous_outputs,
+                decay_config=decay_config,
+                enable_hnsw=enable_hnsw,
+                vector_params=vector_params,
+            )
+
+            # Test RedisStack capabilities
+            try:
+                index_ready = logger_instance.ensure_index()
+                if index_ready:
+                    if embedder:
+                        logging.getLogger(__name__).info(
+                            "✅ RedisStack with HNSW and vector search enabled",
+                        )
+                    else:
+                        logging.getLogger(__name__).info(
+                            "✅ RedisStack with HNSW enabled (no vector search)",
+                        )
+                    return logger_instance
+                else:
+                    logging.getLogger(__name__).warning(
+                        "⚠️ RedisStack index failed, falling back to basic Redis",
+                    )
+            except Exception as e:
+                logging.getLogger(__name__).warning(f"RedisStack index test failed: {e}")
+
+        except ImportError as e:
+            logging.getLogger(__name__).warning(f"RedisStack not available: {e}")
+
+    # Fallback to basic Redis only if RedisStack fails
+    if backend == "redis" or (backend == "redisstack" and not force_basic_redis):
+        try:
+            from .memory.redis_logger import RedisMemoryLogger
+
+            logging.getLogger(__name__).info("🔄 Using basic Redis backend")
+            return RedisMemoryLogger(
+                redis_url=redis_url,
+                stream_key=stream_key,
+                debug_keep_previous_outputs=debug_keep_previous_outputs,
+                decay_config=decay_config,
+            )
+        except ImportError as e:
+            if backend == "redisstack":
+                raise ImportError(f"No Redis backends available: {e}") from e
+
+    # Handle Kafka backend with RedisStack integration
+    if backend == "kafka":
+        try:
+            from .memory.kafka_logger import KafkaMemoryLogger
+
+            # ✅ CRITICAL: Use provided parameters or defaults
+            kafka_bootstrap_servers = bootstrap_servers or os.getenv(
+                "KAFKA_BOOTSTRAP_SERVERS",
+                "localhost:9092",
+            )
+
+            return KafkaMemoryLogger(
+                bootstrap_servers=kafka_bootstrap_servers,
+                redis_url=redis_url,
+                stream_key=stream_key,
+                debug_keep_previous_outputs=debug_keep_previous_outputs,
+                decay_config=decay_config,
+                enable_hnsw=enable_hnsw,
+                vector_params=vector_params,
+            )
+        except ImportError as e:
+            logging.getLogger(__name__).warning(
+                f"Kafka not available, falling back to RedisStack: {e}",
+            )
+            # Recursive call with RedisStack
+            return create_memory_logger(
+                "redisstack",
+                redis_url,
+                stream_key,
+                debug_keep_previous_outputs,
+                decay_config,
+                enable_hnsw,
+                vector_params,
+            )
+
+    raise ValueError(f"Unsupported backend: {backend}. Supported: redisstack, redis, kafka")
 
 
 # Add MemoryLogger alias for backward compatibility with tests
