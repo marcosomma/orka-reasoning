@@ -499,17 +499,22 @@ async def run_orchestrator(args):
 
 
 def memory_watch(args):
-    """Enhanced memory watch with modern TUI interface."""
+    """Modern TUI interface with Textual (default) or Rich fallback."""
+    # Check if user explicitly wants fallback interface
+    if getattr(args, "fallback", False):
+        print("ℹ️  Using basic terminal interface as requested")
+        return _memory_watch_fallback(args)
+
     try:
-        # Try to use modern TUI interface
+        # Use the modern TUI interface (defaults to Textual)
         from .tui_interface import ModernTUIInterface
 
         tui = ModernTUIInterface()
         return tui.run(args)
 
     except ImportError as e:
-        print(f"❌ Could not import modern TUI interface: {e}")
-        print("Falling back to basic interface...")
+        print(f"❌ Could not import TUI interface: {e}")
+        print("Falling back to basic terminal interface...")
         return _memory_watch_fallback(args)
     except Exception as e:
         print(f"❌ Error starting memory watch: {e}", file=sys.stderr)
@@ -735,7 +740,7 @@ def main():
     # Memory watch
     watch_parser = memory_subparsers.add_parser(
         "watch",
-        help="Watch memory statistics in real-time",
+        help="Watch memory statistics in real-time with modern TUI",
     )
     watch_parser.add_argument(
         "--backend",
@@ -757,6 +762,16 @@ def main():
         "--compact",
         action="store_true",
         help="Use compact layout for long workflows",
+    )
+    watch_parser.add_argument(
+        "--use-rich",
+        action="store_true",
+        help="Use Rich fallback interface instead of Textual",
+    )
+    watch_parser.add_argument(
+        "--fallback",
+        action="store_true",
+        help="Use basic terminal interface (no TUI)",
     )
     watch_parser.set_defaults(func=memory_watch)
 
