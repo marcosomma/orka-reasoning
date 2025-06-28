@@ -109,18 +109,63 @@ class ShortMemoryScreen(BaseOrKaScreen):
     def compose_content(self) -> ComposeResult:
         """Compose the short memory layout."""
         with Vertical():
-            # Top 20%: Header and info
+            # Top section: Compact header
             with Container(classes="memory-container", id="short-memory-header"):
-                yield Static("⚡ Short-Term Memory - based on YAML settings", classes="container")
+                yield Static("⚡ Short-Term Memory", classes="container-compact")
                 yield Static("", id="short-memory-info")
 
-            # Bottom 80%: Memory table
+            # Middle section: Memory table
             with Container(id="short-memory-content"):
                 yield MemoryTableWidget(
                     self.data_manager,
                     memory_type="short",
                     id="short-memory-table",
                 )
+
+            # Bottom section: Content inspector (focused on content)
+            with Container(classes="content-panel", id="short-content-panel"):
+                yield Static("📄 Content", classes="container-compact")
+                yield Static(
+                    "[dim]Select a row to view memory content[/dim]",
+                    id="short-selected-content",
+                )
+
+    def on_memory_table_widget_memory_selected(
+        self,
+        message: MemoryTableWidget.MemorySelected,
+    ) -> None:
+        """Handle memory selection to show content in lower panel."""
+        try:
+            content_widget = self.query_one("#short-selected-content", Static)
+        except Exception:
+            return
+
+        if message.memory_data is None:
+            # Deselected - show simple placeholder
+            content_widget.update("[dim]Select a row to view memory content[/dim]")
+        else:
+            # Selected - show content-focused display
+            try:
+                content = self.data_manager._get_content(message.memory_data)
+                memory_key = self.data_manager._get_key(message.memory_data)
+
+                if content is None or str(content).strip() == "":
+                    content_text = "[dim]No content[/dim]"
+                else:
+                    content_str = str(content)
+                    # Clean and truncate content for display
+                    if len(content_str) > 800:
+                        content_text = content_str[:800] + "[dim]...[/dim]"
+                    else:
+                        content_text = content_str
+
+                # Condensed display focused on content
+                key_short = memory_key[-20:] if len(memory_key) > 20 else memory_key
+                formatted_content = f"[bright_blue]...{key_short}[/bright_blue]\n\n{content_text}"
+
+                content_widget.update(formatted_content)
+            except Exception:
+                content_widget.update("[red]Error loading content[/red]")
 
     def refresh_data(self) -> None:
         """Refresh short memory data."""
@@ -129,13 +174,11 @@ class ShortMemoryScreen(BaseOrKaScreen):
             unified = self.data_manager.get_unified_stats()
             stored_memories = unified["stored_memories"]
 
-            # Update info section
+            # Update info section - condensed
             info_widget = self.query_one("#short-memory-info", Static)
-            info_content = f"""
-Total Short-term Entries: {stored_memories["short_term"]:,}
-Criteria: Memory type = 'short_term'
-Auto-refresh: Every 2 seconds
-"""
+            info_content = (
+                f"[cyan]{stored_memories['short_term']:,}[/cyan] entries | Auto-refresh: 2s"
+            )
             info_widget.update(info_content)
 
             # Update table
@@ -152,21 +195,63 @@ class LongMemoryScreen(BaseOrKaScreen):
     def compose_content(self) -> ComposeResult:
         """Compose the long memory layout."""
         with Vertical():
-            # Top 20%: Header and info
+            # Top section: Compact header
             with Container(classes="memory-container", id="long-memory-header"):
-                yield Static(
-                    "🧠 Long-Term Memory - based on YAML settings",
-                    classes="container",
-                )
+                yield Static("🧠 Long-Term Memory", classes="container-compact")
                 yield Static("", id="long-memory-info")
 
-            # Bottom 80%: Memory table
+            # Middle section: Memory table
             with Container(id="long-memory-content"):
                 yield MemoryTableWidget(
                     self.data_manager,
                     memory_type="long",
                     id="long-memory-table",
                 )
+
+            # Bottom section: Content inspector (focused on content)
+            with Container(classes="content-panel", id="long-content-panel"):
+                yield Static("📄 Content", classes="container-compact")
+                yield Static(
+                    "[dim]Select a row to view memory content[/dim]",
+                    id="long-selected-content",
+                )
+
+    def on_memory_table_widget_memory_selected(
+        self,
+        message: MemoryTableWidget.MemorySelected,
+    ) -> None:
+        """Handle memory selection to show content in lower panel."""
+        try:
+            content_widget = self.query_one("#long-selected-content", Static)
+        except Exception:
+            return
+
+        if message.memory_data is None:
+            # Deselected - show simple placeholder
+            content_widget.update("[dim]Select a row to view memory content[/dim]")
+        else:
+            # Selected - show content-focused display
+            try:
+                content = self.data_manager._get_content(message.memory_data)
+                memory_key = self.data_manager._get_key(message.memory_data)
+
+                if content is None or str(content).strip() == "":
+                    content_text = "[dim]No content[/dim]"
+                else:
+                    content_str = str(content)
+                    # Clean and truncate content for display
+                    if len(content_str) > 800:
+                        content_text = content_str[:800] + "[dim]...[/dim]"
+                    else:
+                        content_text = content_str
+
+                # Condensed display focused on content
+                key_short = memory_key[-20:] if len(memory_key) > 20 else memory_key
+                formatted_content = f"[bright_blue]...{key_short}[/bright_blue]\n\n{content_text}"
+
+                content_widget.update(formatted_content)
+            except Exception:
+                content_widget.update("[red]Error loading content[/red]")
 
     def refresh_data(self) -> None:
         """Refresh long memory data."""
@@ -175,13 +260,11 @@ class LongMemoryScreen(BaseOrKaScreen):
             unified = self.data_manager.get_unified_stats()
             stored_memories = unified["stored_memories"]
 
-            # Update info section
+            # Update info section - condensed
             info_widget = self.query_one("#long-memory-info", Static)
-            info_content = f"""
-Total Long-term Entries: {stored_memories["long_term"]:,}
-Criteria: Memory type = 'long_term'
-Auto-refresh: Every 2 seconds
-"""
+            info_content = (
+                f"[cyan]{stored_memories['long_term']:,}[/cyan] entries | Auto-refresh: 2s"
+            )
             info_widget.update(info_content)
 
             # Update table
@@ -198,19 +281,59 @@ class MemoryLogsScreen(BaseOrKaScreen):
     def compose_content(self) -> ComposeResult:
         """Compose the memory logs layout."""
         with Vertical():
-            # Top 70%: Orchestration Logs Table
+            # Top 50%: Orchestration Logs Table
             with Container(classes="logs-container", id="logs-top-section"):
-                yield Static("🔄 Orchestration Logs", classes="container")
+                yield Static("🔄 Orchestration Logs", classes="container-compact")
                 yield MemoryTableWidget(
                     self.data_manager,
                     memory_type="logs",
                     id="orchestration-logs-table",
                 )
 
-            # Bottom 30%: Memory System Logs Summary
-            with Container(classes="stats-container", id="logs-bottom-section"):
-                yield Static("📋 Memory System Logs", classes="container")
-                yield Static("", id="logs-info")
+            # Bottom 50%: Content inspector for selected logs
+            with Container(classes="content-panel", id="logs-bottom-section"):
+                yield Static("📄 Content", classes="container-compact")
+                yield Static(
+                    "[dim]Select a row to view log content[/dim]",
+                    id="logs-selected-content",
+                )
+
+    def on_memory_table_widget_memory_selected(
+        self,
+        message: MemoryTableWidget.MemorySelected,
+    ) -> None:
+        """Handle log selection to show content in lower panel."""
+        try:
+            content_widget = self.query_one("#logs-selected-content", Static)
+        except Exception:
+            return
+
+        if message.memory_data is None:
+            # Deselected - show simple placeholder
+            content_widget.update("[dim]Select a row to view log content[/dim]")
+        else:
+            # Selected - show content-focused display
+            try:
+                content = self.data_manager._get_content(message.memory_data)
+                memory_key = self.data_manager._get_key(message.memory_data)
+
+                if content is None or str(content).strip() == "":
+                    content_text = "[dim]No content[/dim]"
+                else:
+                    content_str = str(content)
+                    # Clean and truncate content for display
+                    if len(content_str) > 800:
+                        content_text = content_str[:800] + "[dim]...[/dim]"
+                    else:
+                        content_text = content_str
+
+                # Condensed display focused on content
+                key_short = memory_key[-20:] if len(memory_key) > 20 else memory_key
+                formatted_content = f"[bright_blue]...{key_short}[/bright_blue]\n\n{content_text}"
+
+                content_widget.update(formatted_content)
+            except Exception:
+                content_widget.update("[red]Error loading content[/red]")
 
     def refresh_data(self) -> None:
         """Refresh memory logs data."""
@@ -218,32 +341,6 @@ class MemoryLogsScreen(BaseOrKaScreen):
             # Update orchestration logs table
             logs_table = self.query_one("#orchestration-logs-table", MemoryTableWidget)
             logs_table.update_data("logs")
-
-            # Update memory system logs summary using unified stats
-            info_widget = self.query_one("#logs-info", Static)
-
-            # 🎯 USE UNIFIED: Get all data from centralized calculation
-            unified = self.data_manager.get_unified_stats()
-            log_entries = unified["log_entries"]
-            stored_memories = unified["stored_memories"]
-            backend = unified["backend"]
-
-            # Calculate recent activity
-            recent_logs = 0  # Placeholder - could be enhanced with timestamp filtering
-
-            info_content = f"""
-📊 System Overview:
-  • Orchestration Logs: {log_entries["orchestration"]:,}
-  • System/Other Logs: {log_entries["system"]:,}
-  • Short-term Memory: {stored_memories["short_term"]:,}
-  • Long-term Memory: {stored_memories["long_term"]:,}
-  • Total Log Events: {log_entries["total"]:,}
-  • Recent Activity (5m): {recent_logs:,}
-
-🔄 Auto-refresh: Every 2 seconds
-📋 Backend: {backend["type"]}
-"""
-            info_widget.update(info_content)
 
         except Exception:
             pass
@@ -255,8 +352,9 @@ class HealthScreen(BaseOrKaScreen):
     def compose_content(self) -> ComposeResult:
         """Compose the health monitoring layout."""
         with Vertical():
-            with Container(classes="health-container"):
-                yield Static("🏥 System Health Monitor", classes="container")
+            # 🎯 COMPACT: Reduce height of health header area
+            with Container(classes="health-container-compact"):
+                yield Static("🏥 System Health Monitor", classes="container-compact")
                 yield Static("", id="health-summary")
 
             with Container(classes="dashboard-grid"):
@@ -300,14 +398,12 @@ class HealthScreen(BaseOrKaScreen):
             stored_memories = unified["stored_memories"]
             log_entries = unified["log_entries"]
 
-            # Update health summary
+            # 🎯 IMPROVED: Better organized health summary with key metrics
             summary_widget = self.query_one("#health-summary", Static)
             overall = health["overall"]
-            summary_content = f"""
-Overall System Health: {overall["icon"]} {overall["message"]}
-Last Update: {self._format_current_time()}
-Monitoring Interval: 2 seconds
-"""
+            total_entries = backend["active_entries"] + backend["expired_entries"]
+            summary_content = f"""[bold]Overall: {overall["icon"]} {overall["message"]}[/bold] | [cyan]Total: {total_entries:,} entries[/cyan] | [green]Active: {backend["active_entries"]:,}[/green] | [red]Expired: {backend["expired_entries"]:,}[/red]
+[dim]Last Update: {self._format_current_time()} | Auto-refresh: 2s | Backend: {backend["type"]}[/dim]"""
             summary_widget.update(summary_content)
 
             # Update connection health

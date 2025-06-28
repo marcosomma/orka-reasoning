@@ -3,9 +3,10 @@ Custom Textual widgets for OrKa memory monitoring.
 """
 
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from textual.containers import Container
+from textual.message import Message
 from textual.widgets import DataTable, Static
 
 
@@ -51,105 +52,313 @@ class StatsWidget(Static):
 
 
 class MemoryTableWidget(DataTable):
-    """Custom data table for displaying memory entries."""
+    """Custom data table for displaying memory entries with checkbox selection."""
+
+    class MemorySelected(Message):
+        """Message sent when a memory row is selected."""
+
+        def __init__(self, memory_data: Dict[str, Any], row_index: int) -> None:
+            self.memory_data = memory_data
+            self.row_index = row_index
+            super().__init__()
 
     def __init__(self, data_manager, memory_type="all", **kwargs):
         super().__init__(**kwargs)
         self.data_manager = data_manager
         self.memory_type = memory_type
+        self.current_memories = []  # Store current memory data
+        self.selected_memory_key: Optional[str] = None  # Track selected memory key across refreshes
+
+        # Enable row selection
+        self.cursor_type = "row"
+        self.zebra_stripes = True
+
+        # 🎯 IMPROVED: Add checkbox column + reorganized columns
         self.add_columns(
-            "Timestamp",
-            "Type",
-            "Key",
-            "Content Preview",
-            "TTL",
-            "Size",
+            "☐",  # Checkbox for selection
+            "Time",  # When was it created
+            "TTL",  # How long until expiry
+            "Memory Key",  # Full access to memory key
+            "Type",  # Memory type (short/long term)
+            "Content",  # Content preview
+            "Score",  # Importance score
         )
 
+    def on_data_table_cell_selected(self, event: DataTable.CellSelected) -> None:
+        """Handle cell selection to toggle checkbox - alternative approach."""
+        try:
+            row_index = event.coordinate.row
+
+            if 0 <= row_index < len(self.current_memories):
+                selected_memory = self.current_memories[row_index]
+                memory_key = self.data_manager._get_key(selected_memory)
+
+                # Toggle selection
+                if self.selected_memory_key == memory_key:
+                    self.selected_memory_key = None
+                    selected_memory = None
+                else:
+                    self.selected_memory_key = memory_key
+
+                # Refresh table to update checkboxes
+                self.update_data(self.memory_type)
+
+                # Send message to parent screen
+                self.post_message(self.MemorySelected(selected_memory, row_index))
+
+        except Exception as e:
+            if hasattr(self, "app"):
+                self.app.notify(f"Selection error: {e!s}", severity="error")
+
+    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        """Handle row selection to toggle checkbox."""
+        try:
+            # Try to use the cursor_row directly
+            row_index = self.cursor_row
+
+            if row_index is not None and 0 <= row_index < len(self.current_memories):
+                selected_memory = self.current_memories[row_index]
+                memory_key = self.data_manager._get_key(selected_memory)
+
+                # Toggle selection
+                if self.selected_memory_key == memory_key:
+                    self.selected_memory_key = None
+                    selected_memory = None
+                    row_index = -1
+                else:
+                    self.selected_memory_key = memory_key
+
+                # Refresh table to update checkboxes
+                self.update_data(self.memory_type)
+
+                # Send message to parent screen
+                self.post_message(self.MemorySelected(selected_memory, row_index))
+
+        except Exception as e:
+            if hasattr(self, "app"):
+                self.app.notify(f"Selection error: {e!s}", severity="error")
+
     def update_data(self, memory_type="all"):
-        """Update the table with filtered data."""
+        """Update the table with filtered data while preserving selection."""
         self.clear()
 
         # Get filtered memories
         memories = self.data_manager.get_filtered_memories(memory_type)
+        self.current_memories = memories[:25]  # Store the memories we're actually displaying
 
-        # 🎯 FIX: Show helpful message when no memories of a specific type exist
+        # Handle empty states
         if not memories and memory_type in ["short", "long"]:
-            # 🎯 USE UNIFIED: Get distribution from unified stats
             unified = self.data_manager.get_unified_stats()
             stored_memories = unified["stored_memories"]
 
             if stored_memories["total"] == 0:
-                # No stored memories at all
                 self.add_row(
+                    "☐",
+                    "[dim]--[/dim]",
+                    "[dim]--[/dim]",
                     "[dim]No stored memories found[/dim]",
+                    "[dim]--[/dim]",
                     "[dim]Create memories using memory-writer nodes[/dim]",
-                    "[dim]--[/dim]",
-                    "[dim]--[/dim]",
                     "[dim]--[/dim]",
                 )
             else:
-                # Stored memories exist but not of the requested type
                 short_count = stored_memories["short_term"]
                 long_count = stored_memories["long_term"]
 
                 if memory_type == "short" and short_count == 0:
                     self.add_row(
-                        "[dim]No short-term memories found[/dim]",
-                        f"[dim]Found {long_count} long-term memories instead[/dim]",
+                        "☐",
                         "[dim]--[/dim]",
                         "[dim]--[/dim]",
+                        "[dim]No short-term memories[/dim]",
+                        "[dim]--[/dim]",
+                        f"[dim]Found {long_count} long-term instead[/dim]",
                         "[dim]--[/dim]",
                     )
                 elif memory_type == "long" and long_count == 0:
                     self.add_row(
-                        "[dim]No long-term memories found[/dim]",
-                        f"[dim]Found {short_count} short-term memories instead[/dim]",
+                        "☐",
                         "[dim]--[/dim]",
                         "[dim]--[/dim]",
+                        "[dim]No long-term memories[/dim]",
+                        "[dim]--[/dim]",
+                        f"[dim]Found {short_count} short-term instead[/dim]",
                         "[dim]--[/dim]",
                     )
+
+            self.current_memories = []
             return
 
-        # Populate table with memory data using unified extraction methods
-        for memory in memories[:20]:  # Limit to 20 entries for performance
-            # 🎯 USE UNIFIED: Use centralized, safe data extraction
+        # Populate table with memory data
+        selected_row_found = False
+        for i, memory in enumerate(self.current_memories):
+            # Extract memory details
             content = self.data_manager._get_content(memory)
             node_id = self.data_manager._get_node_id(memory)
             importance_score = self.data_manager._get_importance_score(memory)
             ttl_formatted = self.data_manager._get_ttl_formatted(memory)
             timestamp = self.data_manager._get_timestamp(memory)
+            memory_key = self.data_manager._get_key(memory)
+            memory_type_actual = self.data_manager._get_memory_type(memory)
 
-            # Format content
-            content_display = content[:40] + "..." if len(content) > 40 else content
+            # Format columns
+            time_display = self._format_enhanced_timestamp(timestamp)
+            ttl_display = self._format_enhanced_ttl(ttl_formatted)
+            key_display = self._format_memory_key(memory_key)
+            type_display = self._format_memory_type(memory_type_actual, node_id)
+            content_display = self._format_content_preview(content)
 
-            # Format timestamp
-            try:
-                if timestamp > 1000000000000:  # milliseconds
-                    dt = datetime.fromtimestamp(timestamp / 1000)
-                else:  # seconds
-                    dt = datetime.fromtimestamp(timestamp)
-                time_display = dt.strftime("%H:%M:%S")
-            except:
-                time_display = "Unknown"
-
-            # Format TTL with color coding
-            if ttl_formatted == "Never" or ttl_formatted == "∞":
-                ttl_display = "[blue]∞[/blue]"
-            elif "h" in ttl_formatted:
-                ttl_display = f"[green]{ttl_formatted}[/green]"
-            elif "m" in ttl_formatted:
-                ttl_display = f"[yellow]{ttl_formatted}[/yellow]"
+            # Checkbox - check if this memory is selected
+            if self.selected_memory_key == memory_key:
+                checkbox = "✓"  # Simple checkmark without markup
+                selected_row_found = True
             else:
-                ttl_display = f"[red]{ttl_formatted}[/red]"
+                checkbox = "☐"
 
             self.add_row(
+                checkbox,
                 time_display,
-                node_id[:15],  # Limit node_id length
-                content_display,
-                f"{importance_score:.2f}",
                 ttl_display,
+                key_display,
+                type_display,
+                content_display,
+                f"[cyan]{importance_score:.1f}[/cyan]",
             )
+
+        # If selected memory was not found (expired), clear selection
+        if not selected_row_found:
+            self.selected_memory_key = None
+
+    def _format_enhanced_timestamp(self, timestamp) -> str:
+        """Enhanced timestamp formatting with relative time info."""
+        try:
+            if timestamp > 1000000000000:  # milliseconds
+                dt = datetime.fromtimestamp(timestamp / 1000)
+            else:  # seconds
+                dt = datetime.fromtimestamp(timestamp)
+
+            # Current time for relative calculations
+            now = datetime.now()
+            diff = now - dt
+
+            # Format based on age
+            if diff.total_seconds() < 60:  # Less than 1 minute
+                return f"[green]{dt.strftime('%H:%M:%S')}[/green]"
+            elif diff.total_seconds() < 3600:  # Less than 1 hour
+                mins = int(diff.total_seconds() / 60)
+                return f"[yellow]{dt.strftime('%H:%M')}[/yellow] [dim](-{mins}m)[/dim]"
+            elif diff.total_seconds() < 86400:  # Less than 1 day
+                hours = int(diff.total_seconds() / 3600)
+                return f"[orange]{dt.strftime('%H:%M')}[/orange] [dim](-{hours}h)[/dim]"
+            else:  # More than 1 day
+                days = int(diff.total_seconds() / 86400)
+                return f"[red]{dt.strftime('%m/%d')}[/red] [dim](-{days}d)[/dim]"
+        except:
+            return "[dim]Unknown[/dim]"
+
+    def _format_enhanced_ttl(self, ttl_formatted) -> str:
+        """Enhanced TTL formatting with urgency indicators."""
+        if ttl_formatted == "Never" or ttl_formatted == "∞" or not ttl_formatted:
+            return "[blue]♾️ Never[/blue]"
+
+        # Parse TTL for urgency classification
+        ttl_str = str(ttl_formatted).lower()
+
+        if "s" in ttl_str and "m" not in ttl_str and "h" not in ttl_str:
+            # Seconds only - critical urgency
+            return f"[red]🚨 {ttl_formatted}[/red]"
+        elif "m" in ttl_str and "h" not in ttl_str:
+            # Minutes only - high urgency
+            return f"[yellow]⚠️ {ttl_formatted}[/yellow]"
+        elif "h" in ttl_str:
+            # Hours - medium urgency
+            if ttl_str.startswith("1h") or ttl_str.startswith("2h"):
+                return f"[orange]⏰ {ttl_formatted}[/orange]"
+            else:
+                return f"[green]🕐 {ttl_formatted}[/green]"
+        else:
+            return f"[cyan]{ttl_formatted}[/cyan]"
+
+    def _format_memory_key(self, memory_key) -> str:
+        """Format memory key with intelligent truncation."""
+        if not memory_key:
+            return "[dim]<no-key>[/dim]"
+
+        key_str = str(memory_key)
+
+        # Show meaningful parts of the key
+        if len(key_str) <= 25:
+            return f"[bright_blue]{key_str}[/bright_blue]"
+        else:
+            # Smart truncation: show start and end
+            start = key_str[:12]
+            end = key_str[-10:]
+            return (
+                f"[bright_blue]{start}[/bright_blue][dim]...[/dim][bright_blue]{end}[/bright_blue]"
+            )
+
+    def _format_memory_type(self, memory_type, node_id) -> str:
+        """Format memory type with icons and node info."""
+        # Decode if bytes
+        if isinstance(memory_type, bytes):
+            memory_type = memory_type.decode("utf-8", errors="ignore")
+        if isinstance(node_id, bytes):
+            node_id = node_id.decode("utf-8", errors="ignore")
+
+        # Format based on type
+        if memory_type == "short_term":
+            icon = "⚡"
+            color = "yellow"
+        elif memory_type == "long_term":
+            icon = "🧠"
+            color = "green"
+        else:
+            icon = "📝"
+            color = "white"
+            memory_type = memory_type or "unknown"
+
+        # Include node info for context
+        node_short = str(node_id)[:8] if node_id else "?"
+        return f"[{color}]{icon} {memory_type}[/{color}] [dim]({node_short})[/dim]"
+
+    def _format_content_preview(self, content) -> str:
+        """Smart content preview with better truncation."""
+        if not content:
+            return "[dim]<empty>[/dim]"
+
+        # Decode if bytes
+        if isinstance(content, bytes):
+            content = content.decode("utf-8", errors="replace")
+
+        content_str = str(content).strip()
+
+        # Remove common JSON/structured prefixes for cleaner display
+        if content_str.startswith('{"') and content_str.endswith('"}'):
+            # Try to extract meaningful text from JSON
+            try:
+                import json
+
+                data = json.loads(content_str)
+                if isinstance(data, dict):
+                    # Look for meaningful fields
+                    for key in ["content", "text", "message", "description", "prompt"]:
+                        if data.get(key):
+                            content_str = str(data[key])
+                            break
+            except:
+                pass
+
+        # Intelligent truncation
+        if len(content_str) <= 35:
+            return f"[white]{content_str}[/white]"
+        else:
+            # Find a good break point (space, comma, period)
+            truncated = content_str[:32]
+            for i in range(len(truncated) - 1, max(20, len(truncated) - 10), -1):
+                if truncated[i] in [" ", ",", ".", ";"]:
+                    truncated = truncated[:i]
+                    break
+            return f"[white]{truncated}[/white][dim]...[/dim]"
 
     def _get_filtered_memories(self) -> List[Dict]:
         """Get memories filtered by type."""

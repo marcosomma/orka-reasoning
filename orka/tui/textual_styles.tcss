@@ -26,6 +26,14 @@ Footer {
     padding: 1;
 }
 
+.container-compact {
+    background: $surface;
+    border: solid $primary;
+    margin: 0;
+    padding: 0 1;
+    height: 3;
+}
+
 .stats-container {
     background: $success 20%;
     border: solid $success;
@@ -48,6 +56,15 @@ Footer {
     background: $error 20%;
     border: solid $error;
     color: $text;
+}
+
+.health-container-compact {
+    background: $error 20%;
+    border: solid $error;
+    color: $text;
+    height: 8;
+    margin: 1;
+    padding: 1;
 }
 
 /* Widget Styles */
@@ -135,6 +152,31 @@ Button.-error {
     grid-gutter: 1;
 }
 
+.content-panel {
+    background: $surface;
+    border: solid $success;
+    color: $text;
+    height: 45%;
+    min-height: 12;
+    margin: 1;
+    padding: 1;
+    display: block;
+}
+
+#short-content-panel, #long-content-panel {
+    height: 45%;
+    min-height: 12;
+    display: block;
+}
+
+#short-selected-content, #long-selected-content {
+    padding: 1;
+    height: 100%;
+    scrollbar-background: $panel;
+    scrollbar-color: $primary;
+    overflow-y: auto;
+}
+
 .full-width {
     width: 100%;
 }
@@ -145,6 +187,27 @@ Button.-error {
 
 .quarter-width {
     width: 25%;
+}
+
+/* Memory table styling */
+MemoryTableWidget {
+    scrollbar-corner-color: $panel;
+    scrollbar-color: $primary;
+    scrollbar-color-hover: $accent;
+    scrollbar-color-active: $accent;
+}
+
+MemoryTableWidget > DataTable {
+    scrollbar-corner-color: $panel;
+}
+
+/* Row highlighting for checkbox interaction */
+MemoryTableWidget DataTable > .datatable--cursor {
+    background: $primary 30%;
+}
+
+MemoryTableWidget DataTable > .datatable--hover {
+    background: $accent 20%;
 }
 
 /* Status Indicators */
@@ -232,43 +295,43 @@ Button.-error {
     padding: 1;
 }
 
-/* Memory Logs Screen Specific Layout */
+/* Memory Logs Screen Specific Layout - 50-50 split */
 #logs-top-section {
-    height: 70%;
+    height: 50%;
 }
 
 #logs-bottom-section {
-    height: 30%;
+    height: 50%;
 }
 
 #orchestration-logs-table {
     height: 100%;
 }
 
-/* Short Memory Screen Layout - 20% header, 80% table */
+/* Short Memory Screen Layout - 10% header, 45% table, 45% content panel */
 #short-memory-header {
-    height: 20%;
-    max-height: 20%;
+    height: 10%;
+    max-height: 10%;
 }
 
 #short-memory-content {
-    height: 80%;
-    max-height: 80%;
+    height: 45%;
+    max-height: 45%;
 }
 
 #short-memory-table {
     height: 100%;
 }
 
-/* Long Memory Screen Layout - 20% header, 80% table */
+/* Long Memory Screen Layout - 10% header, 45% table, 45% content panel */
 #long-memory-header {
-    height: 20%;
-    max-height: 20%;
+    height: 10%;
+    max-height: 10%;
 }
 
 #long-memory-content {
-    height: 80%;
-    max-height: 80%;
+    height: 45%;
+    max-height: 45%;
 }
 
 #long-memory-table {
