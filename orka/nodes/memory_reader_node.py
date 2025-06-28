@@ -855,7 +855,7 @@ class MemoryReaderNode(BaseNode):
             return memories
 
         except Exception as e:
-            logger.error(f"Error applying hybrid scoring: {e!s}")
+            logger.error(f"Error applying hybrid scoring: {e}")
             return memories
 
     def _filter_enhanced_relevant_memories(

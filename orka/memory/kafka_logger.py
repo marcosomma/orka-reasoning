@@ -109,8 +109,10 @@ class KafkaMemoryLogger(BaseMemoryLogger):
             logger.warning(
                 f"⚠️ RedisStack initialization failed ({e}), using basic Redis for memory operations",
             )
-            self.redis_client = redis.from_url(self.redis_url)
             self._redis_memory_logger = None
+
+        # Initialize basic Redis client as fallback
+        self.redis_client = redis.from_url(self.redis_url)
 
     @property
     def redis(self) -> redis.Redis:

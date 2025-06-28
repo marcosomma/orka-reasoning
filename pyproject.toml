@@ -21,7 +21,8 @@ dependencies = [
   "async-timeout",
   "sentence-transformers",
   "numpy",
-  "rich>=13.0.0"
+  "rich>=13.0.0",
+  "textual>=0.40.0"
 ]
 
 classifiers = [
@@ -52,6 +53,10 @@ rag-node = "orka.nodes.rag_node:RAGNode"
 [project.urls]
 "Homepage" = "https://orkacore.com"
 "GIT" = "https://github.com/marcosomma/orka-reasoning"
+
+[project.scripts]
+orka = "orka.orka_cli:main"
+orka-start = "orka.orka_start:main"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]

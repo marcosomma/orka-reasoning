@@ -394,7 +394,7 @@ def memory_configure(args):
             else:
                 print("⚠️  Decay Config: Not available")
 
-            # RedisStack-specific tests
+            # Backend-specific tests
             if backend == "redisstack":
                 print("\n🔍 RedisStack-Specific Tests:")
 
@@ -414,84 +414,6 @@ def memory_configure(args):
                         print("⚠️  HNSW Index: Cannot test (no client access)")
                 except Exception as e:
                     print(f"❌ HNSW Index: Not available - {e}")
-
-                # Test enhanced cleanup
-                try:
-                    cleanup_result = memory.cleanup_expired_memories(dry_run=True)
-                    if cleanup_result.get("cleanup_type") == "redisstack_enhanced":
-                        print("✅ Enhanced Cleanup: Available")
-                        print(f"   Checked: {cleanup_result.get('total_checked', 0)} memories")
-                        print(f"   Index operations: {cleanup_result.get('index_operations', 0)}")
-                        if cleanup_result.get("errors"):
-                            print(f"   Warnings: {len(cleanup_result['errors'])} issues")
-                    else:
-                        print(
-                            f"⚠️  Enhanced Cleanup: Basic mode ({cleanup_result.get('cleanup_type', 'unknown')})",
-                        )
-                except Exception as e:
-                    print(f"❌ Enhanced Cleanup: Error - {e}")
-
-                # Test performance metrics
-                try:
-                    if hasattr(memory, "get_performance_metrics"):
-                        metrics = memory.get_performance_metrics()
-                        print("✅ Performance Metrics: Available")
-                        print(f"   Memory Count: {metrics.get('memory_count', 0)}")
-                        print(f"   HNSW Searches: {metrics.get('hybrid_searches', 0)}")
-                        print(f"   Vector Searches: {metrics.get('vector_searches', 0)}")
-                        print(
-                            f"   Average Search Time: {metrics.get('average_search_time', 0):.3f}s",
-                        )
-
-                        # Test namespace distribution
-                        ns_dist = metrics.get("namespace_distribution", {})
-                        if ns_dist:
-                            print(f"   Namespaces: {len(ns_dist)} active")
-                    else:
-                        print("⚠️  Performance Metrics: Not available")
-                except Exception as e:
-                    print(f"❌ Performance Metrics: Error - {e}")
-
-                # Test vector search capabilities
-                try:
-                    if hasattr(memory, "enhanced_vector_search"):
-                        print("✅ Vector Search: Available")
-                        print("   HNSW algorithm enabled")
-                        print("   384-dimensional embeddings")
-                    else:
-                        print("⚠️  Vector Search: Basic mode")
-                except Exception as e:
-                    print(f"❌ Vector Search: Error - {e}")
-
-                # Test field standardization
-                try:
-                    # Create a test entry to verify field names
-                    test_entry = memory._create_enhanced_memory_entry(
-                        agent_id="test_agent",
-                        event_type="test",
-                        payload={"test": "configuration"},
-                        run_id="config_test",
-                    )
-
-                    required_fields = [
-                        "orka_memory_type",
-                        "orka_importance_score",
-                        "orka_memory_category",
-                        "orka_expire_time",
-                        "orka_created_time",
-                    ]
-
-                    missing_fields = [field for field in required_fields if field not in test_entry]
-
-                    if not missing_fields:
-                        print("✅ Field Standardization: Complete")
-                        print("   All orka_ prefixed fields present")
-                    else:
-                        print(f"⚠️  Field Standardization: Missing {len(missing_fields)} fields")
-                        print(f"   Missing: {', '.join(missing_fields)}")
-
-                except Exception as e:
-                    print(f"❌ Field Standardization: Error - {e}")
 
             elif backend == "redis":
                 print("\n🔧 Redis-Specific Tests:")
@@ -577,13 +499,30 @@ async def run_orchestrator(args):
 
 
 def memory_watch(args):
-    """Enhanced memory watch with RedisStack-specific metrics and continuous monitoring."""
+    """Enhanced memory watch with modern TUI interface."""
+    try:
+        # Try to use modern TUI interface
+        from .tui_interface import ModernTUIInterface
+
+        tui = ModernTUIInterface()
+        return tui.run(args)
+
+    except ImportError as e:
+        print(f"❌ Could not import modern TUI interface: {e}")
+        print("Falling back to basic interface...")
+        return _memory_watch_fallback(args)
+    except Exception as e:
+        print(f"❌ Error starting memory watch: {e}", file=sys.stderr)
+        import traceback
+
+        traceback.print_exc()
+        return 1
+
+
+def _memory_watch_fallback(args):
+    """Fallback memory watch with basic interface."""
     try:
         backend = getattr(args, "backend", None) or os.getenv("ORKA_MEMORY_BACKEND", "redisstack")
-        interval = getattr(args, "interval", 5)
-        no_clear = getattr(args, "no_clear", False)
-        compact = getattr(args, "compact", False)
-        json_output = getattr(args, "json", False)
 
         # Provide proper Redis URL based on backend
         if backend == "redisstack":
@@ -593,13 +532,13 @@ def memory_watch(args):
 
         memory = create_memory_logger(backend=backend, redis_url=redis_url)
 
-        if json_output:
+        if getattr(args, "json", False):
             return _memory_watch_json(memory, backend, args)
         else:
             return _memory_watch_display(memory, backend, args)
 
     except Exception as e:
-        print(f"❌ Error starting memory watch: {e}", file=sys.stderr)
+        print(f"❌ Error in fallback memory watch: {e}", file=sys.stderr)
         return 1
 
 
@@ -662,11 +601,13 @@ def _memory_watch_display(memory, backend: str, args):
         while True:
             try:
                 # Clear screen unless disabled
-                if not args.no_clear:
+                if not getattr(args, "no_clear", False):
                     os.system("cls" if os.name == "nt" else "clear")
 
                 print("=== OrKa Memory Watch ===")
-                print(f"Backend: {backend} | Interval: {args.interval}s | Press Ctrl+C to exit")
+                print(
+                    f"Backend: {backend} | Interval: {getattr(args, 'interval', 5)}s | Press Ctrl+C to exit",
+                )
                 print("-" * 60)
 
                 # Get comprehensive stats
@@ -680,31 +621,18 @@ def _memory_watch_display(memory, backend: str, args):
                 print(f"   Stored Memories: {stats.get('stored_memories', 0)}")
                 print(f"   Orchestration Logs: {stats.get('orchestration_logs', 0)}")
 
-                # 🎯 NEW: Show recent stored memories
+                # Show recent stored memories
                 print("\n🧠 Recent Stored Memories:")
                 try:
                     # Get recent memories using the dedicated method
                     if hasattr(memory, "get_recent_stored_memories"):
                         recent_memories = memory.get_recent_stored_memories(5)
                     elif hasattr(memory, "search_memories"):
-                        # Fallback: Use search_memories with log_type="memory"
                         recent_memories = memory.search_memories(
-                            query=" ",  # Simple space query instead of "*"
+                            query=" ",
                             num_results=5,
                             log_type="memory",
                         )
-                    elif hasattr(memory, "tail"):
-                        # Fallback to tail method with manual filtering
-                        all_recent = memory.tail(10)
-                        recent_memories = []
-                        for mem in all_recent:
-                            metadata = mem.get("metadata", {})
-                            if (
-                                metadata.get("log_type") == "memory"
-                                or metadata.get("category") == "stored"
-                            ):
-                                recent_memories.append(mem)
-                        recent_memories = recent_memories[:5]
                     else:
                         recent_memories = []
 
@@ -724,217 +652,20 @@ def _memory_watch_display(memory, backend: str, args):
                                 else raw_node_id
                             )
 
-                            raw_memory_type = mem.get("memory_type", "unknown")
-                            memory_type = (
-                                raw_memory_type.decode()
-                                if isinstance(raw_memory_type, bytes)
-                                else raw_memory_type
-                            )
-
-                            # Handle bytes for numeric fields
-                            raw_importance = mem.get("importance_score", 0)
-                            if isinstance(raw_importance, bytes):
-                                importance = float(raw_importance.decode())
-                            else:
-                                importance = float(raw_importance) if raw_importance else 0
-
-                            raw_timestamp = mem.get("timestamp", 0)
-                            if isinstance(raw_timestamp, bytes):
-                                timestamp = int(raw_timestamp.decode())
-                            else:
-                                timestamp = int(raw_timestamp) if raw_timestamp else 0
-
-                            # TTL information (handle bytes)
-                            raw_ttl = mem.get("ttl_formatted", "Unknown")
-                            ttl_formatted = (
-                                raw_ttl.decode() if isinstance(raw_ttl, bytes) else raw_ttl
-                            )
-
-                            raw_expires = mem.get("expires_at_formatted", "Unknown")
-                            expires_at_formatted = (
-                                raw_expires.decode()
-                                if isinstance(raw_expires, bytes)
-                                else raw_expires
-                            )
-
-                            has_expiry = mem.get("has_expiry", False)
-
-                            # Format timestamp
-                            try:
-                                import datetime
-
-                                if timestamp > 1000000000000:  # milliseconds
-                                    dt = datetime.datetime.fromtimestamp(timestamp / 1000)
-                                else:  # seconds
-                                    dt = datetime.datetime.fromtimestamp(timestamp)
-                                time_str = dt.strftime("%H:%M:%S")
-                            except:
-                                time_str = str(timestamp)
-
-                            # Display memory info with TTL
-                            print(
-                                f"   [{i}] {time_str} | {node_id} | {memory_type} | Score: {importance:.2f}",
-                            )
-                            print(f"       📝 {content}")
-
-                            # Display TTL information
-                            if has_expiry:
-                                if ttl_formatted == "0s":
-                                    print(f"       ⏰ TTL: ⚠️ Expired (was: {expires_at_formatted})")
-                                else:
-                                    print(
-                                        f"       ⏰ TTL: {ttl_formatted} (expires: {expires_at_formatted})",
-                                    )
-                            else:
-                                print(f"       ⏰ TTL: {ttl_formatted}")
+                            print(f"   [{i}] {node_id}: {content}")
                     else:
                         print("   No stored memories found")
 
                 except Exception as e:
                     print(f"   ❌ Error retrieving memories: {e}")
 
-                if args.compact:
-                    # Compact view - show memory type distribution
-                    decay_status = "Enabled" if stats.get("decay_enabled", False) else "Disabled"
-                    print(f"\n⏰ Decay: {decay_status}")
-
-                    # Memory type distribution in one line
-                    mem_types = stats.get("entries_by_memory_type", {})
-                    if any(count > 0 for count in mem_types.values()):
-                        type_summary = " | ".join(
-                            [f"{k}: {v}" for k, v in mem_types.items() if v > 0],
-                        )
-                        print(f"   Types: {type_summary}")
-
-                # Full view
-                # RedisStack-specific metrics
-                elif backend == "redisstack":
-                    try:
-                        # Check if RedisStack features are available
-                        redisstack_available = hasattr(memory, "get_performance_metrics")
-
-                        if redisstack_available:
-                            perf_metrics = memory.get_performance_metrics()
-
-                            print("\n🚀 RedisStack Performance:")
-                            print(f"   HNSW Searches: {perf_metrics.get('hybrid_searches', 0)}")
-                            print(
-                                f"   Vector Searches: {perf_metrics.get('vector_searches', 0)}",
-                            )
-                            print(
-                                f"   Average Search Time: {perf_metrics.get('average_search_time', 0):.3f}s",
-                            )
-                            print(f"   Memory Writes: {perf_metrics.get('memory_writes', 0)}")
-                            print(f"   Cache Hits: {perf_metrics.get('cache_hits', 0)}")
-
-                            # Enhanced index health monitoring
-                            index_status = perf_metrics.get("index_status", {})
-                            if index_status.get("status") != "unavailable":
-                                print("\n🔍 HNSW Index Health:")
-                                print(
-                                    f"   Index Name: {index_status.get('index_name', 'enhanced_memory_idx')}",
-                                )
-                                print(f"   Documents: {index_status.get('num_docs', 0)}")
-                                print(
-                                    f"   Indexing: {'✅ Active' if index_status.get('indexing', False) else '⏸️ Idle'}",
-                                )
-                                print(
-                                    f"   Indexed: {index_status.get('percent_indexed', 100)}%",
-                                )
-
-                                # Index performance metrics
-                                if index_status.get("index_options"):
-                                    opts = index_status["index_options"]
-                                    print(f"   HNSW M: {opts.get('M', 16)}")
-                                    print(
-                                        f"   EF Construction: {opts.get('ef_construction', 200)}",
-                                    )
-                            else:
-                                print(
-                                    "\n⚠️  HNSW Index: Not available (using basic Redis fallback)",
-                                )
-
-                            # Enhanced namespace distribution
-                            ns_dist = perf_metrics.get("namespace_distribution", {})
-                            if ns_dist:
-                                print("\n📁 Active Namespaces:")
-                                for ns, count in sorted(ns_dist.items())[:5]:  # Show top 5
-                                    print(f"   {ns}: {count} memories")
-                                if len(ns_dist) > 5:
-                                    print(f"   ... and {len(ns_dist) - 5} more namespaces")
-
-                            # Memory quality indicators
-                            quality_metrics = perf_metrics.get("memory_quality", {})
-                            if quality_metrics:
-                                print("\n📊 Memory Quality:")
-                                print(
-                                    f"   Avg Importance: {quality_metrics.get('avg_importance_score', 0):.2f}",
-                                )
-                                print(
-                                    f"   Long-term %: {quality_metrics.get('long_term_percentage', 0):.1f}%",
-                                )
-                        else:
-                            print("\n🔄 RedisStack: Using basic Redis fallback")
-                            print("   Vector search: Not available")
-                            print("   HNSW indexing: Not available")
-
-                        # Redis system info (always available)
-                        if hasattr(memory, "client"):
-                            try:
-                                redis_info = memory.client.info()
-                                print("\n💾 Redis System:")
-                                print(
-                                    f"   Memory Used: {redis_info.get('used_memory_human', 'N/A')}",
-                                )
-                                print(
-                                    f"   Clients: {redis_info.get('connected_clients', 'N/A')}",
-                                )
-                                print(
-                                    f"   Uptime: {redis_info.get('uptime_in_seconds', 0) // 3600}h",
-                                )
-
-                                # Check for RedisStack modules
-                                try:
-                                    modules = memory.client.execute_command("MODULE", "LIST")
-                                    if modules:
-                                        module_names = []
-                                        for module in modules:
-                                            if isinstance(module, list) and len(module) >= 2:
-                                                name = (
-                                                    module[1].decode()
-                                                    if isinstance(module[1], bytes)
-                                                    else module[1]
-                                                )
-                                                module_names.append(name)
-                                        if module_names:
-                                            print(f"   Modules: {', '.join(module_names)}")
-                                except Exception:
-                                    pass  # Skip module detection if it fails
-
-                            except Exception:
-                                print("\n💾 Redis System: Connection issue")
-
-                    except Exception as e:
-                        print(f"\n⚠️  Backend metrics unavailable: {e}")
-
-                # Generic backend info
-                else:
-                    print(f"\n📋 {backend.title()} Backend")
-                    if hasattr(memory, "client"):
-                        try:
-                            info = memory.client.info()
-                            print("   Status: Connected")
-                            print(f"   Memory: {info.get('used_memory_human', 'N/A')}")
-                        except:
-                            print("   Status: Connection issue")
-
-                time.sleep(args.interval)
+                time.sleep(getattr(args, "interval", 5))
 
             except KeyboardInterrupt:
                 break
             except Exception as e:
                 print(f"❌ Error in memory watch: {e}", file=sys.stderr)
-                time.sleep(args.interval)
+                time.sleep(getattr(args, "interval", 5))
 
     except KeyboardInterrupt:
         pass

@@ -42,6 +42,7 @@ setup(
         "pydantic>=1.8.0",
         "httpx>=0.24.0",
         "rich>=13.0.0",
+        "textual>=0.40.0",
     ],
     extras_require={"dev": ["pytest", "coverage", "pytest-cov"]},
     classifiers=[
@@ -53,6 +54,7 @@ setup(
     entry_points={
         "console_scripts": [
             "orka-start=orka.orka_start:main",
+            "orka=orka.orka_cli:main",
         ],
     },
     package_data={
