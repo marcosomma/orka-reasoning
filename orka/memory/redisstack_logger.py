@@ -690,7 +690,16 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         try:
             if hasattr(self, "redis_client"):
                 self.redis_client.close()
-            super().close()
+            # Also close thread-local connections
+            if hasattr(self, "_local"):
+                for attr_name in dir(self._local):
+                    if not attr_name.startswith("_"):
+                        try:
+                            attr_value = getattr(self._local, attr_name)
+                            if hasattr(attr_value, "close"):
+                                attr_value.close()
+                        except Exception:
+                            pass  # Ignore errors during cleanup
         except Exception as e:
             logger.error(f"Error closing RedisStack logger: {e}")
 

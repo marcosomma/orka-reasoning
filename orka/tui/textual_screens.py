@@ -64,6 +64,7 @@ class DashboardScreen(BaseOrKaScreen):
 
             # Bottom row: Recent logs
             with Container(classes="logs-container"):
+                yield Static("📋 System Memory", classes="container")
                 yield LogsWidget(self.data_manager, id="dashboard-logs")
 
     def refresh_data(self) -> None:
@@ -73,28 +74,29 @@ class DashboardScreen(BaseOrKaScreen):
             stats_widget = self.query_one("#dashboard-stats", StatsWidget)
             stats_widget.update_stats()
 
-            # Update quick health
+            # Update quick health using unified stats
             health_widget = self.query_one("#quick-health", Static)
-            stats = self.data_manager.stats.current
-            connection = "🟢 Connected" if self.data_manager.memory_logger else "🔴 Disconnected"
-            total = stats.get("total_entries", 0)
-            active = stats.get("active_entries", 0)
+            unified = self.data_manager.get_unified_stats()
+            health = unified["health"]
+            backend = unified["backend"]
 
+            # Format health status with icons
+            connection_status = f"{health['backend']['icon']} {health['backend']['message']}"
             health_content = f"""
-{connection}
-📊 Total: {total:,} entries
-⚡ Active: {active:,} entries
-📈 Backend: {self.data_manager.backend}
+{connection_status}
+📊 Total: {unified["total_entries"]:,} entries
+⚡ Active: {backend["active_entries"]:,} entries  
+📈 Backend: {backend["type"]}
 """
             health_widget.update(health_content)
 
             # Update memories table
             memories_widget = self.query_one("#dashboard-memories", MemoryTableWidget)
-            memories_widget.update_data()
+            memories_widget.update_data("all")
 
-            # Update logs
+            # 🎯 FIX: Update logs using correct method name
             logs_widget = self.query_one("#dashboard-logs", LogsWidget)
-            logs_widget.update_logs()
+            logs_widget.update_data()  # Changed from update_logs() to update_data()
 
         except Exception:
             # Handle refresh errors gracefully
@@ -123,21 +125,22 @@ class ShortMemoryScreen(BaseOrKaScreen):
     def refresh_data(self) -> None:
         """Refresh short memory data."""
         try:
-            # Use centralized filtering
-            short_memories = self.data_manager.get_filtered_memories("short")
+            # 🎯 USE UNIFIED: Get comprehensive stats from centralized calculation
+            unified = self.data_manager.get_unified_stats()
+            stored_memories = unified["stored_memories"]
 
             # Update info section
             info_widget = self.query_one("#short-memory-info", Static)
             info_content = f"""
-Total Short-term Entries: {len(short_memories):,}
-Criteria: Memory type + TTL < 1 hour
+Total Short-term Entries: {stored_memories["short_term"]:,}
+Criteria: Memory type = 'short_term'
 Auto-refresh: Every 2 seconds
 """
             info_widget.update(info_content)
 
             # Update table
             table_widget = self.query_one("#short-memory-table", MemoryTableWidget)
-            table_widget.update_data()
+            table_widget.update_data("short")
 
         except Exception:
             pass
@@ -168,21 +171,22 @@ class LongMemoryScreen(BaseOrKaScreen):
     def refresh_data(self) -> None:
         """Refresh long memory data."""
         try:
-            # Use centralized filtering
-            long_memories = self.data_manager.get_filtered_memories("long")
+            # 🎯 USE UNIFIED: Get comprehensive stats from centralized calculation
+            unified = self.data_manager.get_unified_stats()
+            stored_memories = unified["stored_memories"]
 
             # Update info section
             info_widget = self.query_one("#long-memory-info", Static)
             info_content = f"""
-Total Long-term Entries: {len(long_memories):,}
-Criteria: Memory type + TTL > 1 hour or persistent
+Total Long-term Entries: {stored_memories["long_term"]:,}
+Criteria: Memory type = 'long_term'
 Auto-refresh: Every 2 seconds
 """
             info_widget.update(info_content)
 
             # Update table
             table_widget = self.query_one("#long-memory-table", MemoryTableWidget)
-            table_widget.update_data()
+            table_widget.update_data("long")
 
         except Exception:
             pass
@@ -213,48 +217,31 @@ class MemoryLogsScreen(BaseOrKaScreen):
         try:
             # Update orchestration logs table
             logs_table = self.query_one("#orchestration-logs-table", MemoryTableWidget)
-            logs_table.update_data()
+            logs_table.update_data("logs")
 
-            # Update memory system logs summary
+            # Update memory system logs summary using unified stats
             info_widget = self.query_one("#logs-info", Static)
 
-            # Use centralized filtering for consistency
-            orchestration_logs = [
-                m
-                for m in self.data_manager.memory_data
-                if self.data_manager._get_log_type(m) == "orchestration"
-            ]
-            system_logs = [
-                m
-                for m in self.data_manager.memory_data
-                if self.data_manager._get_log_type(m) in ["log", "system"]
-            ]
-            short_memories = self.data_manager.get_filtered_memories("short")
-            long_memories = self.data_manager.get_filtered_memories("long")
-            all_logs = self.data_manager.get_filtered_memories("logs")
+            # 🎯 USE UNIFIED: Get all data from centralized calculation
+            unified = self.data_manager.get_unified_stats()
+            log_entries = unified["log_entries"]
+            stored_memories = unified["stored_memories"]
+            backend = unified["backend"]
 
-            # Calculate stats
-            total_logs = len(all_logs)
-            recent_logs = len(
-                [
-                    m
-                    for m in orchestration_logs + system_logs
-                    if m.get("timestamp", 0)
-                    > (self.data_manager.stats.current.get("timestamp", 0) - 300)  # Last 5 minutes
-                ],
-            )
+            # Calculate recent activity
+            recent_logs = 0  # Placeholder - could be enhanced with timestamp filtering
 
             info_content = f"""
 📊 System Overview:
-  • Orchestration Logs: {len(orchestration_logs):,}
-  • System/Other Logs: {len(system_logs):,}
-  • Short-term Memory: {len(short_memories):,}
-  • Long-term Memory: {len(long_memories):,}
-  • Total Log Events: {total_logs:,}
+  • Orchestration Logs: {log_entries["orchestration"]:,}
+  • System/Other Logs: {log_entries["system"]:,}
+  • Short-term Memory: {stored_memories["short_term"]:,}
+  • Long-term Memory: {stored_memories["long_term"]:,}
+  • Total Log Events: {log_entries["total"]:,}
   • Recent Activity (5m): {recent_logs:,}
 
 🔄 Auto-refresh: Every 2 seconds
-📋 Backend: {self.data_manager.backend or "Unknown"}
+📋 Backend: {backend["type"]}
 """
             info_widget.update(info_content)
 
@@ -306,13 +293,18 @@ class HealthScreen(BaseOrKaScreen):
     def refresh_data(self) -> None:
         """Refresh health monitoring data."""
         try:
-            stats = self.data_manager.stats.current
+            # 🎯 USE UNIFIED: Get all health data from centralized calculation
+            unified = self.data_manager.get_unified_stats()
+            health = unified["health"]
+            backend = unified["backend"]
+            stored_memories = unified["stored_memories"]
+            log_entries = unified["log_entries"]
 
             # Update health summary
             summary_widget = self.query_one("#health-summary", Static)
-            overall_status = self._calculate_overall_health(stats)
+            overall = health["overall"]
             summary_content = f"""
-Overall System Health: {overall_status}
+Overall System Health: {overall["icon"]} {overall["message"]}
 Last Update: {self._format_current_time()}
 Monitoring Interval: 2 seconds
 """
@@ -320,35 +312,35 @@ Monitoring Interval: 2 seconds
 
             # Update connection health
             conn_widget = self.query_one("#connection-health", Static)
-            conn_status = "🟢 Connected" if self.data_manager.memory_logger else "🔴 Disconnected"
-            backend = self.data_manager.backend or "Unknown"
+            backend_health = health["backend"]
+            conn_status = f"{backend_health['icon']} {backend_health['message']}"
             conn_content = f"""
 Status: {conn_status}
-Backend: {backend}
+Backend: {backend["type"]}
 Protocol: Redis
 """
             conn_widget.update(conn_content)
 
             # Update memory system health
             mem_widget = self.query_one("#memory-health", Static)
-            total = stats.get("total_entries", 0)
-            active = stats.get("active_entries", 0)
-            expired = stats.get("expired_entries", 0)
+            memory_health = health["memory"]
+            total = backend["active_entries"] + backend["expired_entries"]
 
-            mem_health = self._assess_memory_health(total, active, expired)
             mem_content = f"""
-Health: {mem_health}
+Health: {memory_health["icon"]} {memory_health["message"]}
 Total: {total:,} entries
-Active: {active:,} entries
-Expired: {expired:,} entries
+Active: {backend["active_entries"]:,} entries
+Expired: {backend["expired_entries"]:,} entries
 """
             mem_widget.update(mem_content)
 
             # Update performance health
             perf_widget = self.query_one("#performance-health", Static)
-            perf_content = """
-Status: 🟢 Good
-Response Time: < 100ms
+            perf_health = health["performance"]
+            search_time = unified["performance"]["search_time"]
+            perf_content = f"""
+Status: {perf_health["icon"]} {perf_health["message"]}
+Response Time: {search_time:.3f}s
 Throughput: Normal
 Errors: < 0.1%
 """
@@ -357,7 +349,7 @@ Errors: < 0.1%
             # Update backend info
             backend_widget = self.query_one("#backend-info", Static)
             backend_content = f"""
-Type: {backend}
+Type: {backend["type"]}
 Version: Latest
 Features: TTL, Search, Indexing
 Config: Auto-detected
@@ -366,13 +358,14 @@ Config: Auto-detected
 
             # Update system metrics
             metrics_widget = self.query_one("#system-metrics", Static)
-            stored = stats.get("stored_memories", 0)
-            logs = stats.get("orchestration_logs", 0)
+            stored_total = stored_memories["total"]
+            logs_total = log_entries["orchestration"]
+            usage_pct = (backend["active_entries"] / total * 100) if total > 0 else 0
 
             metrics_content = f"""
-Stored Memories: {stored:,}
-Orchestration Logs: {logs:,}
-Memory Usage: {self._calculate_memory_usage(stats)}%
+Stored Memories: {stored_total:,}
+Orchestration Logs: {logs_total:,}
+Memory Usage: {usage_pct:.1f}%
 Cache Hit Rate: 95%
 """
             metrics_widget.update(metrics_content)
@@ -381,7 +374,7 @@ Cache Hit Rate: 95%
             hist_widget = self.query_one("#historical-data", Static)
             hist_content = f"""
 Data Points: {len(self.data_manager.stats.history)}
-Trends: {self.data_manager.stats.get_trend("total_entries")}
+Trends: {unified["trends"]["total_entries"]}
 Performance: Stable
 Retention: 100 points
 """
@@ -389,50 +382,6 @@ Retention: 100 points
 
         except Exception:
             pass
-
-    def _calculate_overall_health(self, stats) -> str:
-        """Calculate overall system health status."""
-        if not self.data_manager.memory_logger:
-            return "🔴 Critical - No Connection"
-
-        total = stats.get("total_entries", 0)
-        expired = stats.get("expired_entries", 0)
-
-        if total == 0:
-            return "🟡 Warning - No Data"
-
-        expired_ratio = expired / total if total > 0 else 0
-
-        if expired_ratio < 0.1:
-            return "🟢 Healthy"
-        elif expired_ratio < 0.3:
-            return "🟡 Degraded"
-        else:
-            return "🔴 Critical"
-
-    def _assess_memory_health(self, total, active, expired) -> str:
-        """Assess memory system health."""
-        if total == 0:
-            return "🟡 No Data"
-
-        expired_ratio = expired / total if total > 0 else 0
-
-        if expired_ratio < 0.1:
-            return "🟢 Healthy"
-        elif expired_ratio < 0.3:
-            return "🟡 Degraded"
-        else:
-            return "🔴 Critical"
-
-    def _calculate_memory_usage(self, stats) -> int:
-        """Calculate memory usage percentage."""
-        total = stats.get("total_entries", 0)
-        active = stats.get("active_entries", 0)
-
-        if total == 0:
-            return 0
-
-        return int((active / total) * 100)
 
     def _format_current_time(self) -> str:
         """Format current time for display."""

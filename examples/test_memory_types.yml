@@ -1,0 +1,36 @@
+orchestrator:
+  id: test-memory-types
+  strategy: sequential
+  queue: orka:test-memory-types
+  agents:
+    - short-term-writer
+    - long-term-writer
+
+agents:
+  - id: short-term-writer
+    type: memory
+    queue: orka:short-term-writer
+    config:
+      operation: write
+      memory_type: short_term # 🎯 Explicitly set memory type
+    namespace: test_memories
+    prompt: "This is a test short-term memory about: {{ input }}"
+    metadata:
+      category: stored
+      test_type: explicit_short_term
+      source: test_workflow
+    key_template: "short_{{ input | replace(' ', '_') }}"
+
+  - id: long-term-writer
+    type: memory
+    queue: orka:long-term-writer
+    config:
+      operation: write
+      memory_type: long_term # 🎯 Explicitly set memory type
+    namespace: test_memories
+    prompt: "This is a test long-term memory about: {{ input }}"
+    metadata:
+      category: stored
+      test_type: explicit_long_term
+      source: test_workflow
+    key_template: "long_{{ input | replace(' ', '_') }}"

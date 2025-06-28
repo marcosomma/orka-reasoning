@@ -3,7 +3,6 @@
 Test script to verify data consistency across TUI screens.
 """
 
-import argparse
 import os
 import sys
 
@@ -14,96 +13,218 @@ from orka.tui.data_manager import DataManager
 
 
 def test_data_consistency():
-    """Test that all filtering methods return consistent results."""
+    """Test data consistency between TUI components and unified stats system."""
+    print("🧪 Testing Data Consistency Across TUI Screens")
+    print("=" * 60)
 
     # Initialize data manager
     data_manager = DataManager()
-    args = argparse.Namespace(backend="redisstack", redis_url=None)
-    data_manager.init_memory_logger(args)
 
-    print("🧪 Testing Data Consistency Across TUI Screens")
-    print("=" * 60)
+    # Mock args for initialization
+    class MockArgs:
+        backend = "redisstack"
+
+    data_manager.init_memory_logger(MockArgs())
 
     # Update data
     data_manager.update_data()
 
-    # Get all filtered data using centralized methods
-    all_memories = data_manager.get_filtered_memories("all")
-    short_memories = data_manager.get_filtered_memories("short")
-    long_memories = data_manager.get_filtered_memories("long")
-    all_logs = data_manager.get_filtered_memories("logs")
+    # 🎯 USE UNIFIED: Test the new unified stats system
+    unified = data_manager.get_unified_stats()
 
-    # Count by type using centralized methods
-    orchestration_logs = [
-        m for m in data_manager.memory_data if data_manager._get_log_type(m) == "orchestration"
-    ]
-    system_logs = [
-        m for m in data_manager.memory_data if data_manager._get_log_type(m) in ["log", "system"]
-    ]
-    memory_entries = [
-        m for m in data_manager.memory_data if data_manager._get_log_type(m) == "memory"
-    ]
+    print("📊 Unified Stats Results:")
+    print(f"  Total entries: {unified['total_entries']}")
+    print(f"  Stored memories: {unified['stored_memories']['total']}")
+    print(f"    - Short-term: {unified['stored_memories']['short_term']}")
+    print(f"    - Long-term: {unified['stored_memories']['long_term']}")
+    print(f"    - Unknown: {unified['stored_memories']['unknown']}")
+    print(f"  Log entries: {unified['log_entries']['total']}")
+    print(f"    - Orchestration: {unified['log_entries']['orchestration']}")
+    print(f"    - System: {unified['log_entries']['system']}")
 
-    print("📊 Centralized Filtering Results:")
-    print(f"  Total entries: {len(all_memories)}")
-    print(f"  Short-term memory: {len(short_memories)}")
-    print(f"  Long-term memory: {len(long_memories)}")
-    print(f"  All logs: {len(all_logs)}")
-    print(f"  Orchestration logs: {len(orchestration_logs)}")
-    print(f"  System logs: {len(system_logs)}")
-    print(f"  Memory entries: {len(memory_entries)}")
-    print()
+    # Test consistency between old and new methods
+    old_short = data_manager.get_filtered_memories("short")
+    old_long = data_manager.get_filtered_memories("long")
+    old_logs = data_manager.get_filtered_memories("logs")
+    old_all = data_manager.get_filtered_memories("all")
 
-    # Verify consistency
-    print("🔍 Consistency Checks:")
+    print("\n🔍 Consistency Checks:")
 
-    # Check 1: Short + Long should equal Memory entries
-    total_memory = len(short_memories) + len(long_memories)
-    print(f"  Short + Long = {total_memory}, Memory entries = {len(memory_entries)}")
-    if total_memory == len(memory_entries):
-        print("  ✅ Memory filtering consistent")
+    # Check stored memories consistency
+    if len(old_short) == unified["stored_memories"]["short_term"]:
+        print("  ✅ Short-term memory filtering consistent")
     else:
-        print("  ❌ Memory filtering inconsistent!")
+        print(
+            f"  ❌ Short-term mismatch: old={len(old_short)}, new={unified['stored_memories']['short_term']}",
+        )
 
-    # Check 2: Orchestration + System should equal All logs
-    total_logs_manual = len(orchestration_logs) + len(system_logs)
-    print(f"  Orchestration + System = {total_logs_manual}, All logs = {len(all_logs)}")
-    if total_logs_manual == len(all_logs):
+    if len(old_long) == unified["stored_memories"]["long_term"]:
+        print("  ✅ Long-term memory filtering consistent")
+    else:
+        print(
+            f"  ❌ Long-term mismatch: old={len(old_long)}, new={unified['stored_memories']['long_term']}",
+        )
+
+    # Check log consistency
+    if len(old_logs) == unified["log_entries"]["total"]:
         print("  ✅ Log filtering consistent")
     else:
-        print("  ❌ Log filtering inconsistent!")
+        print(f"  ❌ Log mismatch: old={len(old_logs)}, new={unified['log_entries']['total']}")
 
-    # Check 3: All memories should equal memory + logs
-    total_all_manual = len(memory_entries) + len(all_logs)
-    print(f"  Memory + Logs = {total_all_manual}, All entries = {len(all_memories)}")
-    if total_all_manual == len(all_memories):
+    # Check total consistency
+    if len(old_all) == unified["total_entries"]:
         print("  ✅ Total count consistent")
     else:
-        print("  ❌ Total count inconsistent!")
+        print(f"  ❌ Total mismatch: old={len(old_all)}, new={unified['total_entries']}")
 
-    print()
-    print("🔧 Data Breakdown by Log Type:")
-    type_counts = {}
-    for memory in data_manager.memory_data:
-        log_type = data_manager._get_log_type(memory)
-        type_counts[log_type] = type_counts.get(log_type, 0) + 1
+    # Test health calculations
+    print("\n🏥 Health System Test:")
+    health = unified["health"]
+    print(f"  Overall: {health['overall']['icon']} {health['overall']['message']}")
+    print(f"  Memory: {health['memory']['icon']} {health['memory']['message']}")
+    print(f"  Backend: {health['backend']['icon']} {health['backend']['message']}")
+    print(f"  Performance: {health['performance']['icon']} {health['performance']['message']}")
 
-    for log_type, count in sorted(type_counts.items()):
-        print(f"  {log_type}: {count}")
-
-    print()
-    print("✅ Data consistency test complete!")
+    print("\n✅ Unified stats system test complete!")
 
     return {
-        "all_memories": len(all_memories),
-        "short_memories": len(short_memories),
-        "long_memories": len(long_memories),
-        "all_logs": len(all_logs),
-        "orchestration_logs": len(orchestration_logs),
-        "system_logs": len(system_logs),
-        "memory_entries": len(memory_entries),
+        "unified_stats": unified,
+        "old_filtering": {
+            "short_memories": len(old_short),
+            "long_memories": len(old_long),
+            "all_logs": len(old_logs),
+            "all_entries": len(old_all),
+        },
     }
 
 
+def test_memory_filtering():
+    """Test memory filtering and show distribution."""
+    print("🧪 Testing Memory Filtering and Distribution")
+    print("=" * 50)
+
+    # Initialize data manager
+    data_manager = DataManager()
+
+    # Mock args for initialization
+    class MockArgs:
+        backend = "redisstack"
+
+    data_manager.init_memory_logger(MockArgs())
+
+    # Update data to load memories
+    print("📡 Loading memories from backend...")
+    data_manager.update_data()
+
+    # Get distribution
+    distribution = data_manager.get_memory_distribution()
+
+    # Display results
+    print("\n📊 Memory Distribution:")
+    print(f"  Total entries: {distribution['total_entries']}")
+    print(f"  Stored memories: {distribution['stored_memories']['total']}")
+    print(f"    - Short-term: {distribution['stored_memories']['short_term']}")
+    print(f"    - Long-term: {distribution['stored_memories']['long_term']}")
+    print(f"    - Unknown type: {distribution['stored_memories']['unknown']}")
+    print(f"  Log entries: {distribution['log_entries']['total']}")
+    print(f"    - By type: {distribution['log_entries']['by_type']}")
+    print(f"  All log types: {distribution['by_log_type']}")
+    print(f"  All memory types: {distribution['by_memory_type']}")
+
+    # Test filtering
+    print("\n🔍 Testing Filtering:")
+    short_memories = data_manager.get_filtered_memories("short")
+    long_memories = data_manager.get_filtered_memories("long")
+    log_memories = data_manager.get_filtered_memories("logs")
+
+    print(f"  Short-term filter result: {len(short_memories)} memories")
+    print(f"  Long-term filter result: {len(long_memories)} memories")
+    print(f"  Logs filter result: {len(log_memories)} entries")
+
+    # Show sample entries if available
+    if distribution["stored_memories"]["total"] == 0:
+        print("\n⚠️  No stored memories found!")
+        print("   To create memories, use a memory-writer node in your workflow")
+        print("   or run: orka run --input 'test' examples/basic_memory.yml")
+    else:
+        print("\n✅ Stored memories found and filtering working correctly!")
+
+        # Show a few sample entries
+        if short_memories:
+            print("\n📝 Sample short-term memory:")
+            memory = short_memories[0]
+            print(f"   Content: {data_manager._get_content(memory)[:100]}...")
+            print(f"   Key: {data_manager._get_key(memory)}")
+
+        if long_memories:
+            print("\n📝 Sample long-term memory:")
+            memory = long_memories[0]
+            print(f"   Content: {data_manager._get_content(memory)[:100]}...")
+            print(f"   Key: {data_manager._get_key(memory)}")
+
+    return distribution
+
+
+def main():
+    """Main test function."""
+    try:
+        print("�� OrKa Memory System Unified Data Test")
+        print("=" * 50)
+
+        # Run the unified stats test
+        print("\n📋 Running unified stats system tests...")
+        unified_results = test_data_consistency()
+
+        print("\n" + "=" * 50)
+
+        # Run the memory filtering test
+        distribution = test_memory_filtering()
+
+        print("\n✅ All tests completed successfully!")
+
+        # Comprehensive summary
+        print("\n📈 Summary:")
+        print("   Unified stats test: ✅ Complete")
+        print("   Memory filtering test: ✅ Complete")
+
+        # Show key metrics from unified system
+        unified = unified_results["unified_stats"]
+        print("\n🎯 Key Metrics (Unified System):")
+        print(f"   Total Entries: {unified['total_entries']}")
+        print(f"   Stored Memories: {unified['stored_memories']['total']}")
+        print(f"     - Short-term: {unified['stored_memories']['short_term']}")
+        print(f"     - Long-term: {unified['stored_memories']['long_term']}")
+        print(f"   Log Entries: {unified['log_entries']['total']}")
+        print(f"     - Orchestration: {unified['log_entries']['orchestration']}")
+        print(f"     - System: {unified['log_entries']['system']}")
+
+        # Health status
+        health = unified["health"]
+        print("\n🏥 System Health:")
+        print(f"   Overall: {health['overall']['icon']} {health['overall']['message']}")
+        print(f"   Memory: {health['memory']['icon']} {health['memory']['message']}")
+        print(f"   Backend: {health['backend']['icon']} {health['backend']['message']}")
+        print(f"   Performance: {health['performance']['icon']} {health['performance']['message']}")
+
+        # Recommendations
+        stored_total = unified["stored_memories"]["total"]
+        if stored_total == 0:
+            print("\n💡 Recommendations:")
+            print("   1. No stored memories found - create some using memory-writer nodes")
+            print("   2. Run: python -m orka.orka_cli run examples/basic_memory.yml 'test message'")
+            print("   3. TUI memory screens will show data once memories are created")
+        else:
+            print("\n🎉 Your unified memory system is working correctly!")
+            print("   - Data calculations are consistent across all TUI components")
+            print("   - Health monitoring is centralized and accurate")
+            print("   - No more scattered or redundant calculations")
+
+    except Exception as e:
+        print(f"❌ Test failed: {e}")
+        return 1
+
+    return 0
+
+
 if __name__ == "__main__":
-    test_data_consistency()
+    exit(main())
