@@ -312,7 +312,11 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         memory_type: Optional[str] = None,
         min_importance: Optional[float] = None,
         log_type: str = "memory",  # 🎯 NEW: Filter by log type (default: only memories)
+        namespace: Optional[str] = None,  # 🎯 NEW: Filter by namespace
     ) -> List[Dict[str, Any]]:
+        logger.debug(
+            f"🔍 SEARCH PARAMS: query='{query}', namespace='{namespace}', log_type='{log_type}', num_results={num_results}",
+        )
         """
         Search memories using enhanced vector search with filtering.
 
@@ -413,6 +417,15 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                             ):
                                 continue
 
+                            # 🎯 NEW: Filter by namespace
+                            if namespace:
+                                memory_namespace = metadata.get("namespace")
+                                logger.debug(
+                                    f"🔍 Vector search - Namespace filter: searching={namespace}, memory={memory_namespace}, match={memory_namespace == namespace}",
+                                )
+                                if memory_namespace != namespace:
+                                    continue
+
                             # Calculate TTL information
                             current_time_ms = int(time.time() * 1000)
                             expiry_info = self._get_ttl_info(
@@ -471,6 +484,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 memory_type,
                 min_importance,
                 log_type,
+                namespace,
             )
 
         except Exception as e:
@@ -499,6 +513,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         memory_type: Optional[str] = None,
         min_importance: Optional[float] = None,
         log_type: str = "memory",
+        namespace: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """Fallback text search using basic Redis search capabilities."""
         try:
@@ -572,6 +587,15 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                         log_type == "log" and memory_log_type != "log" and memory_category != "log"
                     ):
                         continue
+
+                    # 🎯 NEW: Filter by namespace (same logic as vector search)
+                    if namespace:
+                        memory_namespace = metadata.get("namespace")
+                        logger.debug(
+                            f"🔍 Namespace filter: searching={namespace}, memory={memory_namespace}, match={memory_namespace == namespace}",
+                        )
+                        if memory_namespace != namespace:
+                            continue
 
                     # Calculate TTL information
                     current_time_ms = int(time.time() * 1000)

@@ -386,6 +386,72 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         """Delete keys using Redis."""
         return self.redis_client.delete(*keys)
 
+    # 🎯 NEW: Enhanced memory operations - delegate to RedisStack logger
+    def search_memories(
+        self,
+        query: str,
+        num_results: int = 10,
+        trace_id: Optional[str] = None,
+        node_id: Optional[str] = None,
+        memory_type: Optional[str] = None,
+        min_importance: Optional[float] = None,
+        log_type: str = "memory",
+        namespace: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Search memories using RedisStack logger if available, otherwise return empty list."""
+        logger.debug(
+            f"🔍 KafkaMemoryLogger.search_memories: _redis_memory_logger={self._redis_memory_logger is not None}, namespace='{namespace}'",
+        )
+
+        if self._redis_memory_logger and hasattr(self._redis_memory_logger, "search_memories"):
+            logger.debug(f"🔍 Delegating to RedisStackMemoryLogger with namespace='{namespace}'")
+            results = self._redis_memory_logger.search_memories(
+                query=query,
+                num_results=num_results,
+                trace_id=trace_id,
+                node_id=node_id,
+                memory_type=memory_type,
+                min_importance=min_importance,
+                log_type=log_type,
+                namespace=namespace,
+            )
+            logger.debug(f"🔍 RedisStack search returned {len(results)} results")
+            return results
+        else:
+            logger.warning("RedisStack not available for memory search, returning empty results")
+            return []
+
+    def log_memory(
+        self,
+        content: str,
+        node_id: str,
+        trace_id: str,
+        metadata: Optional[Dict[str, Any]] = None,
+        importance_score: float = 1.0,
+        memory_type: str = "short_term",
+        expiry_hours: Optional[float] = None,
+    ) -> str:
+        """Log memory using RedisStack logger if available."""
+        if self._redis_memory_logger and hasattr(self._redis_memory_logger, "log_memory"):
+            return self._redis_memory_logger.log_memory(
+                content=content,
+                node_id=node_id,
+                trace_id=trace_id,
+                metadata=metadata,
+                importance_score=importance_score,
+                memory_type=memory_type,
+                expiry_hours=expiry_hours,
+            )
+        else:
+            logger.warning("RedisStack not available for memory logging")
+            return f"fallback_memory_{datetime.now(UTC).timestamp()}"
+
+    def ensure_index(self) -> bool:
+        """Ensure memory index exists using RedisStack logger if available."""
+        if self._redis_memory_logger and hasattr(self._redis_memory_logger, "ensure_index"):
+            return self._redis_memory_logger.ensure_index()
+        return False
+
     def close(self) -> None:
         """Close both Kafka producer and Redis connection."""
         # Close Kafka producer

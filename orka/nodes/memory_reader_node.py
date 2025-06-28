@@ -60,6 +60,7 @@ class MemoryReaderNode(BaseNode):
                     memory_type=None,  # Don't filter by memory_type for broader search
                     min_importance=context.get("min_importance", 0.0),
                     log_type="memory",  # 🎯 CRITICAL: Only search stored memories, not orchestration logs
+                    namespace=self.namespace,  # 🎯 NEW: Filter by namespace
                 )
 
                 # 🎯 ADDITIONAL FILTERING: Double-check that we only get stored memories
@@ -118,6 +119,7 @@ class MemoryReaderNode(BaseNode):
                     trace_id=session,
                     min_importance=self.similarity_threshold,
                     log_type="memory",  # 🎯 CRITICAL: Only search stored memories, not orchestration logs
+                    namespace=self.namespace,  # 🎯 NEW: Filter by namespace
                 )
             else:
                 results = []

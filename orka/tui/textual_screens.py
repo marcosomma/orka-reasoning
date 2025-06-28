@@ -111,7 +111,7 @@ class ShortMemoryScreen(BaseOrKaScreen):
         with Vertical():
             # Top 20%: Header and info
             with Container(classes="memory-container", id="short-memory-header"):
-                yield Static("⚡ Short-Term Memory (TTL < 1 hour)", classes="container")
+                yield Static("⚡ Short-Term Memory - based on YAML settings", classes="container")
                 yield Static("", id="short-memory-info")
 
             # Bottom 80%: Memory table
@@ -155,7 +155,7 @@ class LongMemoryScreen(BaseOrKaScreen):
             # Top 20%: Header and info
             with Container(classes="memory-container", id="long-memory-header"):
                 yield Static(
-                    "🧠 Long-Term Memory (TTL > 1 hour or persistent)",
+                    "🧠 Long-Term Memory - based on YAML settings",
                     classes="container",
                 )
                 yield Static("", id="long-memory-info")
