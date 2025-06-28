@@ -181,11 +181,18 @@ class MemoryWriterNode(BaseNode):
 
     def _get_expiry_hours(self, memory_type: str, importance_score: float) -> float:
         """Get expiry time in hours based on memory type and importance."""
-        base_hours = (
-            self.decay_config.get("default_long_term_hours", 24.0)
-            if memory_type == "long_term"
-            else self.decay_config.get("default_short_term_hours", 1.0)
-        )
+        if memory_type == "long_term":
+            # Check agent-level config first, then fall back to global config
+            base_hours = self.decay_config.get("long_term_hours") or self.decay_config.get(
+                "default_long_term_hours",
+                24.0,
+            )
+        else:
+            # Check agent-level config first, then fall back to global config
+            base_hours = self.decay_config.get("short_term_hours") or self.decay_config.get(
+                "default_short_term_hours",
+                1.0,
+            )
 
         # Adjust based on importance (higher importance = longer retention)
         importance_multiplier = 1.0 + importance_score

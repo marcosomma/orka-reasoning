@@ -1023,11 +1023,16 @@ class MemoryReaderNode(BaseNode):
                             )
 
                         # Apply decay rules
-                        decay_hours = (
-                            self.decay_config.get("default_long_term_hours", 24.0)
-                            if memory_type == "long_term"
-                            else self.decay_config.get("default_short_term_hours", 1.0)
-                        )
+                        if memory_type == "long_term":
+                            # Check agent-level config first, then fall back to global config
+                            decay_hours = self.decay_config.get(
+                                "long_term_hours",
+                            ) or self.decay_config.get("default_long_term_hours", 24.0)
+                        else:
+                            # Check agent-level config first, then fall back to global config
+                            decay_hours = self.decay_config.get(
+                                "short_term_hours",
+                            ) or self.decay_config.get("default_short_term_hours", 1.0)
 
                         decay_ms = decay_hours * 3600 * 1000
                         if current_time > (created_timestamp + decay_ms):

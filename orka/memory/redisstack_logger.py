@@ -990,9 +990,17 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
 
         # Base expiry times
         if memory_type == "long_term":
-            base_hours = decay_config.get("default_long_term_hours", 24.0)
+            # Check agent-level config first, then fall back to global config
+            base_hours = decay_config.get("long_term_hours") or decay_config.get(
+                "default_long_term_hours",
+                24.0,
+            )
         else:
-            base_hours = decay_config.get("default_short_term_hours", 1.0)
+            # Check agent-level config first, then fall back to global config
+            base_hours = decay_config.get("short_term_hours") or decay_config.get(
+                "default_short_term_hours",
+                1.0,
+            )
 
         # Adjust based on importance (higher importance = longer retention)
         importance_multiplier = 1.0 + importance_score

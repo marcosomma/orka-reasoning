@@ -210,13 +210,17 @@ class KafkaMemoryLogger(BaseMemoryLogger):
                 # Calculate expiration time
                 current_time = datetime.now(UTC)
                 if memory_type == "short_term":
-                    expire_time = current_time + timedelta(
-                        hours=self.decay_config["default_short_term_hours"],
-                    )
+                    # Check agent-level config first, then fall back to global config
+                    expire_hours = self.decay_config.get(
+                        "short_term_hours",
+                    ) or self.decay_config.get("default_short_term_hours", 1.0)
+                    expire_time = current_time + timedelta(hours=expire_hours)
                 else:  # long_term
-                    expire_time = current_time + timedelta(
-                        hours=self.decay_config["default_long_term_hours"],
-                    )
+                    # Check agent-level config first, then fall back to global config
+                    expire_hours = self.decay_config.get(
+                        "long_term_hours",
+                    ) or self.decay_config.get("default_long_term_hours", 24.0)
+                    expire_time = current_time + timedelta(hours=expire_hours)
 
                 decay_metadata = {
                     "orka_importance_score": str(importance_score),
