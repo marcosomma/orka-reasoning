@@ -1,0 +1,125 @@
+# OrKa: Orchestrator Kit Agents
+# Copyright © 2025 Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-resoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+# You may not use this file for commercial purposes without explicit permission.
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+# For commercial use, contact: marcosomma.work@gmail.com
+#
+# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
+
+"""
+OrKa Startup Package
+===================
+
+This package provides modular startup and service management for OrKa.
+It handles infrastructure services (Redis, Kafka), backend server management,
+and orchestrates the complete service lifecycle.
+
+Key Components:
+--------------
+- Configuration management and path discovery
+- Redis infrastructure (native & Docker)
+- Kafka infrastructure (Docker-based)
+- Backend server management
+- Health monitoring and service readiness
+- Cleanup and shutdown coordination
+- Main orchestration logic
+
+This package maintains backward compatibility with the original orka_start.py
+while providing a cleaner, more modular architecture.
+"""
+
+# Main orchestration functions (primary interface)
+# Backend server management
+from .backend import is_backend_running, start_backend, terminate_backend_process
+
+# Service cleanup
+from .cleanup import (
+    cleanup_services,
+    cleanup_specific_backend,
+    force_kill_processes,
+    terminate_all_processes,
+)
+
+# Configuration and environment
+from .config import (
+    configure_backend_environment,
+    get_docker_dir,
+    get_memory_backend,
+    get_service_endpoints,
+)
+
+# Infrastructure services (exposed for advanced usage)
+from .infrastructure import (
+    check_process_health,
+    cleanup_kafka_docker,
+    cleanup_redis_docker,
+    display_error,
+    display_service_endpoints,
+    display_shutdown_complete,
+    display_shutdown_message,
+    display_startup_success,
+    get_kafka_services,
+    initialize_schema_registry,
+    monitor_backend_process,
+    # Kafka
+    start_kafka_docker,
+    # Redis
+    start_native_redis,
+    start_redis_docker,
+    terminate_redis_process,
+    wait_for_kafka_services,
+    wait_for_redis,
+    # Health & monitoring
+    wait_for_services,
+)
+from .orchestrator import main, run_startup, start_infrastructure
+
+# Public API - these are the main functions that should be used
+__all__ = [
+    # Main entry points (most commonly used)
+    "main",
+    "run_startup",
+    # Core infrastructure management
+    "start_infrastructure",
+    "cleanup_services",
+    "get_memory_backend",
+    "get_docker_dir",
+    # Backend management
+    "start_backend",
+    "is_backend_running",
+    "terminate_backend_process",
+    # Service-specific functions (for compatibility)
+    "start_native_redis",
+    "start_redis_docker",
+    "wait_for_redis",
+    "start_kafka_docker",
+    "wait_for_kafka_services",
+    "initialize_schema_registry",
+    "wait_for_services",
+    # Configuration
+    "configure_backend_environment",
+    "get_service_endpoints",
+    # Advanced cleanup
+    "cleanup_specific_backend",
+    "terminate_all_processes",
+    "force_kill_processes",
+    # Monitoring & health
+    "monitor_backend_process",
+    "check_process_health",
+    # User interface helpers
+    "display_service_endpoints",
+    "display_startup_success",
+    "display_shutdown_message",
+    "display_shutdown_complete",
+    "display_error",
+    # Service-specific cleanup
+    "terminate_redis_process",
+    "cleanup_redis_docker",
+    "cleanup_kafka_docker",
+    "get_kafka_services",
+]
