@@ -51,15 +51,30 @@ class MemoryReaderNode(BaseNode):
         try:
             # ✅ Use RedisStack memory logger's search_memories method
             if hasattr(self.memory_logger, "search_memories"):
+                # 🎯 CRITICAL FIX: Search with explicit filtering for stored memories
                 memories = self.memory_logger.search_memories(
                     query=query,
                     num_results=self.limit,
                     trace_id=context.get("trace_id"),
-                    node_id=context.get("node_id"),
-                    memory_type=context.get("memory_type"),
+                    node_id=None,  # Don't filter by node_id for broader search
+                    memory_type=None,  # Don't filter by memory_type for broader search
                     min_importance=context.get("min_importance", 0.0),
                     log_type="memory",  # 🎯 CRITICAL: Only search stored memories, not orchestration logs
                 )
+
+                # 🎯 ADDITIONAL FILTERING: Double-check that we only get stored memories
+                filtered_memories = []
+                for memory in memories:
+                    metadata = memory.get("metadata", {})
+                    # Only include if it's explicitly marked as stored memory
+                    if metadata.get("log_type") == "memory" or metadata.get("category") == "stored":
+                        filtered_memories.append(memory)
+
+                logger.info(
+                    f"Memory search for '{query}': found {len(memories)} total, {len(filtered_memories)} stored memories",
+                )
+                memories = filtered_memories
+
             else:
                 # Fallback for non-RedisStack backends
                 memories = []

@@ -60,7 +60,6 @@ import numpy as np
 import redis
 from redis.commands.search.field import NumericField, TextField, VectorField
 from redis.commands.search.indexDefinition import IndexDefinition, IndexType
-from redis.commands.search.query import Query
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +84,7 @@ def ensure_memory_index(redis_client, index_name="memory_entries"):
                         TextField("content"),
                         TextField("node_id"),
                         NumericField("orka_expire_time"),
-                    ]
+                    ],
                 )
                 logger.info(f"✅ Basic memory index '{index_name}' created successfully")
                 return True
@@ -95,10 +94,10 @@ def ensure_memory_index(redis_client, index_name="memory_entries"):
         logger.error(f"❌ Failed to ensure basic memory index: {e}")
         if "unknown command" in str(e).lower() or "ft.create" in str(e).lower():
             logger.warning(
-                "⚠️  Redis instance does not support RediSearch. Please install RedisStack or enable RediSearch module."
+                "⚠️  Redis instance does not support RediSearch. Please install RedisStack or enable RediSearch module.",
             )
             logger.info(
-                "🔧 For RedisStack setup: https://redis.io/docs/latest/operate/oss_and_stack/install/install-stack/"
+                "🔧 For RedisStack setup: https://redis.io/docs/latest/operate/oss_and_stack/install/install-stack/",
             )
         return False
 
@@ -117,7 +116,7 @@ def ensure_enhanced_memory_index(redis_client, index_name="orka_enhanced_memory"
         except redis.ResponseError as e:
             if "Unknown index name" in str(e):
                 logger.info(
-                    f"Creating enhanced memory index '{index_name}' with vector dimension {vector_dim}"
+                    f"Creating enhanced memory index '{index_name}' with vector dimension {vector_dim}",
                 )
 
                 # Create enhanced index with vector field
@@ -150,14 +149,14 @@ def ensure_enhanced_memory_index(redis_client, index_name="orka_enhanced_memory"
             logger.error(f"❌ Failed to ensure enhanced memory index: {e}")
             if "unknown command" in str(e).lower() or "ft.create" in str(e).lower():
                 logger.warning(
-                    "⚠️  Redis instance does not support RediSearch. Please install RedisStack or enable RediSearch module."
+                    "⚠️  Redis instance does not support RediSearch. Please install RedisStack or enable RediSearch module.",
                 )
                 logger.info(
-                    "🔧 For RedisStack setup: https://redis.io/docs/latest/operate/oss_and_stack/install/install-stack/"
+                    "🔧 For RedisStack setup: https://redis.io/docs/latest/operate/oss_and_stack/install/install-stack/",
                 )
             elif "vector" in str(e).lower():
                 logger.warning(
-                    "⚠️  Redis instance does not support vector search. Please upgrade to RedisStack 7.2+ for vector capabilities."
+                    "⚠️  Redis instance does not support vector search. Please upgrade to RedisStack 7.2+ for vector capabilities.",
                 )
             return False
     except Exception as e:
@@ -180,6 +179,9 @@ def hybrid_vector_search(
     results = []
 
     try:
+        # Import Query from the correct location
+        from redis.commands.search.query import Query
+
         # Convert numpy array to bytes for Redis
         if isinstance(query_vector, np.ndarray):
             vector_bytes = query_vector.astype(np.float32).tobytes()
@@ -193,7 +195,7 @@ def hybrid_vector_search(
         logger.debug(f"Vector search query: {base_query}")
         logger.debug(f"Vector bytes length: {len(vector_bytes)}")
         logger.debug(
-            f"Query vector shape: {query_vector.shape if hasattr(query_vector, 'shape') else 'No shape'}"
+            f"Query vector shape: {query_vector.shape if hasattr(query_vector, 'shape') else 'No shape'}",
         )
 
         # Execute the search with proper parameters
@@ -255,7 +257,7 @@ def hybrid_vector_search(
     except Exception as e:
         logger.error(f"Hybrid vector search failed: {e}")
         logger.debug(
-            f"Query details - text: {query_text}, vector shape: {query_vector.shape if hasattr(query_vector, 'shape') else 'No shape'}"
+            f"Query details - text: {query_text}, vector shape: {query_vector.shape if hasattr(query_vector, 'shape') else 'No shape'}",
         )
 
     # Apply trace filtering if specified

@@ -36,7 +36,6 @@ from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 import redis
-from redis.commands.search.query import Query
 
 from .base_logger import BaseMemoryLogger
 
@@ -361,14 +360,24 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                                 continue
 
                             # Apply filters
-                            if node_id and memory_data.get("node_id") != node_id:
-                                continue
-                            if memory_type and memory_data.get("memory_type") != memory_type:
+                            if (
+                                node_id
+                                and self._safe_get_redis_value(memory_data, "node_id") != node_id
+                            ):
                                 continue
                             if (
-                                min_importance
-                                and float(memory_data.get("importance_score", 0)) < min_importance
+                                memory_type
+                                and self._safe_get_redis_value(memory_data, "memory_type")
+                                != memory_type
                             ):
+                                continue
+
+                            importance_str = self._safe_get_redis_value(
+                                memory_data,
+                                "importance_score",
+                                "0",
+                            )
+                            if min_importance and float(importance_str) < min_importance:
                                 continue
 
                             # Check expiry
@@ -377,9 +386,12 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
 
                             # Parse metadata
                             try:
-                                metadata_value = memory_data.get("metadata", "{}")
-                                if isinstance(metadata_value, bytes):
-                                    metadata_value = metadata_value.decode()
+                                # Handle both string and bytes keys for Redis data
+                                metadata_value = self._safe_get_redis_value(
+                                    memory_data,
+                                    "metadata",
+                                    "{}",
+                                )
                                 metadata = json.loads(metadata_value)
                             except Exception as e:
                                 logger.debug(f"Error parsing metadata for key {result['key']}: {e}")
@@ -410,12 +422,24 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                             )
 
                             formatted_result = {
-                                "content": memory_data.get("content", ""),
-                                "node_id": memory_data.get("node_id", ""),
-                                "trace_id": memory_data.get("trace_id", ""),
-                                "importance_score": float(memory_data.get("importance_score", 0)),
-                                "memory_type": memory_data.get("memory_type", ""),
-                                "timestamp": int(memory_data.get("timestamp", 0)),
+                                "content": self._safe_get_redis_value(memory_data, "content", ""),
+                                "node_id": self._safe_get_redis_value(memory_data, "node_id", ""),
+                                "trace_id": self._safe_get_redis_value(memory_data, "trace_id", ""),
+                                "importance_score": float(
+                                    self._safe_get_redis_value(
+                                        memory_data,
+                                        "importance_score",
+                                        "0",
+                                    ),
+                                ),
+                                "memory_type": self._safe_get_redis_value(
+                                    memory_data,
+                                    "memory_type",
+                                    "",
+                                ),
+                                "timestamp": int(
+                                    self._safe_get_redis_value(memory_data, "timestamp", "0"),
+                                ),
                                 "metadata": metadata,
                                 "similarity_score": result.get("score", 0.0),
                                 "key": result["key"],
@@ -453,6 +477,19 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             logger.error(f"Memory search failed: {e}")
             return []
 
+    def _safe_get_redis_value(self, memory_data: Dict, key: str, default=None):
+        """Safely get value from Redis hash data that might have bytes or string keys."""
+        # Try string key first, then bytes key
+        value = memory_data.get(key, memory_data.get(key.encode("utf-8"), default))
+
+        # Decode bytes values to strings
+        if isinstance(value, bytes):
+            try:
+                return value.decode("utf-8")
+            except UnicodeDecodeError:
+                return default
+        return value
+
     def _fallback_text_search(
         self,
         query: str,
@@ -466,6 +503,9 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         """Fallback text search using basic Redis search capabilities."""
         try:
             logger.info("Using fallback text search")
+
+            # Import Query from the correct location
+            from redis.commands.search.query import Query
 
             # Build search query
             search_query = f"@content:{query}"
@@ -492,24 +532,28 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                     if not memory_data:
                         continue
 
-                    # Apply additional filters
-                    if memory_type and memory_data.get("memory_type") != memory_type:
-                        continue
+                    # Apply additional filters using safe value access
                     if (
-                        min_importance
-                        and float(memory_data.get("importance_score", 0)) < min_importance
+                        memory_type
+                        and self._safe_get_redis_value(memory_data, "memory_type") != memory_type
                     ):
+                        continue
+
+                    importance_str = self._safe_get_redis_value(
+                        memory_data,
+                        "importance_score",
+                        "0",
+                    )
+                    if min_importance and float(importance_str) < min_importance:
                         continue
 
                     # Check expiry
                     if self._is_expired(memory_data):
                         continue
 
-                    # Parse metadata
+                    # Parse metadata with proper bytes handling
                     try:
-                        metadata_value = memory_data.get("metadata", "{}")
-                        if isinstance(metadata_value, bytes):
-                            metadata_value = metadata_value.decode()
+                        metadata_value = self._safe_get_redis_value(memory_data, "metadata", "{}")
                         metadata = json.loads(metadata_value)
                     except Exception as e:
                         logger.debug(f"Error parsing metadata for key {doc.id}: {e}")
@@ -533,13 +577,16 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                     current_time_ms = int(time.time() * 1000)
                     expiry_info = self._get_ttl_info(doc.id, memory_data, current_time_ms)
 
+                    # Build result with safe value access
                     result = {
-                        "content": memory_data.get("content", ""),
-                        "node_id": memory_data.get("node_id", ""),
-                        "trace_id": memory_data.get("trace_id", ""),
-                        "importance_score": float(memory_data.get("importance_score", 0)),
-                        "memory_type": memory_data.get("memory_type", ""),
-                        "timestamp": int(memory_data.get("timestamp", 0)),
+                        "content": self._safe_get_redis_value(memory_data, "content", ""),
+                        "node_id": self._safe_get_redis_value(memory_data, "node_id", ""),
+                        "trace_id": self._safe_get_redis_value(memory_data, "trace_id", ""),
+                        "importance_score": float(
+                            self._safe_get_redis_value(memory_data, "importance_score", "0"),
+                        ),
+                        "memory_type": self._safe_get_redis_value(memory_data, "memory_type", ""),
+                        "timestamp": int(self._safe_get_redis_value(memory_data, "timestamp", "0")),
                         "metadata": metadata,
                         "similarity_score": 1.0,  # Default score for text search
                         "key": doc.id,
@@ -560,11 +607,12 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
 
         except Exception as e:
             logger.error(f"Fallback text search failed: {e}")
+            # If all search methods fail, return empty list
             return []
 
     def _is_expired(self, memory_data: Dict[str, Any]) -> bool:
         """Check if memory entry has expired."""
-        expiry_time = memory_data.get("orka_expire_time")
+        expiry_time = self._safe_get_redis_value(memory_data, "orka_expire_time")
         if expiry_time:
             try:
                 return int(float(expiry_time)) <= int(time.time() * 1000)
