@@ -24,7 +24,12 @@ services:
       - "6380:6379"  # Use port 6380 externally to avoid conflicts with local Redis
     volumes:
       - redis_data:/data
-    command: redis-stack-server --appendonly yes
+    command: >
+      redis-stack-server 
+      --appendonly yes 
+      --maxmemory 2gb 
+      --maxmemory-policy allkeys-lru
+      --save 900 1
     restart: always
     networks:
       - orka-redis-network
@@ -33,12 +38,18 @@ services:
       - kafka  # Include Redis in Kafka profile for hybrid backend
       - dual
     environment:
-      - REDIS_ARGS=--appendonly yes --dir /data
+      - REDIS_ARGS=--appendonly yes --dir /data --maxmemory 2gb --maxmemory-policy allkeys-lru
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 3s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 2.5G
+        reservations:
+          memory: 1G
 
   # ===================
   # Kafka Infrastructure  

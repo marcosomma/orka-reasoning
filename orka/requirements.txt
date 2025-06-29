@@ -1,22 +1,50 @@
-async-timeout==5.0.1
-PyYAML==6.0.2
+# OrKa V0.7.0 Complete Dependencies
+# Includes all features including ML capabilities
+
+# Python async and core utilities
+async-timeout>=4.0.0
+PyYAML>=6.0
+python-dotenv>=0.19.0
+jinja2>=3.0.0
+
+# Web framework for server mode
+fastapi>=0.68.0
+uvicorn>=0.15.0
+pydantic>=1.8.0
+httpx>=0.24.0
+
+# Memory backends - RedisStack for V0.7.0 100x performance
 redis[async]>=5.0.0
-jinja2
-fastapi
-google-api-python-client
-duckduckgo-search
-dotenv
-openai
-pytest
-coverage
-python-dotenv
-pyyaml
-pytest-cov
-pytest-asyncio>=0.21.0
-uvicorn
+
+# LLM integration
+openai>=1.0.0
+litellm>=1.0.0
+
+# Search tools
+duckduckgo-search>=3.0.0
+google-api-python-client>=2.0.0
+
+# Kafka streaming for enterprise
+kafka-python>=2.0.2
+confluent-kafka[avro,protobuf,schema-registry]
+
+# Schema management
+avro-python3
+fastavro
+protobuf
+jsonschema
+
+# ML and vector embeddings for semantic search
 sentence-transformers>=2.2.0
 numpy>=1.21.0
-fakeredis>=2.0.0
-kafka-python>=2.0.2
+
+# CLI and TUI
 rich>=13.0.0
 textual>=0.40.0
+
+# Development and testing
+pytest>=6.0.0
+pytest-cov>=2.0.0
+pytest-asyncio>=0.21.0
+coverage>=5.0.0
+fakeredis>=2.0.0

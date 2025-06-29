@@ -18,7 +18,7 @@ with open("README.md", encoding="utf-8") as fh:
 
 setup(
     name="orka-reasoning",
-    version="0.6.6",
+    version="0.7.0",
     author="Marco Somma",
     author_email="marcosomma.work@gmail.com",
     description="OrKa: Modular orchestration for agent-based cognition",
@@ -50,7 +50,7 @@ setup(
         "License :: Other/Proprietary License",  # Use this for CC BY-NC
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.8",
+    python_requires=">=3.11",
     entry_points={
         "console_scripts": [
             "orka-start=orka.orka_start:main",
