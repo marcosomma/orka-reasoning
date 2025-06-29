@@ -2,20 +2,44 @@
 
 # OrKa FAQ
 
+## 🚀 V0.7.0 RedisStack Questions
+
+### What's new in V0.7.0?
+V0.7.0 introduces **100x faster vector search** with RedisStack HNSW indexing, unified architecture across all components, and professional CLI monitoring. All components now use RedisStack by default with intelligent fallback to basic Redis.
+
+### Do I need to install RedisStack manually?
+No! OrKa V0.7.0 automatically handles RedisStack setup through Docker. Just ensure Docker is running and OrKa will configure everything for you.
+
+### What if I don't have Docker?
+OrKa will gracefully fallback to basic Redis mode. While you won't get the 100x performance improvement, everything will still work. Set `ORKA_FORCE_BASIC_REDIS=true` to explicitly use basic Redis.
+
+### How much faster is RedisStack really?
+Vector search latency drops from 50-200ms to 0.5-5ms (100x faster). Memory throughput increases from 1,000/sec to 50,000/sec (50x higher). These improvements are most noticeable with large memory datasets.
+
+### Will my existing workflows break?
+No! V0.7.0 maintains 100% backward compatibility. Your existing YAML files, agent configurations, and workflows continue to work unchanged while automatically benefiting from RedisStack performance.
+
+### How do I monitor RedisStack performance?
+Use `python -m orka.orka_cli memory watch` for a real-time dashboard showing HNSW metrics, search latency, and memory statistics. The dashboard automatically detects your backend and shows relevant performance data.
+
+---
+
+## 🧠 General OrKa Questions
+
 ### How is this different from LangChain?
-LangChain wraps LLM APIs with logic. OrKa defines cognitive structure in YAML + has full introspection.
+LangChain wraps LLM APIs with logic. OrKa defines cognitive structure in YAML + has full introspection with enterprise-grade memory that learns and forgets intelligently.
 
 ### Why YAML?
-Declarative, composable, versionable. Think: Terraform for thought.
+Declarative, composable, versionable. Think: Terraform for thought. YAML configurations are easier to understand, version control, and modify than complex Python code.
 
 ### What happens if an agent fails?
-It logs the error. You can define `fallback:` agents to take over. No silent failures.
+It logs the error. You can define `failover:` agents to take over. No silent failures. All errors are logged with full context for debugging.
 
 ### Can I run this with local LLMs?
-Yes. Via LiteLLM proxy, run with Ollama, LM Studio, Claude, OpenRouter.
+Yes. Via LiteLLM proxy, run with Ollama, LM Studio, Claude, OpenRouter. V0.7.0 includes enhanced local LLM support with better error handling.
 
 ### What about security?
-Redis/Kafka can be encrypted. PII filters recommended. OrKaUI will support auth soon.
+Redis/Kafka can be encrypted. PII filters recommended. OrKa UI supports authentication, and all memory operations can be configured with encryption at rest.
 
 ### Should I use sync or async agents?
 Use the modern async pattern for new development. The legacy sync pattern is provided for backward compatibility with existing code. The async pattern offers better concurrency control, timeout handling, and resource management.

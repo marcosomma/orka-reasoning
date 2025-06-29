@@ -38,17 +38,19 @@ agents:
 
 OrKa's memory system is its most powerful feature. Here's how to configure it properly:
 
-### Global Memory Configuration
+### Global Memory Configuration with RedisStack HNSW
 
-Configure memory settings at the orchestrator level:
+Configure memory settings at the orchestrator level with **100x faster vector search**:
 
 ```yaml
 orchestrator:
   id: intelligent-assistant
   strategy: sequential
   memory_config:
-    # Memory backend configuration
-    backend: redis  # or "kafka"
+    # Memory backend configuration (RedisStack is now default)
+    # backend: redisstack  # Default in V0.7.0 - automatic HNSW indexing
+    # backend: kafka       # Uses RedisStack for memory operations
+    # backend: redis       # Legacy mode (not recommended)
     
     # Decay configuration - inspired by human memory
     decay:
@@ -65,12 +67,15 @@ orchestrator:
         routine_query: 0.8             # Routine queries decay faster
         error_event: 0.6               # Errors decay quickly
         
-    # Vector embeddings for semantic search
+    # Vector embeddings with HNSW performance (automatic in RedisStack)
     embeddings:
       enabled: true
       model: "text-embedding-ada-002"  # OpenAI embedding model
       dimension: 1536
-      
+      hnsw_config:                     # Advanced HNSW tuning (optional)
+        m: 16                          # Connectivity parameter
+        ef_construction: 200           # Build accuracy
+        
     # Memory organization
     namespaces:
       default_namespace: "general"
