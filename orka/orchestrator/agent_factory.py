@@ -193,6 +193,7 @@ class AgentFactory:
                             0.6,
                         ),
                         decay_config=merged_decay_config,
+                        memory_logger=self.memory,
                     )
 
             # Special handling for search tools

@@ -81,20 +81,184 @@ class TestKafkaMemoryLoggerInitialization:
             assert logger.redis_client == mock_client
 
     @patch("orka.memory.kafka_logger.redis.from_url")
-    def test_redis_property(self, mock_redis):
-        """Test redis property returns correct client."""
+    def test_redis_property_with_redisstack(self, mock_redis):
+        """Test redis property returns RedisStack client when available."""
         mock_client = Mock()
         mock_redis.return_value = mock_client
 
         with patch("orka.memory.redisstack_logger.RedisStackMemoryLogger") as mock_redisstack:
             mock_redisstack_instance = Mock()
-            mock_redisstack_instance.client = Mock()
+            mock_redisstack_redis_client = Mock()
+            mock_redisstack_instance.redis = mock_redisstack_redis_client
             mock_redisstack.return_value = mock_redisstack_instance
 
             logger = KafkaMemoryLogger()
 
             # Should return RedisStack client when available
-            assert logger.redis == mock_redisstack_instance.client
+            assert logger.redis == mock_redisstack_redis_client
+
+    @patch("orka.memory.kafka_logger.redis.from_url")
+    def test_redis_property_fallback(self, mock_redis):
+        """Test redis property returns fallback client when RedisStack is not available."""
+        mock_client = Mock()
+        mock_redis.return_value = mock_client
+
+        with patch("orka.memory.redisstack_logger.RedisStackMemoryLogger", side_effect=ImportError):
+            logger = KafkaMemoryLogger()
+
+            # Should return fallback Redis client
+            assert logger.redis == mock_client
+
+    @patch("orka.memory.kafka_logger.redis.from_url")
+    def test_redis_property_interface_compatibility(self, mock_redis):
+        """Test that the fix works with both RedisMemoryLogger and RedisStackMemoryLogger interfaces."""
+        mock_client = Mock()
+        mock_redis.return_value = mock_client
+
+        with patch("orka.memory.redisstack_logger.RedisStackMemoryLogger") as mock_redisstack:
+            # Simulate RedisStackMemoryLogger interface (has redis_client, redis property)
+            mock_redisstack_instance = Mock()
+            mock_redisstack_redis_client = Mock()
+
+            # This is the key part - RedisStackMemoryLogger has redis_client attribute
+            # and redis property that returns it
+            mock_redisstack_instance.redis_client = mock_redisstack_redis_client
+            mock_redisstack_instance.redis = mock_redisstack_redis_client
+
+            # This should NOT exist (this was causing the AttributeError)
+            del mock_redisstack_instance.client  # Make sure .client doesn't exist
+
+            mock_redisstack.return_value = mock_redisstack_instance
+
+            logger = KafkaMemoryLogger()
+
+            # This should work without AttributeError
+            redis_client = logger.redis
+            assert redis_client == mock_redisstack_redis_client
+
+    @patch("orka.memory.kafka_logger.redis.from_url")
+    def test_redis_property_original_bug_fixed(self, mock_redis):
+        """Test that the original AttributeError bug is fixed."""
+        mock_client = Mock()
+        mock_redis.return_value = mock_client
+
+        with patch("orka.memory.redisstack_logger.RedisStackMemoryLogger") as mock_redisstack:
+            # Create a mock that simulates the real RedisStackMemoryLogger interface
+            mock_redisstack_instance = Mock()
+
+            # RedisStackMemoryLogger has redis_client attribute but NO client attribute
+            mock_redisstack_instance.redis_client = Mock()
+            mock_redisstack_instance.redis = mock_redisstack_instance.redis_client
+
+            # Remove client attribute to simulate the real interface
+            if hasattr(mock_redisstack_instance, "client"):
+                delattr(mock_redisstack_instance, "client")
+
+            mock_redisstack.return_value = mock_redisstack_instance
+
+            logger = KafkaMemoryLogger()
+
+            # This should NOT raise AttributeError: 'RedisStackMemoryLogger' object has no attribute 'client'
+            try:
+                redis_client = logger.redis
+                # Should succeed and return the redis client
+                assert redis_client == mock_redisstack_instance.redis_client
+            except AttributeError as e:
+                if "has no attribute 'client'" in str(e):
+                    raise AssertionError("The original AttributeError bug is not fixed!") from e
+                else:
+                    raise
+
+
+class TestKafkaMemoryLoggerOrchestatorIntegration:
+    """Test integration scenarios with orchestrator initialization."""
+
+    @patch("orka.memory.kafka_logger.redis.from_url")
+    @patch.dict(os.environ, {"ORKA_MEMORY_BACKEND": "kafka"})
+    def test_orchestrator_fork_manager_initialization(self, mock_redis):
+        """Test that orchestrator can initialize fork manager without AttributeError."""
+        mock_client = Mock()
+        mock_redis.return_value = mock_client
+
+        with patch("orka.memory.redisstack_logger.RedisStackMemoryLogger") as mock_redisstack:
+            # Simulate real RedisStackMemoryLogger interface
+            mock_redisstack_instance = Mock()
+            mock_redisstack_instance.redis_client = Mock()
+            mock_redisstack_instance.redis = mock_redisstack_instance.redis_client
+
+            # Ensure no .client attribute (this was the bug)
+            if hasattr(mock_redisstack_instance, "client"):
+                delattr(mock_redisstack_instance, "client")
+
+            mock_redisstack.return_value = mock_redisstack_instance
+
+            # Create KafkaMemoryLogger (this is what happens in orchestrator)
+            kafka_logger = KafkaMemoryLogger()
+
+            # This is the exact line that was failing in orchestrator base.py:139
+            # self.fork_manager = ForkGroupManager(self.memory.redis)
+            with patch("orka.fork_group_manager.ForkGroupManager") as mock_fork_manager:
+                # This should NOT raise AttributeError
+                try:
+                    redis_client = kafka_logger.redis
+                    mock_fork_manager(redis_client)
+
+                    # Verify the fork manager was created with correct client
+                    mock_fork_manager.assert_called_once_with(mock_redisstack_instance.redis_client)
+
+                except AttributeError as e:
+                    if "has no attribute 'client'" in str(e):
+                        raise AssertionError(
+                            "Orchestrator initialization failed due to AttributeError - "
+                            "the fix is not working correctly!",
+                        ) from e
+                    else:
+                        raise
+
+    @patch("orka.memory.kafka_logger.redis.from_url")
+    def test_docker_api_scenario(self, mock_redis):
+        """Test the exact scenario that was failing in Docker API with Kafka backend."""
+        mock_client = Mock()
+        mock_redis.return_value = mock_client
+
+        with patch("orka.memory.redisstack_logger.RedisStackMemoryLogger") as mock_redisstack:
+            # Mock the RedisStackMemoryLogger exactly as it behaves in production
+            mock_redisstack_instance = Mock()
+
+            # RedisStackMemoryLogger has these attributes/properties
+            mock_redisstack_instance.redis_client = Mock()
+            mock_redisstack_instance._get_thread_safe_client = Mock(return_value=Mock())
+
+            # The redis property returns redis_client
+            mock_redisstack_instance.redis = mock_redisstack_instance.redis_client
+
+            # CRITICAL: Remove .client attribute (this is what was causing the bug)
+            mock_redisstack_instance.client = None
+            delattr(mock_redisstack_instance, "client")
+
+            mock_redisstack.return_value = mock_redisstack_instance
+
+            # Simulate the Kafka backend memory logger creation
+            kafka_logger = KafkaMemoryLogger(
+                bootstrap_servers="localhost:9092",
+                redis_url="redis://localhost:6380/0",
+                enable_hnsw=True,
+                vector_params={"M": 16, "ef_construction": 200, "ef_runtime": 10},
+            )
+
+            # This simulates orchestrator initialization in server.py
+            # When POST /api/run creates Orchestrator(tmp_path)
+            # Which calls base.py __init__ line 139: self.fork_manager = ForkGroupManager(self.memory.redis)
+
+            # This exact property access was failing with AttributeError
+            redis_client_for_fork_manager = kafka_logger.redis
+
+            # Verify we got the correct Redis client
+            assert redis_client_for_fork_manager == mock_redisstack_instance.redis_client
+
+            # Test that we can actually use the client (simulate fork manager operations)
+            redis_client_for_fork_manager.ping()
+            mock_redisstack_instance.redis_client.ping.assert_called_once()
 
 
 class TestKafkaMemoryLoggerLogging:
@@ -385,7 +549,10 @@ class TestKafkaMemoryLoggerCleanup:
     def setup_method(self):
         """Set up test fixtures."""
         with patch("orka.memory.kafka_logger.redis.from_url"):
-            with patch("orka.memory.redisstack_logger.RedisStackMemoryLogger"):
+            with patch("orka.memory.redisstack_logger.RedisStackMemoryLogger") as mock_redisstack:
+                self.mock_redisstack_instance = Mock()
+                mock_redisstack.return_value = self.mock_redisstack_instance
+
                 self.logger = KafkaMemoryLogger()
                 self.mock_redis_client = Mock()
                 self.logger.redis_client = self.mock_redis_client
@@ -453,7 +620,7 @@ class TestKafkaMemoryLoggerCleanup:
                 return []  # No keys for other patterns
 
         # Patch the underlying Redis client since redis is a property
-        self.logger._redis_memory_logger.client = self.mock_redis_client
+        self.mock_redisstack_instance.redis = self.mock_redis_client
         self.mock_redis_client.keys.side_effect = mock_keys
         self.mock_redis_client.type.return_value = b"stream"
         self.mock_redis_client.xinfo_stream.return_value = {"length": 2}

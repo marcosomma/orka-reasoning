@@ -118,7 +118,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
     def redis(self) -> redis.Redis:
         """Return Redis client - prefer RedisStack client if available."""
         if self._redis_memory_logger:
-            return self._redis_memory_logger.client
+            return self._redis_memory_logger.redis
         return self.redis_client
 
     def _store_in_redis(self, event: dict, **kwargs):
