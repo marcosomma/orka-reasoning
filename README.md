@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![Tests](https://github.com/marcosomma/orka-reasoning/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/marcosomma/orka-reasoning/actions/workflows/tests.yml)
+[![Coverage Upload](https://github.com/marcosomma/orka-reasoning/actions/workflows/covrage.yml/badge.svg?branch=master)](https://github.com/marcosomma/orka-reasoning/actions/workflows/covrage.yml)
 [![codecov](https://codecov.io/gh/marcosomma/orka-reasoning/branch/master/graph/badge.svg?token=V91X4WGBBZ)](https://codecov.io/gh/marcosomma/orka-reasoning) [![orka-reasoning](https://snyk.io/advisor/python/orka-reasoning/badge.svg)](https://snyk.io/advisor/python/orka-reasoning)
 ![PyPI - License](https://img.shields.io/pypi/l/orka-reasoning?color=blue)
 
