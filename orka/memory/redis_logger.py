@@ -109,7 +109,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
             decay_config: Configuration for memory decay functionality.
         """
         super().__init__(stream_key, debug_keep_previous_outputs, decay_config)
-        self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379/0")
+        self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6380/0")
         self.client = redis.from_url(self.redis_url)
 
     @property

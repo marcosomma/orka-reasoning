@@ -93,7 +93,7 @@ class OrchestratorBase:
             ORKA_DEBUG_KEEP_PREVIOUS_OUTPUTS: Keep previous outputs for debugging ('true'/'false')
             KAFKA_BOOTSTRAP_SERVERS: Kafka broker addresses (for Kafka backend)
             KAFKA_TOPIC_PREFIX: Topic prefix for Kafka topics (default: 'orka-memory')
-            REDIS_URL: Redis connection URL (default: 'redis://localhost:6379/0')
+            REDIS_URL: Redis connection URL (default: 'redis://localhost:6380/0')
         """
         self.loader = YAMLLoader(config_path)
         self.loader.validate()
@@ -101,8 +101,8 @@ class OrchestratorBase:
         self.orchestrator_cfg = self.loader.get_orchestrator()
         self.agent_cfgs = self.loader.get_agents()
 
-        # Configure memory backend
-        memory_backend = os.getenv("ORKA_MEMORY_BACKEND", "redis").lower()
+        # Memory backend configuration with RedisStack as default
+        memory_backend = os.getenv("ORKA_MEMORY_BACKEND", "redisstack").lower()
 
         # Get debug flag from orchestrator config or environment
         debug_keep_previous_outputs = self.orchestrator_cfg.get("debug", {}).get(
@@ -127,19 +127,28 @@ class OrchestratorBase:
                 topic_prefix=os.getenv("KAFKA_TOPIC_PREFIX", "orka-memory"),
                 debug_keep_previous_outputs=debug_keep_previous_outputs,
                 decay_config=decay_config,
-                redis_url=os.getenv(
-                    "REDIS_URL",
-                    "redis://localhost:6379/0",
-                ),  # Redis for memory operations
+                redis_url=os.getenv("REDIS_URL", "redis://localhost:6380/0"),
+                enable_hnsw=True,
+                vector_params={
+                    "M": 16,
+                    "ef_construction": 200,
+                    "ef_runtime": 10,
+                },
             )
             # For Kafka backend, now use Redis-based fork manager since we have Redis for memory
             self.fork_manager = ForkGroupManager(self.memory.redis)
         else:
             self.memory = create_memory_logger(
-                backend="redis",
-                redis_url=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
+                backend="redisstack",
+                redis_url=os.getenv("REDIS_URL", "redis://localhost:6380/0"),
                 debug_keep_previous_outputs=debug_keep_previous_outputs,
                 decay_config=decay_config,
+                enable_hnsw=True,
+                vector_params={
+                    "M": 16,
+                    "ef_construction": 200,
+                    "ef_runtime": 10,
+                },
             )
             # For Redis, use the existing Redis-based fork manager
             self.fork_manager = ForkGroupManager(self.memory.redis)

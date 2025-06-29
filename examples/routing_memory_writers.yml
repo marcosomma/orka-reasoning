@@ -27,7 +27,7 @@ agents:
       Can the previous memory provide a complete answer to this question?
 
       QUESTION: Is {{ input }} greater than 5?
-      MEMORY: {{ previous_outputs.memory_reader.memories }}
+      MEMORY: {{ previous_outputs.memory_reader.result.result.memories }}
 
       The memory contains stored analysis results. If the memory shows analysis for this specific number {{ input }}, 
       return true (memory can answer the question). If memory is empty ("NONE") or contains analysis for different numbers, 
@@ -49,7 +49,7 @@ agents:
     type: openai-answer
     prompt: |
       Based on previously stored analysis:
-      {{ previous_outputs.memory_reader.memories }}
+      {{ previous_outputs.memory_reader.result.result.memories }}
 
       Return the cached result for input "{{ input }}" without reprocessing.
 

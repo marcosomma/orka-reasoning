@@ -19,12 +19,12 @@ services:
   # Redis Infrastructure
   # ===================
   redis:
-    image: redis:7.2-alpine
+    image: redis/redis-stack-server:7.2.0-v6
     ports:
-      - "6379:6379"
+      - "6380:6379"  # Use port 6380 externally to avoid conflicts with local Redis
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes
+    command: redis-stack-server --appendonly yes
     restart: always
     networks:
       - orka-redis-network
@@ -32,6 +32,13 @@ services:
       - redis
       - kafka  # Include Redis in Kafka profile for hybrid backend
       - dual
+    environment:
+      - REDIS_ARGS=--appendonly yes --dir /data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
   # ===================
   # Kafka Infrastructure  
@@ -123,12 +130,14 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - ORKA_MEMORY_BACKEND=redis
+      - ORKA_MEMORY_BACKEND=redisstack
       - REDIS_URL=redis://redis:6379/0
       - ORKA_PORT=8000
     depends_on:
-      - redis
-      - cleanup
+      redis:
+        condition: service_healthy
+      cleanup:
+        condition: service_completed_successfully
     restart: always
     networks:
       - orka-redis-network
@@ -149,11 +158,16 @@ services:
       - REDIS_URL=redis://redis:6379/0  # Redis for memory operations
       - ORKA_PORT=8000
     depends_on:
-      - kafka
-      - zookeeper
-      - schema-registry
-      - redis  # Now depends on Redis for memory operations
-      - cleanup
+      kafka:
+        condition: service_started
+      zookeeper:
+        condition: service_started
+      schema-registry:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      cleanup:
+        condition: service_completed_successfully
     restart: always
     networks:
       - orka-kafka-network
@@ -171,18 +185,23 @@ services:
     ports:
       - "8002:8000"
     environment:
-      - ORKA_MEMORY_BACKEND=redis  # Default to Redis, can be overridden
+      - ORKA_MEMORY_BACKEND=redisstack  # Default to RedisStack
       - REDIS_URL=redis://redis:6379/0
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - KAFKA_TOPIC_PREFIX=orka-memory
       - KAFKA_SCHEMA_REGISTRY_URL=http://schema-registry:8081
       - ORKA_PORT=8000
     depends_on:
-      - redis
-      - kafka
-      - zookeeper
-      - schema-registry
-      - cleanup
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      zookeeper:
+        condition: service_started
+      schema-registry:
+        condition: service_started
+      cleanup:
+        condition: service_completed_successfully
     restart: always
     networks:
       - orka-redis-network

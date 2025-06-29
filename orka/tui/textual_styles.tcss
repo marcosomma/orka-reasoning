@@ -1,0 +1,341 @@
+/* OrKa Textual Application Styles */
+
+/* Global Screen Styles */
+Screen {
+    background: $background;
+    color: $text;
+}
+
+/* Header and Footer */
+Header {
+    background: $primary;
+    color: $text;
+    text-style: bold;
+}
+
+Footer {
+    background: $panel;
+    color: $text-muted;
+}
+
+/* Container Styles */
+.container {
+    background: $surface;
+    border: solid $primary;
+    margin: 1;
+    padding: 1;
+}
+
+.container-compact {
+    background: $surface;
+    border: solid $primary;
+    margin: 0;
+    padding: 0 1;
+    height: 3;
+}
+
+.stats-container {
+    background: $success 20%;
+    border: solid $success;
+    color: $text;
+}
+
+.memory-container {
+    background: $secondary 20%;
+    border: solid $secondary;
+    color: $text;
+}
+
+.logs-container {
+    background: $warning 20%;
+    border: solid $warning;
+    color: $text;
+}
+
+.health-container {
+    background: $error 20%;
+    border: solid $error;
+    color: $text;
+}
+
+.health-container-compact {
+    background: $error 20%;
+    border: solid $error;
+    color: $text;
+    height: 8;
+    margin: 1;
+    padding: 1;
+}
+
+/* Widget Styles */
+DataTable {
+    background: $surface;
+    color: $text;
+}
+
+DataTable > .datatable--header {
+    background: $primary;
+    color: $text;
+    text-style: bold;
+}
+
+DataTable > .datatable--cursor {
+    background: $accent;
+    color: $text;
+}
+
+Static {
+    background: transparent;
+    color: $text;
+}
+
+Label {
+    background: transparent;
+    color: $text;
+}
+
+/* Progress Bar Styles */
+ProgressBar > .bar--bar {
+    color: $success;
+}
+
+ProgressBar > .bar--complete {
+    color: $success;
+}
+
+ProgressBar > .bar--indeterminate {
+    color: $warning;
+}
+
+/* Button Styles */
+Button {
+    background: $primary;
+    color: $text;
+    border: solid $primary 80%;
+}
+
+Button:hover {
+    background: $primary 80%;
+    color: $text;
+}
+
+Button.-primary {
+    background: $primary;
+    color: $text;
+}
+
+Button.-success {
+    background: $success;
+    color: $text;
+}
+
+Button.-warning {
+    background: $warning;
+    color: $text;
+}
+
+Button.-error {
+    background: $error;
+    color: $text;
+}
+
+/* Special Layout Classes */
+.dashboard-grid {
+    layout: grid;
+    grid-size: 2 3;
+    grid-gutter: 1;
+}
+
+.memory-grid {
+    layout: grid;
+    grid-size: 1 2;
+    grid-gutter: 1;
+}
+
+.content-panel {
+    background: $surface;
+    border: solid $success;
+    color: $text;
+    height: 45%;
+    min-height: 12;
+    margin: 1;
+    padding: 1;
+    display: block;
+}
+
+#short-content-panel, #long-content-panel {
+    height: 45%;
+    min-height: 12;
+    display: block;
+}
+
+#short-selected-content, #long-selected-content {
+    padding: 1;
+    height: 100%;
+    scrollbar-background: $panel;
+    scrollbar-color: $primary;
+    overflow-y: auto;
+}
+
+.full-width {
+    width: 100%;
+}
+
+.half-width {
+    width: 50%;
+}
+
+.quarter-width {
+    width: 25%;
+}
+
+/* Memory table styling */
+MemoryTableWidget {
+    scrollbar-corner-color: $panel;
+    scrollbar-color: $primary;
+    scrollbar-color-hover: $accent;
+    scrollbar-color-active: $accent;
+}
+
+MemoryTableWidget > DataTable {
+    scrollbar-corner-color: $panel;
+}
+
+/* Row highlighting for checkbox interaction */
+MemoryTableWidget DataTable > .datatable--cursor {
+    background: $primary 30%;
+}
+
+MemoryTableWidget DataTable > .datatable--hover {
+    background: $accent 20%;
+}
+
+/* Status Indicators */
+.status-good {
+    color: $success;
+    text-style: bold;
+}
+
+.status-warning {
+    color: $warning;
+    text-style: bold;
+}
+
+.status-error {
+    color: $error;
+    text-style: bold;
+}
+
+.status-info {
+    color: $secondary;
+    text-style: bold;
+}
+
+/* Metric Display */
+.metric-value {
+    text-style: bold;
+    color: $accent;
+}
+
+.metric-label {
+    color: $text-muted;
+}
+
+.metric-trend-up {
+    color: $success;
+    text-style: bold;
+}
+
+.metric-trend-down {
+    color: $error;
+    text-style: bold;
+}
+
+.metric-trend-stable {
+    color: $secondary;
+}
+
+/* Loading and Error States */
+.loading {
+    color: $warning;
+    text-style: italic;
+}
+
+.error {
+    color: $error;
+    text-style: bold;
+}
+
+.success {
+    color: $success;
+    text-style: bold;
+}
+
+/* Memory Type Indicators */
+.memory-short {
+    color: $secondary;
+}
+
+.memory-long {
+    color: $success;
+}
+
+.memory-expired {
+    color: $error;
+}
+
+.memory-active {
+    color: $accent;
+}
+
+/* Chart and Graph Styles */
+.chart-container {
+    background: $surface 80%;
+    border: solid $primary 80%;
+    padding: 1;
+}
+
+/* Memory Logs Screen Specific Layout - 50-50 split */
+#logs-top-section {
+    height: 50%;
+}
+
+#logs-bottom-section {
+    height: 50%;
+}
+
+#orchestration-logs-table {
+    height: 100%;
+}
+
+/* Short Memory Screen Layout - 10% header, 45% table, 45% content panel */
+#short-memory-header {
+    height: 10%;
+    max-height: 10%;
+}
+
+#short-memory-content {
+    height: 45%;
+    max-height: 45%;
+}
+
+#short-memory-table {
+    height: 100%;
+}
+
+/* Long Memory Screen Layout - 10% header, 45% table, 45% content panel */
+#long-memory-header {
+    height: 10%;
+    max-height: 10%;
+}
+
+#long-memory-content {
+    height: 45%;
+    max-height: 45%;
+}
+
+#long-memory-table {
+    height: 100%;
+}
+
+/* Responsive Design - handled by Textual's built-in responsive system */ 

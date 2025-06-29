@@ -7,7 +7,7 @@ authors = [
 ]
 readme = "README.md"
 license = { text = "Apache 2.0" }
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 
 dependencies = [
   "python-dotenv",
@@ -21,7 +21,8 @@ dependencies = [
   "async-timeout",
   "sentence-transformers",
   "numpy",
-  "rich>=13.0.0"
+  "rich>=13.0.0",
+  "textual>=0.40.0"
 ]
 
 classifiers = [
@@ -53,6 +54,10 @@ rag-node = "orka.nodes.rag_node:RAGNode"
 "Homepage" = "https://orkacore.com"
 "GIT" = "https://github.com/marcosomma/orka-reasoning"
 
+[project.scripts]
+orka = "orka.orka_cli:main"
+orka-start = "orka.orka_start:main"
+
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
@@ -72,21 +77,38 @@ filterwarnings = [
     "ignore::RuntimeWarning:unittest.mock",
     "ignore::DeprecationWarning:datetime",
 ]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+    "performance: marks tests as performance tests",
+    "redis: marks tests that require Redis",
+    "llm: marks tests that require LLM APIs",
+    "asyncio: marks tests as async",
+]
 
 [tool.coverage.run]
 source = ["orka"]
 branch = true
+parallel = true
 omit = [
     "*/site-packages/*",
     "*/tests/*",
     "test/*",
     "setup.py",
     "orka/start_kafka.py",
-    "orka/start_redis.py",
+    "orka/start_redis_only.py",
     "orka/orka_start.py",
+    "orka/docker/*",
+    "orka/tui/*",  # TUI components can be tested separately
+    "orka/startup/*",  # Startup scripts for infrastructure
 ]
 
 [tool.coverage.report]
+# Set coverage thresholds
+precision = 2
+show_missing = true
+skip_covered = false
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
@@ -94,7 +116,22 @@ exclude_lines = [
     "if __name__ == .__main__.:",
     "pass",
     "raise ImportError",
+    "except ImportError:",
+    "if TYPE_CHECKING:",
+    "if typing.TYPE_CHECKING:",
+    "@abstractmethod",
+    "return NotImplemented",
 ]
+
+# Coverage thresholds for CI/CD
+fail_under = 80
+
+[tool.coverage.html]
+directory = "htmlcov"
+show_contexts = true
+
+[tool.coverage.xml]
+output = "coverage.xml"
 
 [tool.ruff]
 # Enable autofix behavior
@@ -196,3 +233,9 @@ max-complexity = 10
 [tool.ruff.per-file-ignores]
 "__init__.py" = ["F401"]
 "test_*.py" = ["S101"]
+
+[tool.poetry.scripts]
+orka = "orka.orka_cli:main"
+orka-start = "orka.orka_start:main"
+orka-kafka = "orka.start_kafka:main"
+orka-redis = "orka.start_redis_only:main"

@@ -47,139 +47,119 @@ class KafkaMemoryLogger(BaseMemoryLogger):
 
     def __init__(
         self,
-        bootstrap_servers: Optional[str] = None,
-        topic_prefix: str = "orka-memory",
+        bootstrap_servers: str = "localhost:9092",
+        redis_url: Optional[str] = None,
         stream_key: str = "orka:memory",
-        synchronous_send: bool = False,
         debug_keep_previous_outputs: bool = False,
         decay_config: Optional[Dict[str, Any]] = None,
-        redis_url: Optional[str] = None,
+        enable_hnsw: bool = True,
+        vector_params: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
-        Initialize the hybrid Kafka + Redis memory logger.
+        Initialize the hybrid Kafka + RedisStack memory logger.
 
         Args:
-            bootstrap_servers: Kafka bootstrap servers. Defaults to environment variable KAFKA_BOOTSTRAP_SERVERS.
-            topic_prefix: Prefix for Kafka topics. Defaults to "orka-memory".
+            bootstrap_servers: Kafka bootstrap servers. Defaults to "localhost:9092".
+            redis_url: RedisStack connection URL. Defaults to environment variable REDIS_URL.
             stream_key: Key for the memory stream. Defaults to "orka:memory".
-            synchronous_send: Whether to wait for message confirmation. Defaults to False for performance.
             debug_keep_previous_outputs: If True, keeps previous_outputs in log files for debugging.
             decay_config: Configuration for memory decay functionality.
-            redis_url: Redis connection URL. Defaults to environment variable REDIS_URL.
+            enable_hnsw: Enable HNSW vector indexing in RedisStack backend.
+            vector_params: HNSW configuration parameters.
         """
         super().__init__(stream_key, debug_keep_previous_outputs, decay_config)
 
-        # Kafka configuration
-        self.bootstrap_servers = bootstrap_servers or os.getenv(
-            "KAFKA_BOOTSTRAP_SERVERS",
-            "localhost:9092",
-        )
-        self.topic_prefix = topic_prefix
-        self.main_topic = f"{topic_prefix}-events"
-        self.synchronous_send = synchronous_send
+        # Kafka setup
+        self.bootstrap_servers = bootstrap_servers
+        self.main_topic = "orka-memory-events"
+        self.producer = None
+        self.consumer = None
 
-        # Schema Registry configuration
-        self.use_schema_registry = os.getenv("KAFKA_USE_SCHEMA_REGISTRY", "false").lower() == "true"
-        self.schema_registry_url = os.getenv("KAFKA_SCHEMA_REGISTRY_URL", "http://localhost:8081")
+        # ✅ CRITICAL: Use RedisStack for memory operations instead of basic Redis
+        self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6380/0")
 
-        # Redis configuration for memory operations
-        self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379/0")
+        # Initialize Redis client variables
+        self.redis_client = None
+        self._redis_memory_logger = None
+
+        # Create RedisStack logger for enhanced memory operations
+        try:
+            from .redisstack_logger import RedisStackMemoryLogger
+
+            self._redis_memory_logger = RedisStackMemoryLogger(
+                redis_url=self.redis_url,
+                stream_key=stream_key,
+                debug_keep_previous_outputs=debug_keep_previous_outputs,
+                decay_config=decay_config,
+                enable_hnsw=enable_hnsw,
+                vector_params=vector_params,
+            )
+
+            # Ensure enhanced index is ready
+            self._redis_memory_logger.ensure_index()
+            logger.info("✅ Kafka backend using RedisStack for memory operations")
+
+        except ImportError:
+            # Fallback to basic Redis
+            self.redis_client = redis.from_url(self.redis_url)
+            self._redis_memory_logger = None
+            logger.warning("⚠️ RedisStack not available, using basic Redis for memory operations")
+        except Exception as e:
+            # If RedisStack creation fails for any other reason, fall back to basic Redis
+            logger.warning(
+                f"⚠️ RedisStack initialization failed ({e}), using basic Redis for memory operations",
+            )
+            self._redis_memory_logger = None
+
+        # Initialize basic Redis client as fallback
         self.redis_client = redis.from_url(self.redis_url)
-
-        # In-memory storage for recent events (for tail operations)
-        self.memory: List[Dict[str, Any]] = []
-
-        # Initialize schema manager and producer
-        self.schema_manager = None
-        self.serializer = None
-        if self.use_schema_registry:
-            self._init_schema_registry()
-
-        self.producer = self._init_kafka_producer()
 
     @property
     def redis(self) -> redis.Redis:
-        """
-        Return the Redis client for compatibility.
-        This allows the KafkaMemoryLogger to work with Redis-based fork managers.
-        """
+        """Return Redis client - prefer RedisStack client if available."""
+        if self._redis_memory_logger:
+            return self._redis_memory_logger.redis
         return self.redis_client
 
-    def _init_schema_registry(self):
-        """Initialize schema registry and register schemas."""
-        try:
-            logger.info("🔧 Initializing schema registry integration...")
-
-            # Import schema manager
-            from .schema_manager import create_schema_manager
-
-            # Create schema manager
-            self.schema_manager = create_schema_manager(
-                registry_url=self.schema_registry_url,
+    def _store_in_redis(self, event: dict, **kwargs):
+        """Store event using RedisStack logger if available."""
+        if self._redis_memory_logger:
+            # ✅ Use RedisStack logger for enhanced storage
+            self._redis_memory_logger.log(
+                agent_id=event["agent_id"],
+                event_type=event["event_type"],
+                payload=event["payload"],
+                step=kwargs.get("step"),
+                run_id=kwargs.get("run_id"),
+                fork_group=kwargs.get("fork_group"),
+                parent=kwargs.get("parent"),
+                previous_outputs=kwargs.get("previous_outputs"),
+                agent_decay_config=kwargs.get("agent_decay_config"),
             )
-
-            # Register schemas
-            subject = f"{self.main_topic}-value"
-            schema_id = self.schema_manager.register_schema(subject, "memory_entry")
-            logger.info(f"✅ Schema registered: {subject} (ID: {schema_id})")
-
-            # Get serializer
-            self.serializer = self.schema_manager.get_serializer(self.main_topic)
-            logger.info("✅ Schema registry integration ready")
-
-        except Exception as e:
-            logger.warning(f"Schema registry initialization failed: {e}")
-            logger.warning("Falling back to JSON serialization")
-            self.use_schema_registry = False
-
-    def _init_kafka_producer(self):
-        """Initialize Kafka producer with proper error handling."""
-        try:
-            # Check if schema registry is enabled
-            use_schema_registry = os.getenv("KAFKA_USE_SCHEMA_REGISTRY", "false").lower() == "true"
-
-            if use_schema_registry:
-                # Use confluent-kafka with schema registry
-                try:
-                    from confluent_kafka import Producer
-
-                    config = {
-                        "bootstrap.servers": self.bootstrap_servers,
-                        "client.id": "orka-memory-logger",
-                        "acks": "all" if self.synchronous_send else "1",
-                        "retries": 3,
-                        "retry.backoff.ms": 100,
-                    }
-
-                    producer = Producer(config)
-                    logger.info("Initialized Confluent Kafka producer with schema registry support")
-                    return producer
-
-                except ImportError:
-                    logger.warning("confluent-kafka not available, falling back to kafka-python")
-
-            # Use kafka-python as fallback
+        else:
+            # Fallback to basic Redis streams
             try:
-                from kafka import KafkaProducer
+                # Prepare the Redis entry
+                redis_entry = {
+                    "agent_id": event["agent_id"],
+                    "event_type": event["event_type"],
+                    "timestamp": event.get("timestamp"),
+                    "run_id": kwargs.get("run_id", "default"),
+                    "step": str(kwargs.get("step", -1)),
+                    "payload": json.dumps(event["payload"]),
+                }
 
-                producer = KafkaProducer(
-                    bootstrap_servers=self.bootstrap_servers.split(","),
-                    value_serializer=lambda v: json.dumps(v).encode("utf-8"),
-                    key_serializer=lambda k: k.encode("utf-8") if k else None,
-                    acks="all" if self.synchronous_send else 1,
-                    retries=3,
-                    retry_backoff_ms=100,
-                )
+                # Add decay metadata if available
+                if hasattr(self, "decay_config") and self.decay_config:
+                    decay_metadata = self._generate_decay_metadata(event)
+                    redis_entry.update(decay_metadata)
 
-                logger.info("Initialized kafka-python producer")
-                return producer
+                # Write to Redis stream
+                self.redis_client.xadd(self.stream_key, redis_entry)
+                logger.debug(f"Stored event in basic Redis stream: {self.stream_key}")
 
-            except ImportError:
-                raise ImportError("kafka-python package is required for Kafka backend")
-
-        except Exception as e:
-            logger.error(f"Failed to initialize Kafka producer: {e}")
-            raise
+            except Exception as e:
+                logger.error(f"Failed to store event in basic Redis: {e}")
 
     def log(
         self,
@@ -230,13 +210,17 @@ class KafkaMemoryLogger(BaseMemoryLogger):
                 # Calculate expiration time
                 current_time = datetime.now(UTC)
                 if memory_type == "short_term":
-                    expire_time = current_time + timedelta(
-                        hours=self.decay_config["default_short_term_hours"],
-                    )
+                    # Check agent-level config first, then fall back to global config
+                    expire_hours = self.decay_config.get(
+                        "short_term_hours",
+                    ) or self.decay_config.get("default_short_term_hours", 1.0)
+                    expire_time = current_time + timedelta(hours=expire_hours)
                 else:  # long_term
-                    expire_time = current_time + timedelta(
-                        hours=self.decay_config["default_long_term_hours"],
-                    )
+                    # Check agent-level config first, then fall back to global config
+                    expire_hours = self.decay_config.get(
+                        "long_term_hours",
+                    ) or self.decay_config.get("default_long_term_hours", 24.0)
+                    expire_time = current_time + timedelta(hours=expire_hours)
 
                 decay_metadata = {
                     "orka_importance_score": str(importance_score),
@@ -264,21 +248,19 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         # Add decay metadata to the event
         event.update(decay_metadata)
 
-        # Store in memory buffer for tail operations
+        # CRITICAL: Add event to local memory buffer for file operations
+        # This ensures events are included in the JSON trace files
         self.memory.append(event)
-
-        # Send to Kafka for event streaming
-        self._send_to_kafka(event, run_id, agent_id)
 
         # Store in Redis for memory operations (similar to RedisMemoryLogger)
         self._store_in_redis(
             event,
-            step,
-            run_id,
-            fork_group,
-            parent,
-            previous_outputs,
-            decay_metadata,
+            step=step,
+            run_id=run_id,
+            fork_group=fork_group,
+            parent=parent,
+            previous_outputs=previous_outputs,
+            agent_decay_config=agent_decay_config,
         )
 
     def _send_to_kafka(self, event: dict, run_id: Optional[str], agent_id: str):
@@ -323,93 +305,6 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         except Exception as e:
             logger.error(f"Failed to send event to Kafka: {e}")
             # Event is still stored in Redis, so we can continue
-
-    def _store_in_redis(
-        self,
-        event: dict,
-        step: Optional[int],
-        run_id: Optional[str],
-        fork_group: Optional[str],
-        parent: Optional[str],
-        previous_outputs: Optional[Dict[str, Any]],
-        decay_metadata: dict,
-    ):
-        """Store event in Redis streams (similar to RedisMemoryLogger)."""
-        try:
-            # Determine which stream(s) to write to based on memory category
-            streams_to_write = []
-            memory_category = decay_metadata.get("orka_memory_category", "log")
-
-            if (
-                memory_category == "stored"
-                and event["event_type"] == "write"
-                and isinstance(event["payload"], dict)
-            ):
-                # For stored memories, only write to namespace-specific stream
-                namespace = event["payload"].get("namespace")
-                session = event["payload"].get("session", "default")
-                if namespace:
-                    namespace_stream = f"orka:memory:{namespace}:{session}"
-                    streams_to_write.append(namespace_stream)
-                    logger.info(
-                        f"Writing stored memory to namespace-specific stream: {namespace_stream}",
-                    )
-                else:
-                    # Fallback to general stream if no namespace
-                    streams_to_write.append(self.stream_key)
-            else:
-                # For orchestration logs and other events, write to general stream
-                streams_to_write.append(self.stream_key)
-
-            # Sanitize previous outputs if present
-            safe_previous_outputs = None
-            if previous_outputs:
-                try:
-                    safe_previous_outputs = json.dumps(
-                        self._sanitize_for_json(previous_outputs),
-                    )
-                except Exception as e:
-                    logger.error(f"Failed to serialize previous_outputs: {e!s}")
-                    safe_previous_outputs = json.dumps(
-                        {"error": f"Serialization error: {e!s}"},
-                    )
-
-            # Prepare the Redis entry
-            redis_entry = {
-                "agent_id": event["agent_id"],
-                "event_type": event["event_type"],
-                "timestamp": event["timestamp"],
-                "run_id": run_id or "default",
-                "step": str(step or -1),
-            }
-
-            # Add decay metadata if decay is enabled
-            redis_entry.update(decay_metadata)
-
-            # Safely serialize the payload
-            try:
-                redis_entry["payload"] = json.dumps(event["payload"])
-            except Exception as e:
-                logger.error(f"Failed to serialize payload: {e!s}")
-                redis_entry["payload"] = json.dumps(
-                    {"error": "Original payload contained non-serializable objects"},
-                )
-
-            # Only add previous_outputs if it exists and is not None
-            if safe_previous_outputs:
-                redis_entry["previous_outputs"] = safe_previous_outputs
-
-            # Write to all determined streams
-            for stream_key in streams_to_write:
-                try:
-                    self.redis_client.xadd(stream_key, redis_entry)
-                    logger.debug(f"Successfully wrote to Redis stream: {stream_key}")
-                except Exception as stream_e:
-                    logger.error(f"Failed to write to Redis stream {stream_key}: {stream_e!s}")
-
-        except Exception as e:
-            logger.error(f"Failed to store event in Redis: {e}")
-            # Continue execution since event is still in Kafka
 
     def _send_json_message(self, message_key: str, event: dict):
         """Send message using JSON serialization (fallback)."""
@@ -495,6 +390,72 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         """Delete keys using Redis."""
         return self.redis_client.delete(*keys)
 
+    # 🎯 NEW: Enhanced memory operations - delegate to RedisStack logger
+    def search_memories(
+        self,
+        query: str,
+        num_results: int = 10,
+        trace_id: Optional[str] = None,
+        node_id: Optional[str] = None,
+        memory_type: Optional[str] = None,
+        min_importance: Optional[float] = None,
+        log_type: str = "memory",
+        namespace: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Search memories using RedisStack logger if available, otherwise return empty list."""
+        logger.debug(
+            f"🔍 KafkaMemoryLogger.search_memories: _redis_memory_logger={self._redis_memory_logger is not None}, namespace='{namespace}'",
+        )
+
+        if self._redis_memory_logger and hasattr(self._redis_memory_logger, "search_memories"):
+            logger.debug(f"🔍 Delegating to RedisStackMemoryLogger with namespace='{namespace}'")
+            results = self._redis_memory_logger.search_memories(
+                query=query,
+                num_results=num_results,
+                trace_id=trace_id,
+                node_id=node_id,
+                memory_type=memory_type,
+                min_importance=min_importance,
+                log_type=log_type,
+                namespace=namespace,
+            )
+            logger.debug(f"🔍 RedisStack search returned {len(results)} results")
+            return results
+        else:
+            logger.warning("RedisStack not available for memory search, returning empty results")
+            return []
+
+    def log_memory(
+        self,
+        content: str,
+        node_id: str,
+        trace_id: str,
+        metadata: Optional[Dict[str, Any]] = None,
+        importance_score: float = 1.0,
+        memory_type: str = "short_term",
+        expiry_hours: Optional[float] = None,
+    ) -> str:
+        """Log memory using RedisStack logger if available."""
+        if self._redis_memory_logger and hasattr(self._redis_memory_logger, "log_memory"):
+            return self._redis_memory_logger.log_memory(
+                content=content,
+                node_id=node_id,
+                trace_id=trace_id,
+                metadata=metadata,
+                importance_score=importance_score,
+                memory_type=memory_type,
+                expiry_hours=expiry_hours,
+            )
+        else:
+            logger.warning("RedisStack not available for memory logging")
+            return f"fallback_memory_{datetime.now(UTC).timestamp()}"
+
+    def ensure_index(self) -> bool:
+        """Ensure memory index exists using RedisStack logger if available."""
+        if self._redis_memory_logger and hasattr(self._redis_memory_logger, "ensure_index"):
+            return self._redis_memory_logger.ensure_index()
+        return False
+
     def close(self) -> None:
         """Close both Kafka producer and Redis connection."""
         # Close Kafka producer
@@ -510,8 +471,20 @@ class KafkaMemoryLogger(BaseMemoryLogger):
 
         # Close Redis connection
         try:
-            self.redis_client.close()
-            logger.info("Redis connection closed")
+            if self._redis_memory_logger:
+                # Close RedisStack logger if available
+                if hasattr(self._redis_memory_logger, "close"):
+                    self._redis_memory_logger.close()
+                elif hasattr(self._redis_memory_logger, "client") and hasattr(
+                    self._redis_memory_logger.client,
+                    "close",
+                ):
+                    self._redis_memory_logger.client.close()
+                logger.info("RedisStack memory logger closed")
+            elif self.redis_client:
+                # Close basic Redis client
+                self.redis_client.close()
+                logger.info("Redis connection closed")
         except Exception as e:
             logger.error(f"Error closing Redis connection: {e}")
 
@@ -574,24 +547,226 @@ class KafkaMemoryLogger(BaseMemoryLogger):
 
     def get_memory_stats(self) -> Dict[str, Any]:
         """
-        Get memory usage statistics from Redis backend.
+        Get memory usage statistics from both Redis backend and local memory buffer.
         """
         try:
-            # Import Redis memory logger for stats logic
-            from .redis_logger import RedisMemoryLogger
+            current_time = datetime.now(UTC)
+            stats = {
+                "timestamp": current_time.isoformat(),
+                "backend": "kafka+redis",
+                "kafka_topic": self.main_topic,
+                "memory_buffer_size": len(self.memory),
+                "decay_enabled": self.decay_config.get("enabled", False),
+                "total_streams": 0,
+                "total_entries": 0,
+                "entries_by_type": {},
+                "entries_by_memory_type": {"short_term": 0, "long_term": 0, "unknown": 0},
+                "entries_by_category": {"stored": 0, "log": 0, "unknown": 0},
+                "expired_entries": 0,
+                "streams_detail": [],
+            }
 
-            # Create a temporary Redis logger to reuse stats logic
-            temp_redis_logger = RedisMemoryLogger(
-                redis_url=self.redis_url,
-                stream_key=self.stream_key,
-                decay_config=self.decay_config,
-            )
+            # Use the actual Redis client from the Kafka backend
+            redis_client = self.redis
 
-            # Use Redis stats logic
-            stats = temp_redis_logger.get_memory_stats()
-            stats["backend"] = "kafka+redis"
-            stats["kafka_topic"] = self.main_topic
-            stats["memory_buffer_size"] = len(self.memory)
+            # Get all stream keys that match OrKa patterns
+            stream_patterns = [
+                "orka:memory:*",  # All OrKa memory streams (this is what Kafka backend creates)
+                self.stream_key,  # Base stream key
+                f"{self.stream_key}:*",  # Namespace-specific streams
+            ]
+
+            processed_streams = set()
+            for pattern in stream_patterns:
+                try:
+                    stream_keys = redis_client.keys(pattern)
+
+                    for stream_key in stream_keys:
+                        stream_key_str = (
+                            stream_key.decode() if isinstance(stream_key, bytes) else stream_key
+                        )
+
+                        if stream_key_str in processed_streams:
+                            continue
+                        processed_streams.add(stream_key_str)
+
+                        try:
+                            # Check if it's actually a stream
+                            key_type = redis_client.type(stream_key)
+                            if key_type != b"stream" and key_type != "stream":
+                                continue
+
+                            # Get stream info and entries
+                            stream_info = redis_client.xinfo_stream(stream_key)
+                            entries = redis_client.xrange(stream_key)
+
+                            stream_stats = {
+                                "stream": stream_key_str,
+                                "length": stream_info.get("length", 0),
+                                "entries_by_type": {},
+                                "entries_by_memory_type": {
+                                    "short_term": 0,
+                                    "long_term": 0,
+                                    "unknown": 0,
+                                },
+                                "entries_by_category": {
+                                    "stored": 0,
+                                    "log": 0,
+                                    "unknown": 0,
+                                },
+                                "expired_entries": 0,
+                                "active_entries": 0,
+                            }
+
+                            stats["total_streams"] += 1
+
+                            for entry_id, entry_data in entries:
+                                # Check if expired first
+                                is_expired = False
+                                expire_time_field = entry_data.get(
+                                    b"orka_expire_time",
+                                ) or entry_data.get("orka_expire_time")
+                                if expire_time_field:
+                                    try:
+                                        expire_time_str = (
+                                            expire_time_field.decode()
+                                            if isinstance(expire_time_field, bytes)
+                                            else expire_time_field
+                                        )
+                                        expire_time = datetime.fromisoformat(expire_time_str)
+                                        if current_time > expire_time:
+                                            is_expired = True
+                                            stream_stats["expired_entries"] += 1
+                                            stats["expired_entries"] += 1
+                                    except (ValueError, TypeError):
+                                        pass  # Skip invalid dates
+
+                                # Only count non-expired entries in the main statistics
+                                if not is_expired:
+                                    stream_stats["active_entries"] += 1
+                                    stats["total_entries"] += 1
+
+                                    # Count by event type
+                                    event_type_field = entry_data.get(
+                                        b"event_type",
+                                    ) or entry_data.get("event_type")
+                                    event_type = "unknown"
+                                    if event_type_field:
+                                        event_type = (
+                                            event_type_field.decode()
+                                            if isinstance(event_type_field, bytes)
+                                            else event_type_field
+                                        )
+
+                                    stream_stats["entries_by_type"][event_type] = (
+                                        stream_stats["entries_by_type"].get(event_type, 0) + 1
+                                    )
+                                    stats["entries_by_type"][event_type] = (
+                                        stats["entries_by_type"].get(event_type, 0) + 1
+                                    )
+
+                                    # Count by memory category
+                                    memory_category_field = entry_data.get(
+                                        b"orka_memory_category",
+                                    ) or entry_data.get("orka_memory_category")
+                                    memory_category = "unknown"
+                                    if memory_category_field:
+                                        memory_category = (
+                                            memory_category_field.decode()
+                                            if isinstance(memory_category_field, bytes)
+                                            else memory_category_field
+                                        )
+
+                                    if memory_category in stream_stats["entries_by_category"]:
+                                        stream_stats["entries_by_category"][memory_category] += 1
+                                        stats["entries_by_category"][memory_category] += 1
+                                    else:
+                                        stream_stats["entries_by_category"]["unknown"] += 1
+                                        stats["entries_by_category"]["unknown"] += 1
+
+                                    # Count by memory type ONLY for non-log entries
+                                    if memory_category != "log":
+                                        memory_type_field = entry_data.get(
+                                            b"orka_memory_type",
+                                        ) or entry_data.get("orka_memory_type")
+                                        memory_type = "unknown"
+                                        if memory_type_field:
+                                            memory_type = (
+                                                memory_type_field.decode()
+                                                if isinstance(memory_type_field, bytes)
+                                                else memory_type_field
+                                            )
+
+                                        if memory_type in stream_stats["entries_by_memory_type"]:
+                                            stream_stats["entries_by_memory_type"][memory_type] += 1
+                                            stats["entries_by_memory_type"][memory_type] += 1
+                                        else:
+                                            stream_stats["entries_by_memory_type"]["unknown"] += 1
+                                            stats["entries_by_memory_type"]["unknown"] += 1
+
+                            stats["streams_detail"].append(stream_stats)
+
+                        except Exception as e:
+                            logger.error(f"Error getting stats for stream {stream_key_str}: {e}")
+
+                except Exception as e:
+                    logger.error(f"Error getting keys for pattern {pattern}: {e}")
+
+            # Add decay configuration info
+            if self.decay_config.get("enabled", False):
+                stats["decay_config"] = {
+                    "short_term_hours": self.decay_config["default_short_term_hours"],
+                    "long_term_hours": self.decay_config["default_long_term_hours"],
+                    "check_interval_minutes": self.decay_config["check_interval_minutes"],
+                    "last_decay_check": self._last_decay_check.isoformat()
+                    if hasattr(self, "_last_decay_check") and self._last_decay_check
+                    else None,
+                }
+
+            # Enhance stats with local memory buffer analysis
+            # This provides more accurate decay metadata since local buffer has proper field names
+            local_stats = {
+                "entries_by_memory_type": {"short_term": 0, "long_term": 0, "unknown": 0},
+                "entries_by_category": {"stored": 0, "log": 0, "unknown": 0},
+            }
+
+            for entry in self.memory:
+                # Memory type distribution
+                memory_type = entry.get("orka_memory_type", "unknown")
+                if memory_type in local_stats["entries_by_memory_type"]:
+                    local_stats["entries_by_memory_type"][memory_type] += 1
+                else:
+                    local_stats["entries_by_memory_type"]["unknown"] += 1
+
+                # Memory category distribution
+                memory_category = entry.get("orka_memory_category", "unknown")
+                if memory_category in local_stats["entries_by_category"]:
+                    local_stats["entries_by_category"][memory_category] += 1
+                else:
+                    local_stats["entries_by_category"]["unknown"] += 1
+
+            # If local buffer has meaningful data, use it to enhance Redis stats
+            if len(self.memory) > 0:
+                # Combine Redis stats with local buffer insights
+                if local_stats["entries_by_memory_type"]["unknown"] < len(self.memory):
+                    # Local buffer has better memory type data
+                    stats["entries_by_memory_type"] = local_stats["entries_by_memory_type"]
+
+                if local_stats["entries_by_category"]["unknown"] < len(self.memory):
+                    # Local buffer has better category data
+                    stats["entries_by_category"] = local_stats["entries_by_category"]
+
+                # Add local buffer specific metrics
+                stats["local_buffer_insights"] = {
+                    "total_entries": len(self.memory),
+                    "entries_with_decay_metadata": sum(
+                        1
+                        for entry in self.memory
+                        if entry.get("orka_memory_type") and entry.get("orka_memory_category")
+                    ),
+                    "memory_types": local_stats["entries_by_memory_type"],
+                    "categories": local_stats["entries_by_category"],
+                }
 
             return stats
 
