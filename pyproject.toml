@@ -77,10 +77,20 @@ filterwarnings = [
     "ignore::RuntimeWarning:unittest.mock",
     "ignore::DeprecationWarning:datetime",
 ]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+    "performance: marks tests as performance tests",
+    "redis: marks tests that require Redis",
+    "llm: marks tests that require LLM APIs",
+    "asyncio: marks tests as async",
+]
 
 [tool.coverage.run]
 source = ["orka"]
 branch = true
+parallel = true
 omit = [
     "*/site-packages/*",
     "*/tests/*",
@@ -89,9 +99,16 @@ omit = [
     "orka/start_kafka.py",
     "orka/start_redis_only.py",
     "orka/orka_start.py",
+    "orka/docker/*",
+    "orka/tui/*",  # TUI components can be tested separately
+    "orka/startup/*",  # Startup scripts for infrastructure
 ]
 
 [tool.coverage.report]
+# Set coverage thresholds
+precision = 2
+show_missing = true
+skip_covered = false
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
@@ -99,7 +116,22 @@ exclude_lines = [
     "if __name__ == .__main__.:",
     "pass",
     "raise ImportError",
+    "except ImportError:",
+    "if TYPE_CHECKING:",
+    "if typing.TYPE_CHECKING:",
+    "@abstractmethod",
+    "return NotImplemented",
 ]
+
+# Coverage thresholds for CI/CD
+fail_under = 80
+
+[tool.coverage.html]
+directory = "htmlcov"
+show_contexts = true
+
+[tool.coverage.xml]
+output = "coverage.xml"
 
 [tool.ruff]
 # Enable autofix behavior
