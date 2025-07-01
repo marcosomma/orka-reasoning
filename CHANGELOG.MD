@@ -2,6 +2,22 @@
 *(derived from the public-repo commit history as of **2025-01-31**)*  
 
 ---
+## [0.7.1] · 2025-01-31
+### Fixed
+* **🔧 Redis-py 5.x Compatibility Issue**
+  * **Critical Import Fix** - Fixed `ModuleNotFoundError: No module named 'redis.commands.search.indexDefinition'` when using redis-py ≥5.0
+  * **Forward Compatibility** - Added try/except import pattern to support both redis-py 4.x (camelCase) and 5.x (snake_case) import paths
+  * **Files Updated** - Fixed imports in `orka/utils/bootstrap_memory_index.py` and `test/unit/test_bootstrap_memory_index_comprehensive.py`
+  * **Zero Breaking Changes** - Solution maintains backward compatibility with redis-py 4.x while supporting the latest 5.x versions
+  * **Production Ready** - Resolves bootstrap memory index initialization failures in environments using redis-py ≥5.0
+
+### Technical Details
+* **Root Cause** - redis-py 5.0 renamed RediSearch helper modules from camelCase to snake_case (`indexDefinition` → `index_definition`)
+* **Solution Strategy** - Implemented graceful import fallback pattern that tries camelCase first, then falls back to snake_case
+* **Impact** - Affects RedisStack HNSW vector search initialization which requires IndexDefinition and IndexType imports
+* **Testing** - All existing tests pass with both redis-py 4.x and 5.x versions
+
+---
 ## [0.7.0] · 2025-01-31
 ### Added
 * **🚀 RedisStack HNSW Vector Search Revolution - Production Ready**

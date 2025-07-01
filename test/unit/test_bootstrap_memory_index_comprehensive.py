@@ -8,7 +8,14 @@ from unittest.mock import Mock, patch
 import numpy as np
 import pytest
 import redis
-from redis.commands.search.indexDefinition import IndexDefinition
+
+# Support both redis-py 4.x and 5.x versions
+try:
+    # redis-py <5 (camelCase)
+    from redis.commands.search.indexDefinition import IndexDefinition
+except ModuleNotFoundError:
+    # redis-py ≥5 (snake_case)
+    from redis.commands.search.index_definition import IndexDefinition
 
 from orka.utils.bootstrap_memory_index import (
     ensure_enhanced_memory_index,

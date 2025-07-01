@@ -54,12 +54,19 @@ async def initialize_memory():
 
 import asyncio
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import numpy as np
 import redis
 from redis.commands.search.field import NumericField, TextField, VectorField
-from redis.commands.search.indexDefinition import IndexDefinition, IndexType
+
+# Support both redis-py 4.x and 5.x versions
+try:
+    # redis-py <5 (camelCase)
+    from redis.commands.search.indexDefinition import IndexDefinition, IndexType
+except ModuleNotFoundError:
+    # redis-py ≥5 (snake_case)
+    from redis.commands.search.index_definition import IndexDefinition, IndexType
 
 logger = logging.getLogger(__name__)
 
@@ -170,8 +177,8 @@ def hybrid_vector_search(
     query_vector: np.ndarray,
     num_results: int = 5,
     index_name: str = "orka_enhanced_memory",
-    trace_id: Optional[str] = None,
-) -> List[Dict[str, Any]]:
+    trace_id: str | None = None,
+) -> list[dict[str, Any]]:
     """
     Perform hybrid vector search using RedisStack.
     Combines semantic vector search with text search and filtering.
@@ -270,13 +277,13 @@ def hybrid_vector_search(
 
 def legacy_vector_search(
     client: redis.Redis,
-    query_vector: Union[List[float], np.ndarray],
-    namespace: Optional[str] = None,
-    session: Optional[str] = None,
-    agent: Optional[str] = None,
+    query_vector: list[float] | np.ndarray,
+    namespace: str | None = None,
+    session: str | None = None,
+    agent: str | None = None,
     similarity_threshold: float = 0.7,
     num_results: int = 10,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """
     Fallback vector search using legacy FLAT indexing.
 
