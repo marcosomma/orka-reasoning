@@ -18,7 +18,7 @@ with open("README.md", encoding="utf-8") as fh:
 
 setup(
     name="orka-reasoning",
-    version="0.7.1",
+    version="0.7.2",
     author="Marco Somma",
     author_email="marcosomma.work@gmail.com",
     description="OrKa: Modular orchestration for agent-based cognition",
@@ -58,6 +58,6 @@ setup(
         ],
     },
     package_data={
-        "orka": ["docker/*", "docker/**/*", "requirements.txt"],
+        "orka": ["docker/*", "docker/**/*", "requirements.txt", "tui/*.tcss"],
     },
 )

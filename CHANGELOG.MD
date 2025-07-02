@@ -2,6 +2,21 @@
 *(derived from the public-repo commit history as of **2025-01-31**)*  
 
 ---
+## [0.7.2] · 2025-01-31
+### Fixed
+* **🎨 TUI Package Distribution Issue**
+  * **Missing CSS Files** - Fixed `textual_styles.tcss` file not being included in package distribution
+  * **Package Configuration** - Updated `MANIFEST.in`, `setup.py`, and `pyproject.toml` to include TUI CSS files
+  * **Files Updated** - Added `recursive-include orka *.tcss` to MANIFEST.in and `tui/*.tcss` to package_data
+  * **Production Ready** - Resolves TUI styling issues when package is installed from distribution (pip install)
+
+### Technical Details
+* **Root Cause** - CSS file referenced in `textual_app.py` but not included in package distribution configuration
+* **Solution Strategy** - Added tcss file inclusion to all package configuration files (MANIFEST.in, setup.py, pyproject.toml)
+* **Impact** - Affects TUI visual styling and layout when running from installed package
+* **Testing** - Package installation now includes all required TUI assets for proper styling
+
+---
 ## [0.7.1] · 2025-01-31
 ### Fixed
 * **🔧 Redis-py 5.x Compatibility Issue**

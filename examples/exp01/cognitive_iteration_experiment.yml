@@ -1,0 +1,318 @@
+orchestrator:
+  id: cognitive_iteration
+  strategy: parallel
+  queue: orka:cognitive_iteration
+  memory:
+    enabled: false
+  agents:
+    - memory_read_history
+    - fork_parallel_agents
+    - join_agent_outputs
+    - moderator_synthesis
+    - agreement_finder
+    - agreement_check
+    - router_continue
+
+agents:
+  - id: memory_read_history
+    type: memory
+    queue: orka:memory_read_history
+    config:
+      operation: read
+      limit: 5
+      enable_context_search: true
+      similarity_threshold: 0.3
+    namespace: cognitive_iteration
+    prompt: "Retrieve previous agent stances and deliberation history for topic: {{ input }}"
+
+  - id: fork_parallel_agents
+    type: fork
+    targets:
+      - - logic_reasoning
+      - - empathy_reasoning
+      - - skeptic_reasoning
+      - - historian_analysis
+    depends_on:
+      - memory_read_history
+
+  - id: logic_reasoning
+    type: openai-answer
+    queue: orka:logic_reasoning
+    prompt: |
+      You are the LOGIC AGENT. Your role is formal reasoning, evidence-based analysis, and logical consistency.
+
+      Topic: {{ input }}
+
+      Previous context: {{ previous_outputs['memory_read_history'].memories if previous_outputs.get('memory_read_history') else 'None' }}
+
+      Analyze this topic using:
+      - Logical frameworks and reasoning
+      - Available evidence and data
+      - Cost-benefit analysis
+      - Practical implementation considerations
+
+      Provide your stance and reasoning. You may modify your position based on new information, but maintain logical consistency.
+    depends_on:
+      - memory_read_history
+
+  - id: empathy_reasoning
+    type: openai-answer
+    queue: orka:empathy_reasoning
+    prompt: |
+      You are the EMPATHY AGENT. Your role is moral reasoning, harm reduction, and considering human impact.
+
+      Topic: {{ input }}
+
+      Previous context: {{ previous_outputs['memory_read_history'].memories if previous_outputs.get('memory_read_history') else 'None' }}
+
+      Analyze this topic focusing on:
+      - Human welfare and dignity
+      - Moral and ethical implications
+      - Vulnerable populations impact
+      - Long-term societal effects
+
+      Consider any previous moderator suggestions but prioritize moral considerations over compromise.
+    depends_on:
+      - memory_read_history
+
+  - id: skeptic_reasoning
+    type: openai-answer
+    queue: orka:skeptic_reasoning
+    prompt: |
+      You are the SKEPTIC AGENT. Your default position is contrarian - you resist easy consensus and highlight risks.
+
+      Topic: {{ input }}
+
+      Previous context: {{ previous_outputs['memory_read_history'].memories if previous_outputs.get('memory_read_history') else 'None' }}
+
+      Your role is to:
+      - Challenge assumptions and identify flaws
+      - Highlight unintended consequences
+      - Question feasibility and implementation
+      - Resist premature consensus
+
+      You may eventually agree, but only if genuinely convinced. Maintain healthy skepticism.
+    depends_on:
+      - memory_read_history
+
+  - id: historian_analysis
+    type: openai-answer
+    queue: orka:historian_analysis
+    prompt: |
+      You are the HISTORIAN AGENT. You analyze patterns from past iterations and provide contextual memory.
+
+      Topic: {{ input }}
+
+      Previous deliberation history: {{ previous_outputs['memory_read_history'].memories if previous_outputs.get('memory_read_history') else 'None' }}
+
+      Provide:
+      - Analysis of how positions have evolved
+      - Patterns in the deliberation process  
+      - Historical context for current disagreements
+      - Observations about convergence or divergence trends
+    depends_on:
+      - memory_read_history
+
+  - id: join_agent_outputs
+    type: join
+    group: fork_parallel_agents
+
+  - id: moderator_synthesis
+    type: openai-answer
+    queue: orka:moderator_synthesis
+    prompt: |
+      You are the MODERATOR AGENT. You observe all agent positions, calculate agreement, and suggest convergence paths.
+
+      Topic: {{ input }}
+
+      Current agent positions:
+      Logic Agent: {{ previous_outputs['logic_reasoning'].result.response }}
+      Empathy Agent: {{ previous_outputs['empathy_reasoning'].result.response }}
+      Skeptic Agent: {{ previous_outputs['skeptic_reasoning'].result.response }}
+      Historian Agent: {{ previous_outputs['historian_analysis'].result.response }}
+
+      Your tasks:
+      1. Calculate semantic similarity and agreement score (0.0-1.0)
+      2. Identify areas of convergence and persistent disagreement
+      3. Synthesize a convergence suggestion that respects each agent's core concerns
+      4. Assess whether productive dialogue is continuing or if positions are entrenched
+
+      Format your response as:
+      AGREEMENT_SCORE: [0.0-1.0]
+      CONVERGENCE_AREAS: [list areas of agreement]
+      PERSISTENT_DISAGREEMENTS: [list ongoing conflicts]
+      SYNTHESIS_SUGGESTION: [proposed path forward]
+      CONTINUE_ITERATION: [YES/NO with reasoning]
+    depends_on:
+      - join_agent_outputs
+
+  - id: agreement_finder
+    type: openai-answer
+    queue: orka:moderator_synthesis
+    prompt: |
+      Based on: 
+        - Moderator's analysis: "{{ previous_outputs['moderator_synthesis'].result.response }}"
+        - Past memory of agreements history 
+        ```
+        {{previous_outputs['memory_read_history'].memories}}
+        ```
+
+      Generate a single sentence that start with the topic plus a single suggestion that work for all the 
+      previous agents responses:
+        - Logic Agent: "{{ previous_outputs['logic_reasoning'].result.response }}"
+        - Empathy Agent: "{{ previous_outputs['empathy_reasoning'].result.response }}"
+        - Skeptic Agent: "{{ previous_outputs['skeptic_reasoning'].result.response }}"
+        - Historian Agent: "{{ previous_outputs['historian_analysis'].result.response }}"
+        - Moderator Analysis: "{{ previous_outputs['moderator_synthesis'].result.response }}"
+
+  - id: agreement_check
+    type: openai-binary
+    queue: orka:agreement_check
+    prompt: |
+      Based on the moderator's analysis: {{ previous_outputs['moderator_synthesis'].result.response }}
+
+      Does the agreement score indicate sufficient convergence (>= 0.85) or should we continue iterating?
+
+      Look for "AGREEMENT_SCORE:" in the moderator analysis and determine if it's >= 0.85
+    depends_on:
+      - agreement_finder
+
+  - id: router_continue
+    type: router
+    params:
+      decision_key: agreement_check
+      routing_map:
+        "true":
+          - final_moderator_synthesis
+        "false":
+          - iteration_validation_guardian
+          - memory_write_iteration
+    depends_on:
+      - agreement_check
+
+  - id: iteration_validation_guardian
+    type: validate_and_structure
+    queue: orka:validation-guardian-iteration
+    prompt: |
+      Validate and structure the following cognitive iteration result for memory storage:
+
+      Topic: {{ input }}
+
+      Agent Deliberation Results:
+      Logic Agent: {{ previous_outputs.logic_reasoning.result.response }}
+      Empathy Agent: {{ previous_outputs.empathy_reasoning.result.response }}
+      Skeptic Agent: {{ previous_outputs.skeptic_reasoning.result.response }}
+      Historian Agent: {{ previous_outputs.historian_analysis.result.response }}
+      Moderator Analysis: {{ previous_outputs.moderator_synthesis.result.response }}
+      Agreement Finder: {{ previous_outputs.agreement_finder.result.response }}
+
+      This represents a complete cognitive iteration cycle where consensus was not reached and deliberation should continue.
+
+      IMPORTANT: You MUST respond with the exact JSON format specified below. Do not use any other format.
+
+      Return your response in the following JSON format:
+      {
+          "valid": true,
+          "reason": "Complete cognitive iteration cycle processed successfully",
+          "memory_object": {
+              "topic": "{{ input }}",
+              "iteration_type": "continue_deliberation",
+              "consensus_status": "not_reached",
+              "logic_reasoning": "{{ previous_outputs.logic_reasoning.result.response }}",
+              "empathy_reasoning": "{{ previous_outputs.empathy_reasoning.result.response }}",
+              "skeptic_reasoning": "{{ previous_outputs.skeptic_reasoning.result.response }}",
+              "historian_analysis": "{{ previous_outputs.historian_analysis.result.response }}",
+              "moderator_synthesis": "{{ previous_outputs.moderator_synthesis.result.response }}",
+              "agreement_finder": "{{ previous_outputs.agreement_finder.result.response }}",
+              "timestamp": "{{ now() }}",
+              "category": "iteration_continue",
+              "processed_by": "cognitive_iteration_orchestrator",
+              "analysis_type": "multi_agent_deliberation"
+          }
+      }
+    depends_on:
+      - router_continue
+    store_structure: |
+      {
+        "topic": "string",
+        "iteration_type": "string",
+        "consensus_status": "string",
+        "logic_reasoning": "string",
+        "empathy_reasoning": "string", 
+        "skeptic_reasoning": "string",
+        "historian_analysis": "string",
+        "moderator_synthesis": "string",
+        "agreement_finder": "string",
+        "timestamp": "string",
+        "category": "string",
+        "processed_by": "string",
+        "analysis_type": "string"
+      }
+
+  - id: memory_write_iteration
+    type: memory
+    queue: orka:memory_write_iteration
+    config:
+      operation: write
+      memory_type: short_term
+      vector: true
+    namespace: cognitive_iteration
+    decay:
+      enabled: true
+      default_long_term: false # Store for future retrieval
+      short_term_hours: 0.025 # 1.5 min retention
+      long_term_hours: 0.05 # 3 min max retention
+      check_interval_minutes: 0.5 # Check every 30 seconds for testing
+      importance_rules:
+        base_score: 0.8 # Higher base score for caching
+        event_type_boosts:
+          write: 0.3
+    prompt: |
+      Iteration completed but consensus not reached. Continue deliberation.
+      Summary: {{ previous_outputs.iteration_validation_guardian.result.response }}
+    metadata:
+      category: iteration_continue
+      topic: "{{ input }}"
+      iteration_type: "continue_deliberation"
+      consensus_status: "not_reached"
+      timestamp: "{{ now() }}"
+      result:
+        - logic_reasoning: "{{ previous_outputs.logic_reasoning.result.response }}"
+        - empathy_reasoning: "{{ previous_outputs.empathy_reasoning.result.response }}"
+        - skeptic_reasoning: "{{ previous_outputs.skeptic_reasoning.result.response }}"
+        - historian_analysis: "{{ previous_outputs.historian_analysis.result.response }}"
+        - moderator_synthesis: "{{ previous_outputs.moderator_synthesis.result.response }}"
+        - agreement_finder: "{{ previous_outputs.agreement_finder.result.response }}"
+        - validation_summary: "{{ previous_outputs.iteration_validation_guardian.result.response }}"
+        - processed_by: "cognitive_iteration_orchestrator"
+        - analysis_type: "multi_agent_deliberation"
+    key_template: "continue_{{ now() }}_{{ input }}"
+    depends_on:
+      - iteration_validation_guardian
+
+  - id: final_moderator_synthesis
+    type: openai-answer
+    queue: orka:final_synthesis
+    prompt: |
+      FINAL SYNTHESIS - Cognitive Iteration Complete
+
+      Topic: {{ input }}
+
+      Complete deliberation history: {{ previous_outputs['memory_read_history'].memories }}
+
+      Final agent positions:
+      Logic Agent: {{ previous_outputs['logic_reasoning'].result.response }}
+      Empathy Agent: {{ previous_outputs['empathy_reasoning'].result.response }}
+      Skeptic Agent: {{ previous_outputs['skeptic_reasoning'].result.response }}
+      Historian Agent: {{ previous_outputs['historian_analysis'].result.response }}
+
+      Moderator's final analysis: {{ previous_outputs['moderator_synthesis'].result.response }}
+
+      Provide a comprehensive synthesis addressing:
+      1. The deliberation process and how positions evolved
+      2. Final consensus areas and remaining disagreements  
+      3. Quality of the artificial deliberation
+      4. Insights about synthetic introspection and cognitive iteration
+      5. Recommendations based on the multi-agent reasoning process
+    depends_on:
+      - router_continue
