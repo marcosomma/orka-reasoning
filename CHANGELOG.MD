@@ -2,6 +2,22 @@
 *(derived from the public-repo commit history as of **2025-01-31**)*  
 
 ---
+## [0.7.3] · 2025-01-04
+### Fixed
+* **🔧 Memory Metadata Structure Preservation**
+  * **Enhanced Memory Writer Node** - Fixed metadata structure handling to ensure YAML-defined metadata is properly preserved and rendered
+  * **Improved Template Rendering** - Enhanced Jinja2 template rendering in metadata fields with better error handling and debugging
+  * **Comprehensive Metadata Merging** - Fixed metadata merging from multiple sources (YAML config, context, guardian outputs, memory objects)
+  * **Template Context Enhancement** - Improved template context with comprehensive data structure access and debugging capabilities
+  * **Metadata Validation** - Added validation to ensure metadata structure is correctly saved and accessible for memory retrieval
+
+### Technical Details
+* **Root Cause** - Memory metadata structure was not being properly preserved when merging from different sources during memory writing
+* **Solution Strategy** - Enhanced the `_merge_metadata()` and `_render_metadata_templates()` methods in MemoryWriterNode to properly handle YAML metadata structure
+* **Impact** - Ensures that metadata defined in YAML configuration files is properly preserved and accessible for memory operations
+* **Testing** - Enhanced debugging and logging to verify metadata structure preservation throughout the memory writing process
+
+---
 ## [0.7.2] · 2025-01-31
 ### Fixed
 * **🎨 TUI Package Distribution Issue**
