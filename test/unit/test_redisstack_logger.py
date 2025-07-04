@@ -17,9 +17,11 @@ class TestRedisStackLoggerInitialization:
 
     @patch("orka.memory.redisstack_logger.redis.Redis")
     @patch("orka.utils.bootstrap_memory_index.ensure_enhanced_memory_index")
-    def test_default_initialization(self, mock_ensure_index, mock_redis):
+    @patch.object(RedisStackMemoryLogger, "_create_redis_connection")
+    def test_default_initialization(self, mock_create_connection, mock_ensure_index, mock_redis):
         """Test initialization with default parameters."""
         mock_ensure_index.return_value = True
+        mock_create_connection.return_value = Mock()
 
         logger = RedisStackMemoryLogger()
 
@@ -66,8 +68,10 @@ class TestRedisStackLoggerInitialization:
 
     @patch("orka.memory.redisstack_logger.redis.Redis")
     @patch.object(RedisStackMemoryLogger, "_ensure_index")
-    def test_thread_safe_client_creation(self, mock_ensure, mock_redis):
+    @patch.object(RedisStackMemoryLogger, "_create_redis_connection")
+    def test_thread_safe_client_creation(self, mock_create_connection, mock_ensure, mock_redis):
         """Test thread-safe client creation."""
+        mock_create_connection.return_value = Mock()
         logger = RedisStackMemoryLogger()
 
         # Mock the _create_redis_connection method
@@ -85,9 +89,16 @@ class TestRedisStackLoggerInitialization:
 
     @patch("orka.memory.redisstack_logger.redis.Redis")
     @patch("orka.utils.bootstrap_memory_index.ensure_enhanced_memory_index")
-    def test_index_creation_with_embedder_dimensions(self, mock_ensure, mock_redis):
+    @patch.object(RedisStackMemoryLogger, "_create_redis_connection")
+    def test_index_creation_with_embedder_dimensions(
+        self,
+        mock_create_connection,
+        mock_ensure,
+        mock_redis,
+    ):
         """Test index creation with embedder dimensions."""
         mock_ensure.return_value = True
+        mock_create_connection.return_value = Mock()
         mock_embedder = Mock()
         mock_embedder.embedding_dim = 512
 
@@ -103,10 +114,14 @@ class TestRedisStackLoggerMemoryOperations:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch("orka.memory.redisstack_logger.redis.Redis"), patch.object(
-            RedisStackMemoryLogger,
-            "_ensure_index",
-        ), patch.object(RedisStackMemoryLogger, "_create_redis_connection"):
+        with (
+            patch("orka.memory.redisstack_logger.redis.Redis"),
+            patch.object(
+                RedisStackMemoryLogger,
+                "_ensure_index",
+            ),
+            patch.object(RedisStackMemoryLogger, "_create_redis_connection"),
+        ):
             self.logger = RedisStackMemoryLogger()
             self.mock_redis_client = Mock()
             self.logger.redis_client = self.mock_redis_client
@@ -286,12 +301,15 @@ class TestRedisStackLoggerSearch:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch("orka.memory.redisstack_logger.redis.Redis"):
-            with patch.object(RedisStackMemoryLogger, "_ensure_index"):
-                self.logger = RedisStackMemoryLogger()
-                self.mock_redis_client = Mock()
-                self.logger.redis_client = self.mock_redis_client
-                self.logger._get_thread_safe_client = Mock(return_value=self.mock_redis_client)
+        with (
+            patch("orka.memory.redisstack_logger.redis.Redis"),
+            patch.object(RedisStackMemoryLogger, "_ensure_index"),
+            patch.object(RedisStackMemoryLogger, "_create_redis_connection"),
+        ):
+            self.logger = RedisStackMemoryLogger()
+            self.mock_redis_client = Mock()
+            self.logger.redis_client = self.mock_redis_client
+            self.logger._get_thread_safe_client = Mock(return_value=self.mock_redis_client)
 
     def test_vector_search_with_embedder(self):
         """Test vector-based memory search."""
@@ -440,11 +458,14 @@ class TestRedisStackLoggerManagement:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch("orka.memory.redisstack_logger.redis.Redis"):
-            with patch.object(RedisStackMemoryLogger, "_ensure_index"):
-                self.logger = RedisStackMemoryLogger()
-                self.mock_redis_client = Mock()
-                self.logger.redis_client = self.mock_redis_client
+        with (
+            patch("orka.memory.redisstack_logger.redis.Redis"),
+            patch.object(RedisStackMemoryLogger, "_ensure_index"),
+            patch.object(RedisStackMemoryLogger, "_create_redis_connection"),
+        ):
+            self.logger = RedisStackMemoryLogger()
+            self.mock_redis_client = Mock()
+            self.logger.redis_client = self.mock_redis_client
 
     def test_get_all_memories(self):
         """Test retrieving all memories."""
@@ -582,12 +603,15 @@ class TestRedisStackLoggerRedisOperations:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch("orka.memory.redisstack_logger.redis.Redis"):
-            with patch.object(RedisStackMemoryLogger, "_ensure_index"):
-                self.logger = RedisStackMemoryLogger()
-                self.mock_redis_client = Mock()
-                self.logger.redis_client = self.mock_redis_client
-                self.logger._get_thread_safe_client = Mock(return_value=self.mock_redis_client)
+        with (
+            patch("orka.memory.redisstack_logger.redis.Redis"),
+            patch.object(RedisStackMemoryLogger, "_ensure_index"),
+            patch.object(RedisStackMemoryLogger, "_create_redis_connection"),
+        ):
+            self.logger = RedisStackMemoryLogger()
+            self.mock_redis_client = Mock()
+            self.logger.redis_client = self.mock_redis_client
+            self.logger._get_thread_safe_client = Mock(return_value=self.mock_redis_client)
 
     def test_hset_wrapper(self):
         """Test HSET operation wrapper."""
@@ -685,12 +709,15 @@ class TestRedisStackLoggerAdvanced:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch("orka.memory.redisstack_logger.redis.Redis"):
-            with patch.object(RedisStackMemoryLogger, "_ensure_index"):
-                self.logger = RedisStackMemoryLogger()
-                self.mock_redis_client = Mock()
-                self.logger.redis_client = self.mock_redis_client
-                self.logger._get_thread_safe_client = Mock(return_value=self.mock_redis_client)
+        with (
+            patch("orka.memory.redisstack_logger.redis.Redis"),
+            patch.object(RedisStackMemoryLogger, "_ensure_index"),
+            patch.object(RedisStackMemoryLogger, "_create_redis_connection"),
+        ):
+            self.logger = RedisStackMemoryLogger()
+            self.mock_redis_client = Mock()
+            self.logger.redis_client = self.mock_redis_client
+            self.logger._get_thread_safe_client = Mock(return_value=self.mock_redis_client)
 
     def test_embedding_generation_success(self):
         """Test successful embedding generation."""
@@ -839,12 +866,15 @@ class TestRedisStackLoggerEdgeCases:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch("orka.memory.redisstack_logger.redis.Redis"):
-            with patch.object(RedisStackMemoryLogger, "_ensure_index"):
-                self.logger = RedisStackMemoryLogger()
-                self.mock_redis_client = Mock()
-                self.logger.redis_client = self.mock_redis_client
-                self.logger._get_thread_safe_client = Mock(return_value=self.mock_redis_client)
+        with (
+            patch("orka.memory.redisstack_logger.redis.Redis"),
+            patch.object(RedisStackMemoryLogger, "_ensure_index"),
+            patch.object(RedisStackMemoryLogger, "_create_redis_connection"),
+        ):
+            self.logger = RedisStackMemoryLogger()
+            self.mock_redis_client = Mock()
+            self.logger.redis_client = self.mock_redis_client
+            self.logger._get_thread_safe_client = Mock(return_value=self.mock_redis_client)
 
     def test_log_memory_exception_handling(self):
         """Test exception handling in log_memory."""
