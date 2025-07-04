@@ -102,7 +102,69 @@ class PromptRenderer:
             raise ValueError(
                 f"Expected template_str to be str, got {type(template_str)} instead.",
             )
-        return Template(template_str).render(**payload)
+
+        # 🔧 GENERIC FIX: Enhance payload for better template rendering
+        enhanced_payload = self._enhance_payload_for_templates(payload)
+
+        return Template(template_str).render(**enhanced_payload)
+
+    def _enhance_payload_for_templates(self, payload):
+        """
+        Enhance the payload to make template rendering more robust and generic.
+
+        This method ensures that previous_outputs can be accessed in multiple ways
+        to support different template patterns used across workflows.
+        """
+        enhanced_payload = payload.copy()
+
+        # If previous_outputs exists, enhance it for template compatibility
+        if "previous_outputs" in enhanced_payload:
+            original_outputs = enhanced_payload["previous_outputs"]
+            enhanced_outputs = {}
+
+            # Process each agent's output to make it more template-friendly
+            for agent_id, agent_result in original_outputs.items():
+                # Keep the original structure
+                enhanced_outputs[agent_id] = agent_result
+
+                # If the result has a nested structure, also provide direct access
+                if isinstance(agent_result, dict):
+                    # If agent_result has a 'result' key, also provide shortcuts
+                    if "result" in agent_result:
+                        result_data = agent_result["result"]
+
+                        # Create a flattened version for easier template access
+                        flattened_result = {
+                            "result": result_data,
+                            # If result has common keys, expose them directly
+                        }
+
+                        # Add common result fields as shortcuts
+                        if isinstance(result_data, dict):
+                            # For memory agents, expose memories directly
+                            if "memories" in result_data:
+                                flattened_result["memories"] = result_data["memories"]
+
+                            # For LLM agents, expose response directly
+                            if "response" in result_data:
+                                flattened_result["response"] = result_data["response"]
+
+                            # For other common fields
+                            for key in ["status", "confidence", "data", "content"]:
+                                if key in result_data:
+                                    flattened_result[key] = result_data[key]
+
+                        enhanced_outputs[agent_id] = flattened_result
+                    else:
+                        # If no nested result, the agent_result is the direct result
+                        enhanced_outputs[agent_id] = agent_result
+                else:
+                    # If not a dict, keep as is
+                    enhanced_outputs[agent_id] = agent_result
+
+            enhanced_payload["previous_outputs"] = enhanced_outputs
+
+        return enhanced_payload
 
     def _add_prompt_to_payload(self, agent, payload_out, payload):
         """

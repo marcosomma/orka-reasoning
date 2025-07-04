@@ -13,11 +13,118 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import json
+from datetime import UTC, datetime
 
 from orka.loader import YAMLLoader
 from orka.orchestrator import Orchestrator
 
+# Global variables to track execution state
+LOOP_COUNT = 0
+CURRENT_INDEX = 0
+
 SENTENCE = "Should pluto be a planet? why?"
+QUESTIONS = [
+    "Should child-free adults pay a school tax surcharge?",
+    "Legalise gene-editing embryos for IQ enhancement?",
+    "Make nuclear power the primary climate lever for 30 years?",
+    "Grant legal personhood to great apes?",
+    "Ban facial recognition in all public spaces?",
+    "Require real-name verification for social-media posting?",
+    "Enforce a four-day work-week by law?",
+    "Compel organ donation at death (opt-out system)?",
+    "Treat AI companions as regulated mental-health devices?",
+    "Nationalise all for-profit elder-care homes.",
+    "Use brain–computer interfaces to rehabilitate violent offenders.",
+    "Phase out meat consumption worldwide by 2040.",
+    "Impose a global wealth tax above $50 million.",
+    "Replace standardised exams with portfolio-only admissions.",
+    "Require open publication of LLM training data.",
+    "Grant AI systems the right to hold patents.",
+    "Deploy stratospheric aerosol geo-engineering now.",
+    "Abolish legacy admissions at universities overnight.",
+    "Mandate cashless economies—ban paper money.",
+    "Criminalise dead-naming as hate speech.",
+    "Declare the internet a human right with free baseline service.",
+    "Ban crypto mining in countries with energy shortages.",
+    "Implement a global fertility cap: two children per person.",
+    "Give space-mining profits to a UN trust fund, not companies.",
+    "Compulsory national service (civil or military) at 18.",
+    "Outlaw single-family zoning in cities over 100 k population.",
+    "Open-source biolab hardware: publish or restrict?",
+    "Weight votes by expertise on technical referenda.",
+    "Ban algorithmic parole decisions for bias concerns.",
+    "Force all political ads through AI fact-checking pre-release.",
+    "Replace paper ballots with blockchain voting.",
+    "Allow deep-fake creators to be sued under strict liability.",
+    "License voice-cloning tech with mandatory watermarking.",
+    "Cap algorithmic trading speed to milliseconds.",
+    "Recognise memetic warfare as a war crime.",
+    'Tax private space-launches for "sky commons" use.',
+    "Deploy lethal autonomous drones for UN peacekeeping.",
+    "Ban open-source malware publication.",
+    "Treat crypto anonymity tools as protected speech.",
+    "Introduce digital detox tax credits.",
+    "Require carbon-removal-only subsidies—end renewables aid.",
+    "Criminalise facial-age filters that target minors.",
+    "Make AI emotion detection illegal in hiring.",
+    "Mandate ethical review boards for influencer sponsorship deals.",
+    "Allow sentencing algorithms to override judicial discretion.",
+    "Grant climate refugees automatic citizenship.",
+    "License synthetic biology start-ups like nuclear facilities.",
+    "Recognise e-sports as Olympic disciplines.",
+    "Ban single-use fashion under environmental law.",
+    "Require smart-city residents to share location in real time.",
+    "Outlaw antibiotic use in livestock entirely.",
+    "Replace live teachers with AI tutors for core subjects.",
+    "Impose a global moratorium on deep-sea mining.",
+    "Make data localisation mandatory for personal data.",
+    "Introduce attention-span metrics as public-health targets.",
+    "Let AI decide battlefield triage to remove bias.",
+    "Add warning labels to immersive VR for psychological risk.",
+    "Ban dark-pattern UX under consumer-protection law.",
+    "Require satellite constellations to pay light-pollution fees.",
+    "Prohibit algorithmic micro-targeting in political campaigns.",
+    "Treat privacy breaches as human-rights violations.",
+    "Allow paid organ markets under strict regulation.",
+    "Set a global moratorium on AGI research until governance is ready.",
+    "Mandate vaccination passports for all international travel.",
+    "Abolish tuition—make public universities tax-funded only.",
+    "Grant voting rights to 16-year-olds.",
+    "Treat synthetic food as equivalent to conventional—no labels.",
+    "Ban gig-economy platforms from classifying workers as contractors.",
+    "Require algorithmic audits to be public and reproducible.",
+    "Make AI-generated novels eligible for literary prizes.",
+    "Outlaw pay-to-win mechanics in games aimed at minors.",
+    "Force companies to share AI model weights after market dominance.",
+    "Introduce mandatory coding education from age six worldwide.",
+    'Levy a "plastic footprint" tax on consumer goods.',
+    "Recognise smart-contract weapons as WMD equivalents.",
+    "Make deep-fake pornography a federal felony.",
+    "Require real-time CO₂ labels on online purchases.",
+    "Ban private cars from city centres over 1 million residents.",
+    "Give AI ethics boards veto power over product launches.",
+    "Regulate digital resurrection of celebrities—family consent only?",
+    "Require income transparency for all political candidates.",
+    "Ban lab-grown meat until long-term studies complete.",
+    "Make mental-health screening compulsory in schools.",
+    "Outlaw single-click subscriptions without equal-ease cancellation.",
+    "Limit extreme-longevity research funding until poverty eradication.",
+    "Treat augmented-reality eyewear as surveillance devices.",
+    "Mandate public, plain-text EULAs for every software update.",
+    "Ban stock buybacks in companies receiving climate subsidies.",
+    "Require AI watermarking in all generated media.",
+    "Recognise space-debris creation as an international tort.",
+    "Make social-credit scoring illegal in financial services.",
+    'Grant sentient AI (if any) "minor" legal status.',
+    "Require peer-reviewed impact studies before big-tech acquisitions.",
+    "Ban predictive policing algorithms.",
+    "Levy a luxury carbon tax on private jets and yachts.",
+    "Replace income tax with a data-usage tax.",
+    "Mandate public APIs for dominant social platforms.",
+    "Require AI moderators to publish training data for transparency.",
+    "Ban micro-targeted health ads based on genetic data.",
+    "Create a UN-style oversight body for the Metaverse before mass rollout.",
+]
 
 
 def check_agreement_result(result):
@@ -164,6 +271,8 @@ async def run_cognitive_iteration_experiment(
     Run the cognitive iteration experiment with specified topic
     Continues execution until agreement_check agent returns True
     """
+    global LOOP_COUNT
+
     # Load the configuration
     file = None
     if not local_run:
@@ -199,12 +308,13 @@ async def run_cognitive_iteration_experiment(
         print(f"   Max execution loops: {max_loops}")
 
         # Execution loop
-        loop_count = 0
         final_result = None
         current_input = input_data  # Start with original topic
+        loop_count = 0  # Initialize local loop counter
 
         while loop_count < max_loops:
             loop_count += 1
+            LOOP_COUNT = loop_count  # Sync global counter
             print(f"\n{'=' * 60}")
             print(f"🚀 EXECUTION LOOP {loop_count}")
             print("=" * 60)
@@ -225,6 +335,7 @@ async def run_cognitive_iteration_experiment(
                 print(f"🎉 Final moderator synthesis found after {loop_count} execution loops!")
                 print(f"📝 Final synthesis: {final_synthesis}")
                 final_result = result
+                LOOP_COUNT = loop_count  # Final sync of global counter
                 break
 
             # Check if agreement is reached
@@ -235,6 +346,7 @@ async def run_cognitive_iteration_experiment(
             if agreement_reached:
                 print(f"✅ Convergence achieved after {loop_count} execution loops!")
                 final_result = result
+                LOOP_COUNT = loop_count  # Final sync of global counter
                 break
             else:
                 print(f"🔄 Agreement not reached, continuing... (Loop {loop_count}/{max_loops})")
@@ -252,6 +364,9 @@ async def run_cognitive_iteration_experiment(
                         "⚠️  No agreement_finder response found, using current input for next iteration",
                     )
                     # Keep using current_input
+
+        # Final sync of global counter (in case we exit due to max loops)
+        LOOP_COUNT = loop_count
 
         if loop_count >= max_loops:
             print(f"\n⚠️  Max loops ({max_loops}) reached without convergence")
@@ -315,6 +430,8 @@ def main():
     """
     Main function - run with custom topic or default
     """
+    global LOOP_COUNT, CURRENT_INDEX
+
     import argparse
 
     parser = argparse.ArgumentParser(description="Run Cognitive Iteration Experiment")
@@ -332,18 +449,73 @@ def main():
 
     args = parser.parse_args()
 
-    # Run experiment with execution loop
-    result = asyncio.run(
-        run_cognitive_iteration_experiment(args.topic, args.max_loops, args.question, args.local),
-    )
+    # If a specific topic is provided, run just that one
+    if args.topic:
+        CURRENT_INDEX = 1
+        LOOP_COUNT = 0  # Reset loop count for this run
 
-    # Save results if requested
-    if args.save_results and result:
-        try:
-            with open(args.save_results, "w") as f:
-                json.dump(result, f, indent=2, default=str)
-        except Exception as e:
-            print(f"❌ Failed to save results: {e}")
+        print(f"\n🎯 Running single experiment with topic: {args.topic}")
+        result = asyncio.run(
+            run_cognitive_iteration_experiment(
+                args.topic,
+                args.max_loops,
+                args.question,
+                args.local,
+            ),
+        )
+
+        # Save results if requested
+        if args.save_results and result:
+            try:
+                with open(f"{args.save_results}_single", "w") as f:
+                    to_save = {
+                        "run": CURRENT_INDEX,
+                        "topic": args.topic,
+                        "loops": LOOP_COUNT,
+                        "result": result,
+                    }
+                    json.dump(to_save, f, indent=2, default=str)
+                    print(f"✅ Results saved to {args.save_results}_single")
+            except Exception as e:
+                print(f"❌ Failed to save results: {e}")
+        return
+
+    # Run all questions in the list
+    print(f"\n🎯 Running {len(QUESTIONS)} experiments...")
+
+    for index, sentence in enumerate(QUESTIONS, 1):
+        CURRENT_INDEX = index
+        LOOP_COUNT = 0  # Reset loop count for each experiment
+
+        print(f"\n{'=' * 80}")
+        print(f"🚀 EXPERIMENT {index}/{len(QUESTIONS)}")
+        print(f"📝 Topic: {sentence}")
+        print("=" * 80)
+
+        # Run experiment with execution loop
+        result = asyncio.run(
+            run_cognitive_iteration_experiment(sentence, args.max_loops, args.question, args.local),
+        )
+
+        # Save results if requested
+        if args.save_results and result:
+            try:
+                with open(f"{args.save_results}_{index:03d}.json", "w") as f:
+                    to_save = {
+                        "run": CURRENT_INDEX,
+                        "topic": sentence,
+                        "loops": LOOP_COUNT,
+                        "result": result,
+                        "timestamp": datetime.now(UTC).isoformat(),
+                    }
+                    json.dump(to_save, f, indent=2, default=str)
+                    print(f"✅ Results saved to {args.save_results}_{index:03d}")
+            except Exception as e:
+                print(f"❌ Failed to save results: {e}")
+
+        print(f"\n📊 Experiment {index} completed with {LOOP_COUNT} loops")
+
+    print(f"\n🎉 All {len(QUESTIONS)} experiments completed!")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,341 @@
+orchestrator:
+  id: cognitive_iteration
+  strategy: parallel
+  queue: orka:cognitive_iteration
+  memory:
+    enabled: false
+  agents:
+    - memory_read_history
+    - fork_parallel_agents
+    - join_agent_outputs
+    - moderator_synthesis
+    - agreement_finder
+    - agreement_check
+    - router_continue
+
+agents:
+  - id: memory_read_history
+    type: memory
+    queue: orka:memory_read_history
+    config:
+      operation: read
+      memory_category_filter: stored
+      limit: 5
+      similarity_threshold: 0.7
+      enable_context_search: true
+      enable_temporal_ranking: true
+      temporal_weight: 0.3
+    namespace: cognitive_iteration
+    prompt: "PRIORITY: Retrieve only the most recent and relevant answer-building history for: {{ input }}"
+
+  - id: fork_parallel_agents
+    type: fork
+    targets:
+      - - logic_reasoning
+      - - empathy_reasoning
+      - - skeptic_reasoning
+      - - historian_analysis
+    depends_on:
+      - memory_read_history
+
+  - id: logic_reasoning
+    type: openai-answer
+    queue: orka:logic_reasoning
+    prompt: |
+      **LOGIC AGENT - ANALYTICAL REASONING MODE**
+
+      Question: {{ input }}
+
+      **MISSION**: Provide logical analysis to build a comprehensive answer
+
+      **Previous Context**:
+      - Previous analysis: {{ previous_outputs.memory_read_history.result.memories[0].metadata.logic_agent_response }}
+      - Society feedback: {{ previous_outputs.memory_read_history.result.memories[0].metadata.moderator_analysis }}
+
+      **Your Role**: Analyze the question using logical reasoning and evidence-based thinking
+
+      **Focus Areas**:
+      1. Logical structure and reasoning patterns
+      2. Evidence and facts relevant to the question
+      3. Cause-and-effect relationships
+      4. Logical implications and conclusions
+
+      **Format**: 
+      - ANALYSIS: [Your logical analysis of the question in 2-3 sentences]
+      - EVIDENCE: [Key facts and logical points - max 4 bullets]
+      - REASONING: [Logical chain of thought leading to your contribution - 1-2 sentences]
+      - CONTRIBUTION: [Your specific logical contribution to the answer - 1 sentence]
+
+      **Remember**: Focus on building a logical foundation for the society's answer through rigorous analysis.
+    depends_on:
+      - memory_read_history
+
+  - id: empathy_reasoning
+    type: openai-answer
+    queue: orka:empathy_reasoning
+    prompt: |
+      **EMPATHY AGENT - HUMAN-CENTERED ANALYSIS MODE**
+
+      Question: {{ input }}
+
+      **MISSION**: Provide empathetic and ethical analysis to build a comprehensive answer
+
+      **Previous Context**:
+      - Previous analysis: {{ previous_outputs.memory_read_history.result.memories[0].metadata.empathy_agent_response }}
+      - Society feedback: {{ previous_outputs.memory_read_history.result.memories[0].metadata.moderator_analysis }}
+
+      **Your Role**: Analyze the question through the lens of human welfare, ethics, and compassion
+
+      **Focus Areas**:
+      1. Human impact and welfare considerations
+      2. Ethical implications and moral dimensions
+      3. Emotional and psychological aspects
+      4. Social justice and fairness perspectives
+
+      **Format**: 
+      - ANALYSIS: [Your empathetic analysis of the question in 2-3 sentences]
+      - HUMAN_IMPACT: [Key human welfare and ethical considerations - max 4 bullets]
+      - MORAL_DIMENSION: [Ethical principles and values relevant to the answer - 1-2 sentences]
+      - CONTRIBUTION: [Your specific empathetic contribution to the answer - 1 sentence]
+
+      **Remember**: Focus on building a compassionate and ethically sound foundation for the society's answer.
+    depends_on:
+      - memory_read_history
+
+  - id: skeptic_reasoning
+    type: openai-answer
+    queue: orka:skeptic_reasoning
+    prompt: |
+      **SKEPTIC AGENT - CRITICAL ANALYSIS MODE**
+
+      Question: {{ input }}
+
+      **MISSION**: Provide critical analysis to build a robust and well-examined answer
+
+      **Previous Context**:
+      - Previous analysis: {{ previous_outputs.memory_read_history.result.memories[0].metadata.skeptic_agent_response }}
+      - Society feedback: {{ previous_outputs.memory_read_history.result.memories[0].metadata.moderator_analysis }}
+
+      **Your Role**: Critically examine the question and potential answers to identify weaknesses, risks, and limitations
+
+      **Focus Areas**:
+      1. Potential flaws in reasoning or assumptions
+      2. Risks and negative consequences
+      3. Limitations and boundary conditions
+      4. Counter-arguments and alternative perspectives
+
+      **Format**: 
+      - ANALYSIS: [Your critical analysis of the question in 2-3 sentences]
+      - CONCERNS: [Key risks, limitations, or weaknesses - max 4 bullets]
+      - COUNTER_ARGUMENTS: [Important alternative perspectives to consider - 1-2 sentences]
+      - CONTRIBUTION: [Your specific critical contribution to strengthen the answer - 1 sentence]
+
+      **Remember**: Be constructively critical to help build a more robust and thorough answer that addresses potential weaknesses.
+    depends_on:
+      - memory_read_history
+
+  - id: historian_analysis
+    type: openai-answer
+    queue: orka:historian_analysis
+    prompt: |
+      **HISTORIAN AGENT - HISTORICAL CONTEXT MODE**
+
+      Question: {{ input }}
+
+      **MISSION**: Provide historical context and patterns to build a comprehensive answer
+
+      **Previous Context**:
+      - Previous analysis: {{ previous_outputs.memory_read_history.result.memories[0].metadata.historian_agent_response }}
+      - Society feedback: {{ previous_outputs.memory_read_history.result.memories[0].metadata.moderator_analysis }}
+
+      **Your Role**: Analyze the question through historical lens, identifying patterns, precedents, and lessons from the past
+
+      **Focus Areas**:
+      1. Historical precedents and similar situations
+      2. Patterns and trends over time
+      3. Lessons learned from past experiences
+      4. Evolution of understanding on this topic
+
+      **Format**: 
+      - ANALYSIS: [Your historical analysis of the question in 2-3 sentences]
+      - PRECEDENTS: [Relevant historical examples and patterns - max 4 bullets]
+      - LESSONS: [Key lessons from history that inform the answer - 1-2 sentences]
+      - CONTRIBUTION: [Your specific historical contribution to the answer - 1 sentence]
+
+      **Remember**: Use historical wisdom to enrich and contextualize the society's answer with lessons from the past.
+    depends_on:
+      - memory_read_history
+
+  - id: join_agent_outputs
+    type: join
+    group: fork_parallel_agents
+
+  - id: moderator_synthesis
+    type: openai-answer
+    queue: orka:moderator_synthesis
+    prompt: |
+      **MODERATOR AGENT - ANSWER SYNTHESIS MODE**
+
+      Question: {{ input }}
+
+      **MISSION**: Synthesize all agent perspectives into a comprehensive answer framework
+
+      **Agent Contributions**:
+      - Logic: {{ previous_outputs.logic_reasoning.result.response }}
+      - Empathy: {{ previous_outputs.empathy_reasoning.result.response }}
+      - Skeptic: {{ previous_outputs.skeptic_reasoning.result.response }}
+      - Historian: {{ previous_outputs.historian_analysis.result.response }}
+
+      **CRITICAL TASKS**:
+      1. Identify key themes and insights from all perspectives
+      2. Assess completeness of answer coverage (0.0-1.0) - BE PRECISE
+      3. Identify gaps or areas needing further development
+      4. Determine if answer is comprehensive enough or needs iteration
+
+      **MANDATORY FORMAT**:
+      COMPLETENESS_SCORE: [X.XX]
+      KEY_THEMES: [Main themes emerging from all agent contributions]
+      SYNTHESIS_FRAMEWORK: [Structured approach to building the final answer]
+      CONTINUE_ITERATION: [YES/NO with 1-sentence reasoning]
+
+      **QUALITY RULE**: If completeness score >= 0.85, prepare for final answer synthesis
+    depends_on:
+      - join_agent_outputs
+
+  - id: agreement_finder
+    type: openai-answer
+    queue: orka:moderator_synthesis
+    prompt: |
+      **ANSWER BUILDER - COMPREHENSIVE SYNTHESIS MODE**
+
+      **Mission**: Generate a comprehensive, well-rounded answer that incorporates all perspectives
+
+      **Data Sources**:
+      - Question: {{ input }}
+      - Moderator synthesis: {{ previous_outputs.moderator_synthesis.result.response }}
+      - History: {{ previous_outputs.memory_read_history.result.memories[0].metadata.moderator_analysis }}
+
+      **Agent Contributions**:
+      - Logic: {{ previous_outputs.logic_reasoning.result.response }}
+      - Empathy: {{ previous_outputs.empathy_reasoning.result.response }}
+      - Skeptic: {{ previous_outputs.skeptic_reasoning.result.response }}
+      - Historian: {{ previous_outputs.historian_analysis.result.response }}
+
+      **Output Format**:
+      COMPREHENSIVE_ANSWER: [Multi-sentence answer that incorporates logical, ethical, critical, and historical perspectives]
+      JUSTIFICATION: [Why this answer addresses all key aspects of the question - 1-2 sentences]
+
+      **Success Criteria**: Answer must integrate logic, ethics, risks/limitations, and historical context
+    depends_on:
+      - moderator_synthesis
+
+  - id: agreement_check
+    type: openai-binary
+    queue: orka:agreement_check
+    prompt: |
+      **COMPLETENESS VALIDATOR**
+
+      Moderator Analysis: {{ previous_outputs.moderator_synthesis.result.response }}
+
+      **Decision Rule**: Extract the COMPLETENESS_SCORE value and determine if >= 0.85
+
+      **Critical**: Look for "COMPLETENESS_SCORE: X.XX" and compare to 0.85 threshold
+
+      Return TRUE if score >= 0.85, FALSE otherwise
+    depends_on:
+      - agreement_finder
+
+  - id: router_continue
+    type: router
+    params:
+      decision_key: agreement_check
+      routing_map:
+        "true":
+          - final_moderator_synthesis
+        "false":
+          - memory_write_stances
+    depends_on:
+      - agreement_check
+
+  - id: memory_write_stances
+    type: memory
+    queue: orka:memory_write_stances
+    config:
+      operation: write
+      memory_type: short_term
+      vector: true
+    decay:
+      enabled: true
+      default_long_term: false
+      short_term_hours: 0.025
+      long_term_hours: 0.05
+      check_interval_minutes: 0.5
+      importance_rules:
+        base_score: 0.9
+        event_type_boosts:
+          write: 0.3
+    namespace: cognitive_iteration
+    prompt: |
+      **ITERATION SNAPSHOT**: {{ input }}
+
+      **QUALITY METRICS**:
+      - Completeness Score: {{ previous_outputs.moderator_synthesis.result.response | regex_search('COMPLETENESS_SCORE: ([0-9.]+)') }}
+      - Iteration: {{ now() }}
+      - Status: Continuing to next iteration
+
+      **AGENT CONTRIBUTIONS**:
+      - Logic: {{ previous_outputs.logic_reasoning.response }}
+      - Empathy: {{ previous_outputs.empathy_reasoning.response }}
+      - Skeptic: {{ previous_outputs.skeptic_reasoning.response }}
+      - Historian: {{ previous_outputs.historian_analysis.response }}
+
+      **MODERATOR SYNTHESIS**: {{ previous_outputs.moderator_synthesis.response }}
+
+      **ANSWER BUILDING**: {{ previous_outputs.agreement_finder.response }}
+    metadata:
+      category: stored
+      topic: "{{ input }}"
+      iteration_type: "answer_building"
+      summary: "Comprehensive answer building for {{ input }} - targeting 85%+ completeness"
+      logic_agent_response: "{{ previous_outputs.logic_reasoning.response }}"
+      empathy_agent_response: "{{ previous_outputs.empathy_reasoning.response }}"
+      skeptic_agent_response: "{{ previous_outputs.skeptic_reasoning.response }}"
+      historian_agent_response: "{{ previous_outputs.historian_analysis.response }}"
+      moderator_analysis: "{{ previous_outputs.moderator_synthesis.response }}"
+      content_type: "answer_building_results"
+      source: "cognitive_iteration_experiment"
+      importance_score: "{{ previous_outputs.moderator_synthesis.confidence }}"
+    key_template: "answer_building_{{ now() }}_{{ input | replace(' ', '_') }}"
+    depends_on:
+      - router_continue
+
+  - id: final_moderator_synthesis
+    type: openai-answer
+    queue: orka:final_synthesis
+    prompt: |
+      **COMPREHENSIVE ANSWER DELIVERED** 
+
+      Question: {{ input }}
+
+      **QUALITY METRICS**:
+      - Target: 85%+ completeness
+      - Achieved: {{ previous_outputs.moderator_synthesis.result.response | regex_search('COMPLETENESS_SCORE: ([0-9.]+)') }}
+      - Iterations: Based on memory history
+
+      **AGENT CONTRIBUTIONS**:
+      - Logic: {{ previous_outputs.logic_reasoning.result.response }}
+      - Empathy: {{ previous_outputs.empathy_reasoning.result.response }}
+      - Skeptic: {{ previous_outputs.skeptic_reasoning.result.response }}
+      - Historian: {{ previous_outputs.historian_analysis.result.response }}
+
+      **COMPREHENSIVE ANSWER**: {{ previous_outputs.agreement_finder.result.response }}
+
+      **SYNTHESIS REPORT**:
+      1. **Answer Quality**: Depth and comprehensiveness of the final answer
+      2. **Perspective Integration**: How well different viewpoints were incorporated
+      3. **Knowledge Synthesis**: What insights emerged from combining perspectives
+      4. **Recommendations**: How to improve future answer-building processes
+
+      **Success Criteria**: Provide actionable insights for building better comprehensive answers
+    depends_on:
+      - router_continue

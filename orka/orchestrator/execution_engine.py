@@ -49,7 +49,7 @@ import json
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from time import time
 
 logger = logging.getLogger(__name__)
@@ -143,7 +143,7 @@ class ExecutionEngine:
             )
             self.error_telemetry["execution_status"] = "failed"
             self.error_telemetry["critical_failures"].append(
-                {"error": str(e), "timestamp": datetime.now(timezone.utc).isoformat()},
+                {"error": str(e), "timestamp": datetime.now(UTC).isoformat()},
             )
             self._save_error_report(logs, e)
             raise
@@ -176,7 +176,7 @@ class ExecutionEngine:
                 log_entry = {
                     "agent_id": agent_id,
                     "event_type": agent.__class__.__name__,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                 }
 
                 start_time = time()
@@ -317,7 +317,7 @@ class ExecutionEngine:
         meta_report_entry = {
             "agent_id": "meta_report",
             "event_type": "MetaReport",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "payload": {
                 "meta_report": meta_report,
                 "run_id": self.run_id,
@@ -554,6 +554,18 @@ class ExecutionEngine:
         # Render prompt before running agent if agent has a prompt
         self._render_agent_prompt(agent, payload)
 
+        # 🔍 DEBUG: Check if template rendering worked (only if DEBUG logging is enabled)
+        if logger.isEnabledFor(logging.DEBUG) and hasattr(agent, "prompt") and agent.prompt:
+            if "formatted_prompt" in payload:
+                original_template = agent.prompt
+                rendered_template = payload["formatted_prompt"]
+
+                # Check if template was actually rendered (changed from original)
+                if original_template != rendered_template:
+                    logger.debug(f"Agent '{agent_id}' template rendered successfully")
+                else:
+                    logger.debug(f"Agent '{agent_id}' template unchanged - possible template issue")
+
         # Inspect the run method to see if it needs orchestrator
         run_method = agent.run
         sig = inspect.signature(run_method)
@@ -603,6 +615,24 @@ class ExecutionEngine:
         Run multiple branches in parallel, with agents within each branch running sequentially.
         Returns a list of log entries for each forked agent.
         """
+        # 🔧 GENERIC FIX: Ensure complete context is passed to forked agents
+        logger.debug(
+            f"run_parallel_agents called with previous_outputs keys: {list(previous_outputs.keys())}",
+        )
+
+        # Enhanced debugging: Check the structure of previous_outputs (only if DEBUG enabled)
+        if logger.isEnabledFor(logging.DEBUG):
+            for agent_id, agent_result in previous_outputs.items():
+                if isinstance(agent_result, dict):
+                    # Check for common nested structures
+                    if "memories" in agent_result:
+                        memories = agent_result["memories"]
+                        logger.debug(
+                            f"Agent '{agent_id}' has {len(memories) if isinstance(memories, list) else 'non-list'} memories",
+                        )
+                    if "result" in agent_result:
+                        logger.debug(f"Agent '{agent_id}' has nested result structure")
+
         # Get the fork node to understand the branch structure
         # Fork group ID format: {node_id}_{timestamp}, so we need to remove the timestamp
         fork_node_id = "_".join(
@@ -611,9 +641,14 @@ class ExecutionEngine:
         fork_node = self.agents[fork_node_id]
         branches = fork_node.targets
 
+        # 🔧 GENERIC FIX: Ensure previous_outputs is properly structured
+        # Make a deep copy to avoid modifying the original
+        enhanced_previous_outputs = self._ensure_complete_context(previous_outputs)
+
         # Run each branch in parallel
         branch_tasks = [
-            self._run_branch_async(branch, input_data, previous_outputs) for branch in branches
+            self._run_branch_async(branch, input_data, enhanced_previous_outputs)
+            for branch in branches
         ]
 
         # Wait for all branches to complete
@@ -622,7 +657,7 @@ class ExecutionEngine:
         # Process results and create logs
         forked_step_index = 0
         result_logs = []
-        updated_previous_outputs = previous_outputs.copy()
+        updated_previous_outputs = enhanced_previous_outputs.copy()
 
         # Flatten branch results into a single list of (agent_id, result) pairs
         all_results = []
@@ -653,7 +688,7 @@ class ExecutionEngine:
             log_data = {
                 "agent_id": agent_id,
                 "event_type": f"ForkedAgent-{self.agents[agent_id].__class__.__name__}",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "payload": payload_data,
                 "previous_outputs": updated_previous_outputs.copy(),
                 "step": step_index,
@@ -675,6 +710,51 @@ class ExecutionEngine:
             updated_previous_outputs[agent_id] = result
 
         return result_logs
+
+    def _ensure_complete_context(self, previous_outputs):
+        """
+        Generic method to ensure previous_outputs has complete context for template rendering.
+        This handles various agent result structures and ensures templates can access data.
+        """
+        enhanced_outputs = {}
+
+        for agent_id, agent_result in previous_outputs.items():
+            # Start with the original result
+            enhanced_outputs[agent_id] = agent_result
+
+            # If the result is a complex structure, ensure it's template-friendly
+            if isinstance(agent_result, dict):
+                # Handle different common agent result patterns
+                # Pattern 1: Direct result (like memory nodes)
+                if "memories" in agent_result and isinstance(agent_result["memories"], list):
+                    logger.debug(
+                        f"Agent '{agent_id}' has {len(agent_result['memories'])} memories directly accessible",
+                    )
+
+                # Pattern 2: Nested result structure
+                elif "result" in agent_result and isinstance(agent_result["result"], dict):
+                    nested_result = agent_result["result"]
+                    logger.debug(
+                        f"Agent '{agent_id}' has nested result with keys: {list(nested_result.keys())}",
+                    )
+
+                    # For nested structures, also provide direct access to common fields
+                    if "memories" in nested_result:
+                        # Create a version that allows both access patterns
+                        enhanced_outputs[agent_id] = {
+                            **agent_result,  # Keep original structure
+                            "memories": nested_result["memories"],  # Direct access
+                        }
+                        logger.debug(f"Agent '{agent_id}' enhanced with direct memory access")
+
+                    if "response" in nested_result:
+                        enhanced_outputs[agent_id] = {
+                            **enhanced_outputs.get(agent_id, agent_result),
+                            "response": nested_result["response"],  # Direct access
+                        }
+                        logger.debug(f"Agent '{agent_id}' enhanced with direct response access")
+
+        return enhanced_outputs
 
     def enqueue_fork(self, agent_ids, fork_group_id):
         """

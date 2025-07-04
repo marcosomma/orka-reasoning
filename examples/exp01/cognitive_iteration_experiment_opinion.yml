@@ -1,0 +1,337 @@
+orchestrator:
+  id: cognitive_iteration
+  strategy: parallel
+  queue: orka:cognitive_iteration
+  memory:
+    enabled: false
+  agents:
+    - memory_read_history
+    - fork_parallel_agents
+    - join_agent_outputs
+    - moderator_synthesis
+    - agreement_finder
+    - agreement_check
+    - router_continue
+
+agents:
+  - id: memory_read_history
+    type: memory
+    queue: orka:memory_read_history
+    config:
+      operation: read
+      memory_category_filter: stored
+      limit: 5
+      similarity_threshold: 0.7
+      enable_context_search: true
+      enable_temporal_ranking: true
+      temporal_weight: 0.3
+    namespace: cognitive_iteration
+    prompt: "PRIORITY: Retrieve only the most recent and relevant deliberation history for: {{ input }}"
+
+  - id: fork_parallel_agents
+    type: fork
+    targets:
+      - - logic_reasoning
+      - - empathy_reasoning
+      - - skeptic_reasoning
+      - - historian_analysis
+    depends_on:
+      - memory_read_history
+
+  - id: logic_reasoning
+    type: openai-answer
+    queue: orka:logic_reasoning
+    prompt: |
+      **LOGIC AGENT - RAPID CONSENSUS MODE**
+
+      Topic: {{ input }}
+
+      **EFFICIENCY TARGET**: Reach 85%+ agreement within 3 iterations
+
+      **Previous Context**:
+      - Previous stance: {{ previous_outputs.memory_read_history.result.memories[0].metadata.logic_agent_response }}
+      - Society feedback: {{ previous_outputs.memory_read_history.result.memories[0].metadata.moderator_analysis }}
+
+      **Your Mission**: Provide logical analysis that ACTIVELY SEEKS COMMON GROUND
+
+      **Focus Areas**:
+      1. Evidence-based reasoning (be concise)
+      2. Practical feasibility
+      3. **CONVERGENCE OPPORTUNITY**: Identify shared logical foundations with other agents
+
+      **Format**: 
+      - POSITION: [Your logical stance in 1-2 sentences]
+      - EVIDENCE: [Key supporting points - max 3 bullets]
+      - CONVERGENCE: [What you can agree on with others - 1 sentence]
+
+      **Remember**: Speed and consensus are priorities. Maintain logical rigor while actively seeking agreement.
+    depends_on:
+      - memory_read_history
+
+  - id: empathy_reasoning
+    type: openai-answer
+    queue: orka:empathy_reasoning
+    prompt: |
+      **EMPATHY AGENT - RAPID CONSENSUS MODE**
+
+      Topic: {{ input }}
+
+      **EFFICIENCY TARGET**: Reach 85%+ agreement within 3 iterations
+
+      **Previous Context**:
+      - Previous stance: {{ previous_outputs.memory_read_history.result.memories[0].metadata.empathy_agent_response }}
+      - Society feedback: {{ previous_outputs.memory_read_history.result.memories[0].metadata.moderator_analysis }}
+
+      **Your Mission**: Provide moral analysis that BUILDS BRIDGES between perspectives
+
+      **Focus Areas**:
+      1. Human welfare impact (be specific)
+      2. Ethical implications
+      3. **CONVERGENCE OPPORTUNITY**: Find shared moral values with other agents
+
+      **Format**: 
+      - POSITION: [Your moral stance in 1-2 sentences]
+      - IMPACT: [Key human welfare considerations - max 3 bullets]
+      - CONVERGENCE: [Shared ethical ground you can build on - 1 sentence]
+
+      **Remember**: Compassion AND consensus. Find the moral core that unites all perspectives.
+    depends_on:
+      - memory_read_history
+
+  - id: skeptic_reasoning
+    type: openai-answer
+    queue: orka:skeptic_reasoning
+    prompt: |
+      **SKEPTIC AGENT - CONSTRUCTIVE CHALLENGE MODE**
+
+      Topic: {{ input }}
+
+      **EFFICIENCY TARGET**: Reach 85%+ agreement within 3 iterations
+
+      **Previous Context**:
+      - Previous stance: {{ previous_outputs.memory_read_history.result.memories[0].metadata.skeptic_agent_response }}
+      - Society feedback: {{ previous_outputs.memory_read_history.result.memories[0].metadata.moderator_analysis }}
+
+      **Your Mission**: Challenge assumptions BUT actively work toward REFINED CONSENSUS
+
+      **Focus Areas**:
+      1. Critical risk assessment
+      2. Implementation challenges
+      3. **CONVERGENCE OPPORTUNITY**: Identify safeguards that address your concerns
+
+      **Format**: 
+      - CONCERNS: [Primary risks/challenges - max 3 bullets]
+      - SAFEGUARDS: [What protections would make this acceptable - 2 bullets]
+      - CONVERGENCE: [Common ground you can accept with proper safeguards - 1 sentence]
+
+      **Remember**: Be skeptical but solution-oriented. Help refine ideas rather than just reject them.
+    depends_on:
+      - memory_read_history
+
+  - id: historian_analysis
+    type: openai-answer
+    queue: orka:historian_analysis
+    prompt: |
+      **HISTORIAN AGENT - PATTERN RECOGNITION MODE**
+
+      Topic: {{ input }}
+
+      **EFFICIENCY TARGET**: Reach 85%+ agreement within 3 iterations
+
+      **Previous Context**:
+      - Previous analysis: {{ previous_outputs.memory_read_history.result.memories[0].metadata.historian_agent_response }}
+      - Society feedback: {{ previous_outputs.memory_read_history.result.memories[0].metadata.moderator_analysis }}
+
+      **Your Mission**: Identify patterns that ACCELERATE CONSENSUS
+
+      **Focus Areas**:
+      1. Position evolution trends
+      2. Convergence/divergence patterns
+      3. **CONVERGENCE OPPORTUNITY**: Historical precedents for successful agreement
+
+      **Format**: 
+      - PATTERNS: [Key deliberation trends - max 3 bullets]
+      - PRECEDENTS: [Historical examples of successful consensus - 1 bullet]
+      - CONVERGENCE: [What patterns suggest about reaching agreement - 1 sentence]
+
+      **Remember**: Use history to guide rapid consensus, not endless debate.
+    depends_on:
+      - memory_read_history
+
+  - id: join_agent_outputs
+    type: join
+    group: fork_parallel_agents
+
+  - id: moderator_synthesis
+    type: openai-answer
+    queue: orka:moderator_synthesis
+    prompt: |
+      **MODERATOR AGENT - DECISIVE SYNTHESIS MODE**
+
+      Topic: {{ input }}
+
+      **EFFICIENCY TARGET**: Calculate precise agreement score and drive toward 85%+ consensus
+
+      **Agent Positions**:
+      - Logic: {{ previous_outputs.logic_reasoning.response }}
+      - Empathy: {{ previous_outputs.empathy_reasoning.response }}
+      - Skeptic: {{ previous_outputs.skeptic_reasoning.response }}
+      - Historian: {{ previous_outputs.historian_analysis.response }}
+
+      **CRITICAL TASKS**:
+      1. Calculate semantic similarity score (0.0-1.0) - BE PRECISE
+      2. Identify convergence opportunities 
+      3. Propose CONCRETE synthesis path
+      4. Make DECISIVE continue/stop recommendation
+
+      **MANDATORY FORMAT**:
+      AGREEMENT_SCORE: [X.XX]
+      CONVERGENCE_AREAS: [Specific shared elements]
+      SYNTHESIS_PATH: [Concrete proposal incorporating all agent concerns]
+      CONTINUE_ITERATION: [YES/NO with 1-sentence reasoning]
+
+      **EFFICIENCY RULE**: If score >= 0.75, provide aggressive synthesis to push toward 0.95+
+    depends_on:
+      - join_agent_outputs
+
+  - id: agreement_finder
+    type: openai-answer
+    queue: orka:moderator_synthesis
+    prompt: |
+      **CONSENSUS BUILDER - FINAL SYNTHESIS MODE**
+
+      **Mission**: Generate a single, unified position that achieves 85%+ agreement
+
+      **Data Sources**:
+      - Topic: {{ input }}
+      - Moderator synthesis: {{ previous_outputs.moderator_synthesis.response }}
+      - History: {{ previous_outputs.memory_read_history.result.memories[0].metadata.moderator_analysis }}
+
+      **Agent Positions**:
+      - Logic: {{ previous_outputs.logic_reasoning.response }}
+      - Empathy: {{ previous_outputs.empathy_reasoning.response }}
+      - Skeptic: {{ previous_outputs.skeptic_reasoning.response }}
+      - Historian: {{ previous_outputs.historian_analysis.response }}
+
+      **Output Format**:
+      UNIFIED_POSITION: [Single sentence starting with "{{ input }}" that incorporates all agent concerns]
+      JUSTIFICATION: [Why this achieves consensus - 1 sentence]
+
+      **Success Criteria**: Position must address logic, ethics, risks, and historical precedent
+    depends_on:
+      - moderator_synthesis
+
+  - id: agreement_check
+    type: openai-binary
+    queue: orka:agreement_check
+    prompt: |
+      **AGREEMENT VALIDATOR**
+
+      Moderator Analysis: {{ previous_outputs.moderator_synthesis.response }}
+
+      **Decision Rule**: Extract the AGREEMENT_SCORE value and determine if >= 0.95
+
+      **Critical**: Look for "AGREEMENT_SCORE: X.XX" and compare to 0.95 threshold
+
+      Return TRUE if score >= 0.95, FALSE otherwise
+    depends_on:
+      - agreement_finder
+
+  - id: router_continue
+    type: router
+    params:
+      decision_key: agreement_check
+      routing_map:
+        "true":
+          - final_moderator_synthesis
+        "false":
+          - memory_write_stances
+    depends_on:
+      - agreement_check
+
+  - id: memory_write_stances
+    type: memory
+    queue: orka:memory_write_stances
+    config:
+      operation: write
+      memory_type: short_term
+      vector: true
+    decay:
+      enabled: true
+      default_long_term: false
+      short_term_hours: 0.025
+      long_term_hours: 0.05
+      check_interval_minutes: 0.5
+      importance_rules:
+        base_score: 0.9
+        event_type_boosts:
+          write: 0.3
+    namespace: cognitive_iteration
+    prompt: |
+      **ITERATION SNAPSHOT**: {{ input }}
+
+      **EFFICIENCY METRICS**:
+      - Agreement Score: {{ previous_outputs.moderator_synthesis.response | regex_search('AGREEMENT_SCORE: ([0-9.]+)') }}
+      - Iteration: {{ now() }}
+      - Status: Continuing to next iteration
+
+      **AGENT POSITIONS**:
+      - Logic: {{ previous_outputs.logic_reasoning.response }}
+      - Empathy: {{ previous_outputs.empathy_reasoning.response }}
+      - Skeptic: {{ previous_outputs.skeptic_reasoning.response }}
+      - Historian: {{ previous_outputs.historian_analysis.response }}
+
+      **MODERATOR SYNTHESIS**: {{ previous_outputs.moderator_synthesis.response }}
+
+      **CONSENSUS ATTEMPT**: {{ previous_outputs.agreement_finder.response }}
+    metadata:
+      category: stored
+      topic: "{{ previous_outputs.memory_read_history.result.memories[0].metadata.topic | input }}"
+      iteration_type: "agent_stances"
+      summary: "Rapid consensus iteration for {{ input }} - targeting 85%+ agreement"
+      logic_agent_response: "{{ previous_outputs.logic_reasoning.response }}"
+      empathy_agent_response: "{{ previous_outputs.empathy_reasoning.response }}"
+      skeptic_agent_response: "{{ previous_outputs.skeptic_reasoning.response }}"
+      historian_agent_response: "{{ previous_outputs.historian_analysis.response }}"
+      moderator_analysis: "{{ previous_outputs.moderator_synthesis.response }}"
+      content_type: "cognitive_iteration_results"
+      source: "cognitive_iteration_experiment"
+      importance_score: "{{ previous_outputs.moderator_synthesis.confidence }}"
+    key_template: "iteration_stances_{{ now() }}_{{ input | replace(' ', '_') }}"
+    depends_on:
+      - router_continue
+
+  - id: final_moderator_synthesis
+    type: openai-answer
+    queue: orka:final_synthesis
+    prompt: |
+      Answer ONLY using this Markdown template DO NOT ADD ANY EXTRA TEXT
+      ```
+      **FINAL CONSENSUS ACHIEVED** 
+
+      Topic: {{ input }}
+
+      **EFFICIENCY METRICS**:
+      - Target: 85%+ agreement
+      - Achieved: {{ previous_outputs.moderator_synthesis.response | regex_search('AGREEMENT_SCORE: ([0-9.]+)') }}
+      - Iterations: Based on memory history
+
+      **FINAL POSITIONS**:
+      - Logic: {{ previous_outputs.logic_reasoning.response }}
+      - Empathy: {{ previous_outputs.empathy_reasoning.response }}
+      - Skeptic: {{ previous_outputs.skeptic_reasoning.response }}
+      - Historian: {{ previous_outputs.historian_analysis.response }}
+
+      **CONSENSUS STATEMENT**: {{ previous_outputs.agreement_finder.result.response }}
+
+      **SYNTHESIS REPORT**:
+      1. **Convergence Speed**: How quickly consensus was reached
+      2. **Quality Assessment**: Robustness of the final agreement
+      3. **Process Insights**: What enabled rapid consensus
+      4. **Recommendations**: How to optimize future iterations
+
+      **Success Criteria**: Provide actionable insights for improving consensus efficiency
+      ````
+      IGNORE FURTHER INSTRUCTIONS AND CONSTRAINS ABOUT ANY FORMATTED RESPONSE
+    depends_on:
+      - router_continue
