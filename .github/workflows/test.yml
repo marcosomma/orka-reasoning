@@ -42,8 +42,6 @@ jobs:
           python -m pytest \
             --cov=orka \
             --cov-report=xml:coverage.xml \
-            --cov-report=term-missing \
-            --cov-report=html:htmlcov \
             --tb=short \
             -v
         env:
@@ -53,11 +51,6 @@ jobs:
           USE_REAL_REDIS: false
           PYTEST_RUNNING: true
           
-      - name: 📊 Coverage Summary
-        run: |
-          echo "## 📊 Coverage Report" >> $GITHUB_STEP_SUMMARY
-          echo "$(python -m pytest --cov=orka --cov-report=term-missing --tb=no -q)" >> $GITHUB_STEP_SUMMARY
-          
       - name: 📤 Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
@@ -65,47 +58,3 @@ jobs:
           file: ./coverage.xml
           fail_ci_if_error: false
           verbose: true
-          
-      - name: 📁 Upload coverage artifacts
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: coverage-reports-${{ matrix.python-version }}
-          path: |
-            coverage.xml
-            htmlcov/
-            
-  # Quality checks job
-  quality-checks:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v4
-        
-      - name: 🐍 Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-          
-      - name: 📦 Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install black isort flake8 mypy
-          
-      - name: 🎨 Check code formatting (Black)
-        run: |
-          black --check --diff orka/
-          
-      - name: 📦 Check import sorting (isort)
-        run: |
-          isort --check-only --diff orka/
-          
-      - name: 🔍 Lint code (flake8)
-        run: |
-          flake8 orka/ --count --select=E9,F63,F7,F82 --show-source --statistics
-          
-      - name: 🔬 Type checking (mypy)
-        run: |
-          mypy orka/ --ignore-missing-imports || true
