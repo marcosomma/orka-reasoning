@@ -622,6 +622,6 @@ Apache 2.0 License. See [LICENSE](./LICENSE) for details.
 pip install orka-reasoning && docker run -d -p 6379:6379 redis/redis-stack:latest
 ```
 
-[Get Started Now →](https://orkacore.com/docs/quickstart)
+[Get Started Now →](https://github.com/marcosomma/orka-reasoning/blob/master/docs/getting-started.md)
 
 </div>
