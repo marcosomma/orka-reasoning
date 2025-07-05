@@ -43,6 +43,9 @@ Every decision is traceable and auditable:
 ```bash
 # Install OrKa with all required dependencies
 pip install orka-reasoning fastapi uvicorn kafka-python
+
+# Optional: Install schema management features (Avro/Protobuf support)
+pip install orka-reasoning[schema]
 ```
 
 ### 2. Start OrKa (Automatic RedisStack Setup)

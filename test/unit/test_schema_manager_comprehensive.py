@@ -412,4 +412,4 @@ class TestUtilityFunctions:
         mock_print.assert_called_once()
         call_args = mock_print.call_args[0][0]
         assert "Migration Steps" in call_args
-        assert "pip install confluent-kafka" in call_args
+        assert "pip install orka-reasoning[schema]" in call_args

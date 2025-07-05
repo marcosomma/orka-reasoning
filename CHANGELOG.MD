@@ -2,6 +2,24 @@
 *(derived from the public-repo commit history as of **2025-01-31**)*  
 
 ---
+## [0.7.4] · 2025-01-31
+### Fixed
+* **🔧 Schema Management Dependencies Installation Issue**
+  * **Critical Package Configuration Fix** - Fixed missing confluent-kafka dependencies preventing schema management features from working after pip installation
+  * **Optional Dependencies Implementation** - Added `[schema]` optional dependencies group allowing users to install schema features with `pip install orka-reasoning[schema]`
+  * **GitHub Actions Test Failures** - Resolved failing schema manager tests in CI/CD pipeline by installing required dependencies
+  * **Installation Documentation** - Updated README.md, getting-started.md, and documentation to reflect new installation options
+  * **Improved Error Messages** - Enhanced error messages in schema_manager.py to guide users to correct installation method
+  * **Backward Compatibility** - Maintained full backward compatibility while adding optional schema management features
+
+### Technical Details
+* **Root Cause** - confluent-kafka dependencies were only in `orka/requirements.txt` but not in `setup.py` or `pyproject.toml`, causing installation failures
+* **Solution Strategy** - Added schema management as optional dependencies that users can install when needed
+* **Files Updated** - `setup.py`, `pyproject.toml`, `.github/workflows/test.yml`, documentation files, and schema_manager.py
+* **Impact** - Users can now choose between basic installation (`pip install orka-reasoning`) and full schema support (`pip install orka-reasoning[schema]`)
+* **Testing** - All 28 schema manager tests now pass, including the previously failing TestUtilityFunctions tests
+
+---
 ## [0.7.3] · 2025-01-04
 ### Fixed
 * **🔧 Memory Metadata Structure Preservation**

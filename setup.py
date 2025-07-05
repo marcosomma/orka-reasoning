@@ -18,7 +18,7 @@ with open("README.md", encoding="utf-8") as fh:
 
 setup(
     name="orka-reasoning",
-    version="0.7.3",
+    version="0.7.4",
     author="Marco Somma",
     author_email="marcosomma.work@gmail.com",
     description="OrKa: Modular orchestration for agent-based cognition",
@@ -44,7 +44,16 @@ setup(
         "rich>=13.0.0",
         "textual>=0.40.0",
     ],
-    extras_require={"dev": ["pytest", "coverage", "pytest-cov"]},
+    extras_require={
+        "dev": ["pytest", "coverage", "pytest-cov"],
+        "schema": [
+            "confluent-kafka[avro,protobuf,schema-registry]>=2.3.0",
+            "avro-python3",
+            "fastavro",
+            "protobuf",
+            "jsonschema",
+        ],
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: Other/Proprietary License",  # Use this for CC BY-NC

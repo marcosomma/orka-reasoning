@@ -42,6 +42,9 @@ Get OrKa running with enterprise-grade performance in 2 minutes:
 # 1. Install OrKa with all dependencies
 pip install orka-reasoning fastapi uvicorn kafka-python
 
+# Optional: Install schema management features (Avro/Protobuf support)
+pip install orka-reasoning[schema]
+
 # 2. Set your OpenAI key
 export OPENAI_API_KEY=your-key-here
 

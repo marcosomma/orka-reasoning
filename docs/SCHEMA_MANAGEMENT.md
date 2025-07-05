@@ -140,7 +140,7 @@ python scripts/migrate_to_schemas.py --analyze logs/orka_trace_*.json --generate
 
 1. **Install Schema Dependencies**
    ```bash
-   pip install confluent-kafka[avro] confluent-kafka[protobuf]
+   pip install orka-reasoning[schema]
    ```
 
 2. **Update Producers**

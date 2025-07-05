@@ -8,7 +8,7 @@ import logging
 import os
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any
 
 # Always import SerializationContext for type hints
 if TYPE_CHECKING:
@@ -67,8 +67,8 @@ class SchemaManager:
     def __init__(self, config: SchemaConfig):
         self.config = config
         self.registry_client = None
-        self.serializers: Dict[str, Any] = {}
-        self.deserializers: Dict[str, Any] = {}
+        self.serializers: dict[str, Any] = {}
+        self.deserializers: dict[str, Any] = {}
 
         if config.format != SchemaFormat.JSON:
             self._init_schema_registry()
@@ -77,7 +77,7 @@ class SchemaManager:
         """Initialize connection to Schema Registry."""
         if not AVRO_AVAILABLE and not PROTOBUF_AVAILABLE:
             raise RuntimeError(
-                "Neither Avro nor Protobuf dependencies are available. Please install: pip install confluent-kafka[avro] confluent-kafka[protobuf]",
+                "Neither Avro nor Protobuf dependencies are available. Please install: pip install orka-reasoning[schema]",
             )
 
         try:
@@ -181,9 +181,9 @@ class SchemaManager:
 
     def _memory_to_dict(
         self,
-        memory_obj: Dict[str, Any],
+        memory_obj: dict[str, Any],
         ctx: "SerializationContext",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Convert memory object to dict for Avro serialization."""
         # Transform your memory object to match the Avro schema
         return {
@@ -214,15 +214,15 @@ class SchemaManager:
 
     def _dict_to_memory(
         self,
-        avro_dict: Dict[str, Any],
+        avro_dict: dict[str, Any],
         ctx: "SerializationContext",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Convert Avro dict back to memory object."""
         return avro_dict  # Or transform back to your internal format
 
     def _json_serializer(
         self,
-        obj: Dict[str, Any],
+        obj: dict[str, Any],
         ctx: "SerializationContext",
     ) -> bytes:
         """Fallback JSON serializer."""
@@ -232,7 +232,7 @@ class SchemaManager:
         self,
         data: bytes,
         ctx: "SerializationContext",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Fallback JSON deserializer."""
         return json.loads(data.decode("utf-8"))
 
@@ -272,7 +272,7 @@ class SchemaManager:
 
 
 def create_schema_manager(
-    registry_url: Optional[str] = None,
+    registry_url: str | None = None,
     format: SchemaFormat = SchemaFormat.AVRO,
 ) -> SchemaManager:
     """Create a schema manager with configuration from environment or parameters."""
@@ -295,8 +295,7 @@ def migrate_from_json():
     Migration Steps:
     
     1. Install dependencies:
-       pip install confluent-kafka[avro]  # For Avro
-       pip install confluent-kafka[protobuf]  # For Protobuf
+       pip install orka-reasoning[schema]  # Includes Avro and Protobuf support
     
     2. Update your Kafka producer:
        schema_manager = create_schema_manager()

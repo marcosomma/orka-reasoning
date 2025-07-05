@@ -1,6 +1,6 @@
 [project]
 name = "orka-reasoning"
-version = "0.7.3"
+version = "0.7.4"
 description = "Modular agent orchestrator for reasoning pipelines"
 authors = [
   { name = "Marco Somma", email = "marcosomma.work@gmail.com" }
@@ -39,6 +39,13 @@ dev = [
   "ruff",
   "sphinx",
   "sphinx-rtd-theme"
+]
+schema = [
+  "confluent-kafka[avro,protobuf,schema-registry]>=2.3.0",
+  "avro-python3",
+  "fastavro", 
+  "protobuf",
+  "jsonschema"
 ]
 
 [project.entry-points."orka.agents"]

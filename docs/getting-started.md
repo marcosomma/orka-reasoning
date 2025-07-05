@@ -24,6 +24,9 @@ Welcome to OrKa! This guide will help you get up and running with OrKa's powerfu
 ```bash
 # Install OrKa with all dependencies (includes automatic RedisStack setup)
 pip install orka-reasoning fastapi uvicorn kafka-python
+
+# Optional: Install schema management features (Avro/Protobuf support)
+pip install orka-reasoning[schema]
 ```
 
 **That's it!** OrKa V0.7.0 automatically handles RedisStack setup through Docker.

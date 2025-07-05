@@ -36,6 +36,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest pytest-cov pytest-asyncio
+          pip install -e .[schema]  # Install schema dependencies for testing
           
       - name: 🧪 Run tests with coverage
         run: |
