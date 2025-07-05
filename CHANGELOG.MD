@@ -516,7 +516,7 @@
 
 ---
 
-## [0.5.5] · 2025-05-10
+## [0.5.5] · 2025-05-09
 ### Changed
 * Bumped version to **0.5.5** in *pyproject.toml* / *setup.py*.  
 * Polished README (new badges, wording) and expanded docs.  
@@ -524,7 +524,7 @@
 
 ---
 
-## [0.5.2] · 2025-05-10
+## [0.5.2] · 2025-05-01
 ### Added
 * Initial **Codecov** integration & coverage upload workflow.  
 * Extra unit-tests ⇒ higher overall coverage.  
@@ -533,7 +533,7 @@
 
 ---
 
-## [0.5.0] · 2025-05-10  
+## [0.5.0] · 2025-04-26  
 *(tag implied by version bump in later commits)*  
 ### Added
 * **Service-node / Memory subsystem**  
@@ -546,7 +546,7 @@
 
 ---
 
-## [0.3.7] · 2025-05-03
+## [0.3.7] · 2025-04-20
 ### Added
 * Docker artefacts (`orka/docker/*`, root `docker-compose.yml`).  
 * `orka_start.py` — one-shot CLI launcher for Redis + backend.  
@@ -555,7 +555,7 @@
 
 ---
 
-## [0.3.64] · 2025-05-03
+## [0.3.64] · 2025-04-13
 ### Added
 * Repo-wide branding refresh (new logo URL, website link).  
 * Additional Codecov / Test badges.  
@@ -564,7 +564,7 @@
 
 ---
 
-## [0.3.6] · 2025-05-03
+## [0.3.6] · 2025-04-13
 ### Added
 * **CLI `orka-start`** docs & helper text.  
 * Bulk test suite (`test_orka_*`, fake-Redis) + coverage scripts.  
@@ -573,7 +573,7 @@
 
 ---
 
-## [0.3.5] · 2025-05-02
+## [0.3.5] · 2025-04-11
 ### Added
 * First **fork/join** logic polish – big diff in `join_node.py`.  
 * Example YAML (`example.yml`) with agent definitions.  
