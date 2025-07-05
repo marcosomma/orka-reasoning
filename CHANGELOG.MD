@@ -2,7 +2,7 @@
 *(derived from the public-repo commit history as of **2025-01-31**)*  
 
 ---
-## [0.7.4] · 2025-01-31
+## [0.7.4] · 2025-07-05
 ### Fixed
 * **🔧 Schema Management Dependencies Installation Issue**
   * **Critical Package Configuration Fix** - Fixed missing confluent-kafka dependencies preventing schema management features from working after pip installation
@@ -20,7 +20,7 @@
 * **Testing** - All 28 schema manager tests now pass, including the previously failing TestUtilityFunctions tests
 
 ---
-## [0.7.3] · 2025-01-04
+## [0.7.3] · 2025-07-03
 ### Fixed
 * **🔧 Memory Metadata Structure Preservation**
   * **Enhanced Memory Writer Node** - Fixed metadata structure handling to ensure YAML-defined metadata is properly preserved and rendered
@@ -36,7 +36,7 @@
 * **Testing** - Enhanced debugging and logging to verify metadata structure preservation throughout the memory writing process
 
 ---
-## [0.7.2] · 2025-01-31
+## [0.7.2] · 2025-07-01
 ### Fixed
 * **🎨 TUI Package Distribution Issue**
   * **Missing CSS Files** - Fixed `textual_styles.tcss` file not being included in package distribution
@@ -51,7 +51,7 @@
 * **Testing** - Package installation now includes all required TUI assets for proper styling
 
 ---
-## [0.7.1] · 2025-01-31
+## [0.7.1] · 2025-07-01
 ### Fixed
 * **🔧 Redis-py 5.x Compatibility Issue**
   * **Critical Import Fix** - Fixed `ModuleNotFoundError: No module named 'redis.commands.search.indexDefinition'` when using redis-py ≥5.0
@@ -67,7 +67,7 @@
 * **Testing** - All existing tests pass with both redis-py 4.x and 5.x versions
 
 ---
-## [0.7.0] · 2025-01-31
+## [0.7.0] · 2025-06-31
 ### Added
 * **🚀 RedisStack HNSW Vector Search Revolution - Production Ready**
   * **100x Faster Vector Searches** - RedisStack with HNSW (Hierarchical Navigable Small World) indexing now default across all components
@@ -160,7 +160,7 @@
 * **Performance Benefits** - Immediate 100x search performance improvement upon RedisStack adoption with zero code changes
 
 ---
-## [0.6.6] · 2025-01-30
+## [0.6.6] · 2025-06-30
 ### Added
 * **Kafka Hybrid Backend Implementation**
   * **Streamlined Architecture** - Kafka now automatically uses Redis for memory operations while handling event streaming
@@ -202,7 +202,7 @@
 * **Cross-Platform Support** - Enhanced Windows and Unix compatibility for Docker and startup scripts
 * **Comprehensive Testing** - Extended test coverage to 639+ tests with focus on hybrid backend scenarios
 
-## [0.6.5] · 2025-01-29
+## [0.6.5] · 2025-06-29
 ### Added
 * **Memory Decay System - Intelligent Memory Management**
   * **Automatic Memory Classification** - Smart classification of memory entries as short-term or long-term based on importance and event type
@@ -271,7 +271,7 @@
 * **Comprehensive Testing** - Extensive test coverage for decay functionality, enhanced memory reader, CLI commands, and edge cases
 * **Performance Optimization** - Efficient memory scanning and cleanup with minimal impact on orchestration performance
 
-## [0.6.4] · 2025-01-28
+## [0.6.4] · 2025-06-16
 ### Changed
 * **Major Architectural Refactoring - Monolithic File Decomposition**
   * **Memory Logger Modularization** - Split `memory_logger.py` from 1,813 lines into focused components:
@@ -317,7 +317,7 @@
 * **Zero Regression Policy** - Rigorous testing ensured no functionality changes during refactoring process
 * **Future-Proof Architecture** - New modular structure enables easier maintenance, testing, and feature development
 
-## [0.6.3] · 2025-01-27
+## [0.6.3] · 2025-06-12
 ### Fixed
 * **Critical Docker Integration Bug**
   * Fixed "docker-compose file not available" error when running `orka.orka_start` after pip installation
