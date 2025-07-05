@@ -1,8 +1,9 @@
 # OrKa-Reasoning
 
+
 <div align="center">
 
-[![Coverage Upload](https://github.com/marcosomma/orka-reasoning/actions/workflows/covrage.yml/badge.svg?branch=master)](https://github.com/marcosomma/orka-reasoning/actions/workflows/covrage.yml)
+![GitHub Tag](https://img.shields.io/github/v/tag/marcosomma/orka-reasoning?color=blue)
 [![codecov](https://codecov.io/gh/marcosomma/orka-reasoning/branch/master/graph/badge.svg?token=V91X4WGBBZ)](https://codecov.io/gh/marcosomma/orka-reasoning) [![orka-reasoning](https://snyk.io/advisor/python/orka-reasoning/badge.svg)](https://snyk.io/advisor/python/orka-reasoning)
 ![PyPI - License](https://img.shields.io/pypi/l/orka-reasoning?color=blue)
 
@@ -19,7 +20,7 @@
 
 ---
 
-## 🚀 What's New in V0.7.0
+## 🚀 What's New in V0.7.x
 
 - **🚀 100x Faster Vector Search** - RedisStack HNSW indexing now default across all components
 - **⚡ Sub-millisecond Search Latency** - O(log n) complexity for massive datasets
