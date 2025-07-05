@@ -68,5 +68,5 @@ class TestTUIInterface:
 
         # Check module docstring
         assert tui_interface.__doc__ is not None
-        assert "OrKa Modern TUI Interface" in tui_interface.__doc__
-        assert "Features:" in tui_interface.__doc__
+        assert "OrKa TUI Interface" in tui_interface.__doc__
+        assert "Core Features" in tui_interface.__doc__

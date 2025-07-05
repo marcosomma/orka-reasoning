@@ -25,7 +25,7 @@ import logging
 import threading
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from .file_operations import FileOperationsMixin
 from .serialization import SerializationMixin
@@ -35,15 +35,148 @@ logger = logging.getLogger(__name__)
 
 class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
     """
-    Abstract base class for memory loggers.
-    Defines the interface that must be implemented by all memory backends.
+    Base Memory Logger
+    =================
+
+    Abstract base class that defines the interface and common functionality for all
+    memory logger implementations in OrKa. This class provides the foundation for
+    persistent memory storage across different backends.
+
+    Core Responsibilities
+    --------------------
+
+    **Interface Definition**
+    - Defines abstract methods that all memory backends must implement
+    - Provides common initialization and configuration patterns
+    - Establishes consistent behavior across different storage backends
+
+    **Memory Lifecycle Management**
+    - Automatic memory decay based on configurable rules
+    - Importance scoring for memory retention decisions
+    - Memory type classification (short-term vs long-term)
+    - Category-based memory organization (logs vs stored memories)
+
+    **Data Optimization**
+    - Blob deduplication for large objects to reduce storage overhead
+    - Serialization mixins for consistent data handling
+    - File operation mixins for export/import functionality
+    - Configurable thresholds for optimization decisions
+
+    **Thread Safety**
+    - Thread-safe decay scheduling and management
+    - Concurrent access patterns for multi-threaded environments
+    - Proper resource cleanup and lifecycle management
+
+    Architecture Details
+    -------------------
+
+    **Memory Classification System**
+    - **Categories**: "log" (orchestration events) vs "stored" (persistent memories)
+    - **Types**: "short_term" (temporary) vs "long_term" (persistent)
+    - **Importance Scoring**: 0.0-1.0 scale based on event type and content
+    - **Decay Rules**: Configurable retention policies per category/type
+
+    **Blob Deduplication**
+    - SHA256 hashing for content identification
+    - Reference counting for cleanup decisions
+    - Configurable size threshold (default: 200 characters)
+    - Automatic cleanup of unused blobs
+
+    **Decay Management**
+    - Background thread for automatic cleanup
+    - Configurable check intervals (default: 30 minutes)
+    - Dry-run support for testing cleanup operations
+    - Graceful shutdown with proper thread cleanup
+
+    Implementation Requirements
+    --------------------------
+
+    **Required Abstract Methods**
+    All concrete implementations must provide:
+
+    - `log()` - Store orchestration events and memory entries
+    - `tail()` - Retrieve recent entries for debugging
+    - `cleanup_expired_memories()` - Remove expired entries
+    - `get_memory_stats()` - Provide storage statistics
+    - Redis-compatible methods: `hset`, `hget`, `hkeys`, `hdel`, `get`, `set`, `delete`
+    - Set operations: `smembers`, `sadd`, `srem`
+
+    **Optional Enhancements**
+    Implementations may provide:
+
+    - Vector search capabilities for semantic similarity
+    - Advanced filtering and querying options
+    - Performance optimizations for specific use cases
+    - Integration with external systems (Redis, Kafka, etc.)
+
+    Configuration Options
+    --------------------
+
+    **Decay Configuration**
+    ```python
+    decay_config = {
+        "enabled": True,
+        "default_short_term_hours": 1.0,
+        "default_long_term_hours": 24.0,
+        "check_interval_minutes": 30,
+        "memory_type_rules": {
+            "long_term_events": ["success", "completion", "write", "result"],
+            "short_term_events": ["debug", "processing", "start", "progress"]
+        },
+        "importance_rules": {
+            "base_score": 0.5,
+            "event_type_boosts": {"write": 0.3, "success": 0.2},
+            "agent_type_boosts": {"memory": 0.2, "openai-answer": 0.1}
+        }
+    }
+    ```
+
+    **Blob Deduplication**
+    - `_blob_threshold`: Minimum size for deduplication (default: 200 chars)
+    - Automatic reference counting and cleanup
+    - SHA256 hashing for content identification
+
+    Usage Patterns
+    --------------
+
+    **Implementing a Custom Backend**
+    ```python
+    from orka.memory.base_logger import BaseMemoryLogger
+
+    class CustomMemoryLogger(BaseMemoryLogger):
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            self._storage = {}  # Your storage implementation
+
+        def log(self, agent_id, event_type, payload, **kwargs):
+            # Implement storage logic
+            pass
+
+        def cleanup_expired_memories(self, dry_run=False):
+            # Implement cleanup logic
+            pass
+
+        # ... implement other abstract methods
+    ```
+
+    **Memory Classification Logic**
+    - Orchestration logs are always classified as short-term
+    - Only "stored" memories can be classified as long-term
+    - Importance scoring influences retention decisions
+    - Event types and agent types affect classification
+
+    **Thread Safety Considerations**
+    - Decay scheduler runs in background thread
+    - Proper synchronization for concurrent access
+    - Graceful shutdown handling with stop events
+    - Resource cleanup on object destruction
     """
 
     def __init__(
         self,
         stream_key: str = "orka:memory",
         debug_keep_previous_outputs: bool = False,
-        decay_config: Optional[Dict[str, Any]] = None,
+        decay_config: dict[str, Any] | None = None,
     ) -> None:
         """
         Initialize the memory logger.
@@ -54,7 +187,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
             decay_config: Configuration for memory decay functionality.
         """
         self.stream_key = stream_key
-        self.memory: List[Dict[str, Any]] = []  # Local memory buffer
+        self.memory: list[dict[str, Any]] = []  # Local memory buffer
         self.debug_keep_previous_outputs = debug_keep_previous_outputs
 
         # Initialize decay configuration
@@ -70,13 +203,13 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
             self._start_decay_scheduler()
 
         # Blob deduplication storage: SHA256 -> actual blob content
-        self._blob_store: Dict[str, Any] = {}
+        self._blob_store: dict[str, Any] = {}
         # Track blob usage count for potential cleanup
-        self._blob_usage: Dict[str, int] = {}
+        self._blob_usage: dict[str, int] = {}
         # Minimum size threshold for blob deduplication (in chars)
         self._blob_threshold = 200
 
-    def _init_decay_config(self, decay_config: Dict[str, Any]) -> Dict[str, Any]:
+    def _init_decay_config(self, decay_config: dict[str, Any]) -> dict[str, Any]:
         """
         Initialize decay configuration with defaults.
 
@@ -124,7 +257,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         self,
         event_type: str,
         agent_id: str,
-        payload: Dict[str, Any],
+        payload: dict[str, Any],
     ) -> float:
         """
         Calculate importance score for a memory entry.
@@ -197,7 +330,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         self,
         event_type: str,
         agent_id: str,
-        payload: Dict[str, Any],
+        payload: dict[str, Any],
         log_type: str = "log",
     ) -> str:
         """
@@ -265,7 +398,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
             logger.info("Stopped automatic memory decay scheduler")
 
     @abstractmethod
-    def cleanup_expired_memories(self, dry_run: bool = False) -> Dict[str, Any]:
+    def cleanup_expired_memories(self, dry_run: bool = False) -> dict[str, Any]:
         """
         Clean up expired memory entries based on decay configuration.
 
@@ -277,7 +410,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         """
 
     @abstractmethod
-    def get_memory_stats(self) -> Dict[str, Any]:
+    def get_memory_stats(self) -> dict[str, Any]:
         """
         Get memory usage statistics.
 
@@ -290,31 +423,31 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         self,
         agent_id: str,
         event_type: str,
-        payload: Dict[str, Any],
-        step: Optional[int] = None,
-        run_id: Optional[str] = None,
-        fork_group: Optional[str] = None,
-        parent: Optional[str] = None,
-        previous_outputs: Optional[Dict[str, Any]] = None,
-        agent_decay_config: Optional[Dict[str, Any]] = None,
+        payload: dict[str, Any],
+        step: int | None = None,
+        run_id: str | None = None,
+        fork_group: str | None = None,
+        parent: str | None = None,
+        previous_outputs: dict[str, Any] | None = None,
+        agent_decay_config: dict[str, Any] | None = None,
         log_type: str = "log",  # 🎯 NEW: "log" for orchestration, "memory" for stored memories
     ) -> None:
         """Log an event to the memory backend."""
 
     @abstractmethod
-    def tail(self, count: int = 10) -> List[Dict[str, Any]]:
+    def tail(self, count: int = 10) -> list[dict[str, Any]]:
         """Retrieve the most recent events."""
 
     @abstractmethod
-    def hset(self, name: str, key: str, value: Union[str, bytes, int, float]) -> int:
+    def hset(self, name: str, key: str, value: str | bytes | int | float) -> int:
         """Set a field in a hash structure."""
 
     @abstractmethod
-    def hget(self, name: str, key: str) -> Optional[str]:
+    def hget(self, name: str, key: str) -> str | None:
         """Get a field from a hash structure."""
 
     @abstractmethod
-    def hkeys(self, name: str) -> List[str]:
+    def hkeys(self, name: str) -> list[str]:
         """Get all keys in a hash structure."""
 
     @abstractmethod
@@ -322,7 +455,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         """Delete fields from a hash structure."""
 
     @abstractmethod
-    def smembers(self, name: str) -> List[str]:
+    def smembers(self, name: str) -> list[str]:
         """Get all members of a set."""
 
     @abstractmethod
@@ -334,11 +467,11 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         """Remove members from a set."""
 
     @abstractmethod
-    def get(self, key: str) -> Optional[str]:
+    def get(self, key: str) -> str | None:
         """Get a value by key."""
 
     @abstractmethod
-    def set(self, key: str, value: Union[str, bytes, int, float]) -> bool:
+    def set(self, key: str, value: str | bytes | int | float) -> bool:
         """Set a value by key."""
 
     @abstractmethod
@@ -417,8 +550,8 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
     def _create_blob_reference(
         self,
         blob_hash: str,
-        original_keys: List[str] = None,
-    ) -> Dict[str, Any]:
+        original_keys: list[str] = None,
+    ) -> dict[str, Any]:
         """
         Create a blob reference object.
 

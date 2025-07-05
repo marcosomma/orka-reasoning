@@ -47,7 +47,7 @@ import abc
 import logging
 import uuid
 from datetime import datetime
-from typing import Any, List, Optional, TypeVar, Union
+from typing import Any, TypeVar
 
 from ..contracts import Context, Output, Registry
 from ..utils.concurrency import ConcurrencyManager
@@ -59,52 +59,116 @@ T = TypeVar("T")
 
 class BaseAgent:
     """
-    🧠 **Foundation for all OrKa agents** - the cognitive building blocks of your workflows.
+    Agent Base Classes
+    ==================
 
-    **What makes agents special:**
-    - **Intelligent Processing**: Transform raw inputs into structured, meaningful outputs
-    - **Context Preservation**: Maintain conversation flow and processing history
-    - **Async Performance**: Non-blocking execution with timeout and concurrency control
-    - **Error Intelligence**: Graceful failure handling with detailed diagnostics
-    - **Resource Management**: Automatic initialization and cleanup of dependencies
+    This module defines the foundation for all OrKa agents - the processing units that
+    transform inputs into outputs within orchestrated workflows.
+
+    Agent Architecture
+    -----------------
+
+    OrKa provides two agent patterns to support different implementation needs:
+
+    **Modern Async Pattern (BaseAgent)**
+    - Full async/await support for concurrent execution
+    - Structured output handling with automatic error wrapping
+    - Built-in timeout and concurrency control
+    - Lifecycle hooks for initialization and cleanup
+    - Context-aware execution with trace information
+
+    **Legacy Sync Pattern (LegacyBaseAgent)**
+    - Simple synchronous execution model
+    - Compatible with existing agent implementations
+    - Direct result return without output wrapping
+    - Backward compatibility for older agents
+
+    Core Concepts
+    ------------
 
     **Agent Lifecycle:**
     1. **Initialization**: Set up resources and validate configuration
-    2. **Execution**: Process inputs with full context awareness
+    2. **Execution**: Process inputs with context awareness
     3. **Result Handling**: Structure outputs for downstream processing
     4. **Cleanup**: Release resources and maintain system health
 
-    **Perfect for building:**
-    - Multi-step reasoning workflows
-    - Intelligent content processing pipelines
-    - Context-aware conversational systems
-    - Fault-tolerant distributed AI applications
+    **Context Management:**
+    - Agents receive context dictionaries containing input data and metadata
+    - Trace IDs are automatically added for debugging and monitoring
+    - Previous outputs from other agents are available in the context
+    - Error information is captured and structured for debugging
 
-    **Example Usage:**
+    **Concurrency Control:**
+    - Built-in concurrency manager limits parallel executions
+    - Configurable timeout handling prevents hanging operations
+    - Thread-safe execution for multi-agent workflows
+    - Resource pooling for efficient memory usage
+
+    Implementation Patterns
+    ----------------------
+
+    **Modern Agent Example:**
     ```python
-    # Create a specialized agent
-    classifier = OpenAIClassificationAgent(
-        agent_id="intent_classifier",
-        options=["question", "request", "complaint"],
-        prompt="Classify user intent: {{ input }}"
-    )
+    from orka.agents.base_agent import BaseAgent
 
-    # Execute with context
-    result = await classifier.run({
-        "input": "How do I reset my password?",
-        "user_id": "user123",
-        "session_context": previous_interactions
-    })
+    class MyModernAgent(BaseAgent):
+        async def _run_impl(self, ctx):
+            input_data = ctx.get("input")
+            # Process input asynchronously
+            result = await self.process_async(input_data)
+            return result
     ```
+
+    **Legacy Agent Example:**
+    ```python
+    from orka.agents.base_agent import LegacyBaseAgent
+
+    class MyLegacyAgent(LegacyBaseAgent):
+        def run(self, input_data):
+            # Simple synchronous processing
+            return self.process_sync(input_data)
+    ```
+
+    Error Handling
+    --------------
+
+    **Modern Agents:**
+    - Exceptions are automatically caught and wrapped in Output objects
+    - Error details are preserved for debugging
+    - Status indicators show success/failure state
+    - Metadata includes agent identification
+
+    **Legacy Agents:**
+    - Exceptions propagate directly to the orchestrator
+    - Simple error handling for backward compatibility
+    - Direct return values without wrapping
+
+    Integration Features
+    -------------------
+
+    **Registry Integration:**
+    - Agents can access shared resources through the registry
+    - Dependency injection for memory, embedders, and other services
+    - Lazy initialization of expensive resources
+
+    **Orchestrator Integration:**
+    - Agents are automatically discovered and instantiated
+    - Configuration is passed through constructor parameters
+    - Results flow seamlessly between agents in workflows
+
+    **Monitoring and Debugging:**
+    - Automatic trace ID generation for request tracking
+    - Execution timing and performance metrics
+    - Comprehensive logging for troubleshooting
     """
 
     def __init__(
         self,
         agent_id: str,
-        registry: Optional[Registry] = None,
-        prompt: Optional[str] = None,
-        queue: Optional[List[str]] = None,
-        timeout: Optional[float] = 30.0,
+        registry: Registry | None = None,
+        prompt: str | None = None,
+        queue: list[str] | None = None,
+        timeout: float | None = 30.0,
         max_concurrency: int = 10,
         **kwargs,
     ):
@@ -143,7 +207,7 @@ class BaseAgent:
             return
         self._initialized = True
 
-    async def run(self, ctx: Union[Context, Any]) -> Union[Output, Any]:
+    async def run(self, ctx: Context | Any) -> Output | Any:
         """
         Run the agent with the given context.
 

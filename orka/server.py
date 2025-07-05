@@ -12,71 +12,223 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-🌐 **OrKa Server** - High-Performance API Gateway
-===============================================
+OrKa Server - FastAPI Web Server
+===============================
 
-The OrKa Server transforms your AI workflows into production-ready APIs with
-enterprise-grade features for reliability, scalability, and monitoring.
+Production-ready FastAPI server that exposes OrKa workflows through RESTful APIs.
+Transforms AI workflows into scalable web services with comprehensive data handling.
 
-**Core Server Philosophy:**
-Think of the OrKa Server as your AI workflow's gateway to the world - providing
-secure, fast, and reliable access to your intelligent agents through modern
-web APIs that scale from prototype to production.
+Core Features
+------------
 
-**API Capabilities:**
-- 🚀 **RESTful Endpoints**: Clean, intuitive APIs for workflow execution
-- 📡 **WebSocket Streaming**: Real-time results for interactive applications
-- 📊 **GraphQL Interface**: Flexible querying for complex data requirements
-- 📋 **OpenAPI Documentation**: Interactive testing and client generation
+**API Gateway Functionality**
+- RESTful endpoints for workflow execution
+- JSON request/response handling with intelligent sanitization
+- CORS middleware for cross-origin requests
+- Comprehensive error handling and logging
 
-**Production Features:**
-- ✅ **Request/Response Validation**: Pydantic-powered data validation
-- 🛡️ **Rate Limiting & Auth**: Protect your APIs from abuse and unauthorized access
-- 📈 **Metrics & Health Checks**: Comprehensive monitoring and observability
-- 🔄 **Graceful Shutdown**: Clean connection handling during deployments
+**Data Processing**
+- Intelligent JSON sanitization for complex Python objects
+- Automatic handling of bytes, datetime, and custom objects
+- Base64 encoding for binary data transmission
+- Type preservation with metadata for complex structures
 
-**Scaling Patterns:**
-- ⚡ **Horizontal Scaling**: Load balancer-friendly stateless architecture
-- 🔗 **Connection Pooling**: Efficient resource management for high throughput
-- ⚙️ **Async Processing**: Non-blocking I/O for maximum concurrency
-- 💾 **Caching Layers**: Intelligent caching for frequently accessed workflows
+**Production Features**
+- FastAPI framework with automatic OpenAPI documentation
+- Uvicorn ASGI server for high-performance async handling
+- Configurable port binding with environment variable support
+- Graceful error handling with fallback responses
 
-**Integration Examples:**
+Architecture Details
+-------------------
 
+**Request Processing Flow**
+1. **Request Reception**: FastAPI receives POST requests at `/api/run`
+2. **Data Extraction**: Extract input text and YAML configuration
+3. **Temporary File Creation**: Create temporary YAML file with UTF-8 encoding
+4. **Orchestrator Instantiation**: Initialize orchestrator with configuration
+5. **Workflow Execution**: Run orchestrator with input data
+6. **Response Sanitization**: Convert complex objects to JSON-safe format
+7. **Cleanup**: Remove temporary files and return response
+
+**JSON Sanitization System**
+The server includes sophisticated data sanitization for API responses:
+
+- **Primitive Types**: Direct passthrough for strings, numbers, booleans
+- **Bytes Objects**: Base64 encoding with type metadata
+- **DateTime Objects**: ISO format conversion for universal compatibility
+- **Custom Objects**: Introspection and dictionary conversion
+- **Collections**: Recursive processing of lists and dictionaries
+- **Fallback Handling**: Safe string representations for non-serializable objects
+
+**Error Handling**
+- Comprehensive exception catching with detailed logging
+- Graceful degradation for serialization failures
+- Fallback responses with error context
+- HTTP status codes for different error types
+
+Implementation Details
+---------------------
+
+**FastAPI Configuration**
 ```python
-# Web Application Integration
+app = FastAPI(
+    title="OrKa AI Orchestration API",
+    description="High-performance API gateway for AI workflow orchestration",
+    version="1.0.0"
+)
+```
+
+**CORS Configuration**
+- Permissive CORS for development environments
+- Configurable origins, methods, and headers
+- Credential support for authenticated requests
+
+**Temporary File Handling**
+- UTF-8 encoding for international character support
+- Secure temporary file creation with proper cleanup
+- Error handling for file operations
+
+API Endpoints
+------------
+
+**POST /api/run**
+Execute OrKa workflows with dynamic configuration.
+
+**Request Format:**
+```json
+{
+    "input": "Your input text here",
+    "yaml_config": "orchestrator:\\n  id: example\\n  agents: [agent1]\\nagents:\\n  - id: agent1\\n    type: openai-answer"
+}
+```
+
+**Response Format:**
+```json
+{
+    "input": "Your input text here",
+    "execution_log": {
+        "orchestrator_result": "...",
+        "agent_outputs": {...},
+        "metadata": {...}
+    },
+    "log_file": {...}
+}
+```
+
+**Error Response:**
+```json
+{
+    "input": "Your input text here",
+    "error": "Error description",
+    "summary": "Error summary for debugging"
+}
+```
+
+Data Sanitization Examples
+--------------------------
+
+**Bytes Handling:**
+```python
+# Input: b"binary data"
+# Output: {"__type": "bytes", "data": "YmluYXJ5IGRhdGE="}
+```
+
+**DateTime Handling:**
+```python
+# Input: datetime(2024, 1, 1, 12, 0, 0)
+# Output: "2024-01-01T12:00:00"
+```
+
+**Custom Object Handling:**
+```python
+# Input: CustomClass(attr="value")
+# Output: {"__type": "CustomClass", "data": {"attr": "value"}}
+```
+
+Deployment Configuration
+-----------------------
+
+**Environment Variables**
+- `ORKA_PORT`: Server port (default: 8001)
+- Standard FastAPI/Uvicorn environment variables
+
+**Production Deployment**
+```bash
+# Direct execution
+python -m orka.server
+
+# With custom port
+ORKA_PORT=8080 python -m orka.server
+
+# Production deployment with Uvicorn
+uvicorn orka.server:app --host 0.0.0.0 --port 8000 --workers 4
+```
+
+**Docker Deployment**
+```dockerfile
+FROM python:3.11
+COPY . /app
+WORKDIR /app
+RUN pip install -r requirements.txt
+EXPOSE 8000
+CMD ["uvicorn", "orka.server:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+Integration Examples
+-------------------
+
+**Client Integration**
+```python
 import httpx
 
-async def call_orka_workflow(user_input: str):
+async def call_orka_api(input_text: str, workflow_config: str):
     async with httpx.AsyncClient() as client:
-        response = await client.post("http://orka-server:8000/api/run", json={
-            "input": user_input,
+        response = await client.post("http://localhost:8001/api/run", json={
+            "input": input_text,
             "yaml_config": workflow_config
         })
         return response.json()
-
-# Microservice Integration
-from fastapi import FastAPI
-from orka.server import OrKaServer
-
-app = FastAPI()
-orka = OrKaServer()
-
-@app.post("/intelligent-response")
-async def intelligent_response(request: UserRequest):
-    result = await orka.execute_workflow(
-        config="customer_service.yml",
-        input=request.message,
-        context={"user_id": request.user_id}
-    )
-    return {"response": result["answer_agent"]}
 ```
 
-**Real-world Applications:**
-- Customer service APIs with intelligent routing and responses
-- Content processing services for media and publishing platforms
-- Research automation APIs for academic and enterprise use
-- Real-time decision APIs for financial and healthcare applications
+**Microservice Integration**
+```python
+from fastapi import FastAPI
+import httpx
+
+app = FastAPI()
+
+@app.post("/process")
+async def process_request(request: dict):
+    # Forward to OrKa server
+    async with httpx.AsyncClient() as client:
+        orka_response = await client.post("http://orka-server:8001/api/run", json={
+            "input": request["text"],
+            "yaml_config": request["workflow"]
+        })
+        return orka_response.json()
+```
+
+Performance Considerations
+-------------------------
+
+**Scalability Features**
+- Async request handling for high concurrency
+- Stateless design for horizontal scaling
+- Efficient memory management with temporary file cleanup
+- Fast JSON serialization with optimized sanitization
+
+**Resource Management**
+- Temporary file cleanup prevents disk space leaks
+- Memory-efficient processing of large responses
+- Connection pooling through FastAPI/Uvicorn
+- Graceful error handling prevents resource locks
+
+**Monitoring and Debugging**
+- Comprehensive request/response logging
+- Detailed error context for troubleshooting
+- Performance metrics through FastAPI integration
+- OpenAPI documentation for API exploration
 """
 
 import base64

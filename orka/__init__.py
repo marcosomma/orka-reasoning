@@ -15,101 +15,161 @@
 OrKa: Orchestrator Kit Agents
 ==============================
 
-OrKa is a flexible and powerful orchestration framework for AI agents. It provides
-a structured way to build, connect, and manage various AI agents in a workflow.
+OrKa is a comprehensive orchestration framework for AI agents that provides
+structured workflows, intelligent memory management, and production-ready
+infrastructure for building sophisticated AI applications.
 
-**Modular Architecture**
-    OrKa features a modular architecture with specialized components for improved
-    maintainability while preserving 100% backward compatibility.
+Architecture Overview
+--------------------
 
-Key Components
+OrKa features a modular architecture with specialized components designed for
+maintainability, testability, and extensibility while preserving complete
+backward compatibility.
+
+Core Components
 --------------
 
-**Orchestrator**
-    Core engine that manages agent workflows and execution using modular components:
+**Orchestrator System**
+    Modular orchestration engine with specialized components:
 
-    * :class:`~orka.orchestrator.base.OrchestratorBase` - Core initialization and configuration
-    * :class:`~orka.orchestrator.agent_factory.AgentFactory` - Agent registry and initialization
-    * :class:`~orka.orchestrator.execution_engine.ExecutionEngine` - Main execution loop
-    * :class:`~orka.orchestrator.metrics.MetricsCollector` - Performance metrics and reporting
-    * :class:`~orka.orchestrator.error_handling.ErrorHandler` - Error tracking and reporting
+    * :class:`~orka.orchestrator.base.OrchestratorBase` - Configuration and initialization
+    * :class:`~orka.orchestrator.agent_factory.AgentFactory` - Agent registry and instantiation
+    * :class:`~orka.orchestrator.execution_engine.ExecutionEngine` - Workflow execution
+    * :class:`~orka.orchestrator.metrics.MetricsCollector` - Performance monitoring
+    * :class:`~orka.orchestrator.error_handling.ErrorHandler` - Error management
     * :class:`~orka.orchestrator.prompt_rendering.PromptRenderer` - Template processing
 
-**Agents**
-    Various task-specific agents for different cognitive functions:
+**Agent Ecosystem**
+    Comprehensive agent implementations for various AI tasks:
 
-    * LLM agents (OpenAI, local models)
-    * Classification and binary decision agents
-    * Search agents (DuckDuckGo, Google)
-    * Validation and structuring agents
+    * **LLM Agents**: OpenAI integration, local model support
+    * **Decision Agents**: Binary decisions, classification, routing
+    * **Memory Agents**: Intelligent storage and retrieval
+    * **Search Agents**: Web search and information gathering
+    * **Validation Agents**: Data validation and structuring
 
-**Nodes**
-    Special workflow control components:
+**Node System**
+    Specialized workflow control components:
 
-    * Router nodes for conditional branching
-    * Fork/Join nodes for parallel execution
-    * Memory reader/writer nodes for data persistence
+    * **Router Nodes**: Conditional branching and decision trees
+    * **Fork/Join Nodes**: Parallel execution and synchronization
+    * **Memory Nodes**: Data persistence and retrieval operations
+    * **RAG Nodes**: Retrieval-augmented generation workflows
 
 **Memory System**
-    Persistent storage with multiple backend support:
+    High-performance memory backends with vector search capabilities:
 
+    * :class:`~orka.memory.redisstack_logger.RedisStackMemoryLogger` - HNSW vector indexing
     * :class:`~orka.memory.redis_logger.RedisMemoryLogger` - Redis-based storage
-    * :class:`~orka.memory.kafka_logger.KafkaMemoryLogger` - Kafka-based event streaming
-    * Modular components for serialization, file operations, and compression
+    * :class:`~orka.memory.kafka_logger.KafkaMemoryLogger` - Event streaming
+    * **Modular Components**: Serialization, compression, file operations
 
-**Fork/Join Management**
-    Advanced workflow patterns for parallel execution and synchronization
+**Command Line Interface**
+    Comprehensive CLI for development and production operations:
 
-Usage
------
+    * **Workflow Execution**: Run and debug AI workflows
+    * **Memory Management**: Statistics, cleanup, monitoring
+    * **Configuration Validation**: YAML validation and error reporting
+    * **Development Tools**: Interactive testing and debugging
 
-**Basic Workflow**
-    1. Define your agent workflows in YAML configuration
-    2. Initialize the Orchestrator with your config
-    3. Run the workflow with your input data
-    4. Retrieve and process the results
+Key Features
+-----------
 
-**Example Code**
+**Production-Ready Infrastructure**
+- Thread-safe execution with concurrency control
+- Comprehensive error handling and retry logic
+- Performance metrics and monitoring
+- Graceful shutdown and resource cleanup
+
+**Intelligent Memory Management**
+- Vector similarity search with HNSW indexing
+- Automatic memory decay and lifecycle management
+- Namespace isolation for multi-tenant scenarios
+- Hybrid search combining semantic and metadata filtering
+
+**Developer Experience**
+- Declarative YAML configuration
+- Interactive CLI with real-time feedback
+- Comprehensive error reporting and debugging
+- Hot-reload for development workflows
+
+**Scalability and Performance**
+- Async/await patterns for non-blocking operations
+- Connection pooling and resource management
+- Horizontal scaling with stateless architecture
+- Optimized data structures and algorithms
+
+Usage Patterns
+--------------
+
+**Basic Workflow Execution**
 
 .. code-block:: python
 
     from orka import Orchestrator
 
-    # Initialize with your YAML config
-    orchestrator = Orchestrator("my_workflow.yml")
+    # Initialize with YAML configuration
+    orchestrator = Orchestrator("workflow.yml")
 
-    # Run the workflow
-    result = await orchestrator.run({"input": "Your query here"})
+    # Execute workflow
+    result = await orchestrator.run("input data")
 
-**Memory Backend Selection**
+**Memory Backend Configuration**
 
 .. code-block:: python
 
     from orka.memory_logger import create_memory_logger
 
-    # Redis backend (default)
-    redis_memory = create_memory_logger("redis")
+    # High-performance RedisStack backend with HNSW
+    memory = create_memory_logger("redisstack")
 
-    # Kafka backend
-    kafka_memory = create_memory_logger("kafka")
+    # Standard Redis backend
+    memory = create_memory_logger("redis")
 
-Architecture Benefits
---------------------
+    # Kafka backend for event streaming
+    memory = create_memory_logger("kafka")
 
-**Backward Compatibility**
-    All existing imports and APIs remain unchanged
+**Custom Agent Development**
 
-**Modularity**
-    Components are focused on single responsibilities for easier maintenance
+.. code-block:: python
 
-**Extensibility**
-    Modular structure makes contributing and extending much easier
+    from orka.agents.base_agent import BaseAgent
 
-**Performance**
-    Improved memory management and optimized execution paths
+    class CustomAgent(BaseAgent):
+        async def _run_impl(self, ctx):
+            input_data = ctx.get("input")
+            # Process input asynchronously
+            return await self.process(input_data)
+
+**CLI Operations**
+
+.. code-block:: bash
+
+    # Execute workflow
+    orka run workflow.yml "input text" --verbose
+
+    # Memory management
+    orka memory stats
+    orka memory cleanup --dry-run
+
+    # Real-time monitoring
+    orka memory watch --live
+
+Backward Compatibility
+---------------------
+
+OrKa maintains 100% backward compatibility with existing code:
+
+- All existing imports continue to work unchanged
+- Legacy agent patterns are fully supported
+- Configuration files remain compatible
+- API interfaces are preserved
+
+This ensures smooth migration paths and protects existing investments
+while providing access to new features and performance improvements.
 
 For More Information
---------------------
+-------------------
 
 * **Documentation**: https://github.com/marcosomma/orka-resoning
 * **Issues**: https://github.com/marcosomma/orka-resoning/issues

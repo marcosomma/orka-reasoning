@@ -15,15 +15,121 @@
 RedisStack Memory Logger Implementation
 =====================================
 
-High-performance memory logger that leverages RedisStack's advanced vector indexing
-capabilities for semantic search and memory operations.
+High-performance memory logger that leverages RedisStack's advanced capabilities
+for semantic search and memory operations with HNSW vector indexing.
 
-This implementation provides:
-- HNSW vector indexing for sub-millisecond semantic search
-- Advanced filtering and namespace isolation
-- Automatic memory decay and lifecycle management
-- Batch operations for high-throughput scenarios
+Key Features
+------------
+
+**Vector Search Performance:**
+- HNSW (Hierarchical Navigable Small World) indexing for fast similarity search
 - Hybrid search combining vector similarity with metadata filtering
+- Fallback to text search when vector search fails
+- Thread-safe operations with connection pooling
+
+**Memory Management:**
+- Automatic memory decay and expiration handling
+- Importance-based memory classification (short_term/long_term)
+- Namespace isolation for multi-tenant scenarios
+- TTL (Time To Live) management with configurable expiry
+
+**Production Features:**
+- Thread-safe Redis client management with connection pooling
+- Comprehensive error handling with graceful degradation
+- Performance metrics and monitoring capabilities
+- Batch operations for high-throughput scenarios
+
+Architecture Details
+-------------------
+
+**Storage Schema:**
+- Memory keys: `orka_memory:{uuid}`
+- Hash fields: content, node_id, trace_id, importance_score, memory_type, timestamp, metadata
+- Vector embeddings stored in RedisStack vector index
+- Automatic expiry through `orka_expire_time` field
+
+**Search Capabilities:**
+1. **Vector Search**: Uses HNSW index for semantic similarity
+2. **Hybrid Search**: Combines vector similarity with metadata filters
+3. **Fallback Search**: Text-based search when vector search unavailable
+4. **Filtered Search**: Support for trace_id, node_id, memory_type, importance, namespace
+
+**Thread Safety:**
+- Thread-local Redis connections for concurrent operations
+- Connection locks for thread-safe access
+- Separate embedding locks to prevent race conditions
+
+**Memory Decay System:**
+- Configurable decay rules based on importance and memory type
+- Automatic cleanup of expired memories
+- Dry-run support for testing cleanup operations
+
+Usage Examples
+--------------
+
+**Basic Usage:**
+```python
+from orka.memory.redisstack_logger import RedisStackMemoryLogger
+
+# Initialize with HNSW indexing
+logger = RedisStackMemoryLogger(
+    redis_url="redis://localhost:6380/0",
+    index_name="orka_enhanced_memory",
+    embedder=my_embedder,
+    enable_hnsw=True
+)
+
+# Log a memory
+memory_key = logger.log_memory(
+    content="Important information",
+    node_id="agent_1",
+    trace_id="session_123",
+    importance_score=0.8,
+    memory_type="long_term"
+)
+
+# Search memories
+results = logger.search_memories(
+    query="information",
+    num_results=5,
+    trace_id="session_123"
+)
+```
+
+**Advanced Configuration:**
+```python
+# With memory decay configuration
+decay_config = {
+    "enabled": True,
+    "short_term_hours": 24,
+    "long_term_hours": 168,  # 1 week
+    "importance_threshold": 0.7
+}
+
+logger = RedisStackMemoryLogger(
+    redis_url="redis://localhost:6380/0",
+    memory_decay_config=decay_config,
+    vector_params={"M": 16, "ef_construction": 200}
+)
+```
+
+Implementation Notes
+-------------------
+
+**Error Handling:**
+- Vector search failures automatically fall back to text search
+- Redis connection errors are logged and handled gracefully
+- Invalid metadata is parsed safely with fallback to empty objects
+
+**Performance Considerations:**
+- Thread-local connections prevent connection contention
+- Embedding operations are locked to prevent race conditions
+- Memory cleanup operations support dry-run mode for testing
+
+**Compatibility:**
+- Maintains BaseMemoryLogger interface for drop-in replacement
+- Supports both async and sync embedding generation
+- Compatible with Redis and RedisStack deployments
 """
 
 import json
@@ -32,7 +138,7 @@ import threading
 import time
 import uuid
 from threading import Lock
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import numpy as np
 import redis
@@ -104,13 +210,13 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         redis_url: str = "redis://localhost:6380/0",
         index_name: str = "orka_enhanced_memory",
         embedder=None,
-        memory_decay_config: Optional[Dict[str, Any]] = None,
+        memory_decay_config: dict[str, Any] | None = None,
         # Additional parameters for factory compatibility
         stream_key: str = "orka:memory",
         debug_keep_previous_outputs: bool = False,
-        decay_config: Optional[Dict[str, Any]] = None,
+        decay_config: dict[str, Any] | None = None,
         enable_hnsw: bool = True,
-        vector_params: Optional[Dict[str, Any]] = None,
+        vector_params: dict[str, Any] | None = None,
         **kwargs,
     ):
         """Initialize RedisStack memory logger with thread safety."""
@@ -208,10 +314,10 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         content: str,
         node_id: str,
         trace_id: str,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
         importance_score: float = 1.0,
         memory_type: str = "short_term",
-        expiry_hours: Optional[float] = None,
+        expiry_hours: float | None = None,
     ) -> str:
         """
         Log a memory entry with vector embedding for semantic search.
@@ -307,13 +413,13 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         self,
         query: str,
         num_results: int = 10,
-        trace_id: Optional[str] = None,
-        node_id: Optional[str] = None,
-        memory_type: Optional[str] = None,
-        min_importance: Optional[float] = None,
+        trace_id: str | None = None,
+        node_id: str | None = None,
+        memory_type: str | None = None,
+        min_importance: float | None = None,
         log_type: str = "memory",  # 🎯 NEW: Filter by log type (default: only memories)
-        namespace: Optional[str] = None,  # 🎯 NEW: Filter by namespace
-    ) -> List[Dict[str, Any]]:
+        namespace: str | None = None,  # 🎯 NEW: Filter by namespace
+    ) -> list[dict[str, Any]]:
         logger.debug(
             f"🔍 SEARCH PARAMS: query='{query}', namespace='{namespace}', log_type='{log_type}', num_results={num_results}",
         )
@@ -491,7 +597,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             logger.error(f"Memory search failed: {e}")
             return []
 
-    def _safe_get_redis_value(self, memory_data: Dict, key: str, default=None):
+    def _safe_get_redis_value(self, memory_data: dict, key: str, default=None):
         """Safely get value from Redis hash data that might have bytes or string keys."""
         # Try string key first, then bytes key
         value = memory_data.get(key, memory_data.get(key.encode("utf-8"), default))
@@ -508,13 +614,13 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         self,
         query: str,
         num_results: int,
-        trace_id: Optional[str] = None,
-        node_id: Optional[str] = None,
-        memory_type: Optional[str] = None,
-        min_importance: Optional[float] = None,
+        trace_id: str | None = None,
+        node_id: str | None = None,
+        memory_type: str | None = None,
+        min_importance: float | None = None,
         log_type: str = "memory",
-        namespace: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        namespace: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Fallback text search using basic Redis search capabilities."""
         try:
             logger.info("Using fallback text search")
@@ -634,7 +740,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             # If all search methods fail, return empty list
             return []
 
-    def _is_expired(self, memory_data: Dict[str, Any]) -> bool:
+    def _is_expired(self, memory_data: dict[str, Any]) -> bool:
         """Check if memory entry has expired."""
         expiry_time = self._safe_get_redis_value(memory_data, "orka_expire_time")
         if expiry_time:
@@ -644,7 +750,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 pass
         return False
 
-    def get_all_memories(self, trace_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_all_memories(self, trace_id: str | None = None) -> list[dict[str, Any]]:
         """Get all memories, optionally filtered by trace_id."""
         try:
             pattern = "orka_memory:*"
@@ -740,7 +846,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         except Exception as e:
             logger.error(f"Failed to clear memories: {e}")
 
-    def get_memory_stats(self) -> Dict[str, Any]:
+    def get_memory_stats(self) -> dict[str, Any]:
         """Get comprehensive memory storage statistics."""
         try:
             # Use thread-safe client to match log_memory() method
@@ -835,13 +941,13 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         self,
         agent_id: str,
         event_type: str,
-        payload: Dict[str, Any],
-        step: Optional[int] = None,
-        run_id: Optional[str] = None,
-        fork_group: Optional[str] = None,
-        parent: Optional[str] = None,
-        previous_outputs: Optional[Dict[str, Any]] = None,
-        agent_decay_config: Optional[Dict[str, Any]] = None,
+        payload: dict[str, Any],
+        step: int | None = None,
+        run_id: str | None = None,
+        fork_group: str | None = None,
+        parent: str | None = None,
+        previous_outputs: dict[str, Any] | None = None,
+        agent_decay_config: dict[str, Any] | None = None,
         log_type: str = "log",  # 🎯 NEW: "log" for orchestration, "memory" for stored memories
     ) -> None:
         """
@@ -906,7 +1012,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         except Exception as e:
             logger.error(f"Failed to log orchestration event: {e}")
 
-    def _extract_content_from_payload(self, payload: Dict[str, Any], event_type: str) -> str:
+    def _extract_content_from_payload(self, payload: dict[str, Any], event_type: str) -> str:
         """Extract meaningful content from payload for memory storage."""
         content_parts = []
 
@@ -932,7 +1038,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
 
         return " ".join(content_parts)
 
-    def _calculate_importance_score(self, event_type: str, payload: Dict[str, Any]) -> float:
+    def _calculate_importance_score(self, event_type: str, payload: dict[str, Any]) -> float:
         """Calculate importance score based on event type and payload."""
         # Base importance by event type
         importance_map = {
@@ -979,8 +1085,8 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         self,
         memory_type: str,
         importance_score: float,
-        agent_decay_config: Optional[Dict[str, Any]],
-    ) -> Optional[float]:
+        agent_decay_config: dict[str, Any] | None,
+    ) -> float | None:
         """Calculate expiry hours based on memory type and importance."""
         # Use agent-specific config if available, otherwise use default
         decay_config = agent_decay_config or self.memory_decay_config
@@ -1008,7 +1114,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
 
         return adjusted_hours
 
-    def tail(self, count: int = 10) -> List[Dict[str, Any]]:
+    def tail(self, count: int = 10) -> list[dict[str, Any]]:
         """Get recent memory entries."""
         try:
             # Get all memories and sort by timestamp
@@ -1022,7 +1128,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             logger.error(f"Error in tail operation: {e}")
             return []
 
-    def cleanup_expired_memories(self, dry_run: bool = False) -> Dict[str, Any]:
+    def cleanup_expired_memories(self, dry_run: bool = False) -> dict[str, Any]:
         """Clean up expired memories."""
         cleaned = 0
         total_checked = 0
@@ -1079,19 +1185,19 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             }
 
     # Redis interface methods (thread-safe delegated methods)
-    def hset(self, name: str, key: str, value: Union[str, bytes, int, float]) -> int:
+    def hset(self, name: str, key: str, value: str | bytes | int | float) -> int:
         return self._get_thread_safe_client().hset(name, key, value)
 
-    def hget(self, name: str, key: str) -> Optional[str]:
+    def hget(self, name: str, key: str) -> str | None:
         return self._get_thread_safe_client().hget(name, key)
 
-    def hkeys(self, name: str) -> List[str]:
+    def hkeys(self, name: str) -> list[str]:
         return self._get_thread_safe_client().hkeys(name)
 
     def hdel(self, name: str, *keys: str) -> int:
         return self._get_thread_safe_client().hdel(name, *keys)
 
-    def smembers(self, name: str) -> List[str]:
+    def smembers(self, name: str) -> list[str]:
         members = self._get_thread_safe_client().smembers(name)
         return list(members)
 
@@ -1101,10 +1207,10 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
     def srem(self, name: str, *values: str) -> int:
         return self._get_thread_safe_client().srem(name, *values)
 
-    def get(self, key: str) -> Optional[str]:
+    def get(self, key: str) -> str | None:
         return self._get_thread_safe_client().get(key)
 
-    def set(self, key: str, value: Union[str, bytes, int, float]) -> bool:
+    def set(self, key: str, value: str | bytes | int | float) -> bool:
         return self._get_thread_safe_client().set(key, value)
 
     def delete(self, *keys: str) -> int:
@@ -1119,7 +1225,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             logger.error(f"Failed to ensure index: {e}")
             return False
 
-    def get_recent_stored_memories(self, count: int = 5) -> List[Dict[str, Any]]:
+    def get_recent_stored_memories(self, count: int = 5) -> list[dict[str, Any]]:
         """Get recent stored memories (log_type='memory' only), sorted by timestamp."""
         try:
             # Use thread-safe client to match log_memory() method
@@ -1203,9 +1309,9 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
     def _get_ttl_info(
         self,
         key: str,
-        memory_data: Dict[str, Any],
+        memory_data: dict[str, Any],
         current_time_ms: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get TTL information for a memory entry."""
         try:
             # Check if memory has expiry time set (handle bytes keys)
@@ -1270,7 +1376,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 "expires_at_formatted": "Unknown",
             }
 
-    def get_performance_metrics(self) -> Dict[str, Any]:
+    def get_performance_metrics(self) -> dict[str, Any]:
         """Get RedisStack performance metrics including vector search status."""
         try:
             metrics = {

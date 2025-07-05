@@ -12,35 +12,133 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-🎼 **Execution Engine** - The Conductor of Your AI Orchestra
-=========================================================
+Execution Engine
+===============
 
-The ExecutionEngine is the heart of OrKa's orchestration capabilities, coordinating
-complex multi-agent workflows with precision, reliability, and intelligence.
+The ExecutionEngine is the core component responsible for coordinating and executing
+multi-agent workflows within the OrKa orchestration framework.
 
-**Core Orchestration Philosophy:**
-Think of the ExecutionEngine as a world-class conductor leading a symphony orchestra.
-Each agent is a specialized musician, and the engine ensures perfect timing,
-coordination, and harmony across the entire performance.
+Core Responsibilities
+--------------------
 
-**Execution Strategies:**
-- **Sequential**: Step-by-step processing with full context propagation
-- **Parallel**: Simultaneous execution for maximum speed and efficiency
-- **Decision-tree**: Dynamic branching based on runtime conditions
-- **Pipeline**: Streaming processing for large-scale data workflows
+**Agent Coordination:**
+- Sequential execution of agents based on configuration
+- Context propagation between agents with previous outputs
+- Dynamic queue management for workflow control
+- Error handling and retry logic with exponential backoff
 
-**Advanced Capabilities:**
-- 🔄 **Intelligent Retry**: Exponential backoff with context preservation
-- 🛡️ **Circuit Breaker**: Automatic failure isolation and recovery
-- ⚡ **Resource Pooling**: Efficient connection and agent management
-- 📊 **Real-time Monitoring**: Performance metrics and bottleneck detection
-- 🎯 **Distributed Execution**: Scale across multiple workers and machines
+**Execution Patterns:**
+- **Sequential Processing**: Default execution pattern where agents run one after another
+- **Parallel Execution**: Fork/join patterns for concurrent agent execution
+- **Conditional Branching**: Router nodes for dynamic workflow paths
+- **Memory Operations**: Integration with memory nodes for data persistence
 
-**Real-world Applications:**
-- Customer service workflows with intelligent escalation
-- Content processing pipelines with quality assurance
-- Research automation with multi-source synthesis
-- Real-time decision systems with complex logic
+**Error Management:**
+- Comprehensive error tracking and telemetry collection
+- Automatic retry with configurable maximum attempts
+- Graceful degradation and fallback strategies
+- Detailed error reporting and recovery actions
+
+Architecture Details
+-------------------
+
+**Execution Flow:**
+1. **Queue Processing**: Agents are processed from the configured queue
+2. **Context Building**: Input data and previous outputs are combined into payload
+3. **Agent Execution**: Individual agents are executed with full context
+4. **Result Processing**: Outputs are captured and added to execution history
+5. **Queue Management**: Next agents are determined based on results
+
+**Context Management:**
+- Input data is preserved throughout the workflow
+- Previous outputs from all agents are available to subsequent agents
+- Execution metadata (timestamps, step indices) is tracked
+- Error context is maintained for debugging and recovery
+
+**Concurrency Handling:**
+- Thread pool executor for parallel agent execution
+- Fork group management for coordinated parallel operations
+- Async/await patterns for non-blocking operations
+- Resource pooling for efficient memory usage
+
+Implementation Features
+----------------------
+
+**Agent Execution:**
+- Support for both sync and async agent implementations
+- Automatic detection of agent execution patterns
+- Timeout handling with configurable limits
+- Resource cleanup after agent completion
+
+**Memory Integration:**
+- Automatic logging of agent execution events
+- Memory backend integration for persistent storage
+- Context preservation across workflow steps
+- Trace ID propagation for debugging
+
+**Error Handling:**
+- Exception capture and structured error reporting
+- Retry logic with exponential backoff
+- Error telemetry collection for monitoring
+- Graceful failure recovery
+
+**Performance Optimization:**
+- Efficient context building and propagation
+- Minimal memory overhead for large workflows
+- Optimized queue processing algorithms
+- Resource pooling for external connections
+
+Execution Patterns
+-----------------
+
+**Sequential Execution:**
+```yaml
+orchestrator:
+  strategy: sequential
+  agents: [classifier, processor, responder]
+```
+
+**Parallel Execution:**
+```yaml
+orchestrator:
+  strategy: parallel
+  fork_groups:
+    - agents: [validator_1, validator_2, validator_3]
+      join_agent: aggregator
+```
+
+**Conditional Branching:**
+```yaml
+agents:
+  - id: router
+    type: router
+    conditions:
+      - condition: "{{ classification == 'urgent' }}"
+        next_agents: [urgent_handler]
+      - condition: "{{ classification == 'normal' }}"
+        next_agents: [normal_handler]
+```
+
+Integration Points
+-----------------
+
+**Memory System:**
+- Automatic event logging for all agent executions
+- Context preservation in memory backend
+- Trace ID propagation for request tracking
+- Performance metrics collection
+
+**Error Handling:**
+- Structured error reporting with context
+- Retry mechanisms with configurable policies
+- Error telemetry for monitoring and alerting
+- Recovery action recommendations
+
+**Monitoring:**
+- Real-time execution metrics
+- Agent performance tracking
+- Resource usage monitoring
+- Error rate and pattern analysis
 """
 
 import asyncio

@@ -1,26 +1,170 @@
 """
-🎨 **OrKa Modern TUI Interface** - Beautiful Real-time Memory Monitoring
-=====================================================================
+OrKa TUI Interface
+==================
 
-Modern Terminal User Interface for OrKa memory system monitoring, inspired by
-htop, btop, and other modern system monitoring tools. Provides real-time
-visualizations, interactive controls, and comprehensive system insights.
+Terminal User Interface for OrKa memory system monitoring and management.
+Provides real-time visualizations and interactive controls for memory operations.
 
-**Features:**
-- 📊 Real-time memory statistics with live charts
-- 🎯 Interactive memory browser with filtering
-- 🚀 Performance metrics and trending
-- 🧠 Vector search monitoring for RedisStack
-- 🎨 Beautiful color-coded interface
-- ⌨️  Keyboard shortcuts for navigation
-- 📈 Historical data visualization
-- 🔄 Auto-refresh with customizable intervals
+Overview
+--------
 
-**Key Components:**
-- **Dashboard View**: Overview of system health and memory usage
-- **Memory Browser**: Interactive table of stored memories
-- **Performance View**: Charts and metrics for system performance
-- **Configuration View**: Real-time configuration monitoring
+The TUI interface offers a modern terminal-based monitoring solution for OrKa
+memory systems, with support for both basic text-based displays and advanced
+interactive interfaces when Textual is available.
+
+Core Features
+------------
+
+**Real-time Monitoring**
+- Live memory statistics with automatic refresh
+- Connection status and backend information
+- Performance metrics and system health indicators
+- Error tracking and status reporting
+
+**Memory Management**
+- View stored memories and orchestration logs
+- Monitor active and expired entries
+- Track memory usage patterns
+- Backend-specific statistics (Redis, Kafka, RedisStack)
+
+**Interactive Interface**
+- Keyboard navigation and shortcuts
+- Multiple view modes (dashboard, memories, performance, config)
+- Customizable refresh intervals
+- Color-coded status indicators
+
+Architecture
+-----------
+
+**Modular Design**
+The TUI system is built with a modular architecture:
+
+- `ModernTUIInterface` - Core interface class with data management
+- `OrKaMonitorApp` - Legacy Textual-based interactive app (backward compatibility)
+- `OrKaTextualApp` - Modern Textual app with advanced features (optional)
+
+**Dependency Handling**
+- Graceful fallback when Textual is not available
+- Optional advanced features with dependency checking
+- Backward compatibility with existing interfaces
+
+**Data Management**
+- Automatic data refresh with configurable intervals
+- Connection pooling for backend systems
+- Error handling and recovery mechanisms
+- Performance optimization for large datasets
+
+Implementation Details
+---------------------
+
+**Textual Integration**
+When Textual is available, the interface provides:
+- Rich terminal widgets and layouts
+- Interactive keyboard bindings
+- Real-time data updates
+- Professional styling and themes
+
+**Fallback Mode**
+When Textual is not available:
+- Basic text-based output
+- Simple refresh mechanisms
+- Core functionality preservation
+- Minimal dependencies
+
+**Key Bindings**
+- `q` - Quit application
+- `1` - Dashboard view
+- `2` - Memories view
+- `3` - Performance view
+- `4` - Configuration view
+- `r` - Force refresh
+
+Usage Patterns
+--------------
+
+**Basic Usage**
+```python
+from orka.tui_interface import ModernTUIInterface
+
+# Create TUI interface
+tui = ModernTUIInterface(memory_logger=memory_backend)
+
+# Start monitoring
+tui.run()
+```
+
+**Advanced Usage with Textual**
+```python
+from orka.tui_interface import OrKaMonitorApp, ModernTUIInterface
+
+# Create TUI with Textual app
+tui = ModernTUIInterface(memory_logger=memory_backend)
+app = OrKaMonitorApp(tui)
+
+# Run interactive interface
+app.run()
+```
+
+**Configuration Options**
+```python
+tui = ModernTUIInterface(
+    memory_logger=memory_backend,
+    refresh_interval=2.0,  # seconds
+    auto_refresh=True,
+    color_theme="default"
+)
+```
+
+Display Information
+------------------
+
+**Memory Statistics**
+- Total entries count
+- Stored memories vs orchestration logs
+- Active vs expired entries
+- Backend type and connection status
+
+**Performance Metrics**
+- Memory usage patterns
+- Search performance (for RedisStack)
+- Connection health
+- Error rates and patterns
+
+**System Information**
+- Backend configuration
+- Connection endpoints
+- Version information
+- Feature availability
+
+Error Handling
+-------------
+
+**Connection Issues**
+- Automatic retry mechanisms
+- Graceful degradation when backend unavailable
+- Clear error messages and recovery suggestions
+- Fallback to cached data when possible
+
+**Display Errors**
+- Safe error rendering in terminal
+- Non-blocking error handling
+- Detailed error context for debugging
+- Recovery actions and suggestions
+
+Compatibility
+------------
+
+**Backward Compatibility**
+- Maintains compatibility with existing TUI interfaces
+- Preserves all public APIs and methods
+- Supports legacy configuration patterns
+- Graceful handling of missing dependencies
+
+**Future Extensions**
+- Plugin system for custom views
+- Export functionality for data analysis
+- Integration with external monitoring systems
+- Advanced filtering and search capabilities
 """
 
 # Main imports for backward compatibility

@@ -12,67 +12,163 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-⚡ **OrKa CLI** - The Command Center for AI Orchestration
-======================================================
+OrKa CLI - Command Line Interface
+=================================
 
-The OrKa CLI is your powerful command center for developing, testing, and operating
-AI workflows. From interactive development to production monitoring, the CLI provides
-comprehensive tools for every stage of your AI application lifecycle.
+The OrKa CLI provides a comprehensive command-line interface for managing and operating
+OrKa AI workflows. From development and testing to production monitoring, the CLI offers
+tools for every stage of the AI application lifecycle.
 
-**Core CLI Philosophy:**
-Think of the OrKa CLI as your mission control center - providing real-time visibility,
-precise control, and powerful automation for your AI workflows. Whether you're
-prototyping a new agent or monitoring production systems, the CLI has you covered.
+Core Features
+------------
 
-**Development Workflows:**
-- 🧪 **Interactive Testing**: Live output streaming with verbose debugging
-- 🔍 **Configuration Validation**: Comprehensive YAML validation and error reporting
-- 🧠 **Memory Inspection**: Deep dive into agent memory and context
-- 📊 **Performance Profiling**: Detailed timing and resource usage analysis
+**Workflow Operations:**
+- Execute orchestrated workflows with real-time output
+- Validate YAML configurations before deployment
+- Debug workflows with verbose logging and tracing
+- Batch processing for high-throughput scenarios
 
-**Production Operations:**
-- 🚀 **Batch Processing**: High-throughput processing of large datasets
-- 🧠 **Memory Management**: Cleanup, monitoring, and optimization tools
-- 📈 **Health Monitoring**: Real-time system health and performance metrics
-- 🔧 **Configuration Management**: Deploy and rollback configuration changes
+**Memory Management:**
+- View memory statistics and usage patterns
+- Clean up expired memories with configurable policies
+- Monitor memory operations in real-time
+- Configure memory backends and settings
 
-**Power User Features:**
-- 📋 **Custom Output Formats**: JSON, CSV, table, and streaming formats
-- 🔄 **Pipeline Integration**: Unix-friendly tools for automation scripts
-- 🔌 **Plugin System**: Extensible architecture for custom commands
-- 📊 **Rich Monitoring**: Beautiful real-time dashboards and alerts
+**Development Tools:**
+- Interactive workflow testing and debugging
+- Configuration validation with detailed error reporting
+- Live output streaming for development workflows
+- Performance profiling and optimization insights
 
-**Example Usage Patterns:**
+Architecture
+-----------
 
-```bash
-# 🧪 Interactive Development
-orka run workflow.yml "test input" --watch --verbose
-# Live output with detailed debugging information
+**Modular Design:**
+The CLI is built with a modular architecture that separates concerns:
 
-# 🚀 Production Batch Processing
-orka batch workflow.yml inputs.jsonl --parallel 10 --output results.jsonl
-# High-throughput processing with parallel execution
+- `core.py` - Core functionality including run_cli_entrypoint
+- `parser.py` - Command-line argument parsing and subcommand setup
+- `utils.py` - Shared utilities like logging configuration
+- `memory/` - Memory management commands (stats, cleanup, watch, configure)
+- `orchestrator/` - Orchestrator operations (run commands)
 
-# 🧠 Memory Operations
-orka memory stats --namespace conversations --format table
-orka memory cleanup --dry-run --older-than 7d
-orka memory watch --live --format json
+**Backward Compatibility:**
+All existing imports and usage patterns continue to work unchanged:
 
-# 🔍 Configuration Management
-orka validate workflow.yml --strict --check-agents --check-memory
-orka deploy workflow.yml --environment production --health-check
+```python
+# These imports still work exactly as before
+from orka.orka_cli import run_cli_entrypoint, memory_stats, setup_logging
+
+# Module usage also works
+import orka.orka_cli
+result = orka.orka_cli.run_cli_entrypoint(config, input_text)
 ```
 
-**Real-world Applications:**
-- Customer service workflow development and testing
-- Content processing pipeline monitoring and optimization
-- Research automation with large-scale data processing
-- Production AI system monitoring and maintenance
+Command Structure
+----------------
 
-**Modular Architecture:**
-This CLI has been refactored into a modular architecture for improved maintainability
-while preserving 100% backward compatibility. All existing imports and usage patterns
-continue to work unchanged.
+**Main Commands:**
+- `orka run` - Execute workflows with configuration files
+- `orka memory` - Memory management operations
+- `orka validate` - Configuration validation (future)
+
+**Memory Subcommands:**
+- `orka memory stats` - Display memory usage statistics
+- `orka memory cleanup` - Clean expired memories with dry-run support
+- `orka memory watch` - Real-time memory monitoring
+- `orka memory configure` - Memory backend configuration
+
+**Global Options:**
+- `--verbose` - Enable detailed logging output
+- `--json` - Format output as JSON for automation
+- `--help` - Display help information for any command
+
+Usage Examples
+--------------
+
+**Basic Workflow Execution:**
+```bash
+# Execute a workflow with input
+orka run workflow.yml "process this text"
+
+# With verbose logging
+orka run workflow.yml "input" --verbose
+
+# JSON output for automation
+orka run workflow.yml "input" --json
+```
+
+**Memory Operations:**
+```bash
+# View memory statistics
+orka memory stats
+
+# Clean expired memories (dry run)
+orka memory cleanup --dry-run
+
+# Real-time memory monitoring
+orka memory watch --live
+
+# Configure memory backend
+orka memory configure --backend redis --url redis://localhost:6379
+```
+
+**Configuration Validation:**
+```bash
+# Validate workflow configuration
+orka validate workflow.yml
+
+# Strict validation with agent checking
+orka validate workflow.yml --strict --check-agents
+```
+
+Implementation Details
+---------------------
+
+**Error Handling:**
+- Comprehensive error messages with context
+- Graceful handling of configuration errors
+- Detailed validation feedback for YAML files
+- Recovery suggestions for common issues
+
+**Output Formatting:**
+- Human-readable tables for interactive use
+- JSON output for automation and scripting
+- Streaming output for long-running operations
+- Colored output for improved readability
+
+**Integration Features:**
+- Unix-friendly design for shell scripting
+- Exit codes for automation workflows
+- Environment variable support
+- Configuration file discovery
+
+**Performance:**
+- Efficient processing for large datasets
+- Parallel execution support where applicable
+- Memory-efficient streaming for large outputs
+- Optimized startup time for quick operations
+
+Development Integration
+----------------------
+
+**IDE Support:**
+- Rich help text for all commands and options
+- Autocomplete support for common shells
+- Detailed error messages with line numbers
+- Configuration validation with syntax highlighting
+
+**Automation:**
+- JSON output for programmatic consumption
+- Reliable exit codes for CI/CD integration
+- Batch processing capabilities
+- Silent mode for automated scripts
+
+**Debugging:**
+- Verbose logging with multiple levels
+- Trace ID propagation for request tracking
+- Performance timing information
+- Memory usage monitoring
 """
 
 import argparse
