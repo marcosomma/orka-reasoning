@@ -122,50 +122,67 @@ class ShortMemoryScreen(BaseOrKaScreen):
                     id="short-memory-table",
                 )
 
-            # Bottom section: Content inspector (focused on content)
+            # Bottom section: Content and Metadata viewer
             with Container(classes="content-panel", id="short-content-panel"):
-                yield Static("📄 Content", classes="container-compact")
-                yield Static(
-                    "[dim]Select a row to view memory content[/dim]",
-                    id="short-selected-content",
-                )
+                yield Static("📄 Content & Metadata", classes="container-compact")
+                with Container(id="short-selected-content"):
+                    yield Static(
+                        "[dim]Select a row to view memory content and metadata[/dim]",
+                        id="short-content-text",
+                    )
 
     def on_memory_table_widget_memory_selected(
         self,
         message: MemoryTableWidget.MemorySelected,
     ) -> None:
-        """Handle memory selection to show content in lower panel."""
+        """Handle memory selection to show content and metadata in lower panel."""
         try:
-            content_widget = self.query_one("#short-selected-content", Static)
+            content_widget = self.query_one("#short-content-text", Static)
         except Exception:
             return
 
         if message.memory_data is None:
             # Deselected - show simple placeholder
-            content_widget.update("[dim]Select a row to view memory content[/dim]")
+            content_widget.update("[dim]Select a row to view memory content and metadata[/dim]")
         else:
-            # Selected - show content-focused display
+            # Selected - show content and metadata
             try:
                 content = self.data_manager._get_content(message.memory_data)
+                metadata_display = self.data_manager._format_metadata_for_display(
+                    message.memory_data,
+                )
                 memory_key = self.data_manager._get_key(message.memory_data)
+                memory_type = self.data_manager._get_memory_type(message.memory_data)
+                importance_score = self.data_manager._get_importance_score(message.memory_data)
+                node_id = self.data_manager._get_node_id(message.memory_data)
 
+                # Format content
                 if content is None or str(content).strip() == "":
                     content_text = "[dim]No content[/dim]"
                 else:
                     content_str = str(content)
-                    # Clean and truncate content for display
-                    if len(content_str) > 800:
-                        content_text = content_str[:800] + "[dim]...[/dim]"
-                    else:
-                        content_text = content_str
+                    # Don't truncate content - let users scroll to see everything
+                    content_text = content_str
 
-                # Condensed display focused on content
+                # Build comprehensive display
                 key_short = memory_key[-20:] if len(memory_key) > 20 else memory_key
-                formatted_content = f"[bright_blue]...{key_short}[/bright_blue]\n\n{content_text}"
+
+                formatted_content = f"""[bold blue]Memory: ...{key_short}[/bold blue]
+
+[bold green]📄 CONTENT:[/bold green]
+{content_text}
+
+[bold yellow]📋 METADATA:[/bold yellow]
+{metadata_display}
+
+[bold cyan]🏷️ SYSTEM INFO:[/bold cyan]
+[cyan]Type:[/cyan] {memory_type}
+[cyan]Node ID:[/cyan] {node_id}
+[cyan]Importance:[/cyan] {importance_score}"""
 
                 content_widget.update(formatted_content)
-            except Exception:
-                content_widget.update("[red]Error loading content[/red]")
+            except Exception as e:
+                content_widget.update(f"[red]Error loading content: {e!s}[/red]")
 
     def refresh_data(self) -> None:
         """Refresh short memory data."""
@@ -208,50 +225,67 @@ class LongMemoryScreen(BaseOrKaScreen):
                     id="long-memory-table",
                 )
 
-            # Bottom section: Content inspector (focused on content)
+            # Bottom section: Content and Metadata viewer
             with Container(classes="content-panel", id="long-content-panel"):
-                yield Static("📄 Content", classes="container-compact")
-                yield Static(
-                    "[dim]Select a row to view memory content[/dim]",
-                    id="long-selected-content",
-                )
+                yield Static("📄 Content & Metadata", classes="container-compact")
+                with Container(id="long-selected-content"):
+                    yield Static(
+                        "[dim]Select a row to view memory content and metadata[/dim]",
+                        id="long-content-text",
+                    )
 
     def on_memory_table_widget_memory_selected(
         self,
         message: MemoryTableWidget.MemorySelected,
     ) -> None:
-        """Handle memory selection to show content in lower panel."""
+        """Handle memory selection to show content and metadata in lower panel."""
         try:
-            content_widget = self.query_one("#long-selected-content", Static)
+            content_widget = self.query_one("#long-content-text", Static)
         except Exception:
             return
 
         if message.memory_data is None:
             # Deselected - show simple placeholder
-            content_widget.update("[dim]Select a row to view memory content[/dim]")
+            content_widget.update("[dim]Select a row to view memory content and metadata[/dim]")
         else:
-            # Selected - show content-focused display
+            # Selected - show content and metadata
             try:
                 content = self.data_manager._get_content(message.memory_data)
+                metadata_display = self.data_manager._format_metadata_for_display(
+                    message.memory_data,
+                )
                 memory_key = self.data_manager._get_key(message.memory_data)
+                memory_type = self.data_manager._get_memory_type(message.memory_data)
+                importance_score = self.data_manager._get_importance_score(message.memory_data)
+                node_id = self.data_manager._get_node_id(message.memory_data)
 
+                # Format content
                 if content is None or str(content).strip() == "":
                     content_text = "[dim]No content[/dim]"
                 else:
                     content_str = str(content)
-                    # Clean and truncate content for display
-                    if len(content_str) > 800:
-                        content_text = content_str[:800] + "[dim]...[/dim]"
-                    else:
-                        content_text = content_str
+                    # Don't truncate content - let users scroll to see everything
+                    content_text = content_str
 
-                # Condensed display focused on content
+                # Build comprehensive display
                 key_short = memory_key[-20:] if len(memory_key) > 20 else memory_key
-                formatted_content = f"[bright_blue]...{key_short}[/bright_blue]\n\n{content_text}"
+
+                formatted_content = f"""[bold blue]Memory: ...{key_short}[/bold blue]
+
+[bold green]📄 CONTENT:[/bold green]
+{content_text}
+
+[bold yellow]📋 METADATA:[/bold yellow]
+{metadata_display}
+
+[bold cyan]🏷️ SYSTEM INFO:[/bold cyan]
+[cyan]Type:[/cyan] {memory_type}
+[cyan]Node ID:[/cyan] {node_id}
+[cyan]Importance:[/cyan] {importance_score}"""
 
                 content_widget.update(formatted_content)
-            except Exception:
-                content_widget.update("[red]Error loading content[/red]")
+            except Exception as e:
+                content_widget.update(f"[red]Error loading content: {e!s}[/red]")
 
     def refresh_data(self) -> None:
         """Refresh long memory data."""
@@ -291,49 +325,66 @@ class MemoryLogsScreen(BaseOrKaScreen):
                 )
 
             # Bottom 50%: Content inspector for selected logs
-            with Container(classes="content-panel", id="logs-bottom-section"):
-                yield Static("📄 Content", classes="container-compact")
-                yield Static(
-                    "[dim]Select a row to view log content[/dim]",
-                    id="logs-selected-content",
-                )
+            with Container(classes="content-panel", id="logs-content-panel"):
+                yield Static("📄 Entry Details", classes="container-compact")
+                with Container(id="logs-selected-content"):
+                    yield Static(
+                        "[dim]Select a row to view entry details and metadata[/dim]",
+                        id="logs-content-text",
+                    )
 
     def on_memory_table_widget_memory_selected(
         self,
         message: MemoryTableWidget.MemorySelected,
     ) -> None:
-        """Handle log selection to show content in lower panel."""
+        """Handle memory selection to show content and metadata in lower panel."""
         try:
-            content_widget = self.query_one("#logs-selected-content", Static)
+            content_widget = self.query_one("#logs-content-text", Static)
         except Exception:
             return
 
         if message.memory_data is None:
             # Deselected - show simple placeholder
-            content_widget.update("[dim]Select a row to view log content[/dim]")
+            content_widget.update("[dim]Select a row to view entry details and metadata[/dim]")
         else:
-            # Selected - show content-focused display
+            # Selected - show content and metadata
             try:
                 content = self.data_manager._get_content(message.memory_data)
+                metadata_display = self.data_manager._format_metadata_for_display(
+                    message.memory_data,
+                )
                 memory_key = self.data_manager._get_key(message.memory_data)
+                log_type = self.data_manager._get_log_type(message.memory_data)
+                importance_score = self.data_manager._get_importance_score(message.memory_data)
+                node_id = self.data_manager._get_node_id(message.memory_data)
 
+                # Format content
                 if content is None or str(content).strip() == "":
                     content_text = "[dim]No content[/dim]"
                 else:
                     content_str = str(content)
-                    # Clean and truncate content for display
-                    if len(content_str) > 800:
-                        content_text = content_str[:800] + "[dim]...[/dim]"
-                    else:
-                        content_text = content_str
+                    # Don't truncate content - let users scroll to see everything
+                    content_text = content_str
 
-                # Condensed display focused on content
+                # Build comprehensive display
                 key_short = memory_key[-20:] if len(memory_key) > 20 else memory_key
-                formatted_content = f"[bright_blue]...{key_short}[/bright_blue]\n\n{content_text}"
+
+                formatted_content = f"""[bold blue]Entry: ...{key_short}[/bold blue]
+
+[bold green]📄 CONTENT:[/bold green]
+{content_text}
+
+[bold yellow]📋 METADATA:[/bold yellow]
+{metadata_display}
+
+[bold cyan]🏷️ SYSTEM INFO:[/bold cyan]
+[cyan]Log Type:[/cyan] {log_type}
+[cyan]Node ID:[/cyan] {node_id}
+[cyan]Importance:[/cyan] {importance_score}"""
 
                 content_widget.update(formatted_content)
-            except Exception:
-                content_widget.update("[red]Error loading content[/red]")
+            except Exception as e:
+                content_widget.update(f"[red]Error loading content: {e!s}[/red]")
 
     def refresh_data(self) -> None:
         """Refresh memory logs data."""

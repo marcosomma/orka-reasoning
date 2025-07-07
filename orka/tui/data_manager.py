@@ -5,7 +5,7 @@ Data management for TUI interface - statistics, caching, and data fetching.
 import os
 import time
 from collections import deque
-from typing import Any, Dict
+from typing import Any
 
 from ..memory_logger import create_memory_logger
 
@@ -16,9 +16,9 @@ class MemoryStats:
     def __init__(self, max_history: int = 100):
         self.max_history = max_history
         self.history: deque = deque(maxlen=max_history)
-        self.current: Dict[str, Any] = {}
+        self.current: dict[str, Any] = {}
 
-    def update(self, stats: Dict[str, Any]):
+    def update(self, stats: dict[str, Any]):
         """Update current stats and add to history."""
         self.current = stats.copy()
         self.current["timestamp"] = time.time()
@@ -481,13 +481,51 @@ class DataManager:
 
     # 🎯 UNIFIED: Centralized data extraction methods (handle bytes consistently)
     def _safe_decode(self, value):
-        """Safely decode bytes to string, handle all data types."""
+        """Safely decode bytes values to strings."""
         if isinstance(value, bytes):
             return value.decode("utf-8", errors="ignore")
-        return str(value) if value is not None else ""
+        return str(value)
+
+    def _get_metadata(self, memory):
+        """Extract and format metadata from memory entry."""
+        metadata = memory.get("metadata", {})
+
+        # Handle bytes values from Redis
+        if isinstance(metadata, bytes):
+            try:
+                import json
+
+                metadata = json.loads(metadata.decode("utf-8"))
+            except:
+                metadata = {}
+
+        return metadata
+
+    def _format_metadata_for_display(self, memory):
+        """Format metadata for TUI display."""
+        metadata = self._get_metadata(memory)
+
+        if not metadata:
+            return "[dim]No metadata available[/dim]"
+
+        # Format metadata as readable text
+        formatted_lines = []
+        for key, value in metadata.items():
+            # Handle nested dictionaries
+            if isinstance(value, dict):
+                formatted_lines.append(f"[cyan]{key}:[/cyan]")
+                for sub_key, sub_value in value.items():
+                    formatted_lines.append(f"  [dim]{sub_key}:[/dim] {sub_value!s}")
+            else:
+                # Handle bytes values
+                if isinstance(value, bytes):
+                    value = value.decode("utf-8", errors="ignore")
+                formatted_lines.append(f"[cyan]{key}:[/cyan] {value!s}")
+
+        return "\n".join(formatted_lines)
 
     def _get_safe_field(self, memory, *field_names, default="unknown"):
-        """Safely get a field from memory, trying multiple field names and handling bytes."""
+        """Get a field from memory with safe handling of bytes values."""
         for field_name in field_names:
             value = memory.get(field_name)
             if value is not None:

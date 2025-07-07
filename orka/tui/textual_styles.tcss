@@ -32,6 +32,8 @@ Footer {
     margin: 0;
     padding: 0 1;
     height: 3;
+    color: $accent;
+    text-style: bold;
 }
 
 .stats-container {
@@ -152,29 +154,41 @@ Button.-error {
     grid-gutter: 1;
 }
 
+/* Enhanced content panels for better scrolling support */
 .content-panel {
-    background: $surface;
-    border: solid $success;
-    color: $text;
-    height: 45%;
-    min-height: 12;
+    height: 40%;
+    border: solid $primary;
+    padding: 0;
     margin: 1;
-    padding: 1;
-    display: block;
+    overflow: hidden;
 }
 
-#short-content-panel, #long-content-panel {
+#short-content-panel, #long-content-panel, #logs-content-panel {
     height: 45%;
     min-height: 12;
     display: block;
+    overflow: hidden;
 }
 
-#short-selected-content, #long-selected-content {
+/* Scrollable content containers using overflow auto */
+#short-selected-content, #long-selected-content, #logs-selected-content {
     padding: 1;
     height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
     scrollbar-background: $panel;
     scrollbar-color: $primary;
-    overflow-y: auto;
+    scrollbar-color-hover: $accent;
+    scrollbar-color-active: $accent;
+}
+
+/* Static content inside scrollable containers */
+#short-content-text, #long-content-text, #logs-content-text {
+    padding: 0;
+    background: transparent;
+    color: $text;
+    height: auto;
+    width: 100%;
 }
 
 .full-width {
@@ -300,10 +314,6 @@ MemoryTableWidget DataTable > .datatable--hover {
     height: 50%;
 }
 
-#logs-bottom-section {
-    height: 50%;
-}
-
 #orchestration-logs-table {
     height: 100%;
 }
@@ -338,4 +348,22 @@ MemoryTableWidget DataTable > .datatable--hover {
     height: 100%;
 }
 
-/* Responsive Design - handled by Textual's built-in responsive system */ 
+/* Responsive Design - handled by Textual's built-in responsive system */
+
+/* Add these styles for better metadata display */
+Static#short-selected-content,
+Static#long-selected-content, 
+Static#logs-selected-content {
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-size: 1 1;
+    scrollbar-size-vertical: 1;
+    scrollbar-size-horizontal: 0;
+    scrollbar-background: $panel;
+    scrollbar-color: $primary;
+    scrollbar-color-hover: $accent;
+    scrollbar-color-active: $accent;
+    height: 100%;
+    padding: 1;
+    margin: 0;
+} 
