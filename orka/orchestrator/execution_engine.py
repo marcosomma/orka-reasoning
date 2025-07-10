@@ -95,7 +95,7 @@ Execution Patterns
 ```yaml
 orchestrator:
   strategy: sequential
-  agents: [classifier, processor, responder]
+  agents: [classifier, router, processor, responder]
 ```
 
 **Parallel Execution:**
@@ -223,32 +223,44 @@ class ExecutionEngine:
     - Fault-tolerant distributed AI applications
     """
 
-    async def run(self, input_data):
+    async def run(self, input_data, return_logs=False):
         """
-        Main entry point for orchestrator execution.
-        Creates empty logs list and delegates to the comprehensive error handling method.
+        Execute the orchestrator with the given input data.
+
+        Args:
+            input_data: The input data for the orchestrator
+            return_logs: If True, return full logs; if False, return final response (default: False)
+
+        Returns:
+            Either the logs array or the final response based on return_logs parameter
         """
         logs = []
         try:
-            return await self._run_with_comprehensive_error_handling(input_data, logs)
+            result = await self._run_with_comprehensive_error_handling(
+                input_data,
+                logs,
+                return_logs,
+            )
+            return result
         except Exception as e:
             self._record_error(
-                "orchestrator_run",
-                "orchestrator",
-                f"Fatal error during run: {e}",
+                "orchestrator_execution",
+                "main",
+                f"Orchestrator execution failed: {e}",
                 e,
-                recovery_action="abort",
+                recovery_action="fail",
             )
-            self.error_telemetry["execution_status"] = "failed"
-            self.error_telemetry["critical_failures"].append(
-                {"error": str(e), "timestamp": datetime.now(UTC).isoformat()},
-            )
-            self._save_error_report(logs, e)
+            print(f"🚨 [ORKA-CRITICAL] Orchestrator execution failed: {e}")
             raise
 
-    async def _run_with_comprehensive_error_handling(self, input_data, logs):
+    async def _run_with_comprehensive_error_handling(self, input_data, logs, return_logs=False):
         """
         Main execution loop with comprehensive error handling wrapper.
+
+        Args:
+            input_data: The input data for the orchestrator
+            logs: List to store execution logs
+            return_logs: If True, return full logs; if False, return final response
         """
         queue = self.orchestrator_cfg["agents"][:]
 
@@ -330,7 +342,7 @@ class ExecutionEngine:
                             await asyncio.sleep(1)  # Brief delay before retry
                         else:
                             print(
-                                f"❌ [ORKA-SKIP] Agent {agent_id} failed {max_retries} times, skipping",
+                                f"[ORKA-SKIP] Agent {agent_id} failed {max_retries} times, skipping",
                             )
                             # Create a failure result
                             agent_result = {
@@ -398,7 +410,7 @@ class ExecutionEngine:
                     recovery_action="continue",
                 )
                 print(
-                    f"⚠️ [ORKA-STEP-ERROR] Step {self.step_index} failed for {agent_id}: {step_error}",
+                    f"[ORKA-STEP-ERROR] Step {self.step_index} failed for {agent_id}: {step_error}",
                 )
                 continue  # Continue to next agent
 
@@ -444,7 +456,14 @@ class ExecutionEngine:
         print(f"Average Latency: {meta_report['avg_latency_ms']:.2f}ms")
         print("=" * 50)
 
-        return logs
+        # Return either logs or final response based on parameter
+        if return_logs:
+            # Return full logs for internal workflows (like loop nodes)
+            return logs
+        else:
+            # Extract the final response from the last non-memory agent for user-friendly output
+            final_response = self._extract_final_response(logs)
+            return final_response
 
     async def _execute_single_agent(
         self,
@@ -610,8 +629,8 @@ class ExecutionEngine:
             # Render prompt before running agent if agent has a prompt
             self._render_agent_prompt(agent, payload)
 
-            if agent_type in ("memoryreadernode", "memorywriternode", "failovernode"):
-                # Memory nodes and failover nodes have async run methods
+            if agent_type in ("memoryreadernode", "memorywriternode", "failovernode", "loopnode"):
+                # Memory nodes, failover nodes, and loop nodes have async run methods
                 result = await agent.run(payload)
             else:
                 # Regular synchronous agent
@@ -652,7 +671,7 @@ class ExecutionEngine:
         # Render prompt before running agent if agent has a prompt
         self._render_agent_prompt(agent, payload)
 
-        # 🔍 DEBUG: Check if template rendering worked (only if DEBUG logging is enabled)
+        # Check if template rendering worked (only if DEBUG logging is enabled)
         if logger.isEnabledFor(logging.DEBUG) and hasattr(agent, "prompt") and agent.prompt:
             if "formatted_prompt" in payload:
                 original_template = agent.prompt
@@ -713,7 +732,7 @@ class ExecutionEngine:
         Run multiple branches in parallel, with agents within each branch running sequentially.
         Returns a list of log entries for each forked agent.
         """
-        # 🔧 GENERIC FIX: Ensure complete context is passed to forked agents
+        # Ensure complete context is passed to forked agents
         logger.debug(
             f"run_parallel_agents called with previous_outputs keys: {list(previous_outputs.keys())}",
         )
@@ -739,7 +758,7 @@ class ExecutionEngine:
         fork_node = self.agents[fork_node_id]
         branches = fork_node.targets
 
-        # 🔧 GENERIC FIX: Ensure previous_outputs is properly structured
+        # Ensure previous_outputs is properly structured
         # Make a deep copy to avoid modifying the original
         enhanced_previous_outputs = self._ensure_complete_context(previous_outputs)
 
@@ -860,3 +879,79 @@ class ExecutionEngine:
         """
         for agent_id in agent_ids:
             self.queue.append(agent_id)
+
+    def _extract_final_response(self, logs):
+        """
+        Extract the response from the last non-memory agent to return as the main result.
+
+        Args:
+            logs: List of agent execution logs
+
+        Returns:
+            The response from the last non-memory agent, or logs if no suitable agent found
+        """
+        # Memory agent types that should be excluded from final response consideration
+        memory_agent_types = {
+            "MemoryReaderNode",
+            "MemoryWriterNode",
+            "memory",
+            "memoryreadernode",
+            "memorywriternode",
+        }
+
+        # Find the last non-memory agent
+        last_non_memory_agent = None
+        for log_entry in reversed(logs):
+            if log_entry.get("event_type") == "MetaReport":
+                continue  # Skip meta reports
+
+            agent_id = log_entry.get("agent_id")
+            event_type = log_entry.get("event_type", "").lower()
+
+            # Skip memory agents
+            if event_type in memory_agent_types:
+                continue
+
+            # Check if this agent has a payload with results
+            payload = log_entry.get("payload", {})
+            if payload and "result" in payload:
+                last_non_memory_agent = log_entry
+                break
+
+        if not last_non_memory_agent:
+            print("[ORKA-WARNING] No suitable final agent found, returning full logs")
+            return logs
+
+        # Extract the response from the last non-memory agent
+        payload = last_non_memory_agent.get("payload", {})
+        result = payload.get("result", {})
+
+        print(
+            f"[ORKA-FINAL] Returning response from final agent: {last_non_memory_agent.get('agent_id')}",
+        )
+
+        # Try to extract a clean response from the result
+        if isinstance(result, dict):
+            # Look for common response patterns
+            if "response" in result:
+                return result["response"]
+            elif "result" in result:
+                nested_result = result["result"]
+                if isinstance(nested_result, dict):
+                    # Handle nested dict structure
+                    if "response" in nested_result:
+                        return nested_result["response"]
+                    else:
+                        return nested_result
+                elif isinstance(nested_result, str):
+                    return nested_result
+                else:
+                    return str(nested_result)
+            else:
+                # Return the entire result if no specific response field found
+                return result
+        elif isinstance(result, str):
+            return result
+        else:
+            # Fallback to string representation
+            return str(result)

@@ -2,6 +2,84 @@
 *(derived from the public-repo commit history as of **2025-01-31**)*  
 
 ---
+## [0.7.5] · 2025-01-31
+### Added
+* **🔄 Advanced Loop Node Implementation - Cognitive Iteration System**
+  * **Intelligent Loop Node** - New `LoopNode` class for sophisticated iterative workflows with threshold-based execution
+  * **Cognitive Insight Extraction** - Advanced pattern-based extraction system for insights, improvements, and mistakes from loop iterations
+  * **Dynamic Score Evaluation** - Configurable score extraction with regex patterns and direct key lookup for threshold-based continuation
+  * **Past Loops Context** - Comprehensive memory system tracking previous loop iterations with customizable metadata structures
+  * **Iterative Improvement Framework** - Built-in system for agents to learn from previous attempts and iteratively improve responses
+  * **Flexible Loop Configuration** - Customizable max loops, score thresholds, and cognitive extraction patterns for diverse use cases
+
+* **🧠 Cognitive Society Framework - Multi-Agent Deliberation**
+  * **Cognitive Society Loop Example** - Complete multi-agent deliberation system with logic, empathy, skeptical, and historical reasoning agents
+  * **Advanced Consensus Building** - Sophisticated agreement scoring and convergence detection for multi-agent decision making
+  * **Cognitive Society with Memory** - Enhanced version with persistent memory integration for long-term learning and context retention
+  * **Moderator Synthesis System** - Intelligent moderator agent for evaluating convergence and facilitating consensus across diverse perspectives
+  * **Simple Loop Example** - Educational example demonstrating core loop functionality with cognitive insight extraction
+
+* **🔧 Enhanced Memory System Integration**
+  * **Memory Node Improvements** - Enhanced memory writer and reader nodes with better error handling and template rendering
+  * **RedisStack Logger Updates** - Improved RedisStack integration with better performance and reliability
+  * **Advanced Metadata Handling** - Enhanced metadata processing and template rendering for complex memory structures
+  * **Memory Context Enhancement** - Improved context passing and data accessibility across memory operations
+
+* **⚡ Orchestrator & Execution Engine Enhancements**
+  * **Loop Node Integration** - Seamless integration of LoopNode into the orchestrator agent factory and execution engine
+  * **Enhanced Error Handling** - Improved error reporting and graceful degradation for complex loop scenarios
+  * **Execution Engine Optimizations** - Performance improvements and better handling of iterative workflows
+  * **Prompt Rendering Updates** - Enhanced template rendering capabilities for complex cognitive extraction patterns
+
+### Changed
+* **🏗️ Node System Architecture**
+  * **Expanded Node Registry** - Added LoopNode to the comprehensive node system alongside existing Fork, Join, Router, and Memory nodes
+  * **Unified Node Interface** - Consistent interface patterns across all node types for seamless workflow composition
+  * **Enhanced Node Documentation** - Comprehensive documentation and examples for all node types including the new LoopNode
+
+* **📊 Example Ecosystem Expansion**
+  * **Cognitive Workflow Examples** - New sophisticated examples demonstrating advanced multi-agent reasoning patterns
+  * **Educational Progression** - Examples organized from simple loops to complex cognitive society implementations
+  * **Real-World Applications** - Practical examples showing how to implement iterative improvement and consensus building
+
+* **🛠️ Development Experience Improvements**
+  * **Enhanced Test Coverage** - Comprehensive test suite for LoopNode functionality and cognitive extraction systems
+  * **Better Error Messages** - Improved error reporting for loop configuration and execution issues
+  * **Development Tools** - Enhanced debugging and monitoring capabilities for iterative workflows
+
+### Fixed
+* **🔧 Loop Execution Reliability**
+  * **Circular Reference Prevention** - Robust handling of past_loops context to prevent memory leaks and circular references
+  * **Score Extraction Accuracy** - Improved score extraction patterns and fallback mechanisms for reliable threshold evaluation
+  * **Context Isolation** - Proper isolation of loop contexts to prevent interference between iterations
+  * **Memory Safety** - Enhanced memory management during long-running loop operations
+
+* **⚡ Performance & Stability Improvements**
+  * **Memory Node Integration** - Fixed integration issues between memory nodes and the broader orchestrator system
+  * **Template Rendering** - Enhanced Jinja2 template rendering for complex cognitive extraction patterns
+  * **Error Propagation** - Improved error handling and reporting throughout the loop execution pipeline
+  * **Resource Management** - Better resource cleanup and management for iterative workflows
+
+* **🖥️ User Experience Enhancements**
+  * **Configuration Validation** - Enhanced validation for loop node configuration parameters
+  * **Example Accessibility** - Improved example documentation and setup instructions
+  * **Debug Information** - Better debugging output for loop execution and cognitive extraction processes
+
+### Technical Details
+* **LoopNode Implementation** - Advanced loop control with configurable thresholds, cognitive extraction, and past context management
+* **Cognitive Extraction System** - Pattern-based extraction using regex patterns with agent-specific priorities and length limits
+* **Memory Context Management** - Sophisticated context passing system preventing circular references while maintaining rich loop history
+* **Multi-Agent Convergence** - Advanced consensus building algorithms for multi-agent deliberation scenarios
+* **Template Integration** - Deep integration with Jinja2 templating for dynamic cognitive extraction and metadata rendering
+* **Performance Optimization** - Efficient memory management and context handling for long-running iterative processes
+
+### Migration Notes
+* **For Existing Users** - No breaking changes; existing workflows continue to function unchanged
+* **Loop Node Usage** - New LoopNode available for iterative workflows with comprehensive documentation and examples
+* **Cognitive Society Patterns** - New examples provide templates for implementing sophisticated multi-agent reasoning systems
+* **Enhanced Memory Operations** - Improved memory node performance and reliability for all existing memory-based workflows
+
+---
 ## [0.7.4] · 2025-07-05
 ### Fixed
 * **🔧 Schema Management Dependencies Installation Issue**

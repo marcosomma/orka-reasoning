@@ -17,6 +17,7 @@ from .failing_node import FailingNode
 from .failover_node import FailoverNode
 from .fork_node import ForkNode
 from .join_node import JoinNode
+from .loop_node import LoopNode
 from .memory_reader_node import MemoryReaderNode
 from .memory_writer_node import MemoryWriterNode
 from .rag_node import RAGNode

@@ -133,7 +133,9 @@ class TestRedisStackLoggerMemoryOperations:
 
         with patch("time.time", return_value=1000.0):
             with patch("uuid.uuid4") as mock_uuid:
-                mock_uuid.return_value.hex = "test123"
+                # Mock the UUID to return a value that when str() and replace("-", "") gives "test123"
+                mock_uuid.return_value.__str__ = Mock(return_value="test-1-2-3")
+                # So str(uuid.uuid4()).replace("-", "") will return "test123"
 
                 memory_key = self.logger.log_memory(
                     content="Test memory content",
@@ -145,6 +147,7 @@ class TestRedisStackLoggerMemoryOperations:
                     expiry_hours=2.0,
                 )
 
+        # Memory key should use str(uuid4()).replace("-", "") format
         assert memory_key == "orka_memory:test123"
         assert self.mock_redis_client.hset.called
         assert self.mock_redis_client.expire.called
@@ -162,7 +165,8 @@ class TestRedisStackLoggerMemoryOperations:
 
         with patch("time.time", return_value=1000.0):
             with patch("uuid.uuid4") as mock_uuid:
-                mock_uuid.return_value.hex = "test123"
+                # Mock the UUID to return a value that when str() and replace("-", "") gives "test123"
+                mock_uuid.return_value.__str__ = Mock(return_value="test-1-2-3")
 
                 memory_key = self.logger.log_memory(
                     content="Test memory content",
@@ -180,7 +184,8 @@ class TestRedisStackLoggerMemoryOperations:
 
         with patch("time.time", return_value=1000.0):
             with patch("uuid.uuid4") as mock_uuid:
-                mock_uuid.return_value.hex = "test123"
+                # Mock the UUID to return a value that when str() and replace("-", "") gives "test123"
+                mock_uuid.return_value.__str__ = Mock(return_value="test-1-2-3")
 
                 self.logger.log_memory(
                     content="Test content",
@@ -215,7 +220,8 @@ class TestRedisStackLoggerMemoryOperations:
         }
 
         with patch("time.time", return_value=1000.0), patch("uuid.uuid4") as mock_uuid:
-            mock_uuid.return_value.hex = "test_key_123"
+            # Mock the UUID to return a value that when str() and replace("-", "") gives "testkey123"
+            mock_uuid.return_value.__str__ = Mock(return_value="test-k-e-y-123")
 
             self.logger.log(
                 agent_id="test_agent",
@@ -977,7 +983,8 @@ class TestRedisStackLoggerEdgeCases:
 
         with patch("time.time", return_value=1000.0):
             with patch("uuid.uuid4") as mock_uuid:
-                mock_uuid.return_value.hex = "test123"
+                # Mock the UUID to return a value that when str() and replace("-", "") gives "test123"
+                mock_uuid.return_value.__str__ = Mock(return_value="test-1-2-3")
 
                 memory_key = self.logger.log_memory(
                     content="Test content",

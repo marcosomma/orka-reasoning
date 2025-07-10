@@ -103,7 +103,7 @@ class PromptRenderer:
                 f"Expected template_str to be str, got {type(template_str)} instead.",
             )
 
-        # 🔧 GENERIC FIX: Enhance payload for better template rendering
+        # Enhance payload for better template rendering
         enhanced_payload = self._enhance_payload_for_templates(payload)
 
         return Template(template_str).render(**enhanced_payload)
@@ -116,6 +116,17 @@ class PromptRenderer:
         to support different template patterns used across workflows.
         """
         enhanced_payload = payload.copy()
+
+        # Expose key properties from input object at root level
+        # Templates expect {{ loop_number }} but it's nested at {{ input.loop_number }}
+        if "input" in enhanced_payload and isinstance(enhanced_payload["input"], dict):
+            input_data = enhanced_payload["input"]
+
+            # Expose commonly used template variables at root level
+            template_vars = ["loop_number", "past_loops_metadata"]
+            for var in template_vars:
+                if var in input_data:
+                    enhanced_payload[var] = input_data[var]
 
         # If previous_outputs exists, enhance it for template compatibility
         if "previous_outputs" in enhanced_payload:

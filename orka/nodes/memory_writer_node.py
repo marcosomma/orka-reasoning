@@ -40,33 +40,13 @@ class MemoryWriterNode(BaseNode):
         # ✅ CRITICAL: Always store metadata structure defined in YAML
         self.yaml_metadata = kwargs.get("metadata", {})
 
-        # Remove direct Redis client - use memory logger instead
-        # self.redis = redis.from_url(...)  # ← REMOVE
+        # Store key_template for rendering
+        self.key_template = kwargs.get("key_template")
 
     async def run(self, context: dict[str, Any]) -> dict[str, Any]:
         """Write to memory using RedisStack memory logger."""
         try:
-            # 🔍 DEBUG: Log the complete context structure
-            logger.info(f"MemoryWriterNode received context keys: {list(context.keys())}")
-            if "previous_outputs" in context:
-                logger.info(f"Previous outputs keys: {list(context['previous_outputs'].keys())}")
-                # Log structure of a few key outputs
-                for key in ["logic_reasoning", "empathy_reasoning", "moderator_synthesis"]:
-                    if key in context["previous_outputs"]:
-                        output = context["previous_outputs"][key]
-                        logger.info(
-                            f"Structure of {key}: {type(output)} with keys: {list(output.keys()) if isinstance(output, dict) else 'not a dict'}",
-                        )
-                        if isinstance(output, dict) and "result" in output:
-                            result = output["result"]
-                            logger.info(
-                                f"  Result structure: {type(result)} with keys: {list(result.keys()) if isinstance(result, dict) else 'not a dict'}",
-                            )
-
-            # Log the YAML metadata we're trying to render
-            logger.info(f"YAML metadata to render: {self.yaml_metadata}")
-
-            # 🎯 CRITICAL FIX: Extract structured memory object from validation guardian
+            # Extract structured memory object from validation guardian
             memory_content = self._extract_memory_content(context)
             if not memory_content:
                 return {"status": "error", "error": "No memory content to store"}
@@ -75,25 +55,57 @@ class MemoryWriterNode(BaseNode):
             namespace = context.get("namespace", self.namespace)
             session_id = context.get("session_id", self.session_id)
 
-            # ✅ CRITICAL: Always merge metadata from YAML config and context
+            # Merge metadata from YAML config and context
             merged_metadata = self._merge_metadata(context)
 
-            # 🔍 DEBUG: Log the final merged metadata
-            logger.info(f"Final merged metadata: {merged_metadata}")
+            # Process key_template if present
+            if self.key_template:
+                try:
+                    # Create template context for key rendering
+                    template_context = {
+                        "input": context.get("input", ""),
+                        "previous_outputs": context.get("previous_outputs", {}),
+                        "timestamp": context.get("timestamp", ""),
+                        **context,  # Include all context keys
+                    }
 
-            # ✅ CRITICAL: Use memory logger for direct memory storage instead of orchestration logging
+                    # Apply same enhancement as in template rendering
+                    if "input" in context and isinstance(context["input"], dict):
+                        input_data = context["input"]
+                        if "loop_number" in input_data:
+                            template_context["loop_number"] = input_data["loop_number"]
+                        if "input" in input_data:
+                            template_context["original_input"] = input_data["input"]
+
+                    # Render the key template
+                    from jinja2 import Template
+
+                    template = Template(self.key_template)
+                    rendered_key = template.render(**template_context)
+
+                    # Store rendered key in metadata for identification
+                    merged_metadata["memory_key_template"] = rendered_key
+
+                except Exception as e:
+                    logger.warning(f"Failed to render key template: {e}")
+                    merged_metadata["memory_key_template"] = self.key_template
+
+            # Use memory logger for direct memory storage
+            final_metadata = {
+                "namespace": namespace,
+                "session": session_id,
+                "content_type": "user_input",
+                **merged_metadata,  # Include all metadata from YAML and context
+                # Set these AFTER merged_metadata to prevent overwriting
+                "category": "stored",  # Mark as stored memory
+                "log_type": "memory",  # Mark as stored memory, not orchestration log
+            }
+
             memory_key = self.memory_logger.log_memory(
                 content=memory_content,
                 node_id=self.node_id,
                 trace_id=session_id,
-                metadata={
-                    "namespace": namespace,
-                    "session": session_id,
-                    "category": "stored",  # Mark as stored memory
-                    "log_type": "memory",  # 🎯 CRITICAL: Mark as stored memory, not orchestration log
-                    "content_type": "user_input",
-                    **merged_metadata,  # Include all metadata from YAML and context
-                },
+                metadata=final_metadata,
                 importance_score=self._calculate_importance_score(memory_content, merged_metadata),
                 memory_type=self._classify_memory_type(
                     merged_metadata,
@@ -116,7 +128,7 @@ class MemoryWriterNode(BaseNode):
                 "backend": "redisstack",
                 "vector_enabled": True,
                 "memory_key": memory_key,
-                "stored_metadata": merged_metadata,  # Include metadata in response
+                "stored_metadata": final_metadata,
             }
 
         except Exception as e:
@@ -129,7 +141,7 @@ class MemoryWriterNode(BaseNode):
             # Start with YAML metadata structure (always preserve this)
             merged_metadata = self.yaml_metadata.copy()
 
-            # ✅ CRITICAL: Render YAML metadata templates first
+            # Render YAML metadata templates first
             rendered_yaml_metadata = self._render_metadata_templates(merged_metadata, context)
 
             # Add context metadata (overrides YAML where keys conflict)
@@ -161,7 +173,7 @@ class MemoryWriterNode(BaseNode):
         try:
             rendered_metadata = {}
 
-            # Create comprehensive template context
+            # Create comprehensive template context with enhanced payload
             template_context = {
                 "input": context.get("input", ""),
                 "previous_outputs": context.get("previous_outputs", {}),
@@ -170,55 +182,58 @@ class MemoryWriterNode(BaseNode):
                 **context,  # Include all context keys
             }
 
-            # Debug: Log template context structure
-            logger.info(f"Template context keys: {list(template_context.keys())}")
-            logger.info(
-                f"Previous outputs keys: {list(template_context.get('previous_outputs', {}).keys())}",
-            )
+            # Expose key properties from input object at root level for template access
+            if "input" in context and isinstance(context["input"], dict):
+                input_data = context["input"]
 
-            # 🔍 DEBUG: Log specific structure that templates are trying to access
-            prev_outputs = template_context.get("previous_outputs", {})
-            for agent_key in ["logic_reasoning", "empathy_reasoning", "moderator_synthesis"]:
-                if agent_key in prev_outputs:
-                    agent_data = prev_outputs[agent_key]
-                    logger.info(f"Agent {agent_key} structure: {type(agent_data)}")
-                    if isinstance(agent_data, dict):
-                        logger.info(f"  Keys: {list(agent_data.keys())}")
-                        if "result" in agent_data:
-                            result = agent_data["result"]
-                            logger.info(f"  Result type: {type(result)}")
-                            if isinstance(result, dict):
-                                logger.info(f"  Result keys: {list(result.keys())}")
+                # Expose loop_number at root level (templates expect {{ loop_number }})
+                if "loop_number" in input_data:
+                    template_context["loop_number"] = input_data["loop_number"]
 
+                # Expose past_loops_metadata at root level
+                if "past_loops_metadata" in input_data:
+                    template_context["past_loops_metadata"] = input_data["past_loops_metadata"]
+
+                # Expose the original input content at root level
+                if "input" in input_data:
+                    template_context["original_input"] = input_data["input"]
+
+            # Ensure timestamp is always available
+            if not template_context.get("timestamp"):
+                import datetime
+
+                template_context["timestamp"] = datetime.datetime.now().isoformat()
+
+            # Process metadata templates
             for key, value in metadata.items():
                 try:
                     if isinstance(value, str) and ("{{" in value or "{%" in value):
-                        # Debug: Log what we're trying to render
-                        logger.info(f"🎯 Rendering template for key '{key}': {value}")
+                        # Render string templates
+                        try:
+                            template = Template(value)
+                            rendered_value = template.render(**template_context)
 
-                        # Render string templates with enhanced error handling
-                        template = Template(value)
-                        rendered_value = template.render(**template_context)
-
-                        # Debug: Log the rendered result
-                        logger.info(
-                            f"✅ Rendered value for key '{key}': {rendered_value[:200]}{'...' if len(str(rendered_value)) > 200 else ''}",
-                        )
-
-                        # Handle special cases where rendered value might be None or empty
-                        if rendered_value is None or rendered_value == "":
-                            # Try to extract default value from template if present
-                            if "default(" in value:
-                                # Use original template string as fallback
-                                rendered_metadata[key] = value
-                                logger.warning(
-                                    f"⚠️ Template rendered empty, using default for '{key}'",
-                                )
+                            # Handle special cases where rendered value might be None or empty
+                            if rendered_value is None or rendered_value == "":
+                                # Try to extract default value from template if present
+                                if "default(" in value:
+                                    # Use original template string as fallback
+                                    rendered_metadata[key] = value
+                                    logger.warning(
+                                        f"Template rendered empty, using default for '{key}'",
+                                    )
+                                else:
+                                    rendered_metadata[key] = ""
+                                    logger.warning(f"Template rendered empty for '{key}'")
                             else:
-                                rendered_metadata[key] = ""
-                                logger.warning(f"⚠️ Template rendered empty for '{key}'")
-                        else:
-                            rendered_metadata[key] = rendered_value
+                                rendered_metadata[key] = rendered_value
+
+                        except Exception as template_error:
+                            logger.error(
+                                f"Template render error for key '{key}': {template_error}",
+                            )
+                            # Use original value if template fails
+                            rendered_metadata[key] = str(value)
 
                     elif isinstance(value, dict):
                         # Recursively render nested dictionaries
@@ -233,8 +248,8 @@ class MemoryWriterNode(BaseNode):
                                     rendered_item = template.render(**template_context)
                                     rendered_list.append(rendered_item)
                                 except Exception as e:
-                                    logger.warning(f"❌ Error rendering list item template: {e}")
-                                    rendered_list.append(item)
+                                    logger.warning(f"Error rendering list item template: {e}")
+                                    rendered_list.append(str(item))
                             else:
                                 rendered_list.append(item)
                         rendered_metadata[key] = rendered_list
@@ -243,22 +258,17 @@ class MemoryWriterNode(BaseNode):
                         rendered_metadata[key] = value
 
                 except Exception as e:
-                    logger.error(f"❌ Error rendering template for metadata key '{key}': {e}")
-                    logger.error(f"Template value: {value}")
-                    logger.error(f"Template context keys: {list(template_context.keys())}")
-                    import traceback
-
-                    logger.error(f"Full traceback: {traceback.format_exc()}")
-                    # Keep original value if rendering fails
-                    rendered_metadata[key] = value
+                    logger.error(f"Error processing metadata key '{key}': {e}")
+                    # Keep original value if rendering fails, but ensure it's not a slice
+                    if hasattr(value, "__getitem__") and not isinstance(value, (str, list, dict)):
+                        rendered_metadata[key] = str(value)
+                    else:
+                        rendered_metadata[key] = value
 
             return rendered_metadata
 
         except Exception as e:
-            logger.error(f"❌ Error rendering metadata templates: {e}")
-            import traceback
-
-            logger.error(f"Full traceback: {traceback.format_exc()}")
+            logger.error(f"Error rendering metadata templates: {e}")
             return metadata.copy()
 
     def _extract_guardian_metadata(self, context: dict[str, Any]) -> dict[str, Any]:
@@ -345,12 +355,33 @@ class MemoryWriterNode(BaseNode):
                             # Convert structured object to searchable text
                             return self._memory_object_to_text(memory_obj, context.get("input", ""))
 
-            # Fallback: use raw input if no structured memory object found
-            return context.get("input", "")
+            # Extract clean string content from nested input structure
+            input_value = context.get("input", "")
+
+            # If input is a complex nested structure, extract the actual string content
+            if isinstance(input_value, dict):
+                # Look for the actual input string in the nested structure
+                if "input" in input_value:
+                    actual_input = input_value["input"]
+                    if isinstance(actual_input, str):
+                        return actual_input
+                    else:
+                        return str(actual_input)
+                else:
+                    # Try to create a meaningful string representation
+                    return f"Complex input structure with keys: {list(input_value.keys())}"
+            elif isinstance(input_value, str):
+                return input_value
+            else:
+                return str(input_value)
 
         except Exception as e:
-            logger.warning(f"Error extracting memory content: {e}")
-            return context.get("input", "")
+            logger.error(f"❌ Error extracting memory content: {e}")
+            import traceback
+
+            logger.error(f"❌ Full traceback: {traceback.format_exc()}")
+            # Safe fallback - return a simple string
+            return "Memory content extraction failed"
 
     def _memory_object_to_text(self, memory_obj: dict[str, Any], original_input: str) -> str:
         """Convert structured memory object to searchable text format."""

@@ -1,0 +1,120 @@
+# Simple Loop Node Example with Cognitive Extraction
+# This example demonstrates the LoopNode functionality with cognitive insight extraction
+
+orchestrator:
+  id: simple-loop-example
+  strategy: sequential
+  agents:
+    - simple_loop
+    - final_processor
+
+agents:
+  - id: simple_loop
+    type: loop
+    max_loops: 10
+    score_threshold: 0.88
+    score_extraction_pattern: "SCORE:\\s*([0-9.]+)"
+    
+    # Cognitive extraction configuration
+    cognitive_extraction:
+      enabled: true
+      max_length_per_category: 500
+      extract_patterns:
+        insights:
+          - "(?:provides?|identifies?|shows?|solid|good|comprehensive|thorough)\\s+(.+?)(?:\\n|$)"
+          - "(?:accurately|correctly)\\s+(.+?)(?:\\n|$)"
+          - "(?:strong|effective|successful)\\s+(.+?)(?:\\n|$)"
+        improvements:
+          - "(?:lacks?|lacking|needs?|requires?|missing|should|could)\\s+(.+?)(?:\\n|$)"
+          - "(?:would improve|would enhance|could benefit from)\\s+(.+?)(?:\\n|$)"
+          - "\\d+\\.\\s*\\*\\*([^*]+)\\*\\*:\\s*(.+?)(?:\\n|$)"
+          - "(?:more detailed|more thorough|clearer|specific|in-depth)\\s+(.+?)(?:\\n|$)"
+          - "(?:depth of|implementation plan|stakeholder analysis|risk assessment)\\s+(.+?)(?:\\n|$)"
+          - "(?:addressing|exploring|developing|conducting|establishing)\\s+(.+?)(?:\\n|$)"
+        mistakes:
+          - "(?:overlooked|missed|not adequately|does not)\\s+(.+?)(?:\\n|$)"
+          - "(?:lacks depth|lacks specificity|insufficient|inadequate)\\s+(.+?)(?:\\n|$)"
+          - "(?:weakness|limitation|gap|problem|issue)\\s*[:\\s]*(.+?)(?:\\n|$)"
+          - "(?:vague|unclear|generic|surface-level)\\s+(.+?)(?:\\n|$)"
+      agent_priorities:
+        analyzer: ["insights", "improvements", "mistakes"]
+        scorer: ["mistakes", "improvements"]
+    
+    # Define past_loops object structure with cognitive insights
+    past_loops_metadata:
+      loop_number: "{{ loop_number }}"
+      score: "{{ score }}"
+      timestamp: "{{ timestamp }}"
+      key_insights: "{{ insights }}"
+      improvements_needed: "{{ improvements }}"
+      mistakes_found: "{{ mistakes }}"
+    
+    # Internal workflow that gets repeated
+    internal_workflow:
+      orchestrator:
+        id: internal-loop
+        strategy: sequential
+        agents: [analyzer, scorer]
+      agents:
+        - id: analyzer
+          type: openai-answer
+          prompt: |
+            Analyze this question: {{ input }}
+            
+            {% if previous_outputs.past_loops %}
+            Previous attempts ({{ previous_outputs.past_loops | length }}):
+            {% for loop in previous_outputs.past_loops %}
+            - Loop {{ loop.loop_number }} (Score: {{ loop.score }}):
+              * Key insights: {{ loop.key_insights }}
+              * Needed improvements: {{ loop.improvements_needed }}
+              * Mistakes found: {{ loop.mistakes_found }}
+            {% endfor %}
+            
+            Build upon these previous insights and address the identified gaps.
+            {% endif %}
+            
+            Provide a comprehensive analysis. Focus on:
+            1. Key insights and findings
+            2. Areas that need improvement
+            3. What might be missing or overlooked
+            
+            Structure your response to clearly indicate insights, improvements needed, and potential mistakes.
+            
+        - id: scorer
+          type: openai-answer
+          prompt: |
+            Rate the quality of this analysis (0.0 to 1.0):
+            {{ previous_outputs.analyzer.result }}
+            
+            Consider:
+            - Completeness and depth
+            - Accuracy of insights
+            - Identification of improvements
+            - Recognition of limitations
+            
+            If the score is below 0.8, clearly identify what was missed, overlooked, or needs improvement.
+            
+            Format your response as: SCORE: X.XX
+            Then explain what was missed or needs improvement.
+
+  - id: final_processor
+    type: openai-answer
+    prompt: |
+      Process the final result from the cognitive loop:
+      
+      Loops completed: {{ previous_outputs.simple_loop.loops_completed }}
+      Final score: {{ previous_outputs.simple_loop.final_score }}
+      Threshold met: {{ previous_outputs.simple_loop.threshold_met }}
+      
+      Cognitive Evolution Summary:
+      {% for loop in previous_outputs.simple_loop.past_loops %}
+      
+      **Loop {{ loop.loop_number }}** (Score: {{ loop.score }}):
+      - Key Insights: {{ loop.key_insights }}
+      - Improvements: {{ loop.improvements_needed }}
+      - Mistakes: {{ loop.mistakes_found }}
+      {% endfor %}
+      
+      Final Analysis: {{ previous_outputs.simple_loop.result }}
+      
+      Provide a meta-analysis of how the thinking evolved through the loops and what the final insights reveal. 

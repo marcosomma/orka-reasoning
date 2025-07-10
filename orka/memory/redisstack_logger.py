@@ -232,10 +232,10 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         self.stream_key = stream_key
         self.debug_keep_previous_outputs = debug_keep_previous_outputs
 
-        # 🎯 CRITICAL: Store memory decay config for method access
+        # Store memory decay config for method access
         self.memory_decay_config = effective_decay_config
 
-        # 🎯 CRITICAL: Thread safety for parallel operations
+        # Thread safety for parallel operations
         self._connection_lock = Lock()
         self._embedding_lock = Lock()  # Separate lock for embedding operations
         self._local = threading.local()  # Thread-local storage for connections
@@ -319,71 +319,83 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         memory_type: str = "short_term",
         expiry_hours: float | None = None,
     ) -> str:
-        """
-        Log a memory entry with vector embedding for semantic search.
-
-        Args:
-            content: The content to store
-            node_id: Node that generated this memory
-            trace_id: Trace/session identifier
-            metadata: Additional metadata
-            importance_score: Importance score (0.0 to 1.0)
-            memory_type: Type of memory (short_term, long_term)
-            expiry_hours: Hours until expiry (None = no expiry)
-
-        Returns:
-            str: Unique key for the stored memory
-        """
+        """Store memory with vector embedding for enhanced search."""
         try:
-            # Get thread-safe client
-            client = self._get_thread_safe_client()
+            # Store memory with enhanced metadata
+            memory_id = str(uuid.uuid4()).replace("-", "")
+            memory_key = f"orka_memory:{memory_id}"
 
-            # Generate unique key
-            memory_key = f"orka_memory:{uuid.uuid4().hex}"
+            current_time_ms = int(time.time() * 1000)
+            metadata = metadata or {}
 
             # Calculate expiry time if specified
-            expiry_time = None
+            orka_expire_time = None
             if expiry_hours is not None:
-                expiry_time = int((time.time() + (expiry_hours * 3600)) * 1000)
+                orka_expire_time = current_time_ms + int(expiry_hours * 3600 * 1000)
 
-            # Prepare memory data
+            # Store to Redis with vector embedding
+            client = self._get_thread_safe_client()
+
+            # Ensure all data is Redis-serializable
+            try:
+                # Test serialization of content
+                if not isinstance(content, str):
+                    logger.warning(f"Content is not a string: {type(content)}, converting...")
+                    content = str(content)
+
+                # Test serialization of metadata
+                metadata_json = json.dumps(metadata)
+
+            except Exception as serialize_error:
+                logger.error(f"Serialization error: {serialize_error}")
+                # Create safe fallback data
+                safe_metadata = {
+                    "error": "serialization_failed",
+                    "original_error": str(serialize_error),
+                    "node_id": node_id,
+                    "trace_id": trace_id,
+                    "log_type": "memory",
+                }
+                metadata = safe_metadata
+                if not isinstance(content, str):
+                    content = str(content)
+                logger.warning("Using safe fallback metadata due to serialization error")
+
+            # Store memory data
             memory_data = {
                 "content": content,
                 "node_id": node_id,
                 "trace_id": trace_id,
+                "timestamp": current_time_ms,
                 "importance_score": importance_score,
                 "memory_type": memory_type,
-                "timestamp": int(time.time() * 1000),
-                "metadata": json.dumps(metadata) if metadata else "{}",
+                "metadata": json.dumps(metadata),
             }
 
-            if expiry_time:
-                memory_data["orka_expire_time"] = expiry_time
+            if orka_expire_time:
+                memory_data["orka_expire_time"] = orka_expire_time
 
-            # Generate content vector if embedder is available
+            # Generate embedding if embedder is available
             if self.embedder:
                 try:
-                    # Handle async embedder in sync context properly with thread safety
-                    with self._embedding_lock:
-                        content_vector = self._get_embedding_sync(content)
-                    if isinstance(content_vector, np.ndarray):
-                        memory_data["content_vector"] = content_vector.astype(np.float32).tobytes()
-                    logger.debug(f"Generated vector embedding for memory: {memory_key}")
+                    embedding = self._get_embedding_sync(content)
+                    if embedding is not None:
+                        memory_data["content_vector"] = embedding.tobytes()
                 except Exception as e:
-                    logger.warning(f"Failed to generate vector embedding: {e}")
+                    logger.warning(f"Failed to generate embedding for memory: {e}")
 
-            # Store in Redis
+            # Store the memory
             client.hset(memory_key, mapping=memory_data)
 
-            # Set expiry on the key if specified
-            if expiry_hours:
-                client.expire(memory_key, int(expiry_hours * 3600))
+            # Set TTL if specified
+            if orka_expire_time:
+                ttl_seconds = max(1, int((orka_expire_time - current_time_ms) / 1000))
+                client.expire(memory_key, ttl_seconds)
 
-            logger.debug(f"Stored memory with key: {memory_key}")
             return memory_key
 
         except Exception as e:
-            logger.error(f"Failed to log memory: {e}")
+            logger.error(f"Failed to store memory: {e}")
             raise
 
     def _get_embedding_sync(self, text: str) -> np.ndarray:
@@ -417,12 +429,9 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         node_id: str | None = None,
         memory_type: str | None = None,
         min_importance: float | None = None,
-        log_type: str = "memory",  # 🎯 NEW: Filter by log type (default: only memories)
-        namespace: str | None = None,  # 🎯 NEW: Filter by namespace
+        log_type: str = "memory",  # Filter by log type (default: only memories)
+        namespace: str | None = None,  # Filter by namespace
     ) -> list[dict[str, Any]]:
-        logger.debug(
-            f"🔍 SEARCH PARAMS: query='{query}', namespace='{namespace}', log_type='{log_type}', num_results={num_results}",
-        )
         """
         Search memories using enhanced vector search with filtering.
 
@@ -507,28 +516,25 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                                 logger.debug(f"Error parsing metadata for key {result['key']}: {e}")
                                 metadata = {}
 
-                            # 🎯 CRITICAL: Filter by log_type
+                            # Check if this is a stored memory
                             memory_log_type = metadata.get("log_type", "log")
                             memory_category = metadata.get("category", "log")
 
-                            # Skip if not matching requested log type
-                            if (
-                                log_type == "memory"
-                                and memory_log_type != "memory"
-                                and memory_category != "stored"
-                            ) or (
-                                log_type == "log"
-                                and memory_log_type != "log"
-                                and memory_category != "log"
-                            ):
+                            is_stored_memory = (
+                                memory_log_type == "memory" or memory_category == "stored"
+                            )
+
+                            # Skip if we want memory entries but this isn't a stored memory
+                            if log_type == "memory" and not is_stored_memory:
                                 continue
 
-                            # 🎯 NEW: Filter by namespace
+                            # Skip if we want log entries but this is a stored memory
+                            if log_type == "log" and is_stored_memory:
+                                continue
+
+                            # Filter by namespace
                             if namespace:
                                 memory_namespace = metadata.get("namespace")
-                                logger.debug(
-                                    f"🔍 Vector search - Namespace filter: searching={namespace}, memory={memory_namespace}, match={memory_namespace == namespace}",
-                                )
                                 if memory_namespace != namespace:
                                     continue
 
@@ -560,9 +566,11 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                                     self._safe_get_redis_value(memory_data, "timestamp", "0"),
                                 ),
                                 "metadata": metadata,
-                                "similarity_score": result.get("score", 0.0),
+                                "similarity_score": self._validate_similarity_score(
+                                    result.get("score", 0.0),
+                                ),
                                 "key": result["key"],
-                                # 🎯 NEW: TTL information
+                                # TTL information
                                 "ttl_seconds": expiry_info["ttl_seconds"],
                                 "ttl_formatted": expiry_info["ttl_formatted"],
                                 "expires_at": expiry_info["expires_at"],
@@ -609,6 +617,20 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             except UnicodeDecodeError:
                 return default
         return value
+
+    def _validate_similarity_score(self, score) -> float:
+        """Validate and sanitize similarity scores to prevent NaN values."""
+        try:
+            score_float = float(score)
+            # Check for NaN, infinity, or invalid values
+            import math
+
+            if math.isnan(score_float) or math.isinf(score_float) or score_float < 0:
+                return 0.0
+            # Clamp to reasonable range (0.0 to 1.0 for distance scores)
+            return max(0.0, min(1.0, score_float))
+        except (ValueError, TypeError):
+            return 0.0
 
     def _fallback_text_search(
         self,
@@ -680,26 +702,24 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                         logger.debug(f"Error parsing metadata for key {doc.id}: {e}")
                         metadata = {}
 
-                    # 🎯 CRITICAL: Filter by log_type (same logic as vector search)
+                    # Filter by log_type (same logic as vector search)
                     memory_log_type = metadata.get("log_type", "log")
                     memory_category = metadata.get("category", "log")
 
-                    # Skip if not matching requested log type
-                    if (
-                        log_type == "memory"
-                        and memory_log_type != "memory"
-                        and memory_category != "stored"
-                    ) or (
-                        log_type == "log" and memory_log_type != "log" and memory_category != "log"
-                    ):
+                    # Check if this is a stored memory (same as vector search)
+                    is_stored_memory = memory_log_type == "memory" or memory_category == "stored"
+
+                    # Skip if we want memory entries but this isn't a stored memory
+                    if log_type == "memory" and not is_stored_memory:
                         continue
 
-                    # 🎯 NEW: Filter by namespace (same logic as vector search)
+                    # Skip if we want log entries but this is a stored memory
+                    if log_type == "log" and is_stored_memory:
+                        continue
+
+                    # Filter by namespace (same logic as vector search)
                     if namespace:
                         memory_namespace = metadata.get("namespace")
-                        logger.debug(
-                            f"🔍 Namespace filter: searching={namespace}, memory={memory_namespace}, match={memory_namespace == namespace}",
-                        )
                         if memory_namespace != namespace:
                             continue
 
@@ -718,9 +738,9 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                         "memory_type": self._safe_get_redis_value(memory_data, "memory_type", ""),
                         "timestamp": int(self._safe_get_redis_value(memory_data, "timestamp", "0")),
                         "metadata": metadata,
-                        "similarity_score": 1.0,  # Default score for text search
+                        "similarity_score": 0.5,  # Default score for text search
                         "key": doc.id,
-                        # 🎯 NEW: TTL information
+                        # TTL information
                         "ttl_seconds": expiry_info["ttl_seconds"],
                         "ttl_formatted": expiry_info["ttl_formatted"],
                         "expires_at": expiry_info["expires_at"],
@@ -948,7 +968,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         parent: str | None = None,
         previous_outputs: dict[str, Any] | None = None,
         agent_decay_config: dict[str, Any] | None = None,
-        log_type: str = "log",  # 🎯 NEW: "log" for orchestration, "memory" for stored memories
+        log_type: str = "log",  # "log" for orchestration, "memory" for stored memories
     ) -> None:
         """
         Log an orchestration event as a memory entry.
@@ -970,6 +990,10 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 agent_decay_config,
             )
 
+            # Force 10 second TTL for orchestration logs
+            if log_type == "log":
+                expiry_hours = 10 / 3600  # 10 seconds in hours
+
             # Store as memory entry
             self.log_memory(
                 content=content,
@@ -982,7 +1006,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                     "parent": parent,
                     "previous_outputs": previous_outputs,
                     "agent_decay_config": agent_decay_config,
-                    "log_type": log_type,  # 🎯 CRITICAL: Store log_type for filtering
+                    "log_type": log_type,  # Store log_type for filtering
                     "category": self._classify_memory_category(
                         event_type,
                         agent_id,
@@ -1259,7 +1283,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                         logger.debug(f"Error parsing metadata for key {key}: {e}")
                         metadata = {}
 
-                    # 🎯 CRITICAL: Only include stored memories (not orchestration logs)
+                        # Only include stored memories (not orchestration logs)
                     memory_log_type = metadata.get("log_type", "log")
                     memory_category = metadata.get("category", "log")
 
@@ -1285,7 +1309,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                         ),
                         "metadata": metadata,
                         "key": key,
-                        # 🎯 NEW: TTL and expiration information
+                        # TTL and expiration information
                         "ttl_seconds": expiry_info["ttl_seconds"],
                         "ttl_formatted": expiry_info["ttl_formatted"],
                         "expires_at": expiry_info["expires_at"],

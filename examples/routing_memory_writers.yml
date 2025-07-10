@@ -15,11 +15,15 @@ agents:
     queue: orka:memory-reader
     config:
       operation: read
+      memory_type: short_term
+      memory_category_filter: stored
       limit: 5
       enable_context_search: true
-      similarity_threshold: 0.3
+      enable_temporal_ranking: true
+      temporal_weight: 0.1
+      similarity_threshold: 0.1
     namespace: processed_numbers
-    prompt: "Search for previous analysis of number: {{ input }}"
+    prompt: "Number: {{ input }}"
 
   - id: binary_answer_classifier
     type: openai-binary

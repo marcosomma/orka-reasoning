@@ -121,7 +121,10 @@ class TestErrorHandler:
 
         with patch("builtins.print"):
             self.handler._record_error(
-                error_type, agent_id, error_msg, recovery_action=recovery_action
+                error_type,
+                agent_id,
+                error_msg,
+                recovery_action=recovery_action,
             )
 
         error_entry = self.handler.error_telemetry["errors"][0]
@@ -347,7 +350,7 @@ class TestErrorHandler:
             self.handler._save_error_report(logs)
 
         # Check error message was printed
-        mock_print.assert_any_call("❌ Failed to save error report: File save failed")
+        mock_print.assert_any_call("Failed to save error report: File save failed")
 
     def test_save_error_report_memory_save_fails(self):
         """Test _save_error_report when memory save fails."""
@@ -366,7 +369,7 @@ class TestErrorHandler:
             self.handler._save_error_report(logs)
 
         # Check error message was printed
-        mock_print.assert_any_call("⚠️ Failed to save trace to memory backend: Memory save failed")
+        mock_print.assert_any_call("Failed to save trace to memory backend: Memory save failed")
 
     def test_save_error_report_with_retries(self):
         """Test _save_error_report includes retry counts in report."""

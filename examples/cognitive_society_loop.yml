@@ -1,0 +1,185 @@
+# Cognitive Society Loop - Simplified Multi-Agent Deliberation
+# Fixed agreement score extraction and simplified prompts
+
+orchestrator:
+  id: cognitive-society-loop
+  strategy: sequential
+  agents:
+    - cognitive_deliberation_loop
+    - final_consensus_processor
+
+agents:
+  - id: cognitive_deliberation_loop
+    type: loop
+    max_loops: 5
+    score_threshold: 0.95
+    score_extraction_pattern: "AGREEMENT_SCORE\"?:\\s*\"?([0-9.]+)\"?"
+    score_extraction_key: "agreement_score"
+    
+    # Simple cognitive extraction
+    cognitive_extraction:
+      enabled: true
+      max_length_per_category: 300
+      extract_patterns:
+        insights:
+          - "FINAL_STRATEGY[\":]?\\s*(.+?)(?:\\n|$)"
+          - "strategy[\":]?\\s*(.+?)(?:\\n|$)"
+        improvements:
+          - "CONVERGENCE_PROOF[\":]?\\s*(.+?)(?:\\n|$)"
+          - "alignment[\":]?\\s*(.+?)(?:\\n|$)"
+    
+    # Simple metadata structure
+    past_loops_metadata:
+      round_number: "{{ loop_number }}"
+      agreement_score: "{{ score }}"
+      insights: "{{ insights }}"
+      improvements: "{{ improvements }}"
+    
+    # Simplified internal workflow
+    internal_workflow:
+      orchestrator:
+        id: cognitive-society-internal
+        strategy: sequential
+        agents:
+          - fork_reasoning_agents
+          - join_perspectives
+          - moderator_synthesis
+      
+      agents:
+        - id: fork_reasoning_agents
+          type: fork
+          targets:
+            - - logic_reasoning
+            - - empathy_reasoning
+            - - skeptic_reasoning
+            - - historian_analysis
+        
+        - id: logic_reasoning
+          type: openai-answer
+          temperature: 0.3
+          prompt: |
+            You are a logical reasoning agent analyzing: {{ input }}
+            
+            Current deliberation round: {{ loop_number }}
+            
+            Previous insights from past rounds:
+            {{ past_loops_metadata.insights }}
+            
+            Your task: Provide a logical analysis of this topic.
+            Focus on rational, evidence-based reasoning.
+            
+            Required format:
+            FINAL_STRATEGY: [Your complete logical recommendation]
+            CONVERGENCE_PROOF: [How you align with other agents]
+        
+        - id: empathy_reasoning
+          type: openai-answer
+          temperature: 0.4
+          prompt: |
+            You are an empathy-focused agent analyzing: {{ input }}
+            
+            Current deliberation round: {{ loop_number }}
+            
+            Previous insights from past rounds:
+            {{ past_loops_metadata.insights }}
+            
+            Your task: Provide an empathetic, human-centered analysis.
+            Focus on ethical considerations and stakeholder impact.
+            
+            Required format:
+            FINAL_STRATEGY: [Your complete empathetic recommendation]
+            CONVERGENCE_PROOF: [How you align with other agents]
+        
+        - id: skeptic_reasoning
+          type: openai-answer
+          temperature: 0.3
+          prompt: |
+            You are a skeptical reasoning agent analyzing: {{ input }}
+            
+            Current deliberation round: {{ loop_number }}
+            
+            Previous insights from past rounds:
+            {{ past_loops_metadata.insights }}
+            
+            Your task: Provide critical analysis and identify potential issues.
+            Challenge assumptions and highlight risks.
+            
+            Required format:
+            FINAL_STRATEGY: [Your complete skeptical assessment]
+            CONVERGENCE_PROOF: [How you align with other agents]
+        
+        - id: historian_analysis
+          type: openai-answer
+          temperature: 0.3
+          prompt: |
+            You are a historical analysis agent analyzing: {{ input }}
+            
+            Current deliberation round: {{ loop_number }}
+            
+            Previous insights from past rounds:
+            {{ past_loops_metadata.insights }}
+            
+            Your task: Provide historical context and precedent analysis.
+            Focus on lessons from the past and proven patterns.
+            
+            Required format:
+            FINAL_STRATEGY: [Your complete historical analysis]
+            CONVERGENCE_PROOF: [How you align with other agents]
+        
+        - id: join_perspectives
+          type: join
+          group: fork_reasoning_agents
+        
+        - id: moderator_synthesis
+          type: openai-answer
+          temperature: 0.2
+          prompt: |
+            You are a moderator evaluating agent convergence on: {{ input }}
+            
+            Agent responses:
+            Logic: {{ previous_outputs.logic_reasoning.response }}
+            Empathy: {{ previous_outputs.empathy_reasoning.response }}
+            Skeptic: {{ previous_outputs.skeptic_reasoning.response }}
+            Historian: {{ previous_outputs.historian_analysis.response }}
+            
+            Evaluate how well the agents agree on their strategies.
+            
+            Scoring criteria:
+            - 0.9-1.0: Identical strategies and language
+            - 0.8-0.9: Same core strategy, minor differences
+            - 0.7-0.8: Mostly aligned, some differences
+            - 0.6-0.7: Compatible but distinct approaches
+            - Below 0.6: Significant disagreements
+            
+            Required format (use exact formatting):
+            AGREEMENT_SCORE: [number between 0.0 and 1.0]
+            ANALYSIS: [Brief explanation of convergence level]
+            CONTINUE: [YES if score below 0.8, NO if above 0.8]
+
+  - id: final_consensus_processor
+    type: openai-answer
+    temperature: 0.2
+    prompt: |
+      Extract the final consensus from the cognitive society deliberation.
+      
+      Original question: {{ input }}
+      
+      Loop results: {{ previous_outputs.cognitive_deliberation_loop.result }}
+      Agreement score: {{ previous_outputs.cognitive_deliberation_loop.final_score }}
+      
+      Provide a clear, concise answer that represents the unified position of all agents.
+            
+      **Format**: 
+      
+      ## Answer
+      
+      [Clear, direct answer to the original question]
+      
+      ## How the Cognitive Society Reached This Conclusion
+      
+      [Brief summary of the deliberation process and why this answer represents consensus]
+      
+      **Keep it simple and user-friendly - no technical jargon or JSON data.**
+    
+    depends_on:
+      - cognitive_deliberation_loop 

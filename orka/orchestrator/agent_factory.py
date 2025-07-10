@@ -27,7 +27,7 @@ from ..agents import (
     local_llm_agents,
     validation_and_structuring_agent,
 )
-from ..nodes import failing_node, failover_node, fork_node, join_node, router_node
+from ..nodes import failing_node, failover_node, fork_node, join_node, loop_node, router_node
 from ..nodes.memory_reader_node import MemoryReaderNode
 from ..nodes.memory_writer_node import MemoryWriterNode
 from ..tools.search_tools import DuckDuckGoTool
@@ -48,6 +48,7 @@ AGENT_TYPES = {
     "failing": failing_node.FailingNode,
     "join": join_node.JoinNode,
     "fork": fork_node.ForkNode,
+    "loop": loop_node.LoopNode,
     "memory": "special_handler",  # This will be handled specially in init_single_agent
 }
 
@@ -126,6 +127,17 @@ class AgentFactory:
                     **clean_cfg,
                 )
 
+            if agent_type == "loop":
+                # LoopNode expects node_id and standard params
+                prompt = cfg.get("prompt", None)
+                queue = cfg.get("queue", None)
+                return agent_cls(
+                    node_id=agent_id,
+                    prompt=prompt,
+                    queue=queue,
+                    **clean_cfg,
+                )
+
             # Special handling for memory agent type
             if agent_type == "memory" or agent_cls == "special_handler":
                 # Special handling for memory nodes based on operation
@@ -182,16 +194,22 @@ class AgentFactory:
                     )
                 else:  # default to read
                     # Use memory reader node for read operations
+                    # Pass ALL config options to MemoryReaderNode
+                    config_dict = memory_cfg.get("config", {})
                     return MemoryReaderNode(
                         node_id=agent_id,
                         prompt=prompt,
                         queue=queue,
                         namespace=namespace,
-                        limit=memory_cfg.get("limit", 10),
-                        similarity_threshold=memory_cfg.get(
-                            "similarity_threshold",
-                            0.6,
-                        ),
+                        limit=config_dict.get("limit", 10),
+                        similarity_threshold=config_dict.get("similarity_threshold", 0.6),
+                        # Pass additional config options that were being ignored
+                        enable_context_search=config_dict.get("enable_context_search", False),
+                        enable_temporal_ranking=config_dict.get("enable_temporal_ranking", False),
+                        temporal_weight=config_dict.get("temporal_weight", 0.1),
+                        memory_category_filter=config_dict.get("memory_category_filter", None),
+                        memory_type_filter=config_dict.get("memory_type_filter", None),
+                        ef_runtime=config_dict.get("ef_runtime", 10),
                         decay_config=merged_decay_config,
                         memory_logger=self.memory,
                     )

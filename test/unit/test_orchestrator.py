@@ -24,9 +24,13 @@ class TestOrchestratorBase:
     @pytest.fixture
     def mock_dependencies(self):
         """Mock all external dependencies for OrchestratorBase."""
-        with patch("orka.orchestrator.base.YAMLLoader") as mock_loader, patch(
-            "orka.orchestrator.base.create_memory_logger",
-        ) as mock_memory, patch("orka.orchestrator.base.ForkGroupManager") as mock_fork:
+        with (
+            patch("orka.orchestrator.base.YAMLLoader") as mock_loader,
+            patch(
+                "orka.orchestrator.base.create_memory_logger",
+            ) as mock_memory,
+            patch("orka.orchestrator.base.ForkGroupManager") as mock_fork,
+        ):
             # Configure loader mock
             mock_loader_instance = Mock()
             mock_loader.return_value = mock_loader_instance
@@ -350,7 +354,7 @@ class TestExecutionEngine:
             result = await mock_execution_engine.run("test input")
 
             assert result == expected_logs
-            mock_run.assert_called_once_with("test input", [])
+            mock_run.assert_called_once_with("test input", [], False)
 
     @pytest.mark.asyncio
     async def test_run_with_fatal_error(self, mock_execution_engine):
@@ -368,8 +372,8 @@ class TestExecutionEngine:
             # Verify error recording
             mock_execution_engine._record_error.assert_called_once()
             error_call = mock_execution_engine._record_error.call_args
-            assert error_call[0][0] == "orchestrator_run"
-            assert "Fatal error during run" in error_call[0][2]
+            assert error_call[0][0] == "orchestrator_execution"
+            assert "Orchestrator execution failed" in error_call[0][2]
 
     @pytest.mark.asyncio
     async def test_run_with_comprehensive_error_handling(self, mock_execution_engine):
@@ -406,6 +410,7 @@ class TestExecutionEngine:
                 result = await mock_execution_engine._run_with_comprehensive_error_handling(
                     "test input",
                     [],
+                    return_logs=True,
                 )
 
                 assert len(result) == 1
@@ -457,6 +462,7 @@ class TestExecutionEngine:
                     result = await mock_execution_engine._run_with_comprehensive_error_handling(
                         "test input",
                         [],
+                        return_logs=True,
                     )
 
                 # Verify retry was recorded and partial success logged
@@ -506,6 +512,7 @@ class TestExecutionEngine:
                 result = await mock_execution_engine._run_with_comprehensive_error_handling(
                     "test input",
                     [],
+                    return_logs=True,
                 )
 
                 # Agent should have been executed at least twice (waiting, then success)

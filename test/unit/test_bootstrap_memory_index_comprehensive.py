@@ -252,7 +252,8 @@ class TestHybridVectorSearch:
         assert len(results) == 2
         assert results[0]["key"] == "doc1"  # Function returns "key" not "id"
         assert results[0]["content"] == "test content"
-        assert results[0]["score"] == 0.9  # Function returns "score" as float, not "vector_score"
+        # Function converts cosine distance to similarity: 1.0 - (0.9 / 2.0) = 0.55
+        assert results[0]["score"] == 0.55
         self.mock_ft.search.assert_called_once()
 
     def test_hybrid_vector_search_with_trace_id(self):
@@ -372,7 +373,8 @@ class TestHybridVectorSearch:
         result = results[0]
         assert result["key"] == "doc1"  # Function returns "key" not "id"
         assert result["content"] == "test content"
-        assert result["score"] == 0.95  # Function returns "score" as float
+        # Function converts cosine distance to similarity: 1.0 - (0.95 / 2.0) = 0.525
+        assert result["score"] == 0.525
         assert result["node_id"] == "node1"
 
 

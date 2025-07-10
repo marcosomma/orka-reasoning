@@ -1,7 +1,7 @@
 import json
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..utils.bootstrap_memory_index import retry
 from ..utils.embedder import from_bytes
@@ -42,7 +42,7 @@ class MemoryReaderNode(BaseNode):
             logger.error(f"Failed to initialize embedder: {e}")
             self.embedder = None
 
-    async def run(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def run(self, context: dict[str, Any]) -> dict[str, Any]:
         """Read memories using RedisStack enhanced vector search."""
         query = context.get("input", "")
         if not query:
@@ -52,6 +52,10 @@ class MemoryReaderNode(BaseNode):
             # ✅ Use RedisStack memory logger's search_memories method
             if hasattr(self.memory_logger, "search_memories"):
                 # 🎯 CRITICAL FIX: Search with explicit filtering for stored memories
+                logger.info(
+                    f"🔍 SEARCHING: query='{query}', namespace='{self.namespace}', log_type='memory'"
+                )
+
                 memories = self.memory_logger.search_memories(
                     query=query,
                     num_results=self.limit,
@@ -63,6 +67,13 @@ class MemoryReaderNode(BaseNode):
                     namespace=self.namespace,  # 🎯 NEW: Filter by namespace
                 )
 
+                logger.info(f"🔍 SEARCH RESULTS: Found {len(memories)} memories")
+                for i, memory in enumerate(memories):
+                    metadata = memory.get("metadata", {})
+                    logger.info(
+                        f"  Memory {i + 1}: log_type={metadata.get('log_type')}, category={metadata.get('category')}, content_preview={memory.get('content', '')[:50]}..."
+                    )
+
                 # 🎯 ADDITIONAL FILTERING: Double-check that we only get stored memories
                 filtered_memories = []
                 for memory in memories:
@@ -70,9 +81,13 @@ class MemoryReaderNode(BaseNode):
                     # Only include if it's explicitly marked as stored memory
                     if metadata.get("log_type") == "memory" or metadata.get("category") == "stored":
                         filtered_memories.append(memory)
+                    else:
+                        logger.info(
+                            f"🔍 FILTERED OUT: log_type={metadata.get('log_type')}, category={metadata.get('category')}"
+                        )
 
                 logger.info(
-                    f"Memory search for '{query}': found {len(memories)} total, {len(filtered_memories)} stored memories",
+                    f"🔍 FINAL RESULTS: {len(memories)} total memories, {len(filtered_memories)} stored memories after filtering",
                 )
                 memories = filtered_memories
 
@@ -107,8 +122,8 @@ class MemoryReaderNode(BaseNode):
         query_text: str,
         namespace: str,
         session: str,
-        conversation_context: List[Dict[str, Any]],
-    ) -> List[Dict[str, Any]]:
+        conversation_context: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
         """Perform high-performance HNSW vector search with metadata filtering."""
         try:
             # Use memory logger's search_memories method instead of direct Redis
@@ -150,9 +165,9 @@ class MemoryReaderNode(BaseNode):
 
     def _enhance_with_context_scoring(
         self,
-        results: List[Dict[str, Any]],
-        conversation_context: List[Dict[str, Any]],
-    ) -> List[Dict[str, Any]]:
+        results: list[dict[str, Any]],
+        conversation_context: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
         """Enhance search results with context-aware scoring."""
         if not conversation_context:
             return results
@@ -192,7 +207,7 @@ class MemoryReaderNode(BaseNode):
             logger.error(f"Error enhancing with context scoring: {e}")
             return results
 
-    def _apply_temporal_ranking(self, results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _apply_temporal_ranking(self, results: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Apply temporal decay to search results."""
         try:
             current_time = time.time()
@@ -254,7 +269,7 @@ class MemoryReaderNode(BaseNode):
         # Update total results found
         self._search_metrics["total_results_found"] += results_count
 
-    def get_search_metrics(self) -> Dict[str, Any]:
+    def get_search_metrics(self) -> dict[str, Any]:
         """Get search performance metrics."""
         return {
             **self._search_metrics,
@@ -264,7 +279,7 @@ class MemoryReaderNode(BaseNode):
             "similarity_threshold": self.similarity_threshold,
         }
 
-    def _extract_conversation_context(self, context: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _extract_conversation_context(self, context: dict[str, Any]) -> list[dict[str, Any]]:
         """Extract conversation context from the execution context."""
         conversation_context = []
 
@@ -344,8 +359,8 @@ class MemoryReaderNode(BaseNode):
     def _generate_enhanced_query_variations(
         self,
         query: str,
-        conversation_context: List[Dict[str, Any]],
-    ) -> List[str]:
+        conversation_context: list[dict[str, Any]],
+    ) -> list[str]:
         """Generate enhanced query variations using conversation context."""
         variations = [query]  # Always include original query
 
@@ -474,8 +489,8 @@ class MemoryReaderNode(BaseNode):
         self,
         namespace: str,
         query: str,
-        conversation_context: List[Dict[str, Any]],
-    ) -> List[Dict[str, Any]]:
+        conversation_context: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
         """Enhanced keyword search that considers conversation context."""
         results = []
         try:
@@ -585,9 +600,9 @@ class MemoryReaderNode(BaseNode):
         self,
         query_embedding,
         namespace: str,
-        conversation_context: List[Dict[str, Any]],
+        conversation_context: list[dict[str, Any]],
         threshold=None,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Context-aware vector search using conversation context."""
         threshold = threshold or self.similarity_threshold
         results = []
@@ -683,8 +698,8 @@ class MemoryReaderNode(BaseNode):
 
     async def _generate_context_vector(
         self,
-        conversation_context: List[Dict[str, Any]],
-    ) -> Optional[List[float]]:
+        conversation_context: list[dict[str, Any]],
+    ) -> list[float] | None:
         """Generate a context vector from conversation history."""
         if not conversation_context:
             return None
@@ -714,9 +729,9 @@ class MemoryReaderNode(BaseNode):
         stream_key: str,
         query: str,
         query_embedding,
-        conversation_context: List[Dict[str, Any]],
+        conversation_context: list[dict[str, Any]],
         threshold=None,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Context-aware search for memories in the Redis stream."""
         threshold = threshold or self.similarity_threshold
 
@@ -806,10 +821,10 @@ class MemoryReaderNode(BaseNode):
 
     def _apply_hybrid_scoring(
         self,
-        memories: List[Dict[str, Any]],
+        memories: list[dict[str, Any]],
         query: str,
-        conversation_context: List[Dict[str, Any]],
-    ) -> List[Dict[str, Any]]:
+        conversation_context: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
         """Apply hybrid scoring combining multiple similarity factors."""
         if not memories:
             return memories
@@ -877,10 +892,10 @@ class MemoryReaderNode(BaseNode):
 
     def _filter_enhanced_relevant_memories(
         self,
-        memories: List[Dict[str, Any]],
+        memories: list[dict[str, Any]],
         query: str,
-        conversation_context: List[Dict[str, Any]],
-    ) -> List[Dict[str, Any]]:
+        conversation_context: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
         """Enhanced filtering for relevant memories using multiple criteria."""
         if not memories:
             return memories
@@ -940,7 +955,7 @@ class MemoryReaderNode(BaseNode):
 
         return filtered_memories
 
-    def _filter_by_category(self, memories: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _filter_by_category(self, memories: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Filter memories by category if category filter is enabled."""
         if not self.memory_category_filter:
             return memories
@@ -962,7 +977,7 @@ class MemoryReaderNode(BaseNode):
         )
         return filtered
 
-    def _filter_expired_memories(self, memories: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _filter_expired_memories(self, memories: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Filter out expired memories based on decay configuration."""
         if not self.decay_config.get("enabled", False):
             return memories  # No decay enabled, return all memories

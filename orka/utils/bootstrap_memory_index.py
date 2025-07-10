@@ -221,11 +221,53 @@ def hybrid_vector_search(
             # Process results
             for doc in search_results.docs:
                 try:
+                    # Safely extract and validate the similarity score
+                    # Redis returns the score with the alias we defined in the search query
+                    # Try multiple possible field names for the score
+                    raw_score = None
+                    for score_field in ["vector_score", "__vector_score", "score", "similarity"]:
+                        if hasattr(doc, score_field):
+                            raw_score = getattr(doc, score_field)
+                            logger.debug(
+                                f"Found score field '{score_field}' with value: {raw_score}",
+                            )
+                            break
+
+                    if raw_score is None:
+                        # If no score field found, log available fields for debugging
+                        available_fields = [attr for attr in dir(doc) if not attr.startswith("_")]
+                        logger.debug(f"No score field found. Available fields: {available_fields}")
+                        raw_score = 0.0
+
+                    try:
+                        score = float(raw_score)
+                        # Check for NaN, infinity, or invalid values
+                        import math
+
+                        if math.isnan(score) or math.isinf(score):
+                            score = 0.0
+                        # For cosine distance: 0 = identical, 2 = opposite
+                        # Convert to similarity: similarity = 1 - (distance / 2)
+                        # This maps distance [0, 2] to similarity [1, 0]
+                        elif score < 0:
+                            score = 1.0  # Treat negative as perfect similarity
+                        elif score > 2:
+                            score = 0.0  # Treat > 2 as no similarity
+                        else:
+                            score = 1.0 - (score / 2.0)
+
+                        # Ensure final score is in [0, 1] range
+                        score = max(0.0, min(1.0, score))
+                        logger.debug(f"Converted cosine distance {raw_score} -> similarity {score}")
+                    except (ValueError, TypeError) as e:
+                        logger.debug(f"Error converting score {raw_score}: {e}")
+                        score = 0.0
+
                     result = {
                         "content": getattr(doc, "content", ""),
                         "node_id": getattr(doc, "node_id", ""),
                         "trace_id": getattr(doc, "trace_id", ""),
-                        "score": float(getattr(doc, "vector_score", 0.0)),
+                        "score": score,
                         "key": doc.id,
                     }
                     results.append(result)
@@ -250,7 +292,7 @@ def hybrid_vector_search(
                             "content": getattr(doc, "content", ""),
                             "node_id": getattr(doc, "node_id", ""),
                             "trace_id": getattr(doc, "trace_id", ""),
-                            "score": 1.0,  # Default score for text search
+                            "score": 0.5,  # Default score for text search (not perfect match)
                             "key": doc.id,
                         }
                         results.append(result)

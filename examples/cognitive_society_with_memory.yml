@@ -1,0 +1,523 @@
+# Cognitive Society Loop with Dedicated Memory Systems - FIXED
+# Each agent has its own memory reader and writer with 30-minute TTL
+
+orchestrator:
+  id: cognitive-society-memory-loop
+  strategy: sequential
+  # Global memory configuration
+  memory_config:
+    decay:
+      enabled: true
+      default_short_term_hours: 0.5  # 30 minutes TTL
+      default_long_term_hours: 0.5   # 30 minutes TTL for all agents
+      check_interval_minutes: 5      # Check every 5 minutes
+      importance_rules:
+        base_score: 0.8
+        event_type_boosts:
+          write: 0.3
+          success: 0.2
+        agent_type_boosts:
+          memory: 0.2
+          openai-answer: 0.15
+  agents:
+    - cognitive_deliberation_loop
+    - final_consensus_processor
+
+agents:
+  - id: cognitive_deliberation_loop
+    type: loop
+    max_loops: 5
+    score_threshold: 0.95
+    score_extraction_pattern: "AGREEMENT_SCORE\"?:\\s*\"?([0-9.]+)\"?"
+    score_extraction_key: "agreement_score"
+    
+    # Simple cognitive extraction
+    cognitive_extraction:
+      enabled: true
+      max_length_per_category: 300
+      extract_patterns:
+        insights:
+          - "FINAL_STRATEGY[\":]?\\s*(.+?)(?:\\n|$)"
+          - "strategy[\":]?\\s*(.+?)(?:\\n|$)"
+        improvements:
+          - "CONVERGENCE_PROOF[\":]?\\s*(.+?)(?:\\n|$)"
+          - "alignment[\":]?\\s*(.+?)(?:\\n|$)"
+    
+    # Enhanced internal workflow with memory systems
+    internal_workflow:
+      orchestrator:
+        id: cognitive-society-memory-internal
+        strategy: sequential
+        agents:
+          - fork_memory_readers
+          - join_memory_reads
+          - fork_reasoning_agents
+          - join_perspectives
+          - moderator_synthesis
+          - fork_memory_writers
+          - join_memory_writes
+      
+      agents:
+        # Step 1: Fork memory readers for each agent
+        - id: fork_memory_readers
+          type: fork
+          targets:
+            - - logic_memory_reader
+            - - empathy_memory_reader
+            - - skeptic_memory_reader
+            - - historian_memory_reader
+            - - moderator_memory_reader
+        
+        # ✅ FIXED: Memory readers using correct syntax
+        - id: logic_memory_reader
+          type: memory
+          queue: orka:logic-memory-reader
+          config:
+            operation: read
+            limit: 10
+            enable_context_search: true
+            similarity_threshold: 0.1  # Very low for broad matching
+            enable_temporal_ranking: true
+            temporal_weight: 0.3
+            memory_type_filter: "all"
+            vector: false  # Disable vector search for more reliable text matching
+          namespace: logic_agent_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.5  # 30 minutes TTL
+            long_term_hours: 0.5   # 30 minutes TTL
+          prompt: |
+            {{ input.input }}
+        
+        - id: empathy_memory_reader
+          type: memory
+          queue: orka:empathy-memory-reader
+          config:
+            operation: read
+            limit: 10
+            enable_context_search: true
+            similarity_threshold: 0.1  # Very low for broad matching
+            enable_temporal_ranking: true
+            temporal_weight: 0.3
+            memory_type_filter: "all"
+            vector: false  # Disable vector search for more reliable text matching
+          namespace: empathy_agent_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.5  # 30 minutes TTL
+            long_term_hours: 0.5   # 30 minutes TTL
+          prompt: |
+            {{ input.input }}
+        
+        - id: skeptic_memory_reader
+          type: memory
+          queue: orka:skeptic-memory-reader
+          config:
+            operation: read
+            limit: 10
+            enable_context_search: true
+            similarity_threshold: 0.1  # Very low for broad matching
+            enable_temporal_ranking: true
+            temporal_weight: 0.3
+            memory_type_filter: "all"
+            vector: false  # Disable vector search for more reliable text matching
+          namespace: skeptic_agent_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.5  # 30 minutes TTL
+            long_term_hours: 0.5   # 30 minutes TTL
+          prompt: |
+            {{ input.input }}
+        
+        - id: historian_memory_reader
+          type: memory
+          queue: orka:historian-memory-reader
+          config:
+            operation: read
+            limit: 10
+            enable_context_search: true
+            similarity_threshold: 0.1  # Very low for broad matching
+            enable_temporal_ranking: true
+            temporal_weight: 0.3
+            memory_type_filter: "all"
+            vector: false  # Disable vector search for more reliable text matching
+          namespace: historian_agent_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.5  # 30 minutes TTL
+            long_term_hours: 0.5   # 30 minutes TTL
+          prompt: |
+            {{ input.input }}
+        
+        - id: moderator_memory_reader
+          type: memory
+          queue: orka:moderator-memory-reader
+          config:
+            operation: read
+            limit: 10
+            enable_context_search: true
+            similarity_threshold: 0.1  # Very low for broad matching
+            enable_temporal_ranking: true
+            temporal_weight: 0.3
+            memory_type_filter: "all"
+            vector: false  # Disable vector search for more reliable text matching
+          namespace: moderator_agent_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.5  # 30 minutes TTL
+            long_term_hours: 0.5   # 30 minutes TTL
+          prompt: |
+            {{ input.input }}
+        
+        # Step 2: Join memory reads
+        - id: join_memory_reads
+          type: join
+          group: fork_memory_readers
+        
+        # Step 3: Fork reasoning agents
+        - id: fork_reasoning_agents
+          type: fork
+          targets:
+            - - logic_reasoning
+            - - empathy_reasoning
+            - - skeptic_reasoning
+            - - historian_analysis
+        
+        # Enhanced reasoning agents with memory integration
+        - id: logic_reasoning
+          type: openai-answer
+          temperature: 0.3
+          prompt: |
+            You are a logical reasoning agent analyzing: {{ input }}
+            
+            Current deliberation round: {{ loop_number }}
+            
+            Previous logical reasoning outcomes from your memory:
+            {{ previous_outputs.logic_memory_reader.memories }}
+            
+            Your task: Provide a logical analysis of this topic.
+            Focus on rational, evidence-based reasoning.
+            Learn from your past reasoning patterns and build upon them.
+            
+            Required format:
+            FINAL_STRATEGY: [Your complete logical recommendation]
+            CONVERGENCE_PROOF: [How you align with other agents]
+        
+        - id: empathy_reasoning
+          type: openai-answer
+          temperature: 0.4
+          prompt: |
+            You are an empathy-focused agent analyzing: {{ input }}
+            
+            Current deliberation round: {{ loop_number }}
+            
+            Previous empathetic reasoning outcomes from your memory:
+            {{ previous_outputs.empathy_memory_reader.memories }}
+            
+            Your task: Provide an empathetic, human-centered analysis.
+            Focus on ethical considerations and stakeholder impact.
+            Learn from your past empathetic assessments and build upon them.
+            
+            Required format:
+            FINAL_STRATEGY: [Your complete empathetic recommendation]
+            CONVERGENCE_PROOF: [How you align with other agents]
+        
+        - id: skeptic_reasoning
+          type: openai-answer
+          temperature: 0.3
+          prompt: |
+            You are a skeptical reasoning agent analyzing: {{ input }}
+            
+            Current deliberation round: {{ loop_number }}
+            
+            Previous skeptical reasoning outcomes from your memory:
+            {{ previous_outputs.skeptic_memory_reader.memories }}
+            
+            Your task: Provide critical analysis and identify potential issues.
+            Challenge assumptions and highlight risks.
+            Learn from your past skeptical assessments and build upon them.
+            
+            Required format:
+            FINAL_STRATEGY: [Your complete skeptical assessment]
+            CONVERGENCE_PROOF: [How you align with other agents]
+        
+        - id: historian_analysis
+          type: openai-answer
+          temperature: 0.3
+          prompt: |
+            You are a historical analysis agent analyzing: {{ input }}
+            
+            Current deliberation round: {{ loop_number }}
+            
+            Previous historical analysis outcomes from your memory:
+            {{ previous_outputs.historian_memory_reader.memories }}
+            
+            Your task: Provide historical context and precedent analysis.
+            Focus on lessons from the past and proven patterns.
+            Learn from your past historical assessments and build upon them.
+            
+            Required format:
+            FINAL_STRATEGY: [Your complete historical analysis]
+            CONVERGENCE_PROOF: [How you align with other agents]
+        
+        # Step 4: Join perspectives
+        - id: join_perspectives
+          type: join
+          group: fork_reasoning_agents
+        
+        # Step 5: Moderator synthesis
+        - id: moderator_synthesis
+          type: openai-answer
+          temperature: 0.2
+          prompt: |
+            You are a moderator evaluating agent convergence on: {{ input }}
+            
+            Current deliberation round: {{ loop_number }}
+            
+            Previous moderation outcomes from your memory:
+            {{ previous_outputs.moderator_memory_reader.memories }}
+            
+            Agent responses:
+            Logic: {{ previous_outputs.logic_reasoning.response }}
+            Empathy: {{ previous_outputs.empathy_reasoning.response }}
+            Skeptic: {{ previous_outputs.skeptic_reasoning.response }}
+            Historian: {{ previous_outputs.historian_analysis.response }}
+            
+            Evaluate how well the agents agree on their strategies.
+            Learn from your past moderation patterns and build upon them.
+            
+            Scoring criteria:
+            - 0.9-1.0: Identical strategies and language
+            - 0.8-0.9: Same core strategy, minor differences
+            - 0.7-0.8: Mostly aligned, some differences
+            - 0.6-0.7: Compatible but distinct approaches
+            - Below 0.6: Significant disagreements
+            
+            Required format (use exact formatting):
+            AGREEMENT_SCORE: [number between 0.0 and 1.0]
+            ANALYSIS: [Brief explanation of convergence level]
+            CONTINUE: [YES if score below 0.8, NO if above 0.8]
+        
+        # Step 6: Fork memory writers for each agent
+        - id: fork_memory_writers
+          type: fork
+          targets:
+            - - logic_memory_writer
+            - - empathy_memory_writer
+            - - skeptic_memory_writer
+            - - historian_memory_writer
+            - - moderator_memory_writer
+        
+        # ✅ FIXED: Memory writers using simple string patterns like routing_memory_writers.yml
+        - id: logic_memory_writer
+          type: memory
+          queue: orka:logic-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: logic_agent_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.5  # 30 minutes TTL
+            long_term_hours: 0.5   # 30 minutes TTL
+            check_interval_minutes: 5
+            importance_rules:
+              base_score: 0.8
+              event_type_boosts:
+                write: 0.3
+          prompt: |
+            Logic Agent Analysis - Round {{ loop_number }}
+            Topic: {{ input.input }}
+            
+            ANALYSIS: {{ previous_outputs.logic_reasoning.response }}
+            
+            This represents the logical reasoning outcome for deliberation round {{ loop_number }}.
+          metadata:
+            agent_type: "logic_reasoning"
+            loop_number: "{{ loop_number }}"
+            topic_summary: "{{ input.input }}"
+            confidence: "{{ previous_outputs.logic_reasoning.confidence | default('0.9') }}"
+            response: "{{ previous_outputs.logic_reasoning.response }}"
+            analysis_type: "logical_reasoning"
+            category: "cognitive_society_analysis"
+            timestamp: "{{ timestamp }}"
+          key_template: "logic_analysis_{{ loop_number }}}"
+
+        - id: empathy_memory_writer
+          type: memory
+          queue: orka:empathy-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: empathy_agent_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.5  # 30 minutes TTL
+            long_term_hours: 0.5   # 30 minutes TTL
+            check_interval_minutes: 5
+            importance_rules:
+              base_score: 0.8
+              event_type_boosts:
+                write: 0.3
+          prompt: |
+            Empathy Agent Analysis - Round {{ loop_number }}
+            Topic: {{ input.input }}
+            
+            ANALYSIS: {{ previous_outputs.empathy_reasoning.response }}
+            
+            This represents the empathetic reasoning outcome for deliberation round {{ loop_number }}.
+          metadata:
+            agent_type: "empathy_reasoning"
+            loop_number: "{{ loop_number }}"
+            topic_summary: "{{ input.input }}"
+            confidence: "{{ previous_outputs.empathy_reasoning.confidence | default('0.9') }}"
+            response: "{{ previous_outputs.empathy_reasoning.response }}"
+            analysis_type: "empathetic_reasoning"
+            category: "cognitive_society_analysis"
+            timestamp: "{{ timestamp }}"
+          key_template: "empathy_analysis_{{ loop_number }}}"
+
+        - id: skeptic_memory_writer
+          type: memory
+          queue: orka:skeptic-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: skeptic_agent_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.5  # 30 minutes TTL
+            long_term_hours: 0.5   # 30 minutes TTL
+            check_interval_minutes: 5
+            importance_rules:
+              base_score: 0.8
+              event_type_boosts:
+                write: 0.3
+          prompt: |
+            Skeptic Agent Analysis - Round {{ loop_number }}
+            Topic: {{ input.input }}
+            
+            ANALYSIS: {{ previous_outputs.skeptic_reasoning.response }}
+            
+            This represents the skeptical reasoning outcome for deliberation round {{ loop_number }}.
+          metadata:
+            agent_type: "skeptic_reasoning"
+            loop_number: "{{ loop_number }}"
+            topic_summary: "{{ input.input }}"
+            confidence: "{{ previous_outputs.skeptic_reasoning.confidence | default('0.9') }}"
+            response: "{{ previous_outputs.skeptic_reasoning.response }}"
+            analysis_type: "skeptical_reasoning"
+            category: "cognitive_society_analysis"
+            timestamp: "{{ timestamp }}"
+          key_template: "skeptic_analysis_{{ loop_number }}}"
+
+        - id: historian_memory_writer
+          type: memory
+          queue: orka:historian-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: historian_agent_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.5  # 30 minutes TTL
+            long_term_hours: 0.5   # 30 minutes TTL
+            check_interval_minutes: 5
+            importance_rules:
+              base_score: 0.8
+              event_type_boosts:
+                write: 0.3
+          prompt: |
+            Historian Agent Analysis - Round {{ loop_number }}
+            Topic: {{ input.input }}
+            
+            ANALYSIS: {{ previous_outputs.historian_analysis.response }}
+            
+            This represents the historical analysis outcome for deliberation round {{ loop_number }}.
+          metadata:
+            agent_type: "historian_analysis"
+            loop_number: "{{ loop_number }}"
+            topic_summary: "{{ input.input }}"
+            confidence: "{{ previous_outputs.historian_analysis.confidence | default('0.9') }}"
+            response: "{{ previous_outputs.historian_analysis.response }}"
+            analysis_type: "historical_analysis"
+            category: "cognitive_society_analysis"
+            timestamp: "{{ timestamp }}"
+          key_template: "historian_analysis_{{ loop_number }}}"
+
+        - id: moderator_memory_writer
+          type: memory
+          queue: orka:moderator-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: moderator_agent_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.5  # 30 minutes TTL
+            long_term_hours: 0.5   # 30 minutes TTL
+            check_interval_minutes: 5
+            importance_rules:
+              base_score: 0.8
+              event_type_boosts:
+                write: 0.3
+          prompt: |
+            Moderator Analysis - Round {{ loop_number }}
+            Topic: {{ input.input }}
+            
+            ANALYSIS: {{ previous_outputs.moderator_synthesis.response }}
+            
+            This represents the moderation and convergence analysis for deliberation round {{ loop_number }}.
+          metadata:
+            agent_type: "moderator_synthesis"
+            loop_number: "{{ loop_number }}"
+            topic_summary: "{{ input.input }}"
+            confidence: "{{ previous_outputs.moderator_synthesis.confidence | default('0.9') }}"
+            response: "{{ previous_outputs.moderator_synthesis.response }}"
+            analysis_type: "moderation_synthesis"
+            category: "cognitive_society_analysis"
+            timestamp: "{{ timestamp }}"
+          key_template: "moderator_analysis_{{ loop_number }}}"
+        
+        # Step 7: Join memory writes
+        - id: join_memory_writes
+          type: join
+          group: fork_memory_writers
+
+  - id: final_consensus_processor
+    type: openai-answer
+    temperature: 0.2
+    prompt: |
+      Extract the final consensus from the cognitive society deliberation.
+      
+      Original question: {{ input }}
+      
+      Loop results: {{ previous_outputs.cognitive_deliberation_loop.result }}
+      Agreement score: {{ previous_outputs.cognitive_deliberation_loop.final_score }}
+      
+      Provide a clear, concise answer that represents the unified position of all agents.
+      
+      **Format**: 
+      
+      ## Answer
+      
+      [Clear, direct answer to the original question]
+      
+      ## How the Cognitive Society Reached This Conclusion
+      
+      [Brief summary of the deliberation process and why this answer represents consensus]
+      
+      **Keep it simple and user-friendly - no technical jargon or JSON data.**
+    
+    depends_on:
+      - cognitive_deliberation_loop 

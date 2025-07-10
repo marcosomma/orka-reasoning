@@ -20,7 +20,7 @@ Comprehensive error tracking, reporting, and recovery mechanisms.
 
 import json
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 class ErrorHandler:
@@ -51,7 +51,7 @@ class ErrorHandler:
             recovery_action: Action taken to recover (retry, fallback, etc.)
         """
         error_entry = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "type": error_type,
             "agent_id": agent_id,
             "message": error_msg,
@@ -97,7 +97,7 @@ class ErrorHandler:
         """Record that an agent succeeded after retries."""
         self.error_telemetry["partial_successes"].append(
             {
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "agent_id": agent_id,
                 "retry_count": retry_count,
             },
@@ -107,7 +107,7 @@ class ErrorHandler:
         """Record silent degradations like JSON parsing failures."""
         self.error_telemetry["silent_degradations"].append(
             {
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "agent_id": agent_id,
                 "type": degradation_type,
                 "details": details,
@@ -127,7 +127,7 @@ class ErrorHandler:
             self.error_telemetry["execution_status"] = "failed"
             self.error_telemetry["critical_failures"].append(
                 {
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "error": str(final_error),
                     "step": self.step_index,
                 },
@@ -179,17 +179,17 @@ class ErrorHandler:
         try:
             with open(error_report_path, "w") as f:
                 json.dump(error_report, f, indent=2, default=str)
-            print(f"📋 Error report saved: {error_report_path}")
+            print(f"Error report saved: {error_report_path}")
         except Exception as e:
-            print(f"❌ Failed to save error report: {e}")
+            print(f"Failed to save error report: {e}")
 
         # Also save to memory backend
         try:
             trace_path = os.path.join(log_dir, f"orka_trace_{timestamp}.json")
             self.memory.save_to_file(trace_path)
-            print(f"📋 Execution trace saved: {trace_path}")
+            print(f"Execution trace saved: {trace_path}")
         except Exception as e:
-            print(f"⚠️ Failed to save trace to memory backend: {e}")
+            print(f"Failed to save trace to memory backend: {e}")
 
         return error_report_path
 
