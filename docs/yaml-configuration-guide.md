@@ -821,6 +821,282 @@ Failover with multiple strategies:
   queue: orka:resilient_search
 ```
 
+### Iterative Processing
+
+Loop node for threshold-based iterative workflows:
+
+```yaml
+- id: iterative_quality_improver
+  type: loop
+  max_loops: 10
+  score_threshold: 0.85
+  score_extraction_pattern: "QUALITY_SCORE:\\s*([0-9.]+)"
+  score_extraction_key: "quality_score"  # Alternative to regex pattern
+  
+  # Cognitive extraction configuration
+  cognitive_extraction:
+    enabled: true
+    max_length_per_category: 500
+    extract_patterns:
+      insights:
+        - "(?:provides?|identifies?|shows?|demonstrates?)\\s+(.+?)(?:\\n|$)"
+        - "(?:comprehensive|thorough|detailed|solid)\\s+(.+?)(?:\\n|$)"
+        - "(?:accurately|correctly|effectively)\\s+(.+?)(?:\\n|$)"
+      improvements:
+        - "(?:lacks?|lacking|needs?|requires?|missing)\\s+(.+?)(?:\\n|$)"
+        - "(?:should|could|would improve|would enhance)\\s+(.+?)(?:\\n|$)"
+        - "(?:more detailed|more specific|clearer|deeper)\\s+(.+?)(?:\\n|$)"
+        - "(?:addressing|exploring|developing|implementing)\\s+(.+?)(?:\\n|$)"
+      mistakes:
+        - "(?:error|mistake|wrong|incorrect|flaw|oversight)\\s+(.+?)(?:\\n|$)"
+        - "(?:overlooked|missed|ignored|failed to)\\s+(.+?)(?:\\n|$)"
+        - "(?:weakness|limitation|gap|problem)\\s+(.+?)(?:\\n|$)"
+        - "(?:inadequate|insufficient|lacks depth)\\s+(.+?)(?:\\n|$)"
+    
+    # Agent-specific extraction priorities
+    agent_priorities:
+      analyzer: ["insights", "improvements", "mistakes"]
+      quality_scorer: ["mistakes", "improvements"]
+      expert_reviewer: ["insights", "improvements"]
+  
+  # Past loops metadata template
+  past_loops_metadata:
+    iteration_number: "{{ loop_number }}"
+    quality_score: "{{ score }}"
+    timestamp: "{{ timestamp }}"
+    key_insights: "{{ insights }}"
+    areas_for_improvement: "{{ improvements }}"
+    mistakes_identified: "{{ mistakes }}"
+    processing_time: "{{ processing_time }}"
+  
+  # Internal workflow that gets repeated
+  internal_workflow:
+    orchestrator:
+      id: quality-improvement-cycle
+      strategy: sequential
+      agents: [content_analyzer, expert_reviewer, quality_scorer]
+    
+    agents:
+      - id: content_analyzer
+        type: openai-answer
+        temperature: 0.3
+        prompt: |
+          Analyze this content thoroughly: {{ input }}
+          
+          {% if previous_outputs.past_loops %}
+          Previous improvement cycles ({{ previous_outputs.past_loops | length }}):
+          {% for loop in previous_outputs.past_loops %}
+          
+          **Iteration {{ loop.iteration_number }}** (Score: {{ loop.quality_score }}):
+          - Key insights: {{ loop.key_insights }}
+          - Areas for improvement: {{ loop.areas_for_improvement }}
+          - Mistakes identified: {{ loop.mistakes_identified }}
+          {% endfor %}
+          
+          Build upon these insights and address the identified gaps.
+          {% endif %}
+          
+          Provide comprehensive analysis covering:
+          1. Content quality and completeness
+          2. Accuracy and factual verification
+          3. Clarity and organization
+          4. Depth and thoroughness
+          5. Areas needing improvement
+      
+      - id: expert_reviewer
+        type: openai-answer
+        temperature: 0.2
+        prompt: |
+          As an expert reviewer, evaluate this analysis:
+          {{ previous_outputs.content_analyzer.result }}
+          
+          Focus on:
+          - Technical accuracy
+          - Completeness of coverage
+          - Logical structure
+          - Evidence quality
+          - Missing perspectives
+          
+          Provide specific recommendations for improvement.
+      
+      - id: quality_scorer
+        type: openai-answer
+        temperature: 0.1
+        prompt: |
+          Rate the overall quality of this analysis (0.0 to 1.0):
+          
+          Original Analysis: {{ previous_outputs.content_analyzer.result }}
+          Expert Review: {{ previous_outputs.expert_reviewer.result }}
+          
+          Scoring criteria:
+          - 0.9-1.0: Exceptional quality, comprehensive, accurate
+          - 0.8-0.9: High quality, thorough, minor improvements needed
+          - 0.7-0.8: Good quality, adequate coverage, some gaps
+          - 0.6-0.7: Acceptable quality, notable improvements needed
+          - Below 0.6: Poor quality, significant issues
+          
+          Format your response as:
+          QUALITY_SCORE: X.XX
+          
+          Explanation: [Detailed rationale for the score]
+          
+          If score is below 0.85, clearly identify what needs improvement.
+  
+  timeout: 300.0
+```
+
+### Multi-Agent Cognitive Society
+
+Loop node for consensus-building deliberation:
+
+```yaml
+- id: cognitive_society_deliberation
+  type: loop
+  max_loops: 5
+  score_threshold: 0.90
+  score_extraction_pattern: "CONSENSUS_SCORE[\":]?\\s*\"?([0-9.]+)\"?"
+  
+  # Simple cognitive extraction for consensus building
+  cognitive_extraction:
+    enabled: true
+    max_length_per_category: 300
+    extract_patterns:
+      insights:
+        - "FINAL_STRATEGY[\":]?\\s*(.+?)(?:\\n|$)"
+        - "strategy[\":]?\\s*(.+?)(?:\\n|$)"
+        - "conclusion[\":]?\\s*(.+?)(?:\\n|$)"
+      improvements:
+        - "CONVERGENCE_PROOF[\":]?\\s*(.+?)(?:\\n|$)"
+        - "alignment[\":]?\\s*(.+?)(?:\\n|$)"
+        - "consensus[\":]?\\s*(.+?)(?:\\n|$)"
+  
+  # Track deliberation rounds
+  past_loops_metadata:
+    round_number: "{{ loop_number }}"
+    consensus_score: "{{ score }}"
+    key_strategies: "{{ insights }}"
+    convergence_evidence: "{{ improvements }}"
+  
+  # Multi-agent internal workflow
+  internal_workflow:
+    orchestrator:
+      id: society-deliberation
+      strategy: sequential
+      agents: [fork_reasoning_agents, join_perspectives, consensus_moderator]
+    
+    agents:
+      - id: fork_reasoning_agents
+        type: fork
+        targets:
+          - [logical_reasoner]
+          - [empathetic_reasoner]
+          - [skeptical_reasoner]
+          - [creative_reasoner]
+        mode: parallel
+      
+      - id: logical_reasoner
+        type: openai-answer
+        temperature: 0.3
+        prompt: |
+          You are a logical reasoning agent analyzing: {{ input }}
+          
+          Current deliberation round: {{ loop_number }}
+          
+          {% if previous_outputs.past_loops %}
+          Previous logical insights from past rounds:
+          {% for loop in previous_outputs.past_loops %}
+          - Round {{ loop.round_number }}: {{ loop.key_strategies }}
+          {% endfor %}
+          {% endif %}
+          
+          Provide logical, evidence-based analysis.
+          Format: FINAL_STRATEGY: [Your recommendation]
+      
+      - id: empathetic_reasoner
+        type: openai-answer
+        temperature: 0.4
+        prompt: |
+          You are an empathetic reasoning agent analyzing: {{ input }}
+          
+          Current deliberation round: {{ loop_number }}
+          
+          {% if previous_outputs.past_loops %}
+          Previous empathetic insights from past rounds:
+          {% for loop in previous_outputs.past_loops %}
+          - Round {{ loop.round_number }}: {{ loop.key_strategies }}
+          {% endfor %}
+          {% endif %}
+          
+          Provide human-centered, ethical analysis.
+          Format: FINAL_STRATEGY: [Your recommendation]
+      
+      - id: skeptical_reasoner
+        type: openai-answer
+        temperature: 0.3
+        prompt: |
+          You are a skeptical reasoning agent analyzing: {{ input }}
+          
+          Current deliberation round: {{ loop_number }}
+          
+          {% if previous_outputs.past_loops %}
+          Previous skeptical insights from past rounds:
+          {% for loop in previous_outputs.past_loops %}
+          - Round {{ loop.round_number }}: {{ loop.key_strategies }}
+          {% endfor %}
+          {% endif %}
+          
+          Provide critical, risk-aware analysis.
+          Format: FINAL_STRATEGY: [Your recommendation]
+      
+      - id: creative_reasoner
+        type: openai-answer
+        temperature: 0.6
+        prompt: |
+          You are a creative reasoning agent analyzing: {{ input }}
+          
+          Current deliberation round: {{ loop_number }}
+          
+          {% if previous_outputs.past_loops %}
+          Previous creative insights from past rounds:
+          {% for loop in previous_outputs.past_loops %}
+          - Round {{ loop.round_number }}: {{ loop.key_strategies }}
+          {% endfor %}
+          {% endif %}
+          
+          Provide innovative, out-of-the-box analysis.
+          Format: FINAL_STRATEGY: [Your recommendation]
+      
+      - id: join_perspectives
+        type: join
+        group: fork_reasoning_agents
+      
+      - id: consensus_moderator
+        type: openai-answer
+        temperature: 0.2
+        prompt: |
+          As a moderator, evaluate consensus among these agents on: {{ input }}
+          
+          Agent Perspectives:
+          - Logical: {{ previous_outputs.logical_reasoner.response }}
+          - Empathetic: {{ previous_outputs.empathetic_reasoner.response }}
+          - Skeptical: {{ previous_outputs.skeptical_reasoner.response }}
+          - Creative: {{ previous_outputs.creative_reasoner.response }}
+          
+          Scoring criteria:
+          - 0.9-1.0: Strong consensus, aligned strategies
+          - 0.8-0.9: Good alignment, minor differences
+          - 0.7-0.8: Moderate agreement, some conflicts
+          - 0.6-0.7: Weak consensus, significant differences
+          - Below 0.6: No consensus, major disagreements
+          
+          Format your response as:
+          CONSENSUS_SCORE: X.XX
+          ANALYSIS: [Explanation of convergence level]
+          CONTINUE: [YES if more deliberation needed, NO if sufficient]
+  
+  timeout: 600.0
+```
+
 ## Advanced Patterns
 
 ### RAG (Retrieval-Augmented Generation)

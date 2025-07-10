@@ -1,8 +1,16 @@
 [📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
 
-# Getting Started with OrKa V0.7.0
+# Getting Started with OrKa V0.7.5
 
-Welcome to OrKa! This guide will help you get up and running with OrKa's powerful agent orchestration system and **100x faster vector search** in just a few minutes.
+Welcome to OrKa! This guide will help you get up and running with OrKa's powerful agent orchestration system, **100x faster vector search**, and the new **iterative workflows** in just a few minutes.
+
+## 🚀 What's New in V0.7.5
+
+- **🔄 Advanced Loop Node** - Intelligent iterative workflows with cognitive insight extraction
+- **🧠 Cognitive Society Framework** - Multi-agent deliberation and consensus building
+- **🎯 Threshold-Based Execution** - Continue until quality meets requirements
+- **📊 Past Loops Memory** - Learn from previous attempts and iteratively improve
+- **🎓 Cognitive Insight Extraction** - Automatically identify insights, improvements, and mistakes
 
 ## 🚀 What's New in V0.7.0
 
@@ -248,19 +256,128 @@ python -m orka.orka_cli memory cleanup --dry-run
 | **Concurrent Searches** | 10-50 | 1000+ | **Massive scale** |
 | **Memory Efficiency** | 100% | 40% | **60% less RAM** |
 
+## 🔄 Advanced: Iterative Workflows with LoopNode
+
+OrKa V0.7.5 introduces the powerful **LoopNode** for iterative improvement workflows. Here's a quick example:
+
+### Create an Iterative Improver: `iterative-assistant.yml`
+
+```yaml
+meta:
+  version: "1.0"
+  description: "Iterative improvement workflow with cognitive learning"
+
+orchestrator:
+  id: iterative-assistant
+  strategy: sequential
+  agents: [improvement_loop, final_summary]
+
+agents:
+  - id: improvement_loop
+    type: loop
+    max_loops: 5
+    score_threshold: 0.85
+    score_extraction_pattern: "QUALITY_SCORE:\\s*([0-9.]+)"
+    
+    # Cognitive extraction learns from each iteration
+    cognitive_extraction:
+      enabled: true
+      extract_patterns:
+        insights:
+          - "(?:provides?|shows?|demonstrates?)\\s+(.+?)(?:\\n|$)"
+        improvements:
+          - "(?:lacks?|needs?|should?)\\s+(.+?)(?:\\n|$)"
+        mistakes:
+          - "(?:overlooked|missed?)\\s+(.+?)(?:\\n|$)"
+    
+    # Track learning across iterations
+    past_loops_metadata:
+      iteration: "{{ loop_number }}"
+      quality_score: "{{ score }}"
+      key_insights: "{{ insights }}"
+      improvements_needed: "{{ improvements }}"
+    
+    # Internal workflow that gets repeated
+    internal_workflow:
+      orchestrator:
+        id: improvement-cycle
+        agents: [analyzer, quality_scorer]
+      agents:
+        - id: analyzer
+          type: openai-answer
+          prompt: |
+            Analyze this request: {{ input }}
+            
+            {% if previous_outputs.past_loops %}
+            Previous iterations:
+            {% for loop in previous_outputs.past_loops %}
+            - Iteration {{ loop.iteration }} (Score: {{ loop.quality_score }}):
+              Insights: {{ loop.key_insights }}
+              Improvements: {{ loop.improvements_needed }}
+            {% endfor %}
+            {% endif %}
+            
+            Provide comprehensive analysis building on previous insights.
+        
+        - id: quality_scorer
+          type: openai-answer
+          prompt: |
+            Rate this analysis quality (0.0-1.0):
+            {{ previous_outputs.analyzer.result }}
+            
+            Format: QUALITY_SCORE: X.XX
+            Explain improvements needed if score < 0.85
+
+  - id: final_summary
+    type: openai-answer
+    prompt: |
+      Summarize the iterative learning process:
+      
+      Iterations: {{ previous_outputs.improvement_loop.loops_completed }}
+      Final Score: {{ previous_outputs.improvement_loop.final_score }}
+      
+      Learning Journey:
+      {% for loop in previous_outputs.improvement_loop.past_loops %}
+      **Iteration {{ loop.iteration }}**: {{ loop.key_insights }}
+      {% endfor %}
+      
+      Final Result: {{ previous_outputs.improvement_loop.result }}
+```
+
+### Test the Iterative Improver
+
+```bash
+# Run an iterative workflow
+python -m orka.orka_cli iterative-assistant.yml "Explain how artificial intelligence will impact education in the next decade"
+
+# Watch it improve over multiple iterations until quality threshold is met
+```
+
+**What you'll see:**
+- **Iteration 1**: Basic analysis, identifies areas for improvement
+- **Iteration 2**: Builds on insights, addresses gaps from iteration 1
+- **Continues**: Until quality score reaches 0.85 or max loops reached
+- **Final**: Comprehensive analysis with learning summary
+
 ## 🎯 Next Steps
 
 ### 1. Explore More Examples
 ```bash
 # Try the built-in examples with RedisStack performance
 python -m orka.orka_cli examples/enhanced_memory_validation_example.yml "Test RedisStack speed"
+
+# Try the cognitive society example
+python -m orka.orka_cli examples/cognitive_society_loop.yml "Should we implement universal basic income?"
+
+# Try the simple loop example
+python -m orka.orka_cli examples/simple_loop_example.yml "Analyze the pros and cons of remote work"
 ```
 
 ### 2. Build Advanced Workflows
 Check out our comprehensive guides:
-- **[📝 YAML Configuration Guide](./yaml-configuration-guide.md)** - Complete configuration reference
+- **[📝 YAML Configuration Guide](./yaml-configuration-guide.md)** - Complete configuration reference including LoopNode
 - **[🧠 Memory System Guide](./MEMORY_SYSTEM_GUIDE.md)** - Deep dive into RedisStack memory
-- **[🤖 Agent Types](./agents.md)** - All available agent types
+- **[🤖 Agent Types](./agents.md)** - All available agent types including LoopNode
 
 ### 3. Production Deployment
 ```bash

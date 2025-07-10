@@ -4,6 +4,14 @@
 
 Welcome to OrKa - the **Orchestrator Kit for Agentic Reasoning**! OrKa transforms Large Language Models into intelligent, memory-enabled agents that can learn, remember, and reason through complex workflows.
 
+## 🚀 What's New in V0.7.5
+
+- **🔄 Advanced Loop Node** - Intelligent iterative workflows with cognitive insight extraction
+- **🧠 Cognitive Society Framework** - Multi-agent deliberation and consensus building
+- **🎯 Threshold-Based Execution** - Continue until quality meets requirements
+- **📊 Past Loops Memory** - Learn from previous attempts and iteratively improve
+- **🎓 Cognitive Insight Extraction** - Automatically identify insights, improvements, and mistakes
+
 ## 🚀 What's New in V0.7.0
 
 - **🚀 100x Faster Vector Search** - RedisStack HNSW indexing now default across all components
@@ -165,7 +173,23 @@ Orchestrate collaborative research workflows:
 # synthesis agents create comprehensive reports - all sharing RedisStack memory
 ```
 
-### 4. Error Learning System
+### 4. Iterative Improvement Systems
+Build systems that learn from mistakes and improve over time:
+```yaml
+# Uses LoopNode to iteratively refine responses until quality threshold is met,
+# extracts insights and improvements from each iteration,
+# maintains memory of past attempts for continuous learning
+```
+
+### 5. Cognitive Society Deliberation
+Create multi-agent deliberation systems for consensus building:
+```yaml
+# Multiple reasoning agents (logical, empathetic, skeptical, creative) deliberate,
+# moderator evaluates consensus level, process repeats until agreement reached,
+# produces unified perspective incorporating all viewpoints
+```
+
+### 6. Error Learning System
 Build systems that learn from mistakes:
 ```yaml
 # Attempts solutions, validates results, learns from failures,

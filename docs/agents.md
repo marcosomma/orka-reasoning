@@ -272,6 +272,135 @@ Intentionally fails for testing error handling and failover scenarios.
   prompt: "This will always fail"
 ```
 
+### 🔄 `loop`
+
+Executes an internal workflow repeatedly until a score threshold is met or maximum loops are reached. Features cognitive insight extraction and iterative improvement capabilities.
+
+**Use case:** Iterative refinement, consensus building, multi-agent deliberation, self-improving systems.
+
+**Key Features:**
+- **Threshold-based execution** - Continues until score meets requirements
+- **Cognitive insight extraction** - Automatically extracts insights, improvements, and mistakes
+- **Past loops context** - Maintains memory of previous iterations for learning
+- **Flexible scoring** - Configurable score extraction via regex patterns or direct keys
+- **Iterative improvement** - Agents learn from previous attempts
+
+**Example config:**
+```yaml
+- id: iterative_improver
+  type: loop
+  max_loops: 10
+  score_threshold: 0.85
+  score_extraction_pattern: "SCORE:\\s*([0-9.]+)"
+  
+  # Cognitive extraction configuration
+  cognitive_extraction:
+    enabled: true
+    max_length_per_category: 300
+    extract_patterns:
+      insights:
+        - "(?:provides?|identifies?|shows?)\\s+(.+?)(?:\\n|$)"
+        - "(?:solid|good|comprehensive)\\s+(.+?)(?:\\n|$)"
+      improvements:
+        - "(?:lacks?|needs?|requires?|should)\\s+(.+?)(?:\\n|$)"
+        - "(?:would improve|could benefit from)\\s+(.+?)(?:\\n|$)"
+      mistakes:
+        - "(?:overlooked|missed|inadequate)\\s+(.+?)(?:\\n|$)"
+        - "(?:weakness|limitation|gap)\\s*[:\\s]*(.+?)(?:\\n|$)"
+  
+  # Past loops metadata template
+  past_loops_metadata:
+    loop_number: "{{ loop_number }}"
+    score: "{{ score }}"
+    key_insights: "{{ insights }}"
+    improvements_needed: "{{ improvements }}"
+    mistakes_identified: "{{ mistakes }}"
+  
+  # Internal workflow that gets repeated
+  internal_workflow:
+    orchestrator:
+      id: internal-loop
+      strategy: sequential
+      agents: [analyzer, scorer]
+    agents:
+      - id: analyzer
+        type: openai-answer
+        prompt: |
+          Analyze: {{ input }}
+          
+          {% if previous_outputs.past_loops %}
+          Previous attempts:
+          {% for loop in previous_outputs.past_loops %}
+          - Loop {{ loop.loop_number }} (Score: {{ loop.score }}):
+            * Insights: {{ loop.key_insights }}
+            * Improvements: {{ loop.improvements_needed }}
+            * Mistakes: {{ loop.mistakes_identified }}
+          {% endfor %}
+          
+          Build upon these insights and address the gaps.
+          {% endif %}
+          
+          Provide comprehensive analysis with clear insights.
+      
+      - id: scorer
+        type: openai-answer
+        prompt: |
+          Rate this analysis (0.0 to 1.0): {{ previous_outputs.analyzer.result }}
+          
+          Format: SCORE: X.XX
+          Explain what needs improvement if score is below threshold.
+```
+
+**Multi-Agent Deliberation Example:**
+```yaml
+- id: cognitive_society
+  type: loop
+  max_loops: 5
+  score_threshold: 0.95
+  score_extraction_pattern: "AGREEMENT_SCORE[\":]?\\s*\"?([0-9.]+)\"?"
+  
+  internal_workflow:
+    orchestrator:
+      id: deliberation
+      strategy: sequential
+      agents: [fork_reasoning, join_perspectives, moderator]
+    agents:
+      - id: fork_reasoning
+        type: fork
+        targets:
+          - [logic_agent]
+          - [empathy_agent]
+          - [skeptic_agent]
+      
+      - id: logic_agent
+        type: openai-answer
+        prompt: "Provide logical analysis of: {{ input }}"
+      
+      - id: empathy_agent
+        type: openai-answer
+        prompt: "Provide empathetic perspective on: {{ input }}"
+      
+      - id: skeptic_agent
+        type: openai-answer
+        prompt: "Provide critical analysis of: {{ input }}"
+      
+      - id: join_perspectives
+        type: join
+        group: fork_reasoning
+      
+      - id: moderator
+        type: openai-answer
+        prompt: |
+          Evaluate agent convergence on: {{ input }}
+          
+          Logic: {{ previous_outputs.logic_agent.response }}
+          Empathy: {{ previous_outputs.empathy_agent.response }}
+          Skeptic: {{ previous_outputs.skeptic_agent.response }}
+          
+          Score agreement level (0.0-1.0):
+          AGREEMENT_SCORE: [score]
+```
+
 ---
 
 ## 🤖 Advanced Nodes
@@ -311,6 +440,7 @@ Performs Retrieval-Augmented Generation with vector search and LLM generation.
 | `failover` | Node | Error resilience | Active |
 | `fork` | Node | Parallel execution | Active |
 | `join` | Node | Result aggregation | Active |
+| `loop` | Node | Iterative workflows | Active |
 | `failing` | Node | Testing failures | Active |
 
 ---

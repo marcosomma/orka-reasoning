@@ -22,6 +22,14 @@
 
 ---
 
+## 🚀 What's New in V0.7.5
+
+- **🔄 Advanced Loop Node** - Intelligent iterative workflows with cognitive insight extraction
+- **🧠 Cognitive Society Framework** - Multi-agent deliberation and consensus building
+- **🎯 Threshold-Based Execution** - Continue until quality meets requirements
+- **📊 Past Loops Memory** - Learn from previous attempts and iteratively improve
+- **🎓 Cognitive Insight Extraction** - Automatically identify insights, improvements, and mistakes
+
 ## 🚀 What's New in V0.7.x
 
 - **🚀 100x Faster Vector Search** - RedisStack HNSW indexing now default across all components
@@ -372,6 +380,230 @@ agents:
     prompt: "Find related knowledge: {{ input }}"
 ```
 
+### 4. Iterative Improvement Loop
+
+```yaml
+# iterative-improver.yml
+orchestrator:
+  id: iterative-improver
+  strategy: sequential
+  agents: [improvement_loop, final_processor]
+
+agents:
+  - id: improvement_loop
+    type: loop
+    max_loops: 8
+    score_threshold: 0.85
+    score_extraction_pattern: "QUALITY_SCORE:\\s*([0-9.]+)"
+    
+    # Cognitive extraction to learn from each iteration
+    cognitive_extraction:
+      enabled: true
+      extract_patterns:
+        insights:
+          - "(?:provides?|identifies?|shows?)\\s+(.+?)(?:\\n|$)"
+          - "(?:comprehensive|thorough|detailed)\\s+(.+?)(?:\\n|$)"
+        improvements:
+          - "(?:lacks?|needs?|requires?|should)\\s+(.+?)(?:\\n|$)"
+          - "(?:would improve|could benefit)\\s+(.+?)(?:\\n|$)"
+        mistakes:
+          - "(?:overlooked|missed|inadequate)\\s+(.+?)(?:\\n|$)"
+          - "(?:weakness|gap|limitation)\\s+(.+?)(?:\\n|$)"
+    
+    # Track learning across iterations
+    past_loops_metadata:
+      iteration: "{{ loop_number }}"
+      quality_score: "{{ score }}"
+      key_insights: "{{ insights }}"
+      areas_to_improve: "{{ improvements }}"
+      mistakes_found: "{{ mistakes }}"
+    
+    # Internal workflow that gets repeated
+    internal_workflow:
+      orchestrator:
+        id: improvement-cycle
+        strategy: sequential
+        agents: [analyzer, quality_scorer]
+      
+      agents:
+        - id: analyzer
+          type: openai-answer
+          prompt: |
+            Analyze this request: {{ input }}
+            
+            {% if previous_outputs.past_loops %}
+            Previous analysis attempts ({{ previous_outputs.past_loops | length }}):
+            {% for loop in previous_outputs.past_loops %}
+            
+            Iteration {{ loop.iteration }} (Score: {{ loop.quality_score }}):
+            - Key insights: {{ loop.key_insights }}
+            - Areas to improve: {{ loop.areas_to_improve }}
+            - Mistakes found: {{ loop.mistakes_found }}
+            {% endfor %}
+            
+            Build upon these insights and address the identified gaps.
+            {% endif %}
+            
+            Provide a comprehensive, high-quality analysis.
+        
+        - id: quality_scorer
+          type: openai-answer
+          prompt: |
+            Rate the quality of this analysis (0.0 to 1.0):
+            {{ previous_outputs.analyzer.result }}
+            
+            Consider:
+            - Depth and comprehensiveness
+            - Accuracy and relevance
+            - Clarity and structure
+            - Addressing of key points
+            
+            Format: QUALITY_SCORE: X.XX
+            
+            If score is below 0.85, identify specific areas for improvement.
+
+  - id: final_processor
+    type: openai-answer
+    prompt: |
+      Process the final result from the improvement loop:
+      
+      Iterations completed: {{ previous_outputs.improvement_loop.loops_completed }}
+      Final quality score: {{ previous_outputs.improvement_loop.final_score }}
+      Threshold met: {{ previous_outputs.improvement_loop.threshold_met }}
+      
+      Learning Journey:
+      {% for loop in previous_outputs.improvement_loop.past_loops %}
+      **Iteration {{ loop.iteration }}** (Score: {{ loop.quality_score }}):
+      - Insights: {{ loop.key_insights }}
+      - Improvements: {{ loop.areas_to_improve }}
+      - Mistakes: {{ loop.mistakes_found }}
+      {% endfor %}
+      
+      Final Analysis: {{ previous_outputs.improvement_loop.result }}
+      
+      Provide a meta-analysis of the learning process and final insights.
+```
+
+### 5. Cognitive Society Deliberation
+
+```yaml
+# cognitive-society.yml
+orchestrator:
+  id: cognitive-society
+  strategy: sequential
+  agents: [deliberation_loop, consensus_builder]
+
+agents:
+  - id: deliberation_loop
+    type: loop
+    max_loops: 5
+    score_threshold: 0.90
+    score_extraction_pattern: "CONSENSUS_SCORE:\\s*([0-9.]+)"
+    
+    internal_workflow:
+      orchestrator:
+        id: multi-agent-deliberation
+        strategy: sequential
+        agents: [fork_perspectives, join_views, consensus_evaluator]
+      
+      agents:
+        - id: fork_perspectives
+          type: fork
+          targets:
+            - [logical_reasoner]
+            - [empathetic_reasoner]
+            - [skeptical_reasoner]
+            - [creative_reasoner]
+        
+        - id: logical_reasoner
+          type: openai-answer
+          prompt: |
+            Provide logical, evidence-based reasoning for: {{ input }}
+            
+            {% if previous_outputs.past_loops %}
+            Previous logical insights:
+            {% for loop in previous_outputs.past_loops %}
+            - Round {{ loop.round }}: {{ loop.logical_insights }}
+            {% endfor %}
+            
+            Build upon and refine these logical perspectives.
+            {% endif %}
+        
+        - id: empathetic_reasoner
+          type: openai-answer
+          prompt: |
+            Provide empathetic, human-centered reasoning for: {{ input }}
+            
+            {% if previous_outputs.past_loops %}
+            Previous empathetic insights:
+            {% for loop in previous_outputs.past_loops %}
+            - Round {{ loop.round }}: {{ loop.empathetic_insights }}
+            {% endfor %}
+            
+            Deepen and expand these empathetic perspectives.
+            {% endif %}
+        
+        - id: skeptical_reasoner
+          type: openai-answer
+          prompt: |
+            Provide critical, skeptical analysis of: {{ input }}
+            
+            {% if previous_outputs.past_loops %}
+            Previous critical insights:
+            {% for loop in previous_outputs.past_loops %}
+            - Round {{ loop.round }}: {{ loop.critical_insights }}
+            {% endfor %}
+            
+            Strengthen and refine these critical perspectives.
+            {% endif %}
+        
+        - id: creative_reasoner
+          type: openai-answer
+          prompt: |
+            Provide creative, innovative thinking for: {{ input }}
+            
+            {% if previous_outputs.past_loops %}
+            Previous creative insights:
+            {% for loop in previous_outputs.past_loops %}
+            - Round {{ loop.round }}: {{ loop.creative_insights }}
+            {% endfor %}
+            
+            Expand and develop these creative perspectives.
+            {% endif %}
+        
+        - id: join_views
+          type: join
+          group: fork_perspectives
+        
+        - id: consensus_evaluator
+          type: openai-answer
+          prompt: |
+            Evaluate consensus among these perspectives on: {{ input }}
+            
+            Logical: {{ previous_outputs.logical_reasoner.response }}
+            Empathetic: {{ previous_outputs.empathetic_reasoner.response }}
+            Skeptical: {{ previous_outputs.skeptical_reasoner.response }}
+            Creative: {{ previous_outputs.creative_reasoner.response }}
+            
+            Rate the consensus level (0.0-1.0):
+            CONSENSUS_SCORE: [score]
+            
+            Explain areas of agreement and remaining disagreements.
+
+  - id: consensus_builder
+    type: openai-answer
+    prompt: |
+      Build final consensus from the deliberation:
+      
+      Original question: {{ input }}
+      Deliberation rounds: {{ previous_outputs.deliberation_loop.loops_completed }}
+      Final consensus score: {{ previous_outputs.deliberation_loop.final_score }}
+      
+      Final result: {{ previous_outputs.deliberation_loop.result }}
+      
+      Provide a unified perspective that incorporates all viewpoints.
+```
+
 ---
 
 ## 🎯 Agent Quick Reference
@@ -451,6 +683,38 @@ agents:
 - id: combine_results
   type: join
   prompt: "Combine all validation results"
+
+# Iterative improvement loop
+- id: iterative_improver
+  type: loop
+  max_loops: 5
+  score_threshold: 0.85
+  score_extraction_pattern: "SCORE:\\s*([0-9.]+)"
+  cognitive_extraction:
+    enabled: true
+    extract_patterns:
+      insights: ["(?:provides?|shows?)\\s+(.+?)(?:\\n|$)"]
+      improvements: ["(?:lacks?|needs?)\\s+(.+?)(?:\\n|$)"]
+      mistakes: ["(?:overlooked|missed)\\s+(.+?)(?:\\n|$)"]
+  past_loops_metadata:
+    iteration: "{{ loop_number }}"
+    score: "{{ score }}"
+    insights: "{{ insights }}"
+  internal_workflow:
+    orchestrator:
+      id: improvement-cycle
+      agents: [analyzer, scorer]
+    agents:
+      - id: analyzer
+        type: openai-answer
+        prompt: |
+          Analyze: {{ input }}
+          {% if previous_outputs.past_loops %}
+          Previous attempts: {{ previous_outputs.past_loops }}
+          {% endif %}
+      - id: scorer
+        type: openai-answer
+        prompt: "Rate quality (0.0-1.0): {{ previous_outputs.analyzer.result }}"
 ```
 
 ---
