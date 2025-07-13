@@ -55,11 +55,81 @@ class LoopNode(BaseNode):
         # Configuration
         self.max_loops = kwargs.get("max_loops", 5)
         self.score_threshold = kwargs.get("score_threshold", 0.8)
-        self.score_extraction_pattern = kwargs.get(
-            "score_extraction_pattern",
-            r"SCORE:\s*([0-9.]+)",
+
+        # 🔧 FLEXIBLE SCORE EXTRACTION CONFIGURATION
+        # Replace rigid pattern/key with flexible configuration
+        self.score_extraction_config = kwargs.get(
+            "score_extraction_config",
+            {
+                # Multiple extraction strategies to try in order
+                "strategies": [
+                    {
+                        "type": "direct_key",
+                        "key": "score",
+                    },
+                    {
+                        "type": "direct_key",
+                        "key": "reasoning_quality",
+                    },
+                    {
+                        "type": "agent_key",
+                        "agents": ["quality_moderator", "scorer", "evaluator"],
+                        "key": "score",
+                    },
+                    {
+                        "type": "agent_key",
+                        "agents": ["quality_moderator", "scorer", "evaluator"],
+                        "key": "reasoning_quality",
+                    },
+                    {
+                        "type": "nested_path",
+                        "path": "result.score",
+                    },
+                    {
+                        "type": "nested_path",
+                        "path": "result.reasoning_quality",
+                    },
+                    {
+                        "type": "pattern",
+                        "patterns": [
+                            r"REASONING_QUALITY:\s*([0-9.]+)",
+                            r"SCORE:\s*([0-9.]+)",
+                            r"score:\s*([0-9.]+)",
+                            r"quality:\s*([0-9.]+)",
+                            r"([0-9.]+)",
+                        ],
+                    },
+                ],
+            },
         )
-        self.score_extraction_key = kwargs.get("score_extraction_key", "score")
+
+        # Backward compatibility - convert old format to new format
+        if "score_extraction_pattern" in kwargs or "score_extraction_key" in kwargs:
+            logger.warning(
+                "score_extraction_pattern and score_extraction_key are deprecated. Use score_extraction_config instead.",
+            )
+
+            # Convert old format to new format
+            old_strategies = []
+
+            if "score_extraction_key" in kwargs:
+                old_strategies.append(
+                    {
+                        "type": "direct_key",
+                        "key": kwargs["score_extraction_key"],
+                    },
+                )
+
+            if "score_extraction_pattern" in kwargs:
+                old_strategies.append(
+                    {
+                        "type": "pattern",
+                        "patterns": [kwargs["score_extraction_pattern"]],
+                    },
+                )
+
+            if old_strategies:
+                self.score_extraction_config = {"strategies": old_strategies}
 
         # Internal workflow configuration
         self.internal_workflow = kwargs.get("internal_workflow", {})
@@ -228,13 +298,16 @@ class LoopNode(BaseNode):
                 "loop_number": current_loop_number,  # 🔧 CRITICAL FIX: Pass loop_number to internal agents
                 "past_loops_metadata": {
                     "insights": self._extract_metadata_field(
-                        "insights", previous_outputs.get("past_loops", [])
+                        "insights",
+                        previous_outputs.get("past_loops", []),
                     ),
                     "improvements": self._extract_metadata_field(
-                        "improvements", previous_outputs.get("past_loops", [])
+                        "improvements",
+                        previous_outputs.get("past_loops", []),
                     ),
                     "mistakes": self._extract_metadata_field(
-                        "mistakes", previous_outputs.get("past_loops", [])
+                        "mistakes",
+                        previous_outputs.get("past_loops", []),
                     ),
                 },
             }
@@ -263,58 +336,256 @@ class LoopNode(BaseNode):
 
     def _extract_score(self, result):
         """
-        Extract score from workflow result.
+        Extract score from workflow result using flexible configuration.
 
         Args:
-            result: The workflow result to extract score from (now a dict of agent responses)
+            result: The workflow result to extract score from (dict of agent responses)
 
         Returns:
             float: Extracted score value, defaults to 0.0 if not found
         """
-        # Strategy 1: Direct key lookup in the result dictionary
-        if isinstance(result, dict):
-            # Check if there's a direct score key in the result
-            if self.score_extraction_key in result:
-                try:
-                    return float(result[self.score_extraction_key])
-                except (ValueError, TypeError):
-                    pass
+        if not isinstance(result, dict):
+            logger.warning(f"Result is not a dict, cannot extract score: {type(result)}")
+            return 0.0
 
-            # Check each agent's result for the score key
-            for agent_id, agent_result in result.items():
-                if isinstance(agent_result, dict) and self.score_extraction_key in agent_result:
-                    try:
-                        return float(agent_result[self.score_extraction_key])
-                    except (ValueError, TypeError):
-                        pass
+        strategies = self.score_extraction_config.get("strategies", [])
 
-        # Strategy 2: Pattern matching in result text
-        # Convert the entire result to text and search for the pattern
-        result_text = str(result)
-        match = re.search(self.score_extraction_pattern, result_text)
-        if match:
+        for strategy in strategies:
+            strategy_type = strategy.get("type")
+
             try:
-                return float(match.group(1))
-            except ValueError:
-                pass
+                if strategy_type == "direct_key":
+                    # Look for key directly in result
+                    score = self._extract_direct_key(result, strategy.get("key"))
+                    if score is not None:
+                        logger.debug(
+                            f"Score extracted via direct_key '{strategy.get('key')}': {score}",
+                        )
+                        return score
 
-        # Strategy 3: Look for specific agent responses that might contain scores
-        # This is useful for workflows where a specific agent (like "scorer") provides the score
-        if isinstance(result, dict):
-            for agent_id, agent_result in result.items():
-                if "score" in agent_id.lower() or "scorer" in agent_id.lower():
-                    # This agent likely contains the score
-                    agent_text = str(agent_result)
-                    match = re.search(self.score_extraction_pattern, agent_text)
-                    if match:
-                        try:
-                            return float(match.group(1))
-                        except ValueError:
-                            pass
+                elif strategy_type == "agent_key":
+                    # Look for key in specific agent results
+                    score = self._extract_agent_key(
+                        result,
+                        strategy.get("agents", []),
+                        strategy.get("key"),
+                    )
+                    if score is not None:
+                        logger.debug(f"Score extracted via agent_key: {score}")
+                        return score
+
+                elif strategy_type == "nested_path":
+                    # Look for nested path (e.g., "result.score")
+                    score = self._extract_nested_path(result, strategy.get("path"))
+                    if score is not None:
+                        logger.debug(
+                            f"Score extracted via nested_path '{strategy.get('path')}': {score}",
+                        )
+                        return score
+
+                elif strategy_type == "pattern":
+                    # Pattern matching on text
+                    score = self._extract_pattern(result, strategy.get("patterns", []))
+                    if score is not None:
+                        logger.debug(f"Score extracted via pattern: {score}")
+                        return score
+
+                else:
+                    logger.warning(f"Unknown extraction strategy type: {strategy_type}")
+
+            except Exception as e:
+                logger.debug(f"Strategy {strategy_type} failed: {e}")
+                continue
 
         # Default: return 0
-        logger.warning(f"No score found in result: {result}, defaulting to 0")
+        logger.warning("No score found in result using any strategy, defaulting to 0")
         return 0.0
+
+    def _extract_direct_key(self, result, key):
+        """Extract score from direct key in result."""
+        if key in result:
+            try:
+                return float(result[key])
+            except (ValueError, TypeError):
+                pass
+        return None
+
+    def _extract_agent_key(self, result, agents, key):
+        """Extract score from specific agent results."""
+        import ast
+        import json
+
+        for agent_id, agent_result in result.items():
+            # Check if this agent matches our priority list
+            if agents and not any(agent_name in agent_id.lower() for agent_name in agents):
+                continue
+
+            # 🔧 FIXED: Handle nested result structures (result.response, result.result, etc.)
+            possible_values = []
+
+            # Direct key access
+            if isinstance(agent_result, dict) and key in agent_result:
+                possible_values.append(agent_result[key])
+
+            # Nested access - look in result.response, result.result, etc.
+            if isinstance(agent_result, dict):
+                for nested_key in ["response", "result", "output", "data"]:
+                    if nested_key in agent_result:
+                        nested_value = agent_result[nested_key]
+
+                        # If nested value is a dict, look for our key directly
+                        if isinstance(nested_value, dict) and key in nested_value:
+                            possible_values.append(nested_value[key])
+
+                        # 🔧 NEW: Parse string dictionaries from LLM responses
+                        elif isinstance(nested_value, str):
+                            # Try to parse as JSON first
+                            try:
+                                parsed = json.loads(nested_value)
+                                if isinstance(parsed, dict) and key in parsed:
+                                    possible_values.append(parsed[key])
+                            except json.JSONDecodeError:
+                                pass
+
+                            # Try to parse as Python dictionary string
+                            try:
+                                parsed = ast.literal_eval(nested_value)
+                                if isinstance(parsed, dict) and key in parsed:
+                                    possible_values.append(parsed[key])
+                            except (ValueError, SyntaxError):
+                                pass
+
+                            # Try regex pattern matching on the string
+                            import re
+
+                            pattern = rf"['\"]?{re.escape(key)}['\"]?\s*:\s*([0-9.]+)"
+                            match = re.search(pattern, nested_value)
+                            if match:
+                                possible_values.append(match.group(1))
+
+            # Try to convert any found values to float
+            for value in possible_values:
+                try:
+                    return float(value)
+                except (ValueError, TypeError):
+                    continue
+
+        return None
+
+    def _extract_nested_path(self, result, path):
+        """Extract score from nested path (e.g., 'result.score')."""
+        if not path:
+            return None
+
+        path_parts = path.split(".")
+        current = result
+
+        for part in path_parts:
+            if isinstance(current, dict) and part in current:
+                current = current[part]
+            else:
+                return None
+
+        try:
+            return float(current)
+        except (ValueError, TypeError):
+            return None
+
+    def _extract_pattern(self, result, patterns):
+        """Extract score using regex patterns."""
+        result_text = str(result)
+
+        for pattern in patterns:
+            try:
+                match = re.search(pattern, result_text)
+                if match:
+                    try:
+                        return float(match.group(1))
+                    except (ValueError, IndexError):
+                        continue
+            except re.error:
+                # Skip invalid regex patterns
+                continue
+
+        return None
+
+    def _extract_secondary_metric(self, result, metric_key, default=0.0):
+        """
+        Extract secondary metrics (like REASONING_QUALITY, CONVERGENCE_TREND) from agent responses.
+
+        Args:
+            result: The workflow result to extract metric from
+            metric_key: The key to look for (e.g., "REASONING_QUALITY", "CONVERGENCE_TREND")
+            default: Default value if metric not found
+
+        Returns:
+            The extracted metric value or default
+        """
+        if not isinstance(result, dict):
+            logger.warning(f"Result is not a dict, cannot extract {metric_key}: {type(result)}")
+            return default
+
+        import ast
+        import json
+        import re
+
+        # Try different extraction strategies
+        for agent_id, agent_result in result.items():
+            if not isinstance(agent_result, dict):
+                continue
+
+            # Look in nested structures
+            for nested_key in ["response", "result", "output", "data"]:
+                if nested_key not in agent_result:
+                    continue
+
+                nested_value = agent_result[nested_key]
+
+                # If nested value is a dict, look for our key directly
+                if isinstance(nested_value, dict) and metric_key in nested_value:
+                    return nested_value[metric_key]
+
+                # Parse string dictionaries from LLM responses
+                elif isinstance(nested_value, str):
+                    # Try to parse as JSON first
+                    try:
+                        parsed = json.loads(nested_value)
+                        if isinstance(parsed, dict) and metric_key in parsed:
+                            return parsed[metric_key]
+                    except json.JSONDecodeError:
+                        pass
+
+                    # Try to parse as Python dictionary string
+                    try:
+                        parsed = ast.literal_eval(nested_value)
+                        if isinstance(parsed, dict) and metric_key in parsed:
+                            return parsed[metric_key]
+                    except (ValueError, SyntaxError):
+                        pass
+
+                    # Try regex pattern matching on the string
+                    pattern = (
+                        rf"['\"]?{re.escape(metric_key)}['\"]?\s*:\s*['\"]?([^'\",$\}}]+)['\"]?"
+                    )
+                    match = re.search(pattern, nested_value)
+                    if match:
+                        value = match.group(1).strip()
+                        # For numeric values, try to convert to float
+                        if (
+                            metric_key in ["REASONING_QUALITY", "AGREEMENT_SCORE"]
+                            and value.replace(".", "").isdigit()
+                        ):
+                            try:
+                                return float(value)
+                            except ValueError:
+                                pass
+                        return value
+
+        # Fallback: return default
+        logger.debug(
+            f"Secondary metric '{metric_key}' not found in result, using default: {default}",
+        )
+        return default
 
     def _extract_cognitive_insights(self, result):
         """
@@ -434,6 +705,14 @@ class LoopNode(BaseNode):
         # Extract cognitive insights from the result
         cognitive_insights = self._extract_cognitive_insights(result)
 
+        # 🔧 NEW: Extract secondary metrics from agent responses
+        reasoning_quality = self._extract_secondary_metric(result, "REASONING_QUALITY")
+        convergence_trend = self._extract_secondary_metric(
+            result,
+            "CONVERGENCE_TREND",
+            default="STABLE",
+        )
+
         # Create a safe version of the result for fallback
         safe_result = self._create_safe_result(result)
 
@@ -442,41 +721,67 @@ class LoopNode(BaseNode):
         if len(safe_input) > 200:
             safe_input = safe_input[:200] + "...<truncated>"
 
-        # Template variables with cognitive insights
-        template_vars = {
+        # 🔧 FIXED: Complete template context for Jinja2 rendering
+        template_context = {
             "loop_number": loop_number,
             "score": score,
+            "reasoning_quality": reasoning_quality,  # 🔧 NEW: Available for templates
+            "convergence_trend": convergence_trend,  # 🔧 NEW: Available for templates
             "timestamp": datetime.now().isoformat(),
             "result": safe_result,
             "input": safe_input,
             "insights": cognitive_insights.get("insights", ""),
             "improvements": cognitive_insights.get("improvements", ""),
             "mistakes": cognitive_insights.get("mistakes", ""),
+            # Add previous_outputs context for complex template access
+            "previous_outputs": {
+                "synthesis_attempt": {"response": cognitive_insights.get("insights", "")},
+                "quality_moderator": {"response": f"Score: {reasoning_quality}"},
+                "agreement_moderator": {"response": f"Score: {score}, Trend: {convergence_trend}"},
+            },
         }
 
-        # Build past_loop object from metadata template - ensure only primitives
+        # 🔧 FIXED: Proper Jinja2 template evaluation instead of naive string replacement
+        from jinja2 import Template, TemplateSyntaxError, UndefinedError
+
         past_loop_obj = {}
         for key, template in self.past_loops_metadata.items():
-            if (
-                isinstance(template, str)
-                and template.startswith("{{ ")
-                and template.endswith(" }}")
-            ):
-                # Extract variable name from template
-                var_name = template.strip("{{ ").strip(" }}")
-                value = template_vars.get(var_name, template)
-                # Ensure the value is a safe primitive type
-                if isinstance(value, (str, int, float, bool, type(None))):
-                    past_loop_obj[key] = value
-                elif isinstance(value, dict):
-                    # For dict values, convert to a safe string representation
-                    past_loop_obj[key] = str(value)
+            try:
+                if isinstance(template, str) and "{{" in template and "}}" in template:
+                    # 🔧 NEW: Use proper Jinja2 template rendering
+                    jinja_template = Template(template)
+                    rendered_value = jinja_template.render(**template_context)
+
+                    # Try to convert to appropriate type
+                    if rendered_value.replace(".", "").replace("-", "").isdigit():
+                        # Convert numeric strings to float/int
+                        try:
+                            if "." in rendered_value:
+                                past_loop_obj[key] = float(rendered_value)
+                            else:
+                                past_loop_obj[key] = int(rendered_value)
+                        except ValueError:
+                            past_loop_obj[key] = rendered_value
+                    else:
+                        past_loop_obj[key] = rendered_value
+
+                    logger.debug(f"Template '{template}' rendered to: {rendered_value}")
+
+                # Non-template value - use as-is
+                elif isinstance(template, (str, int, float, bool, type(None))):
+                    past_loop_obj[key] = template
                 else:
-                    past_loop_obj[key] = str(value)
-            # Ensure template is also a primitive
-            elif isinstance(template, (str, int, float, bool, type(None))):
-                past_loop_obj[key] = template
-            else:
+                    past_loop_obj[key] = str(template)
+
+            except (TemplateSyntaxError, UndefinedError) as e:
+                logger.warning(
+                    f"Template rendering failed for key '{key}', template '{template}': {e}",
+                )
+                # Fallback to original template string
+                past_loop_obj[key] = str(template)
+            except Exception as e:
+                logger.error(f"Unexpected error rendering template for key '{key}': {e}")
+                # Fallback to safe string representation
                 past_loop_obj[key] = str(template)
 
         return past_loop_obj

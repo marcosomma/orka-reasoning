@@ -44,7 +44,30 @@ class MemoryReaderNode(BaseNode):
 
     async def run(self, context: dict[str, Any]) -> dict[str, Any]:
         """Read memories using RedisStack enhanced vector search."""
-        query = context.get("input", "")
+        # Try to get the rendered prompt first, then fall back to raw input
+        query = context.get("formatted_prompt", "")
+        if not query:
+            # Fallback to raw input if no formatted prompt
+            query = context.get("input", "")
+
+        # Handle case where input is a complex dictionary (from template rendering)
+        if isinstance(query, dict):
+            # If it's a dict, it's likely the raw template context - try to extract the actual input
+            if "input" in query:
+                nested_input = query["input"]
+                if isinstance(nested_input, str):
+                    query = nested_input
+                else:
+                    # Convert dict to string representation as last resort
+                    query = str(nested_input)
+            else:
+                # Convert dict to string representation as last resort
+                query = str(query)
+
+        # Additional safety check - if query is still not a string, convert it
+        if not isinstance(query, str):
+            query = str(query)
+
         if not query:
             return {"memories": [], "query": "", "error": "No query provided"}
 
@@ -53,7 +76,7 @@ class MemoryReaderNode(BaseNode):
             if hasattr(self.memory_logger, "search_memories"):
                 # 🎯 CRITICAL FIX: Search with explicit filtering for stored memories
                 logger.info(
-                    f"🔍 SEARCHING: query='{query}', namespace='{self.namespace}', log_type='memory'"
+                    f"🔍 SEARCHING: query='{query}', namespace='{self.namespace}', log_type='memory'",
                 )
 
                 memories = self.memory_logger.search_memories(
@@ -71,7 +94,7 @@ class MemoryReaderNode(BaseNode):
                 for i, memory in enumerate(memories):
                     metadata = memory.get("metadata", {})
                     logger.info(
-                        f"  Memory {i + 1}: log_type={metadata.get('log_type')}, category={metadata.get('category')}, content_preview={memory.get('content', '')[:50]}..."
+                        f"  Memory {i + 1}: log_type={metadata.get('log_type')}, category={metadata.get('category')}, content_preview={memory.get('content', '')[:50]}...",
                     )
 
                 # 🎯 ADDITIONAL FILTERING: Double-check that we only get stored memories
@@ -83,7 +106,7 @@ class MemoryReaderNode(BaseNode):
                         filtered_memories.append(memory)
                     else:
                         logger.info(
-                            f"🔍 FILTERED OUT: log_type={metadata.get('log_type')}, category={metadata.get('category')}"
+                            f"🔍 FILTERED OUT: log_type={metadata.get('log_type')}, category={metadata.get('category')}",
                         )
 
                 logger.info(

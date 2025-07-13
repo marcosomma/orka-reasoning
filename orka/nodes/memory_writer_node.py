@@ -355,25 +355,30 @@ class MemoryWriterNode(BaseNode):
                             # Convert structured object to searchable text
                             return self._memory_object_to_text(memory_obj, context.get("input", ""))
 
-            # Extract clean string content from nested input structure
-            input_value = context.get("input", "")
+            # Try to get the rendered prompt first, then fall back to raw input
+            content = context.get("formatted_prompt", "")
+            if not content:
+                # Extract clean string content from nested input structure
+                input_value = context.get("input", "")
 
-            # If input is a complex nested structure, extract the actual string content
-            if isinstance(input_value, dict):
-                # Look for the actual input string in the nested structure
-                if "input" in input_value:
-                    actual_input = input_value["input"]
-                    if isinstance(actual_input, str):
-                        return actual_input
+                # If input is a complex nested structure, extract the actual string content
+                if isinstance(input_value, dict):
+                    # Look for the actual input string in the nested structure
+                    if "input" in input_value:
+                        actual_input = input_value["input"]
+                        if isinstance(actual_input, str):
+                            return actual_input
+                        else:
+                            return str(actual_input)
                     else:
-                        return str(actual_input)
+                        # Try to create a meaningful string representation
+                        return f"Complex input structure with keys: {list(input_value.keys())}"
+                elif isinstance(input_value, str):
+                    return input_value
                 else:
-                    # Try to create a meaningful string representation
-                    return f"Complex input structure with keys: {list(input_value.keys())}"
-            elif isinstance(input_value, str):
-                return input_value
+                    return str(input_value)
             else:
-                return str(input_value)
+                return content
 
         except Exception as e:
             logger.error(f"❌ Error extracting memory content: {e}")

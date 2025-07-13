@@ -18,7 +18,7 @@ with open("README.md", encoding="utf-8") as fh:
 
 setup(
     name="orka-reasoning",
-    version="0.7.5",
+    version="0.7.6",
     author="Marco Somma",
     author_email="marcosomma.work@gmail.com",
     description="OrKa: Modular orchestration for agent-based cognition",
