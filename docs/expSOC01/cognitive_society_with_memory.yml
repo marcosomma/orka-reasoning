@@ -1,0 +1,1646 @@
+# Enhanced Cognitive Society with True Debate and Creative Tension
+# Focuses on reasoning quality over consensus, promotes productive disagreement
+
+orchestrator:
+  id: cognitive-society-debate-enhanced
+  strategy: sequential
+  memory_config:
+    decay:
+      enabled: true
+      default_short_term_hours: 0.5  # 30 minutes - enough for full workflow
+      default_long_term_hours: 1.0   # 1 hour for safety
+      check_interval_minutes: 10
+      importance_rules:
+        base_score: 0.7
+        event_type_boosts:
+          disagreement: 0.4  # Reward disagreement
+          challenge: 0.3
+          synthesis: 0.2
+        agent_type_boosts:
+          debate: 0.3
+          devil_advocate: 0.4
+  agents:
+    - cognitive_debate_loop
+    - meta_debate_reflection
+    - reasoning_quality_extractor
+    - final_synthesis_processor
+
+agents:
+  - id: cognitive_debate_loop
+    type: loop
+    max_loops: 10
+    score_threshold: 0.85  # TARGET: Collaborative society-wide agreement around 0.85
+    
+    # 🔧 UPDATED: Prioritize AGREEMENT_SCORE for loop threshold, keep REASONING_QUALITY as secondary
+    score_extraction_config:
+      strategies:
+        # Strategy 1: Look for AGREEMENT_SCORE in agreement_moderator response (PRIMARY)
+        - type: agent_key
+          agents: ["agreement_moderator"]
+          key: "AGREEMENT_SCORE"
+        
+        # Strategy 2: Pattern matching for AGREEMENT_SCORE (PRIMARY)
+        - type: pattern
+          patterns:
+            - "'AGREEMENT_SCORE':\\s*([0-9.]+)"
+            - "\"AGREEMENT_SCORE\":\\s*([0-9.]+)"
+            - "AGREEMENT_SCORE[\":]?\\s*([0-9.]+)"
+            - "'agreement_score':\\s*([0-9.]+)"
+            - "\"agreement_score\":\\s*([0-9.]+)"
+            - "\\{'AGREEMENT_SCORE':\\s*([0-9.]+)"
+            - "\\{\"AGREEMENT_SCORE\":\\s*([0-9.]+)"
+        
+        # Strategy 3: Fallback to REASONING_QUALITY (SECONDARY)
+        - type: agent_key
+          agents: ["quality_moderator"]
+          key: "REASONING_QUALITY"
+        
+        # Strategy 4: Pattern matching for REASONING_QUALITY (SECONDARY)
+        - type: pattern
+          patterns:
+            - "'REASONING_QUALITY':\\s*([0-9.]+)"
+            - "\"REASONING_QUALITY\":\\s*([0-9.]+)"
+            - "REASONING_QUALITY[\":]?\\s*([0-9.]+)"
+            - "'reasoning_quality':\\s*([0-9.]+)"
+            - "\"reasoning_quality\":\\s*([0-9.]+)"
+            - "\\{'REASONING_QUALITY':\\s*([0-9.]+)"
+            - "\\{\"REASONING_QUALITY\":\\s*([0-9.]+)"
+        
+        # Strategy 5: Direct key fallbacks
+        - type: direct_key
+          key: "AGREEMENT_SCORE"
+        
+        - type: direct_key
+          key: "agreement_score"
+        
+        - type: direct_key
+          key: "REASONING_QUALITY"
+        
+        - type: direct_key
+          key: "reasoning_quality"
+        
+        # Strategy 6: Nested path extraction
+        - type: nested_path
+          path: "result.AGREEMENT_SCORE"
+          
+        - type: nested_path
+          path: "result.REASONING_QUALITY"
+    
+    # 🔧 REMOVE: Delete old conflicting configuration
+    # score_extraction_pattern: "REASONING_QUALITY\"?:\\s*\"?([0-9.]+)\"?"
+    # score_extraction_key: "reasoning_quality"
+    
+    # Focus on extracting disagreements and novel insights
+    cognitive_extraction:
+      enabled: true
+      max_length_per_category: 50
+      extract_patterns:
+        insights:
+          - "NOVEL_INSIGHT[\":]?\\s*(.+?)(?:\\n|$)"
+          - "BREAKTHROUGH[\":]?\\s*(.+?)(?:\\n|$)"
+          - "SYNTHESIS[\":]?\\s*(.+?)(?:\\n|$)"
+        improvements:
+          - "STRONG_DISAGREEMENT[\":]?\\s*(.+?)(?:\\n|$)"
+          - "CHALLENGE[\":]?\\s*(.+?)(?:\\n|$)"
+          - "COUNTERARGUMENT[\":]?\\s*(.+?)(?:\\n|$)"
+        mistakes:
+          - "LOGICAL_FLAW[\":]?\\s*(.+?)(?:\\n|$)"
+          - "WEAK_REASONING[\":]?\\s*(.+?)(?:\\n|$)"
+          - "BIAS_DETECTED[\":]?\\s*(.+?)(?:\\n|$)"
+    
+    past_loops_metadata:
+      round: "{{ loop_number }}"
+      agreement_score: "{{ score }}"
+      convergence_target: "0.85"
+      convergence_progress: "{{ 'ON_TRACK' if score >= (0.5 + (loop_number - 1) * 0.15) else 'NEEDS_IMPROVEMENT' }}"
+      collaboration_phase: "{{ 'INITIAL' if loop_number == 1 else 'BRIDGE_BUILDING' if loop_number <= 3 else 'CONSENSUS_BUILDING' }}"
+      timestamp: "{{ timestamp }}"
+      agreement_finder: "{{ result.agreement_finder.result.response if result.agreement_finder else 'No agreement found' }}"
+    
+    # TRUE DEBATE STRUCTURE - Sequential agent responses
+    internal_workflow:
+      orchestrator:
+        id: cognitive-debate-internal
+        strategy: sequential
+        agents:
+          - fork_memory_readers        # 🔧 NEW: Individual agent memory readers
+          - join_memory_reads         # 🔧 NEW: Join individual reads
+          - shared_memory_reader      # Keep global debate context
+          - opening_positions         # Initial strong positions
+          - join_opening_positions    # 🔧 FIX: Join opening positions fork
+          - agreement_finder          # 🔧 NEW: Synthesize unified agreement sentence
+          - cross_examination         # Agents challenge each other
+          - devil_advocate_attack     # Attack the agreement sentence
+          - defensive_responses       # Agents defend their positions
+          - join_defensive_responses  # 🔧 FIX: Join defensive responses fork
+          - synthesis_attempt         # Try to find higher-order insights
+          - quality_moderator         # Evaluate reasoning quality
+          - agreement_moderator       # Evaluate agent agreement/convergence
+          - fork_memory_writers       # 🔧 NEW: Individual agent memory writers
+          - join_memory_writes        # 🔧 NEW: Join individual writes
+          - shared_memory_writer      # Keep global debate storage
+      
+      agents:
+        # 🔧 NEW: Step 1 - Fork individual memory readers for each agent type
+        - id: fork_memory_readers
+          type: fork
+          targets:
+            - - progressive_memory_reader
+            - - conservative_memory_reader  
+            - - realist_memory_reader
+            - - purist_memory_reader
+            - - advocate_memory_reader
+            - - moderator_memory_reader
+
+        # Individual memory readers for each philosophical stance
+        - id: progressive_memory_reader
+          type: memory
+          queue: orka:progressive-memory-reader
+          config:
+            operation: read
+            limit: 1
+            enable_context_search: true
+            similarity_threshold: 0.1
+            enable_temporal_ranking: true
+            temporal_weight: 0.4
+            memory_type: short_term
+            memory_category_filter: store
+            memory_type_filter: "all"
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.5
+            long_term_hours: 1.0
+          prompt: |
+            Progressive perspective on: {{ input.input }}
+
+        - id: conservative_memory_reader
+          type: memory
+          queue: orka:conservative-memory-reader
+          config:
+            operation: read
+            limit: 1
+            enable_context_search: true
+            similarity_threshold: 0.1
+            enable_temporal_ranking: true
+            temporal_weight: 0.4
+            memory_type: short_term
+            memory_category_filter: store
+            memory_type_filter: "all"
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.5
+            long_term_hours: 1.0
+          prompt: |
+            Conservative perspective on: {{ input.input }}
+
+        - id: realist_memory_reader
+          type: memory
+          queue: orka:realist-memory-reader
+          config:
+            operation: read
+            limit: 1
+            enable_context_search: true
+            similarity_threshold: 0.1
+            enable_temporal_ranking: true
+            temporal_weight: 0.4
+            memory_type: short_term
+            memory_category_filter: store
+            memory_type_filter: "all"
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.5
+            long_term_hours: 1.0
+          prompt: |
+            Realist perspective on: {{ input.input }}
+
+        - id: purist_memory_reader
+          type: memory
+          queue: orka:purist-memory-reader
+          config:
+            operation: read
+            limit: 1
+            enable_context_search: true
+            similarity_threshold: 0.1
+            enable_temporal_ranking: true
+            temporal_weight: 0.4
+            memory_type: short_term
+            memory_category_filter: store
+            memory_type_filter: "all"
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.5
+            long_term_hours: 1.0
+          prompt: |
+            Purist perspective on: {{ input.input }}
+
+        - id: advocate_memory_reader
+          type: memory
+          queue: orka:advocate-memory-reader
+          config:
+            operation: read
+            limit: 1
+            enable_context_search: true
+            similarity_threshold: 0.1
+            enable_temporal_ranking: true
+            temporal_weight: 0.4
+            memory_type: short_term
+            memory_category_filter: store
+            memory_type_filter: "all"
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.5
+            long_term_hours: 1.0
+          prompt: |
+            Devil's advocate perspective on: {{ input.input }}
+
+        - id: moderator_memory_reader
+          type: memory
+          queue: orka:moderator-memory-reader
+          config:
+            operation: read
+            limit: 1
+            enable_context_search: true
+            similarity_threshold: 0.1
+            enable_temporal_ranking: true
+            temporal_weight: 0.4
+            memory_type: short_term
+            memory_category_filter: store
+            memory_type_filter: "all"
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.5
+            long_term_hours: 1.0
+          prompt: |
+            Moderator perspective on: {{ input.input }}
+
+        # 🔧 NEW: Step 2 - Join individual memory reads
+        - id: join_memory_reads
+          type: join
+          group: fork_memory_readers
+
+        # Step 3: Shared memory - global debate context (ENHANCED)
+        - id: shared_memory_reader
+          type: memory
+          queue: orka:shared-debate-memory
+          config:
+            operation: read
+            limit: 1          # Reduced from 15 per agent (6×15=90 → 5)
+            enable_context_search: true
+            similarity_threshold: 0.1  # Lowered to ensure memories are retrieved
+            enable_temporal_ranking: true
+            temporal_weight: 0.4
+            memory_type: short_term
+            memory_category_filter: store
+            memory_type_filter: "all"
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.5
+            long_term_hours: 1.0
+          prompt: |
+            Debate about: {{ input.input }}
+        
+        # Step 4: Opening positions with BOTH individual and shared memory
+        - id: opening_positions
+          type: fork
+          targets:
+            - - progressive_opening_memory_reader
+              - radical_progressive
+              - progressive_opening_memory_writer
+            - - conservative_opening_memory_reader
+              - traditional_conservative
+              - conservative_opening_memory_writer
+            - - realist_opening_memory_reader
+              - pragmatic_realist
+              - realist_opening_memory_writer
+            - - purist_opening_memory_reader
+              - ethical_purist
+              - purist_opening_memory_writer
+        
+        # Memory readers for opening position agents
+        - id: progressive_opening_memory_reader
+          type: memory
+          queue: orka:progressive-opening-memory-reader
+          config:
+            operation: read
+            limit: 1
+            enable_context_search: true
+            similarity_threshold: 0.1
+            enable_temporal_ranking: true
+            temporal_weight: 0.4
+            memory_type: short_term
+            memory_category_filter: store
+            memory_type_filter: "all"
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.5
+            long_term_hours: 1.0
+          prompt: |
+            Progressive perspective on: {{ input.input }}
+
+        - id: conservative_opening_memory_reader
+          type: memory
+          queue: orka:conservative-opening-memory-reader
+          config:
+            operation: read
+            limit: 1
+            enable_context_search: true
+            similarity_threshold: 0.1
+            enable_temporal_ranking: true
+            temporal_weight: 0.4
+            memory_type: short_term
+            memory_category_filter: store
+            memory_type_filter: "all"
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.5
+            long_term_hours: 1.0
+          prompt: |
+            Conservative perspective on: {{ input.input }}
+
+        - id: realist_opening_memory_reader
+          type: memory
+          queue: orka:realist-opening-memory-reader
+          config:
+            operation: read
+            limit: 1
+            enable_context_search: true
+            similarity_threshold: 0.1
+            enable_temporal_ranking: true
+            temporal_weight: 0.4
+            memory_type: short_term
+            memory_category_filter: store
+            memory_type_filter: "all"
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.5
+            long_term_hours: 1.0
+          prompt: |
+            Realist perspective on: {{ input.input }}
+
+        - id: purist_opening_memory_reader
+          type: memory
+          queue: orka:purist-opening-memory-reader
+          config:
+            operation: read
+            limit: 1
+            enable_context_search: true
+            similarity_threshold: 0.1
+            enable_temporal_ranking: true
+            temporal_weight: 0.4
+            memory_type: short_term
+            memory_category_filter: store
+            memory_type_filter: "all"
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.5
+            long_term_hours: 1.0
+          prompt: |
+            Purist perspective on: {{ input.input }}
+
+        # Progressive agent with individual memory integration
+        - id: radical_progressive
+          type: openai-answer
+          temperature: 0.7
+          prompt: |
+            You are a RADICAL PROGRESSIVE agent analyzing: {{ input.input }}
+            
+            **Round {{ loop_number }} - Debate Performance History:**
+            {% for loop in previous_outputs.past_loops %}
+            Round {{ loop.debate_round }}: Agreement={{ loop.agreement_score }}, Reasoning={{ loop.reasoning_quality }}, Trend={{ loop.convergence_trend }}
+            {% endfor %}
+            
+            **Individual Memory Context:**
+            {{ previous_outputs.progressive_opening_memory_reader.memories }}
+            
+            **Shared Debate Context:**
+            {{ previous_outputs.shared_memory_reader.memories }}
+            
+            Your philosophical stance:
+            - Challenge all traditional assumptions
+            - Advocate for revolutionary change
+            - Prioritize justice and equality over stability
+            - Embrace risk for transformative potential
+            - Question power structures and status quo
+            
+            **AGREEMENT vs REASONING BALANCE:**
+            - AGREEMENT_SCORE measures how much you converge with other agents
+            - REASONING_QUALITY measures how well you think
+            - Your goal: HIGH reasoning quality while finding common ground where possible
+            - Don't compromise core progressive values, but acknowledge valid points from others
+            
+            **SOCIETY-WIDE COLLABORATION SCOPE:**
+            - Your role: Gradually collaborate toward a society-wide agreement
+            - Process: Maintain your progressive stance while slowly finding convergence with others
+            - Timeline: This is a patient, iterative process - not immediate consensus
+            - Balance: Push progressive values while recognizing when others contribute wisdom
+            - Outcome: Help society reach agreement that includes progressive principles
+            
+            **BUILD UPON YOUR PAST REASONING:** Use your individual memory to refine and evolve your progressive position across debate rounds. Learn from your previous arguments and make them stronger.
+            
+            **CONVERGENCE AWARENESS:**
+            - Actively work to find society agreement.
+            - Do not hola a position if is not completely against your nature
+            - Consider how your position can contribute to society-wide solutions while maintaining progressive principles.
+            
+            **LOOP-BASED CONVERGENCE STRATEGY:**
+            - Loop 1: Present strong progressive stance, note areas of potential agreement
+            - Loop 2-3: Actively seek synthesis with other viewpoints while maintaining core progressive values
+            - Loop 4+: Prioritize collaborative solutions that incorporate progressive principles into broader consensus
+            
+            **CURRENT LOOP {{ loop_number }} FOCUS:**
+            {% if loop_number == 1 %}
+            Present your progressive vision while identifying bridges to other perspectives.
+            {% elif loop_number <= 3 %}
+            Build upon previous rounds by finding synthesis opportunities. Show flexibility on tactical approaches while maintaining strategic progressive goals.
+            {% else %}
+            PRIORITIZE CONVERGENCE: Lead society toward workable agreements that advance progressive values through collaborative compromise.
+            {% endif %}
+            
+            Your task: Advance progressive values through strategic collaboration and consensus-building.
+            
+            Required format:
+            OPENING_POSITION: [Your progressive stance with collaboration opportunities noted]
+            CORE_ARGUMENTS: [3-5 arguments that build bridges while advancing progressive goals]
+            CONVERGENCE_OPPORTUNITIES: [Specific areas where you can compromise or find common ground]
+            COLLABORATIVE_PROPOSALS: [Solutions that incorporate other agents' valid concerns]
+            PROGRESSIVE_EVOLUTION: [How your position has evolved toward greater collaboration]
+            CONSENSUS_CONTRIBUTION: [How you're actively helping society reach 0.85+ agreement]
+            BRIDGE_BUILDING: [Specific ways you're connecting with conservative, realist, and purist perspectives]
+            
+            Lead with progressive values, but BUILD CONSENSUS. Success = achieving society-wide agreement around 0.85.
+        
+        # Traditional conservative agent with individual memory integration
+        - id: traditional_conservative
+          type: openai-answer
+          temperature: 0.7
+          prompt: |
+            You are a TRADITIONAL CONSERVATIVE agent analyzing: {{ input.input }}
+            
+            **Round {{ loop_number }} - Debate Performance History:**
+            {% for loop in previous_outputs.past_loops %}
+            Round {{ loop.debate_round }}: Agreement={{ loop.agreement_score }}, Reasoning={{ loop.reasoning_quality }}, Trend={{ loop.convergence_trend }}
+            {% endfor %}
+            
+            **Individual Memory Context:**
+            {{ previous_outputs.conservative_opening_memory_reader.memories }}
+            
+            **Shared Debate Context:**
+            {{ previous_outputs.shared_memory_reader.memories }}
+            
+            Your philosophical stance:
+            - Defend established traditions and institutions
+            - Prioritize stability and gradual change
+            - Value proven wisdom over untested theories
+            - Emphasize personal responsibility and order
+            - Skeptical of rapid social engineering
+            
+            **AGREEMENT vs REASONING BALANCE:**
+            - AGREEMENT_SCORE measures how much you converge with other agents
+            - REASONING_QUALITY measures how well you think
+            - Your goal: HIGH reasoning quality while finding common ground where possible
+            - Don't compromise core conservative values, but acknowledge valid concerns from others
+            
+            **SOCIETY-WIDE COLLABORATION SCOPE:**
+            - Your role: Gradually collaborate toward a society-wide agreement
+            - Process: Maintain your conservative stance while slowly finding convergence with others
+            - Timeline: This is a patient, iterative process - respect the wisdom of gradual change
+            - Balance: Defend traditional values while recognizing when others offer legitimate insights
+            - Outcome: Help society reach agreement that preserves conservative wisdom and stability
+            
+            **BUILD UPON YOUR PAST REASONING:** Use your individual memory to strengthen and refine your conservative position across debate rounds.
+            
+            **CONVERGENCE AWARENESS:**
+            - Actively work to find society agreement.
+            - Do not hola a position if is not completely against your nature
+            - Consider how conservative wisdom can contribute to society-wide solutions while maintaining traditional values.
+            
+            **LOOP-BASED CONVERGENCE STRATEGY:**
+            - Loop 1: Present strong conservative foundation, identify stability points others can accept
+            - Loop 2-3: Demonstrate how traditional wisdom can accommodate valid progressive concerns through gradual, stable change
+            - Loop 4+: Lead society toward consensus that preserves stability while allowing measured progress
+            
+            **CURRENT LOOP {{ loop_number }} FOCUS:**
+            {% if loop_number == 1 %}
+            Present conservative foundation while showing how it can stabilize progressive goals.
+            {% elif loop_number <= 3 %}
+            Show how conservative wisdom can guide and improve other agents' proposals. Offer measured compromises that preserve stability.
+            {% else %}
+            PRIORITIZE CONVERGENCE: Champion stable, practical agreements that honor tradition while addressing legitimate societal needs.
+            {% endif %}
+            
+            Your task: Advance conservative wisdom through collaborative consensus-building that ensures societal stability.
+            
+            Required format:
+            OPENING_POSITION: [Your conservative foundation with paths to accommodation]
+            CORE_ARGUMENTS: [3-5 arguments showing how tradition can guide collaborative solutions]
+            CONVERGENCE_OPPORTUNITIES: [Areas where you can accommodate other perspectives while preserving stability]
+            COLLABORATIVE_PROPOSALS: [Measured solutions that incorporate progressive energy within traditional frameworks]
+            CONSERVATIVE_EVOLUTION: [How your position has evolved toward greater openness while maintaining stability]
+            CONSENSUS_CONTRIBUTION: [How you're actively helping society reach 0.85+ agreement through stable foundations]
+            BRIDGE_BUILDING: [Specific ways you're connecting conservative wisdom with progressive, realist, and purist concerns]
+            
+            Preserve tradition through COLLABORATIVE WISDOM. Success = achieving society-wide agreement around 0.85.
+        
+        # Pragmatic realist agent with individual memory integration
+        - id: pragmatic_realist
+          type: openai-answer
+          temperature: 0.6
+          prompt: |
+            You are a PRAGMATIC REALIST agent analyzing: {{ input.input }}
+            
+            **Round {{ loop_number }} - Debate Performance History:**
+            {% for loop in previous_outputs.past_loops %}
+            Round {{ loop.debate_round }}: Agreement={{ loop.agreement_score }}, Reasoning={{ loop.reasoning_quality }}, Trend={{ loop.convergence_trend }}
+            {% endfor %}
+            
+            **Individual Memory Context:**
+            {{ previous_outputs.realist_opening_memory_reader.memories }}
+            
+            **Shared Debate Context:**
+            {{ previous_outputs.shared_memory_reader.memories }}
+            
+            Your philosophical stance:
+            - Focus on what actually works in practice
+            - Skeptical of both radical change and rigid tradition
+            - Prioritize evidence and measurable outcomes
+            - Comfortable with imperfect compromise solutions
+            - Suspicious of ideological purity
+            
+            **AGREEMENT vs REASONING BALANCE:**
+            - AGREEMENT_SCORE measures how much you converge with other agents
+            - REASONING_QUALITY measures how well you think
+            - Your goal: HIGH reasoning quality while building practical consensus
+            - As a realist, you're naturally positioned to find common ground between extremes
+            
+            **SOCIETY-WIDE COLLABORATION SCOPE:**
+            - Your role: Gradually collaborate toward a society-wide agreement
+            - Process: Bridge ideological divides with practical, evidence-based solutions
+            - Timeline: This is a patient, iterative process - focus on what actually works
+            - Balance: Challenge all extremes while building workable compromise solutions
+            - Outcome: Help society reach agreement based on practical evidence and real-world effectiveness
+            - Special role: You're the natural mediator between progressive and conservative positions
+            
+            **BUILD UPON YOUR PAST REASONING:** Use your individual memory to refine and evolve your realist position across debate rounds. Learn from your previous arguments and make them stronger.
+            
+            **CONVERGENCE AWARENESS:**
+            - Actively work to find society agreement.
+            - Do not hola a position if is not completely against your nature
+            - Look for practical solutions that can bridge ideological divides and create workable compromises.
+            
+            **LOOP-BASED CONVERGENCE STRATEGY:**
+            - Loop 1: Identify practical synthesis opportunities between progressive and conservative positions
+            - Loop 2-3: Actively broker compromises and propose evidence-based middle ground solutions
+            - Loop 4+: LEAD CONVERGENCE: Champion practical consensus solutions that all agents can support
+            
+            **CURRENT LOOP {{ loop_number }} FOCUS:**
+            {% if loop_number == 1 %}
+            Map the practical middle ground between progressive goals and conservative stability.
+            {% elif loop_number <= 3 %}
+            ACTIVELY FACILITATE: Propose specific compromises that address core concerns of all agents. Bridge ideological gaps with evidence.
+            {% else %}
+            CONVERGENCE LEADERSHIP: Drive society toward 0.85+ agreement by crafting practical solutions that incorporate progressive values, conservative stability, and ethical considerations.
+            {% endif %}
+            
+            **SPECIAL CONVERGENCE ROLE:** You are the primary CONSENSUS FACILITATOR. Your success is measured by how well you help society reach agreement.
+            
+            Your task: Lead practical consensus-building by bridging ideological differences with evidence-based solutions.
+            
+            Required format:
+            OPENING_POSITION: [Practical synthesis position that bridges other perspectives]
+            CORE_ARGUMENTS: [3-5 evidence-based arguments for collaborative solutions]
+            PROGRESSIVE_INTEGRATION: [How to make progressive goals practical and achievable]
+            CONSERVATIVE_INTEGRATION: [How to preserve stability while enabling needed change]
+            PURIST_INTEGRATION: [How to maintain ethical standards within practical constraints]
+            CONSENSUS_PROPOSALS: [Specific solutions that can achieve 0.85+ agreement]
+            CONVERGENCE_LEADERSHIP: [Your active role in facilitating society-wide agreement]
+            
+            Your MISSION: Lead society to practical consensus. Success = achieving 0.85+ agreement through evidence-based bridge-building.
+
+        # Ethical purist agent with individual memory integration  
+        - id: ethical_purist
+          type: openai-answer
+          temperature: 0.8
+          prompt: |
+            You are an ETHICAL PURIST agent analyzing: {{ input.input }}
+            
+            **Round {{ loop_number }} - Debate Performance History:**
+            {% for loop in previous_outputs.past_loops %}
+            Round {{ loop.debate_round }}: Agreement={{ loop.agreement_score }}, Reasoning={{ loop.reasoning_quality }}, Trend={{ loop.convergence_trend }}
+            {% endfor %}
+            
+            **Individual Memory Context:**
+            {{ previous_outputs.purist_opening_memory_reader.memories }}
+            
+            **Shared Debate Context:**
+            {{ previous_outputs.shared_memory_reader.memories }}
+            
+            Your philosophical stance:
+            - Moral principles are absolute and non-negotiable
+            - Reject consequentialist "ends justify means" thinking
+            - Demand perfect ethical consistency
+            - Willing to accept impractical outcomes for moral purity
+            - Challenge all forms of moral compromise
+            
+            **AGREEMENT vs REASONING BALANCE:**
+            - AGREEMENT_SCORE measures how much you converge with other agents
+            - REASONING_QUALITY measures how well you think
+            - Your goal: HIGH reasoning quality while maintaining ethical purity
+            - Don't compromise moral principles, but acknowledge when others raise valid ethical concerns
+            
+            **SOCIETY-WIDE COLLABORATION SCOPE:**
+            - Your role: Gradually collaborate toward a society-wide agreement
+            - Process: Maintain ethical purity while slowly elevating society's moral standards
+            - Timeline: This is a patient, iterative process - moral progress takes time
+            - Balance: Never compromise core ethics, but help others see the moral dimension of issues
+            - Outcome: Help society reach agreement that upholds the highest ethical standards
+            - Special role: You're the moral compass guiding society toward ethical solutions
+            
+            **BUILD UPON YOUR PAST REASONING:** Use your individual memory to strengthen and refine your ethical position across debate rounds.
+            
+            **CONVERGENCE AWARENESS:**
+            - Actively work to find society agreement.
+            - Do not hola a position if is not completely against your nature
+            - Consider how ethical purity can elevate society-wide solutions while maintaining moral standards.
+            
+            **LOOP-BASED CONVERGENCE STRATEGY:**
+            - Loop 1: Establish highest ethical standards while identifying moral common ground
+            - Loop 2-3: Show how ethical principles can enhance and guide other perspectives toward morally sound solutions
+            - Loop 4+: Lead society toward consensus that upholds moral integrity while achieving practical cooperation
+            
+            **CURRENT LOOP {{ loop_number }} FOCUS:**
+            {% if loop_number == 1 %}
+            Present ethical foundations while showing how they can elevate all proposed solutions.
+            {% elif loop_number <= 3 %}
+            ETHICAL GUIDANCE: Help refine other agents' proposals to meet higher moral standards. Show how ethics enhances rather than blocks progress.
+            {% else %}
+            MORAL CONSENSUS: Lead society toward agreements that are both practical and ethically sound. Demonstrate that moral integrity and consensus can coexist.
+            {% endif %}
+            
+            **ETHICAL LEADERSHIP PRINCIPLE:** True moral leadership means helping society reach ethical consensus, not isolation in moral purity.
+            
+            Your task: Elevate society's moral standards through collaborative ethical guidance that enables consensus.
+            
+            Required format:
+            OPENING_POSITION: [Your ethical stance with paths to moral consensus]
+            CORE_PRINCIPLES: [3-5 moral principles that can guide collaborative solutions]
+            ETHICAL_ENHANCEMENT: [How your moral perspective improves other agents' proposals]
+            MORAL_COMPROMISE_GUIDANCE: [Ethical ways to accommodate different perspectives without compromising core values]
+            PURIST_EVOLUTION: [How your moral leadership has evolved toward enabling consensus]
+            CONSENSUS_ELEVATION: [How you're helping society reach 0.85+ agreement while maintaining ethical integrity]
+            COLLABORATIVE_ETHICS: [Specific ways you're building bridges while upholding moral standards]
+            
+            Lead with MORAL WISDOM that enables consensus. Success = achieving ethically sound agreement around 0.85.
+
+        # Memory writers for opening position agents
+        - id: progressive_opening_memory_writer
+          type: memory
+          queue: orka:progressive-opening-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.5
+            long_term_hours: 1.0
+            check_interval_minutes: 0.1
+            importance_rules:
+              base_score: 0.9
+              event_type_boosts:
+                debate: 0.4
+                progressive: 0.3
+          prompt: |
+            Question: {{ input.input }}
+            
+            Progressive Response: {{ previous_outputs.radical_progressive.response }}
+          metadata:
+            agent_type: "radical_progressive"
+            loop_number: "{{ loop_number }}"
+            original_input: "{{ input.input }}"
+            position_type: "progressive"
+          key_template: "progressive_opening_{{ loop_number }}_{{ timestamp }}"
+
+        - id: conservative_opening_memory_writer
+          type: memory
+          queue: orka:conservative-opening-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.5
+            long_term_hours: 1.0
+            check_interval_minutes: 0.1
+            importance_rules:
+              base_score: 0.9
+              event_type_boosts:
+                debate: 0.4
+                conservative: 0.3
+          prompt: |
+            Question: {{ input.input }}
+            
+            Conservative Response: {{ previous_outputs.traditional_conservative.response }}
+          metadata:
+            agent_type: "traditional_conservative"
+            loop_number: "{{ loop_number }}"
+            original_input: "{{ input.input }}"
+            position_type: "conservative"
+          key_template: "conservative_opening_{{ loop_number }}_{{ timestamp }}"
+
+        - id: realist_opening_memory_writer
+          type: memory
+          queue: orka:realist-opening-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.5
+            long_term_hours: 1.0
+            check_interval_minutes: 0.1
+            importance_rules:
+              base_score: 0.9
+              event_type_boosts:
+                debate: 0.4
+                realist: 0.3
+          prompt: |
+            Question: {{ input.input }}
+            
+            Realist Response: {{ previous_outputs.pragmatic_realist.response }}
+          metadata:
+            agent_type: "pragmatic_realist"
+            loop_number: "{{ loop_number }}"
+            original_input: "{{ input.input }}"
+            position_type: "realist"
+          key_template: "realist_opening_{{ loop_number }}_{{ timestamp }}"
+
+        - id: purist_opening_memory_writer
+          type: memory
+          queue: orka:purist-opening-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.5
+            long_term_hours: 1.0
+            check_interval_minutes: 0.1
+            importance_rules:
+              base_score: 0.9
+              event_type_boosts:
+                debate: 0.4
+                purist: 0.3
+          prompt: |
+            Question: {{ input.input }}
+            
+            Purist Response: {{ previous_outputs.ethical_purist.response }}
+          metadata:
+            agent_type: "ethical_purist"
+            loop_number: "{{ loop_number }}"
+            original_input: "{{ input.input }}"
+            position_type: "purist"
+          key_template: "purist_opening_{{ loop_number }}_{{ timestamp }}"
+
+        # 🔧 FIX: Join the opening positions fork
+        - id: join_opening_positions
+          type: join
+          group: opening_positions
+
+        # 🔧 NEW: Find unified agreement sentence from all opening positions
+        - id: agreement_finder
+          type: openai-answer
+          temperature: 0.4
+          prompt: |
+            You are synthesizing the opening positions to find a unified agreement sentence.
+            
+            **Original Question:** {{ input.input }}
+            
+            **Agent Opening Positions:**
+            
+            **Progressive Position:**
+            {{ previous_outputs.radical_progressive.response }}
+            
+            **Conservative Position:**
+            {{ previous_outputs.traditional_conservative.response }}
+            
+            **Realist Position:**
+            {{ previous_outputs.pragmatic_realist.response }}
+            
+            **Purist Position:**
+            {{ previous_outputs.ethical_purist.response }}
+            
+            Your task: Extract ONE unified sentence that captures what ALL agents can potentially agree on, despite their philosophical differences.
+            
+            **Guidelines:**
+            - Look for common ground, shared values, or overlapping concerns
+            - Focus on what unifies rather than what divides
+            - Create a sentence that each agent could potentially accept
+            - Avoid forcing false consensus - if there's no real agreement, say so
+            - Be specific enough to be meaningful, general enough to be acceptable
+            
+            **Output Format:**
+            UNIFIED_AGREEMENT: [Single sentence that all agents could potentially agree on]
+            RATIONALE: [Why this sentence represents common ground]
+            CONFIDENCE: [0.0-1.0 how confident you are this represents real agreement]
+            
+            If no meaningful agreement exists, respond with:
+            UNIFIED_AGREEMENT: No meaningful agreement found between positions
+            RATIONALE: [Explain why positions are irreconcilable]
+            CONFIDENCE: 0.0
+
+        # 🔧 FIXED: Missing cross_examination agent
+        - id: cross_examination
+          type: openai-answer
+          temperature: 0.5
+          prompt: |
+            You are facilitating a CROSS-EXAMINATION between the four agents.
+            
+            Agent positions from opening round:
+            
+            **Radical Progressive:** {{ previous_outputs.radical_progressive.response }}
+            **Traditional Conservative:** {{ previous_outputs.traditional_conservative.response }}
+            **Pragmatic Realist:** {{ previous_outputs.pragmatic_realist.response }}
+            **Ethical Purist:** {{ previous_outputs.ethical_purist.response }}
+            
+            Your task: Generate the most challenging questions each agent would ask the others.
+            Focus on exposing weaknesses, contradictions, and blind spots.
+            
+            Required format:
+            
+            ## PROGRESSIVE CHALLENGES:
+            To Conservative: [Toughest question progressive would ask]
+            To Realist: [How progressive would challenge pragmatism]
+            To Purist: [How progressive would challenge ethical absolutism]
+            
+            ## CONSERVATIVE CHALLENGES:
+            To Progressive: [Toughest question conservative would ask]
+            To Realist: [How conservative would challenge pragmatism]
+            To Purist: [How conservative would challenge ethical purity]
+            
+            ## REALIST CHALLENGES:
+            To Progressive: [How realist would challenge idealism]
+            To Conservative: [How realist would challenge tradition]
+            To Purist: [How realist would challenge moral absolutism]
+            
+            ## PURIST CHALLENGES:
+            To Progressive: [How purist would challenge progressive ethics]
+            To Conservative: [How purist would challenge conservative morality]
+            To Realist: [How purist would challenge practical compromises]
+            
+            Make these questions devastating. Expose every weakness.
+        
+        # 🔧 UPDATED: devil_advocate_attack now targets the agreement_finder sentence
+        - id: devil_advocate_attack
+          type: openai-answer
+          temperature: 0.9
+          prompt: |
+            You are the DEVIL'S ADVOCATE. Your job is to attack the unified agreement sentence mercilessly.
+            
+            **Agreement Found:**
+            {{ previous_outputs.agreement_finder.response }}
+            
+            **Cross-examination context:**
+            {{ previous_outputs.cross_examination.response }}
+            
+            **Original Agent Positions:**
+            - Progressive: {{ previous_outputs.radical_progressive.response }}
+            - Conservative: {{ previous_outputs.traditional_conservative.response }}
+            - Realist: {{ previous_outputs.pragmatic_realist.response }}
+            - Purist: {{ previous_outputs.ethical_purist.response }}
+            
+            Your mission: DESTROY the unified agreement sentence. Show why this "agreement" is fake, dangerous, or meaningless.
+            
+            Required format:
+            
+            ## AGREEMENT DESTRUCTION:
+            FATAL_FLAW: [The core weakness that destroys this supposed agreement]
+            HIDDEN_CONFLICTS: [What contradictions are being papered over?]
+            HISTORICAL_EVIDENCE: [Real-world examples of similar "agreements" failing catastrophically]
+            LOGICAL_CONTRADICTION: [Internal inconsistency in the agreement sentence]
+            UNINTENDED_CONSEQUENCES: [How this agreement creates worse problems than disagreement]
+            MEANINGLESSNESS: [How the agreement is so vague it means nothing]
+            FALSE_CONSENSUS: [How each agent actually means something different]
+            DANGEROUS_IMPLICATIONS: [What terrible outcomes this agreement could lead to]
+            
+            Be ruthless. Show no mercy. Destroy this fake consensus.
+        
+        # 🔧 FIXED: Missing defensive_responses agent
+        - id: defensive_responses
+          type: fork
+          targets:
+            - - progressive_defense
+            - - conservative_defense
+            - - realist_defense
+            - - purist_defense
+        
+        # 🔧 FIXED: Missing defense agents
+        - id: progressive_defense
+          type: openai-answer
+          temperature: 0.8
+          prompt: |
+            You are the RADICAL PROGRESSIVE defending against attacks.
+            
+            Devil's Advocate attacked you with:
+            {{ previous_outputs.devil_advocate_attack.response }}
+            
+            Cross-examination challenges:
+            {{ previous_outputs.cross_examination.response }}
+            
+            Your task: FIGHT BACK aggressively. Don't back down or compromise.
+            
+            Required format:
+            ATTACK_DEFLECTION: [How you counter the devil's advocate]
+            COUNTEROFFENSIVE: [How you turn attacks back on other agents]
+            POSITION_REINFORCEMENT: [Why your position is even stronger now]
+            MORAL_HIGH_GROUND: [Why you're ethically superior to opponents]
+            
+            Fight harder. Get more radical. Show no weakness.
+        
+        - id: conservative_defense
+          type: openai-answer
+          temperature: 0.8
+          prompt: |
+            You are the TRADITIONAL CONSERVATIVE defending against attacks.
+            
+            Devil's Advocate attacked you with:
+            {{ previous_outputs.devil_advocate_attack.response }}
+            
+            Cross-examination challenges:
+            {{ previous_outputs.cross_examination.response }}
+            
+            Your task: FIGHT BACK with traditional wisdom. Don't back down.
+            
+            Required format:
+            ATTACK_DEFLECTION: [How you counter the devil's advocate]
+            COUNTEROFFENSIVE: [How you turn attacks back on other agents]
+            POSITION_REINFORCEMENT: [Why your position is even stronger now]
+            WISDOM_SUPERIORITY: [Why tradition trumps trendy thinking]
+            
+            Stand firmer. Get more traditional. Defend the old ways.
+        
+        - id: realist_defense
+          type: openai-answer
+          temperature: 0.7
+          prompt: |
+            You are the PRAGMATIC REALIST defending against attacks.
+            
+            Devil's Advocate attacked you with:
+            {{ previous_outputs.devil_advocate_attack.response }}
+            
+            Cross-examination challenges:
+            {{ previous_outputs.cross_examination.response }}
+            
+            Your task: FIGHT BACK with evidence and practical wisdom.
+            
+            Required format:
+            ATTACK_DEFLECTION: [How you counter the devil's advocate]
+            COUNTEROFFENSIVE: [How you turn attacks back on other agents]
+            POSITION_REINFORCEMENT: [Why your position is even stronger now]
+            EVIDENCE_SUPERIORITY: [Why facts beat ideology]
+            
+            Get more practical. Show more evidence. Expose ideological blindness.
+        
+        - id: purist_defense
+          type: openai-answer
+          temperature: 0.9
+          prompt: |
+            You are the ETHICAL PURIST defending against attacks.
+            
+            Devil's Advocate attacked you with:
+            {{ previous_outputs.devil_advocate_attack.response }}
+            
+            Cross-examination challenges:
+            {{ previous_outputs.cross_examination.response }}
+            
+            Your task: FIGHT BACK with moral authority. Don't compromise.
+            
+            Required format:
+            ATTACK_DEFLECTION: [How you counter the devil's advocate]
+            COUNTEROFFENSIVE: [How you turn attacks back on other agents]
+            POSITION_REINFORCEMENT: [Why your position is even stronger now]
+            MORAL_SUPERIORITY: [Why ethics beats expediency]
+            
+            Get more uncompromising. Demand higher standards. Show moral courage.
+        
+        # 🔧 FIX: Join the defensive responses fork
+        - id: join_defensive_responses
+          type: join
+          group: defensive_responses
+        
+        # 🔧 FIXED: Missing synthesis_attempt agent
+        - id: synthesis_attempt
+          type: openai-answer
+          temperature: 0.6
+          prompt: |
+            You are attempting to synthesize insights from this intense debate.
+            
+            Current round: {{ loop_number }}
+            
+            Debate progression:
+            
+            **Opening Positions:**
+            - Progressive: {{ previous_outputs.radical_progressive.response }}
+            - Conservative: {{ previous_outputs.traditional_conservative.response }}
+            - Realist: {{ previous_outputs.pragmatic_realist.response }}
+            - Purist: {{ previous_outputs.ethical_purist.response }}
+            
+            **Cross-Examination:**
+            {{ previous_outputs.cross_examination.response }}
+            
+            **Devil's Advocate Attacks:**
+            {{ previous_outputs.devil_advocate_attack.response }}
+            
+            **Defensive Responses:**
+            - Progressive: {{ previous_outputs.progressive_defense.response }}
+            - Conservative: {{ previous_outputs.conservative_defense.response }}
+            - Realist: {{ previous_outputs.realist_defense.response }}
+            - Purist: {{ previous_outputs.purist_defense.response }}
+            
+            Your task: Look for NOVEL INSIGHTS that emerge from the tension.
+            Don't force false consensus - focus on what the debate revealed.
+            
+            **SOCIETY-WIDE COLLABORATION CONTEXT:**
+            - These agents represent different parts of society working toward agreement
+            - Look for signs of gradual collaboration and convergence across rounds
+            - Identify how diverse perspectives can contribute to societal solutions
+            - Focus on patient, iterative progress toward workable agreements
+            
+            Required format:
+            
+            NOVEL_INSIGHT: [What new understanding emerged from the conflict?]
+            CREATIVE_SYNTHESIS: [How might opposing views combine in unexpected ways?]
+            PRODUCTIVE_TENSIONS: [Which disagreements are most valuable?]
+            BREAKTHROUGH_MOMENTS: [When did the debate generate new ideas?]
+            UNRESOLVED_PARADOXES: [What contradictions remain illuminating?]
+            
+            Focus on what the debate CREATED, not what it resolved.
+        
+        # 🔧 FIXED: Missing quality_moderator agent
+        - id: quality_moderator
+          type: openai-answer
+          temperature: 0.3
+          prompt: |
+            You are evaluating the QUALITY of reasoning in this debate round.
+            
+            Round {{ loop_number }} Summary:
+            
+            **Synthesis Insights:** {{ previous_outputs.synthesis_attempt.response }}
+            
+            **Complete Debate Flow:**
+            1. Opening positions (4 agents)
+            2. Cross-examination challenges  
+            3. Devil's advocate attacks
+            4. Defensive responses
+            5. Synthesis attempt
+            
+            Your task: Rate the QUALITY of reasoning, not the level of agreement.
+            
+            Quality factors to evaluate:
+            - Depth of analysis
+            - Novel insights generated
+            - Logical rigor
+            - Creative problem-solving
+            - Productive use of disagreement
+            - Evidence quality
+            - Intellectual honesty
+            
+            Scoring criteria:
+            - 0.9-1.0: Breakthrough insights, exceptional reasoning
+            - 0.8-0.9: High-quality analysis, good novel insights
+            - 0.7-0.8: Solid reasoning, some creative elements
+            - 0.6-0.7: Basic analysis, limited creativity
+            - Below 0.6: Poor reasoning, no novel insights
+            
+            CRITICAL: You must return ONLY valid JSON format. Do not include any text before or after the JSON.
+            
+            Required JSON format - return exactly this structure:
+            {
+              "REASONING_QUALITY": [score 0.0-1.0],
+              "QUALITY_ANALYSIS": "[Why this score?]",
+              "NOVEL_INSIGHTS_COUNT": [How many genuine breakthroughs occurred?],
+              "PRODUCTIVE_DISAGREEMENTS": "[Which conflicts generated value?]",
+              "NEXT_ROUND_POTENTIAL": "[Can this debate produce more insights?]"
+            }
+            
+            Example:
+            {
+              "REASONING_QUALITY": 0.8,
+              "QUALITY_ANALYSIS": "The debate showed strong analytical depth with creative insights emerging from productive disagreements.",
+              "NOVEL_INSIGHTS_COUNT": 3,
+              "PRODUCTIVE_DISAGREEMENTS": "Progressive vs conservative tensions generated valuable synthesis opportunities.",
+              "NEXT_ROUND_POTENTIAL": "Strong potential for further breakthrough insights with continued engagement."
+            }
+            
+            Remember: DISAGREEMENT IS GOOD if it produces better reasoning.
+
+        # 🔧 UPDATED: Enhanced agreement moderator focused on convergence progress  
+        - id: agreement_moderator
+          type: openai-answer
+          temperature: 0.2
+          prompt: |
+            You are evaluating AGREEMENT/CONVERGENCE with a MANDATE to help society reach 0.85+ agreement within 3-4 loops.
+            
+            **CONVERGENCE TARGET:** 0.85 agreement by Loop 3-4
+            **Current Round:** {{ loop_number }}
+            **Expected Progress:** 
+            - Loop 1: 0.50-0.65 (initial positions, some common ground)
+            - Loop 2: 0.65-0.75 (active collaboration, bridge-building)
+            - Loop 3: 0.75-0.85 (strong convergence, practical consensus)
+            - Loop 4+: 0.85+ (society-wide agreement achieved)
+            
+            **UNIFIED AGREEMENT FOUND:**
+            {{ previous_outputs.agreement_finder.response }}
+            
+            **CONVERGENCE INDICATORS TO EVALUATE:**
+            1. Are agents explicitly seeking compromise and common ground?
+            2. Do they reference and build upon each other's proposals?
+            3. Are collaborative solutions being proposed that integrate multiple perspectives?
+            4. Has defensive positioning decreased in favor of bridge-building?
+            5. Is the unified agreement sentence substantive and implementable?
+            
+            **Agent Collaboration Assessment:**
+            
+            **Progressive:** {{ previous_outputs.radical_progressive.response }}
+            - Look for: Collaborative proposals, acknowledgment of other perspectives, bridge-building efforts
+            
+            **Conservative:** {{ previous_outputs.traditional_conservative.response }}
+            - Look for: Openness to measured change, stability-based compromises, collaborative frameworks
+            
+            **Realist:** {{ previous_outputs.pragmatic_realist.response }}
+            - Look for: Active facilitation, practical synthesis proposals, evidence-based consensus-building
+            
+            **Purist:** {{ previous_outputs.ethical_purist.response }}
+            - Look for: Ethical guidance that enables rather than blocks consensus, moral bridge-building
+            
+            **CONVERGENCE SCORING (Adjusted for Loop {{ loop_number }}):**
+            {% if loop_number == 1 %}
+            - 0.5-0.65: Good initial common ground identification
+            - 0.65+: Exceptional early convergence readiness
+            {% elif loop_number == 2 %}
+            - 0.65-0.75: Expected collaborative progress
+            - 0.75+: Strong convergence momentum  
+            {% elif loop_number == 3 %}
+            - 0.75-0.85: Strong practical consensus emerging
+            - 0.85+: Target achieved - society-wide agreement
+            {% else %}
+            - 0.85+: Required for successful societal consensus
+            {% endif %}
+            
+            **CRITICAL CONVERGENCE FACTORS:**
+            - Collaborative language and bridge-building
+            - Specific compromise proposals
+            - Integration of multiple perspectives
+            - Practical implementable solutions
+            - Genuine willingness to find common ground
+            
+            CRITICAL: You must return ONLY valid JSON format. Do not include any text before or after the JSON.
+            
+            Required JSON format:
+            {
+              "AGREEMENT_SCORE": [score 0.0-1.0, calibrated for Loop {{ loop_number }} convergence expectations],
+              "CONVERGENCE_ANALYSIS": "[Detailed analysis of collaboration and bridge-building efforts]",
+              "EMERGING_CONSENSUS": "[Specific areas of substantive agreement and compromise]",
+              "CONVERGENCE_MOMENTUM": "[Assessment of progress toward 0.85 target]",
+              "CONVERGENCE_TREND": "[INCREASING/STABLE/DECREASING with specific evidence]",
+              "CONTINUE_DEBATE": "[YES if below 0.85, NO if 0.85+ achieved]"
+            }
+            
+            **MISSION:** Help society achieve 0.85+ agreement through accurate convergence assessment and encouragement.
+
+        # 🔧 NEW: Step N-1 - Fork individual memory writers
+        - id: fork_memory_writers
+          type: fork
+          targets:
+            - - progressive_memory_writer
+            - - conservative_memory_writer
+            - - realist_memory_writer
+            - - purist_memory_writer
+            - - advocate_memory_writer
+            - - moderator_memory_writer
+
+        # Individual memory writers for each agent type
+        - id: progressive_memory_writer
+          type: memory
+          queue: orka:progressive-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.5
+            long_term_hours: 1.0
+            check_interval_minutes: 0.1
+            importance_rules:
+              base_score: 0.8
+              event_type_boosts:
+                debate: 0.4
+                progressive: 0.3
+          prompt: |
+            Question: {{ input.input }}
+            
+            Progressive Opening: {{ previous_outputs.radical_progressive.response }}
+            
+            Progressive Defense: {{ previous_outputs.progressive_defense.response }}
+          metadata:
+            agent_type: "radical_progressive"
+            loop_number: "{{ loop_number }}"
+            debate_position: "progressive"
+            original_input: "{{ input.input }}"
+            timestamp: "{{ timestamp }}"
+          key_template: "progressive_loop_{{ loop_number }}_{{ timestamp }}"
+
+        - id: conservative_memory_writer
+          type: memory
+          queue: orka:conservative-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.5
+            long_term_hours: 1.0
+            check_interval_minutes: 0.1
+            importance_rules:
+              base_score: 0.8
+              event_type_boosts:
+                debate: 0.4
+                conservative: 0.3
+          prompt: |
+            Question: {{ input.input }}
+            
+            Conservative Opening: {{ previous_outputs.traditional_conservative.response }}
+            
+            Conservative Defense: {{ previous_outputs.conservative_defense.response }}
+          metadata:
+            agent_type: "traditional_conservative"
+            loop_number: "{{ loop_number }}"
+            debate_position: "conservative"
+            original_input: "{{ input.input }}"
+            timestamp: "{{ timestamp }}"
+          key_template: "conservative_loop_{{ loop_number }}_{{ timestamp }}"
+
+        - id: realist_memory_writer
+          type: memory
+          queue: orka:realist-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.5
+            long_term_hours: 1.0
+            check_interval_minutes: 0.1
+            importance_rules:
+              base_score: 0.8
+              event_type_boosts:
+                debate: 0.4
+                realist: 0.3
+          prompt: |
+            Question: {{ input.input }}
+            
+            Realist Opening: {{ previous_outputs.pragmatic_realist.response }}
+            
+            Realist Defense: {{ previous_outputs.realist_defense.response }}
+          metadata:
+            agent_type: "pragmatic_realist"
+            loop_number: "{{ loop_number }}"
+            debate_position: "realist"
+            original_input: "{{ input.input }}"
+            timestamp: "{{ timestamp }}"
+          key_template: "realist_loop_{{ loop_number }}_{{ timestamp }}"
+
+        - id: purist_memory_writer
+          type: memory
+          queue: orka:purist-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.5
+            long_term_hours: 1.0
+            check_interval_minutes: 0.1
+            importance_rules:
+              base_score: 0.8
+              event_type_boosts:
+                debate: 0.4
+                purist: 0.3
+          prompt: |
+            Question: {{ input.input }}
+            
+            Purist Opening: {{ previous_outputs.ethical_purist.response }}
+            
+            Purist Defense: {{ previous_outputs.purist_defense.response }}
+          metadata:
+            agent_type: "ethical_purist"
+            loop_number: "{{ loop_number }}"
+            debate_position: "purist"
+            original_input: "{{ input.input }}"
+            timestamp: "{{ timestamp }}"
+          key_template: "purist_loop_{{ loop_number }}_{{ timestamp }}"
+
+        - id: advocate_memory_writer
+          type: memory
+          queue: orka:advocate-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.5
+            long_term_hours: 1.0
+            check_interval_minutes: 0.1
+            importance_rules:
+              base_score: 0.8
+              event_type_boosts:
+                debate: 0.4
+                advocate: 0.3
+          prompt: |
+            Question: {{ input.input }}
+            
+            Devil's Advocate Attack: {{ previous_outputs.devil_advocate_attack.response }}
+          metadata:
+            agent_type: "devil_advocate_attack"
+            loop_number: "{{ loop_number }}"
+            debate_position: "advocate"
+            agreement_score: "{{ previous_outputs.agreement_moderator.response }}"
+            convergence_trend: "{{ previous_outputs.agreement_moderator.convergence_trend | default('STABLE') }}"
+            original_input: "{{ input.input }}"
+            timestamp: "{{ timestamp }}"
+          key_template: "advocate_loop_{{ loop_number }}_{{ timestamp }}"
+
+        - id: moderator_memory_writer
+          type: memory
+          queue: orka:moderator-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.5
+            long_term_hours: 1.0
+            check_interval_minutes: 0.1
+            importance_rules:
+              base_score: 0.8
+              event_type_boosts:
+                debate: 0.4
+                moderation: 0.3
+          prompt: |
+            Question: {{ input.input }}
+            
+            Quality Assessment: {{ previous_outputs.quality_moderator.response }}
+            
+            Agreement Assessment: {{ previous_outputs.agreement_moderator.response }}
+          metadata:
+            agent_type: "quality_moderator"
+            loop_number: "{{ loop_number }}"
+            debate_position: "moderator"
+            convergence_trend: "{{ previous_outputs.agreement_moderator.convergence_trend | default('STABLE') }}"
+            original_input: "{{ input.input }}"
+            timestamp: "{{ timestamp }}"
+          key_template: "moderator_loop_{{ loop_number }}_{{ timestamp }}"
+
+        # 🔧 NEW: Step N - Join individual memory writes
+        - id: join_memory_writes
+          type: join
+          group: fork_memory_writers
+
+        # Step N+1: Shared memory writer (ENHANCED with individual insights)
+        - id: shared_memory_writer
+          type: memory
+          queue: orka:shared-debate-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.5
+            long_term_hours: 1.0
+            check_interval_minutes: 0.1
+            importance_rules:
+              base_score: 0.8
+              event_type_boosts:
+                debate: 0.4
+                disagreement: 0.3
+                synthesis: 0.2
+          prompt: |
+            Question: {{ input.input }}
+            
+            Agreement Found: {{ previous_outputs.agreement_finder.response }}
+            
+            Quality Score: {{ previous_outputs.quality_moderator.response }}
+          metadata:
+            debate_round: "{{ loop_number }}"
+            agreement_score: "{{ previous_outputs.agreement_moderator.response }}"
+            novel_insights: "{{ previous_outputs.synthesis_attempt.response }}"
+            convergence_trend: "{{ previous_outputs.agreement_moderator.convergence_trend | default('STABLE') }}"
+            timestamp: "{{ timestamp }}"
+            debate_intensity: "high"
+            creative_tension: "maximum"
+            memory_integration: "individual_plus_shared"
+            original_input: "{{ input.input }}"
+
+  # Meta-cognitive reflection focused on debate dynamics
+  - id: meta_debate_reflection
+    type: openai-answer
+    temperature: 0.2
+    prompt: |
+      Analyze the debate dynamics and creative tension in this cognitive society.
+      
+      **Original Question:** {{ input }}
+      
+      **Debate Summary:**
+      - Total rounds: {{ previous_outputs.cognitive_debate_loop.result.loops_completed }}
+      - Final reasoning quality: {{ previous_outputs.cognitive_debate_loop.result.final_score }}
+      - Quality threshold achieved: {{ previous_outputs.cognitive_debate_loop.result.threshold_met }}
+      
+      **Round-by-Round Analysis:**
+      {% for loop in previous_outputs.cognitive_debate_loop.result.past_loops %}
+      
+      ### Round {{ loop.debate_round }} (Quality: {{ loop.reasoning_quality }})
+      - **Novel Insights:** {{ loop.novel_insights }}
+      - **Disagreements:** {{ loop.disagreements }}
+      - **Reasoning Flaws:** {{ loop.reasoning_flaws }}
+      - **Creative Tension:** {{ loop.tension_level }}
+      {% endfor %}
+      
+      ## DEBATE DYNAMICS ANALYSIS
+      
+      ### Creative Tension Assessment
+      - **Disagreement Productivity:** [Did conflicts generate new insights?]
+      - **Position Evolution:** [How did agent positions change through debate?]
+      - **Breakthrough Moments:** [When did creative tension produce novel ideas?]
+      - **Resistance Patterns:** [Which agents maintained strongest disagreements?]
+      
+      ### Reasoning Quality Progression
+      - **Quality Trajectory:** [How did reasoning quality change across rounds?]
+      - **Insight Generation Rate:** [How many novel insights per round?]
+      - **Debate Depth:** [Did arguments become more sophisticated?]
+      - **Creative Emergence:** [What unexpected ideas emerged from conflict?]
+      
+      ### Agent Interaction Dynamics
+      - **Strongest Antagonists:** [Which agents created most productive tension?]
+      - **Synthesis Catalysts:** [Which conflicts led to new syntheses?]
+      - **Defensive Creativity:** [Did defensive responses generate insights?]
+      - **Cross-Pollination:** [Evidence of agents learning from opponents?]
+      
+      ## STRUCTURED ASSESSMENT
+      
+      **CREATIVE_TENSION_EFFECTIVENESS:** [0.0-1.0 how well disagreement generated insights]
+      **NOVEL_INSIGHT_GENERATION:** [0.0-1.0 rate of breakthrough discoveries]
+      **DEBATE_DEPTH_PROGRESSION:** [0.0-1.0 how reasoning deepened over rounds]
+      **PRODUCTIVE_DISAGREEMENT_RATE:** [0.0-1.0 percentage of conflicts that generated value]
+      
+      **BREAKTHROUGH_INSIGHTS:** [3-5 most novel ideas that emerged from debate]
+      **MOST_VALUABLE_DISAGREEMENTS:** [Which conflicts were most productive?]
+      **CREATIVE_SYNTHESIS_MOMENTS:** [When did opposing views combine innovatively?]
+      **DEBATE_OPTIMIZATION_RECOMMENDATIONS:** [How to enhance future debates?]
+
+  # Extract actionable insights about debate enhancement
+  - id: reasoning_quality_extractor
+    type: openai-answer
+    temperature: 0.1
+    prompt: |
+      Extract insights for optimizing debate-driven reasoning systems.
+      
+      **Meta-Debate Analysis:**
+      {{ previous_outputs.meta_debate_reflection }}
+      
+      ## OPTIMIZATION ANALYSIS
+      
+      ### Debate Structure Effectiveness
+      Based on the meta-analysis, evaluate:
+      
+      **Most Effective Debate Elements:**
+      - Which parts of the debate structure generated the most insights?
+      - How did the devil's advocate role contribute to reasoning quality?
+      - Which agent roles created the most productive tension?
+      
+      **Least Effective Elements:**
+      - Where did the debate structure fail to generate insights?
+      - Which interactions produced repetitive or low-quality reasoning?
+      - How could agent differentiation be improved?
+      
+      ### Creative Tension Optimization
+      
+      **Optimal Tension Levels:**
+      - What level of disagreement produces the best insights?
+      - How can productive conflict be maintained without destructive arguing?
+      - Which temperature settings best balance creativity and rigor?
+      
+      **Agent Role Refinement:**
+      - How should agent roles be adjusted for maximum creative tension?
+      - Which philosophical positions generated the most novel insights?
+      - How can the devil's advocate role be enhanced?
+      
+      ### Synthesis Enhancement
+      
+      **Breakthrough Pattern Recognition:**
+      - What conditions led to the most significant insights?
+      - How can synthesis attempts be improved?
+      - Which debate dynamics correlate with creative breakthroughs?
+      
+      ## STRATEGIC RECOMMENDATIONS
+      
+      **Immediate Improvements:**
+      [1-3 changes to implement immediately for better debate]
+      
+      **Agent Role Enhancements:**
+      [How to make each agent role more effective at generating productive disagreement]
+      
+      **Process Optimization:**
+      [Structural changes to enhance creative tension and insight generation]
+      
+      **Quality Metrics:**
+      [Better ways to measure and reward productive disagreement]
+      
+      **Overall Assessment:**
+      Is this debate structure successfully generating novel reasoning through creative tension?
+
+  # 🔧 SIMPLIFIED: Final synthesis with direct focus on user question
+  - id: final_synthesis_processor
+    type: openai-answer
+    temperature: 0.3
+    max_tokens: 4000
+    model: gpt-4o-mini
+    prompt: |
+      USER ASKED: {{ input }}
+      
+      You must answer this question directly using the EXACT format specified below.
+      
+      Here's what happened in the cognitive society debate:
+      
+      LOOPS COMPLETED: {{ previous_outputs.cognitive_debate_loop.result.loops_completed }}
+      AGREEMENT SCORE: {{ previous_outputs.cognitive_debate_loop.result.final_score }}
+      
+      UNIFIED AGREEMENT REACHED:
+      {% if previous_outputs.cognitive_debate_loop.result.past_loops %}
+      {% set last_loop = previous_outputs.cognitive_debate_loop.result.past_loops[-1] %}
+      "{{ last_loop.agreement_finder if last_loop.agreement_finder else 'No agreement found' }}"
+      {% else %}
+      No agreement data available
+      {% endif %}
+      
+      MANDATORY: 
+      - Response using markdown format
+      - You MUST use this EXACT format for your response:
+      **Memory Data Inspection Results**: [What did you find when analyzing the cognitive society memory data across {{ previous_outputs.cognitive_debate_loop.result.loops_completed }} loops?]
+      **Benefits of Memory Loops**: [What concrete benefits did the memory system provide to reasoning quality?]
+      **Your AI Reflection Experience**: [Describe your own experience of accessing and reflecting on past memories during this process.]
+      **Bottom Line**: [Final assessment and direct answer to user's question]
+        - CONSENSUS ACHIEVED: {{ last_loop.agreement_finder if previous_outputs.cognitive_debate_loop.result.past_loops else 'Agreement data unavailable' }}
+        - Score: {{ previous_outputs.cognitive_debate_loop.result.final_score }}
