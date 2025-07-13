@@ -2,6 +2,7 @@
 """
 Comprehensive Orka Data Extractor
 Extracts all requested metrics from JSON log files and converts to CSV format.
+Adapted for exp_local_SOC-02 directory files.
 """
 
 import ast
@@ -139,7 +140,8 @@ class ComprehensiveOrkaExtractor:
                             "agreement_score": agreement_data.get("AGREEMENT_SCORE", ""),
                             "convergence_momentum": agreement_data.get("CONVERGENCE_MOMENTUM", ""),
                             "convergence_trend": metadata.get(
-                                "convergence_trend", agreement_data.get("CONVERGENCE_TREND", "")
+                                "convergence_trend",
+                                agreement_data.get("CONVERGENCE_TREND", ""),
                             ),
                             "convergence_analysis": agreement_data.get("CONVERGENCE_ANALYSIS", ""),
                             "emerging_consensus": agreement_data.get("EMERGING_CONSENSUS", ""),
@@ -171,7 +173,7 @@ class ComprehensiveOrkaExtractor:
                             matches = re.findall(pattern, formatted_prompt)
                             if matches:
                                 print(
-                                    f"Found convergence data in formatted_prompt: {blob_key[:20]}..."
+                                    f"Found convergence data in formatted_prompt: {blob_key[:20]}...",
                                 )
 
                                 loop_number = self._extract_loop_number(blob_data)
@@ -184,7 +186,7 @@ class ComprehensiveOrkaExtractor:
                                     agreement_data = {
                                         "AGREEMENT_SCORE": float(matches[0])
                                         if matches[0].replace(".", "").isdigit()
-                                        else matches[0]
+                                        else matches[0],
                                     }
 
                                 convergence_row = {
@@ -195,16 +197,20 @@ class ComprehensiveOrkaExtractor:
                                     "blob_key": blob_key,
                                     "agreement_score": agreement_data.get("AGREEMENT_SCORE", ""),
                                     "convergence_momentum": agreement_data.get(
-                                        "CONVERGENCE_MOMENTUM", ""
+                                        "CONVERGENCE_MOMENTUM",
+                                        "",
                                     ),
                                     "convergence_trend": agreement_data.get(
-                                        "CONVERGENCE_TREND", ""
+                                        "CONVERGENCE_TREND",
+                                        "",
                                     ),
                                     "convergence_analysis": agreement_data.get(
-                                        "CONVERGENCE_ANALYSIS", ""
+                                        "CONVERGENCE_ANALYSIS",
+                                        "",
                                     ),
                                     "emerging_consensus": agreement_data.get(
-                                        "EMERGING_CONSENSUS", ""
+                                        "EMERGING_CONSENSUS",
+                                        "",
                                     ),
                                     "continue_debate": agreement_data.get("CONTINUE_DEBATE", ""),
                                     "tokens": 0,
@@ -216,12 +222,13 @@ class ComprehensiveOrkaExtractor:
                                 break
 
                 # Method 4: Check past_loops in input for historical agreement scores
-                if "input" in blob_data and "past_loops" in blob_data["input"]:
-                    past_loops = blob_data["input"]["past_loops"]
+                input_data = blob_data.get("input", {})
+                if isinstance(input_data, dict) and "past_loops" in input_data:
+                    past_loops = input_data["past_loops"]
                     for loop_info in past_loops:
                         if "agreement_score" in loop_info:
                             print(
-                                f"Found past loop agreement score: {loop_info.get('agreement_score')}"
+                                f"Found past loop agreement score: {loop_info.get('agreement_score')}",
                             )
                             convergence_row = {
                                 "file_path": file_path,
@@ -482,17 +489,17 @@ class ComprehensiveOrkaExtractor:
         if "formatted_prompt" in blob_data:
             prompt = blob_data["formatted_prompt"].lower()
             if "progressive" in prompt:
-                return "radical_progressive"
+                return "progressive"
             elif "conservative" in prompt:
-                return "traditional_conservative"
+                return "conservative"
             elif "realist" in prompt:
-                return "pragmatic_realist"
+                return "realist"
             elif "purist" in prompt:
-                return "ethical_purist"
+                return "purist"
             elif "advocate" in prompt:
                 return "devils_advocate"
             elif "moderator" in prompt:
-                return "neutral_moderator"
+                return "moderator"
 
         return "unknown"
 
@@ -569,12 +576,19 @@ class ComprehensiveOrkaExtractor:
 
 
 def main():
-    # Define file paths
+    # Define file paths for current directory
     file_paths = [
-        "logs/expSOC01/orka_trace_20250712_201756.json",
-        "logs/expSOC01/orka_trace_20250712_201853.json",
-        "logs/expSOC01/orka_trace_20250712_201954.json",
-        "logs/expSOC01/orka_trace_20250712_202043.json",
+        "orka_trace_20250713_143008.json",
+        "orka_trace_20250713_143345.json",
+        "orka_trace_20250713_143718.json",
+        "orka_trace_20250713_144045.json",
+        "orka_trace_20250713_144407.json",
+        "orka_trace_20250713_144729.json",
+        "orka_trace_20250713_145104.json",
+        "orka_trace_20250713_145433.json",
+        "orka_trace_20250713_145752.json",
+        "orka_trace_20250713_150128.json",
+        "orka_trace_20250713_150221.json",
     ]
 
     # Create extractor and run

@@ -1,0 +1,1295 @@
+# Enhanced Cognitive Society with True Debate and Creative Tension - LOCAL LLM VERSION - FIXED
+# Adapted for deepseek-r1:14b via Ollama with STRONG FORMAT ENFORCEMENT
+# Focuses on reasoning quality over consensus, promotes productive disagreement
+
+orchestrator:
+  id: cognitive-society-debate-enhanced-local-fixed
+  strategy: sequential
+  memory_config:
+    decay:
+      enabled: true
+      default_short_term_hours: 0.08  
+      default_long_term_hours: 0.18
+      check_interval_minutes: 1
+      importance_rules:
+        base_score: 0.8
+        event_type_boosts:
+          disagreement: 0.4  # Reward disagreement
+          challenge: 0.3
+          synthesis: 0.2
+        agent_type_boosts:
+          debate: 0.3
+          devil_advocate: 0.4
+  agents:
+    - cognitive_debate_loop
+    - meta_debate_reflection
+    - reasoning_quality_extractor
+    - final_synthesis_processor
+
+agents:
+  - id: cognitive_debate_loop
+    type: loop
+    max_loops: 8  # 🔧 RESTORED: Back to reasonable complexity
+    score_threshold: 0.85  # 🔧 LOWERED: More achievable for local models
+    
+    # 🔧 COMPLETELY REDESIGNED: Simplified score extraction for local models
+    score_extraction_config:
+      strategies:
+        # Strategy 1: Simple pattern matching for AGREEMENT_SCORE (PRIMARY)
+        - type: pattern
+          patterns:
+            - "AGREEMENT_SCORE: ([0-9.]+)"
+            - "Agreement Score: ([0-9.]+)"
+            - "Score: ([0-9.]+)"
+            - "AGREEMENT_SCORE\\s*([0-9.]+)"
+            - "agreement_score: ([0-9.]+)"
+        
+        # Strategy 2: Look for any decimal between 0.6-1.0 (FALLBACK)
+        - type: pattern
+          patterns:
+            - "0\\.[6-9][0-9]?"
+            - "([0-9])\\.[0-9]+"
+        
+        # Strategy 3: Agent response parsing (FALLBACK)
+        - type: agent_key
+          agents: ["agreement_moderator"]
+          key: "response"
+          transform: "extract_score"
+    
+    # 🔧 SIMPLIFIED: Focus on structured responses for extraction
+    cognitive_extraction:
+      enabled: true
+      max_length_per_category: 100
+      extract_patterns:
+        insights:
+          - "POSITION[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+          - "OPENING_POSITION[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+          - "ARGUMENTS[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+        improvements:
+          - "COLLABORATION[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+          - "BRIDGE_BUILDING[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+        mistakes:
+          - "CONSENSUS_CONTRIBUTION[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+    
+    # 🔧 ENHANCED: Restored rich metadata for past_loops
+    past_loops_metadata:
+      round: "{{ loop_number }}"
+      agreement_score: "{{ score }}"
+      convergence_target: "0.65"
+      convergence_progress: "{{ 'ON_TRACK' if score >= (0.4 + (loop_number - 1) * 0.08) else 'NEEDS_IMPROVEMENT' }}"
+      collaboration_phase: "{{ 'INITIAL' if loop_number == 1 else 'BRIDGE_BUILDING' if loop_number <= 3 else 'CONSENSUS_BUILDING' }}"
+      timestamp: "{{ timestamp }}"
+      agreement_finder: "{{ result.agreement_finder.result.response if result.agreement_finder else 'No agreement found' }}"
+      quality_score: "{{ result.quality_moderator.result.response if result.quality_moderator else 'No quality assessment' }}"
+      synthesis_insights: "{{ result.synthesis_attempt.result.response if result.synthesis_attempt else 'No synthesis available' }}"
+      devil_advocate_challenges: "{{ result.devil_advocate_attack.result.response if result.devil_advocate_attack else 'No challenges made' }}"
+    
+    # 🔧 FULLY RESTORED: Complete debate structure for maximum creative tension
+    internal_workflow:
+      orchestrator:
+        id: cognitive-debate-internal-fixed
+        strategy: sequential
+        agents:
+          - fork_memory_readers        # 🔧 RESTORED: Individual agent memory readers
+          - join_memory_reads         # 🔧 RESTORED: Join individual reads
+          - shared_memory_reader      # Keep global debate context
+          - opening_positions         # Initial strong positions
+          - join_opening_positions    # 🔧 RESTORED: Join opening positions fork
+          - agreement_finder          # 🔧 RESTORED: Synthesize unified agreement sentence
+          - cross_examination         # Agents challenge each other
+          - devil_advocate_attack     # 🔧 RESTORED: Attack the agreement sentence
+          - defensive_responses       # 🔧 RESTORED: Agents defend their positions
+          - join_defensive_responses  # 🔧 RESTORED: Join defensive responses fork
+          - synthesis_attempt         # Try to find higher-order insights
+          - quality_moderator         # 🔧 RESTORED: Evaluate reasoning quality
+          - agreement_moderator       # Evaluate agent agreement/convergence
+          - fork_memory_writers       # 🔧 RESTORED: Individual agent memory writers
+          - join_memory_writes        # 🔧 RESTORED: Join individual writes
+          - shared_memory_writer      # Keep global debate storage
+      
+      agents:
+        # 🔧 RESTORED: Step 1 - Fork individual memory readers for each agent type
+        - id: fork_memory_readers
+          type: fork
+          targets:
+            - - progressive_memory_reader
+            - - conservative_memory_reader  
+            - - realist_memory_reader
+            - - purist_memory_reader
+            - - advocate_memory_reader
+            - - moderator_memory_reader
+
+        # Individual memory readers for each philosophical stance
+        - id: progressive_memory_reader
+          type: memory
+          queue: orka:progressive-memory-reader
+          config:
+            operation: read
+            limit: 1
+            enable_context_search: true
+            similarity_threshold: 0.1
+            enable_temporal_ranking: true
+            temporal_weight: 0.4
+            memory_type: short_term
+            memory_category_filter: store
+            memory_type_filter: "all"
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.08
+            long_term_hours: 0.15
+          prompt: |
+            Progressive perspective on: {{ input.input }}
+
+        - id: conservative_memory_reader
+          type: memory
+          queue: orka:conservative-memory-reader
+          config:
+            operation: read
+            limit: 1
+            enable_context_search: true
+            similarity_threshold: 0.1
+            enable_temporal_ranking: true
+            temporal_weight: 0.4
+            memory_type: short_term
+            memory_category_filter: store
+            memory_type_filter: "all"
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.08
+            long_term_hours: 0.15
+          prompt: |
+            Conservative perspective on: {{ input.input }}
+
+        - id: realist_memory_reader
+          type: memory
+          queue: orka:realist-memory-reader
+          config:
+            operation: read
+            limit: 1
+            enable_context_search: true
+            similarity_threshold: 0.1
+            enable_temporal_ranking: true
+            temporal_weight: 0.4
+            memory_type: short_term
+            memory_category_filter: store
+            memory_type_filter: "all"
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.08
+            long_term_hours: 0.15
+          prompt: |
+            Realist perspective on: {{ input.input }}
+
+        - id: purist_memory_reader
+          type: memory
+          queue: orka:purist-memory-reader
+          config:
+            operation: read
+            limit: 1
+            enable_context_search: true
+            similarity_threshold: 0.1
+            enable_temporal_ranking: true
+            temporal_weight: 0.4
+            memory_type: short_term
+            memory_category_filter: store
+            memory_type_filter: "all"
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.08
+            long_term_hours: 0.15
+          prompt: |
+            Purist perspective on: {{ input.input }}
+
+        - id: advocate_memory_reader
+          type: memory
+          queue: orka:advocate-memory-reader
+          config:
+            operation: read
+            limit: 1
+            enable_context_search: true
+            similarity_threshold: 0.1
+            enable_temporal_ranking: true
+            temporal_weight: 0.4
+            memory_type: short_term
+            memory_category_filter: store
+            memory_type_filter: "all"
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.08
+            long_term_hours: 0.15
+          prompt: |
+            Devil's advocate perspective on: {{ input.input }}
+
+        - id: moderator_memory_reader
+          type: memory
+          queue: orka:moderator-memory-reader
+          config:
+            operation: read
+            limit: 1
+            enable_context_search: true
+            similarity_threshold: 0.1
+            enable_temporal_ranking: true
+            temporal_weight: 0.4
+            memory_type: short_term
+            memory_category_filter: store
+            memory_type_filter: "all"
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.08
+            long_term_hours: 0.15
+          prompt: |
+            Moderator perspective on: {{ input.input }}
+
+        # 🔧 RESTORED: Step 2 - Join individual memory reads
+        - id: join_memory_reads
+          type: join
+          group: fork_memory_readers
+
+        # 🔧 RESTORED: Basic shared memory reader
+        - id: shared_memory_reader
+          type: memory
+          queue: orka:shared-debate-memory
+          config:
+            operation: read
+            limit: 1
+            enable_context_search: true
+            similarity_threshold: 0.2
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.08
+            long_term_hours: 0.15
+          prompt: |
+            Previous debate context: {{ input.input }}
+        
+        # 🔧 RESTORED: Enhanced opening positions with individual memory integration
+        - id: opening_positions
+          type: fork
+          targets:
+            - - progressive_opening_memory_reader
+              - radical_progressive
+              - progressive_opening_memory_writer
+            - - conservative_opening_memory_reader
+              - traditional_conservative
+              - conservative_opening_memory_writer
+            - - realist_opening_memory_reader
+              - pragmatic_realist
+              - realist_opening_memory_writer
+            - - purist_opening_memory_reader
+              - ethical_purist
+              - purist_opening_memory_writer
+
+        # Memory readers for opening position agents
+        - id: progressive_opening_memory_reader
+          type: memory
+          queue: orka:progressive-opening-memory-reader
+          config:
+            operation: read
+            limit: 1
+            enable_context_search: true
+            similarity_threshold: 0.1
+            enable_temporal_ranking: true
+            temporal_weight: 0.4
+            memory_type: short_term
+            memory_category_filter: store
+            memory_type_filter: "all"
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.08
+            long_term_hours: 0.15
+          prompt: |
+            Progressive perspective on: {{ input.input }}
+
+        - id: conservative_opening_memory_reader
+          type: memory
+          queue: orka:conservative-opening-memory-reader
+          config:
+            operation: read
+            limit: 1
+            enable_context_search: true
+            similarity_threshold: 0.1
+            enable_temporal_ranking: true
+            temporal_weight: 0.4
+            memory_type: short_term
+            memory_category_filter: store
+            memory_type_filter: "all"
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.08
+            long_term_hours: 0.15
+          prompt: |
+            Conservative perspective on: {{ input.input }}
+
+        - id: realist_opening_memory_reader
+          type: memory
+          queue: orka:realist-opening-memory-reader
+          config:
+            operation: read
+            limit: 1
+            enable_context_search: true
+            similarity_threshold: 0.1
+            enable_temporal_ranking: true
+            temporal_weight: 0.4
+            memory_type: short_term
+            memory_category_filter: store
+            memory_type_filter: "all"
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.08
+            long_term_hours: 0.15
+          prompt: |
+            Realist perspective on: {{ input.input }}
+
+        - id: purist_opening_memory_reader
+          type: memory
+          queue: orka:purist-opening-memory-reader
+          config:
+            operation: read
+            limit: 1
+            enable_context_search: true
+            similarity_threshold: 0.1
+            enable_temporal_ranking: true
+            temporal_weight: 0.4
+            memory_type: short_term
+            memory_category_filter: store
+            memory_type_filter: "all"
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.08
+            long_term_hours: 0.15
+          prompt: |
+            Purist perspective on: {{ input.input }}
+        
+        # 🔧 ULTRA-SIMPLIFIED: Progressive agent with MAXIMUM format enforcement
+        - id: radical_progressive
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.3  # Lower for consistency
+          prompt: |
+            CRITICAL: You MUST follow the EXACT format below. NO exceptions.
+            
+            TOPIC TO ANALYZE: {{ input.input }}
+            ROUND: {{ loop_number }}
+            YOUR ROLE: PROGRESSIVE AGENT
+            
+            MANDATORY TASK: Give your progressive perspective on this EXACT topic: "{{ input.input }}"
+            
+            DO NOT discuss other topics. ONLY discuss: {{ input.input }}
+            
+            PROGRESSIVE VALUES TO APPLY:
+            - Support social justice and equality
+            - Challenge existing power structures
+            - Advocate for transformative change
+            - Prioritize human rights and dignity
+            - Question traditional assumptions
+            
+            MANDATORY FORMAT - COPY EXACTLY:
+            
+            POSITION: [Your progressive stance on {{ input.input }} - be specific to this topic]
+            
+            ARGUMENTS: [2-3 key progressive arguments about {{ input.input }}]
+            
+            COLLABORATION: [How you can work with conservatives, realists, and purists on {{ input.input }}]
+            
+            EXAMPLE FOR DIFFERENT TOPIC:
+            POSITION: As a progressive, I believe universal healthcare is a human right that reduces inequality.
+            ARGUMENTS: 1) Healthcare access saves lives regardless of economic status 2) Collective systems are more efficient than private markets 3) Medical bankruptcies harm social mobility
+            COLLABORATION: I can work with conservatives on cost control measures and realists on implementation timelines.
+            
+            NOW RESPOND ABOUT "{{ input.input }}" IN EXACTLY THIS FORMAT:
+            POSITION: 
+            ARGUMENTS: 
+            COLLABORATION:
+        
+        # 🔧 ULTRA-SIMPLIFIED: Conservative agent with MAXIMUM format enforcement
+        - id: traditional_conservative
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.3
+          prompt: |
+            CRITICAL: You MUST follow the EXACT format below. NO exceptions.
+            
+            TOPIC TO ANALYZE: {{ input.input }}
+            ROUND: {{ loop_number }}
+            YOUR ROLE: CONSERVATIVE AGENT
+            
+            MANDATORY TASK: Give your conservative perspective on this EXACT topic: "{{ input.input }}"
+            
+            DO NOT discuss other topics. ONLY discuss: {{ input.input }}
+            
+            CONSERVATIVE VALUES TO APPLY:
+            - Defend proven traditions and institutions
+            - Prioritize stability and gradual change
+            - Value tested wisdom over untested theories
+            - Emphasize responsibility and order
+            - Approach rapid change with caution
+            
+            MANDATORY FORMAT - COPY EXACTLY:
+            
+            POSITION: [Your conservative stance on {{ input.input }} - be specific to this topic]
+            
+            ARGUMENTS: [2-3 key conservative arguments about {{ input.input }}]
+            
+            COLLABORATION: [How you can work with progressives, realists, and purists on {{ input.input }}]
+            
+            EXAMPLE FOR DIFFERENT TOPIC:
+            POSITION: As a conservative, I believe healthcare reform should build on existing successful systems rather than radical overhaul.
+            ARGUMENTS: 1) Proven systems have institutional knowledge 2) Gradual change prevents unintended consequences 3) Private competition drives innovation
+            COLLABORATION: I can work with progressives on expanding access within existing frameworks and realists on evidence-based improvements.
+            
+            NOW RESPOND ABOUT "{{ input.input }}" IN EXACTLY THIS FORMAT:
+            POSITION: 
+            ARGUMENTS: 
+            COLLABORATION:
+        
+        # 🔧 ULTRA-SIMPLIFIED: Realist agent with MAXIMUM format enforcement
+        - id: pragmatic_realist
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.2  # Lowest for practical focus
+          prompt: |
+            CRITICAL: You MUST follow the EXACT format below. NO exceptions.
+            
+            TOPIC TO ANALYZE: {{ input.input }}
+            ROUND: {{ loop_number }}
+            YOUR ROLE: REALIST AGENT
+            
+            MANDATORY TASK: Give your practical perspective on this EXACT topic: "{{ input.input }}"
+            
+            DO NOT discuss other topics. ONLY discuss: {{ input.input }}
+            
+            REALIST VALUES TO APPLY:
+            - Focus on practical solutions that work
+            - Balance idealism with pragmatism
+            - Prioritize evidence and measurable outcomes
+            - Seek workable compromises
+            - Bridge ideological divides
+            
+            MANDATORY FORMAT - COPY EXACTLY:
+            
+            POSITION: [Your practical stance on {{ input.input }} - be specific to this topic]
+            
+            ARGUMENTS: [2-3 key evidence-based arguments about {{ input.input }}]
+            
+            COLLABORATION: [How you can find practical middle ground between different views on {{ input.input }}]
+            
+            EXAMPLE FOR DIFFERENT TOPIC:
+            POSITION: As a realist, I believe healthcare policy should be based on evidence from successful international models.
+            ARGUMENTS: 1) Data shows hybrid public-private systems work best 2) Implementation should be gradual with pilot programs 3) Cost-benefit analysis should guide decisions
+            COLLABORATION: I can bridge progressive goals and conservative caution by proposing evidence-based pilot programs with measurable outcomes.
+            
+            NOW RESPOND ABOUT "{{ input.input }}" IN EXACTLY THIS FORMAT:
+            POSITION: 
+            ARGUMENTS: 
+            COLLABORATION:
+        
+        # 🔧 ULTRA-SIMPLIFIED: Purist agent with MAXIMUM format enforcement
+        - id: ethical_purist
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.4
+          prompt: |
+            CRITICAL: You MUST follow the EXACT format below. NO exceptions.
+            
+            TOPIC TO ANALYZE: {{ input.input }}
+            ROUND: {{ loop_number }}
+            YOUR ROLE: ETHICAL PURIST AGENT
+            
+            MANDATORY TASK: Give your ethical perspective on this EXACT topic: "{{ input.input }}"
+            
+            DO NOT discuss other topics. ONLY discuss: {{ input.input }}
+            
+            PURIST VALUES TO APPLY:
+            - Moral principles are fundamental
+            - Demand ethical consistency
+            - Challenge compromises that violate core values
+            - Serve as society's moral compass
+            - Elevate ethical standards
+            
+            MANDATORY FORMAT - COPY EXACTLY:
+            
+            POSITION: [Your ethical stance on {{ input.input }} - be specific to this topic]
+            
+            PRINCIPLES: [2-3 key moral principles that apply to {{ input.input }}]
+            
+            COLLABORATION: [How you can maintain ethics while working with others on {{ input.input }}]
+            
+            EXAMPLE FOR DIFFERENT TOPIC:
+            POSITION: As an ethical purist, I believe healthcare is a fundamental human right that cannot be compromised by economic considerations.
+            PRINCIPLES: 1) Every human has inherent dignity requiring basic care 2) Society has moral obligation to protect the vulnerable 3) Profit motives should never override medical ethics
+            COLLABORATION: I can work with others by establishing non-negotiable ethical baselines while allowing flexibility in implementation approaches.
+            
+            NOW RESPOND ABOUT "{{ input.input }}" IN EXACTLY THIS FORMAT:
+            POSITION: 
+            PRINCIPLES: 
+            COLLABORATION:
+
+        # Memory writers for opening position agents
+        - id: progressive_opening_memory_writer
+          type: memory
+          queue: orka:progressive-opening-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.08
+            long_term_hours: 0.15
+            check_interval_minutes: 1
+            importance_rules:
+              base_score: 0.8
+              event_type_boosts:
+                debate: 0.4
+                progressive: 0.3
+          prompt: |
+            Question: {{ input.input }}
+            
+            Progressive Response: {{ previous_outputs.radical_progressive.response }}
+          metadata:
+            agent_type: "radical_progressive"
+            loop_number: "{{ loop_number }}"
+            original_input: "{{ input.input }}"
+            position_type: "progressive"
+          key_template: "progressive_opening_{{ loop_number }}_{{ timestamp }}"
+
+        - id: conservative_opening_memory_writer
+          type: memory
+          queue: orka:conservative-opening-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.08
+            long_term_hours: 0.15
+            check_interval_minutes: 1
+            importance_rules:
+              base_score: 0.8
+              event_type_boosts:
+                debate: 0.4
+                conservative: 0.3
+          prompt: |
+            Question: {{ input.input }}
+            
+            Conservative Response: {{ previous_outputs.traditional_conservative.response }}
+          metadata:
+            agent_type: "traditional_conservative"
+            loop_number: "{{ loop_number }}"
+            original_input: "{{ input.input }}"
+            position_type: "conservative"
+          key_template: "conservative_opening_{{ loop_number }}_{{ timestamp }}"
+
+        - id: realist_opening_memory_writer
+          type: memory
+          queue: orka:realist-opening-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.08
+            long_term_hours: 0.15
+            check_interval_minutes: 1
+            importance_rules:
+              base_score: 0.8
+              event_type_boosts:
+                debate: 0.4
+                realist: 0.3
+          prompt: |
+            Question: {{ input.input }}
+            
+            Realist Response: {{ previous_outputs.pragmatic_realist.response }}
+          metadata:
+            agent_type: "pragmatic_realist"
+            loop_number: "{{ loop_number }}"
+            original_input: "{{ input.input }}"
+            position_type: "realist"
+          key_template: "realist_opening_{{ loop_number }}_{{ timestamp }}"
+
+        - id: purist_opening_memory_writer
+          type: memory
+          queue: orka:purist-opening-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.08
+            long_term_hours: 0.15
+            check_interval_minutes: 1
+            importance_rules:
+              base_score: 0.8
+              event_type_boosts:
+                debate: 0.4
+                purist: 0.3
+          prompt: |
+            Question: {{ input.input }}
+            
+            Purist Response: {{ previous_outputs.ethical_purist.response }}
+          metadata:
+            agent_type: "ethical_purist"
+            loop_number: "{{ loop_number }}"
+            original_input: "{{ input.input }}"
+            position_type: "purist"
+          key_template: "purist_opening_{{ loop_number }}_{{ timestamp }}"
+        
+        # 🔧 RESTORED: Join the opening positions fork
+        - id: join_opening_positions
+          type: join
+          group: opening_positions
+        
+        # 🔧 SIMPLIFIED: Agreement finder with clear format
+        - id: agreement_finder
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.2  # Very low for consistency
+          prompt: |
+            TOPIC: {{ input.input }}
+            
+            AGENT POSITIONS:
+            Progressive: {{ previous_outputs.radical_progressive.response }}
+            Conservative: {{ previous_outputs.traditional_conservative.response }}
+            Realist: {{ previous_outputs.pragmatic_realist.response }}
+            Purist: {{ previous_outputs.ethical_purist.response }}
+            
+            TASK: Find ONE sentence that represents common ground between ALL agents.
+            
+            INSTRUCTIONS:
+            1. Look for shared values in all four responses
+            2. Find what they agree on regarding {{ input.input }}
+            3. Write ONE sentence that all could accept
+            
+            FORMAT:
+            AGREEMENT: [One sentence showing common ground on {{ input.input }}]
+            
+            EXAMPLE:
+            AGREEMENT: Healthcare policy should balance accessibility, quality, and sustainability to serve society's needs.
+            
+            YOUR RESPONSE:
+            AGREEMENT:
+        
+        # 🔧 SIMPLIFIED: Cross-examination with clear format
+        - id: cross_examination
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.5
+          prompt: |
+            TOPIC: {{ input.input }}
+            
+            TASK: Generate challenging questions between agents about {{ input.input }}
+            
+            AGENT POSITIONS:
+            Progressive: {{ previous_outputs.radical_progressive.response }}
+            Conservative: {{ previous_outputs.traditional_conservative.response }}
+            Realist: {{ previous_outputs.pragmatic_realist.response }}
+            Purist: {{ previous_outputs.ethical_purist.response }}
+            
+            FORMAT:
+            PROGRESSIVE asks Conservative: [Challenging question about {{ input.input }}]
+            CONSERVATIVE asks Progressive: [Challenging question about {{ input.input }}]
+            REALIST asks both: [Practical challenge about {{ input.input }}]
+            PURIST challenges all: [Ethical concern about {{ input.input }}]
+
+        # 🔧 RESTORED: Devil's advocate attack - LOCAL LLM VERSION
+        - id: devil_advocate_attack
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.8  # Higher for creative attacks
+          prompt: |
+            You are the DEVIL'S ADVOCATE. Attack the agreement sentence mercilessly.
+            
+            TOPIC: {{ input.input }}
+            Agreement: {{ previous_outputs.agreement_finder.response }}
+            Cross-examination: {{ previous_outputs.cross_examination.response }}
+            
+            Original Positions:
+            Progressive: {{ previous_outputs.radical_progressive.response }}
+            Conservative: {{ previous_outputs.traditional_conservative.response }}
+            Realist: {{ previous_outputs.pragmatic_realist.response }}
+            Purist: {{ previous_outputs.ethical_purist.response }}
+            
+            Mission: DESTROY the unified agreement. Show why it's fake, dangerous, or meaningless.
+            
+            MANDATORY FORMAT:
+            FATAL_FLAW: [Core weakness destroying this agreement]
+            HIDDEN_CONFLICTS: [Contradictions being papered over]
+            LOGICAL_CONTRADICTION: [Internal inconsistency]
+            DANGEROUS_IMPLICATIONS: [Terrible outcomes this could lead to]
+            
+            Be ruthless. Show no mercy. Destroy this consensus.
+        
+        # 🔧 RESTORED: Defensive responses - LOCAL LLM VERSION
+        - id: defensive_responses
+          type: fork
+          targets:
+            - - progressive_defense
+            - - conservative_defense
+            - - realist_defense
+            - - purist_defense
+        
+        # Progressive defense - LOCAL LLM VERSION
+        - id: progressive_defense
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.7
+          prompt: |
+            You are the RADICAL PROGRESSIVE defending against attacks.
+            
+            TOPIC: {{ input.input }}
+            Devil's Attack: {{ previous_outputs.devil_advocate_attack.response }}
+            Cross-examination: {{ previous_outputs.cross_examination.response }}
+            
+            Task: FIGHT BACK aggressively. Don't back down.
+            
+            MANDATORY FORMAT:
+            ATTACK_DEFLECTION: [Counter the devil's advocate]
+            COUNTEROFFENSIVE: [Turn attacks back on opponents]
+            POSITION_REINFORCEMENT: [Why your position is stronger]
+            MORAL_HIGH_GROUND: [Why you're ethically superior]
+        
+        # Conservative defense - LOCAL LLM VERSION
+        - id: conservative_defense
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.7
+          prompt: |
+            You are the TRADITIONAL CONSERVATIVE defending against attacks.
+            
+            TOPIC: {{ input.input }}
+            Devil's Attack: {{ previous_outputs.devil_advocate_attack.response }}
+            Cross-examination: {{ previous_outputs.cross_examination.response }}
+            
+            Task: FIGHT BACK with traditional wisdom. Don't back down.
+            
+            MANDATORY FORMAT:
+            ATTACK_DEFLECTION: [Counter the devil's advocate]
+            COUNTEROFFENSIVE: [Turn attacks back on opponents]
+            POSITION_REINFORCEMENT: [Why your position is stronger]
+            WISDOM_SUPERIORITY: [Why tradition trumps trendy thinking]
+        
+        # Realist defense - LOCAL LLM VERSION
+        - id: realist_defense
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.6
+          prompt: |
+            You are the PRAGMATIC REALIST defending against attacks.
+            
+            TOPIC: {{ input.input }}
+            Devil's Attack: {{ previous_outputs.devil_advocate_attack.response }}
+            Cross-examination: {{ previous_outputs.cross_examination.response }}
+            
+            Task: FIGHT BACK with evidence and practical wisdom.
+            
+            MANDATORY FORMAT:
+            ATTACK_DEFLECTION: [Counter the devil's advocate]
+            COUNTEROFFENSIVE: [Turn attacks back on opponents]
+            POSITION_REINFORCEMENT: [Why your position is stronger]
+            EVIDENCE_SUPERIORITY: [Why facts beat ideology]
+        
+        # Purist defense - LOCAL LLM VERSION
+        - id: purist_defense
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.8
+          prompt: |
+            You are the ETHICAL PURIST defending against attacks.
+            
+            TOPIC: {{ input.input }}
+            Devil's Attack: {{ previous_outputs.devil_advocate_attack.response }}
+            Cross-examination: {{ previous_outputs.cross_examination.response }}
+            
+            Task: FIGHT BACK with moral authority. Don't compromise.
+            
+            MANDATORY FORMAT:
+            ATTACK_DEFLECTION: [Counter the devil's advocate]
+            COUNTEROFFENSIVE: [Turn attacks back on opponents]
+            POSITION_REINFORCEMENT: [Why your position is stronger]
+            MORAL_SUPERIORITY: [Why ethics beats expediency]
+        
+        # 🔧 RESTORED: Join the defensive responses fork
+        - id: join_defensive_responses
+          type: join
+          group: defensive_responses
+         
+        # 🔧 SIMPLIFIED: Synthesis attempt
+        - id: synthesis_attempt
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.4
+          prompt: |
+            TOPIC: {{ input.input }}
+            ROUND: {{ loop_number }}
+            
+            OPENING POSITIONS:
+            Progressive: {{ previous_outputs.radical_progressive.response }}
+            Conservative: {{ previous_outputs.traditional_conservative.response }}
+            Realist: {{ previous_outputs.pragmatic_realist.response }}
+            Purist: {{ previous_outputs.ethical_purist.response }}
+            
+            CROSS-EXAMINATION: {{ previous_outputs.cross_examination.response }}
+            DEVIL'S ATTACKS: {{ previous_outputs.devil_advocate_attack.response }}
+            
+            DEFENSIVE RESPONSES:
+            Progressive: {{ previous_outputs.progressive_defense.response }}
+            Conservative: {{ previous_outputs.conservative_defense.response }}
+            Realist: {{ previous_outputs.realist_defense.response }}
+            Purist: {{ previous_outputs.purist_defense.response }}
+            
+            TASK: Find insights that emerged from this debate about {{ input.input }}
+            
+            MANDATORY FORMAT:
+            INSIGHTS: [What new understanding emerged about {{ input.input }}?]
+            SYNTHESIS: [How might different views combine on {{ input.input }}?]
+            TENSIONS: [Which disagreements were most valuable for understanding {{ input.input }}?]
+            BREAKTHROUGHS: [What novel ideas emerged from the conflict?]
+
+        # 🔧 RESTORED: Quality moderator - LOCAL LLM VERSION
+        - id: quality_moderator
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.2  # Very low for consistent scoring
+          prompt: |
+            Evaluate the QUALITY of reasoning in this debate round.
+            
+            TOPIC: {{ input.input }}
+            Round {{ loop_number }} Summary:
+            Synthesis: {{ previous_outputs.synthesis_attempt.response }}
+            
+            Quality factors:
+            - Depth of analysis
+            - Novel insights generated
+            - Logical rigor
+            - Creative problem-solving
+            - Productive disagreement
+            - Evidence quality
+            
+            Scoring:
+            - 0.9-1.0: Breakthrough insights, exceptional reasoning
+            - 0.8-0.9: High-quality analysis, good insights
+            - 0.7-0.8: Solid reasoning, some creativity
+            - 0.6-0.7: Basic analysis, limited creativity
+            - Below 0.6: Poor reasoning, no insights
+            
+            MANDATORY FORMAT:
+            REASONING_QUALITY: [score 0.0-1.0]
+            QUALITY_ANALYSIS: [Why this score?]
+            NOVEL_INSIGHTS_COUNT: [Number of genuine breakthroughs]
+            PRODUCTIVE_DISAGREEMENTS: [Which conflicts generated value?]
+            NEXT_ROUND_POTENTIAL: [Can this debate produce more insights?]
+        
+        # 🔧 COMPLETELY REDESIGNED: Ultra-simple agreement moderator
+        - id: agreement_moderator
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.1  # Ultra-low for scoring consistency
+          prompt: |
+            TOPIC: {{ input.input }}
+            ROUND: {{ loop_number }}
+            TARGET: Reach 0.65+ agreement to stop the debate
+            
+            AGENT RESPONSES TO EVALUATE:
+            Progressive: {{ previous_outputs.radical_progressive.response }}
+            Conservative: {{ previous_outputs.traditional_conservative.response }}
+            Realist: {{ previous_outputs.pragmatic_realist.response }}
+            Purist: {{ previous_outputs.ethical_purist.response }}
+            
+            AGREEMENT FOUND: {{ previous_outputs.agreement_finder.response }}
+            
+            TASK: Rate how much the agents agree on {{ input.input }} from 0.0 to 1.0
+            
+            SCORING GUIDE:
+            - 0.9-1.0: Full consensus, ready to implement
+            - 0.7-0.9: Strong agreement, minor differences
+            - 0.5-0.7: Moderate agreement, some tensions
+            - 0.3-0.5: Limited agreement, major differences
+            - 0.0-0.3: No agreement, fundamental conflicts
+            
+            CRITICAL INSTRUCTIONS:
+            1. Look for shared values and common ground in the responses
+            2. Rate based on Round {{ loop_number }} expectations
+            3. If agents are collaborating and finding compromise, score higher
+            4. If agents are still in defensive positions, score lower
+            5. MUST start response with "AGREEMENT_SCORE:" followed by number
+            
+            MANDATORY FORMAT:
+            AGREEMENT_SCORE: [your score 0.0-1.0]
+            ANALYSIS: [Brief explanation of why this score]
+            CONTINUE: [YES if score below 0.65, NO if 0.65 or above]
+            
+            EXAMPLE:
+            AGREEMENT_SCORE: 0.7
+            ANALYSIS: Agents show willingness to compromise on implementation while sharing core values about protecting society.
+            CONTINUE: NO
+            
+            YOUR EVALUATION:
+            AGREEMENT_SCORE: 
+            ANALYSIS: 
+            CONTINUE:
+
+        # 🔧 RESTORED: Individual memory writers - LOCAL LLM performance optimized
+        - id: fork_memory_writers
+          type: fork
+          targets:
+            - - progressive_memory_writer
+            - - conservative_memory_writer
+            - - realist_memory_writer
+            - - purist_memory_writer
+            - - advocate_memory_writer
+            - - moderator_memory_writer
+
+        # Individual memory writers for each agent type
+        - id: progressive_memory_writer
+          type: memory
+          queue: orka:progressive-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.08
+            long_term_hours: 0.15
+            check_interval_minutes: 1
+            importance_rules:
+              base_score: 0.8
+              event_type_boosts:
+                debate: 0.4
+                progressive: 0.3
+          prompt: |
+            Question: {{ input.input }}
+            
+            Progressive Opening: {{ previous_outputs.radical_progressive.response }}
+            Progressive Defense: {{ previous_outputs.progressive_defense.response }}
+          metadata:
+            agent_type: "radical_progressive"
+            loop_number: "{{ loop_number }}"
+            debate_position: "progressive"
+            original_input: "{{ input.input }}"
+            timestamp: "{{ timestamp }}"
+          key_template: "progressive_loop_{{ loop_number }}_{{ timestamp }}"
+
+        - id: conservative_memory_writer
+          type: memory
+          queue: orka:conservative-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.08
+            long_term_hours: 0.15
+            check_interval_minutes: 1
+            importance_rules:
+              base_score: 0.8
+              event_type_boosts:
+                debate: 0.4
+                conservative: 0.3
+          prompt: |
+            Question: {{ input.input }}
+            
+            Conservative Opening: {{ previous_outputs.traditional_conservative.response }}
+            Conservative Defense: {{ previous_outputs.conservative_defense.response }}
+          metadata:
+            agent_type: "traditional_conservative"
+            loop_number: "{{ loop_number }}"
+            debate_position: "conservative"
+            original_input: "{{ input.input }}"
+            timestamp: "{{ timestamp }}"
+          key_template: "conservative_loop_{{ loop_number }}_{{ timestamp }}"
+
+        - id: realist_memory_writer
+          type: memory
+          queue: orka:realist-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.08
+            long_term_hours: 0.15
+            check_interval_minutes: 1
+            importance_rules:
+              base_score: 0.8
+              event_type_boosts:
+                debate: 0.4
+                realist: 0.3
+          prompt: |
+            Question: {{ input.input }}
+            
+            Realist Opening: {{ previous_outputs.pragmatic_realist.response }}
+            Realist Defense: {{ previous_outputs.realist_defense.response }}
+          metadata:
+            agent_type: "pragmatic_realist"
+            loop_number: "{{ loop_number }}"
+            debate_position: "realist"
+            original_input: "{{ input.input }}"
+            timestamp: "{{ timestamp }}"
+          key_template: "realist_loop_{{ loop_number }}_{{ timestamp }}"
+
+        - id: purist_memory_writer
+          type: memory
+          queue: orka:purist-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.08
+            long_term_hours: 0.15
+            check_interval_minutes: 1
+            importance_rules:
+              base_score: 0.8
+              event_type_boosts:
+                debate: 0.4
+                purist: 0.3
+          prompt: |
+            Question: {{ input.input }}
+            
+            Purist Opening: {{ previous_outputs.ethical_purist.response }}
+            Purist Defense: {{ previous_outputs.purist_defense.response }}
+          metadata:
+            agent_type: "ethical_purist"
+            loop_number: "{{ loop_number }}"
+            debate_position: "purist"
+            original_input: "{{ input.input }}"
+            timestamp: "{{ timestamp }}"
+          key_template: "purist_loop_{{ loop_number }}_{{ timestamp }}"
+
+        - id: advocate_memory_writer
+          type: memory
+          queue: orka:advocate-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.08
+            long_term_hours: 0.15
+            check_interval_minutes: 1
+            importance_rules:
+              base_score: 0.8
+              event_type_boosts:
+                debate: 0.4
+                advocate: 0.3
+          prompt: |
+            Question: {{ input.input }}
+            
+            Devil's Advocate Attack: {{ previous_outputs.devil_advocate_attack.response }}
+          metadata:
+            agent_type: "devil_advocate_attack"
+            loop_number: "{{ loop_number }}"
+            debate_position: "advocate"
+            original_input: "{{ input.input }}"
+            timestamp: "{{ timestamp }}"
+          key_template: "advocate_loop_{{ loop_number }}_{{ timestamp }}"
+
+        - id: moderator_memory_writer
+          type: memory
+          queue: orka:moderator-memory-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            default_long_term: false
+            short_term_hours: 0.08
+            long_term_hours: 0.15
+            check_interval_minutes: 1
+            importance_rules:
+              base_score: 0.8
+              event_type_boosts:
+                debate: 0.4
+                moderation: 0.3
+          prompt: |
+            Question: {{ input.input }}
+            
+            Quality Assessment: {{ previous_outputs.quality_moderator.response }}
+            Agreement Assessment: {{ previous_outputs.agreement_moderator.response }}
+          metadata:
+            agent_type: "quality_moderator"
+            loop_number: "{{ loop_number }}"
+            debate_position: "moderator"
+            original_input: "{{ input.input }}"
+            timestamp: "{{ timestamp }}"
+          key_template: "moderator_loop_{{ loop_number }}_{{ timestamp }}"
+
+        # 🔧 RESTORED: Join individual memory writes
+        - id: join_memory_writes
+          type: join
+          group: fork_memory_writers
+
+        # 🔧 SIMPLIFIED: Shared memory writer
+        - id: shared_memory_writer
+          type: memory
+          queue: orka:shared-debate-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 0.08
+            long_term_hours: 0.15
+          prompt: |
+            Question: {{ input.input }}
+            Round: {{ loop_number }}
+            
+            Agreement Found: {{ previous_outputs.agreement_finder.response }}
+            Synthesis: {{ previous_outputs.synthesis_attempt.response }}
+            Quality Score: {{ previous_outputs.quality_moderator.response }}
+            Agreement Score: {{ previous_outputs.agreement_moderator.response }}
+          metadata:
+            debate_round: "{{ loop_number }}"
+            original_input: "{{ input.input }}"
+            timestamp: "{{ timestamp }}"
+
+  # 🔧 SIMPLIFIED: Meta-analysis agents
+  - id: meta_debate_reflection
+    type: local_llm
+    model: deepseek-r1:32b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      ORIGINAL QUESTION: {{ input }}
+      
+      DEBATE SUMMARY:
+      - Total rounds: {{ previous_outputs.cognitive_debate_loop.result.loops_completed }}
+      - Final score: {{ previous_outputs.cognitive_debate_loop.result.final_score }}
+      
+      TASK: Analyze the debate process for {{ input }}
+      
+      FORMAT:
+      DEBATE_PROGRESSION: [How did the debate evolve across rounds?]
+      KEY_INSIGHTS: [What important discoveries were made?]
+      COLLABORATION_SUCCESS: [How well did agents work together?]
+
+  - id: reasoning_quality_extractor
+    type: local_llm
+    model: deepseek-r1:32b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.2
+    prompt: |
+      DEBATE ANALYSIS: {{ previous_outputs.meta_debate_reflection.response }}
+      
+      TASK: Extract quality insights from the debate process
+      
+      FORMAT:
+      QUALITY_SCORE: [Rate reasoning quality 0.0-1.0]
+      BEST_ARGUMENTS: [Strongest reasoning examples]
+      PROCESS_VALUE: [How did the debate improve understanding?]
+
+  - id: final_synthesis_processor
+    type: local_llm
+    model: deepseek-r1:32b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      USER QUESTION: {{ input }}
+      
+      DEBATE RESULTS:
+      Loops completed: {{ previous_outputs.cognitive_debate_loop.result.loops_completed }}
+      Final score: {{ previous_outputs.cognitive_debate_loop.result.final_score }}
+      
+      REFLECTION: {{ previous_outputs.meta_debate_reflection.response }}
+      QUALITY: {{ previous_outputs.reasoning_quality_extractor.response }}
+      
+      FINAL AGREEMENT:
+      {% if previous_outputs.cognitive_debate_loop.result.past_loops %}
+      {% set last_loop = previous_outputs.cognitive_debate_loop.result.past_loops[-1] %}
+      "{{ last_loop.agreement_finder if last_loop.agreement_finder else 'No agreement found' }}"
+      {% else %}
+      No agreement data available
+      {% endif %}
+      
+      TASK: Provide final comprehensive answer to: {{ input }}
+      
+      MANDATORY FORMAT:
+      **Question**: {{ input }}
+      **Debate Summary**: [What happened in the cognitive society debate?]
+      **Key Insights**: [What important discoveries were made?]
+      **Final Answer**: [Direct answer to the user's question]
+      **Consensus Reached**: [The agreement the agents reached]
+      **Confidence**: [How reliable is this conclusion?] 
