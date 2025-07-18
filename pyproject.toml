@@ -10,52 +10,73 @@ license = { text = "Apache 2.0" }
 requires-python = ">=3.11"
 
 dependencies = [
-  "python-dotenv",
-  "redis",
-  "pyyaml",
-  "openai",
-  "duckduckgo-search",
-  "litellm",
-  "jinja2",
-  "google-api-python-client",
-  "async-timeout",
-  "sentence-transformers",
-  "numpy",
+  # Core Dependencies
+  "redis[async]>=5.0.0",
+  "redis-om>=0.2.1",
+  "pyyaml>=6.0.2",
+  "python-dotenv>=0.19.0",
+  
+  # AI and ML
+  "openai>=1.0.0",
+  "litellm>=1.0.0",
+  "sentence-transformers>=2.2.0",
+  "numpy>=1.21.0",
+  
+  # Search and APIs
+  "duckduckgo-search>=3.0.0",
+  "google-api-python-client>=2.0.0",
+  
+  # Web Framework
+  "fastapi>=0.68.0",
+  "uvicorn>=0.15.0",
+  "pydantic>=1.8.0",
+  "httpx>=0.24.0",
+  "jinja2>=3.0.0",
+  "async-timeout>=4.0.0",
+  
+  # UI Components
   "rich>=13.0.0",
   "textual>=0.40.0"
 ]
 
-classifiers = [
-  "Programming Language :: Python :: 3",
-  "License :: Other/Proprietary License",
-  "Operating System :: OS Independent"
+[project.optional-dependencies]
+# Development Tools
+dev = [
+  # Testing
+  "pytest>=7.0.0",
+  "pytest-asyncio>=0.21.0",
+  "pytest-cov>=4.0.0",
+  "coverage>=7.0.0",
+  "fakeredis>=2.0.0",
+  
+  # Linting and Formatting
+  "ruff>=0.1.0",
+  
+  # Documentation
+  "sphinx>=7.0.0",
+  "sphinx-rtd-theme>=1.0.0"
 ]
 
-[project.optional-dependencies]
-dev = [
-  "pytest",
-  "coverage",
-  "pytest-cov",
-  "ruff",
-  "sphinx",
-  "sphinx-rtd-theme"
-]
+# Schema Registry and Kafka Support
 schema = [
   "confluent-kafka[avro,protobuf,schema-registry]>=2.3.0",
-  "avro-python3",
-  "fastavro", 
-  "protobuf",
-  "jsonschema"
+  "avro-python3>=1.11.0",
+  "fastavro>=1.9.0",
+  "protobuf>=4.25.0",
+  "jsonschema>=4.20.0",
+  "kafka-python>=2.0.2"
 ]
 
-[project.entry-points."orka.agents"]
-openai-builder = "orka.agents.llm_agents:OpenAIAnswerBuilder"
-rag-agent = "orka.agents.rag_agent:RAGAgent"
+# Production Dependencies
+prod = [
+  "gunicorn>=21.0.0",
+  "supervisor>=4.2.0"
+]
 
-[project.entry-points."orka.nodes"]
-memory-writer = "orka.nodes.memory_writer_node:MemoryWriterNode"
-memory-reader = "orka.nodes.memory_reader_node:MemoryReaderNode"
-rag-node = "orka.nodes.rag_node:RAGNode"
+# All Dependencies (for development with all features)
+all = [
+  "orka-reasoning[dev,schema,prod]"
+]
 
 [project.urls]
 "Homepage" = "https://orkacore.com"
@@ -64,6 +85,8 @@ rag-node = "orka.nodes.rag_node:RAGNode"
 [project.scripts]
 orka = "orka.orka_cli:main"
 orka-start = "orka.orka_start:main"
+orka-kafka = "orka.start_kafka:main"
+orka-redis = "orka.start_redis_only:main"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
@@ -240,6 +263,23 @@ max-complexity = 10
 [tool.ruff.per-file-ignores]
 "__init__.py" = ["F401"]
 "test_*.py" = ["S101"]
+
+[project.entry-points."orka.agents"]
+openai-builder = "orka.agents.llm_agents:OpenAIAnswerBuilder"
+rag-agent = "orka.agents.rag_agent:RAGAgent"
+local-llm = "orka.agents.local_llm_agents:LocalLLMAgent"
+binary = "orka.agents.agents:BinaryAgent"
+classification = "orka.agents.agents:ClassificationAgent"
+validate-and-structure = "orka.agents.validation_and_structuring_agent:ValidationAndStructuringAgent"
+
+[project.entry-points."orka.nodes"]
+memory-writer = "orka.nodes.memory_writer_node:MemoryWriterNode"
+memory-reader = "orka.nodes.memory_reader_node:MemoryReaderNode"
+rag-node = "orka.nodes.rag_node:RAGNode"
+fork-node = "orka.nodes.fork_node:ForkNode"
+join-node = "orka.nodes.join_node:JoinNode"
+failover-node = "orka.nodes.failover_node:FailoverNode"
+router-node = "orka.nodes.router_node:RouterNode"
 
 [tool.poetry.scripts]
 orka = "orka.orka_cli:main"
