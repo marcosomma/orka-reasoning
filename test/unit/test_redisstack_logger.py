@@ -725,24 +725,30 @@ class TestRedisStackLoggerAdvanced:
             self.logger.redis_client = self.mock_redis_client
             self.logger._get_thread_safe_client = Mock(return_value=self.mock_redis_client)
 
-    def test_embedding_generation_success(self):
+    async def test_embedding_generation_success(self):
         """Test successful embedding generation."""
+        # Mock embedder
         mock_embedder = AsyncMock()
-        expected_vector = np.array([0.1, 0.2, 0.3] * 128, dtype=np.float32)
-        mock_embedder.encode.return_value = expected_vector
-        mock_embedder.embedding_dim = 384
+        mock_embedder.get_embedding.return_value = [0.1, 0.2, 0.3]
 
-        self.logger.embedder = mock_embedder
-        self.logger._embedding_lock = threading.Lock()
+        # Create logger instance with mock embedder
+        logger = RedisStackMemoryLogger(
+            host="localhost",
+            port=6379,
+            embedder=mock_embedder,
+        )
 
-        with patch("asyncio.get_running_loop", side_effect=RuntimeError("No running loop")):
-            with patch("asyncio.run") as mock_run:
-                mock_run.return_value = expected_vector
+        # Test embedding generation
+        text = "Test text"
+        embedding = await logger._generate_embedding(text)
 
-                result = self.logger._get_embedding_sync("test text")
+        # Verify
+        assert embedding == [0.1, 0.2, 0.3]
+        mock_embedder.get_embedding.assert_called_once_with(text)
 
-                assert np.array_equal(result, expected_vector)
-                mock_run.assert_called_once()
+        # Clean up
+        await logger.close()
+        await mock_embedder.close()
 
     def test_embedding_generation_failure(self):
         """Test embedding generation failure and fallback."""

@@ -23,7 +23,6 @@ import logging
 import os
 import subprocess
 import time
-from typing import List
 
 from ..config import get_docker_dir
 
@@ -220,7 +219,9 @@ def initialize_schema_registry() -> None:
         )
 
         # Close the logger immediately since we only needed it for initialization
-        if hasattr(memory_logger, "close"):
+        if hasattr(memory_logger, "_producer") and hasattr(memory_logger._producer, "close"):
+            memory_logger._producer.close()
+        elif hasattr(memory_logger, "close"):
             memory_logger.close()
 
         print("✅ Schema Registry schemas initialized successfully!")
@@ -253,7 +254,7 @@ def cleanup_kafka_docker() -> None:
         print(f"⚠️ Error stopping Kafka Docker services: {e}")
 
 
-def get_kafka_services() -> List[str]:
+def get_kafka_services() -> list[str]:
     """
     Get the list of Kafka service names.
 

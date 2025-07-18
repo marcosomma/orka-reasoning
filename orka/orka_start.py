@@ -1,50 +1,40 @@
-# OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
-#
-# This file is part of OrKa – https://github.com/marcosomma/orka-resoning
-#
-# Licensed under the Apache License, Version 2.0 (Apache 2.0).
-# You may not use this file for commercial purposes without explicit permission.
-#
-# Full license: https://www.apache.org/licenses/LICENSE-2.0
-# For commercial use, contact: marcosomma.work@gmail.com
-#
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
-
+#!/usr/bin/env python3
 """
-OrKa Service Runner (Backward Compatibility Layer)
-==================================================
+OrKa Service Runner
+====================
 
-This module provides backward compatibility for the original OrKa service runner.
-The actual implementation has been refactored into the orka.startup package for
-better modularity and maintainability.
+Main entry point for starting the OrKa service stack.
+By default, uses Kafka backend for event streaming and Redis for memory operations.
 
-Key Features:
------------
-1. Multi-Backend Support: Supports both Redis and Kafka memory backends
-2. Infrastructure Management: Automates the startup and shutdown of required services
-3. Docker Integration: Manages containers via Docker Compose with profiles
-4. Process Management: Starts and monitors the OrKa backend server process
-5. Graceful Shutdown: Ensures clean teardown of services on exit
-6. Path Discovery: Locates configuration files in development and production environments
+This provides the best of both worlds:
+- Kafka for persistent event streaming and audit trails
+- Redis for fast memory operations and fork/join coordination
 
-This module serves as the main entry point for running the complete OrKa service stack.
-It can be executed directly to start all necessary services:
-
-```bash
-# Start with Redis backend (default)
-python -m orka.orka_start
-
-# Start with Kafka backend
-ORKA_MEMORY_BACKEND=kafka python -m orka.orka_start
-
-# Start with dual backend (both Redis and Kafka)
-ORKA_MEMORY_BACKEND=dual python -m orka.orka_start
-```
-
-Once started, the services will run until interrupted (e.g., Ctrl+C), at which point
-they will be gracefully shut down.
+Environment Variables:
+--------------------
+ORKA_MEMORY_BACKEND: Backend type ('kafka', 'redis', 'redisstack', or 'dual')
+REDIS_URL: Redis connection URL (default: redis://localhost:6380/0)
+KAFKA_BOOTSTRAP_SERVERS: Kafka broker list (default: localhost:9092)
+KAFKA_TOPIC_PREFIX: Prefix for Kafka topics (default: orka-memory)
 """
+
+import os
+import sys
+
+# Set default backend to Kafka (hybrid with Redis for memory)
+if "ORKA_MEMORY_BACKEND" not in os.environ:
+    os.environ["ORKA_MEMORY_BACKEND"] = "kafka"
+
+# Ensure Redis is configured for memory operations
+if "REDIS_URL" not in os.environ:
+    os.environ["REDIS_URL"] = "redis://localhost:6380/0"
+
+# Set default Kafka configuration if not already set
+if "KAFKA_BOOTSTRAP_SERVERS" not in os.environ:
+    os.environ["KAFKA_BOOTSTRAP_SERVERS"] = "localhost:9092"
+
+if "KAFKA_TOPIC_PREFIX" not in os.environ:
+    os.environ["KAFKA_TOPIC_PREFIX"] = "orka-memory"
 
 # Import all functions from the modular startup package to maintain backward compatibility
 from orka.startup import (
@@ -73,6 +63,31 @@ __all__ = [
     "wait_for_redis",
 ]
 
+print("🚀 Starting OrKa with Kafka + Redis Hybrid Backend...")
+print("📋 Configuration:")
+print(f"   • Memory Backend: {os.environ['ORKA_MEMORY_BACKEND']}")
+print(f"   • Kafka Servers: {os.environ['KAFKA_BOOTSTRAP_SERVERS']}")
+print(f"   • Kafka Topic Prefix: {os.environ['KAFKA_TOPIC_PREFIX']}")
+print(f"   • Redis URL: {os.environ['REDIS_URL']}")
+print()
+
+
+def cli_main():
+    """
+    CLI entry point for orka-start command.
+    This function is referenced in pyproject.toml's console_scripts.
+    """
+    import asyncio
+
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\n🛑 Shutdown complete.")
+    except Exception as e:
+        print(f"\n❌ Error: {e}")
+        sys.exit(1)
+
+
 # Main execution block
 if __name__ == "__main__":
-    run_startup()
+    cli_main()

@@ -238,6 +238,10 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         )
 
         # Then send to Kafka
+        self._send_to_kafka(event_data)
+
+    def _send_to_kafka(self, event_data: dict[str, Any]) -> None:
+        """Send event data to Kafka."""
         try:
             # Prepare Kafka message
             kafka_message = event_data.copy()
@@ -487,7 +491,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         """Close all connections."""
         try:
             if hasattr(self, "producer"):
-                self.producer.close()
+                self.producer.flush()  # Ensure all messages are delivered
             if self._redis_memory_logger:
                 self._redis_memory_logger.close()
             else:

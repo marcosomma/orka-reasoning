@@ -382,18 +382,18 @@ class TestKafkaMemoryLoggerOperations:
         assert "member2" in result
 
     def test_close_method(self):
-        """Test close method closes both Kafka and Redis connections."""
+        """Test close method properly closes producer."""
         # Set up the logger to not have RedisStack logger
         self.logger._redis_memory_logger = None
 
         mock_producer = Mock()
-        mock_producer.close = Mock()
+        mock_producer.flush = Mock()
         self.logger.producer = mock_producer
 
         self.logger.close()
 
-        # Verify both connections were closed
-        mock_producer.close.assert_called_once()
+        # Verify producer was flushed
+        mock_producer.flush.assert_called_once()
         self.mock_redis_client.close.assert_called_once()
 
 

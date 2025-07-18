@@ -5,11 +5,12 @@ import logging
 import sys
 
 from orka.cli.core import run_cli
+from orka.cli.memory.watch import memory_watch
 
 logger = logging.getLogger(__name__)
 
 # Re-export run_cli for backward compatibility
-__all__ = ["main", "run_cli"]
+__all__ = ["cli_main", "run_cli"]
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -47,6 +48,12 @@ def create_parser() -> argparse.ArgumentParser:
     cleanup_parser.add_argument("--dry-run", action="store_true", help="Show what would be deleted")
     cleanup_parser.set_defaults(func=lambda args: 0)
 
+    # Memory watch command
+    watch_parser = memory_subparsers.add_parser("watch", help="Watch memory events in real-time")
+    watch_parser.add_argument("--json", action="store_true", help="Output in JSON format")
+    watch_parser.add_argument("--run-id", help="Filter by run ID")
+    watch_parser.set_defaults(func=memory_watch)
+
     return parser
 
 
@@ -76,8 +83,15 @@ def main(argv: list[str] | None = None) -> int | None:
         # Handle memory command
         if args.command == "memory":
             if not hasattr(args, "memory_command") or not args.memory_command:
-                parser.print_help()
-                return None
+                memory_parser = [
+                    p for p in parser._subparsers._group_actions if p.dest == "command"
+                ][0]
+                memory_parser.choices["memory"].print_help()
+                return 1
+
+            # Execute memory command
+            if hasattr(args, "func"):
+                return args.func(args)
 
         # Handle run command
         if args.command == "run":
@@ -98,8 +112,20 @@ def main(argv: list[str] | None = None) -> int | None:
 
     except Exception as e:
         logger.error(f"Error: {e}")
-        raise
+        return 1
+
+
+def cli_main() -> None:
+    """CLI entry point for orka command."""
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        print("\n🛑 Operation cancelled.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n❌ Error: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    cli_main()
