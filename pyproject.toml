@@ -69,6 +69,16 @@ dev = [
   "flake8-comprehensions>=3.14.0",
   "flake8-pytest-style>=1.7.0",
   
+  # Type Checking
+  "mypy==1.8.0",
+  "types-redis>=4.6.0.20240311",
+  "types-PyYAML>=6.0.12.20240311",
+  "types-requests>=2.31.0.20240311",
+  "types-psutil>=5.9.0.20240311",
+  "types-protobuf>=4.24.0.20240311",
+  "types-setuptools>=69.0.0.20240311",
+  "types-urllib3>=1.26.25.14",
+  
   # Documentation
   "sphinx>=7.0.0",
   "sphinx-rtd-theme>=1.0.0"
@@ -218,3 +228,28 @@ per-file-ignores = [
 ]
 docstring-convention = "google"
 max-complexity = 10
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+# Per-module options
+[[tool.mypy.overrides]]
+module = ["test.*"]
+disallow_untyped_defs = false
+check_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = ["confluent_kafka.*", "sentence_transformers.*"]
+ignore_missing_imports = true
