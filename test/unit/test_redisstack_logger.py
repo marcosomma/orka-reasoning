@@ -725,30 +725,29 @@ class TestRedisStackLoggerAdvanced:
             self.logger.redis_client = self.mock_redis_client
             self.logger._get_thread_safe_client = Mock(return_value=self.mock_redis_client)
 
+    @pytest.mark.asyncio
     async def test_embedding_generation_success(self):
-        """Test successful embedding generation."""
-        # Mock embedder
+        """Test successful generation of embeddings."""
         mock_embedder = AsyncMock()
-        mock_embedder.get_embedding.return_value = [0.1, 0.2, 0.3]
+        mock_embedder._fallback_encode = Mock(return_value=np.array([0.1, 0.2, 0.3], dtype=np.float32))
+        mock_embedder.embedding_dim = 3
 
-        # Create logger instance with mock embedder
-        logger = RedisStackMemoryLogger(
-            host="localhost",
-            port=6379,
-            embedder=mock_embedder,
-        )
+        # Mock Redis client
+        mock_redis = Mock()
+        mock_redis.ping.return_value = True
 
-        # Test embedding generation
-        text = "Test text"
-        embedding = await logger._generate_embedding(text)
-
-        # Verify
-        assert embedding == [0.1, 0.2, 0.3]
-        mock_embedder.get_embedding.assert_called_once_with(text)
-
-        # Clean up
-        await logger.close()
-        await mock_embedder.close()
+        with (
+            patch.object(RedisStackMemoryLogger, "_create_redis_connection", return_value=mock_redis),
+            patch.object(RedisStackMemoryLogger, "_ensure_index"),
+            patch("asyncio.get_running_loop"),  # This will make it think we're in an async context
+        ):
+            logger = RedisStackMemoryLogger(embedder=mock_embedder)
+            text = "Test text"
+            embedding = logger._get_embedding_sync(text)
+            assert list(embedding) == [0.1, 0.2, 0.3]
+            mock_embedder._fallback_encode.assert_called_once_with(text)
+            logger.close()
+            await mock_embedder.close()
 
     def test_embedding_generation_failure(self):
         """Test embedding generation failure and fallback."""
