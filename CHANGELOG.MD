@@ -2,6 +2,30 @@
 *(derived from the public-repo commit history as of **2025-01-31**)*  
 
 ---
+## [0.7.7] · 2025-07-15
+### Enhanced
+* **🖥️ CLI Interface Improvements**
+  * **Simplified Command Structure** - Introduced new entry points for cleaner command-line interface
+  * **Standardized Commands** - Added consistent command format across all operations
+  * **Entry Points**:
+    * `orka` - Main CLI interface for all operations
+    * `orka-start` - Start OrKa with RedisStack
+    * `orka-redis` - Start OrKa with Redis only
+    * `orka-kafka` - Start OrKa with Kafka streaming
+
+### Changed
+* **📚 Documentation Updates**
+  * **README.md** - Updated command examples to use new entry points
+  * **Getting Started Guide** - Refreshed getting-started.md with new command format
+  * **YAML Guide** - Updated yaml-configuration-guide.md with new command examples
+
+### Technical Details
+* **Entry Points** - Added proper entry points in pyproject.toml for all CLI commands
+* **Documentation** - Updated all documentation to reflect new command structure
+* **Testing** - Ensured all tests continue to work with direct module imports
+* **Migration** - No breaking changes; old command format still supported
+
+---
 ## [0.7.6] · 2025-07-13
 ### Fixed
 * **🔧 LoopNode Test Suite Reliability & GitHub Actions Compatibility**

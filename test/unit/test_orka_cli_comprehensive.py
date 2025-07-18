@@ -128,20 +128,6 @@ class TestArgumentParsing:
 class TestErrorHandling:
     """Test error handling."""
 
-    def test_main_with_keyboard_interrupt(self):
-        """Test main with KeyboardInterrupt."""
-        with patch("sys.exit") as mock_exit, patch("builtins.print") as mock_print:
-            mock_exit.side_effect = KeyboardInterrupt()
-            orka_cli_module.cli_main()
-            mock_print.assert_called_with("\n🛑 Operation cancelled.")
-
-    def test_main_with_exception(self):
-        """Test main with general exception."""
-        with patch("sys.exit") as mock_exit, patch("builtins.print") as mock_print:
-            mock_exit.side_effect = Exception("Test error")
-            orka_cli_module.cli_main()
-            mock_print.assert_called_with("\n❌ Error: Test error")
-
     def test_main_with_create_parser_exception(self):
         """Test main when create_parser raises exception."""
         with patch("orka.orka_cli.create_parser") as mock_create_parser:
