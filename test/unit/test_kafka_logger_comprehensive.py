@@ -11,7 +11,8 @@ class TestKafkaMemoryLoggerInitialization:
     """Test initialization of KafkaMemoryLogger."""
 
     @patch("orka.memory.kafka_logger.redis.from_url")
-    def test_initialization_default_params(self, mock_redis):
+    @patch("confluent_kafka.Producer")
+    def test_initialization_default_params(self, mock_producer, mock_redis):
         """Test initialization with default parameters."""
         mock_client = Mock()
         mock_redis.return_value = mock_client
@@ -25,9 +26,11 @@ class TestKafkaMemoryLoggerInitialization:
             assert logger.redis_url == "redis://localhost:6380/0"
             assert logger.stream_key == "orka:memory"
             assert logger.main_topic == "orka-memory-events"
+            mock_producer.assert_called_once()
 
     @patch("orka.memory.kafka_logger.redis.from_url")
-    def test_initialization_custom_params(self, mock_redis):
+    @patch("confluent_kafka.Producer")
+    def test_initialization_custom_params(self, mock_producer, mock_redis):
         """Test initialization with custom parameters."""
         mock_client = Mock()
         mock_redis.return_value = mock_client
@@ -48,10 +51,12 @@ class TestKafkaMemoryLoggerInitialization:
             assert logger.stream_key == "custom:stream"
             assert logger.debug_keep_previous_outputs is True
             assert logger.decay_config["enabled"] is True
+            mock_producer.assert_called_once()
 
     @patch.dict(os.environ, {"REDIS_URL": "redis://env:6379/2"})
     @patch("orka.memory.kafka_logger.redis.from_url")
-    def test_initialization_from_env(self, mock_redis):
+    @patch("confluent_kafka.Producer")
+    def test_initialization_from_env(self, mock_producer, mock_redis):
         """Test initialization with environment variable."""
         mock_client = Mock()
         mock_redis.return_value = mock_client
@@ -62,6 +67,7 @@ class TestKafkaMemoryLoggerInitialization:
             logger = KafkaMemoryLogger()
 
             assert logger.redis_url == "redis://env:6379/2"
+            mock_producer.assert_called_once()
 
     @patch("orka.memory.kafka_logger.redis.from_url")
     def test_initialization_redisstack_fallback(self, mock_redis):
@@ -226,10 +232,11 @@ class TestKafkaMemoryLoggerLogging:
         """Set up test fixtures."""
         with patch("orka.memory.kafka_logger.redis.from_url"):
             with patch("orka.memory.redisstack_logger.RedisStackMemoryLogger") as mock_redisstack:
-                self.mock_redisstack_instance = Mock()
-                mock_redisstack.return_value = self.mock_redisstack_instance
+                with patch("confluent_kafka.Producer"):
+                    self.mock_redisstack_instance = Mock()
+                    mock_redisstack.return_value = self.mock_redisstack_instance
 
-                self.logger = KafkaMemoryLogger()
+                    self.logger = KafkaMemoryLogger()
 
     def test_log_basic_event(self):
         """Test logging a basic event."""
@@ -386,15 +393,20 @@ class TestKafkaMemoryLoggerOperations:
         # Set up the logger to not have RedisStack logger
         self.logger._redis_memory_logger = None
 
+        # Mock the producer
         mock_producer = Mock()
         mock_producer.flush = Mock()
         self.logger.producer = mock_producer
 
+        # Mock the redis client
+        mock_redis_client = Mock()
+        self.logger.redis_client = mock_redis_client
+
         self.logger.close()
 
-        # Verify producer was flushed
+        # Verify producer was flushed and redis client was closed
         mock_producer.flush.assert_called_once()
-        self.mock_redis_client.close.assert_called_once()
+        mock_redis_client.close.assert_called_once()
 
 
 class TestKafkaMemoryLoggerEnhancedFeatures:
