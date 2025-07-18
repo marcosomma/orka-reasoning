@@ -53,10 +53,10 @@ export OPENAI_API_KEY=your-openai-api-key-here
 
 ```bash
 # For LOCAL development (automatically includes RedisStack + 100x faster vector search):
-python -m orka.orka_start
+orka-start
 
 # For PRODUCTION with Kafka streaming:
-python -m orka.start_kafka
+orka-kafka
 
 # Optional: Run OrKa UI for visual monitoring
 docker pull marcosomma/orka-ui:latest
@@ -188,13 +188,13 @@ agents:
 
 ```bash
 # Run your first conversation
-python -m orka.orka_cli smart-assistant.yml "Hello! I'm new to OrKa. Can you help me understand how the new RedisStack memory works?"
+orka run smart-assistant.yml "Hello! I'm new to OrKa. Can you help me understand how the new RedisStack memory works?"
 
 # Ask a follow-up question
-python -m orka.orka_cli smart-assistant.yml "What makes the new version 100x faster than before?"
+orka run smart-assistant.yml "What makes the new version 100x faster than before?"
 
 # Test memory with a related question
-python -m orka.orka_cli smart-assistant.yml "Can you remind me what we were just discussing about OrKa's performance improvements?"
+orka run smart-assistant.yml "Can you remind me what we were just discussing about OrKa's performance improvements?"
 ```
 
 **What you'll notice:**
@@ -228,7 +228,7 @@ python -m orka.orka_cli smart-assistant.yml "Can you remind me what we were just
 
 ```bash
 # Professional dashboard with HNSW metrics
-python -m orka.orka_cli memory watch
+orka memory watch
 
 # You'll see:
 ┌─────────────────────────────────────────────────────────────┐
@@ -241,10 +241,10 @@ python -m orka.orka_cli memory watch
 └─────────────────────────────────────────────────────────────┘
 
 # Detailed performance analytics
-python -m orka.orka_cli memory stats
+orka memory stats
 
 # Clean up expired memories with HNSW optimization
-python -m orka.orka_cli memory cleanup --dry-run
+orka memory cleanup --dry-run
 ```
 
 ## 📊 Performance Comparison
@@ -348,7 +348,7 @@ agents:
 
 ```bash
 # Run an iterative workflow
-python -m orka.orka_cli iterative-assistant.yml "Explain how artificial intelligence will impact education in the next decade"
+orka run iterative-assistant.yml "Explain how artificial intelligence will impact education in the next decade"
 
 # Watch it improve over multiple iterations until quality threshold is met
 ```
@@ -364,13 +364,13 @@ python -m orka.orka_cli iterative-assistant.yml "Explain how artificial intellig
 ### 1. Explore More Examples
 ```bash
 # Try the built-in examples with RedisStack performance
-python -m orka.orka_cli examples/enhanced_memory_validation_example.yml "Test RedisStack speed"
+orka run examples/enhanced_memory_validation_example.yml "Test RedisStack speed"
 
 # Try the cognitive society example
-python -m orka.orka_cli examples/cognitive_society_loop.yml "Should we implement universal basic income?"
+orka run examples/cognitive_society_loop.yml "Should we implement universal basic income?"
 
 # Try the simple loop example
-python -m orka.orka_cli examples/simple_loop_example.yml "Analyze the pros and cons of remote work"
+orka run examples/simple_loop_example.yml "Analyze the pros and cons of remote work"
 ```
 
 ### 2. Build Advanced Workflows
@@ -382,7 +382,7 @@ Check out our comprehensive guides:
 ### 3. Production Deployment
 ```bash
 # Use Kafka for enterprise streaming + RedisStack for memory
-python -m orka.start_kafka
+orka-kafka
 
 # Monitor with professional UI
 docker run -it -p 80:80 marcosomma/orka-ui:latest

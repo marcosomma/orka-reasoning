@@ -1244,3 +1244,25 @@ agents:
 This comprehensive guide covers all the major agent types, configuration patterns, and best practices for building robust OrKa workflows.
 
 [📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md) 
+
+### Running Your Configuration
+
+```bash
+# Start OrKa with RedisStack (development)
+orka-start
+
+# Start OrKa with Kafka (production)
+orka-kafka
+
+# Run your workflow
+orka run ./my-workflow.yml "Your input here"
+
+# Monitor memory performance
+orka memory watch
+
+# Check memory statistics
+orka memory stats
+
+# Clean up expired memories
+orka memory cleanup --dry-run
+``` 

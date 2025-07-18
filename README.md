@@ -58,14 +58,11 @@ export OPENAI_API_KEY=your-key-here
 
 # 3. Start OrKa (automatically includes RedisStack + 100x faster vector search)
 # For LOCAL development:
-python -m orka.orka_start
+orka-start
 
-# For PRODUCTION with Kafka streaming:
-python -m orka.start_kafka
-```
+# For PRODUCTION to ensure Kafka streaming:
+orka-kafka
 
-In a separate terminal:
-```
 # 4. Create a simple workflow
 cat > quickstart.yml << EOF
 orchestrator:
@@ -118,10 +115,10 @@ agents:
 EOF
 
 # 5. Run your intelligent AI workflow
-python -m orka.orka_cli ./quickstart.yml "What are the latest developments in quantum computing?"
+orka run ./quickstart.yml "What are the latest developments in quantum computing?"
 
 # 6. Monitor performance (in another terminal)
-python -m orka.orka_cli memory watch
+orka memory watch
 
 # 7. Optional: Run OrKa UI for visual workflow monitoring
 docker pull marcosomma/orka-ui:latest
@@ -739,6 +736,12 @@ orka run ./my-workflow.yml "Your input here"
 
 # Check system health
 orka system status
+
+# Start OrKa with Redis only (for development)
+orka-redis
+
+# Start OrKa with Kafka (for production)
+orka-kafka
 ```
 
 ---
