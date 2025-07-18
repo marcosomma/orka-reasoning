@@ -22,7 +22,7 @@ import json
 import logging
 import os
 from datetime import UTC, datetime, timedelta
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import redis
 
@@ -94,10 +94,10 @@ class RedisMemoryLogger(BaseMemoryLogger):
 
     def __init__(
         self,
-        redis_url: Optional[str] = None,
+        redis_url: str | None = None,
         stream_key: str = "orka:memory",
         debug_keep_previous_outputs: bool = False,
-        decay_config: Optional[Dict[str, Any]] = None,
+        decay_config: dict[str, Any] | None = None,
     ) -> None:
         """
         Initialize the Redis memory logger.
@@ -109,7 +109,9 @@ class RedisMemoryLogger(BaseMemoryLogger):
             decay_config: Configuration for memory decay functionality.
         """
         super().__init__(stream_key, debug_keep_previous_outputs, decay_config)
-        self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6380/0")
+        self.redis_url = redis_url or os.getenv(
+            "REDIS_URL", "redis://localhost:6379/0"
+        )  # Use port 6379 by default
         self.client = redis.from_url(self.redis_url)
 
     @property
@@ -124,13 +126,13 @@ class RedisMemoryLogger(BaseMemoryLogger):
         self,
         agent_id: str,
         event_type: str,
-        payload: Dict[str, Any],
-        step: Optional[int] = None,
-        run_id: Optional[str] = None,
-        fork_group: Optional[str] = None,
-        parent: Optional[str] = None,
-        previous_outputs: Optional[Dict[str, Any]] = None,
-        agent_decay_config: Optional[Dict[str, Any]] = None,
+        payload: dict[str, Any],
+        step: int | None = None,
+        run_id: str | None = None,
+        fork_group: str | None = None,
+        parent: str | None = None,
+        previous_outputs: dict[str, Any] | None = None,
+        agent_decay_config: dict[str, Any] | None = None,
     ) -> None:
         """
         Log an event to the Redis stream.
@@ -222,7 +224,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
                 # Restore original config
                 self.decay_config = old_config
 
-        event: Dict[str, Any] = {
+        event: dict[str, Any] = {
             "agent_id": agent_id,
             "event_type": event_type,
             "timestamp": datetime.now(UTC).isoformat(),
@@ -343,7 +345,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
                     f"Failed to log event to Redis: {e!s} and fallback also failed: {inner_e!s}",
                 )
 
-    def tail(self, count: int = 10) -> List[Dict[str, Any]]:
+    def tail(self, count: int = 10) -> list[dict[str, Any]]:
         """
         Retrieve the most recent events from the Redis stream.
 
@@ -361,7 +363,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
             logger.error(f"Failed to retrieve events from Redis: {e!s}")
             return []
 
-    def hset(self, name: str, key: str, value: Union[str, bytes, int, float]) -> int:
+    def hset(self, name: str, key: str, value: str | bytes | int | float) -> int:
         """
         Set a field in a Redis hash.
 
@@ -382,7 +384,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
             logger.error(f"Failed to set hash field {key} in {name}: {e!s}")
             return 0
 
-    def hget(self, name: str, key: str) -> Optional[str]:
+    def hget(self, name: str, key: str) -> str | None:
         """
         Get a field from a Redis hash.
 
@@ -399,7 +401,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
             logger.error(f"Failed to get hash field {key} from {name}: {e!s}")
             return None
 
-    def hkeys(self, name: str) -> List[str]:
+    def hkeys(self, name: str) -> list[str]:
         """
         Get all keys in a Redis hash.
 
@@ -445,7 +447,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
             logger.error(f"Failed to delete hash fields from {name}: {e!s}")
             return 0
 
-    def smembers(self, name: str) -> List[str]:
+    def smembers(self, name: str) -> list[str]:
         """
         Get all members of a Redis set.
 
@@ -495,7 +497,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
             logger.error(f"Failed to remove members from set {name}: {e!s}")
             return 0
 
-    def get(self, key: str) -> Optional[str]:
+    def get(self, key: str) -> str | None:
         """
         Get a value by key from Redis.
 
@@ -512,7 +514,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
             logger.error(f"Failed to get key {key}: {e!s}")
             return None
 
-    def set(self, key: str, value: Union[str, bytes, int, float]) -> bool:
+    def set(self, key: str, value: str | bytes | int | float) -> bool:
         """
         Set a value by key in Redis.
 
@@ -590,7 +592,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
             logger.error(f"Failed to clean up Redis key '{key}': {e!s}")
             return False
 
-    def cleanup_expired_memories(self, dry_run: bool = False) -> Dict[str, Any]:
+    def cleanup_expired_memories(self, dry_run: bool = False) -> dict[str, Any]:
         """
         Clean up expired memory entries based on decay configuration.
 
@@ -703,7 +705,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
                 "deleted_count": 0,
             }
 
-    def get_memory_stats(self) -> Dict[str, Any]:
+    def get_memory_stats(self) -> dict[str, Any]:
         """
         Get memory usage statistics.
 

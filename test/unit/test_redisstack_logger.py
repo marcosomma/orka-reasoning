@@ -25,7 +25,7 @@ class TestRedisStackLoggerInitialization:
 
         logger = RedisStackMemoryLogger()
 
-        assert logger.redis_url == "redis://localhost:6380/0"
+        assert logger.redis_url == "redis://localhost:6379/0"  # Updated to use port 6379
         assert logger.index_name == "orka_enhanced_memory"
         assert logger.embedder is None
         assert logger.memory_decay_config is None

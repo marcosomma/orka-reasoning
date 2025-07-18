@@ -269,27 +269,36 @@ class TestMemoryLoggerEdgeCases:
 
 
 class TestMemoryLoggerParameterHandling:
-    """Test parameter handling and edge cases."""
+    """Test memory logger parameter handling."""
 
     def test_backend_case_insensitive(self):
         """Test that backend parameter is case insensitive."""
-        with patch("orka.memory.redisstack_logger.RedisStackMemoryLogger") as mock_redisstack:
-            mock_instance = Mock()
-            mock_instance.ensure_index.return_value = True
-            mock_redisstack.return_value = mock_instance
+        with (
+            patch("orka.memory.redisstack_logger.RedisStackMemoryLogger") as mock_redisstack,
+            patch("orka.memory.kafka_logger.KafkaMemoryLogger") as mock_kafka,
+        ):
+            # Setup RedisStack mock
+            mock_redisstack_instance = Mock()
+            mock_redisstack_instance.ensure_index.return_value = True
+            mock_redisstack.return_value = mock_redisstack_instance
+
+            # Setup Kafka mock
+            mock_kafka_instance = Mock()
+            mock_kafka.return_value = mock_kafka_instance
 
             # Test various case combinations
-            backends = ["REDIS", "Redis", "REDISSTACK", "RedisStack", "KAFKA", "Kafka"]
+            redis_backends = ["REDIS", "Redis", "REDISSTACK", "RedisStack"]
+            kafka_backends = ["KAFKA", "Kafka"]
 
-            for backend in backends:
-                try:
-                    result = create_memory_logger(backend=backend)
-                    # Should not raise exception for valid backends
-                    assert result is not None
-                except (ImportError, ValueError):
-                    # ImportError is acceptable for missing dependencies
-                    # ValueError for unsupported backends should not happen
-                    pass
+            # Test Redis/RedisStack backends
+            for backend in redis_backends:
+                result = create_memory_logger(backend=backend)
+                assert isinstance(result, mock_redisstack_instance.__class__)
+
+            # Test Kafka backends
+            for backend in kafka_backends:
+                result = create_memory_logger(backend=backend)
+                assert isinstance(result, mock_kafka_instance.__class__)
 
     @patch("orka.memory.redisstack_logger.RedisStackMemoryLogger")
     def test_all_parameters_passed_through(self, mock_redisstack):

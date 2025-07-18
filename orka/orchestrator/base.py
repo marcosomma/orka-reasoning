@@ -43,7 +43,7 @@ Core Responsibilities
 
 import logging
 import os
-from typing import Any, Dict
+from typing import Any
 from uuid import uuid4
 
 from ..fork_group_manager import ForkGroupManager
@@ -117,17 +117,25 @@ class OrchestratorBase:
         # Extract decay configuration from orchestrator config and environment
         decay_config = self._init_decay_config()
 
+        # Get memory configuration from YAML
+        memory_config = self.orchestrator_cfg.get("memory", {}).get("config", {})
+
         if memory_backend == "kafka":
             self.memory = create_memory_logger(
                 backend="kafka",
-                bootstrap_servers=os.getenv(
+                bootstrap_servers=memory_config.get("bootstrap_servers")
+                or os.getenv(
                     "KAFKA_BOOTSTRAP_SERVERS",
                     "localhost:9092",
                 ),
-                topic_prefix=os.getenv("KAFKA_TOPIC_PREFIX", "orka-memory"),
+                schema_registry_url=memory_config.get("schema_registry_url"),
+                use_schema_registry=memory_config.get("use_schema_registry", True),
+                topic_prefix=memory_config.get("topic_prefix")
+                or os.getenv("KAFKA_TOPIC_PREFIX", "orka-memory"),
                 debug_keep_previous_outputs=debug_keep_previous_outputs,
                 decay_config=decay_config,
-                redis_url=os.getenv("REDIS_URL", "redis://localhost:6380/0"),
+                redis_url=memory_config.get("redis_url")
+                or os.getenv("REDIS_URL", "redis://localhost:6380/0"),
                 enable_hnsw=True,
                 vector_params={
                     "M": 16,
@@ -140,7 +148,8 @@ class OrchestratorBase:
         else:
             self.memory = create_memory_logger(
                 backend="redisstack",
-                redis_url=os.getenv("REDIS_URL", "redis://localhost:6380/0"),
+                redis_url=memory_config.get("redis_url")
+                or os.getenv("REDIS_URL", "redis://localhost:6380/0"),
                 debug_keep_previous_outputs=debug_keep_previous_outputs,
                 decay_config=decay_config,
                 enable_hnsw=True,
@@ -175,7 +184,7 @@ class OrchestratorBase:
         """
         # This method will be implemented in the execution engine
 
-    def _init_decay_config(self) -> Dict[str, Any]:
+    def _init_decay_config(self) -> dict[str, Any]:
         """
         Initialize decay configuration from orchestrator config and environment variables.
 

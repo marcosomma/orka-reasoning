@@ -160,7 +160,7 @@ Implementation Notes
 # Import all components from the new memory package
 import logging
 import os
-from typing import Any, Dict, Optional
+from typing import Any
 
 from .memory.base_logger import BaseMemoryLogger
 from .memory.redis_logger import RedisMemoryLogger
@@ -170,14 +170,14 @@ logger = logging.getLogger(__name__)
 
 def create_memory_logger(
     backend: str = "redisstack",
-    redis_url: Optional[str] = None,
-    bootstrap_servers: Optional[str] = None,
+    redis_url: str | None = None,
+    bootstrap_servers: str | None = None,
     topic_prefix: str = "orka-memory",
     stream_key: str = "orka:memory",
     debug_keep_previous_outputs: bool = False,
-    decay_config: Optional[Dict[str, Any]] = None,
+    decay_config: dict[str, Any] | None = None,
     enable_hnsw: bool = True,
-    vector_params: Optional[Dict[str, Any]] = None,
+    vector_params: dict[str, Any] | None = None,
     **kwargs,
 ) -> BaseMemoryLogger:
     """
@@ -311,8 +311,22 @@ def create_memory_logger(
                 "localhost:9092",
             )
 
+            # Get Schema Registry configuration
+            schema_registry_url = kwargs.get("schema_registry_url") or os.getenv(
+                "KAFKA_SCHEMA_REGISTRY_URL",
+                "http://localhost:8081",
+            )
+            use_schema_registry = kwargs.get("use_schema_registry", True)
+
+            logger.info(
+                f"🔄 Creating Kafka memory logger with Schema Registry: {schema_registry_url}"
+            )
+
             return KafkaMemoryLogger(
                 bootstrap_servers=kafka_bootstrap_servers,
+                schema_registry_url=schema_registry_url,
+                use_schema_registry=use_schema_registry,
+                topic_prefix=topic_prefix,
                 redis_url=redis_url,
                 stream_key=stream_key,
                 debug_keep_previous_outputs=debug_keep_previous_outputs,

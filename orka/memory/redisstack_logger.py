@@ -207,7 +207,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
 
     def __init__(
         self,
-        redis_url: str = "redis://localhost:6380/0",
+        redis_url: str = "redis://localhost:6379/0",  # Use port 6379 by default
         index_name: str = "orka_enhanced_memory",
         embedder=None,
         memory_decay_config: dict[str, Any] | None = None,
@@ -219,10 +219,29 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         vector_params: dict[str, Any] | None = None,
         **kwargs,
     ):
-        """Initialize RedisStack memory logger with thread safety."""
-        # Store decay config for access by methods
+        """
+        Initialize the RedisStack memory logger.
+
+        Args:
+            redis_url: Redis connection URL. Defaults to redis://localhost:6379/0.
+            index_name: Name of the RedisStack index for vector search.
+            embedder: Optional embedder for vector search.
+            memory_decay_config: Configuration for memory decay functionality.
+            stream_key: Key for the Redis stream.
+            debug_keep_previous_outputs: If True, keeps previous_outputs in log files.
+            decay_config: Legacy decay configuration (use memory_decay_config instead).
+            enable_hnsw: Whether to enable HNSW vector indexing.
+            vector_params: HNSW configuration parameters.
+            **kwargs: Additional parameters for backward compatibility.
+        """
+        # Handle legacy decay config
         effective_decay_config = memory_decay_config or decay_config
-        super().__init__(effective_decay_config)
+
+        super().__init__(
+            stream_key,
+            debug_keep_previous_outputs,
+            effective_decay_config,
+        )
 
         self.redis_url = redis_url
         self.index_name = index_name

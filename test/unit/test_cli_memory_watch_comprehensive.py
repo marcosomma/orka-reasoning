@@ -127,7 +127,7 @@ class TestMemoryWatch:
             assert result == 0
             mock_create.assert_called_once_with(
                 backend="redisstack",
-                redis_url="redis://localhost:6380/0",
+                redis_url="redis://localhost:6379/0",  # All backends use the same port now
             )
 
     def test_memory_watch_fallback_default_backend(self):

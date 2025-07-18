@@ -56,12 +56,9 @@ def _memory_watch_fallback(args):
     """Fallback memory watch with basic interface."""
     try:
         backend = getattr(args, "backend", None) or os.getenv("ORKA_MEMORY_BACKEND", "redisstack")
-
-        # Provide proper Redis URL based on backend
-        if backend == "redisstack":
-            redis_url = os.getenv("REDIS_URL", "redis://localhost:6380/0")
-        else:
-            redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+        redis_url = os.getenv(
+            "REDIS_URL", "redis://localhost:6379/0"
+        )  # Use same URL for all backends
 
         memory = create_memory_logger(backend=backend, redis_url=redis_url)
 

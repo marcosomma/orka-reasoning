@@ -20,7 +20,7 @@ for running OrKa workflows.
 """
 
 import logging
-from typing import Any, Dict, List, Union
+from typing import Any
 
 from orka.orchestrator import Orchestrator
 
@@ -29,11 +29,30 @@ from .types import Event
 logger = logging.getLogger(__name__)
 
 
+def setup_logging():
+    """Configure logging for the OrKa CLI."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    # Set specific loggers to DEBUG level
+    kafka_logger = logging.getLogger("orka.memory.kafka_logger")
+    kafka_logger.setLevel(logging.DEBUG)
+
+    redis_logger = logging.getLogger("orka.memory.redisstack_logger")
+    redis_logger.setLevel(logging.DEBUG)
+
+    memory_logger = logging.getLogger("orka.memory_logger")
+    memory_logger.setLevel(logging.DEBUG)
+
+
 async def run_cli_entrypoint(
     config_path: str,
     input_text: str,
     log_to_file: bool = False,
-) -> Union[Dict[str, Any], List[Event], str]:
+) -> dict[str, Any] | list[Event] | str:
     """
     🚀 **Primary programmatic entry point** - run OrKa workflows from any application.
 
@@ -88,6 +107,7 @@ async def run_cli_entrypoint(
     - Microservices requiring intelligent decision making
     - Research applications with custom AI workflows
     """
+    setup_logging()
     orchestrator = Orchestrator(config_path)
     result = await orchestrator.run(input_text)
 
@@ -106,3 +126,23 @@ async def run_cli_entrypoint(
         logger.info(result)
 
     return result  # <--- VERY IMPORTANT for your test to receive it
+
+
+def run_cli(argv: list[str]) -> int:
+    """Run the CLI with the given arguments."""
+    import argparse
+    import asyncio
+
+    parser = argparse.ArgumentParser(description="OrKa CLI")
+    parser.add_argument("command", choices=["run"], help="Command to execute")
+    parser.add_argument("config", help="Path to YAML config file")
+    parser.add_argument("input", help="Input text for the workflow")
+    parser.add_argument("--log-to-file", action="store_true", help="Log output to file")
+
+    args = parser.parse_args(argv)
+
+    if args.command == "run":
+        result = asyncio.run(run_cli_entrypoint(args.config, args.input, args.log_to_file))
+        return 0 if result else 1
+
+    return 1

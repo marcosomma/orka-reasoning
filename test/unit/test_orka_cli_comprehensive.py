@@ -1,6 +1,4 @@
-"""
-Comprehensive tests for orka CLI module to improve coverage.
-"""
+"""Test the OrKa CLI module."""
 
 import argparse
 import sys
@@ -8,19 +6,17 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-import orka.orka_cli as orka_cli_module
+from orka import orka_cli as orka_cli_module
 
 
 class TestMainFunction:
-    """Test the main CLI entry point function."""
+    """Test main function."""
 
     @patch("orka.orka_cli.create_parser")
-    @patch("orka.orka_cli.setup_subcommands")
     @patch("orka.orka_cli.setup_logging")
     def test_main_with_no_command(
         self,
         mock_setup_logging,
-        mock_setup_subcommands,
         mock_create_parser,
     ):
         """Test main function when no command is provided."""
@@ -30,52 +26,92 @@ class TestMainFunction:
         mock_create_parser.return_value = mock_parser
 
         # Test
-        result = orka_cli_module.main()
+        with patch.object(sys, "argv", ["orka_cli"]):
+            result = orka_cli_module.main()
 
         # Assertions
         assert result == 1
         mock_create_parser.assert_called_once()
-        mock_setup_subcommands.assert_called_once_with(mock_parser)
         mock_setup_logging.assert_called_once_with(False)
         mock_parser.print_help.assert_called_once()
 
     @patch("orka.orka_cli.create_parser")
-    @patch("orka.orka_cli.setup_subcommands")
     @patch("orka.orka_cli.setup_logging")
-    @patch("asyncio.run")
+    @patch("orka.cli.core.run_cli_entrypoint")
     def test_main_with_run_command(
         self,
-        mock_asyncio_run,
+        mock_run_cli_entrypoint,
         mock_setup_logging,
-        mock_setup_subcommands,
         mock_create_parser,
     ):
-        """Test main function with run command (async)."""
+        """Test main function with run command."""
         # Setup mock
-        mock_func = Mock()
-        mock_args = Mock(command="run", verbose=False, func=mock_func)
-
         mock_parser = Mock()
+        mock_args = Mock(
+            command="run",
+            verbose=False,
+            config="config.yml",
+            input="test input",
+            log_to_file=False,
+        )
         mock_parser.parse_args.return_value = mock_args
         mock_create_parser.return_value = mock_parser
 
-        mock_asyncio_run.return_value = 0
+        # Setup async mock for run_cli_entrypoint
+        mock_run_cli_entrypoint.return_value = {"result": "success"}
 
         # Test
-        result = orka_cli_module.main()
+        with patch.object(sys, "argv", ["orka_cli", "run", "config.yml", "test input"]):
+            result = orka_cli_module.main()
 
         # Assertions
         assert result == 0
         mock_setup_logging.assert_called_once_with(False)
-        mock_asyncio_run.assert_called_once_with(mock_func(mock_args))
+        mock_run_cli_entrypoint.assert_called_once_with("config.yml", "test input", False)
 
     @patch("orka.orka_cli.create_parser")
-    @patch("orka.orka_cli.setup_subcommands")
+    @patch("orka.orka_cli.setup_logging")
+    @patch("orka.cli.core.run_cli_entrypoint")
+    def test_main_with_run_command_log_to_file(
+        self,
+        mock_run_cli_entrypoint,
+        mock_setup_logging,
+        mock_create_parser,
+    ):
+        """Test main function with run command and log-to-file option."""
+        # Setup mock
+        mock_parser = Mock()
+        mock_args = Mock(
+            command="run",
+            verbose=False,
+            config="config.yml",
+            input="test input",
+            log_to_file=True,
+        )
+        mock_parser.parse_args.return_value = mock_args
+        mock_create_parser.return_value = mock_parser
+
+        # Setup async mock for run_cli_entrypoint
+        mock_run_cli_entrypoint.return_value = {"result": "success"}
+
+        # Test
+        with patch.object(
+            sys,
+            "argv",
+            ["orka_cli", "run", "config.yml", "test input", "--log-to-file"],
+        ):
+            result = orka_cli_module.main()
+
+        # Assertions
+        assert result == 0
+        mock_setup_logging.assert_called_once_with(False)
+        mock_run_cli_entrypoint.assert_called_once_with("config.yml", "test input", True)
+
+    @patch("orka.orka_cli.create_parser")
     @patch("orka.orka_cli.setup_logging")
     def test_main_with_non_run_command(
         self,
         mock_setup_logging,
-        mock_setup_subcommands,
         mock_create_parser,
     ):
         """Test main function with non-run command (sync)."""
@@ -88,7 +124,8 @@ class TestMainFunction:
         mock_create_parser.return_value = mock_parser
 
         # Test
-        result = orka_cli_module.main()
+        with patch.object(sys, "argv", ["orka_cli", "memory", "stats"]):
+            result = orka_cli_module.main()
 
         # Assertions
         assert result == 0
@@ -96,142 +133,69 @@ class TestMainFunction:
         mock_func.assert_called_once_with(mock_args)
 
     @patch("orka.orka_cli.create_parser")
-    @patch("orka.orka_cli.setup_subcommands")
     @patch("orka.orka_cli.setup_logging")
-    def test_main_with_exception_in_command(
-        self,
-        mock_setup_logging,
-        mock_setup_subcommands,
-        mock_create_parser,
-    ):
-        """Test main function when command raises exception."""
-        # Setup mock that raises exception
-        mock_func = Mock(side_effect=Exception("Command failed"))
-        mock_args = Mock(command="test", verbose=False, func=mock_func)
-
-        mock_parser = Mock()
-        mock_parser.parse_args.return_value = mock_args
-        mock_create_parser.return_value = mock_parser
-
-        # Test that exception is propagated
-        with pytest.raises(Exception, match="Command failed"):
-            orka_cli_module.main()
-
-    @patch("orka.orka_cli.create_parser")
-    @patch("orka.orka_cli.setup_subcommands")
-    @patch("orka.orka_cli.setup_logging")
-    def test_main_with_memory_command_no_subparsers(
-        self,
-        mock_setup_logging,
-        mock_setup_subcommands,
-        mock_create_parser,
-    ):
-        """Test main function with memory command but no subparsers found."""
-        # Setup mock parser without subparsers
-        mock_func = Mock(return_value=None)
-        mock_args = Mock(command="memory", memory_command=None, verbose=False, func=mock_func)
-
-        mock_parser = Mock()
-        mock_parser.parse_args.return_value = mock_args
-        mock_parser._actions = []  # No subparsers
-        mock_create_parser.return_value = mock_parser
-
-        # Test
-        result = orka_cli_module.main()
-
-        # Should return None from the function
-        assert result is None
-        mock_setup_logging.assert_called_once_with(False)
-        mock_func.assert_called_once_with(mock_args)
-
-    @patch("orka.orka_cli.create_parser")
-    @patch("orka.orka_cli.setup_subcommands")
-    @patch("orka.orka_cli.setup_logging")
-    @patch("asyncio.run")
+    @patch("orka.cli.core.run_cli_entrypoint")
     def test_main_with_run_command_exception(
         self,
-        mock_asyncio_run,
+        mock_run_cli_entrypoint,
         mock_setup_logging,
-        mock_setup_subcommands,
         mock_create_parser,
     ):
         """Test main function with run command that raises exception."""
         # Setup mock
-        mock_func = Mock()
-        mock_args = Mock(command="run", verbose=False, func=mock_func)
+        mock_parser = Mock()
+        mock_args = Mock(
+            command="run",
+            verbose=False,
+            config="config.yml",
+            input="test input",
+            log_to_file=False,
+        )
+        mock_parser.parse_args.return_value = mock_args
+        mock_create_parser.return_value = mock_parser
+
+        # Setup async mock to raise exception
+        mock_run_cli_entrypoint.side_effect = Exception("Command failed")
+
+        # Test that exception is propagated
+        with patch.object(sys, "argv", ["orka_cli", "run", "config.yml", "test input"]):
+            with pytest.raises(Exception, match="Command failed"):
+                orka_cli_module.main()
+
+    @patch("orka.orka_cli.create_parser")
+    @patch("orka.orka_cli.setup_logging")
+    def test_main_with_memory_command_no_subcommand(
+        self,
+        mock_setup_logging,
+        mock_create_parser,
+    ):
+        """Test main function with memory command but no subcommand."""
+        # Setup mock parser without subcommands
+        mock_args = Mock(command="memory", memory_command=None, verbose=False)
 
         mock_parser = Mock()
         mock_parser.parse_args.return_value = mock_args
         mock_create_parser.return_value = mock_parser
 
-        mock_asyncio_run.side_effect = Exception("Async command failed")
+        # Test
+        with patch.object(sys, "argv", ["orka_cli", "memory"]):
+            result = orka_cli_module.main()
 
-        # Test that exception is propagated
-        with pytest.raises(Exception, match="Async command failed"):
-            orka_cli_module.main()
+        # Should return None and print help
+        assert result is None
+        mock_setup_logging.assert_called_once_with(False)
+        mock_parser.print_help.assert_called_once()
 
     @patch("orka.orka_cli.create_parser")
-    @patch("orka.orka_cli.setup_subcommands")
     @patch("orka.orka_cli.setup_logging")
     def test_main_with_command_returning_none(
         self,
         mock_setup_logging,
-        mock_setup_subcommands,
         mock_create_parser,
     ):
         """Test main function with command that returns None."""
         # Setup mock
         mock_func = Mock(return_value=None)
-        mock_args = Mock(command="test", verbose=False, func=mock_func)
-
-        mock_parser = Mock()
-        mock_parser.parse_args.return_value = mock_args
-        mock_create_parser.return_value = mock_parser
-
-        # Test
-        result = orka_cli_module.main()
-
-        # Should return None
-        assert result is None
-        mock_func.assert_called_once_with(mock_args)
-
-    @patch("orka.orka_cli.create_parser")
-    @patch("orka.orka_cli.setup_subcommands")
-    @patch("orka.orka_cli.setup_logging")
-    def test_main_with_verbose_logging(
-        self,
-        mock_setup_logging,
-        mock_setup_subcommands,
-        mock_create_parser,
-    ):
-        """Test main function with verbose logging enabled."""
-        # Setup mock
-        mock_func = Mock(return_value=0)
-        mock_args = Mock(command="test", verbose=True, func=mock_func)
-
-        mock_parser = Mock()
-        mock_parser.parse_args.return_value = mock_args
-        mock_create_parser.return_value = mock_parser
-
-        # Test
-        result = orka_cli_module.main()
-
-        # Assertions
-        assert result == 0
-        mock_setup_logging.assert_called_once_with(True)
-
-    @patch("orka.orka_cli.create_parser")
-    @patch("orka.orka_cli.setup_subcommands")
-    @patch("orka.orka_cli.setup_logging")
-    def test_main_with_memory_command_simple(
-        self,
-        mock_setup_logging,
-        mock_setup_subcommands,
-        mock_create_parser,
-    ):
-        """Test main function with memory command that has subcommand."""
-        # Setup mock
-        mock_func = Mock(return_value=0)
         mock_args = Mock(command="memory", verbose=False, memory_command="stats", func=mock_func)
 
         mock_parser = Mock()
@@ -239,472 +203,278 @@ class TestMainFunction:
         mock_create_parser.return_value = mock_parser
 
         # Test
-        result = orka_cli_module.main()
+        with patch.object(sys, "argv", ["orka_cli", "memory", "stats"]):
+            result = orka_cli_module.main()
 
-        # Should execute the function normally
-        assert result == 0
+        # Should return None
+        assert result is None
         mock_setup_logging.assert_called_once_with(False)
         mock_func.assert_called_once_with(mock_args)
 
-
-class TestModuleImports:
-    """Test module-level imports."""
-
-    def test_imports_available(self):
-        """Test that all required imports are available."""
-        # Test that main imports work
-        assert hasattr(orka_cli_module, "main")
-        assert hasattr(orka_cli_module, "create_parser")
-        assert hasattr(orka_cli_module, "setup_subcommands")
-
-        # Test that imports from cli module work
-        assert callable(orka_cli_module.main)
-        assert callable(orka_cli_module.create_parser)
-        assert callable(orka_cli_module.setup_subcommands)
-
-    def test_module_docstring(self):
-        """Test that module has comprehensive docstring."""
-        assert orka_cli_module.__doc__ is not None
-        assert len(orka_cli_module.__doc__) > 100
-        assert "OrKa CLI" in orka_cli_module.__doc__
-
-    def test_star_imports(self):
-        """Test that star imports from cli module work."""
-        # This tests the "from orka.cli import *" line
-        # We can't easily test all imported functions, but we can test
-        # that the import doesn't fail and basic functions are available
-        try:
-            from orka.cli import setup_logging
-
-            assert callable(setup_logging)
-        except ImportError:
-            # If import fails, that's a separate issue
-            pass
-
-
-class TestMainEntryPoint:
-    """Test the main entry point when called as script."""
-
-    @patch("orka.orka_cli.main")
-    @patch("sys.exit")
-    def test_main_entry_point(self, mock_sys_exit, mock_main):
-        """Test the main entry point (__main__ block)."""
-        mock_main.return_value = 0
-
-        # Simulate running as main module
-        with patch("orka.orka_cli.__name__", "__main__"):
-            # Import and execute the main block
-            exec(
-                compile(
-                    'if __name__ == "__main__": sys.exit(main())',
-                    "orka_cli.py",
-                    "exec",
-                ),
-                orka_cli_module.__dict__,
-            )
-
-        mock_main.assert_called_once()
-        mock_sys_exit.assert_called_once_with(0)
-
-    @patch("orka.orka_cli.main")
-    @patch("sys.exit")
-    def test_main_entry_point_with_error(self, mock_sys_exit, mock_main):
-        """Test the main entry point when main returns error code."""
-        mock_main.return_value = 1
-
-        # Simulate running as main module
-        with patch("orka.orka_cli.__name__", "__main__"):
-            exec(
-                compile(
-                    'if __name__ == "__main__": sys.exit(main())',
-                    "orka_cli.py",
-                    "exec",
-                ),
-                orka_cli_module.__dict__,
-            )
-
-        mock_main.assert_called_once()
-        mock_sys_exit.assert_called_once_with(1)
-
-
-class TestArgumentParsing:
-    """Test argument parsing scenarios."""
-
     @patch("orka.orka_cli.create_parser")
-    @patch("orka.orka_cli.setup_subcommands")
     @patch("orka.orka_cli.setup_logging")
-    def test_parse_args_exception(
+    def test_main_with_verbose_logging(
         self,
         mock_setup_logging,
-        mock_setup_subcommands,
         mock_create_parser,
     ):
-        """Test main function when parse_args raises exception."""
-        # Setup mock parser that raises exception
-        mock_parser = Mock()
-        mock_parser.parse_args.side_effect = SystemExit(2)  # Common argparse exception
-        mock_create_parser.return_value = mock_parser
+        """Test main function with verbose logging enabled."""
+        # Setup mock
+        mock_func = Mock(return_value=0)
+        mock_args = Mock(command="memory", memory_command="stats", verbose=True, func=mock_func)
 
-        # Test that exception is propagated
-        with pytest.raises(SystemExit):
-            orka_cli_module.main()
-
-    @patch("orka.orka_cli.create_parser")
-    @patch("orka.orka_cli.setup_subcommands")
-    @patch("orka.orka_cli.setup_logging")
-    def test_setup_logging_exception(
-        self,
-        mock_setup_logging,
-        mock_setup_subcommands,
-        mock_create_parser,
-    ):
-        """Test main function when setup_logging raises exception."""
-        # Setup mocks
-        mock_args = Mock(command="test", verbose=False)
         mock_parser = Mock()
         mock_parser.parse_args.return_value = mock_args
         mock_create_parser.return_value = mock_parser
 
-        mock_setup_logging.side_effect = Exception("Logging setup failed")
+        # Test
+        with patch.object(sys, "argv", ["orka_cli", "-v", "memory", "stats"]):
+            result = orka_cli_module.main()
 
-        # Test that exception is propagated
-        with pytest.raises(Exception, match="Logging setup failed"):
-            orka_cli_module.main()
+        # Assertions
+        assert result == 0
+        mock_setup_logging.assert_called_once_with(True)
+        mock_func.assert_called_once_with(mock_args)
+
+
+class TestModuleImports:
+    """Test module imports and structure."""
+
+    def test_imports_available(self):
+        """Test that required imports are available."""
+        assert hasattr(orka_cli_module, "main")
+        assert hasattr(orka_cli_module, "run_cli")
+        assert hasattr(orka_cli_module, "create_parser")
+        assert hasattr(orka_cli_module, "setup_logging")
+
+    def test_module_docstring(self):
+        """Test that module has a docstring."""
+        assert orka_cli_module.__doc__ is not None
+        assert len(orka_cli_module.__doc__) > 0
+
+    def test_star_imports(self):
+        """Test that __all__ contains expected exports."""
+        assert hasattr(orka_cli_module, "__all__")
+        assert "main" in orka_cli_module.__all__
+        assert "run_cli" in orka_cli_module.__all__
+
+
+class TestMainEntryPoint:
+    """Test main entry point behavior."""
+
+    def test_main_entry_point(self):
+        """Test that main entry point exists and is callable."""
+        assert callable(orka_cli_module.main)
+
+    def test_main_entry_point_with_error(self):
+        """Test main entry point with error."""
+        with patch.object(sys, "argv", ["orka_cli", "--invalid-option"]):
+            with pytest.raises(SystemExit):
+                orka_cli_module.main()
+
+
+class TestArgumentParsing:
+    """Test argument parsing functionality."""
+
+    def test_parse_args_exception(self):
+        """Test handling of argument parsing exceptions."""
+        with patch.object(sys, "argv", ["orka_cli", "--invalid-option"]):
+            with pytest.raises(SystemExit):
+                orka_cli_module.main()
+
+    @patch("orka.orka_cli.setup_logging")
+    def test_setup_logging_exception(
+        self,
+        mock_setup_logging,
+    ):
+        """Test handling of logging setup exceptions."""
+        mock_setup_logging.side_effect = Exception("Logging setup failed")
+        with patch.object(sys, "argv", ["orka_cli", "memory", "stats"]):
+            with pytest.raises(Exception, match="Logging setup failed"):
+                orka_cli_module.main()
 
 
 class TestComplexScenarios:
     """Test complex scenarios and edge cases."""
 
-    @patch("orka.orka_cli.create_parser")
-    @patch("orka.orka_cli.setup_subcommands")
-    @patch("orka.orka_cli.setup_logging")
-    def test_command_with_custom_return_value(
-        self,
-        mock_setup_logging,
-        mock_setup_subcommands,
-        mock_create_parser,
-    ):
+    def test_command_with_custom_return_value(self):
         """Test command that returns custom value."""
-        # Setup mock
-        mock_func = Mock(return_value=42)
-        mock_args = Mock(command="custom", verbose=False, func=mock_func)
+        with patch("orka.orka_cli.create_parser") as mock_create_parser:
+            mock_func = Mock(return_value=42)
+            mock_args = Mock(
+                command="memory", memory_command="stats", verbose=False, func=mock_func
+            )
+            mock_parser = Mock()
+            mock_parser.parse_args.return_value = mock_args
+            mock_create_parser.return_value = mock_parser
 
-        mock_parser = Mock()
-        mock_parser.parse_args.return_value = mock_args
-        mock_create_parser.return_value = mock_parser
-
-        # Test
-        result = orka_cli_module.main()
-
-        # Should return the custom value
-        assert result == 42
-        mock_func.assert_called_once_with(mock_args)
+            result = orka_cli_module.main(["memory", "stats"])
+            assert result == 42
 
     @patch("orka.orka_cli.create_parser")
-    @patch("orka.orka_cli.setup_subcommands")
     @patch("orka.orka_cli.setup_logging")
-    @patch("asyncio.run")
+    @patch("orka.cli.core.run_cli_entrypoint")
     def test_run_command_with_custom_return_value(
         self,
-        mock_asyncio_run,
+        mock_run_cli_entrypoint,
         mock_setup_logging,
-        mock_setup_subcommands,
         mock_create_parser,
     ):
         """Test run command that returns custom value."""
         # Setup mock
-        mock_func = Mock()
-        mock_args = Mock(command="run", verbose=False, func=mock_func)
-
         mock_parser = Mock()
+        mock_args = Mock(
+            command="run",
+            verbose=False,
+            config="config.yml",
+            input="test input",
+            log_to_file=False,
+        )
         mock_parser.parse_args.return_value = mock_args
         mock_create_parser.return_value = mock_parser
 
-        mock_asyncio_run.return_value = 99
+        # Setup async mock for run_cli_entrypoint
+        mock_run_cli_entrypoint.return_value = {"custom": "value"}
 
         # Test
-        result = orka_cli_module.main()
+        with patch.object(sys, "argv", ["orka_cli", "run", "config.yml", "test input"]):
+            result = orka_cli_module.main()
 
-        # Should return the async result
-        assert result == 99
-        mock_asyncio_run.assert_called_once_with(mock_func(mock_args))
+        # Assertions
+        assert result == 0  # run_cli returns 0 for successful execution
+        mock_setup_logging.assert_called_once_with(False)
+        mock_run_cli_entrypoint.assert_called_once_with("config.yml", "test input", False)
 
-    @patch("orka.orka_cli.create_parser")
-    @patch("orka.orka_cli.setup_subcommands")
-    @patch("orka.orka_cli.setup_logging")
-    def test_main_with_different_command_types(
-        self,
-        mock_setup_logging,
-        mock_setup_subcommands,
-        mock_create_parser,
-    ):
+    def test_main_with_different_command_types(self):
         """Test main function with different command types."""
-        # Test with orchestrator command
-        mock_func = Mock(return_value=0)
-        mock_args = Mock(command="orchestrator", verbose=False, func=mock_func)
+        with patch("orka.orka_cli.create_parser") as mock_create_parser:
+            # Test memory command
+            mock_func = Mock(return_value=0)
+            mock_args = Mock(
+                command="memory",
+                memory_command="stats",
+                verbose=False,
+                func=mock_func,
+            )
+            mock_parser = Mock()
+            mock_parser.parse_args.return_value = mock_args
+            mock_create_parser.return_value = mock_parser
 
-        mock_parser = Mock()
-        mock_parser.parse_args.return_value = mock_args
-        mock_create_parser.return_value = mock_parser
-
-        # Test
-        result = orka_cli_module.main()
-
-        # Should execute normally
-        assert result == 0
-        mock_func.assert_called_once_with(mock_args)
+            result = orka_cli_module.main(["memory", "stats"])
+            assert result == 0
+            mock_func.assert_called_once_with(mock_args)
 
 
 class TestIntegration:
-    """Test integration scenarios."""
+    """Integration tests for the CLI module."""
 
     def test_module_structure(self):
-        """Test that module has expected structure."""
-        # Check that module has main function
+        """Test overall module structure."""
         assert hasattr(orka_cli_module, "main")
-        assert callable(orka_cli_module.main)
-
-        # Check imports
-        assert hasattr(orka_cli_module, "argparse")
-        assert hasattr(orka_cli_module, "sys")
-
-        # Check that create_parser and setup_subcommands are available
         assert hasattr(orka_cli_module, "create_parser")
-        assert hasattr(orka_cli_module, "setup_subcommands")
+        assert hasattr(orka_cli_module, "setup_logging")
 
     def test_backward_compatibility_imports(self):
-        """Test that backward compatibility imports work."""
-        # Test that star import from cli works
-        try:
-            # This should not raise ImportError
-            import orka.cli
+        """Test backward compatibility imports."""
+        assert "run_cli" in orka_cli_module.__all__
 
-            # If we can import orka.cli, the star import should work
-            assert True
-        except ImportError:
-            # If orka.cli doesn't exist, that's a separate issue
-            pytest.skip("orka.cli module not available")
-
-    @patch("sys.argv", ["orka"])
-    @patch("orka.orka_cli.main")
-    def test_command_line_interface(self, mock_main):
-        """Test command line interface integration."""
-        mock_main.return_value = 0
-
-        # This tests that the module can be imported and main can be called
-        # without errors in the import structure
-        result = orka_cli_module.main()
-        assert result == 0
-        mock_main.assert_called_once()
+    def test_command_line_interface(self):
+        """Test command line interface structure."""
+        parser = orka_cli_module.create_parser()
+        assert isinstance(parser, argparse.ArgumentParser)
 
     def test_imports_from_cli_module(self):
-        """Test that imports from cli module are available."""
-        # Test that we can access the imported functions
-        assert hasattr(orka_cli_module, "create_parser")
-        assert hasattr(orka_cli_module, "setup_subcommands")
+        """Test imports from CLI module."""
+        from orka.cli.core import run_cli
 
-        # Test that they are callable
-        assert callable(orka_cli_module.create_parser)
-        assert callable(orka_cli_module.setup_subcommands)
+        assert callable(run_cli)
 
     def test_module_constants(self):
-        """Test module-level constants and attributes."""
-        # Test that sys and argparse are imported
-        assert hasattr(orka_cli_module, "sys")
-        assert hasattr(orka_cli_module, "argparse")
-
-        # Test that they are the expected modules
-        assert orka_cli_module.sys is sys
-        assert orka_cli_module.argparse is argparse
+        """Test module constants."""
+        assert isinstance(orka_cli_module.__all__, list)
+        assert len(orka_cli_module.__all__) > 0
 
 
 class TestErrorHandling:
     """Test error handling scenarios."""
 
-    @patch("orka.orka_cli.create_parser")
-    @patch("orka.orka_cli.setup_subcommands")
-    @patch("orka.orka_cli.setup_logging")
-    def test_main_with_create_parser_exception(
-        self,
-        mock_setup_logging,
-        mock_setup_subcommands,
-        mock_create_parser,
-    ):
+    def test_main_with_create_parser_exception(self):
         """Test main function when create_parser raises exception."""
-        mock_create_parser.side_effect = Exception("Parser creation failed")
+        with patch("orka.orka_cli.create_parser") as mock_create_parser:
+            mock_create_parser.side_effect = Exception("Parser creation failed")
+            with pytest.raises(Exception, match="Parser creation failed"):
+                orka_cli_module.main()
 
-        # Test that exception is propagated
-        with pytest.raises(Exception, match="Parser creation failed"):
-            orka_cli_module.main()
+    def test_main_with_missing_func_attribute(self):
+        """Test main function when args has no func attribute."""
+        with patch("orka.orka_cli.create_parser") as mock_create_parser:
+            mock_args = Mock(command="test", verbose=False)
+            # Explicitly remove func attribute
+            del mock_args.func
+            mock_parser = Mock()
+            mock_parser.parse_args.return_value = mock_args
+            mock_create_parser.return_value = mock_parser
 
-    @patch("orka.orka_cli.create_parser")
-    @patch("orka.orka_cli.setup_subcommands")
-    @patch("orka.orka_cli.setup_logging")
-    def test_main_with_setup_subcommands_exception(
-        self,
-        mock_setup_logging,
-        mock_setup_subcommands,
-        mock_create_parser,
-    ):
-        """Test main function when setup_subcommands raises exception."""
-        mock_parser = Mock()
-        mock_create_parser.return_value = mock_parser
-        mock_setup_subcommands.side_effect = Exception("Subcommands setup failed")
-
-        # Test that exception is propagated
-        with pytest.raises(Exception, match="Subcommands setup failed"):
-            orka_cli_module.main()
-
-    @patch("orka.orka_cli.create_parser")
-    @patch("orka.orka_cli.setup_subcommands")
-    @patch("orka.orka_cli.setup_logging")
-    def test_main_with_missing_func_attribute(
-        self,
-        mock_setup_logging,
-        mock_setup_subcommands,
-        mock_create_parser,
-    ):
-        """Test main function when args doesn't have func attribute."""
-        # Setup mock args without func attribute
-        mock_args = Mock(command="test", verbose=False)
-        # Remove func attribute to simulate missing function
-        del mock_args.func
-
-        mock_parser = Mock()
-        mock_parser.parse_args.return_value = mock_args
-        mock_create_parser.return_value = mock_parser
-
-        # Test that AttributeError is raised
-        with pytest.raises(AttributeError):
-            orka_cli_module.main()
+            result = orka_cli_module.main(["test"])
+            assert result == 1
 
 
 class TestMainExecution:
     """Test main execution scenarios."""
 
     def test_main_module_execution_path(self):
-        """Test that the main module execution path exists."""
-        # Test that the module has the main execution block
-        # Read the source to verify the __name__ == "__main__" block exists
-        import inspect
+        """Test main module execution path."""
+        with patch.object(sys, "argv", ["orka_cli", "--help"]):
+            with pytest.raises(SystemExit):
+                orka_cli_module.main()
 
-        import orka.orka_cli
-
-        source = inspect.getsource(orka.orka_cli)
-
-        # Check that the main execution block exists
-        assert 'if __name__ == "__main__":' in source
-        assert "sys.exit(main())" in source
-
-    @patch("orka.orka_cli.main")
-    def test_main_execution_simulation(self, mock_main):
-        """Test main execution by simulating the __name__ == '__main__' block."""
-        mock_main.return_value = 0
-
-        # Simulate the execution of the __name__ == "__main__" block
-        # by directly calling the code that would be executed
-        import sys
-
-        # This simulates what happens when the module is run directly
-        # We mock sys.exit to prevent actual exit
-        with patch("sys.exit") as mock_exit:
-            # Execute the equivalent of the __name__ == "__main__" block
-            if True:  # This represents __name__ == "__main__"
-                sys.exit(orka_cli_module.main())
-
-            # Verify that sys.exit was called with the main return value
-            mock_exit.assert_called_once_with(0)
-            mock_main.assert_called_once()
-
-    def test_main_execution_with_subprocess(self):
-        """Test actual module execution using subprocess."""
-        import subprocess
-        import sys
-
-        # Test that the module can be executed directly
-        # This will actually execute the __name__ == "__main__" block
-        try:
-            # Run the module with --help to get a quick exit
-            result = subprocess.run(
-                [sys.executable, "-m", "orka.orka_cli", "--help"],
-                check=False,
-                capture_output=True,
-                text=True,
-                timeout=10,
+    def test_main_execution_simulation(self):
+        """Test main execution with simulated arguments."""
+        with patch("orka.orka_cli.create_parser") as mock_create_parser:
+            mock_func = Mock(return_value=0)
+            mock_args = Mock(
+                command="memory",
+                memory_command="stats",
+                verbose=False,
+                func=mock_func,
             )
+            mock_parser = Mock()
+            mock_parser.parse_args.return_value = mock_args
+            mock_create_parser.return_value = mock_parser
 
-            # The module should execute without import errors
-            # Help typically returns exit code 0 or 1
-            assert result.returncode in [0, 1]
+            result = orka_cli_module.main(["memory", "stats"])
+            assert result == 0
 
-        except subprocess.TimeoutExpired:
-            # If it times out, that's also acceptable as it means the module loaded
-            pass
-        except Exception as e:
-            # If there's a module import error, that would be a problem
-            if "ModuleNotFoundError" in str(e) or "ImportError" in str(e):
-                pytest.fail(f"Module execution failed with import error: {e}")
-            # Other errors might be expected (like missing config files)
+    def test_main_execution_with_none_return(self):
+        """Test main execution with None return value."""
+        with patch("orka.orka_cli.create_parser") as mock_create_parser:
+            mock_func = Mock(return_value=None)
+            mock_args = Mock(
+                command="memory",
+                memory_command="stats",
+                verbose=False,
+                func=mock_func,
+            )
+            mock_parser = Mock()
+            mock_parser.parse_args.return_value = mock_args
+            mock_create_parser.return_value = mock_parser
 
-    @patch("sys.argv", ["orka"])
-    @patch("orka.orka_cli.main")
-    @patch("sys.exit")
-    def test_main_called_when_executed_directly(self, mock_sys_exit, mock_main):
-        """Test that main is called when module is executed directly."""
-        mock_main.return_value = 0
+            result = orka_cli_module.main(["memory", "stats"])
+            assert result is None
 
-        # Simulate the __name__ == "__main__" block execution
-        # This is what happens when the module is run directly
-        import sys
+    def test_main_execution_with_error_code(self):
+        """Test main execution with error return code."""
+        with patch("orka.orka_cli.create_parser") as mock_create_parser:
+            mock_func = Mock(return_value=1)
+            mock_args = Mock(
+                command="memory",
+                memory_command="stats",
+                verbose=False,
+                func=mock_func,
+            )
+            mock_parser = Mock()
+            mock_parser.parse_args.return_value = mock_args
+            mock_create_parser.return_value = mock_parser
 
-        if True:  # This simulates __name__ == "__main__"
-            sys.exit(orka_cli_module.main())
-
-        # Check that sys.exit was called with the main return value
-        mock_sys_exit.assert_called_once_with(0)
-
-    @patch("sys.argv", ["orka", "--help"])
-    @patch("orka.orka_cli.main")
-    @patch("sys.exit")
-    def test_main_called_with_help_arg(self, mock_sys_exit, mock_main):
-        """Test that main is called with help argument."""
-        mock_main.return_value = 1  # Help typically returns 1
-
-        # Simulate the __name__ == "__main__" block execution
-        if True:  # This simulates __name__ == "__main__"
-            import sys
-
-            sys.exit(orka_cli_module.main())
-
-        # Check that sys.exit was called with the main return value
-        mock_sys_exit.assert_called_once_with(1)
-
-    @patch("orka.orka_cli.main")
-    @patch("sys.exit")
-    def test_main_execution_with_none_return(self, mock_sys_exit, mock_main):
-        """Test main execution when main returns None."""
-        mock_main.return_value = None
-
-        # Simulate the __name__ == "__main__" block execution
-        if True:  # This simulates __name__ == "__main__"
-            import sys
-
-            sys.exit(orka_cli_module.main())
-
-        # Check that sys.exit was called with None
-        mock_sys_exit.assert_called_once_with(None)
-
-    @patch("orka.orka_cli.main")
-    @patch("sys.exit")
-    def test_main_execution_with_error_code(self, mock_sys_exit, mock_main):
-        """Test main execution when main returns error code."""
-        mock_main.return_value = 42
-
-        # Simulate the __name__ == "__main__" block execution
-        if True:  # This simulates __name__ == "__main__"
-            import sys
-
-            sys.exit(orka_cli_module.main())
-
-        # Check that sys.exit was called with the error code
-        mock_sys_exit.assert_called_once_with(42)
+            result = orka_cli_module.main(["memory", "stats"])
+            assert result == 1

@@ -69,6 +69,7 @@ class SchemaManager:
         self.registry_client = None
         self.serializers: dict[str, Any] = {}
         self.deserializers: dict[str, Any] = {}
+        self.schema_cache: dict[str, str] = {}  # Cache for loaded schemas
 
         if config.format != SchemaFormat.JSON:
             self._init_schema_registry()
@@ -94,6 +95,9 @@ class SchemaManager:
 
     def _load_avro_schema(self, schema_name: str) -> str:
         """Load Avro schema from file."""
+        if schema_name in self.schema_cache:
+            return self.schema_cache[schema_name]
+
         schema_path = os.path.join(
             self.config.schemas_dir,
             "avro",
@@ -101,12 +105,17 @@ class SchemaManager:
         )
         try:
             with open(schema_path) as f:
-                return f.read()
+                schema_str = f.read()
+                self.schema_cache[schema_name] = schema_str
+                return schema_str
         except FileNotFoundError:
             raise FileNotFoundError(f"Avro schema not found: {schema_path}")
 
     def _load_protobuf_schema(self, schema_name: str) -> str:
         """Load Protobuf schema from file."""
+        if schema_name in self.schema_cache:
+            return self.schema_cache[schema_name]
+
         schema_path = os.path.join(
             self.config.schemas_dir,
             "protobuf",
@@ -114,7 +123,9 @@ class SchemaManager:
         )
         try:
             with open(schema_path) as f:
-                return f.read()
+                schema_str = f.read()
+                self.schema_cache[schema_name] = schema_str
+                return schema_str
         except FileNotFoundError:
             raise FileNotFoundError(f"Protobuf schema not found: {schema_path}")
 
@@ -163,9 +174,14 @@ class SchemaManager:
             if not AVRO_AVAILABLE:
                 raise RuntimeError("Avro dependencies not available")
 
+            schema_str = self._load_avro_schema(schema_name)
             from confluent_kafka.schema_registry.avro import AvroDeserializer
 
-            deserializer = AvroDeserializer(self.registry_client, self._dict_to_memory)
+            deserializer = AvroDeserializer(
+                self.registry_client,
+                schema_str,
+                self._dict_to_memory,
+            )
 
         elif self.config.format == SchemaFormat.PROTOBUF:
             if not PROTOBUF_AVAILABLE:
@@ -179,46 +195,27 @@ class SchemaManager:
         self.deserializers[cache_key] = deserializer
         return deserializer
 
-    def _memory_to_dict(
-        self,
-        memory_obj: dict[str, Any],
-        ctx: "SerializationContext",
-    ) -> dict[str, Any]:
-        """Convert memory object to dict for Avro serialization."""
-        # Transform your memory object to match the Avro schema
-        return {
-            "id": memory_obj.get("id", ""),
-            "content": memory_obj.get("content", ""),
-            "metadata": {
-                "source": memory_obj.get("metadata", {}).get("source", ""),
-                "confidence": float(
-                    memory_obj.get("metadata", {}).get("confidence", 0.0),
-                ),
-                "reason": memory_obj.get("metadata", {}).get("reason"),
-                "fact": memory_obj.get("metadata", {}).get("fact"),
-                "timestamp": float(
-                    memory_obj.get("metadata", {}).get("timestamp", 0.0),
-                ),
-                "agent_id": memory_obj.get("metadata", {}).get("agent_id", ""),
-                "query": memory_obj.get("metadata", {}).get("query"),
-                "tags": memory_obj.get("metadata", {}).get("tags", []),
-                "vector_embedding": memory_obj.get("metadata", {}).get(
-                    "vector_embedding",
-                ),
-            },
-            "similarity": memory_obj.get("similarity"),
-            "ts": int(memory_obj.get("ts", 0)),
-            "match_type": memory_obj.get("match_type", "semantic"),
-            "stream_key": memory_obj.get("stream_key", ""),
-        }
+    def _memory_to_dict(self, obj: dict[str, Any], ctx: "SerializationContext") -> dict[str, Any]:
+        """Convert memory object to dict for serialization."""
+        # Ensure metadata field exists with default values
+        if "metadata" not in obj:
+            obj["metadata"] = {
+                "source": "",
+                "timestamp": "",
+                "category": "",
+                "tags": [],
+                "confidence": 0.0,  # Default confidence score
+                "reason": "",
+                "fact": "",
+                "agent_id": "",
+                "query": "",
+                "vector_embedding": [],
+            }
+        return obj
 
-    def _dict_to_memory(
-        self,
-        avro_dict: dict[str, Any],
-        ctx: "SerializationContext",
-    ) -> dict[str, Any]:
-        """Convert Avro dict back to memory object."""
-        return avro_dict  # Or transform back to your internal format
+    def _dict_to_memory(self, obj: dict[str, Any], ctx: "SerializationContext") -> dict[str, Any]:
+        """Convert dict to memory object after deserialization."""
+        return obj
 
     def _json_serializer(
         self,
@@ -282,7 +279,6 @@ def create_schema_manager(
     )
 
     config = SchemaConfig(registry_url=registry_url, format=format)
-
     return SchemaManager(config)
 
 
