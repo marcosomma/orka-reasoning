@@ -143,7 +143,9 @@ class ComponentBuilder:
                 raw_node_id.decode("utf-8", errors="replace")
                 if isinstance(raw_node_id, bytes)
                 else str(raw_node_id)
-            )[:8]  # Limit node_id length
+            )[
+                :8
+            ]  # Limit node_id length
 
             # Handle memory type
             raw_memory_type = mem.get("memory_type", "unknown")
@@ -151,7 +153,9 @@ class ComponentBuilder:
                 raw_memory_type.decode("utf-8", errors="replace")
                 if isinstance(raw_memory_type, bytes)
                 else str(raw_memory_type)
-            )[:6]  # Shorten type
+            )[
+                :6
+            ]  # Shorten type
 
             # Handle importance score
             raw_importance = mem.get("importance_score", 0)
@@ -185,7 +189,9 @@ class ComponentBuilder:
                 raw_ttl.decode("utf-8", errors="replace")
                 if isinstance(raw_ttl, bytes)
                 else str(raw_ttl)
-            )[:8]  # Limit TTL length
+            )[
+                :8
+            ]  # Limit TTL length
 
             # Color code TTL
             if "h" in ttl and int(ttl.split("h")[0]) > 1:
@@ -554,9 +560,7 @@ class ComponentBuilder:
             type_color = (
                 "green"
                 if memory_type == "long_term"
-                else "yellow"
-                if memory_type == "short_term"
-                else "dim"
+                else "yellow" if memory_type == "short_term" else "dim"
             )
 
             table.add_row(

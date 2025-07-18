@@ -52,9 +52,7 @@ class ForkNode(BaseNode):
         """
         targets = self.config.get("targets", [])
         if not targets:
-            raise ValueError(
-                f"ForkNode '{self.node_id}' requires non-empty 'targets' list."
-            )
+            raise ValueError(f"ForkNode '{self.node_id}' requires non-empty 'targets' list.")
 
         # Generate a unique ID for this fork group
         fork_group_id = orchestrator.fork_manager.generate_group_id(self.node_id)
@@ -68,9 +66,7 @@ class ForkNode(BaseNode):
                 if self.mode == "sequential":
                     # For sequential mode, only queue the first agent
                     orchestrator.enqueue_fork([first_agent], fork_group_id)
-                    orchestrator.fork_manager.track_branch_sequence(
-                        fork_group_id, branch
-                    )
+                    orchestrator.fork_manager.track_branch_sequence(fork_group_id, branch)
                 else:
                     # For parallel mode, queue all agents
                     orchestrator.enqueue_fork(branch, fork_group_id)
@@ -84,8 +80,6 @@ class ForkNode(BaseNode):
             orchestrator.fork_manager.create_group(fork_group_id, all_flat_agents)
 
         # Store fork group mapping and agent list using backend-agnostic methods
-        self.memory_logger.hset(
-            f"fork_group_mapping:{self.node_id}", "group_id", fork_group_id
-        )
+        self.memory_logger.hset(f"fork_group_mapping:{self.node_id}", "group_id", fork_group_id)
         self.memory_logger.sadd(f"fork_group:{fork_group_id}", *all_flat_agents)
         return {"status": "forked", "fork_group": fork_group_id}

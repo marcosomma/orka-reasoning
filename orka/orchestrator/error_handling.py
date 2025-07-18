@@ -63,9 +63,9 @@ class ErrorHandler:
             error_entry["exception"] = {
                 "type": str(type(exception).__name__),
                 "message": str(exception),
-                "traceback": str(exception.__traceback__)
-                if hasattr(exception, "__traceback__")
-                else None,
+                "traceback": (
+                    str(exception.__traceback__) if hasattr(exception, "__traceback__") else None
+                ),
             }
 
         if status_code:
@@ -199,9 +199,11 @@ class ErrorHandler:
             if hasattr(self.memory, "memory") and self.memory.memory:
                 return {
                     "total_entries": len(self.memory.memory),
-                    "last_10_entries": self.memory.memory[-10:]
-                    if len(self.memory.memory) >= 10
-                    else self.memory.memory,
+                    "last_10_entries": (
+                        self.memory.memory[-10:]
+                        if len(self.memory.memory) >= 10
+                        else self.memory.memory
+                    ),
                     "backend_type": type(self.memory).__name__,
                 }
         except Exception as e:

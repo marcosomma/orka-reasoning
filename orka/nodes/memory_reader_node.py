@@ -823,9 +823,11 @@ class MemoryReaderNode(BaseNode):
                                 "context_similarity": float(context_similarity),
                                 "keyword_matches": keyword_overlap,
                                 "match_type": "context_aware_stream",
-                                "timestamp": data.get(b"ts", b"0").decode()
-                                if isinstance(data.get(b"ts"), bytes)
-                                else data.get("ts", "0"),
+                                "timestamp": (
+                                    data.get(b"ts", b"0").decode()
+                                    if isinstance(data.get(b"ts"), bytes)
+                                    else data.get("ts", "0")
+                                ),
                             },
                         )
 

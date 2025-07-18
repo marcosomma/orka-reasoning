@@ -287,7 +287,8 @@ def migrate_from_json():
     """
     Example of how to migrate existing JSON-based Kafka messages to schema-based.
     """
-    print("""
+    print(
+        """
     Migration Steps:
     
     1. Install dependencies:
@@ -311,7 +312,8 @@ def migrate_from_json():
     
     4. Register schemas:
        schema_manager.register_schema('orka-memory-topic-value', 'memory_entry')
-    """)
+    """
+    )
 
 
 if __name__ == "__main__":

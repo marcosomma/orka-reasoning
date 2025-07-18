@@ -19,7 +19,12 @@ This package contains CLI commands for memory management operations.
 """
 
 from .commands import memory_cleanup, memory_configure, memory_stats
-from .watch import _memory_watch_display, _memory_watch_fallback, _memory_watch_json, memory_watch
+from .watch import (
+    _memory_watch_display,
+    _memory_watch_fallback,
+    _memory_watch_json,
+    memory_watch,
+)
 
 __all__ = [
     "_memory_watch_display",

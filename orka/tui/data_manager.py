@@ -364,9 +364,11 @@ class DataManager:
             "performance": {
                 "has_data": len(self.performance_history) > 0,
                 "latest": self.performance_history[-1] if self.performance_history else {},
-                "search_time": self.performance_history[-1].get("average_search_time", 0)
-                if self.performance_history
-                else 0,
+                "search_time": (
+                    self.performance_history[-1].get("average_search_time", 0)
+                    if self.performance_history
+                    else 0
+                ),
             },
             # === HEALTH INDICATORS ===
             "health": {

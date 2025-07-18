@@ -1429,12 +1429,12 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 "cache_hits": 0,
                 "average_search_time": 0.0,
                 "vector_search_enabled": self.embedder is not None,
-                "embedder_model": getattr(self.embedder, "model_name", "Unknown")
-                if self.embedder
-                else None,
-                "embedding_dimension": getattr(self.embedder, "embedding_dim", 0)
-                if self.embedder
-                else 0,
+                "embedder_model": (
+                    getattr(self.embedder, "model_name", "Unknown") if self.embedder else None
+                ),
+                "embedding_dimension": (
+                    getattr(self.embedder, "embedding_dim", 0) if self.embedder else 0
+                ),
             }
 
             # Index status
@@ -1502,12 +1502,14 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                     )
 
                     metrics["memory_quality"] = {
-                        "avg_importance_score": sum(importance_scores) / len(importance_scores)
-                        if importance_scores
-                        else 0,
-                        "long_term_percentage": (long_term_count / len(recent_memories)) * 100
-                        if recent_memories
-                        else 0,
+                        "avg_importance_score": (
+                            sum(importance_scores) / len(importance_scores)
+                            if importance_scores
+                            else 0
+                        ),
+                        "long_term_percentage": (
+                            (long_term_count / len(recent_memories)) * 100 if recent_memories else 0
+                        ),
                     }
                 else:
                     metrics["memory_quality"] = {

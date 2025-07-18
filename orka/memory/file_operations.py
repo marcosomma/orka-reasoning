@@ -147,9 +147,11 @@ class FileOperationsMixin:
                         "error": "Original entry contained non-serializable data",
                         # Preserve optimization info if present
                         "previous_outputs_summary": entry.get("previous_outputs_summary"),
-                        "execution_context_keys": list(entry.get("execution_context", {}).keys())
-                        if entry.get("execution_context")
-                        else None,
+                        "execution_context_keys": (
+                            list(entry.get("execution_context", {}).keys())
+                            if entry.get("execution_context")
+                            else None
+                        ),
                     }
                     for entry in processed_memory
                 ]

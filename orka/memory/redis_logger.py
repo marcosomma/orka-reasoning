@@ -833,9 +833,9 @@ class RedisMemoryLogger(BaseMemoryLogger):
                     "short_term_hours": self.decay_config["default_short_term_hours"],
                     "long_term_hours": self.decay_config["default_long_term_hours"],
                     "check_interval_minutes": self.decay_config["check_interval_minutes"],
-                    "last_decay_check": self._last_decay_check.isoformat()
-                    if self._last_decay_check
-                    else None,
+                    "last_decay_check": (
+                        self._last_decay_check.isoformat() if self._last_decay_check else None
+                    ),
                 }
 
             return stats

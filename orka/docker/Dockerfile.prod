@@ -14,9 +14,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
-COPY orka/requirements.txt .
 COPY pyproject.toml .
-COPY setup.py .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip && \

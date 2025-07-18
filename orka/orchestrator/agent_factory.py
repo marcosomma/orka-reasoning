@@ -27,7 +27,14 @@ from ..agents import (
     local_llm_agents,
     validation_and_structuring_agent,
 )
-from ..nodes import failing_node, failover_node, fork_node, join_node, loop_node, router_node
+from ..nodes import (
+    failing_node,
+    failover_node,
+    fork_node,
+    join_node,
+    loop_node,
+    router_node,
+)
 from ..nodes.memory_reader_node import MemoryReaderNode
 from ..nodes.memory_writer_node import MemoryWriterNode
 from ..tools.search_tools import DuckDuckGoTool

@@ -168,9 +168,11 @@ class OrkaErrorHandler:
             if hasattr(self.orchestrator.memory, "memory") and self.orchestrator.memory.memory:
                 return {
                     "total_entries": len(self.orchestrator.memory.memory),
-                    "last_10_entries": self.orchestrator.memory.memory[-10:]
-                    if len(self.orchestrator.memory.memory) >= 10
-                    else self.orchestrator.memory.memory,
+                    "last_10_entries": (
+                        self.orchestrator.memory.memory[-10:]
+                        if len(self.orchestrator.memory.memory) >= 10
+                        else self.orchestrator.memory.memory
+                    ),
                     "backend_type": type(self.orchestrator.memory).__name__,
                 }
         except Exception as e:

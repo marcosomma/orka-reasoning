@@ -165,9 +165,11 @@ class LocalLLMAgent(BaseAgent):
                 else self.params.get("model", "llama3.2:latest")
             )
             temperature = float(
-                input_data.get("temperature", self.params.get("temperature", 0.7))
-                if isinstance(input_data, dict)
-                else self.params.get("temperature", 0.7),
+                (
+                    input_data.get("temperature", self.params.get("temperature", 0.7))
+                    if isinstance(input_data, dict)
+                    else self.params.get("temperature", 0.7)
+                ),
             )
 
         # Build the full prompt using template replacement
@@ -319,9 +321,9 @@ class LocalLLMAgent(BaseAgent):
                     "provider": self.params.get("provider", "unknown"),
                     "error": True,
                 },
-                "formatted_prompt": full_prompt
-                if "full_prompt" in locals()
-                else "Error: prompt not available",
+                "formatted_prompt": (
+                    full_prompt if "full_prompt" in locals() else "Error: prompt not available"
+                ),
             }
 
     def build_prompt(self, input_text, template=None, full_context=None):

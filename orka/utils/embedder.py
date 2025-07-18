@@ -107,18 +107,14 @@ class AsyncEmbedder:
             Model loading happens during initialization but has fallback mechanisms
             to ensure the embedder remains functional even if loading fails.
         """
-        self.model_name = (
-            model_name if model_name else "sentence-transformers/all-MiniLM-L6-v2"
-        )
+        self.model_name = model_name if model_name else "sentence-transformers/all-MiniLM-L6-v2"
         self.model = None
         self.model_loaded = False
 
         # Set embedding dimension based on model or use default
         if model_name:
             base_name = model_name.split("/")[-1]
-            self.embedding_dim = EMBEDDING_DIMENSIONS.get(
-                base_name, DEFAULT_EMBEDDING_DIM
-            )
+            self.embedding_dim = EMBEDDING_DIMENSIONS.get(base_name, DEFAULT_EMBEDDING_DIM)
         else:
             self.embedding_dim = DEFAULT_EMBEDDING_DIM
 
@@ -184,9 +180,7 @@ class AsyncEmbedder:
             )
             self.model_loaded = False
         except Exception as e:
-            logger.warning(
-                f"Failed to load embedding model: {str(e)}. Using fallback encoding."
-            )
+            logger.warning(f"Failed to load embedding model: {str(e)}. Using fallback encoding.")
             self.model_loaded = False
 
     async def encode(self, text: str) -> np.ndarray:
@@ -228,13 +222,9 @@ class AsyncEmbedder:
                 if isinstance(embedding, np.ndarray) and embedding.size > 0:
                     return embedding
                 else:
-                    logger.error(
-                        f"Model produced invalid embedding: {embedding}. Using fallback."
-                    )
+                    logger.error(f"Model produced invalid embedding: {embedding}. Using fallback.")
             except Exception as e:
-                logger.error(
-                    f"Error encoding text with model: {str(e)}. Using fallback."
-                )
+                logger.error(f"Error encoding text with model: {str(e)}. Using fallback.")
 
         # If we get here, we need to use the fallback
         logger.warning("Using fallback pseudo-random encoding based on text hash")
