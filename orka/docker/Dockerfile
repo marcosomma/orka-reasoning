@@ -13,7 +13,7 @@ COPY . .
 
 # Install the package with all dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir ".[schema]"
+    pip install --no-cache-dir ".[all]"
 
 EXPOSE 8000
 

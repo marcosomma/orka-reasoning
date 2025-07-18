@@ -433,11 +433,12 @@ class TestKafkaMemoryLoggerEnhancedFeatures:
         )
 
     def test_search_memories_without_redisstack(self):
-        """Test search memories returns empty when RedisStack is not available."""
+        """Test search_memories returns empty list when RedisStack is not available."""
+        # Ensure RedisStack logger is not available
         self.logger._redis_memory_logger = None
 
+        # Search should return empty list when RedisStack is not available
         result = self.logger.search_memories("test query")
-
         assert result == []
 
     def test_log_memory_with_redisstack(self):
@@ -508,7 +509,7 @@ class TestKafkaMemoryLoggerCleanup:
 
         assert result == 5
         self.mock_redisstack_instance.cleanup_expired_memories.assert_called_once_with(
-            dry_run=False
+            dry_run=False,
         )
 
     def test_get_memory_stats(self):

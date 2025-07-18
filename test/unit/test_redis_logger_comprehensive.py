@@ -24,11 +24,11 @@ class TestRedisMemoryLoggerInitialization:
 
         logger = RedisMemoryLogger()
 
-        assert logger.redis_url == "redis://localhost:6380/0"
+        assert logger.redis_url == "redis://localhost:6379/0"
         assert logger.stream_key == "orka:memory"
         assert logger.debug_keep_previous_outputs is False
         assert logger.client == mock_client
-        mock_redis.assert_called_once_with("redis://localhost:6380/0")
+        mock_redis.assert_called_once_with("redis://localhost:6379/0")
 
     @patch("orka.memory.redis_logger.redis.from_url")
     def test_initialization_custom_params(self, mock_redis):

@@ -506,7 +506,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         log_type: str = "memory",
         namespace: str | None = None,
     ) -> list[dict[str, Any]]:
-        """Search memories using RedisStack."""
+        """Search memories using RedisStack if available."""
         if self._redis_memory_logger:
             return self._redis_memory_logger.search_memories(
                 query=query,
@@ -518,7 +518,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
                 log_type=log_type,
                 namespace=namespace,
             )
-            return []
+        return []  # Return empty list when RedisStack is not available
 
     def log_memory(
         self,

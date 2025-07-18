@@ -23,7 +23,6 @@ import asyncio
 import logging
 import subprocess
 import sys
-from typing import Dict
 
 from .backend import start_backend
 from .cleanup import cleanup_services
@@ -43,7 +42,7 @@ from .infrastructure.redis import start_native_redis
 logger = logging.getLogger(__name__)
 
 
-def start_infrastructure(backend: str) -> Dict[str, subprocess.Popen]:
+def start_infrastructure(backend: str) -> dict[str, subprocess.Popen]:
     """
     Start the infrastructure services natively.
 
