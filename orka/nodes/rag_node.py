@@ -232,9 +232,11 @@ class RAGNode(BaseNode):
 
     async def _run_impl(self, ctx: Context) -> dict[str, Any]:
         """Implementation of RAG operations."""
+        assert self._memory is not None
         query = ctx.get("query")
         if not query:
             raise ValueError("Query is required for RAG operation")
+        assert isinstance(query, str)
 
         # Get embedding for the query
         query_embedding = await self._get_embedding(query)
@@ -262,6 +264,7 @@ class RAGNode(BaseNode):
 
     async def _get_embedding(self, text: str) -> list[float]:
         """Get embedding for text using the embedder."""
+        assert self._embedder is not None
         return await self._embedder.encode(text)
 
     def _format_context(self, results: list[dict[str, Any]]) -> str:
@@ -273,6 +276,7 @@ class RAGNode(BaseNode):
 
     async def _generate_answer(self, query: str, context: str) -> str:
         """Generate answer using the LLM."""
+        assert self._llm is not None
         prompt = f"""Based on the following context, answer the question. If the context doesn't contain relevant information, say so.
 
 Context:

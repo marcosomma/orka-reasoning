@@ -69,12 +69,13 @@ class MemoryCompressor:
         # Create summary of old entries
         try:
             summary = await self._create_summary(old_entries, summarizer)
-            summary_entry = {
+            summary_entry: MemoryEntry = {
                 "content": summary,
                 "importance": 1.0,  # High importance for summaries
                 "timestamp": datetime.now(),
                 "metadata": {"is_summary": True, "summarized_entries": len(old_entries)},
                 "is_summary": True,
+                "category": "summary",  # Add a category for summaries
             }
 
             # Return recent entries + summary

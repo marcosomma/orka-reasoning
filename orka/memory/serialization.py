@@ -27,6 +27,11 @@ class SerializationMixin:
     Mixin class providing JSON serialization capabilities for memory loggers.
     """
 
+    def __init__(self):
+        self.debug_keep_previous_outputs: bool = False
+        self._blob_usage: Dict[str, int] = {}
+        self._blob_store: Dict[str, Any] = {}
+
     def _sanitize_for_json(self, obj: Any, _seen: Optional[set] = None) -> Any:
         """
         Recursively sanitize an object to be JSON serializable, with circular reference detection.
@@ -67,10 +72,10 @@ class SerializationMixin:
             elif isinstance(obj, dict):
                 _seen.add(obj_id)
                 try:
-                    result = {str(k): self._sanitize_for_json(v, _seen) for k, v in obj.items()}
+                    dict_result: Any = {str(k): self._sanitize_for_json(v, _seen) for k, v in obj.items()}
                 finally:
                     _seen.discard(obj_id)
-                return result
+                return dict_result
             elif hasattr(obj, "__dict__"):
                 try:
                     _seen.add(obj_id)

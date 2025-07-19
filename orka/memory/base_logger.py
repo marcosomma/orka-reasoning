@@ -247,7 +247,12 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         merged_config = default_config.copy()
         for key, value in decay_config.items():
             if isinstance(value, dict) and key in merged_config:
-                merged_config[key].update(value)
+                target_dict = merged_config[key]
+                if isinstance(target_dict, dict):
+                    target_dict.update(value)
+                else:
+                    # If merged_config[key] is not a dict, replace it entirely
+                    merged_config[key] = value
             else:
                 merged_config[key] = value
 
@@ -550,7 +555,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
     def _create_blob_reference(
         self,
         blob_hash: str,
-        original_keys: list[str] = None,
+        original_keys: list[str] | None = None,
     ) -> dict[str, Any]:
         """
         Create a blob reference object.
@@ -562,9 +567,10 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         Returns:
             Blob reference dictionary
         """
-        ref = {
+        ref: dict[str, Any] = {
             "ref": blob_hash,
             "_type": "blob_reference",
+            "_original_keys": None, # Initialize to None
         }
 
         if original_keys:
