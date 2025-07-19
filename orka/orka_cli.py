@@ -83,10 +83,10 @@ def main(argv: list[str] | None = None) -> int | None:
         # Handle memory command
         if args.command == "memory":
             if not hasattr(args, "memory_command") or not args.memory_command:
-                memory_parser = [
-                    p for p in parser._subparsers._group_actions if p.dest == "command"
-                ][0]
-                memory_parser.choices["memory"].print_help()
+                if parser._subparsers is not None and hasattr(parser._subparsers, 'choices'):
+                    if "memory" in parser._subparsers.choices:
+                        parser._subparsers.choices["memory"].print_help()
+                        return 1
                 return 1
 
             # Execute memory command

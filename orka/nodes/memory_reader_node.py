@@ -53,7 +53,6 @@ class MemoryReaderNode(BaseNode):
         self.temporal_weight = kwargs.get("temporal_weight", 0.1)
         self.memory_category_filter = kwargs.get("memory_category_filter", None)
         self.decay_config = kwargs.get("decay_config", {})
-        self.redis = self.memory_logger.redis if self.memory_logger else None
 
         self._search_metrics = {
             "hnsw_searches": 0,
@@ -159,53 +158,6 @@ class MemoryReaderNode(BaseNode):
     # 🎯 REMOVED: Complex filtering methods no longer needed
     # Memory filtering is now handled at the storage level via log_type parameter
 
-    async def _hnsw_hybrid_search(
-        self,
-        query_embedding,
-        query_text: str,
-        namespace: str,
-        session: str,
-        conversation_context: list[dict[str, Any]],
-    ) -> list[dict[str, Any]]:
-        """Perform high-performance HNSW vector search with metadata filtering."""
-        try:
-            # Use memory logger's search_memories method instead of direct Redis
-            if self.memory_logger and hasattr(self.memory_logger, "search_memories"):
-                results = self.memory_logger.search_memories(
-                    query=query_text,
-                    num_results=self.limit,
-                    trace_id=session,
-                    min_importance=self.similarity_threshold,
-                    log_type="memory",  # 🎯 CRITICAL: Only search stored memories, not orchestration logs
-                    namespace=self.namespace,  # 🎯 NEW: Filter by namespace
-                )
-            else:
-                results = []
-
-            # Enhance results with conversation context if available
-            if (
-                results
-                and conversation_context
-                and hasattr(self, "enable_context_search")
-                and self.enable_context_search
-            ):
-                results = self._enhance_with_context_scoring(results, conversation_context)
-
-            # Apply temporal ranking if enabled
-            if (
-                results
-                and hasattr(self, "enable_temporal_ranking")
-                and self.enable_temporal_ranking
-            ):
-                results = self._apply_temporal_ranking(results)
-
-            logger.info(f"HNSW hybrid search completed, found {len(results)} results")
-            return results
-
-        except Exception as e:
-            logger.error(f"Error in HNSW hybrid search: {e}")
-            return []
-
     def _enhance_with_context_scoring(
         self,
         results: list[dict[str, Any]],
@@ -217,7 +169,7 @@ class MemoryReaderNode(BaseNode):
 
         try:
             # Extract context keywords
-            context_words = set()
+            context_words: set[str] = set()
             for ctx_item in conversation_context:
                 content_words = [
                     w.lower() for w in ctx_item.get("content", "").split() if len(w) > 3
@@ -228,7 +180,7 @@ class MemoryReaderNode(BaseNode):
             context_weight = getattr(self, "context_weight", 0.2)
             for result in results:
                 content = result.get("content", "")
-                content_words = set(content.lower().split())
+                content_words = list(content.lower().split())
 
                 # Calculate context overlap
                 context_overlap = len(context_words.intersection(content_words))
@@ -243,7 +195,7 @@ class MemoryReaderNode(BaseNode):
                 result["original_similarity"] = original_similarity
 
             # Re-sort by enhanced similarity
-            results.sort(key=lambda x: x.get("similarity_score", 0.0), reverse=True)
+            results.sort(key=lambda x: float(x.get("similarity_score", 0.0)), reverse=True)
             return results
 
         except Exception as e:
@@ -285,7 +237,7 @@ class MemoryReaderNode(BaseNode):
                     )
 
             # Re-sort by temporal-adjusted similarity
-            results.sort(key=lambda x: x.get("similarity_score", 0.0), reverse=True)
+            results.sort(key=lambda x: float(x.get("similarity_score", 0.0)), reverse=True)
             return results
 
         except Exception as e:
@@ -310,7 +262,7 @@ class MemoryReaderNode(BaseNode):
             )
 
         # Update total results found
-        self._search_metrics["total_results_found"] += results_count
+        self._search_metrics["total_results_found"] += int(results_count)
 
     def get_search_metrics(self) -> dict[str, Any]:
         """Get search performance metrics."""
@@ -395,7 +347,7 @@ class MemoryReaderNode(BaseNode):
         if len(conversation_context) > self.context_window_size:
             # Sort by timestamp (most recent first) and take the most recent items
             conversation_context.sort(key=lambda x: x.get("timestamp", 0), reverse=True)
-            conversation_context = conversation_context[: self.context_window_size]
+            return list(conversation_context)[: self.context_window_size]
 
         return conversation_context
 
@@ -528,117 +480,6 @@ class MemoryReaderNode(BaseNode):
 
         return unique_variations
 
-    async def _enhanced_keyword_search(
-        self,
-        namespace: str,
-        query: str,
-        conversation_context: list[dict[str, Any]],
-    ) -> list[dict[str, Any]]:
-        """Enhanced keyword search that considers conversation context."""
-        results = []
-        try:
-            # Check both enhanced and legacy memory prefixes
-            prefixes = ["orka:mem:", "mem:"]
-            all_keys = []
-
-            for prefix in prefixes:
-                keys = await retry(self.redis.keys(f"{prefix}*"))
-                all_keys.extend(keys)
-
-            # Extract query keywords (words longer than 3 characters)
-            query_words = set([w.lower() for w in query.split() if len(w) > 3])
-
-            # If no substantial keywords, use all words
-            if not query_words:
-                query_words = set(query.lower().split())
-
-            # Extract context keywords
-            context_words = set()
-            for ctx_item in conversation_context:
-                content_words = [
-                    w.lower() for w in ctx_item.get("content", "").split() if len(w) > 3
-                ]
-                context_words.update(content_words[:5])  # Top 5 words per context item
-
-            for key in all_keys:
-                try:
-                    # Check if this memory belongs to our namespace
-                    ns = await retry(self.redis.hget(key, "namespace"))
-                    if ns and ns.decode() == namespace:
-                        # Get the content
-                        content = await retry(self.redis.hget(key, "content"))
-                        if content:
-                            content_str = (
-                                content.decode() if isinstance(content, bytes) else content
-                            )
-                            content_words = set(content_str.lower().split())
-
-                            # Calculate enhanced word overlap (query + context)
-                            query_overlap = len(query_words.intersection(content_words))
-                            context_overlap = (
-                                len(context_words.intersection(content_words))
-                                if context_words
-                                else 0
-                            )
-
-                            # Combined similarity score
-                            total_overlap = query_overlap + (context_overlap * self.context_weight)
-
-                            if total_overlap > 0:
-                                # Get metadata if available
-                                metadata_raw = await retry(self.redis.hget(key, "metadata"))
-                                metadata = {}
-                                if metadata_raw:
-                                    try:
-                                        metadata_str = (
-                                            metadata_raw.decode()
-                                            if isinstance(metadata_raw, bytes)
-                                            else metadata_raw
-                                        )
-                                        metadata = json.loads(metadata_str)
-                                    except Exception:
-                                        pass
-
-                                # Calculate enhanced similarity
-                                # Base similarity from query overlap
-                                base_similarity = query_overlap / max(len(query_words), 1)
-
-                                # Context bonus (scaled by context weight)
-                                context_bonus = 0
-                                if context_words and context_overlap > 0:
-                                    context_bonus = (
-                                        context_overlap / max(len(context_words), 1)
-                                    ) * self.context_weight
-
-                                # Combined similarity with context bonus
-                                similarity = base_similarity + context_bonus
-
-                                # Add to results
-                                results.append(
-                                    {
-                                        "id": key.decode() if isinstance(key, bytes) else key,
-                                        "content": content_str,
-                                        "metadata": metadata,
-                                        "similarity": float(similarity),
-                                        "query_overlap": query_overlap,
-                                        "context_overlap": context_overlap,
-                                        "match_type": "enhanced_keyword",
-                                    },
-                                )
-
-                except Exception as e:
-                    logger.error(f"Error processing key {key} in enhanced keyword search: {e!s}")
-
-            # Sort by similarity (highest first)
-            results.sort(key=lambda x: x["similarity"], reverse=True)
-
-            # Return top results
-            return results[: self.limit]
-
-        except Exception as e:
-            logger.error(f"Error in enhanced keyword search: {e!s}")
-            return []
-
     async def _context_aware_vector_search(
         self,
         query_embedding,
@@ -647,6 +488,10 @@ class MemoryReaderNode(BaseNode):
         threshold=None,
     ) -> list[dict[str, Any]]:
         """Context-aware vector search using conversation context."""
+        if not self.memory_logger or not hasattr(self.memory_logger, "client"):
+            logger.error("Memory logger or Redis client not available")
+            return []
+
         threshold = threshold or self.similarity_threshold
         results = []
 
@@ -661,7 +506,7 @@ class MemoryReaderNode(BaseNode):
             all_keys = []
 
             for prefix in prefixes:
-                keys = await retry(self.redis.keys(f"{prefix}*"))
+                keys = await retry(self.memory_logger.client.keys(f"{prefix}*"))
                 all_keys.extend(keys)
 
             logger.info(
@@ -671,10 +516,10 @@ class MemoryReaderNode(BaseNode):
             for key in all_keys:
                 try:
                     # Check if this memory belongs to our namespace
-                    ns = await retry(self.redis.hget(key, "namespace"))
+                    ns = await retry(self.memory_logger.client.hget(key, "namespace"))
                     if ns and ns.decode() == namespace:
                         # Get the vector
-                        vector_bytes = await retry(self.redis.hget(key, "vector"))
+                        vector_bytes = await retry(self.memory_logger.client.hget(key, "vector"))
                         if vector_bytes:
                             # Convert bytes to vector
                             vector = from_bytes(vector_bytes)
@@ -694,12 +539,16 @@ class MemoryReaderNode(BaseNode):
 
                             if combined_similarity >= threshold:
                                 # Get content and metadata
-                                content = await retry(self.redis.hget(key, "content"))
+                                content = await retry(
+                                    self.memory_logger.client.hget(key, "content")
+                                )
                                 content_str = (
                                     content.decode() if isinstance(content, bytes) else content
                                 )
 
-                                metadata_raw = await retry(self.redis.hget(key, "metadata"))
+                                metadata_raw = await retry(
+                                    self.memory_logger.client.hget(key, "metadata")
+                                )
                                 metadata = {}
                                 if metadata_raw:
                                     try:
@@ -730,7 +579,7 @@ class MemoryReaderNode(BaseNode):
                     )
 
             # Sort by combined similarity
-            results.sort(key=lambda x: x["similarity"], reverse=True)
+            results.sort(key=lambda x: float(x.get("similarity", 0.0)), reverse=True)  # type: ignore
 
             # Return top results
             return results[: self.limit]
@@ -739,130 +588,24 @@ class MemoryReaderNode(BaseNode):
             logger.error(f"Error in context-aware vector search: {e!s}")
             return []
 
-    async def _generate_context_vector(
-        self,
-        conversation_context: list[dict[str, Any]],
-    ) -> list[float] | None:
-        """Generate a context vector from conversation history."""
-        if not conversation_context:
+    async def _generate_context_vector(self, conversation_context: list[dict[str, Any]]) -> Any:
+        """Generate a vector representation of the conversation context."""
+        if not self.embedder:
             return None
 
-        try:
-            # Combine recent context into a single text
-            context_texts = []
-            for ctx_item in conversation_context:
-                content = ctx_item.get("content", "").strip()
-                if content:
-                    context_texts.append(content)
-
-            if not context_texts:
-                return None
-
-            # Join and encode context
-            combined_context = " ".join(context_texts[-3:])  # Use only the most recent 3 items
-            context_vector = await self.embedder.encode(combined_context)
-            return context_vector
-
-        except Exception as e:
-            logger.error(f"Error generating context vector: {e!s}")
+        # Combine recent context into a single text
+        context_text = " ".join(
+            item.get("content", "") for item in conversation_context[-2:]  # Last 2 items
+        )
+        if not context_text.strip():
             return None
 
-    async def _context_aware_stream_search(
-        self,
-        stream_key: str,
-        query: str,
-        query_embedding,
-        conversation_context: list[dict[str, Any]],
-        threshold=None,
-    ) -> list[dict[str, Any]]:
-        """Context-aware search for memories in the Redis stream."""
-        threshold = threshold or self.similarity_threshold
-
+        # Generate embedding
         try:
-            # Generate context vector if available
-            context_vector = None
-            if conversation_context and self.enable_context_search:
-                context_vector = await self._generate_context_vector(conversation_context)
-
-            # Get all entries
-            entries = await retry(self.redis.xrange(stream_key))
-            memories = []
-
-            for entry_id, data in entries:
-                try:
-                    # Parse payload
-                    payload_bytes = data.get(b"payload", b"{}")
-                    payload_str = (
-                        payload_bytes.decode()
-                        if isinstance(payload_bytes, bytes)
-                        else payload_bytes
-                    )
-                    payload = json.loads(payload_str)
-
-                    content = payload.get("content", "")
-                    if not content:
-                        continue
-
-                    # Generate embedding for this content
-                    content_embedding = await self.embedder.encode(content)
-
-                    # Calculate primary similarity
-                    primary_similarity = self._cosine_similarity(query_embedding, content_embedding)
-
-                    # Calculate context similarity if available
-                    context_similarity = 0
-                    if context_vector is not None:
-                        context_similarity = self._cosine_similarity(
-                            context_vector,
-                            content_embedding,
-                        )
-
-                    # Combined similarity score
-                    combined_similarity = primary_similarity + (
-                        context_similarity * self.context_weight
-                    )
-
-                    # Check for exact keyword matches for additional scoring
-                    query_words = set(query.lower().split())
-                    content_words = set(content.lower().split())
-                    keyword_overlap = len(query_words.intersection(content_words))
-
-                    if keyword_overlap > 0:
-                        # Boost similarity for exact matches
-                        keyword_bonus = min(0.3, keyword_overlap * 0.1)
-                        combined_similarity += keyword_bonus
-
-                    if combined_similarity >= threshold or keyword_overlap > 0:
-                        memories.append(
-                            {
-                                "id": f"stream:{entry_id.decode() if isinstance(entry_id, bytes) else entry_id}",
-                                "content": content,
-                                "metadata": payload.get("metadata", {}),
-                                "similarity": float(combined_similarity),
-                                "primary_similarity": float(primary_similarity),
-                                "context_similarity": float(context_similarity),
-                                "keyword_matches": keyword_overlap,
-                                "match_type": "context_aware_stream",
-                                "timestamp": (
-                                    data.get(b"ts", b"0").decode()
-                                    if isinstance(data.get(b"ts"), bytes)
-                                    else data.get("ts", "0")
-                                ),
-                            },
-                        )
-
-                except Exception as e:
-                    logger.error(f"Error processing stream entry {entry_id}: {e!s}")
-                    continue
-
-            # Sort by combined similarity
-            memories.sort(key=lambda x: x["similarity"], reverse=True)
-
-            return memories[: self.limit]
-
+            return self.embedder.encode(context_text)
         except Exception as e:
-            logger.error(f"Error in context-aware stream search: {e!s}")
-            return []
+            logger.error(f"Error generating context vector: {e}")
+            return None
 
     def _apply_hybrid_scoring(
         self,
@@ -928,7 +671,7 @@ class MemoryReaderNode(BaseNode):
                 memory["metadata_factor"] = metadata_factor
 
             # Re-sort by enhanced similarity
-            memories.sort(key=lambda x: x["similarity"], reverse=True)
+            memories.sort(key=lambda x: float(x["similarity"]), reverse=True)
             return memories
 
         except Exception as e:
@@ -946,21 +689,23 @@ class MemoryReaderNode(BaseNode):
             return memories
 
         filtered_memories = []
-        query_words = set(query.lower().split())
+        query_words: set[str] = set(query.lower().split())
 
         # Extract context keywords
         context_words = set()
         for ctx_item in conversation_context:
             content_words = [w.lower() for w in ctx_item.get("content", "").split() if len(w) > 3]
-            context_words.update(content_words[:3])  # Top 3 words per context item
+            context_words.update(
+                list(content_words)[:3]
+            )  # Top 3 words per context item  # type: ignore
 
         for memory in memories:
             content = memory.get("content", "").lower()
-            content_words = set(content.split())
+            content_words = list(content.split())
 
             # Check various relevance criteria
             is_relevant = False
-            relevance_score = 0
+            relevance_score = 0.0
 
             # 1. Direct keyword overlap
             keyword_overlap = len(query_words.intersection(content_words))
@@ -1113,29 +858,6 @@ class MemoryReaderNode(BaseNode):
             logger.info(f"Filtered out {len(memories) - len(active_memories)} expired memories")
 
         return active_memories
-
-    # Legacy methods for backward compatibility
-    async def _keyword_search(self, namespace, query):
-        """Legacy keyword search method."""
-        return await self._enhanced_keyword_search(namespace, query, [])
-
-    async def _vector_search(self, query_embedding, namespace, threshold=None):
-        """Legacy vector search method."""
-        return await self._context_aware_vector_search(query_embedding, namespace, [], threshold)
-
-    async def _stream_search(self, stream_key, query, query_embedding, threshold=None):
-        """Legacy stream search method."""
-        return await self._context_aware_stream_search(
-            stream_key,
-            query,
-            query_embedding,
-            [],
-            threshold,
-        )
-
-    def _filter_relevant_memories(self, memories, query):
-        """Legacy filter method."""
-        return self._filter_enhanced_relevant_memories(memories, query, [])
 
     def _cosine_similarity(self, vec1, vec2):
         """Calculate cosine similarity between two vectors."""
