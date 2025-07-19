@@ -90,4 +90,4 @@ def is_backend_running(backend_proc: subprocess.Popen) -> bool:
     Returns:
         bool: True if the process is running, False otherwise
     """
-    return backend_proc and backend_proc.poll() is None
+    return bool(backend_proc and backend_proc.poll() is None)

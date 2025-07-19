@@ -84,7 +84,7 @@ class MemoryWriterNode(BaseNode):
                     rendered_key = template.render(**template_context)
 
                     # Store rendered key in metadata for identification
-                    merged_metadata["memory_key_template"] = rendered_key
+                    merged_metadata["memory_key_template"] = str(rendered_key)  # type: ignore[assignment]
 
                 except Exception as e:
                     logger.warning(f"Failed to render key template: {e}")
@@ -99,7 +99,7 @@ class MemoryWriterNode(BaseNode):
                 # Set these AFTER merged_metadata to prevent overwriting
                 "category": str(merged_metadata.get("category", "stored")),
                 "log_type": "memory",  # Mark as stored memory, not orchestration log
-                "tags": str(merged_metadata.get("tags", [])),
+                "tags": ", ".join(merged_metadata.get("tags", [])),  # type: ignore[assignment]  # type: ignore[assignment]
             }
 
             assert self.memory_logger is not None, "Memory logger not initialized"
@@ -239,7 +239,9 @@ class MemoryWriterNode(BaseNode):
 
                     elif isinstance(value, dict):
                         # Recursively render nested dictionaries
-                        rendered_metadata[key] = self._render_metadata_templates(value, context)
+                        rendered_metadata[key] = str(
+                            self._render_metadata_templates(value, context)
+                        )
                     elif isinstance(value, list):
                         # Render templates in lists
                         rendered_list = []
@@ -254,7 +256,7 @@ class MemoryWriterNode(BaseNode):
                                     rendered_list.append(str(item))
                             else:
                                 rendered_list.append(item)
-                        rendered_metadata[key] = rendered_list
+                        rendered_metadata[key] = str(rendered_list)
                     else:
                         # Keep non-template values as-is
                         rendered_metadata[key] = value

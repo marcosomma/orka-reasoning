@@ -28,7 +28,7 @@ from .infrastructure.redis import terminate_redis_process
 logger = logging.getLogger(__name__)
 
 
-def cleanup_services(backend: str, processes: Dict[str, subprocess.Popen] = None) -> None:
+def cleanup_services(backend: str, processes: Dict[str, subprocess.Popen] = {}) -> None:
     """
     Clean up and stop services for the specified backend.
 

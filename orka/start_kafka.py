@@ -42,18 +42,8 @@ print()
 
 # Import and run the main function
 if __name__ == "__main__":
-    try:
-        import asyncio
+    import asyncio
 
-        from orka.orka_start import main
+    from orka.orka_start import main
 
-        asyncio.run(main())
-    except ImportError:
-        # Fallback for development environments
-        current_dir = Path(__file__).parent
-        sys.path.insert(0, str(current_dir))
-        import asyncio
-
-        from orka_start import main
-
-        asyncio.run(main())
+    asyncio.run(main())

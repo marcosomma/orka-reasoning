@@ -111,7 +111,7 @@ def start_native_redis(port: int = 6380) -> Optional[subprocess.Popen]:
         raise RuntimeError(f"Redis startup failed: {e}")
 
 
-def start_redis_docker(port: int = 6380) -> None:
+def start_redis_docker(port: int = 6380) -> Optional[subprocess.Popen]:
     """
     Start Redis Stack using Docker as a fallback.
 
@@ -119,7 +119,7 @@ def start_redis_docker(port: int = 6380) -> None:
         port: Port to start Redis on
 
     Returns:
-        None: Docker process is managed by Docker daemon
+        Optional[subprocess.Popen]: None since Docker process is managed by Docker daemon
 
     Raises:
         RuntimeError: If Docker Redis fails to start
@@ -160,7 +160,7 @@ def start_redis_docker(port: int = 6380) -> None:
         wait_for_redis(port)
 
         print(f"✅ Redis Stack running via Docker on port {port}")
-        return None  # Docker process managed by daemon
+        return None
 
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Failed to start Redis via Docker: {e}")
@@ -204,7 +204,7 @@ def wait_for_redis(port: int, max_attempts: int = 30) -> None:
 
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(2)
-            result = sock.connect_ex(("localhost", port))
+            socket_result: int = sock.connect_ex(("localhost", port))
             sock.close()
 
             if result == 0:
