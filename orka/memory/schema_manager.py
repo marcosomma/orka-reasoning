@@ -53,7 +53,7 @@ class SchemaFormat(Enum):
 
 @dataclass
 class SchemaConfig:
-    registry_url: str
+    registry_url: str | None
     format: SchemaFormat = SchemaFormat.AVRO
     schemas_dir: str = "orka/schemas"
     subject_name_strategy: str = (

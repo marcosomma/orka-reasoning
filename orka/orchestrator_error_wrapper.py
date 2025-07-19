@@ -35,10 +35,10 @@ class OrkaErrorHandler:
         error_type: str,
         agent_id: str,
         error_msg: str,
-        exception: Exception = None,
-        step: int = None,
-        status_code: int = None,
-        recovery_action: str = None,
+        exception: Exception | None = None,
+        step: int | None = None,
+        status_code: int | None = None,
+        recovery_action: str | None = None,
     ):
         """Record an error in the error telemetry system."""
         error_entry = {
@@ -85,7 +85,7 @@ class OrkaErrorHandler:
             },
         )
 
-    def save_comprehensive_error_report(self, logs: List[Dict], final_error: Exception = None):
+    def save_comprehensive_error_report(self, logs: List[Dict], final_error: Exception | None = None):
         """Save comprehensive error report with all logged data up to the failure point."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_dir = os.getenv("ORKA_LOG_DIR", "logs")

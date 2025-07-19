@@ -30,7 +30,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         use_schema_registry: bool = True,
     ) -> None:
         """Initialize the Kafka memory logger."""
-        super().__init__(decay_config)
+        super().__init__(stream_key, debug_keep_previous_outputs, decay_config)
 
         self.bootstrap_servers = bootstrap_servers
         self.redis_url = redis_url or os.environ.get("REDIS_URL", "redis://localhost:6380/0")
@@ -134,6 +134,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
                 parent=kwargs.get("parent"),
                 previous_outputs=kwargs.get("previous_outputs"),
                 agent_decay_config=kwargs.get("agent_decay_config"),
+                log_type=kwargs.get("log_type", "log"),
             )
         else:
             # Fallback to basic Redis streams
@@ -186,6 +187,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         parent: str | None = None,
         previous_outputs: dict[str, Any] | None = None,
         agent_decay_config: dict[str, Any] | None = None,
+        log_type: str = "log",
     ) -> None:
         """Log an event to both Kafka and Redis."""
         if not agent_id:
@@ -235,6 +237,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
             parent=parent,
             previous_outputs=previous_outputs,
             agent_decay_config=agent_decay_config,
+            log_type=log_type,
         )
 
         # Then send to Kafka
@@ -283,9 +286,9 @@ class KafkaMemoryLogger(BaseMemoryLogger):
                 entry = {
                     "agent_id": data.get(b"agent_id", b"").decode(),
                     "event_type": data.get(b"event_type", b"").decode(),
-                    "timestamp": int(data.get(b"timestamp", 0)),
+                    "timestamp": int(data.get(b"timestamp", b"0").decode()),
                     "run_id": data.get(b"run_id", b"default").decode(),
-                    "step": int(data.get(b"step", -1)),
+                    "step": int(data.get(b"step", b"-1").decode()),
                 }
 
                 try:

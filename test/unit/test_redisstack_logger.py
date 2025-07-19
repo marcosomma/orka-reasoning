@@ -265,19 +265,19 @@ class TestRedisStackLoggerMemoryOperations:
         payload = {"agent_output": "test"}
 
         # Test high importance events
-        score1 = self.logger._calculate_importance_score("agent.error", payload)
+        score1 = self.logger._calculate_importance_score("agent.error", "test_agent", payload)
         assert score1 == 0.9
 
         # Test medium importance events - agent_response is not in importance_map, defaults to 0.5
-        score2 = self.logger._calculate_importance_score("agent_response", payload)
+        score2 = self.logger._calculate_importance_score("agent_response", "test_agent", payload)
         assert score2 == 0.5  # Default value, not 0.8
 
         # Test events in the importance_map
-        score3 = self.logger._calculate_importance_score("agent.end", payload)
+        score3 = self.logger._calculate_importance_score("agent.end", "test_agent", payload)
         assert score3 == 0.8
 
         # Test low importance events
-        score4 = self.logger._calculate_importance_score("memory.retrieve", payload)
+        score4 = self.logger._calculate_importance_score("memory.retrieve", "test_agent", payload)
         assert score4 == 0.4
 
     def test_memory_type_determination(self):

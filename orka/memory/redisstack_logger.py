@@ -803,7 +803,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                         continue
 
                     # Filter by trace_id if specified
-                    if trace_id and memory_data.get("trace_id") != trace_id:
+                    if trace_id and self._safe_get_redis_value(memory_data, "trace_id") != trace_id:
                         continue
 
                     # Check expiry
@@ -812,21 +812,19 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
 
                     # Parse metadata
                     try:
-                        metadata_value = memory_data.get("metadata", "{}")
-                        if isinstance(metadata_value, bytes):
-                            metadata_value = metadata_value.decode()
+                        metadata_value = self._safe_get_redis_value(memory_data, "metadata", "{}")
                         metadata = json.loads(metadata_value)
                     except Exception as e:
                         logger.debug(f"Error parsing metadata for key {key}: {e}")
                         metadata = {}
 
                     memory = {
-                        "content": memory_data.get("content", ""),
-                        "node_id": memory_data.get("node_id", ""),
-                        "trace_id": memory_data.get("trace_id", ""),
-                        "importance_score": float(memory_data.get("importance_score", 0)),
-                        "memory_type": memory_data.get("memory_type", ""),
-                        "timestamp": int(memory_data.get("timestamp", 0)),
+                        "content": self._safe_get_redis_value(memory_data, "content", ""),
+                        "node_id": self._safe_get_redis_value(memory_data, "node_id", ""),
+                        "trace_id": self._safe_get_redis_value(memory_data, "trace_id", ""),
+                        "importance_score": float(self._safe_get_redis_value(memory_data, "importance_score", 0)),
+                        "memory_type": self._safe_get_redis_value(memory_data, "memory_type", ""),
+                        "timestamp": int(self._safe_get_redis_value(memory_data, "timestamp", 0)),
                         "metadata": metadata,
                         "key": key,
                     }
@@ -914,12 +912,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
 
                     # Parse metadata (handle bytes keys from decode_responses=False)
                     try:
-                        metadata_value = memory_data.get(b"metadata") or memory_data.get(
-                            "metadata",
-                            "{}",
-                        )
-                        if isinstance(metadata_value, bytes):
-                            metadata_value = metadata_value.decode()
+                        metadata_value = self._safe_get_redis_value(memory_data, "metadata", "{}")
                         metadata = json.loads(metadata_value)
                     except Exception as e:
                         logger.debug(f"Error parsing metadata for key {key}: {e}")
@@ -940,10 +933,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                         categories["log"] = categories.get("log", 0) + 1
 
                     # Count by memory_type (handle bytes keys)
-                    memory_type = memory_data.get(b"memory_type") or memory_data.get(
-                        "memory_type",
-                        "unknown",
-                    )
+                    memory_type = self._safe_get_redis_value(memory_data, "memory_type", "unknown")
                     if isinstance(memory_type, bytes):
                         memory_type = memory_type.decode()
                     memory_types[memory_type] = memory_types.get(memory_type, 0) + 1
@@ -987,7 +977,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         parent: str | None = None,
         previous_outputs: dict[str, Any] | None = None,
         agent_decay_config: dict[str, Any] | None = None,
-        log_type: str = "log",  # "log" for orchestration, "memory" for stored memories
+        log_type: str = "log",
     ) -> None:
         """
         Log an orchestration event as a memory entry.
@@ -999,7 +989,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             content = self._extract_content_from_payload(payload, event_type)
 
             # Determine memory type and importance
-            importance_score = self._calculate_importance_score(event_type, payload)
+            importance_score = self._calculate_importance_score(event_type, agent_id, payload)
             memory_type = self._determine_memory_type(event_type, importance_score)
 
             # Calculate expiry hours based on memory type and decay config
@@ -1081,7 +1071,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
 
         return " ".join(content_parts)
 
-    def _calculate_importance_score(self, event_type: str, payload: dict[str, Any]) -> float:
+    def _calculate_importance_score(self, event_type: str, agent_id: str, payload: dict[str, Any]) -> float:
         """Calculate importance score based on event type and payload."""
         # Base importance by event type
         importance_map = {
@@ -1419,6 +1409,74 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 "expires_at_formatted": "Unknown",
             }
 
+    def _get_ttl_info(
+        self,
+        key: str,
+        memory_data: dict[str, Any],
+        current_time_ms: int,
+    ) -> dict[str, Any]:
+        """Get TTL information for a memory entry."""
+        try:
+            # Check if memory has expiry time set (handle bytes keys)
+            orka_expire_time = self._safe_get_redis_value(memory_data, "orka_expire_time")
+
+            if orka_expire_time:
+                try:
+                    expire_time_ms = int(float(orka_expire_time))
+                    ttl_ms = expire_time_ms - current_time_ms
+                    ttl_seconds = max(0, ttl_ms // 1000)
+
+                    # Format expire time
+                    import datetime
+
+                    expires_at = datetime.datetime.fromtimestamp(expire_time_ms / 1000)
+                    expires_at_formatted = expires_at.strftime("%Y-%m-%d %H:%M:%S")
+
+                    # Format TTL
+                    if ttl_seconds >= 86400:  # >= 1 day
+                        days = ttl_seconds // 86400
+                        hours = (ttl_seconds % 86400) // 3600
+                        ttl_formatted = f"{days}d {hours}h"
+                    elif ttl_seconds >= 3600:  # >= 1 hour
+                        hours = ttl_seconds // 3600
+                        minutes = (ttl_seconds % 3600) // 60
+                        ttl_formatted = f"{hours}h {minutes}m"
+                    elif ttl_seconds >= 60:  # >= 1 minute
+                        minutes = ttl_seconds // 60
+                        seconds = ttl_seconds % 60
+                        ttl_formatted = f"{minutes}m {seconds}s"
+                    else:
+                        ttl_formatted = f"{ttl_seconds}s"
+
+                    return {
+                        "has_expiry": True,
+                        "ttl_seconds": ttl_seconds,
+                        "ttl_formatted": ttl_formatted,
+                        "expires_at": expire_time_ms,
+                        "expires_at_formatted": expires_at_formatted,
+                    }
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"Invalid expiry time format for {key}: {e}")
+
+            # No expiry or invalid expiry time
+            return {
+                "has_expiry": False,
+                "ttl_seconds": -1,  # -1 indicates no expiry
+                "ttl_formatted": "Never",
+                "expires_at": None,
+                "expires_at_formatted": "Never",
+            }
+
+        except Exception as e:
+            logger.error(f"Error getting TTL info for {key}: {e}")
+            return {
+                "has_expiry": False,
+                "ttl_seconds": -1,
+                "ttl_formatted": "Unknown",
+                "expires_at": None,
+                "expires_at_formatted": "Unknown",
+            }
+
     def get_performance_metrics(self) -> dict[str, Any]:
         """Get RedisStack performance metrics including vector search status."""
         try:
@@ -1473,10 +1531,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                     try:
                         memory_data = client.hgetall(key)
                         # Handle bytes keys from decode_responses=False
-                        raw_trace_id = memory_data.get(b"trace_id") or memory_data.get(
-                            "trace_id",
-                            "unknown",
-                        )
+                        raw_trace_id = self._safe_get_redis_value(memory_data, "trace_id", "unknown")
                         if isinstance(raw_trace_id, bytes):
                             trace_id = raw_trace_id.decode()
                         else:

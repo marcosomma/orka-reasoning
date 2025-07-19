@@ -27,11 +27,9 @@ dependencies = [
   "pyyaml>=6.0.2",
   "python-dotenv>=0.19.0",
   
-  # AI and ML
+  # AI and LLM
   "openai>=1.0.0",
   "litellm>=1.0.0",
-  "sentence-transformers>=2.2.0",
-  "numpy>=1.21.0",
   
   # Search and APIs
   "duckduckgo-search>=3.0.0",
@@ -67,6 +65,7 @@ dev = [
   "flake8-bugbear>=24.1.0",
   "flake8-comprehensions>=3.14.0",
   "flake8-pytest-style>=1.7.0",
+  "mypy==1.17",  # Type checking
   
   # Documentation
   "sphinx>=7.0.0",
@@ -89,9 +88,15 @@ prod = [
   "supervisor>=4.2.0"
 ]
 
+# ML and vector embeddings for semantic search
+ml = [
+  "sentence-transformers>=2.2.0",
+  "numpy>=1.21.0"
+]
+
 # All Dependencies (for development with all features)
 all = [
-  "orka-reasoning[dev,schema,prod]"
+  "orka-reasoning[dev,schema,prod,ml]"
 ]
 
 [project.urls]
@@ -206,6 +211,9 @@ extend-exclude = '''
 # in the root of the project.
 ^/docs/
 '''
+
+[tool.pyright]
+typeCheckingMode = "off"
 
 [tool.flake8]
 max-line-length = 100
