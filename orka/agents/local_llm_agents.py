@@ -290,7 +290,7 @@ class LocalLLMAgent(BaseAgent):
                 error_prompt_tokens = (
                     _count_tokens(full_prompt, model) if "full_prompt" in locals() else 0
                 )
-            except:
+            except Exception:
                 error_prompt_tokens = 0
 
             # Calculate cost even for error case (we consumed some resources)

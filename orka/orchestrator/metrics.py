@@ -76,7 +76,7 @@ class MetricsCollector:
                 .strip()
             )
             env_info["git_sha"] = git_sha[:12]  # Short SHA
-        except:
+        except Exception:
             env_info["git_sha"] = "unknown"
 
         # Check for Docker environment
@@ -87,7 +87,7 @@ class MetricsCollector:
 
         # GPU information
         try:
-            import GPUtil
+            import GPUtil  # type: ignore
 
             gpus = GPUtil.getGPUs()
             if gpus:
@@ -96,7 +96,7 @@ class MetricsCollector:
                 )
             else:
                 env_info["gpu_type"] = "none"
-        except:
+        except Exception:
             env_info["gpu_type"] = "unknown"
 
         # Pricing version (current month-year)

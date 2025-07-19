@@ -381,18 +381,18 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 logger.warning("Using safe fallback metadata due to serialization error")
 
             # Store memory data
-            memory_data = {
+            memory_data: dict[str, Any] = {
                 "content": content,
                 "node_id": node_id,
                 "trace_id": trace_id,
-                "timestamp": current_time_ms,
-                "importance_score": importance_score,
+                "timestamp": str(current_time_ms),  # Store as string for Redis
+                "importance_score": str(importance_score),  # Store as string for Redis
                 "memory_type": memory_type,
                 "metadata": json.dumps(metadata),
             }
 
-            if orka_expire_time:
-                memory_data["orka_expire_time"] = orka_expire_time
+            if orka_expire_time is not None:
+                memory_data["orka_expire_time"] = str(orka_expire_time)  # Store as string for Redis
 
             # Generate embedding if embedder is available
             if self.embedder:
@@ -404,7 +404,13 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                     logger.warning(f"Failed to generate embedding for memory: {e}")
 
             # Store the memory
-            client.hset(memory_key, mapping=memory_data)
+            client.hset(
+                memory_key,
+                mapping={
+                    k: str(v) if not isinstance(v, (bytes, int, float)) else v
+                    for k, v in memory_data.items()
+                },
+            )
 
             # Set TTL if specified
             if orka_expire_time:
@@ -554,7 +560,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                             # Filter by namespace
                             if namespace:
                                 memory_namespace = metadata.get("namespace")
-                                if memory_namespace != namespace:
+                                if memory_namespace is not None and memory_namespace != namespace:
                                     continue
 
                             # Calculate TTL information
@@ -590,11 +596,25 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                                 ),
                                 "key": result["key"],
                                 # TTL information
-                                "ttl_seconds": expiry_info["ttl_seconds"],
-                                "ttl_formatted": expiry_info["ttl_formatted"],
-                                "expires_at": expiry_info["expires_at"],
-                                "expires_at_formatted": expiry_info["expires_at_formatted"],
-                                "has_expiry": expiry_info["has_expiry"],
+                                "ttl_seconds": (
+                                    expiry_info.get("ttl_seconds", -1) if expiry_info else -1
+                                ),
+                                "ttl_formatted": (
+                                    expiry_info.get("ttl_formatted", "N/A")
+                                    if expiry_info
+                                    else "N/A"
+                                ),
+                                "expires_at": (
+                                    expiry_info.get("expires_at") if expiry_info else None
+                                ),
+                                "expires_at_formatted": (
+                                    expiry_info.get("expires_at_formatted", "N/A")
+                                    if expiry_info
+                                    else "N/A"
+                                ),
+                                "has_expiry": (
+                                    expiry_info.get("has_expiry", False) if expiry_info else False
+                                ),
                             }
                             formatted_results.append(formatted_result)
 
@@ -786,7 +806,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             try:
                 return int(float(expiry_time)) <= int(time.time() * 1000)
             except (ValueError, TypeError):
-                pass
+                return False  # Ensure a boolean is always returned
         return False
 
     def get_all_memories(self, trace_id: str | None = None) -> list[dict[str, Any]]:
@@ -822,7 +842,9 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                         "content": self._safe_get_redis_value(memory_data, "content", ""),
                         "node_id": self._safe_get_redis_value(memory_data, "node_id", ""),
                         "trace_id": self._safe_get_redis_value(memory_data, "trace_id", ""),
-                        "importance_score": float(self._safe_get_redis_value(memory_data, "importance_score", 0)),
+                        "importance_score": float(
+                            self._safe_get_redis_value(memory_data, "importance_score", 0)
+                        ),
                         "memory_type": self._safe_get_redis_value(memory_data, "memory_type", ""),
                         "timestamp": int(self._safe_get_redis_value(memory_data, "timestamp", 0)),
                         "metadata": metadata,
@@ -895,8 +917,8 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             expired_count = 0
             log_count = 0
             stored_count = 0
-            memory_types = {}
-            categories = {}
+            memory_types: dict[str, int] = {}
+            categories: dict[str, int] = {}
 
             # Analyze each memory entry
             for key in keys:
@@ -1071,7 +1093,9 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
 
         return " ".join(content_parts)
 
-    def _calculate_importance_score(self, event_type: str, agent_id: str, payload: dict[str, Any]) -> float:
+    def _calculate_importance_score(
+        self, event_type: str, agent_id: str, payload: dict[str, Any]
+    ) -> float:
         """Calculate importance score based on event type and payload."""
         # Base importance by event type
         importance_map = {
@@ -1124,22 +1148,16 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         # Use agent-specific config if available, otherwise use default
         decay_config = agent_decay_config or self.memory_decay_config
 
-        if not decay_config.get("enabled", True):
+        if decay_config is None or not decay_config.get("enabled", True):
             return None
 
         # Base expiry times
         if memory_type == "long_term":
             # Check agent-level config first, then fall back to global config
-            base_hours = decay_config.get("long_term_hours") or decay_config.get(
-                "default_long_term_hours",
-                24.0,
-            )
+            base_hours = decay_config.get("long_term_hours", 24.0) if decay_config else 24.0
         else:
             # Check agent-level config first, then fall back to global config
-            base_hours = decay_config.get("short_term_hours") or decay_config.get(
-                "default_short_term_hours",
-                1.0,
-            )
+            base_hours = decay_config.get("short_term_hours", 1.0) if decay_config else 1.0
 
         # Adjust based on importance (higher importance = longer retention)
         importance_multiplier = 1.0 + importance_score
@@ -1244,7 +1262,10 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         return self._get_thread_safe_client().get(key)
 
     def set(self, key: str, value: str | bytes | int | float) -> bool:
-        return self._get_thread_safe_client().set(key, value)
+        try:
+            return bool(self._get_thread_safe_client().set(key, value))
+        except Exception:
+            return False
 
     def delete(self, *keys: str) -> int:
         return self._get_thread_safe_client().delete(*keys)
@@ -1340,142 +1361,70 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             return []
 
     def _get_ttl_info(
-        self,
-        key: str,
-        memory_data: dict[str, Any],
-        current_time_ms: int,
+        self, key: str, memory_data: dict[str, Any], current_time_ms: int
     ) -> dict[str, Any]:
-        """Get TTL information for a memory entry."""
+        """Calculate TTL information for a memory entry."""
+        ttl_seconds = -1
+        expires_at = None
+        expires_at_formatted = "N/A"
+        has_expiry = False
+
+        # Check for Redis TTL
         try:
-            # Check if memory has expiry time set (handle bytes keys)
-            orka_expire_time = memory_data.get(b"orka_expire_time") or memory_data.get(
-                "orka_expire_time",
-            )
-
-            if orka_expire_time:
-                try:
-                    expire_time_ms = int(float(orka_expire_time))
-                    ttl_ms = expire_time_ms - current_time_ms
-                    ttl_seconds = max(0, ttl_ms // 1000)
-
-                    # Format expire time
-                    import datetime
-
-                    expires_at = datetime.datetime.fromtimestamp(expire_time_ms / 1000)
-                    expires_at_formatted = expires_at.strftime("%Y-%m-%d %H:%M:%S")
-
-                    # Format TTL
-                    if ttl_seconds >= 86400:  # >= 1 day
-                        days = ttl_seconds // 86400
-                        hours = (ttl_seconds % 86400) // 3600
-                        ttl_formatted = f"{days}d {hours}h"
-                    elif ttl_seconds >= 3600:  # >= 1 hour
-                        hours = ttl_seconds // 3600
-                        minutes = (ttl_seconds % 3600) // 60
-                        ttl_formatted = f"{hours}h {minutes}m"
-                    elif ttl_seconds >= 60:  # >= 1 minute
-                        minutes = ttl_seconds // 60
-                        seconds = ttl_seconds % 60
-                        ttl_formatted = f"{minutes}m {seconds}s"
-                    else:
-                        ttl_formatted = f"{ttl_seconds}s"
-
-                    return {
-                        "has_expiry": True,
-                        "ttl_seconds": ttl_seconds,
-                        "ttl_formatted": ttl_formatted,
-                        "expires_at": expire_time_ms,
-                        "expires_at_formatted": expires_at_formatted,
-                    }
-                except (ValueError, TypeError) as e:
-                    logger.warning(f"Invalid expiry time format for {key}: {e}")
-
-            # No expiry or invalid expiry time
-            return {
-                "has_expiry": False,
-                "ttl_seconds": -1,  # -1 indicates no expiry
-                "ttl_formatted": "Never",
-                "expires_at": None,
-                "expires_at_formatted": "Never",
-            }
-
+            client = self._get_thread_safe_client()
+            redis_ttl = client.ttl(key)
+            if redis_ttl > 0:
+                ttl_seconds = redis_ttl
+                expires_at = current_time_ms + (ttl_seconds * 1000)
+                expires_at_formatted = time.strftime(
+                    "%Y-%m-%d %H:%M:%S UTC", time.gmtime(expires_at / 1000)
+                )
+                has_expiry = True
         except Exception as e:
-            logger.error(f"Error getting TTL info for {key}: {e}")
-            return {
-                "has_expiry": False,
-                "ttl_seconds": -1,
-                "ttl_formatted": "Unknown",
-                "expires_at": None,
-                "expires_at_formatted": "Unknown",
-            }
+            logger.debug(f"Error getting Redis TTL for {key}: {e}")
 
-    def _get_ttl_info(
-        self,
-        key: str,
-        memory_data: dict[str, Any],
-        current_time_ms: int,
-    ) -> dict[str, Any]:
-        """Get TTL information for a memory entry."""
-        try:
-            # Check if memory has expiry time set (handle bytes keys)
+        # Check for orka_expire_time field if Redis TTL is not set or is -1
+        if not has_expiry:
             orka_expire_time = self._safe_get_redis_value(memory_data, "orka_expire_time")
-
             if orka_expire_time:
                 try:
-                    expire_time_ms = int(float(orka_expire_time))
-                    ttl_ms = expire_time_ms - current_time_ms
-                    ttl_seconds = max(0, ttl_ms // 1000)
-
-                    # Format expire time
-                    import datetime
-
-                    expires_at = datetime.datetime.fromtimestamp(expire_time_ms / 1000)
-                    expires_at_formatted = expires_at.strftime("%Y-%m-%d %H:%M:%S")
-
-                    # Format TTL
-                    if ttl_seconds >= 86400:  # >= 1 day
-                        days = ttl_seconds // 86400
-                        hours = (ttl_seconds % 86400) // 3600
-                        ttl_formatted = f"{days}d {hours}h"
-                    elif ttl_seconds >= 3600:  # >= 1 hour
-                        hours = ttl_seconds // 3600
-                        minutes = (ttl_seconds % 3600) // 60
-                        ttl_formatted = f"{hours}h {minutes}m"
-                    elif ttl_seconds >= 60:  # >= 1 minute
-                        minutes = ttl_seconds // 60
-                        seconds = ttl_seconds % 60
-                        ttl_formatted = f"{minutes}m {seconds}s"
+                    orka_expire_time_int = int(float(orka_expire_time))
+                    if orka_expire_time_int > current_time_ms:
+                        ttl_seconds = int((orka_expire_time_int - current_time_ms) / 1000)
+                        expires_at = orka_expire_time_int
+                        expires_at_formatted = time.strftime(
+                            "%Y-%m-%d %H:%M:%S UTC", time.gmtime(expires_at / 1000)
+                        )
+                        has_expiry = True
                     else:
-                        ttl_formatted = f"{ttl_seconds}s"
+                        # Already expired by orka_expire_time
+                        ttl_seconds = 0
+                        expires_at = orka_expire_time_int
+                        expires_at_formatted = time.strftime(
+                            "%Y-%m-%d %H:%M:%S UTC", time.gmtime(expires_at / 1000)
+                        )
+                        has_expiry = True
+                except (ValueError, TypeError):
+                    pass
 
-                    return {
-                        "has_expiry": True,
-                        "ttl_seconds": ttl_seconds,
-                        "ttl_formatted": ttl_formatted,
-                        "expires_at": expire_time_ms,
-                        "expires_at_formatted": expires_at_formatted,
-                    }
-                except (ValueError, TypeError) as e:
-                    logger.warning(f"Invalid expiry time format for {key}: {e}")
+        ttl_formatted = "N/A"
+        if ttl_seconds >= 0:
+            if ttl_seconds < 60:
+                ttl_formatted = f"{ttl_seconds}s"
+            elif ttl_seconds < 3600:
+                ttl_formatted = f"{ttl_seconds // 60}m {ttl_seconds % 60}s"
+            elif ttl_seconds < 86400:
+                ttl_formatted = f"{ttl_seconds // 3600}h {(ttl_seconds % 3600) // 60}m"
+            else:
+                ttl_formatted = f"{ttl_seconds // 86400}d"
 
-            # No expiry or invalid expiry time
-            return {
-                "has_expiry": False,
-                "ttl_seconds": -1,  # -1 indicates no expiry
-                "ttl_formatted": "Never",
-                "expires_at": None,
-                "expires_at_formatted": "Never",
-            }
-
-        except Exception as e:
-            logger.error(f"Error getting TTL info for {key}: {e}")
-            return {
-                "has_expiry": False,
-                "ttl_seconds": -1,
-                "ttl_formatted": "Unknown",
-                "expires_at": None,
-                "expires_at_formatted": "Unknown",
-            }
+        return {
+            "ttl_seconds": ttl_seconds,
+            "ttl_formatted": ttl_formatted,
+            "expires_at": expires_at,
+            "expires_at_formatted": expires_at_formatted,
+            "has_expiry": has_expiry,
+        }
 
     def get_performance_metrics(self) -> dict[str, Any]:
         """Get RedisStack performance metrics including vector search status."""
@@ -1510,8 +1459,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 }
 
                 # Get index options if available
-                if "index_options" in index_info:
-                    metrics["index_status"]["index_options"] = index_info["index_options"]
+                metrics["index_status"]["index_options"] = index_info.get("index_options", {}) if index_info is not None else {}  # type: ignore
 
             except Exception as e:
                 logger.debug(f"Could not get index info: {e}")
@@ -1526,18 +1474,21 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 pattern = "orka_memory:*"
                 keys = client.keys(pattern)
 
-                namespace_dist = {}
+                namespace_dist: dict[str, int] = {}
                 for key in keys[:100]:  # Limit to avoid performance issues
                     try:
                         memory_data = client.hgetall(key)
                         # Handle bytes keys from decode_responses=False
-                        raw_trace_id = self._safe_get_redis_value(memory_data, "trace_id", "unknown")
-                        if isinstance(raw_trace_id, bytes):
-                            trace_id = raw_trace_id.decode()
-                        else:
-                            trace_id = raw_trace_id
-                        namespace_dist[trace_id] = namespace_dist.get(trace_id, 0) + 1
-                    except:
+                        raw_trace_id = self._safe_get_redis_value(
+                            memory_data, "trace_id", "unknown"
+                        )
+                        if raw_trace_id is not None:
+                            trace_id = str(raw_trace_id)  # Ensure trace_id is always a string
+                            if trace_id in namespace_dist:
+                                namespace_dist[trace_id] += 1
+                            else:
+                                namespace_dist[trace_id] = 1
+                    except Exception:
                         continue
 
                 metrics["namespace_distribution"] = namespace_dist

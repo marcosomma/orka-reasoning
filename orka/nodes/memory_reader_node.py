@@ -42,6 +42,26 @@ class MemoryReaderNode(BaseNode):
             logger.error(f"Failed to initialize embedder: {e}")
             self.embedder = None
 
+        # Initialize attributes to prevent mypy errors
+        self.use_hnsw = kwargs.get("use_hnsw", True)
+        self.hybrid_search_enabled = kwargs.get("hybrid_search_enabled", True)
+        self.context_window_size = kwargs.get("context_window_size", 10)
+        self.context_weight = kwargs.get("context_weight", 0.2)
+        self.enable_context_search = kwargs.get("enable_context_search", True)
+        self.enable_temporal_ranking = kwargs.get("enable_temporal_ranking", True)
+        self.temporal_decay_hours = kwargs.get("temporal_decay_hours", 24.0)
+        self.temporal_weight = kwargs.get("temporal_weight", 0.1)
+        self.memory_category_filter = kwargs.get("memory_category_filter", None)
+        self.decay_config = kwargs.get("decay_config", {})
+        self.redis = self.memory_logger.redis if self.memory_logger else None
+
+        self._search_metrics = {
+            "hnsw_searches": 0,
+            "legacy_searches": 0,
+            "total_results_found": 0,
+            "average_search_time": 0.0,
+        }
+
     async def run(self, context: dict[str, Any]) -> dict[str, Any]:
         """Read memories using RedisStack enhanced vector search."""
         # Try to get the rendered prompt first, then fall back to raw input
@@ -73,7 +93,7 @@ class MemoryReaderNode(BaseNode):
 
         try:
             # ✅ Use RedisStack memory logger's search_memories method
-            if hasattr(self.memory_logger, "search_memories"):
+            if self.memory_logger and hasattr(self.memory_logger, "search_memories"):
                 # 🎯 CRITICAL FIX: Search with explicit filtering for stored memories
                 logger.info(
                     f"🔍 SEARCHING: query='{query}', namespace='{self.namespace}', log_type='memory'",
@@ -150,7 +170,7 @@ class MemoryReaderNode(BaseNode):
         """Perform high-performance HNSW vector search with metadata filtering."""
         try:
             # Use memory logger's search_memories method instead of direct Redis
-            if hasattr(self.memory_logger, "search_memories"):
+            if self.memory_logger and hasattr(self.memory_logger, "search_memories"):
                 results = self.memory_logger.search_memories(
                     query=query_text,
                     num_results=self.limit,
@@ -576,7 +596,7 @@ class MemoryReaderNode(BaseNode):
                                             else metadata_raw
                                         )
                                         metadata = json.loads(metadata_str)
-                                    except:
+                                    except Exception:
                                         pass
 
                                 # Calculate enhanced similarity
@@ -689,7 +709,7 @@ class MemoryReaderNode(BaseNode):
                                             else metadata_raw
                                         )
                                         metadata = json.loads(metadata_str)
-                                    except:
+                                    except Exception:
                                         pass
 
                                 # Add to results
@@ -884,7 +904,7 @@ class MemoryReaderNode(BaseNode):
                             0.5,
                             1.0 - (age_hours / (self.temporal_decay_hours * 24)),
                         )
-                    except:
+                    except Exception:
                         pass
 
                 # 3. Metadata quality factor

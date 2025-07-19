@@ -179,7 +179,7 @@ class LocalCostCalculator:
 
         # Estimate based on detected GPU
         try:
-            import GPUtil
+            import GPUtil  # type: ignore
 
             gpus = GPUtil.getGPUs()
             if gpus:
@@ -224,7 +224,7 @@ class LocalCostCalculator:
 
         # Try to detect GPU and estimate TDP
         try:
-            import GPUtil
+            import GPUtil  # type: ignore
 
             gpus = GPUtil.getGPUs()
             if gpus:

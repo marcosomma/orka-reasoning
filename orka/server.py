@@ -344,7 +344,7 @@ async def run_execution(request: Request):
     # Clean up the temporary file
     try:
         os.remove(tmp_path)
-    except:
+    except Exception:
         print(f"Warning: Failed to remove temporary file {tmp_path}")
 
     print("\n========== [DEBUG] Orchestrator Result ==========")

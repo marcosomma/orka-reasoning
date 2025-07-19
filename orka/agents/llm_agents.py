@@ -51,7 +51,7 @@ for sophisticated natural language understanding and generation tasks.
 
 import os
 import re
-from typing import Optional
+from typing import Any, Optional
 
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -118,7 +118,7 @@ def _parse_json_safely(json_content) -> Optional[dict]:
         try:
             fixed_json = _fix_malformed_json(json_content)
             return json.loads(fixed_json)
-        except:
+        except Exception:
             return None
 
 
@@ -423,23 +423,7 @@ class OpenAIAnswerBuilder(BaseAgent):
     - Template variable resolution with rich context
     """
 
-    def run(self, input_data) -> dict:
-        """
-        Generate an answer using OpenAI's GPT model.
-
-        Args:
-            input_data (dict): Input data containing:
-                - prompt (str): The prompt to use (optional, defaults to agent's prompt)
-                - model (str): The model to use (optional, defaults to OPENAI_MODEL)
-                - temperature (float): Temperature for generation (optional, defaults to 0.7)
-                - parse_json (bool): Whether to parse JSON response (defaults to True)
-                - error_tracker: Optional error tracking object
-                - agent_id (str): Agent ID for error tracking
-
-        Returns:
-            dict: Returns parsed JSON dict with keys:
-                  response, confidence, internal_reasoning, _metrics
-        """
+    async def run(self, input_data) -> dict[str, Any]:
         # Extract parameters from input_data
         prompt = input_data.get("prompt", self.prompt)
         model = input_data.get("model", OPENAI_MODEL)
@@ -473,7 +457,7 @@ class OpenAIAnswerBuilder(BaseAgent):
         status_code = 200  # Default success
 
         try:
-            response = client.chat.completions.create(
+            response = await client.chat.completions.create(  # type: ignore[misc]  # type: ignore
                 model=model,
                 messages=[{"role": "user", "content": full_prompt}],
                 temperature=temperature,
@@ -511,7 +495,11 @@ class OpenAIAnswerBuilder(BaseAgent):
         cost_usd = _calculate_openai_cost(model, prompt_tokens, completion_tokens)
 
         # Extract and clean the response
-        answer = response.choices[0].message.content.strip()
+        answer = response.choices[0].message.content
+        if answer is not None:
+            answer = answer.strip()
+        else:
+            answer = ""
 
         # Create metrics object
         metrics = {
@@ -596,21 +584,9 @@ class OpenAIBinaryAgent(OpenAIAnswerBuilder):
     - Handles edge cases and ambiguous inputs gracefully
     """
 
-    def run(self, input_data) -> bool:
-        """
-        Make a true/false decision using OpenAI's GPT model.
-
-        Args:
-            input_data (dict): Input data containing:
-                - prompt (str): The prompt to use (optional, defaults to agent's prompt)
-                - model (str): The model to use (optional, defaults to OPENAI_MODEL)
-                - temperature (float): Temperature for generation (optional, defaults to 0.7)
-
-        Returns:
-            bool: True or False based on the model's response.
-        """
+    async def run(self, input_data) -> dict[str, Any]:
         # Override the parent method to add constraints to the prompt
-        # Ask the model to only return a "true" or "false" response
+        # Ask the model to only return a "true" or "false" value.
         constraints = "**CONSTRAINTS** ONLY and STRICTLY Return boolean 'true' or 'false' value."
 
         # Get the original prompt and add constraints
@@ -629,7 +605,7 @@ class OpenAIBinaryAgent(OpenAIAnswerBuilder):
             template = Template(enhanced_prompt)
             rendered_enhanced_prompt = template.render(input=input_data.get("input", ""))
             self._last_formatted_prompt = rendered_enhanced_prompt
-        except:
+        except Exception:
             # Fallback: simple replacement if Jinja2 fails
             self._last_formatted_prompt = enhanced_prompt.replace(
                 "{{ input }}",
@@ -637,7 +613,7 @@ class OpenAIBinaryAgent(OpenAIAnswerBuilder):
             )
 
         # Get the answer using the enhanced prompt
-        response_data = super().run(enhanced_input)
+        response_data = await super().run(enhanced_input)
 
         # Extract answer and preserve metrics and LLM response details
         if isinstance(response_data, dict):
@@ -655,12 +631,20 @@ class OpenAIBinaryAgent(OpenAIAnswerBuilder):
             self._last_internal_reasoning = "Non-JSON response from LLM"
 
         # Convert to binary decision
+        is_true = False
         positive_indicators = ["yes", "true", "correct", "right", "affirmative"]
         for indicator in positive_indicators:
             if indicator in answer.lower():
-                return True
+                is_true = True
+                break
 
-        return False
+        # Return a dictionary matching the supertype's return
+        return {
+            "response": is_true,
+            "confidence": self._last_confidence,
+            "internal_reasoning": self._last_internal_reasoning,
+            "_metrics": self._last_metrics,
+        }
 
 
 class OpenAIClassificationAgent(OpenAIAnswerBuilder):
@@ -709,19 +693,7 @@ class OpenAIClassificationAgent(OpenAIAnswerBuilder):
     - Custom category definitions with examples
     """
 
-    def run(self, input_data) -> str:
-        """
-        Classify input using OpenAI's GPT model.
-
-        Args:
-            input_data (dict): Input data containing:
-                - prompt (str): The prompt to use (optional, defaults to agent's prompt)
-                - model (str): The model to use (optional, defaults to OPENAI_MODEL)
-                - temperature (float): Temperature for generation (optional, defaults to 0.7)
-
-        Returns:
-            str: Category name based on the model's classification.
-        """
+    async def run(self, input_data) -> dict[str, Any]:
         # Extract categories from params or use defaults
         categories = self.params.get("options", [])
         constrains = "**CONSTRAINS**ONLY Return values from the given options. If not return 'not-classified'"
@@ -744,7 +716,7 @@ class OpenAIClassificationAgent(OpenAIAnswerBuilder):
             template = Template(enhanced_prompt)
             rendered_enhanced_prompt = template.render(input=input_data.get("input", ""))
             self._last_formatted_prompt = rendered_enhanced_prompt
-        except:
+        except Exception:
             # Fallback: simple replacement if Jinja2 fails
             self._last_formatted_prompt = enhanced_prompt.replace(
                 "{{ input }}",
@@ -752,7 +724,7 @@ class OpenAIClassificationAgent(OpenAIAnswerBuilder):
             )
 
         # Use parent class to make the API call
-        response_data = super().run(enhanced_input)
+        response_data = await super().run(enhanced_input)
 
         # Extract answer and preserve metrics and LLM response details
         if isinstance(response_data, dict):
@@ -769,4 +741,10 @@ class OpenAIClassificationAgent(OpenAIAnswerBuilder):
             self._last_confidence = "0.0"
             self._last_internal_reasoning = "Non-JSON response from LLM"
 
-        return answer
+        # Return a dictionary matching the supertype's return
+        return {
+            "response": answer,
+            "confidence": self._last_confidence,
+            "internal_reasoning": self._last_internal_reasoning,
+            "_metrics": self._last_metrics,
+        }
