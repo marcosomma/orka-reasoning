@@ -40,7 +40,7 @@ class TestOrchestratorComposition:
             with os.fdopen(fd, "w") as tmp_file:
                 yaml.dump(config, tmp_file)
             return path
-        except:
+        except Exception:
             os.close(fd)
             raise
 

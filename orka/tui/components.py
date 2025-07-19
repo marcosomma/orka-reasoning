@@ -162,7 +162,7 @@ class ComponentBuilder:
             if isinstance(raw_importance, bytes):
                 try:
                     importance = float(raw_importance.decode())
-                except:
+                except Exception:
                     importance = 0.0
             else:
                 importance = float(raw_importance) if raw_importance else 0.0
@@ -180,7 +180,7 @@ class ComponentBuilder:
                 else:  # seconds
                     dt = datetime.datetime.fromtimestamp(timestamp)
                 time_str = dt.strftime("%H:%M")
-            except:
+            except Exception:
                 time_str = "??:??"
 
             # Handle TTL
@@ -285,7 +285,7 @@ class ComponentBuilder:
                         modules = self.memory_logger.client.execute_command("MODULE", "LIST")
                         module_count = len(modules) if modules else 0
                         table.add_row("  Modules", f"{module_count}", "ext", "🔌")
-                    except:
+                    except Exception:
                         table.add_row("  Modules", "Unknown", "ext", "❓")
 
             except Exception as e:
@@ -309,7 +309,7 @@ class ComponentBuilder:
                 reads = perf.get("memory_reads", 0)
                 table.add_row("  Writes/min", f"{writes}", "ops", "✏️")
                 table.add_row("  Reads/min", f"{reads}", "ops", "👁️")
-            except:
+            except Exception:
                 pass
 
         return Panel(table, title="⚡ Performance & System Health", box=ROUNDED)
@@ -503,7 +503,7 @@ class ComponentBuilder:
             if isinstance(raw_importance, bytes):
                 try:
                     importance = float(raw_importance.decode())
-                except:
+                except Exception:
                     importance = 0.0
             else:
                 importance = float(raw_importance) if raw_importance else 0.0
@@ -521,7 +521,7 @@ class ComponentBuilder:
                 else:  # seconds
                     dt = datetime.datetime.fromtimestamp(timestamp)
                 time_str = dt.strftime("%H:%M:%S")
-            except:
+            except Exception:
                 time_str = "??:??:??"
 
             # Handle TTL with full information

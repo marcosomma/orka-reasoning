@@ -51,9 +51,15 @@ class ValidationAndStructuringAgent(BaseAgent):
         The LLM agent used for validation and structuring
     """
 
-    def __init__(self, params: Dict[str, Any] = None):
+    def __init__(self, params: Dict[str, Any] | None = None):
         """Initialize the agent with an OpenAIAnswerBuilder for LLM calls."""
-        super().__init__(params)
+        _agent_id = params.get("agent_id", "validation_agent") if params else "validation_agent"
+        super().__init__(
+            agent_id=_agent_id,  # Pass agent_id to BaseAgent
+            stream_key=_agent_id,  # Use agent_id as stream_key
+            debug_keep_previous_outputs=False,  # Default value
+            decay_config=None,  # Default value
+        )
         # Initialize LLM agent with required parameters
         prompt = params.get("prompt", "") if params else ""
         queue = params.get("queue") if params else None
@@ -64,7 +70,7 @@ class ValidationAndStructuringAgent(BaseAgent):
             queue=queue,
         )
 
-    def run(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def run(self, input_data: Any) -> Dict[str, Any]:
         """
         Process the input data to validate and structure the answer.
 
@@ -120,7 +126,7 @@ class ValidationAndStructuringAgent(BaseAgent):
         llm_input = {"prompt": prompt, "parse_json": False}
 
         # Get response from LLM
-        response = self.llm_agent.run(llm_input)
+        response = await self.llm_agent.run(llm_input)
 
         # Extract the raw LLM output
         if isinstance(response, dict):

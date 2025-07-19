@@ -58,15 +58,30 @@ from typing import Any
 
 import numpy as np
 import redis
-from redis.commands.search.field import NumericField, TextField, VectorField
+from redis.commands.search.field import NumericField, TextField
 
 # Support both redis-py 4.x and 5.x versions
 try:
     # redis-py <5 (camelCase)
-    from redis.commands.search.indexDefinition import IndexDefinition, IndexType
+    from redis.commands.search.indexDefinition import (  # type: ignore
+        IndexDefinition,
+        IndexType,
+    )
 except ModuleNotFoundError:
     # redis-py ≥5 (snake_case)
-    from redis.commands.search.index_definition import IndexDefinition, IndexType
+    from redis.commands.search.index_definition import (  # type: ignore
+        IndexDefinition,
+        IndexType,
+    )
+
+# Optional vector search support
+try:
+    from redis.commands.search.field import VectorField
+
+    VECTOR_SEARCH_AVAILABLE = True
+except ImportError:
+    VECTOR_SEARCH_AVAILABLE = False
+    VectorField = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -114,6 +129,12 @@ def ensure_enhanced_memory_index(redis_client, index_name="orka_enhanced_memory"
     Ensure that the enhanced memory index with vector search exists.
     This creates an index with vector search capabilities for semantic search.
     """
+    if not VECTOR_SEARCH_AVAILABLE:
+        logger.warning(
+            "Vector search not available in this Redis version. Using basic index instead."
+        )
+        return ensure_memory_index(redis_client, index_name)
+
     try:
         # Check if index exists
         try:
@@ -213,7 +234,7 @@ def hybrid_vector_search(
                 .paging(0, num_results)
                 .return_fields("content", "node_id", "trace_id", "vector_score")
                 .dialect(2),
-                query_params={"query_vector": vector_bytes},
+                query_params={"query_vector": vector_bytes},  # type: ignore
             )
 
             logger.debug(f"Vector search returned {len(search_results.docs)} results")
@@ -371,7 +392,7 @@ def legacy_vector_search(
         # Execute legacy search with proper LIMIT syntax
         search_result = client.ft("memory_idx").search(
             query=f"{vector_query} LIMIT 0 {num_results}",
-            query_params={"query_vector": query_vector_bytes},
+            query_params={"query_vector": query_vector_bytes},  # type: ignore
         )
 
         # Process results

@@ -108,7 +108,7 @@ class SocietyOfMindExtractor:
                     except (ValueError, SyntaxError):
                         try:
                             return eval(response_str)
-                        except:
+                        except Exception:
                             return {}
             return {}
         except Exception:
@@ -386,12 +386,16 @@ class SocietyOfMindExtractor:
                     "memory_vs_past_loops_ratio": (
                         memory_relevance_score / max(1, past_loops_relevance_score)
                     ),
-                    "primary_data_source": "memory"
-                    if memory_relevance_score > past_loops_relevance_score
-                    else "past_loops",
-                    "data_richness": "high"
-                    if (memory_content_length + past_loops_content_length) > 1000
-                    else "low",
+                    "primary_data_source": (
+                        "memory"
+                        if memory_relevance_score > past_loops_relevance_score
+                        else "past_loops"
+                    ),
+                    "data_richness": (
+                        "high"
+                        if (memory_content_length + past_loops_content_length) > 1000
+                        else "low"
+                    ),
                 }
                 memory_analysis.append(memory_row)
 

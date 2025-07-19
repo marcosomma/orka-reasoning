@@ -34,8 +34,9 @@ try:
     from duckduckgo_search import DDGS
 
     HAS_DUCKDUCKGO = True
+    DDGS_INSTANCE: type[DDGS] | None = DDGS  # Assign the class to a variable
 except ImportError:
-    DDGS = None
+    DDGS_INSTANCE = None
     HAS_DUCKDUCKGO = False
 
 from .base_tool import BaseTool
@@ -90,7 +91,7 @@ class DuckDuckGoTool(BaseTool):
 
         try:
             # Execute search and get top 5 results
-            with DDGS() as ddgs:
+            with DDGS_INSTANCE() as ddgs:
                 results = [r["body"] for r in ddgs.text(query, max_results=5)]
             return results
         except Exception as e:

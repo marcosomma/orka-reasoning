@@ -142,6 +142,8 @@ interface, ensuring existing code continues to work without modification. The
 RedisStack logger provides enhanced performance while preserving legacy API.
 """
 
+from typing import Any
+
 from .base_logger import BaseMemoryLogger
 from .file_operations import FileOperationsMixin
 from .redis_logger import RedisMemoryLogger
@@ -151,15 +153,128 @@ from .serialization import SerializationMixin
 try:
     from .redisstack_logger import RedisStackMemoryLogger
 except ImportError:
-    # RedisStack dependencies not available, that's fine
-    RedisStackMemoryLogger = None
+    # Define a dummy class if RedisStack dependencies are not available
+    class _DummyRedisStackMemoryLogger(BaseMemoryLogger):
+        def __init__(self, *args: Any, **kwargs: Any):
+            super().__init__(*args, **kwargs)
+            raise ImportError("RedisStack dependencies not available")
+
+        def cleanup_expired_memories(self, dry_run: bool = False) -> dict[str, Any]:
+            raise NotImplementedError
+
+        def get_memory_stats(self) -> dict[str, Any]:
+            raise NotImplementedError
+
+        def log(self, *args: Any, **kwargs: Any) -> None:
+            raise NotImplementedError
+
+        def tail(self, count: int = 10) -> list[dict[str, Any]]:
+            raise NotImplementedError
+
+        def hset(self, name: str, key: str, value: str | bytes | int | float) -> int:
+            raise NotImplementedError
+
+        def hget(self, name: str, key: str) -> str | None:
+            raise NotImplementedError
+
+        def hkeys(self, name: str) -> list[str]:
+            raise NotImplementedError
+
+        def hdel(self, name: str, *keys: str) -> int:
+            raise NotImplementedError
+
+        def smembers(self, name: str) -> list[str]:
+            raise NotImplementedError
+
+        def sadd(self, name: str, *values: str) -> int:
+            raise NotImplementedError
+
+        def srem(self, name: str, *values: str) -> int:
+            raise NotImplementedError
+
+        def get(self, key: str) -> str | None:
+            raise NotImplementedError
+
+        def set(self, key: str, value: str | bytes | int | float) -> bool:
+            raise NotImplementedError
+
+        def delete(self, *keys: str) -> int:
+            raise NotImplementedError
+
+        def ensure_index(self) -> bool:
+            raise NotImplementedError
+
+        def log_memory(self, *args: Any, **kwargs: Any) -> str:
+            raise NotImplementedError
+
+        def search_memories(self, *args: Any, **kwargs: Any) -> list[dict[str, Any]]:
+            raise NotImplementedError
+
+    RedisStackMemoryLogger = _DummyRedisStackMemoryLogger  # type: ignore
+
 
 # Import KafkaMemoryLogger if available (optional dependency)
 try:
     from .kafka_logger import KafkaMemoryLogger
 except ImportError:
-    # Kafka dependencies not available, that's fine
-    KafkaMemoryLogger = None
+    # Define a dummy class if Kafka dependencies are not available
+    class _DummyKafkaMemoryLogger(BaseMemoryLogger):
+        def __init__(self, *args: Any, **kwargs: Any):
+            super().__init__(*args, **kwargs)
+            raise ImportError("Kafka dependencies not available")
+
+        def cleanup_expired_memories(self, dry_run: bool = False) -> dict[str, Any]:
+            raise NotImplementedError
+
+        def get_memory_stats(self) -> dict[str, Any]:
+            raise NotImplementedError
+
+        def log(self, *args: Any, **kwargs: Any) -> None:
+            raise NotImplementedError
+
+        def tail(self, count: int = 10) -> list[dict[str, Any]]:
+            raise NotImplementedError
+
+        def hset(self, name: str, key: str, value: str | bytes | int | float) -> int:
+            raise NotImplementedError
+
+        def hget(self, name: str, key: str) -> str | None:
+            raise NotImplementedError
+
+        def hkeys(self, name: str) -> list[str]:
+            raise NotImplementedError
+
+        def hdel(self, name: str, *keys: str) -> int:
+            raise NotImplementedError
+
+        def smembers(self, name: str) -> list[str]:
+            raise NotImplementedError
+
+        def sadd(self, name: str, *values: str) -> int:
+            raise NotImplementedError
+
+        def srem(self, name: str, *values: str) -> int:
+            raise NotImplementedError
+
+        def get(self, key: str) -> str | None:
+            raise NotImplementedError
+
+        def set(self, key: str, value: str | bytes | int | float) -> bool:
+            raise NotImplementedError
+
+        def delete(self, *keys: str) -> int:
+            raise NotImplementedError
+
+        def ensure_index(self) -> bool:
+            raise NotImplementedError
+
+        def log_memory(self, *args: Any, **kwargs: Any) -> str:
+            raise NotImplementedError
+
+        def search_memories(self, *args: Any, **kwargs: Any) -> list[dict[str, Any]]:
+            raise NotImplementedError
+
+    KafkaMemoryLogger = _DummyKafkaMemoryLogger  # type: ignore
 
 __all__ = [
     "BaseMemoryLogger",

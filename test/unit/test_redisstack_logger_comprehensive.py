@@ -1359,5 +1359,5 @@ class TestRedisStackMemoryLogger:
         """Clean up after each test."""
         try:
             self.logger.close()
-        except:
+        except Exception:
             pass

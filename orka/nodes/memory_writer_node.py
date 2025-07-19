@@ -97,10 +97,12 @@ class MemoryWriterNode(BaseNode):
                 "content_type": "user_input",
                 **merged_metadata,  # Include all metadata from YAML and context
                 # Set these AFTER merged_metadata to prevent overwriting
-                "category": "stored",  # Mark as stored memory
+                "category": str(merged_metadata.get("category", "stored")),
                 "log_type": "memory",  # Mark as stored memory, not orchestration log
+                "tags": str(merged_metadata.get("tags", [])),
             }
 
+            assert self.memory_logger is not None, "Memory logger not initialized"
             memory_key = self.memory_logger.log_memory(
                 content=memory_content,
                 node_id=self.node_id,

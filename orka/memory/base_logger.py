@@ -570,7 +570,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         ref: dict[str, Any] = {
             "ref": blob_hash,
             "_type": "blob_reference",
-            "_original_keys": None, # Initialize to None
+            "_original_keys": None,
         }
 
         if original_keys:

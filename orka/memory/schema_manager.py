@@ -12,14 +12,14 @@ from typing import TYPE_CHECKING, Any
 
 # Always import SerializationContext for type hints
 if TYPE_CHECKING:
-    from confluent_kafka.serialization import MessageField, SerializationContext
+    from confluent_kafka.serialization import MessageField, SerializationContext  # type: ignore
 
 try:
     import avro.io
     import avro.schema
-    from confluent_kafka.schema_registry import SchemaRegistryClient
-    from confluent_kafka.schema_registry.avro import AvroDeserializer, AvroSerializer
-    from confluent_kafka.serialization import MessageField, SerializationContext
+    from confluent_kafka.schema_registry import SchemaRegistryClient  # type: ignore
+    from confluent_kafka.schema_registry.avro import AvroDeserializer, AvroSerializer  # type: ignore
+    from confluent_kafka.serialization import MessageField, SerializationContext  # type: ignore
 
     AVRO_AVAILABLE = True
 except ImportError:
@@ -30,9 +30,9 @@ except ImportError:
 
 try:
     import google.protobuf
-    from confluent_kafka.schema_registry.protobuf import (
-        ProtobufDeserializer,
-        ProtobufSerializer,
+    from confluent_kafka.schema_registry.protobuf import (  # type: ignore
+        ProtobufDeserializer,  # type: ignore
+        ProtobufSerializer,  # type: ignore
     )
 
     PROTOBUF_AVAILABLE = True

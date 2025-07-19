@@ -253,7 +253,7 @@ class MemoryTableWidget(DataTable):
             else:  # More than 1 day
                 days = int(diff.total_seconds() / 86400)
                 return f"[red]{dt.strftime('%m/%d')}[/red] [dim](-{days}d)[/dim]"
-        except:
+        except Exception:
             return "[dim]Unknown[/dim]"
 
     def _format_enhanced_ttl(self, ttl_formatted) -> str:
@@ -345,7 +345,7 @@ class MemoryTableWidget(DataTable):
                         if data.get(key):
                             content_str = str(data[key])
                             break
-            except:
+            except Exception:
                 pass
 
         # Intelligent truncation
@@ -399,7 +399,7 @@ class MemoryTableWidget(DataTable):
             else:
                 dt = datetime.fromisoformat(str(timestamp))
             return dt.strftime("%H:%M:%S")
-        except:
+        except Exception:
             return str(timestamp)[:8]
 
     def _format_type(self, log_type: str) -> str:
@@ -586,7 +586,7 @@ class LogsWidget(DataTable):
                     else:  # seconds
                         dt = datetime.fromtimestamp(timestamp)
                     time_display = dt.strftime("%H:%M:%S")
-                except:
+                except Exception:
                     time_display = "Unknown"
 
                 # Format content for overview (shorter)
@@ -628,7 +628,7 @@ class LogsWidget(DataTable):
                     else:  # seconds
                         dt = datetime.fromtimestamp(timestamp)
                     time_display = dt.strftime("%H:%M:%S")
-                except:
+                except Exception:
                     time_display = "Unknown"
 
                 content_overview = content[:35] + "..." if len(content) > 35 else content

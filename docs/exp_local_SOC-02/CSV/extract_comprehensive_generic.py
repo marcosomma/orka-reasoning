@@ -50,7 +50,7 @@ class ComprehensiveOrkaExtractor:
                         # If literal_eval fails, try eval (less safe but sometimes necessary)
                         try:
                             return eval(response_str)
-                        except:
+                        except Exception:
                             return {}
             return {}
         except Exception:
@@ -184,9 +184,11 @@ class ComprehensiveOrkaExtractor:
                                     agreement_data = self.safe_eval(matches[0])
                                 else:
                                     agreement_data = {
-                                        "AGREEMENT_SCORE": float(matches[0])
-                                        if matches[0].replace(".", "").isdigit()
-                                        else matches[0],
+                                        "AGREEMENT_SCORE": (
+                                            float(matches[0])
+                                            if matches[0].replace(".", "").isdigit()
+                                            else matches[0]
+                                        ),
                                     }
 
                                 convergence_row = {

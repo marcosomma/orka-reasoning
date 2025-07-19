@@ -291,7 +291,7 @@ if TEXTUAL_AVAILABLE:
     try:
         from .tui.textual_app import OrKaTextualApp
     except ImportError:
-        OrKaTextualApp = None
+        OrKaTextualApp = None  # type: ignore
 
 
 # Export the main class for backward compatibility

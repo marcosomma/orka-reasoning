@@ -263,7 +263,7 @@ class DataManager:
         if isinstance(timestamp, bytes):
             try:
                 return int(timestamp.decode())
-            except:
+            except Exception:
                 return 0
         return int(timestamp) if timestamp else 0
 
@@ -273,7 +273,7 @@ class DataManager:
         if isinstance(score, bytes):
             try:
                 return float(score.decode())
-            except:
+            except Exception:
                 return 0.0
         return float(score) if score else 0.0
 
@@ -453,7 +453,7 @@ class DataManager:
                         return {"status": "healthy", "icon": "🟢", "message": "Connected"}
                     else:
                         return {"status": "warning", "icon": "🟡", "message": "Limited"}
-                except:
+                except Exception:
                     return {"status": "warning", "icon": "🟡", "message": "Limited"}
             elif hasattr(self.memory_logger, "client"):
                 # Other memory loggers might use client
@@ -461,7 +461,7 @@ class DataManager:
             else:
                 # Memory logger exists but no known client attribute
                 return {"status": "warning", "icon": "🟡", "message": "Limited"}
-        except:
+        except Exception:
             return {"status": "critical", "icon": "🔴", "message": "Error"}
 
     def _calculate_performance_health(self):
@@ -498,7 +498,7 @@ class DataManager:
                 import json
 
                 metadata = json.loads(metadata.decode("utf-8"))
-            except:
+            except Exception:
                 metadata = {}
 
         return metadata

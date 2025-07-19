@@ -252,7 +252,7 @@ def create_memory_logger(
                 logger.warning("Vector search will not be available")
 
             logger_instance = RedisStackMemoryLogger(
-                redis_url=redis_url,
+                redis_url=redis_url or "redis://localhost:6379/0",
                 embedder=embedder,  # 🎯 NEW: Pass embedder for vector search
                 stream_key=stream_key,
                 debug_keep_previous_outputs=debug_keep_previous_outputs,
@@ -323,11 +323,11 @@ def create_memory_logger(
             )
 
             return KafkaMemoryLogger(
-                bootstrap_servers=kafka_bootstrap_servers,
+                bootstrap_servers=str(kafka_bootstrap_servers),
                 schema_registry_url=schema_registry_url,
                 use_schema_registry=use_schema_registry,
                 topic_prefix=topic_prefix,
-                redis_url=redis_url,
+                redis_url=redis_url or "redis://localhost:6380/0",
                 stream_key=stream_key,
                 debug_keep_previous_outputs=debug_keep_previous_outputs,
                 decay_config=decay_config,
@@ -341,12 +341,12 @@ def create_memory_logger(
             # Recursive call with RedisStack
             return create_memory_logger(
                 "redisstack",
-                redis_url,
-                stream_key,
-                debug_keep_previous_outputs,
-                decay_config,
-                enable_hnsw,
-                vector_params,
+                redis_url=redis_url,
+                stream_key=stream_key,
+                debug_keep_previous_outputs=debug_keep_previous_outputs,
+                decay_config=decay_config,
+                enable_hnsw=enable_hnsw,
+                vector_params=vector_params,
             )
 
     raise ValueError(f"Unsupported backend: {backend}. Supported: redisstack, redis, kafka")

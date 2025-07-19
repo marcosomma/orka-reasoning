@@ -185,7 +185,7 @@ def redis_client():
         yield client
         try:
             client.flushdb()  # Clean up after tests
-        except:
+        except Exception:
             pass
     else:
         yield FakeRedisClient()
@@ -287,7 +287,7 @@ def wait_for_redis(redis_url: str, max_retries: int = 5, retry_delay: float = 1.
             client = redis.from_url(redis_url)
             client.ping()
             return True
-        except:
+        except Exception:
             if attempt < max_retries - 1:
                 time.sleep(retry_delay)
     return False

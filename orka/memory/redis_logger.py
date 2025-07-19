@@ -576,7 +576,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
         """Cleanup when object is destroyed."""
         try:
             self.close()
-        except:
+        except Exception:
             # Ignore all errors during cleanup
             pass
 
