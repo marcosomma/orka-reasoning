@@ -48,7 +48,8 @@ dependencies = [
   
   # UI Components
   "rich>=13.0.0",
-  "textual>=0.40.0"
+  "textual>=0.40.0",
+  "GPUtil>=1.4.0"
 ]
 
 [project.optional-dependencies]
@@ -70,7 +71,7 @@ dev = [
   "flake8-pytest-style>=1.7.0",
   
   # Type Checking
-  "mypy==1.8.0",
+  "mypy==1.17.0",
   "types-redis>=4.6.0.20240311",
   "types-PyYAML>=6.0.12.20240311",
   "types-requests>=2.31.0.20240311",
@@ -252,4 +253,4 @@ check_untyped_defs = false
 
 [[tool.mypy.overrides]]
 module = ["confluent_kafka.*", "sentence_transformers.*"]
-ignore_missing_imports = true
+ignore_missing_imports = false

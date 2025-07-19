@@ -13,27 +13,38 @@
 
 
 import json
+from typing import Any, Dict, List, Optional, Union
 
 from .base_node import BaseNode
 
 
-class JoinNode(BaseNode):
+class JoinNode(BaseNode[Dict[str, Any], Dict[str, Any]]):
     """
     A node that waits for and merges results from parallel branches created by a ForkNode.
     Uses a max retry counter to prevent infinite waiting.
     """
 
-    def __init__(self, node_id, prompt, queue, memory_logger=None, **kwargs):
-        super().__init__(node_id, prompt, queue, **kwargs)
-        self.memory_logger = memory_logger
-        self.group_id = kwargs.get("group")
-        self.max_retries = kwargs.get("max_retries", 30)
-        self.output_key = f"{self.node_id}:output"
-        self._retry_key = f"{self.node_id}:join_retry_count"
+    def __init__(
+        self,
+        node_id: str,
+        prompt: Optional[str] = None,
+        queue: Optional[List[Any]] = None,
+        memory_logger: Optional[Any] = None,
+        **kwargs: Any
+    ) -> None:
+        super().__init__(node_id=node_id, prompt=prompt, queue=queue, **kwargs)
+        self.memory_logger: Optional[Any] = memory_logger
+        self.group_id: Optional[str] = kwargs.get("group")
+        self.max_retries: int = kwargs.get("max_retries", 30)
+        self.output_key: str = f"{self.node_id}:output"
+        self._retry_key: str = f"{self.node_id}:join_retry_count"
 
-    def run(self, input_data):
+    async def run(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         fork_group_id = input_data.get("fork_group_id", self.group_id)
         state_key = "waitfor:join_parallel_checks:inputs"
+
+        if self.memory_logger is None:
+            return {"status": "error", "message": "memory_logger is not initialized"}
 
         # Get or increment retry count using backend-agnostic hash operations
         retry_count_str = self.memory_logger.hget("join_retry_counts", self._retry_key)
@@ -45,15 +56,15 @@ class JoinNode(BaseNode):
 
         # Get list of received inputs and expected targets
         inputs_received = self.memory_logger.hkeys(state_key)
-        received = [i.decode() if isinstance(i, bytes) else i for i in inputs_received]
+        received: List[str] = [i.decode() if isinstance(i, bytes) else i for i in inputs_received]
         fork_targets = self.memory_logger.smembers(f"fork_group:{fork_group_id}")
-        fork_targets = [i.decode() if isinstance(i, bytes) else i for i in fork_targets]
-        pending = [agent for agent in fork_targets if agent not in received]
+        fork_targets_list: List[str] = [i.decode() if isinstance(i, bytes) else i for i in fork_targets]
+        pending: List[str] = [agent for agent in fork_targets_list if agent not in received]
 
         # Check if all expected agents have completed
         if not pending:
             self.memory_logger.hdel("join_retry_counts", self._retry_key)
-            return self._complete(fork_targets, state_key)
+            return self._complete(fork_targets_list, state_key)
 
         # Check for max retries
         if retry_count >= self.max_retries:
@@ -74,8 +85,21 @@ class JoinNode(BaseNode):
             "max_retries": self.max_retries,
         }
 
-    def _complete(self, fork_targets, state_key):
-        merged = {
+    def _complete(self, fork_targets: List[str], state_key: str) -> Dict[str, Any]:
+        """
+        Complete the join operation by merging results from all fork targets.
+
+        Args:
+            fork_targets: List of fork target agent IDs
+            state_key: Key for storing state in memory logger
+
+        Returns:
+            Dict containing merged results from all fork targets
+        """
+        if self.memory_logger is None:
+            return {"status": "error", "message": "memory_logger is not initialized"}
+
+        merged: Dict[str, Any] = {
             agent_id: json.loads(self.memory_logger.hget(state_key, agent_id))
             for agent_id in fork_targets
         }

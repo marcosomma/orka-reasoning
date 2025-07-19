@@ -10,53 +10,84 @@
 # For commercial use, contact: marcosomma.work@gmail.com
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
+"""A node that splits the workflow into parallel branches."""
+
+from typing import Any, Dict, List, Optional, Union
+
 from .base_node import BaseNode
 
+# Define type variables for better type hints
+Context = Dict[str, Any]
+Result = Dict[str, str]
+Orchestrator = Any  # TODO: Create proper type for Orchestrator
 
-class ForkNode(BaseNode):
+
+class ForkNode(BaseNode[Context, Result]):
     """
     A node that splits the workflow into parallel branches.
+
     Can handle both sequential and parallel execution of agent branches.
     """
 
-    def __init__(self, node_id, prompt=None, queue=None, memory_logger=None, **kwargs):
+    def __init__(
+        self,
+        node_id: str,
+        prompt: Optional[str] = None,
+        queue: Optional[List[Any]] = None,
+        memory_logger: Optional[Any] = None,
+        **kwargs: Any,
+    ) -> None:
         """
         Initialize the fork node.
 
         Args:
-            node_id (str): Unique identifier for the node.
-            prompt (str, optional): Prompt or instruction for the node.
-            queue (list, optional): Queue of agents or nodes to be processed.
+            node_id: Unique identifier for the node.
+            prompt: Prompt or instruction for the node.
+            queue: Queue of agents or nodes to be processed.
             memory_logger: Logger for tracking node state.
             **kwargs: Additional configuration parameters.
         """
         super().__init__(node_id=node_id, prompt=prompt, queue=queue, **kwargs)
-        self.memory_logger = memory_logger
-        self.targets = kwargs.get("targets", [])  # Store the fork branches
-        self.config = kwargs  # Store config explicitly
-        self.mode = kwargs.get("mode", "sequential")  # Default to sequential execution
+        self.memory_logger: Optional[Any] = memory_logger
+        self.targets: List[Union[str, List[str]]] = kwargs.get(
+            "targets", []
+        )  # Store the fork branches
+        self.config: Dict[str, Any] = kwargs  # Store config explicitly
+        self.mode: str = kwargs.get("mode", "sequential")  # Default to sequential execution
+        self.orchestrator: Optional[Orchestrator] = None
 
-    async def run(self, orchestrator, context):
+    def set_orchestrator(self, orchestrator: Orchestrator) -> None:
+        """
+        Set the orchestrator instance for this node.
+
+        Args:
+            orchestrator: The orchestrator instance managing the workflow.
+        """
+        self.orchestrator = orchestrator
+
+    async def run(self, context: Context) -> Result:
         """
         Execute the fork operation by creating parallel branches.
 
         Args:
-            orchestrator: The orchestrator instance managing the workflow.
             context: Context data for the fork operation.
 
         Returns:
-            dict: Status and fork group information.
+            Status and fork group information.
 
         Raises:
-            ValueError: If no targets are specified.
+            ValueError: If no targets are specified or orchestrator is not set.
         """
-        targets = self.config.get("targets", [])
+        if self.orchestrator is None:
+            raise ValueError(f"ForkNode '{self.node_id}' requires orchestrator to be set.")
+
+        targets: List[Union[str, List[str]]] = self.config.get("targets", [])
         if not targets:
             raise ValueError(f"ForkNode '{self.node_id}' requires non-empty 'targets' list.")
 
         # Generate a unique ID for this fork group
-        fork_group_id = orchestrator.fork_manager.generate_group_id(self.node_id)
-        all_flat_agents = []  # Store all agents in a flat list
+        fork_group_id: str = self.orchestrator.fork_manager.generate_group_id(self.node_id)
+        all_flat_agents: List[str] = []  # Store all agents in a flat list
 
         # Process each branch in the targets
         for branch in self.targets:
@@ -65,21 +96,22 @@ class ForkNode(BaseNode):
                 first_agent = branch[0]
                 if self.mode == "sequential":
                     # For sequential mode, only queue the first agent
-                    orchestrator.enqueue_fork([first_agent], fork_group_id)
-                    orchestrator.fork_manager.track_branch_sequence(fork_group_id, branch)
+                    self.orchestrator.enqueue_fork([first_agent], fork_group_id)
+                    self.orchestrator.fork_manager.track_branch_sequence(fork_group_id, branch)
                 else:
                     # For parallel mode, queue all agents
-                    orchestrator.enqueue_fork(branch, fork_group_id)
+                    self.orchestrator.enqueue_fork(branch, fork_group_id)
                 all_flat_agents.extend(branch)
             else:
                 # Single agent, flat structure (fallback)
-                orchestrator.enqueue_fork([branch], fork_group_id)
+                self.orchestrator.enqueue_fork([branch], fork_group_id)
                 all_flat_agents.append(branch)
 
             # Create the fork group with all agents
-            orchestrator.fork_manager.create_group(fork_group_id, all_flat_agents)
+            self.orchestrator.fork_manager.create_group(fork_group_id, all_flat_agents)
 
         # Store fork group mapping and agent list using backend-agnostic methods
-        self.memory_logger.hset(f"fork_group_mapping:{self.node_id}", "group_id", fork_group_id)
-        self.memory_logger.sadd(f"fork_group:{fork_group_id}", *all_flat_agents)
+        if self.memory_logger is not None:
+            self.memory_logger.hset(f"fork_group_mapping:{self.node_id}", "group_id", fork_group_id)
+            self.memory_logger.sadd(f"fork_group:{fork_group_id}", *all_flat_agents)
         return {"status": "forked", "fork_group": fork_group_id}

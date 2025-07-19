@@ -1,11 +1,11 @@
-"""
-Fallback interface implementations for when Rich is not available.
-"""
+"""Implement fallback interfaces for when Rich is not available."""
 
 import json
 import os
 import sys
 import time
+from argparse import Namespace
+from typing import Any, Dict
 
 from ..memory_logger import create_memory_logger
 
@@ -13,19 +13,31 @@ from ..memory_logger import create_memory_logger
 class FallbackInterface:
     """Basic fallback interface when Rich is not available."""
 
-    def run_basic_fallback(self, args):
-        """Basic fallback interface when Rich is not available."""
+    def run_basic_fallback(self, args: Namespace) -> int:
+        """
+        Run the basic fallback interface when Rich is not available.
+
+        Args:
+            args: Command-line arguments namespace.
+
+        Returns:
+            0 for success, 1 for failure.
+        """
         try:
-            backend = getattr(args, "backend", None) or os.getenv(
+            backend: str = getattr(args, "backend", None) or os.getenv(
                 "ORKA_MEMORY_BACKEND",
                 "redisstack",
             )
 
             # Provide proper Redis URL based on backend
-            if backend == "redisstack":
-                redis_url = os.getenv("REDIS_URL", "redis://localhost:6380/0")
-            else:
-                redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+            redis_url: str = os.getenv(
+                "REDIS_URL",
+                (
+                    "redis://localhost:6380/0"
+                    if backend == "redisstack"
+                    else "redis://localhost:6379/0"
+                ),
+            )
 
             memory = create_memory_logger(backend=backend, redis_url=redis_url)
 
@@ -38,14 +50,24 @@ class FallbackInterface:
             print(f"❌ Error in basic fallback: {e}", file=sys.stderr)
             return 1
 
-    def basic_json_watch(self, memory, backend: str, args):
-        """Basic JSON mode memory watch."""
+    def basic_json_watch(self, memory: Any, backend: str, args: Namespace) -> int:
+        """
+        Watch memory stats in JSON mode.
+
+        Args:
+            memory: Memory logger instance.
+            backend: Backend type.
+            args: Command-line arguments namespace.
+
+        Returns:
+            0 for success, 1 for failure.
+        """
         try:
             while True:
                 try:
-                    stats = memory.get_memory_stats()
+                    stats: Dict[str, Any] = memory.get_memory_stats()
 
-                    output = {
+                    output: Dict[str, Any] = {
                         "timestamp": stats.get("timestamp"),
                         "backend": backend,
                         "stats": stats,
@@ -65,8 +87,18 @@ class FallbackInterface:
 
         return 0
 
-    def basic_display_watch(self, memory, backend: str, args):
-        """Basic display mode memory watch."""
+    def basic_display_watch(self, memory: Any, backend: str, args: Namespace) -> int:
+        """
+        Watch memory stats in display mode.
+
+        Args:
+            memory: Memory logger instance.
+            backend: Backend type.
+            args: Command-line arguments namespace.
+
+        Returns:
+            0 for success, 1 for failure.
+        """
         try:
             while True:
                 try:
@@ -79,7 +111,7 @@ class FallbackInterface:
                     print("-" * 60)
 
                     # Get comprehensive stats
-                    stats = memory.get_memory_stats()
+                    stats: Dict[str, Any] = memory.get_memory_stats()
 
                     # Display basic metrics
                     print("📊 Memory Statistics:")

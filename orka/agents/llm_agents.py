@@ -12,8 +12,7 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-🤖 **LLM Agents** - Cloud-Powered Intelligent Processing
-======================================================
+🤖 **LLM Agents** - Cloud-Powered Intelligent Processing.
 
 This module contains specialized agents that leverage cloud LLMs (OpenAI GPT models)
 for sophisticated natural language understanding and generation tasks.
@@ -54,6 +53,7 @@ import re
 from typing import Optional
 
 from dotenv import load_dotenv
+from fastapi import HTTPException
 from openai import OpenAI
 
 from .base_agent import LegacyBaseAgent as BaseAgent
@@ -118,7 +118,7 @@ def _parse_json_safely(json_content) -> Optional[dict]:
         try:
             fixed_json = _fix_malformed_json(json_content)
             return json.loads(fixed_json)
-        except:
+        except Exception:
             return None
 
 
@@ -251,7 +251,7 @@ def parse_llm_json_response(
 
 def _fix_malformed_json(json_str) -> str:
     """
-    Attempt to fix common JSON formatting issues.
+    If malformed, attempt to fix common JSON formatting issues.
 
     Args:
         json_str (str): Potentially malformed JSON string
@@ -259,7 +259,6 @@ def _fix_malformed_json(json_str) -> str:
     Returns:
         str: Fixed JSON string
     """
-
     # Remove comments and extra whitespace
     json_str = re.sub(r"//.*?\n", "\n", json_str)
     json_str = re.sub(r"/\*.*?\*/", "", json_str, flags=re.DOTALL)
@@ -335,7 +334,7 @@ def _calculate_openai_cost(model: str, prompt_tokens: int, completion_tokens: in
 
 def _simple_json_parse(response_text) -> dict:
     """
-    Simple JSON parser for OpenAI models (no reasoning support).
+    For not reasoning responses simple JSON parser for OpenAI models.
 
     Args:
         response_text (str): Raw response from OpenAI
@@ -478,14 +477,14 @@ class OpenAIAnswerBuilder(BaseAgent):
                 messages=[{"role": "user", "content": full_prompt}],
                 temperature=temperature,
             )
-        except Exception as e:
+        except HTTPException as e:
             # Track API errors and status codes
             if error_tracker:
                 # Extract status code if it's an HTTP error
                 if hasattr(e, "status_code"):
                     status_code = e.status_code
-                elif hasattr(e, "code"):
-                    status_code = e.code
+                elif hasattr(e, "detail"):
+                    status_code = e.detail
                 else:
                     status_code = 500
 
@@ -629,7 +628,7 @@ class OpenAIBinaryAgent(OpenAIAnswerBuilder):
             template = Template(enhanced_prompt)
             rendered_enhanced_prompt = template.render(input=input_data.get("input", ""))
             self._last_formatted_prompt = rendered_enhanced_prompt
-        except:
+        except Exception:
             # Fallback: simple replacement if Jinja2 fails
             self._last_formatted_prompt = enhanced_prompt.replace(
                 "{{ input }}",
@@ -744,7 +743,7 @@ class OpenAIClassificationAgent(OpenAIAnswerBuilder):
             template = Template(enhanced_prompt)
             rendered_enhanced_prompt = template.render(input=input_data.get("input", ""))
             self._last_formatted_prompt = rendered_enhanced_prompt
-        except:
+        except Exception:
             # Fallback: simple replacement if Jinja2 fails
             self._last_formatted_prompt = enhanced_prompt.replace(
                 "{{ input }}",

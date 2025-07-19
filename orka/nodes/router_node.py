@@ -12,8 +12,7 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-🚦 **Router Node** - Intelligent Traffic Controller
-================================================
+🚦 **Router Node** - Intelligent Traffic Controller.
 
 The RouterNode is the intelligent traffic controller of OrKa workflows, enabling
 sophisticated branching logic based on dynamic conditions and previous outputs.
@@ -31,10 +30,11 @@ sophisticated branching logic based on dynamic conditions and previous outputs.
 - A/B testing with random or criteria-based routing
 """
 
+from typing import Any, Dict, List, Optional, Union
 from .base_node import BaseNode
 
 
-class RouterNode(BaseNode):
+class RouterNode(BaseNode[Dict[str, Any], List[str]]):
     """
     🚦 **The intelligent traffic controller** - routes execution based on dynamic conditions.
 
@@ -97,7 +97,9 @@ class RouterNode(BaseNode):
     - A/B testing and experimentation
     """
 
-    def __init__(self, node_id, params=None, **kwargs):
+    def __init__(
+        self, node_id: str, params: Optional[Dict[str, Any]] = None, **kwargs: Any
+    ) -> None:
         """
         Initialize the router node.
 
@@ -109,15 +111,14 @@ class RouterNode(BaseNode):
         Raises:
             ValueError: If required parameters are missing.
         """
-        queue = kwargs.pop("queue", None)
-        super().__init__(node_id=node_id, prompt=None, queue=None, **kwargs)
+        super().__init__(node_id=node_id, **kwargs)
         if params is None:
             raise ValueError(
                 "RouterAgent requires 'params' with 'decision_key' and 'routing_map'.",
             )
-        self.params = params
+        self.params: Dict[str, Any] = params
 
-    def run(self, input_data):
+    async def run(self, input_data: Dict[str, Any]) -> List[str]:
         """
         Route the workflow based on the decision value.
 
@@ -138,7 +139,7 @@ class RouterNode(BaseNode):
         decision_value_str = str(decision_value).strip().lower()
 
         # Try different matching strategies in order of preference
-        route = (
+        route: List[str] = (
             routing_map.get(decision_value)  # literal (True, False)
             or routing_map.get(decision_value_str)  # string "true"/"false"
             or routing_map.get(self._bool_key(decision_value_str))  # normalized boolean
@@ -147,7 +148,7 @@ class RouterNode(BaseNode):
 
         return route
 
-    def _bool_key(self, val):
+    def _bool_key(self, val: str) -> Union[bool, str]:
         """
         Convert string values to boolean for routing.
 

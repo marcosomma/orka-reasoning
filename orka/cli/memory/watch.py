@@ -12,8 +12,7 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-Memory Watch Functionality
-==========================
+Memory Watch Functionality.
 
 This module contains memory watch functionality with TUI interface support.
 """
@@ -22,12 +21,22 @@ import json
 import os
 import sys
 import time
+from argparse import Namespace
+from typing import Any, Dict, List, Union
 
 from orka.memory_logger import create_memory_logger
 
 
-def memory_watch(args):
-    """Modern TUI interface with Textual (default) or Rich fallback."""
+def memory_watch(args: Namespace) -> int:
+    """
+    Modern TUI interface with Textual (default) or Rich fallback.
+
+    Args:
+        args: Command-line arguments namespace.
+
+    Returns:
+        0 for success, 1 for failure.
+    """
     # Check if user explicitly wants fallback interface
     if getattr(args, "fallback", False):
         print("ℹ️  Using basic terminal interface as requested")
@@ -52,11 +61,21 @@ def memory_watch(args):
         return 1
 
 
-def _memory_watch_fallback(args):
-    """Fallback memory watch with basic interface."""
+def _memory_watch_fallback(args: Namespace) -> int:
+    """
+    Fallback memory watch with basic interface.
+
+    Args:
+        args: Command-line arguments namespace.
+
+    Returns:
+        0 for success, 1 for failure.
+    """
     try:
-        backend = getattr(args, "backend", None) or os.getenv("ORKA_MEMORY_BACKEND", "redisstack")
-        redis_url = os.getenv(
+        backend: str = getattr(args, "backend", None) or os.getenv(
+            "ORKA_MEMORY_BACKEND", "redisstack"
+        )
+        redis_url: str = os.getenv(
             "REDIS_URL", "redis://localhost:6379/0"
         )  # Use same URL for all backends
 
@@ -72,14 +91,24 @@ def _memory_watch_fallback(args):
         return 1
 
 
-def _memory_watch_json(memory, backend: str, args):
-    """JSON mode memory watch with continuous updates."""
+def _memory_watch_json(memory: Any, backend: str, args: Namespace) -> int:
+    """
+    JSON mode memory watch with continuous updates.
+
+    Args:
+        memory: Memory logger instance.
+        backend: Backend type.
+        args: Command-line arguments namespace.
+
+    Returns:
+        0 for success, 1 for failure.
+    """
     try:
         while True:
             try:
-                stats = memory.get_memory_stats()
+                stats: Dict[str, Any] = memory.get_memory_stats()
 
-                output = {
+                output: Dict[str, Any] = {
                     "timestamp": stats.get("timestamp"),
                     "backend": backend,
                     "stats": stats,
@@ -87,6 +116,7 @@ def _memory_watch_json(memory, backend: str, args):
 
                 # Add recent stored memories
                 try:
+                    recent_memories: List[Dict[str, Any]] = []
                     if hasattr(memory, "get_recent_stored_memories"):
                         recent_memories = memory.get_recent_stored_memories(5)
                     elif hasattr(memory, "search_memories"):
@@ -95,8 +125,6 @@ def _memory_watch_json(memory, backend: str, args):
                             num_results=5,
                             log_type="memory",
                         )
-                    else:
-                        recent_memories = []
 
                     output["recent_stored_memories"] = recent_memories
                 except Exception as e:
@@ -125,8 +153,18 @@ def _memory_watch_json(memory, backend: str, args):
     return 0
 
 
-def _memory_watch_display(memory, backend: str, args):
-    """Interactive display mode with continuous updates."""
+def _memory_watch_display(memory: Any, backend: str, args: Namespace) -> int:
+    """
+    Interactive display mode with continuous updates.
+
+    Args:
+        memory: Memory logger instance.
+        backend: Backend type.
+        args: Command-line arguments namespace.
+
+    Returns:
+        0 for success, 1 for failure.
+    """
     try:
         while True:
             try:
@@ -141,7 +179,7 @@ def _memory_watch_display(memory, backend: str, args):
                 print("-" * 60)
 
                 # Get comprehensive stats
-                stats = memory.get_memory_stats()
+                stats: Dict[str, Any] = memory.get_memory_stats()
 
                 # Display basic metrics
                 print("📊 Memory Statistics:")
@@ -155,6 +193,7 @@ def _memory_watch_display(memory, backend: str, args):
                 print("\n🧠 Recent Stored Memories:")
                 try:
                     # Get recent memories using the dedicated method
+                    recent_memories: List[Dict[str, Any]] = []
                     if hasattr(memory, "get_recent_stored_memories"):
                         recent_memories = memory.get_recent_stored_memories(5)
                     elif hasattr(memory, "search_memories"):
@@ -163,19 +202,17 @@ def _memory_watch_display(memory, backend: str, args):
                             num_results=5,
                             log_type="memory",
                         )
-                    else:
-                        recent_memories = []
 
                     if recent_memories:
                         for i, mem in enumerate(recent_memories, 1):
                             # Handle bytes content from decode_responses=False
-                            raw_content = mem.get("content", "")
+                            raw_content: Union[str, bytes] = mem.get("content", "")
                             if isinstance(raw_content, bytes):
                                 raw_content = raw_content.decode()
                             content = raw_content[:100] + ("..." if len(raw_content) > 100 else "")
 
                             # Handle bytes for other fields
-                            raw_node_id = mem.get("node_id", "unknown")
+                            raw_node_id: Union[str, bytes] = mem.get("node_id", "unknown")
                             node_id = (
                                 raw_node_id.decode()
                                 if isinstance(raw_node_id, bytes)

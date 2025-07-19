@@ -12,8 +12,7 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-Basic Agents Module
-=================
+Basic Agents Module.
 
 This module implements simple rule-based agents for the OrKa framework that don't
 rely on external APIs or complex ML models. These agents serve as building blocks
@@ -93,6 +92,9 @@ class ClassificationAgent(BaseAgent):
 
     def run(self, input_data):
         """
-        Deprecated in v 0.5.6
+        Run function for the classification Agent.
+
+        Deprecated function DO NO USE IT.
+        Deprecated in v 0.5.6.
         """
         return "deprecated"

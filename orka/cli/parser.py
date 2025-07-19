@@ -12,8 +12,7 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-CLI Parser
-==========
+CLI Parser.
 
 This module contains the command-line argument parsing logic for the OrKa CLI.
 """
@@ -24,8 +23,13 @@ from .memory import memory_cleanup, memory_configure, memory_stats, memory_watch
 from .orchestrator import run_orchestrator
 
 
-def create_parser():
-    """Create and configure the main argument parser."""
+def create_parser() -> argparse.ArgumentParser:
+    """
+    Create and configure the main argument parser.
+
+    Returns:
+        The configured argument parser.
+    """
     parser = argparse.ArgumentParser(
         description="OrKa - Orchestrator Kit for Agents",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -38,8 +42,16 @@ def create_parser():
     return parser
 
 
-def setup_subcommands(parser):
-    """Set up all subcommands and their arguments."""
+def setup_subcommands(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+    """
+    Set up all subcommands and their arguments.
+
+    Args:
+        parser: The main argument parser to add subcommands to.
+
+    Returns:
+        The configured argument parser with subcommands.
+    """
     # Subcommands
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 

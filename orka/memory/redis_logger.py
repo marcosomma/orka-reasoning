@@ -12,8 +12,7 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-Redis Memory Logger Implementation
-=================================
+Redis Memory Logger Implementation.
 
 Redis-based memory logger that uses Redis streams for event storage.
 """
@@ -22,13 +21,30 @@ import json
 import logging
 import os
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, Dict, List, Optional, Union, cast, Mapping, TypedDict
 
 import redis
 
 from .base_logger import BaseMemoryLogger
 
 logger = logging.getLogger(__name__)
+
+# Type aliases
+JsonDict = Dict[str, Any]
+JsonList = List[Any]
+RedisValue = Union[str, bytes, int, float]
+RedisMapping = Mapping[str, RedisValue]
+
+
+class RedisFields(TypedDict):
+    """Type definition for Redis fields."""
+
+    data: str
+    orka_importance_score: str
+    orka_memory_type: str
+    orka_memory_category: str
+    orka_expire_time: str
+    orka_created_time: str
 
 
 class RedisMemoryLogger(BaseMemoryLogger):
@@ -94,10 +110,10 @@ class RedisMemoryLogger(BaseMemoryLogger):
 
     def __init__(
         self,
-        redis_url: str | None = None,
+        redis_url: Optional[str] = None,
         stream_key: str = "orka:memory",
         debug_keep_previous_outputs: bool = False,
-        decay_config: dict[str, Any] | None = None,
+        decay_config: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Initialize the Redis memory logger.
@@ -109,15 +125,18 @@ class RedisMemoryLogger(BaseMemoryLogger):
             decay_config: Configuration for memory decay functionality.
         """
         super().__init__(stream_key, debug_keep_previous_outputs, decay_config)
-        self.redis_url = redis_url or os.getenv(
-            "REDIS_URL", "redis://localhost:6379/0"
+        self.redis_url: str = (
+            redis_url
+            or os.getenv("REDIS_URL", "redis://localhost:6379/0")
+            or "redis://localhost:6379/0"
         )  # Use port 6379 by default
-        self.client = redis.from_url(self.redis_url)
+        self.client: redis.Redis = redis.from_url(self.redis_url)
 
     @property
     def redis(self) -> redis.Redis:
         """
         Return the Redis client for backward compatibility.
+
         This property exists for compatibility with existing code.
         """
         return self.client
@@ -126,13 +145,14 @@ class RedisMemoryLogger(BaseMemoryLogger):
         self,
         agent_id: str,
         event_type: str,
-        payload: dict[str, Any],
-        step: int | None = None,
-        run_id: str | None = None,
-        fork_group: str | None = None,
-        parent: str | None = None,
-        previous_outputs: dict[str, Any] | None = None,
-        agent_decay_config: dict[str, Any] | None = None,
+        payload: Dict[str, Any],
+        step: Optional[int] = None,
+        run_id: Optional[str] = None,
+        fork_group: Optional[str] = None,
+        parent: Optional[str] = None,
+        previous_outputs: Optional[Dict[str, Any]] = None,
+        agent_decay_config: Optional[Dict[str, Any]] = None,
+        log_type: str = "memory",
     ) -> None:
         """
         Log an event to the Redis stream.
@@ -147,6 +167,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
             parent: Parent agent identifier.
             previous_outputs: Previous agent outputs.
             agent_decay_config: Agent-specific decay configuration overrides.
+            log_type: Type of log entry.
 
         Raises:
             ValueError: If agent_id is missing.
@@ -158,14 +179,14 @@ class RedisMemoryLogger(BaseMemoryLogger):
         safe_payload = self._sanitize_for_json(payload)
 
         # Determine which decay config to use
-        effective_decay_config = self.decay_config.copy()
+        effective_decay_config = self.decay_config.copy() if self.decay_config else {}
         if agent_decay_config:
             # Merge agent-specific decay config with global config
             effective_decay_config.update(agent_decay_config)
 
         # Calculate decay metadata if decay is enabled (globally or for this agent)
-        decay_metadata = {}
-        decay_enabled = self.decay_config.get("enabled", False) or (
+        decay_metadata: Dict[str, str] = {}
+        decay_enabled = (self.decay_config and self.decay_config.get("enabled", False)) or (
             agent_decay_config and agent_decay_config.get("enabled", False)
         )
 
@@ -178,11 +199,15 @@ class RedisMemoryLogger(BaseMemoryLogger):
                 importance_score = self._calculate_importance_score(
                     event_type,
                     agent_id,
-                    safe_payload,
+                    cast(Dict[str, Any], safe_payload),
                 )
 
                 # Classify memory category for separation first
-                memory_category = self._classify_memory_category(event_type, agent_id, safe_payload)
+                memory_category = self._classify_memory_category(
+                    event_type,
+                    agent_id,
+                    cast(Dict[str, Any], safe_payload),
+                )
 
                 # Check for agent-specific default memory type first
                 if "default_long_term" in effective_decay_config:
@@ -203,15 +228,15 @@ class RedisMemoryLogger(BaseMemoryLogger):
                 if memory_type == "short_term":
                     expire_hours = effective_decay_config.get(
                         "short_term_hours",
-                        effective_decay_config["default_short_term_hours"],
+                        effective_decay_config.get("default_short_term_hours", 24.0),
                     )
                 else:
                     expire_hours = effective_decay_config.get(
                         "long_term_hours",
-                        effective_decay_config["default_long_term_hours"],
+                        effective_decay_config.get("default_long_term_hours", 168.0),
                     )
 
-                expire_time = current_time + timedelta(hours=expire_hours)
+                expire_time = current_time + timedelta(hours=float(expire_hours))
 
                 decay_metadata = {
                     "orka_importance_score": str(importance_score),
@@ -224,11 +249,12 @@ class RedisMemoryLogger(BaseMemoryLogger):
                 # Restore original config
                 self.decay_config = old_config
 
-        event: dict[str, Any] = {
+        event: Dict[str, Any] = {
             "agent_id": agent_id,
             "event_type": event_type,
             "timestamp": datetime.now(UTC).isoformat(),
             "payload": safe_payload,
+            "log_type": log_type,
         }
         if step is not None:
             event["step"] = step
@@ -243,606 +269,335 @@ class RedisMemoryLogger(BaseMemoryLogger):
 
         self.memory.append(event)
 
-        # Determine which stream(s) to write to based on memory category
-        streams_to_write = []
-
         # Get memory category from decay metadata
         memory_category = decay_metadata.get("orka_memory_category", "log")
 
-        if memory_category == "stored" and event_type == "write" and isinstance(safe_payload, dict):
-            # For stored memories, only write to namespace-specific stream
-            namespace = safe_payload.get("namespace")
-            session = safe_payload.get("session", "default")
-            if namespace:
-                namespace_stream = f"orka:memory:{namespace}:{session}"
-                streams_to_write.append(namespace_stream)
-                logger.info(
-                    f"Writing stored memory to namespace-specific stream: {namespace_stream}",
-                )
-            else:
-                # Fallback to general stream if no namespace
-                streams_to_write.append(self.stream_key)
-        else:
-            # For orchestration logs and other events, write to general stream
-            streams_to_write.append(self.stream_key)
+        # Convert decay metadata to Redis-compatible format
+        redis_fields: RedisFields = {
+            "data": json.dumps(event),
+            "orka_importance_score": str(decay_metadata.get("orka_importance_score", "1.0")),
+            "orka_memory_type": str(decay_metadata.get("orka_memory_type", "short_term")),
+            "orka_memory_category": str(decay_metadata.get("orka_memory_category", "log")),
+            "orka_expire_time": str(decay_metadata.get("orka_expire_time", "")),
+            "orka_created_time": str(decay_metadata.get("orka_created_time", "")),
+        }
 
+        # Write to Redis stream
         try:
-            # Sanitize previous outputs if present
-            safe_previous_outputs = None
-            if previous_outputs:
-                try:
-                    safe_previous_outputs = json.dumps(
-                        self._sanitize_for_json(previous_outputs),
-                    )
-                except Exception as e:
-                    logger.error(f"Failed to serialize previous_outputs: {e!s}")
-                    safe_previous_outputs = json.dumps(
-                        {"error": f"Serialization error: {e!s}"},
-                    )
-
-            # Prepare the Redis entry
-            redis_entry = {
-                "agent_id": agent_id,
-                "event_type": event_type,
-                "timestamp": event["timestamp"],
-                "run_id": run_id or "default",
-                "step": str(step or -1),
-            }
-
-            # Add decay metadata if decay is enabled
-            redis_entry.update(decay_metadata)
-
-            # Safely serialize the payload
-            try:
-                redis_entry["payload"] = json.dumps(safe_payload)
-            except Exception as e:
-                logger.error(f"Failed to serialize payload: {e!s}")
-                redis_entry["payload"] = json.dumps(
-                    {"error": "Original payload contained non-serializable objects"},
-                )
-
-            # Only add previous_outputs if it exists and is not None
-            if safe_previous_outputs:
-                redis_entry["previous_outputs"] = safe_previous_outputs
-
-            # Write to all determined streams
-            for stream_key in streams_to_write:
-                try:
-                    self.client.xadd(stream_key, redis_entry)
-                    logger.debug(f"Successfully wrote to stream: {stream_key}")
-                except Exception as stream_e:
-                    logger.error(f"Failed to write to stream {stream_key}: {stream_e!s}")
-
+            self.client.xadd(
+                self.stream_key,
+                fields=redis_fields,
+            )
         except Exception as e:
-            logger.error(f"Failed to log event to Redis: {e!s}")
-            logger.error(f"Problematic payload: {str(payload)[:200]}")
-            # Try again with a simplified payload
-            try:
-                simplified_payload = {
-                    "error": f"Original payload contained non-serializable objects: {e!s}",
-                }
-                simplified_entry = {
-                    "agent_id": agent_id,
-                    "event_type": event_type,
-                    "timestamp": event["timestamp"],
-                    "payload": json.dumps(simplified_payload),
-                    "run_id": run_id or "default",
-                    "step": str(step or -1),
-                }
-                simplified_entry.update(decay_metadata)
+            logger.error(f"Failed to write to Redis stream: {e}")
 
-                # Write simplified entry to all streams
-                for stream_key in streams_to_write:
-                    try:
-                        self.client.xadd(stream_key, simplified_entry)
-                    except Exception as stream_e:
-                        logger.error(
-                            f"Failed to write simplified entry to stream {stream_key}: {stream_e!s}",
-                        )
-                logger.info("Logged simplified error payload instead")
-            except Exception as inner_e:
-                logger.error(
-                    f"Failed to log event to Redis: {e!s} and fallback also failed: {inner_e!s}",
-                )
-
-    def tail(self, count: int = 10) -> list[dict[str, Any]]:
+    def tail(self, count: int = 10) -> List[Dict[str, Any]]:
         """
-        Retrieve the most recent events from the Redis stream.
+        Get the last N events from the memory stream.
 
         Args:
             count: Number of events to retrieve.
 
         Returns:
-            List of recent events.
+            List of events.
         """
         try:
-            results = self.client.xrevrange(self.stream_key, count=count)
-            # Sanitize results for JSON serialization before returning
-            return self._sanitize_for_json(results)
+            return list(reversed(self.memory[-count:]))
         except Exception as e:
-            logger.error(f"Failed to retrieve events from Redis: {e!s}")
+            logger.error(f"Failed to tail memory: {e}")
             return []
 
-    def hset(self, name: str, key: str, value: str | bytes | int | float) -> int:
+    def hset(self, name: str, key: str, value: Union[str, bytes, int, float]) -> int:
         """
-        Set a field in a Redis hash.
+        Set a hash field to a value.
 
         Args:
-            name: Name of the hash.
-            key: Field key.
+            name: Hash name.
+            key: Field name.
             value: Field value.
 
         Returns:
-            Number of fields added.
+            Number of fields that were added.
         """
         try:
-            # Convert non-string values to strings if needed
-            if not isinstance(value, (str, bytes, int, float)):
-                value = json.dumps(self._sanitize_for_json(value))
             return self.client.hset(name, key, value)
         except Exception as e:
-            logger.error(f"Failed to set hash field {key} in {name}: {e!s}")
+            logger.error(f"Failed to set hash field {key} in {name}: {e}")
             return 0
 
-    def hget(self, name: str, key: str) -> str | None:
+    def hget(self, name: str, key: str) -> Optional[str]:
         """
-        Get a field from a Redis hash.
+        Get the value of a hash field.
 
         Args:
-            name: Name of the hash.
-            key: Field key.
+            name: Hash name.
+            key: Field name.
 
         Returns:
-            Field value.
+            Field value if found, None otherwise.
         """
         try:
-            return self.client.hget(name, key)
+            value = self.client.hget(name, key)
+            return value.decode("utf-8") if value else None
         except Exception as e:
-            logger.error(f"Failed to get hash field {key} from {name}: {e!s}")
+            logger.error(f"Failed to get hash field {key} from {name}: {e}")
             return None
 
-    def hkeys(self, name: str) -> list[str]:
+    def hkeys(self, name: str) -> List[str]:
         """
-        Get all keys in a Redis hash.
+        Get all the fields in a hash.
 
         Args:
-            name: Name of the hash.
+            name: Hash name.
 
         Returns:
-            List of keys.
+            List of field names.
         """
         try:
-            return self.client.hkeys(name)
+            keys = self.client.hkeys(name)
+            return [key.decode("utf-8") for key in keys]
         except Exception as e:
-            logger.error(f"Failed to get hash keys from {name}: {e!s}")
+            logger.error(f"Failed to get hash keys from {name}: {e}")
             return []
 
     def hdel(self, name: str, *keys: str) -> int:
         """
-        Delete fields from a Redis hash.
+        Delete one or more hash fields.
 
         Args:
-            name: Name of the hash.
-            *keys: Keys to delete.
+            name: Hash name.
+            *keys: Field names to delete.
 
         Returns:
-            Number of fields deleted.
+            Number of fields that were removed.
         """
         try:
-            if not keys:
-                logger.warning(f"hdel called with no keys for hash {name}")
-                return 0
             return self.client.hdel(name, *keys)
         except Exception as e:
-            # Handle WRONGTYPE errors by cleaning up the key and retrying
-            if "WRONGTYPE" in str(e):
-                logger.warning(f"WRONGTYPE error for key '{name}', attempting cleanup")
-                if self._cleanup_redis_key(name):
-                    try:
-                        # Retry after cleanup
-                        return self.client.hdel(name, *keys)
-                    except Exception as retry_e:
-                        logger.error(f"Failed to hdel after cleanup: {retry_e!s}")
-                        return 0
-            logger.error(f"Failed to delete hash fields from {name}: {e!s}")
+            logger.error(f"Failed to delete hash fields {keys} from {name}: {e}")
             return 0
 
-    def smembers(self, name: str) -> list[str]:
+    def smembers(self, name: str) -> List[str]:
         """
-        Get all members of a Redis set.
+        Get all the members of a set.
 
         Args:
-            name: Name of the set.
+            name: Set name.
 
         Returns:
-            Set of members.
+            List of set members.
         """
         try:
-            return self.client.smembers(name)
+            members = self.client.smembers(name)
+            return [member.decode("utf-8") for member in members]
         except Exception as e:
-            logger.error(f"Failed to get set members from {name}: {e!s}")
+            logger.error(f"Failed to get set members from {name}: {e}")
             return []
 
     def sadd(self, name: str, *values: str) -> int:
         """
-        Add members to a Redis set.
+        Add one or more members to a set.
 
         Args:
-            name: Name of the set.
+            name: Set name.
             *values: Values to add.
 
         Returns:
-            Number of new members added.
+            Number of members that were added.
         """
         try:
             return self.client.sadd(name, *values)
         except Exception as e:
-            logger.error(f"Failed to add members to set {name}: {e!s}")
+            logger.error(f"Failed to add values {values} to set {name}: {e}")
             return 0
 
     def srem(self, name: str, *values: str) -> int:
         """
-        Remove members from a Redis set.
+        Remove one or more members from a set.
 
         Args:
-            name: Name of the set.
+            name: Set name.
             *values: Values to remove.
 
         Returns:
-            Number of members removed.
+            Number of members that were removed.
         """
         try:
             return self.client.srem(name, *values)
         except Exception as e:
-            logger.error(f"Failed to remove members from set {name}: {e!s}")
+            logger.error(f"Failed to remove values {values} from set {name}: {e}")
             return 0
 
-    def get(self, key: str) -> str | None:
+    def get(self, key: str) -> Optional[str]:
         """
-        Get a value by key from Redis.
+        Get the value of a key.
 
         Args:
-            key: The key to get.
+            key: Key name.
 
         Returns:
             Value if found, None otherwise.
         """
         try:
-            result = self.client.get(key)
-            return result.decode() if isinstance(result, bytes) else result
+            value = self.client.get(key)
+            return value.decode("utf-8") if value else None
         except Exception as e:
-            logger.error(f"Failed to get key {key}: {e!s}")
+            logger.error(f"Failed to get key {key}: {e}")
             return None
 
-    def set(self, key: str, value: str | bytes | int | float) -> bool:
+    def set(self, key: str, value: Union[str, bytes, int, float]) -> bool:
         """
-        Set a value by key in Redis.
+        Set the value of a key.
 
         Args:
-            key: The key to set.
-            value: The value to set.
+            key: Key name.
+            value: Value to set.
 
         Returns:
             True if successful, False otherwise.
         """
         try:
-            return self.client.set(key, value)
+            return bool(self.client.set(key, value))
         except Exception as e:
-            logger.error(f"Failed to set key {key}: {e!s}")
+            logger.error(f"Failed to set key {key}: {e}")
             return False
 
     def delete(self, *keys: str) -> int:
         """
-        Delete keys from Redis.
+        Delete one or more keys.
 
         Args:
             *keys: Keys to delete.
 
         Returns:
-            Number of keys deleted.
+            Number of keys that were removed.
         """
         try:
             return self.client.delete(*keys)
         except Exception as e:
-            logger.error(f"Failed to delete keys {keys}: {e!s}")
+            logger.error(f"Failed to delete keys {keys}: {e}")
             return 0
 
     def close(self) -> None:
-        """Close the Redis client connection."""
+        """Close the Redis connection."""
         try:
             self.client.close()
-            # Only log if logging system is still available
-            try:
-                logger.info("[RedisMemoryLogger] Redis client closed")
-            except (ValueError, OSError):
-                # Logging system might be shut down, ignore
-                pass
         except Exception as e:
-            try:
-                logger.error(f"Error closing Redis client: {e!s}")
-            except (ValueError, OSError):
-                # Logging system might be shut down, ignore
-                pass
+            logger.error(f"Failed to close Redis connection: {e}")
 
-    def __del__(self):
-        """Cleanup when object is destroyed."""
-        try:
-            self.close()
-        except:
-            # Ignore all errors during cleanup
-            pass
+    def __del__(self) -> None:
+        """Ensure Redis connection is closed on object deletion."""
+        self.close()
 
     def _cleanup_redis_key(self, key: str) -> bool:
         """
-        Clean up a Redis key that might have the wrong type.
-
-        This method deletes a key to resolve WRONGTYPE errors.
+        Clean up a Redis key and its associated data.
 
         Args:
-            key: The Redis key to clean up
+            key: Key to clean up.
 
         Returns:
-            True if key was cleaned up, False if cleanup failed
+            True if successful, False otherwise.
         """
         try:
+            # Delete the key and any associated data
             self.client.delete(key)
-            logger.warning(f"Cleaned up Redis key '{key}' due to type conflict")
             return True
         except Exception as e:
-            logger.error(f"Failed to clean up Redis key '{key}': {e!s}")
+            logger.error(f"Failed to clean up Redis key {key}: {e}")
             return False
 
-    def cleanup_expired_memories(self, dry_run: bool = False) -> dict[str, Any]:
+    def cleanup_expired_memories(self, dry_run: bool = False) -> Dict[str, Any]:
         """
-        Clean up expired memory entries based on decay configuration.
+        Clean up expired memories.
 
         Args:
-            dry_run: If True, return what would be deleted without actually deleting
+            dry_run: If True, only report what would be deleted.
 
         Returns:
-            Dictionary containing cleanup statistics
+            Dictionary containing cleanup statistics.
         """
-        if not self.decay_config.get("enabled", False):
-            return {"status": "decay_disabled", "deleted_count": 0}
-
         try:
             current_time = datetime.now(UTC)
-            stats = {
-                "start_time": current_time.isoformat(),
-                "dry_run": dry_run,
-                "deleted_count": 0,
-                "deleted_entries": [],
-                "error_count": 0,
-                "streams_processed": 0,
-                "total_entries_checked": 0,
-            }
+            cleaned = 0
+            skipped = 0
+            errors = 0
 
-            # Get all stream keys that match our pattern
-            stream_patterns = [
-                self.stream_key,
-                f"{self.stream_key}:*",  # Namespace-specific streams
-                "orka:memory:*",  # All Orka memory streams
-            ]
-
-            processed_streams = set()
-            for pattern in stream_patterns:
-                stream_keys = self.client.keys(pattern)
-
-                for stream_key in stream_keys:
-                    if stream_key.decode() in processed_streams:
+            # Get all memory keys
+            memory_keys = self.client.keys("orka:memory:*")
+            for key in memory_keys:
+                try:
+                    # Get memory metadata
+                    metadata = self.client.hgetall(key)
+                    if not metadata:
                         continue
-                    processed_streams.add(stream_key.decode())
 
-                    try:
-                        # Get all entries from the stream
-                        entries = self.client.xrange(stream_key)
-                        stats["streams_processed"] += 1
-                        stats["total_entries_checked"] += len(entries)
+                    # Check expiration time
+                    expire_time_str = metadata.get(b"orka_expire_time")
+                    if not expire_time_str:
+                        skipped += 1
+                        continue
 
-                        for entry_id, entry_data in entries:
-                            expire_time_str = entry_data.get(b"orka_expire_time")
-                            if not expire_time_str:
-                                continue  # Skip entries without expiration time
+                    expire_time = datetime.fromisoformat(expire_time_str.decode("utf-8"))
+                    if current_time > expire_time:
+                        if not dry_run:
+                            if self._cleanup_redis_key(key.decode("utf-8")):
+                                cleaned += 1
+                            else:
+                                errors += 1
+                        else:
+                            cleaned += 1
+                    else:
+                        skipped += 1
 
-                            try:
-                                expire_time = datetime.fromisoformat(expire_time_str.decode())
-                                if current_time > expire_time:
-                                    # Entry has expired
-                                    entry_info = {
-                                        "stream": stream_key.decode(),
-                                        "entry_id": entry_id.decode(),
-                                        "agent_id": entry_data.get(
-                                            b"agent_id",
-                                            b"unknown",
-                                        ).decode(),
-                                        "event_type": entry_data.get(
-                                            b"event_type",
-                                            b"unknown",
-                                        ).decode(),
-                                        "expire_time": expire_time_str.decode(),
-                                        "memory_type": entry_data.get(
-                                            b"orka_memory_type",
-                                            b"unknown",
-                                        ).decode(),
-                                    }
+                except Exception as e:
+                    logger.error(f"Error processing key {key}: {e}")
+                    errors += 1
 
-                                    if not dry_run:
-                                        # Actually delete the entry
-                                        self.client.xdel(stream_key, entry_id)
-
-                                    stats["deleted_entries"].append(entry_info)
-                                    stats["deleted_count"] += 1
-
-                            except (ValueError, TypeError) as e:
-                                logger.warning(
-                                    f"Invalid expire_time format in entry {entry_id}: {e}",
-                                )
-                                stats["error_count"] += 1
-
-                    except Exception as e:
-                        logger.error(f"Error processing stream {stream_key}: {e}")
-                        stats["error_count"] += 1
-
-            stats["end_time"] = datetime.now(UTC).isoformat()
-            stats["duration_seconds"] = (datetime.now(UTC) - current_time).total_seconds()
-
-            # Update last decay check time
-            if not dry_run:
-                self._last_decay_check = current_time
-
-            logger.info(
-                f"Memory decay cleanup completed. Deleted {stats['deleted_count']} entries "
-                f"from {stats['streams_processed']} streams (dry_run={dry_run})",
-            )
-
-            return stats
+            return {
+                "cleaned": cleaned,
+                "skipped": skipped,
+                "errors": errors,
+                "dry_run": dry_run,
+            }
 
         except Exception as e:
-            logger.error(f"Error during memory decay cleanup: {e}")
+            logger.error(f"Failed to cleanup expired memories: {e}")
             return {
-                "status": "error",
                 "error": str(e),
-                "deleted_count": 0,
+                "cleaned": 0,
+                "skipped": 0,
+                "errors": 0,
+                "dry_run": dry_run,
             }
 
-    def get_memory_stats(self) -> dict[str, Any]:
+    def get_memory_stats(self) -> Dict[str, Any]:
         """
         Get memory usage statistics.
 
         Returns:
-            Dictionary containing memory statistics
+            Dictionary containing memory statistics.
         """
         try:
-            current_time = datetime.now(UTC)
-            stats = {
-                "timestamp": current_time.isoformat(),
-                "decay_enabled": self.decay_config.get("enabled", False),
-                "total_streams": 0,
-                "total_entries": 0,
-                "entries_by_type": {},
-                "entries_by_memory_type": {"short_term": 0, "long_term": 0, "unknown": 0},
-                "entries_by_category": {"stored": 0, "log": 0, "unknown": 0},
-                "expired_entries": 0,
-                "streams_detail": [],
+            info = self.client.info("memory")
+            return {
+                "used_memory": info["used_memory"],
+                "used_memory_peak": info["used_memory_peak"],
+                "used_memory_lua": info["used_memory_lua"],
+                "used_memory_scripts": info["used_memory_scripts"],
+                "number_of_cached_scripts": info["number_of_cached_scripts"],
+                "maxmemory": info["maxmemory"],
+                "maxmemory_policy": info["maxmemory_policy"],
             }
-
-            # Get all stream keys that match our pattern
-            stream_patterns = [
-                self.stream_key,
-                f"{self.stream_key}:*",
-                "orka:memory:*",
-            ]
-
-            processed_streams = set()
-            for pattern in stream_patterns:
-                stream_keys = self.client.keys(pattern)
-
-                for stream_key in stream_keys:
-                    if stream_key.decode() in processed_streams:
-                        continue
-                    processed_streams.add(stream_key.decode())
-
-                    try:
-                        # Get stream info
-                        stream_info = self.client.xinfo_stream(stream_key)
-                        entries = self.client.xrange(stream_key)
-
-                        stream_stats = {
-                            "stream": stream_key.decode(),
-                            "length": stream_info.get("length", 0),
-                            "entries_by_type": {},
-                            "entries_by_memory_type": {
-                                "short_term": 0,
-                                "long_term": 0,
-                                "unknown": 0,
-                            },
-                            "entries_by_category": {
-                                "stored": 0,
-                                "log": 0,
-                                "unknown": 0,
-                            },
-                            "expired_entries": 0,
-                            "active_entries": 0,  # Track active entries separately
-                        }
-
-                        stats["total_streams"] += 1
-                        # Don't count total entries here - we'll count active ones below
-
-                        for entry_id, entry_data in entries:
-                            # Check if expired first
-                            is_expired = False
-                            expire_time_str = entry_data.get(b"orka_expire_time")
-                            if expire_time_str:
-                                try:
-                                    expire_time = datetime.fromisoformat(expire_time_str.decode())
-                                    if current_time > expire_time:
-                                        is_expired = True
-                                        stream_stats["expired_entries"] += 1
-                                        stats["expired_entries"] += 1
-                                except (ValueError, TypeError):
-                                    pass  # Skip invalid dates
-
-                            # Only count non-expired entries in the main statistics
-                            if not is_expired:
-                                stream_stats["active_entries"] += 1
-                                stats["total_entries"] += 1
-
-                                # Count by event type
-                                event_type = entry_data.get(b"event_type", b"unknown").decode()
-                                stream_stats["entries_by_type"][event_type] = (
-                                    stream_stats["entries_by_type"].get(event_type, 0) + 1
-                                )
-                                stats["entries_by_type"][event_type] = (
-                                    stats["entries_by_type"].get(event_type, 0) + 1
-                                )
-
-                                # Count by memory category first
-                                memory_category = entry_data.get(
-                                    b"orka_memory_category",
-                                    b"unknown",
-                                ).decode()
-                                if memory_category in stream_stats["entries_by_category"]:
-                                    stream_stats["entries_by_category"][memory_category] += 1
-                                    stats["entries_by_category"][memory_category] += 1
-                                else:
-                                    stream_stats["entries_by_category"]["unknown"] += 1
-                                    stats["entries_by_category"]["unknown"] += 1
-
-                                # Count by memory type ONLY for non-log entries
-                                # Logs should be excluded from memory type statistics
-                                if memory_category != "log":
-                                    memory_type = entry_data.get(
-                                        b"orka_memory_type",
-                                        b"unknown",
-                                    ).decode()
-                                    if memory_type in stream_stats["entries_by_memory_type"]:
-                                        stream_stats["entries_by_memory_type"][memory_type] += 1
-                                        stats["entries_by_memory_type"][memory_type] += 1
-                                    else:
-                                        stream_stats["entries_by_memory_type"]["unknown"] += 1
-                                        stats["entries_by_memory_type"]["unknown"] += 1
-
-                        stats["streams_detail"].append(stream_stats)
-
-                    except Exception as e:
-                        logger.error(f"Error getting stats for stream {stream_key}: {e}")
-
-            # Add decay configuration info
-            if self.decay_config.get("enabled", False):
-                stats["decay_config"] = {
-                    "short_term_hours": self.decay_config["default_short_term_hours"],
-                    "long_term_hours": self.decay_config["default_long_term_hours"],
-                    "check_interval_minutes": self.decay_config["check_interval_minutes"],
-                    "last_decay_check": (
-                        self._last_decay_check.isoformat() if self._last_decay_check else None
-                    ),
-                }
-
-            return stats
-
         except Exception as e:
-            logger.error(f"Error getting memory statistics: {e}")
+            logger.error(f"Failed to get memory stats: {e}")
             return {
                 "error": str(e),
-                "timestamp": datetime.now(UTC).isoformat(),
+                "used_memory": 0,
+                "used_memory_peak": 0,
+                "used_memory_lua": 0,
+                "used_memory_scripts": 0,
+                "number_of_cached_scripts": 0,
+                "maxmemory": 0,
+                "maxmemory_policy": "unknown",
             }

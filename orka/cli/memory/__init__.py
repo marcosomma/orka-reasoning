@@ -12,8 +12,7 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-Memory CLI Package
-=================
+Memory CLI Package.
 
 This package contains CLI commands for memory management operations.
 """

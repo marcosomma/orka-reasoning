@@ -27,15 +27,24 @@ The BaseTool class provides:
 """
 
 import abc
+from typing import Any, Dict, List, Optional, TypeVar, Generic
 
+T = TypeVar('T')  # Input type
+R = TypeVar('R')  # Return type
 
-class BaseTool(abc.ABC):
+class BaseTool(abc.ABC, Generic[T, R]):
     """
     Abstract base class for all tools in the OrKa framework.
     Defines the common interface and properties that all tools must implement.
     """
 
-    def __init__(self, tool_id, prompt=None, queue=None, **kwargs):
+    def __init__(
+        self,
+        tool_id: str,
+        prompt: Optional[str] = None,
+        queue: Optional[List[Any]] = None,
+        **kwargs: Any
+    ) -> None:
         """
         Initialize the base tool with common properties.
 
@@ -45,14 +54,14 @@ class BaseTool(abc.ABC):
             queue (list, optional): Queue of next tools to be processed.
             **kwargs: Additional parameters specific to the tool type.
         """
-        self.tool_id = tool_id
-        self.prompt = prompt
-        self.queue = queue
-        self.params = kwargs
-        self.type = self.__class__.__name__.lower()
+        self.tool_id: str = tool_id
+        self.prompt: Optional[str] = prompt
+        self.queue: Optional[List[Any]] = queue
+        self.params: Dict[str, Any] = kwargs
+        self.type: str = self.__class__.__name__.lower()
 
     @abc.abstractmethod
-    def run(self, input_data):
+    def run(self, input_data: T) -> R:
         """
         Abstract method to run the tool's functionality.
         Must be implemented by all concrete tool classes.
@@ -68,7 +77,7 @@ class BaseTool(abc.ABC):
         """
         pass
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Return a string representation of the tool.
 

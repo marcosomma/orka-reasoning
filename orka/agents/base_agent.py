@@ -12,8 +12,7 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-🧠 **Agents Domain** - Intelligent Processing Units
-================================================
+🧠 **Agents Domain** - Intelligent Processing Units.
 
 This module defines the foundation for all OrKa agents - the cognitive building blocks
 of your AI workflows. Agents are specialized processing units that transform inputs
@@ -59,8 +58,7 @@ T = TypeVar("T")
 
 class BaseAgent:
     """
-    Agent Base Classes
-    ==================
+    Agent Base Classes.
 
     This module defines the foundation for all OrKa agents - the processing units that
     transform inputs into outputs within orchestrated workflows.
@@ -207,6 +205,9 @@ class BaseAgent:
             return
         self._initialized = True
 
+    def _is_legacy_agent(self) -> bool:
+        return False
+
     async def run(self, ctx: Context | Any) -> Output | Any:
         """
         Run the agent with the given context.
@@ -269,10 +270,9 @@ class BaseAgent:
 
     async def _run_impl(self, ctx: Context) -> Any:
         """
-        Implementation of the agent's run logic.
+        Modern async classes implementation.
 
-        This method must be implemented by all derived agent classes to
-        provide the specific execution logic for that agent type.
+        This method must be implemented by all derived agent classes to provide the specific execution logic for that agent type.
 
         Args:
             ctx (Context): The execution context containing input and metadata
@@ -287,7 +287,8 @@ class BaseAgent:
 
     async def _run_legacy(self, input_data: Any) -> Any:
         """
-        Legacy implementation that modern async classes should override
+        Legacy implementation that modern async classes should override.
+
         if they need to support the legacy sync interface.
 
         Args:
@@ -327,6 +328,7 @@ class BaseAgent:
 class LegacyBaseAgent(abc.ABC, BaseAgent):
     """
     Abstract base class for legacy agents in the OrKa framework.
+
     Provides compatibility with the older synchronous agent pattern.
 
     New agent implementations should use BaseAgent directly with async methods.
@@ -346,13 +348,14 @@ class LegacyBaseAgent(abc.ABC, BaseAgent):
         super().__init__(agent_id=agent_id, prompt=prompt, queue=queue, **kwargs)
 
     def _is_legacy_agent(self):
-        """Identify this as a legacy agent for the unified run method"""
+        """Identify this as a legacy agent for the unified run method."""
         return True
 
     @abc.abstractmethod
     def run(self, input_data):
         """
         Abstract method to run the agent's reasoning process.
+
         Must be implemented by all concrete agent classes.
 
         Args:

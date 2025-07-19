@@ -12,8 +12,7 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-Memory Package
-==============
+Memory Package.
 
 The memory package provides persistent storage and retrieval capabilities for OrKa
 orchestration events, agent outputs, and system state. This package contains the

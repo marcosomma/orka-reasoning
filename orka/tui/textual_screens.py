@@ -18,6 +18,12 @@ class BaseOrKaScreen(Screen):
     """Base screen for OrKa application with common functionality."""
 
     def __init__(self, data_manager, **kwargs):
+        """
+        Base Orka Screen Init.
+
+        Args:
+            data_manager (_type_): _description_
+        """
         super().__init__(**kwargs)
         self.data_manager = data_manager
 

@@ -1,19 +1,4 @@
-# OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
-#
-# This file is part of OrKa – https://github.com/marcosomma/orka-resoning
-#
-# Licensed under the Apache License, Version 2.0 (Apache 2.0).
-# You may not use this file for commercial purposes without explicit permission.
-#
-# Full license: https://www.apache.org/licenses/LICENSE-2.0
-# For commercial use, contact: marcosomma.work@gmail.com
-#
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
-
-"""
-Embedder Module
-==============
+"""Provide text embedding functionality for the OrKa framework.
 
 This module provides text embedding functionality for the OrKa framework with robust
 fallback mechanisms. It is designed to be resilient and provide embeddings even in
@@ -55,17 +40,23 @@ import hashlib
 import logging
 import os
 import random
+from typing import Dict, Optional
 
 import numpy as np
+
+try:
+    from sentence_transformers import SentenceTransformer
+except ImportError:
+    SentenceTransformer = None
 
 logger = logging.getLogger(__name__)
 
 # Global embedder instance for singleton pattern
-_embedder = None
+_embedder: Optional[AsyncEmbedder] = None
 
 # Default embedding dimensions for common models
-DEFAULT_EMBEDDING_DIM = 384  # Common for smaller models like MiniLM-L6-v2
-EMBEDDING_DIMENSIONS = {
+DEFAULT_EMBEDDING_DIM: int = 384  # Common for smaller models like MiniLM-L6-v2
+EMBEDDING_DIMENSIONS: Dict[str, int] = {
     "all-MiniLM-L6-v2": 384,
     "all-mpnet-base-v2": 768,
     "all-distilroberta-v1": 768,
@@ -89,17 +80,19 @@ class AsyncEmbedder:
 
     Attributes:
         model_name (str): Name of the sentence transformer model to use
-        model: The SentenceTransformer model instance or None if loading failed
+        model (Optional[SentenceTransformer]): The SentenceTransformer model instance or None if loading failed
         model_loaded (bool): Whether the model was successfully loaded
         embedding_dim (int): Dimension of the embedding vectors produced
     """
 
-    def __init__(self, model_name="sentence-transformers/all-MiniLM-L6-v2"):
+    def __init__(
+        self, model_name: Optional[str] = "sentence-transformers/all-MiniLM-L6-v2"
+    ) -> None:
         """
         Initialize the AsyncEmbedder with the specified model.
 
         Args:
-            model_name (str): Name of the sentence transformer model to use.
+            model_name: Name of the sentence transformer model to use.
                 Defaults to "sentence-transformers/all-MiniLM-L6-v2", a lightweight
                 but effective general-purpose embedding model.
 
@@ -107,14 +100,16 @@ class AsyncEmbedder:
             Model loading happens during initialization but has fallback mechanisms
             to ensure the embedder remains functional even if loading fails.
         """
-        self.model_name = model_name if model_name else "sentence-transformers/all-MiniLM-L6-v2"
-        self.model = None
-        self.model_loaded = False
+        self.model_name: str = (
+            model_name if model_name else "sentence-transformers/all-MiniLM-L6-v2"
+        )
+        self.model: Optional[SentenceTransformer] = None
+        self.model_loaded: bool = False
 
         # Set embedding dimension based on model or use default
         if model_name:
             base_name = model_name.split("/")[-1]
-            self.embedding_dim = EMBEDDING_DIMENSIONS.get(base_name, DEFAULT_EMBEDDING_DIM)
+            self.embedding_dim: int = EMBEDDING_DIMENSIONS.get(base_name, DEFAULT_EMBEDDING_DIM)
         else:
             self.embedding_dim = DEFAULT_EMBEDDING_DIM
 
@@ -123,7 +118,7 @@ class AsyncEmbedder:
         # Try to load the model
         self._load_model()
 
-    def _load_model(self):
+    def _load_model(self) -> None:
         """
         Load the sentence transformer model with comprehensive error handling.
 
@@ -137,9 +132,6 @@ class AsyncEmbedder:
         Even on failure, the embedder will remain functional using fallback mechanisms.
         """
         try:
-            # Only import if needed to reduce startup time
-            from sentence_transformers import SentenceTransformer
-
             # Check for model file existence before loading
             if self.model_name and not self.model_name.startswith(("http:", "https:")):
                 # Check if model exists in common locations
@@ -168,12 +160,16 @@ class AsyncEmbedder:
                     )
 
             # Load the model
-            self.model = SentenceTransformer(self.model_name)
-            self.model_loaded = True
-            self.embedding_dim = self.model.get_sentence_embedding_dimension()
-            logger.info(
-                f"Successfully loaded embedding model: {self.model_name} with dimension {self.embedding_dim}"
-            )
+            if SentenceTransformer is not None:
+                self.model = SentenceTransformer(self.model_name)
+                self.model_loaded = True
+                if self.model is not None and hasattr(
+                    self.model, "get_sentence_embedding_dimension"
+                ):
+                    self.embedding_dim = self.model.get_sentence_embedding_dimension()
+                logger.info(
+                    f"Successfully loaded embedding model: {self.model_name} with dimension {self.embedding_dim}"
+                )
         except ImportError as e:
             logger.error(
                 f"Failed to import SentenceTransformer: {str(e)}. Using fallback encoding."
@@ -192,10 +188,10 @@ class AsyncEmbedder:
         embeddings are always returned, regardless of model status.
 
         Args:
-            text (str): The text to encode into an embedding vector
+            text: The text to encode into an embedding vector
 
         Returns:
-            np.ndarray: A normalized embedding vector of shape (embedding_dim,)
+            A normalized embedding vector of shape (embedding_dim,)
 
         Note:
             The method has a three-tier fallback system:
@@ -239,65 +235,53 @@ class AsyncEmbedder:
         that identical text inputs always produce the same embedding vectors.
 
         Args:
-            text (str): The text to encode
+            text: The text to encode
 
         Returns:
-            np.ndarray: A normalized embedding vector of shape (embedding_dim,)
+            A normalized embedding vector of shape (embedding_dim,)
 
         Note:
             The generated embeddings are deterministic but don't have the semantic
             properties of true model-based embeddings. They are suitable for basic
             storage and retrieval but not for advanced semantic operations.
         """
-        try:
-            # Create a deterministic hash of the text
-            text_hash = hashlib.md5(text.encode("utf-8")).hexdigest()
+        # Use text hash as random seed for deterministic output
+        text_hash = hashlib.sha256(text.encode()).hexdigest()
+        random.seed(text_hash)
 
-            # Set random seed based on text hash for deterministic output
-            random.seed(text_hash)
+        # Generate pseudo-random vector
+        vec = np.array([random.gauss(0, 1) for _ in range(self.embedding_dim)])
 
-            # Generate a random embedding vector
-            vec = np.array(
-                [random.uniform(-1, 1) for _ in range(self.embedding_dim)],
-                dtype=np.float32,
-            )
+        # Normalize to unit length (L2 norm)
+        norm = np.linalg.norm(vec)
+        if norm > 0:
+            vec = vec / norm
 
-            # Normalize to unit length for cosine similarity
-            norm = np.linalg.norm(vec)
-            if norm > 0:
-                vec = vec / norm
-
-            return vec
-        except Exception as e:
-            logger.error(f"Error in fallback encoding: {str(e)}. Using zeros vector.")
-            # Last resort - return zeros
-            return np.zeros(self.embedding_dim, dtype=np.float32)
+        return vec.astype(np.float32)
 
 
-def get_embedder(name=None):
+def get_embedder(name: Optional[str] = None) -> AsyncEmbedder:
     """
-    Get or create the singleton embedder instance.
+    Get or create a singleton embedder instance.
 
-    This function implements the singleton pattern to ensure only one embedder
-    instance is created and reused, conserving resources. The first call creates
-    the embedder with the specified model name; subsequent calls return the
-    existing instance regardless of the name parameter.
+    This function implements the singleton pattern for embedder instances to avoid
+    loading multiple copies of large models into memory. It ensures efficient
+    resource usage while providing consistent embedding functionality.
 
     Args:
-        name (str, optional): Model name to use if creating a new embedder instance.
-            Ignored if an embedder already exists.
+        name: Optional model name to use. If None, uses the default model.
 
     Returns:
-        AsyncEmbedder: The singleton embedder instance
+        A singleton AsyncEmbedder instance.
 
     Example:
         ```python
-        # First call creates the embedder
-        embedder1 = get_embedder("sentence-transformers/all-MiniLM-L6-v2")
+        # Get default embedder
+        embedder1 = get_embedder()
+        embedder2 = get_embedder()  # Returns same instance as embedder1
 
-        # Second call returns the same instance even with different model name
-        embedder2 = get_embedder("different-model")
-        assert embedder1 is embedder2  # True
+        # Get specific model embedder
+        custom_embedder = get_embedder("sentence-transformers/all-mpnet-base-v2")
         ```
     """
     global _embedder
@@ -308,73 +292,45 @@ def get_embedder(name=None):
 
 def to_bytes(vec: np.ndarray) -> bytes:
     """
-    Convert embedding vector to normalized bytes for storage.
+    Convert a numpy array to bytes for storage.
 
-    This utility function converts a numpy embedding vector to bytes format
-    for efficient storage in databases or caches. It ensures consistent
-    normalization and data types.
+    This function serializes a numpy array to a compact byte representation
+    suitable for storage in databases or transmission over networks.
 
     Args:
-        vec (np.ndarray): The embedding vector to convert
+        vec: The numpy array to convert
 
     Returns:
-        bytes: The normalized vector in bytes format
-
-    Note:
-        The function handles errors gracefully, returning empty vector bytes
-        if conversion fails.
+        The serialized byte representation of the array
 
     Example:
         ```python
-        embedding = await embedder.encode("Sample text")
+        embedding = await embedder.encode("sample text")
         bytes_data = to_bytes(embedding)
-        # Store bytes_data in Redis or other storage
+        # Store bytes_data in database
         ```
     """
-    try:
-        # Ensure vector is float32 for consistent storage
-        vec = vec.astype(np.float32)
-
-        # Normalize for cosine similarity
-        norm = np.linalg.norm(vec)
-        if norm > 0:
-            vec = vec / norm
-
-        return vec.tobytes()
-    except Exception as e:
-        logger.error(f"Error converting vector to bytes: {str(e)}")
-        # Return empty bytes as fallback
-        return np.zeros(DEFAULT_EMBEDDING_DIM, dtype=np.float32).tobytes()
+    return vec.tobytes()
 
 
 def from_bytes(b: bytes) -> np.ndarray:
     """
-    Convert bytes back to a numpy array embedding vector.
+    Convert bytes back to a numpy array.
 
-    This utility function reverses the to_bytes conversion, reconstructing
-    a numpy array from its byte representation. It's used when retrieving
-    embedding vectors from storage.
+    This function deserializes a byte representation back into a numpy array,
+    typically used when retrieving embeddings from storage.
 
     Args:
-        b (bytes): The bytes representation of the embedding vector
+        b: The bytes to convert back to an array
 
     Returns:
-        np.ndarray: The reconstructed embedding vector
-
-    Note:
-        The function handles errors gracefully, returning a zero vector
-        if conversion fails.
+        The deserialized numpy array
 
     Example:
         ```python
-        # Retrieve bytes_data from storage
+        # Retrieve bytes_data from database
         embedding = from_bytes(bytes_data)
-        # Use embedding for similarity calculations, etc.
+        # Use embedding for similarity comparison, etc.
         ```
     """
-    try:
-        return np.frombuffer(b, dtype=np.float32)
-    except Exception as e:
-        logger.error(f"Error converting bytes to vector: {str(e)}")
-        # Return empty vector as fallback
-        return np.zeros(DEFAULT_EMBEDDING_DIM, dtype=np.float32)
+    return np.frombuffer(b, dtype=np.float32)

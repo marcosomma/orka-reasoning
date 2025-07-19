@@ -236,7 +236,8 @@ import logging
 import os
 import pprint
 import tempfile
-from typing import Any
+from datetime import datetime
+from typing import Any, Dict
 
 import uvicorn
 from fastapi import FastAPI, Request
@@ -250,131 +251,138 @@ app = FastAPI(
     description="🚀 High-performance API gateway for AI workflow orchestration",
     version="1.0.0",
 )
-logger = logging.getLogger(__name__)
 
-# CORS (optional, but useful if UI and API are on different ports during dev)
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Allows all origins
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
 )
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def sanitize_for_json(obj: Any) -> Any:
     """
-    🧹 **Intelligent JSON sanitizer** - handles complex objects for API responses.
+    Recursively sanitize Python objects for JSON serialization.
 
-    **What makes sanitization smart:**
-    - **Type Intelligence**: Automatically handles datetime, bytes, and custom objects
-    - **Recursive Processing**: Deep sanitization of nested structures
-    - **Fallback Safety**: Graceful handling of non-serializable objects
-    - **Performance Optimized**: Efficient processing of large data structures
+    Args:
+        obj: Any Python object to sanitize.
 
-    **Sanitization Patterns:**
-    - **Bytes**: Converted to base64-encoded strings with type metadata
-    - **Datetime**: ISO format strings for universal compatibility
-    - **Custom Objects**: Introspected and converted to structured dictionaries
-    - **Non-serializable**: Safe string representations with type information
+    Returns:
+        JSON-serializable version of the object.
+    """
+    if isinstance(obj, (str, int, float, bool, type(None))):
+        return obj
+    elif isinstance(obj, bytes):
+        return {
+            "__type": "bytes",
+            "data": base64.b64encode(obj).decode("utf-8"),
+        }
+    elif isinstance(obj, datetime):
+        return obj.isoformat()
+    elif isinstance(obj, (list, tuple)):
+        return [sanitize_for_json(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {str(k): sanitize_for_json(v) for k, v in obj.items()}
+    elif hasattr(obj, "__dict__"):
+        return {
+            "__type": obj.__class__.__name__,
+            "data": sanitize_for_json(obj.__dict__),
+        }
+    else:
+        return str(obj)
 
-    **Perfect for:**
-    - API responses containing complex agent outputs
-    - Memory objects with mixed data types
-    - Debug information with arbitrary Python objects
-    - Cross-platform data exchange requirements
+
+@app.post("/api/run")
+async def run_execution(request: Request) -> JSONResponse:
+    """
+    Execute an OrKa workflow with the provided input and configuration.
+
+    Args:
+        request: FastAPI request object containing input text and YAML configuration.
+
+    Returns:
+        JSONResponse containing the execution results or error information.
     """
     try:
-        if obj is None or isinstance(obj, (str, int, float, bool)):
-            return obj
-        elif isinstance(obj, bytes):
-            # Convert bytes to base64-encoded string
-            return {"__type": "bytes", "data": base64.b64encode(obj).decode("utf-8")}
-        elif isinstance(obj, (list, tuple)):
-            return [sanitize_for_json(item) for item in obj]
-        elif isinstance(obj, dict):
-            return {str(k): sanitize_for_json(v) for k, v in obj.items()}
-        elif hasattr(obj, "isoformat"):  # Handle datetime-like objects
-            return obj.isoformat()
-        elif hasattr(obj, "__dict__"):  # Handle custom objects
+        # Parse request body
+        body: Dict[str, Any] = await request.json()
+        input_text: str = body.get("input", "")
+        yaml_config: str = body.get("yaml_config", "")
+
+        # Create temporary YAML file
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".yaml", encoding="utf-8", delete=False
+        ) as temp_yaml:
+            temp_yaml.write(yaml_config)
+            temp_yaml_path: str = temp_yaml.name
+
+        try:
+            # Initialize and run orchestrator
+            orchestrator = Orchestrator(temp_yaml_path)
+            result: Dict[str, Any] = await orchestrator.run({"input": input_text})
+
+            # Sanitize result for JSON serialization
+            sanitized_result: Dict[str, Any] = sanitize_for_json(result)
+
+            # Return successful response
+            return JSONResponse(
+                content={
+                    "input": input_text,
+                    "execution_log": sanitized_result,
+                    "log_file": (
+                        orchestrator.log_file if hasattr(orchestrator, "log_file") else None
+                    ),
+                },
+                status_code=200,
+            )
+
+        except Exception as e:
+            # Handle orchestrator execution errors
+            err_msg: str = f"Error during orchestrator execution: {str(e)}"
+            logger.error(err_msg)
+            return JSONResponse(
+                content={
+                    "input": input_text,
+                    "error": err_msg,
+                    "summary": pprint.pformat(e.__dict__ if hasattr(e, "__dict__") else str(e)),
+                },
+                status_code=500,
+            )
+
+        finally:
+            # Clean up temporary file
             try:
-                # Handle custom objects by converting to dict
-                return {
-                    "__type": obj.__class__.__name__,
-                    "data": sanitize_for_json(obj.__dict__),
-                }
+                os.unlink(temp_yaml_path)
             except Exception as e:
-                return f"<non-serializable object: {obj.__class__.__name__}, error: {e!s}>"
-        else:
-            # Last resort - convert to string
-            return f"<non-serializable: {type(obj).__name__}>"
+                logger.warning(f"Failed to delete temporary YAML file: {e}")
+
     except Exception as e:
-        logger.warning(f"Failed to sanitize object for JSON: {e!s}")
-        return f"<sanitization-error: {e!s}>"
-
-
-# API endpoint at /api/run
-@app.post("/api/run")
-async def run_execution(request: Request):
-    data = await request.json()
-    print("\n========== [DEBUG] Incoming POST /api/run ==========")
-    pprint.pprint(data)
-
-    input_text = data.get("input")
-    yaml_config = data.get("yaml_config")
-
-    print("\n========== [DEBUG] YAML Config String ==========")
-    print(yaml_config)
-
-    # Create a temporary file path with UTF-8 encoding
-    tmp_fd, tmp_path = tempfile.mkstemp(suffix=".yml")
-    os.close(tmp_fd)  # Close the file descriptor
-
-    # Write with explicit UTF-8 encoding
-    with open(tmp_path, "w", encoding="utf-8") as tmp:
-        tmp.write(yaml_config)
-
-    print("\n========== [DEBUG] Instantiating Orchestrator ==========")
-    orchestrator = Orchestrator(tmp_path)
-    print(f"Orchestrator: {orchestrator}")
-
-    print("\n========== [DEBUG] Running Orchestrator ==========")
-    result = await orchestrator.run(input_text)
-
-    # Clean up the temporary file
-    try:
-        os.remove(tmp_path)
-    except:
-        print(f"Warning: Failed to remove temporary file {tmp_path}")
-
-    print("\n========== [DEBUG] Orchestrator Result ==========")
-    pprint.pprint(result)
-
-    # Sanitize the result data for JSON serialization
-    sanitized_result = sanitize_for_json(result)
-
-    try:
+        # Handle request parsing errors
+        error_msg: str = f"Error parsing request: {str(e)}"
+        logger.error(error_msg)
         return JSONResponse(
             content={
-                "input": input_text,
-                "execution_log": sanitized_result,
-                "log_file": sanitized_result,
+                "error": error_msg,
+                "summary": pprint.pformat(e.__dict__ if hasattr(e, "__dict__") else str(e)),
             },
-        )
-    except Exception as e:
-        logger.error(f"Error creating JSONResponse: {e!s}")
-        # Fallback response with minimal data
-        return JSONResponse(
-            content={
-                "input": input_text,
-                "error": f"Error creating response: {e!s}",
-                "summary": "Execution completed but response contains non-serializable data",
-            },
-            status_code=500,
+            status_code=400,
         )
 
 
 if __name__ == "__main__":
-    # Get port from environment variable, default to 8000
-    port = int(os.environ.get("ORKA_PORT", 8001))  # Default to 8001 to avoid conflicts
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    # Get port from environment variable or use default
+    port: int = int(os.getenv("ORKA_PORT", "8001"))
+
+    # Run server
+    uvicorn.run(
+        "orka.server:app",
+        host="0.0.0.0",
+        port=port,
+        reload=True,  # Enable auto-reload for development
+    )

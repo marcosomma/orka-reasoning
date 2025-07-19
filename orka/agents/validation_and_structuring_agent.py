@@ -1,6 +1,5 @@
 """
-Validation and Structuring Agent
-==============================
+Validation and Structuring Agent.
 
 This module provides the ValidationAndStructuringAgent class, which is responsible for
 validating answers and structuring them into a memory format. The agent ensures answers
@@ -248,7 +247,8 @@ Context: {context}
 
 Answer to validate: {answer}
 
-This appears to be a case where no information was found for the question. Please validate this as a legitimate "no information available" response and structure it appropriately.
+This appears to be a case where no information was found for the question. Please validate this as a legitimate "no information 
+available" response and structure it appropriately.
 
 IMPORTANT: You MUST respond with the exact JSON format specified below. Do not use any other format.
 

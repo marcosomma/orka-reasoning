@@ -12,8 +12,7 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-OrKa CLI Package
-===============
+OrKa CLI Package.
 
 Modular CLI architecture with backward compatibility.
 

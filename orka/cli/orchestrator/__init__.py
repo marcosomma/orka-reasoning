@@ -12,8 +12,7 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-Orchestrator CLI Package
-========================
+Orchestrator CLI Package.
 
 This package contains CLI commands for orchestrator operations.
 """

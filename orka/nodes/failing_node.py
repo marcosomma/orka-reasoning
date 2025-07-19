@@ -11,18 +11,19 @@
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 import time
+from typing import Any, Dict
 
 from .base_node import BaseNode
 
 
-class FailingNode(BaseNode):
+class FailingNode(BaseNode[Dict[str, Any], None]):
     """
     A node that simulates failure for testing purposes.
     Intentionally raises a RuntimeError after a delay.
     """
 
     @property
-    def id(self):
+    def id(self) -> str:
         """
         Get the ID of the node.
 
@@ -31,7 +32,7 @@ class FailingNode(BaseNode):
         """
         return getattr(self, "agent_id", getattr(self, "node_id", "unknown"))
 
-    def run(self, input_data):
+    async def run(self, input_data: Dict[str, Any]) -> None:
         """
         Simulate a failing node by raising a RuntimeError after a delay.
 

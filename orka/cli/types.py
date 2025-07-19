@@ -12,8 +12,7 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-CLI Type Definitions
-===================
+CLI Type Definitions.
 
 This module contains type definitions used throughout the OrKa CLI system.
 These types provide structure and validation for orchestration events and data.

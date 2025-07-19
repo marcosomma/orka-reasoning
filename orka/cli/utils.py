@@ -12,8 +12,7 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-CLI Utilities
-============
+CLI Utilities.
 
 This module contains shared utility functions used across the OrKa CLI system.
 """
@@ -21,8 +20,13 @@ This module contains shared utility functions used across the OrKa CLI system.
 import logging
 
 
-def setup_logging(verbose: bool = False):
-    """Setup logging configuration."""
+def setup_logging(verbose: bool = False) -> None:
+    """
+    Set up logging configuration.
+
+    Args:
+        verbose: If True, set logging level to DEBUG, otherwise INFO.
+    """
     level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(
         level=level,

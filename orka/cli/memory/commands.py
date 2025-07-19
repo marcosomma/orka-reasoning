@@ -12,8 +12,7 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-Memory CLI Commands
-==================
+Memory CLI Commands.
 
 This module contains CLI commands for memory management operations including
 statistics, cleanup, and configuration.
@@ -22,40 +21,60 @@ statistics, cleanup, and configuration.
 import json
 import os
 import sys
+from argparse import Namespace
+from typing import Any, Dict
 
 from orka.memory_logger import create_memory_logger
 
 
-def memory_stats(args):
-    """Display memory usage statistics."""
+def get_redis_url(backend: str) -> str:
+    """
+    Get Redis URL based on backend type.
+
+    Args:
+        backend: The backend type ('redisstack' or 'redis').
+
+    Returns:
+        The Redis URL to use.
+    """
+    if backend == "redisstack":
+        return os.getenv("REDIS_URL", "redis://localhost:6380/0")
+    return os.getenv("REDIS_URL", "redis://localhost:6379/0")
+
+
+def memory_stats(args: Namespace) -> int:
+    """
+    Display memory usage statistics.
+
+    Args:
+        args: Command-line arguments namespace.
+
+    Returns:
+        0 for success, 1 for failure.
+    """
     try:
         # Get backend from args or environment, default to redisstack for best performance
-        backend = getattr(args, "backend", None) or os.getenv("ORKA_MEMORY_BACKEND", "redisstack")
-
-        # Provide proper Redis URL based on backend
-        if backend == "redisstack":
-            redis_url = os.getenv("REDIS_URL", "redis://localhost:6380/0")
-        else:
-            redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+        backend: str = getattr(args, "backend", None) or os.getenv(
+            "ORKA_MEMORY_BACKEND", "redisstack"
+        )
 
         # Try RedisStack first for enhanced performance, fallback to Redis if needed
         try:
-            memory = create_memory_logger(backend=backend, redis_url=redis_url)
+            memory = create_memory_logger(backend=backend, redis_url=get_redis_url(backend))
         except ImportError as e:
             if backend == "redisstack":
                 print(f"⚠️ RedisStack not available ({e}), falling back to Redis", file=sys.stderr)
                 backend = "redis"
-                redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-                memory = create_memory_logger(backend=backend, redis_url=redis_url)
+                memory = create_memory_logger(backend=backend, redis_url=get_redis_url(backend))
             else:
                 raise
 
         # Get statistics
-        stats = memory.get_memory_stats()
+        stats: Dict[str, Any] = memory.get_memory_stats()
 
         # Display results
         if args.json:
-            output = {"stats": stats}
+            output: Dict[str, Any] = {"stats": stats}
             print(json.dumps(output, indent=2))
         else:
             print("=== OrKa Memory Statistics ===")
@@ -97,27 +116,30 @@ def memory_stats(args):
     return 0
 
 
-def memory_cleanup(args):
-    """Clean up expired memory entries."""
+def memory_cleanup(args: Namespace) -> int:
+    """
+    Clean up expired memory entries.
+
+    Args:
+        args: Command-line arguments namespace.
+
+    Returns:
+        0 for success, 1 for failure.
+    """
     try:
         # Get backend from args or environment, default to redisstack for best performance
-        backend = getattr(args, "backend", None) or os.getenv("ORKA_MEMORY_BACKEND", "redisstack")
-
-        # Provide proper Redis URL based on backend
-        if backend == "redisstack":
-            redis_url = os.getenv("REDIS_URL", "redis://localhost:6380/0")
-        else:
-            redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+        backend: str = getattr(args, "backend", None) or os.getenv(
+            "ORKA_MEMORY_BACKEND", "redisstack"
+        )
 
         # Try RedisStack first for enhanced performance, fallback to Redis if needed
         try:
-            memory = create_memory_logger(backend=backend, redis_url=redis_url)
+            memory = create_memory_logger(backend=backend, redis_url=get_redis_url(backend))
         except ImportError as e:
             if backend == "redisstack":
                 print(f"⚠️ RedisStack not available ({e}), falling back to Redis", file=sys.stderr)
                 backend = "redis"
-                redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-                memory = create_memory_logger(backend=backend, redis_url=redis_url)
+                memory = create_memory_logger(backend=backend, redis_url=get_redis_url(backend))
             else:
                 raise
 
@@ -127,11 +149,11 @@ def memory_cleanup(args):
         else:
             print("=== Memory Cleanup ===")
 
-        result = memory.cleanup_expired_memories(dry_run=args.dry_run)
+        result: Dict[str, Any] = memory.cleanup_expired_memories(dry_run=args.dry_run)
 
         # Display results
         if args.json:
-            output = {"cleanup_result": result}
+            output: Dict[str, Any] = {"cleanup_result": result}
             print(json.dumps(output, indent=2))
         else:
             print(f"Backend: {backend}")
@@ -166,16 +188,18 @@ def memory_cleanup(args):
     return 0
 
 
-def memory_configure(args):
-    """Enhanced memory configuration with RedisStack testing."""
-    try:
-        backend = args.backend or os.getenv("ORKA_MEMORY_BACKEND", "redisstack")
+def memory_configure(args: Namespace) -> int:
+    """
+    Enhanced memory configuration with RedisStack testing.
 
-        # Provide proper Redis URL based on backend
-        if backend == "redisstack":
-            redis_url = os.getenv("REDIS_URL", "redis://localhost:6380/0")
-        else:
-            redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    Args:
+        args: Command-line arguments namespace.
+
+    Returns:
+        0 for success, 1 for failure.
+    """
+    try:
+        backend: str = args.backend or os.getenv("ORKA_MEMORY_BACKEND", "redisstack")
 
         print("=== OrKa Memory Configuration Test ===")
         print(f"Backend: {backend}")
@@ -183,7 +207,7 @@ def memory_configure(args):
         # Test configuration
         print("\n🧪 Testing Configuration:")
         try:
-            memory = create_memory_logger(backend=backend, redis_url=redis_url)
+            memory = create_memory_logger(backend=backend, redis_url=get_redis_url(backend))
 
             # Basic decay config test
             if hasattr(memory, "decay_config"):
@@ -205,11 +229,12 @@ def memory_configure(args):
                 # Test index availability
                 try:
                     if hasattr(memory, "client"):
-                        memory.client.ft("enhanced_memory_idx").info()
+                        # Note: We can't type check memory.client here as it's a dynamic attribute
+                        memory.client.ft("enhanced_memory_idx").info()  # type: ignore
                         print("✅ HNSW Index: Available")
 
                         # Get index details
-                        index_info = memory.client.ft("enhanced_memory_idx").info()
+                        index_info = memory.client.ft("enhanced_memory_idx").info()  # type: ignore
                         print(f"   Documents: {index_info.get('num_docs', 0)}")
                         print(
                             f"   Indexing: {'Yes' if index_info.get('indexing', False) else 'No'}",
@@ -225,7 +250,7 @@ def memory_configure(args):
                 # Test basic connectivity
                 try:
                     if hasattr(memory, "client"):
-                        memory.client.ping()
+                        memory.client.ping()  # type: ignore
                         print("✅ Redis Connection: Active")
                     else:
                         print("⚠️  Redis Connection: Cannot test")
@@ -248,33 +273,15 @@ def memory_configure(args):
                     if hasattr(memory, "redis_url"):
                         print("✅ Hybrid Backend: Kafka + Redis")
                         print(f"   Kafka topic: {getattr(memory, 'main_topic', 'N/A')}")
-                        print(f"   Redis URL: {memory.redis_url}")
-                    else:
-                        print("⚠️  Hybrid Backend: Configuration unclear")
                 except Exception as e:
                     print(f"❌ Hybrid Backend: Error - {e}")
 
-            # Test memory stats retrieval
-            try:
-                stats = memory.get_memory_stats()
-                print("\n✅ Memory Stats: Available")
-                print(f"   Total entries: {stats.get('total_entries', 0)}")
-                print(f"   Decay enabled: {stats.get('decay_enabled', False)}")
-
-                if stats.get("entries_by_memory_type"):
-                    print(f"   Memory types: {len(stats['entries_by_memory_type'])} categories")
-
-            except Exception as e:
-                print(f"\n❌ Memory Stats: Error - {e}")
-
-            print("\n✅ Configuration test completed")
-
         except Exception as e:
-            print(f"❌ Configuration test failed: {e}")
+            print(f"Error during configuration test: {e}", file=sys.stderr)
             return 1
 
     except Exception as e:
-        print(f"❌ Error testing configuration: {e}", file=sys.stderr)
+        print(f"Error during memory configuration test: {e}", file=sys.stderr)
         return 1
 
     return 0

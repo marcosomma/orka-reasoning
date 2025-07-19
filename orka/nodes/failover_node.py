@@ -18,6 +18,7 @@ from .base_node import BaseNode
 class FailoverNode(BaseNode):
     """
     A node that implements failover logic by trying multiple child nodes in sequence.
+
     If one child fails, it tries the next one until one succeeds or all fail.
     """
 
@@ -131,7 +132,7 @@ class FailoverNode(BaseNode):
                     import asyncio
 
                     print(
-                        f"{datetime.now()} > [ORKA][NODE][FAILOVER][INFO] Rate limit detected, waiting 2 seconds before next attempt",
+                        f"{datetime.now()} > [ORKA][NODE][FAILOVER][INFO] Rate limit detected, waiting 2 sec. before next attempt",
                     )
                     await asyncio.sleep(2)
 

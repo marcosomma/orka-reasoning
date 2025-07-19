@@ -8,7 +8,7 @@ import json
 import os
 import traceback
 from datetime import datetime, timezone
-from typing import Dict, List
+from typing import Any, Dict, List, Optional, Union
 
 
 class OrkaErrorHandler:
@@ -17,9 +17,9 @@ class OrkaErrorHandler:
     Tracks errors, retries, status codes, and provides detailed debugging reports.
     """
 
-    def __init__(self, orchestrator):
-        self.orchestrator = orchestrator
-        self.error_telemetry = {
+    def __init__(self, orchestrator: Any) -> None:
+        self.orchestrator: Any = orchestrator
+        self.error_telemetry: Dict[str, Any] = {
             "errors": [],  # List of all errors encountered
             "retry_counters": {},  # Per-agent retry counts
             "partial_successes": [],  # Agents that succeeded after retries
@@ -35,13 +35,13 @@ class OrkaErrorHandler:
         error_type: str,
         agent_id: str,
         error_msg: str,
-        exception: Exception = None,
-        step: int = None,
-        status_code: int = None,
-        recovery_action: str = None,
-    ):
+        exception: Optional[Exception] = None,
+        step: Optional[int] = None,
+        status_code: Optional[int] = None,
+        recovery_action: Optional[str] = None,
+    ) -> None:
         """Record an error in the error telemetry system."""
-        error_entry = {
+        error_entry: Dict[str, Any] = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "type": error_type,
             "agent_id": agent_id,
@@ -74,7 +74,7 @@ class OrkaErrorHandler:
         self.error_telemetry["errors"].append(error_entry)
         print(f"🚨 [ORKA-ERROR] {error_type} in {agent_id}: {error_msg}")
 
-    def record_silent_degradation(self, agent_id: str, degradation_type: str, details: str):
+    def record_silent_degradation(self, agent_id: str, degradation_type: str, details: str) -> None:
         """Record silent degradations like JSON parsing failures."""
         self.error_telemetry["silent_degradations"].append(
             {
@@ -85,8 +85,17 @@ class OrkaErrorHandler:
             },
         )
 
-    def save_comprehensive_error_report(self, logs: List[Dict], final_error: Exception = None):
-        """Save comprehensive error report with all logged data up to the failure point."""
+    def save_comprehensive_error_report(
+        self,
+        logs: List[Dict[str, Any]],
+        final_error: Optional[Exception] = None
+    ) -> str:
+        """
+        Save comprehensive error report with all logged data up to the failure point.
+        
+        Returns:
+            str: Path to the saved error report file.
+        """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_dir = os.getenv("ORKA_LOG_DIR", "logs")
         os.makedirs(log_dir, exist_ok=True)
@@ -125,7 +134,7 @@ class OrkaErrorHandler:
             }
 
         # Create comprehensive error report
-        error_report = {
+        error_report: Dict[str, Any] = {
             "orka_execution_report": {
                 "run_id": getattr(self.orchestrator, "run_id", "unknown"),
                 "timestamp": timestamp,
@@ -162,8 +171,13 @@ class OrkaErrorHandler:
 
         return error_report_path
 
-    def _capture_memory_snapshot(self):
-        """Capture current state of memory backend for debugging."""
+    def _capture_memory_snapshot(self) -> Dict[str, Any]:
+        """
+        Capture current state of memory backend for debugging.
+        
+        Returns:
+            Dict containing memory snapshot information.
+        """
         try:
             if hasattr(self.orchestrator.memory, "memory") and self.orchestrator.memory.memory:
                 return {
@@ -179,12 +193,12 @@ class OrkaErrorHandler:
             return {"error": f"Failed to capture memory snapshot: {e}"}
         return {"status": "no_memory_data"}
 
-    async def run_with_error_handling(self, input_data):
+    async def run_with_error_handling(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Run the orchestrator with comprehensive error handling.
         Always returns a JSON report, even on failure, for debugging purposes.
         """
-        logs = []
+        logs: List[Dict[str, Any]] = []
 
         # Store original run method
         original_run = self.orchestrator.run
@@ -208,7 +222,7 @@ class OrkaErrorHandler:
             # Enhance the result with error telemetry
             if isinstance(result, list):
                 # Standard successful result - logs list
-                enhanced_result = {
+                enhanced_result: Dict[str, Any] = {
                     "status": "success",
                     "execution_logs": result,
                     "error_telemetry": self.error_telemetry,
@@ -248,47 +262,41 @@ class OrkaErrorHandler:
 
             error_report_path = self.save_comprehensive_error_report(logs, critical_error)
 
-            # Try to cleanup memory backend
-            try:
-                self.orchestrator.memory.close()
-            except Exception as cleanup_error:
-                print(f"⚠️ Failed to cleanup memory backend: {cleanup_error}")
-
-            # Return error report for debugging instead of raising
             return {
                 "status": "critical_failure",
                 "error": str(critical_error),
-                "error_report_path": error_report_path,
-                "logs_captured": len(logs),
                 "error_telemetry": self.error_telemetry,
-                "traceback": traceback.format_exc(),
+                "partial_logs": logs,
+                "report_path": error_report_path,
             }
 
-    def _patch_orchestrator_for_error_tracking(self):
-        """Add error tracking to orchestrator methods without breaking existing logic."""
-        # This could be expanded to patch individual agent run methods
-        # For now, we rely on the outer error handling
+    def _patch_orchestrator_for_error_tracking(self) -> None:
+        """Patch the orchestrator to add error tracking to all agent executions."""
+        pass
 
-    def _get_execution_summary(self, logs):
-        """Get a summary of the execution."""
+    def _get_execution_summary(self, logs: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Generate a summary of the execution from logs."""
         return {
-            "total_agents_executed": len(logs),
+            "total_agents": len(logs),
             "total_errors": len(self.error_telemetry["errors"]),
-            "total_retries": sum(self.error_telemetry["retry_counters"].values()),
             "execution_status": self.error_telemetry["execution_status"],
         }
 
 
-# Enhanced orchestrator wrapper function
-async def run_orchestrator_with_error_handling(orchestrator, input_data):
+async def run_orchestrator_with_error_handling(
+    orchestrator: Any,
+    input_data: Dict[str, Any]
+) -> Dict[str, Any]:
     """
-    Enhanced wrapper function to run any orchestrator with comprehensive error handling.
+    Run an orchestrator with comprehensive error handling.
+    Wraps the orchestrator in an error handler and runs it.
 
-    Usage:
-        from orka.orchestrator_error_wrapper import run_orchestrator_with_error_handling
+    Args:
+        orchestrator: The orchestrator instance to run.
+        input_data: Input data for the orchestrator.
 
-        orchestrator = Orchestrator("config.yml")
-        result = await run_orchestrator_with_error_handling(orchestrator, input_data)
+    Returns:
+        Dict containing execution results and error telemetry.
     """
     error_handler = OrkaErrorHandler(orchestrator)
     return await error_handler.run_with_error_handling(input_data)

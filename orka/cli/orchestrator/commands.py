@@ -12,28 +12,37 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-Orchestrator CLI Commands
-========================
+Orchestrator CLI Commands.
 
 This module contains CLI commands related to orchestrator operations.
 """
 
 import json
 import sys
+from argparse import Namespace
 from pathlib import Path
+from typing import Any, Dict, List, Union
 
 from orka.orchestrator import Orchestrator
 
 
-async def run_orchestrator(args):
-    """Run the orchestrator with the given configuration."""
+async def run_orchestrator(args: Namespace) -> int:
+    """
+    Run the orchestrator with the given configuration.
+
+    Args:
+        args: Command-line arguments namespace.
+
+    Returns:
+        0 for success, 1 for failure.
+    """
     try:
         if not Path(args.config).exists():
             print(f"Configuration file not found: {args.config}", file=sys.stderr)
             return 1
 
         orchestrator = Orchestrator(args.config)
-        result = await orchestrator.run(args.input)
+        result: Union[Dict[str, Any], List[Any], str] = await orchestrator.run(args.input)
 
         if args.json:
             print(json.dumps(result, indent=2))

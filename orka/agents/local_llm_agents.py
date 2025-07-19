@@ -12,8 +12,7 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-Local LLM Agents Module
-======================
+Local LLM Agents Module.
 
 This module provides agents for interfacing with locally running large language models.
 Supports various local LLM serving solutions including Ollama, LM Studio, LMDeploy,
@@ -290,7 +289,7 @@ class LocalLLMAgent(BaseAgent):
                 error_prompt_tokens = (
                     _count_tokens(full_prompt, model) if "full_prompt" in locals() else 0
                 )
-            except:
+            except Exception:
                 error_prompt_tokens = 0
 
             # Calculate cost even for error case (we consumed some resources)

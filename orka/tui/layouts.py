@@ -1,9 +1,11 @@
 """
 Layout management and view coordination for TUI interface.
+
 DEPRECATED: This is now a fallback component. The primary interface uses Textual.
 """
 
 import warnings
+from typing import Any, Union
 
 try:
     from rich.layout import Layout
@@ -14,12 +16,19 @@ except ImportError:
 
 
 class LayoutManager:
-    """Manages layout composition and view switching for the TUI interface.
+    """
+    Manages layout composition and view switching for the TUI interface.
 
     DEPRECATED: This is now a fallback component. The primary interface uses Textual.
     """
 
-    def __init__(self, component_builder):
+    def __init__(self, component_builder: Any) -> None:
+        """
+        Initialize the LayoutManager.
+
+        Args:
+            component_builder: Component builder instance for creating UI components.
+        """
         warnings.warn(
             "LayoutManager is deprecated. Use the Textual interface for modern TUI experience.",
             DeprecationWarning,
@@ -27,8 +36,13 @@ class LayoutManager:
         )
         self.components = component_builder
 
-    def create_dashboard(self):
-        """Create a compact dashboard that fits in standard terminal windows."""
+    def create_dashboard(self) -> Layout:
+        """
+        Create a compact dashboard that fits in standard terminal windows.
+
+        Returns:
+            A Rich Layout object configured for the dashboard view.
+        """
         layout = Layout()
 
         # Split into header, main content, and footer (more compact)
@@ -61,8 +75,13 @@ class LayoutManager:
 
         return layout
 
-    def create_memory_browser(self):
-        """Create memory browser view with full table display."""
+    def create_memory_browser(self) -> Layout:
+        """
+        Create memory browser view with full table display.
+
+        Returns:
+            A Rich Layout object configured for the memory browser view.
+        """
         layout = Layout()
 
         layout.split_column(
@@ -85,16 +104,34 @@ class LayoutManager:
 
         return layout
 
-    def create_performance_view(self):
-        """Create performance monitoring view."""
+    def create_performance_view(self) -> Any:
+        """
+        Create performance monitoring view.
+
+        Returns:
+            A Rich renderable object for the performance view.
+        """
         return self.components.create_performance_panel()
 
-    def create_config_view(self):
-        """Create configuration and system diagnostics view."""
+    def create_config_view(self) -> Any:
+        """
+        Create configuration and system diagnostics view.
+
+        Returns:
+            A Rich renderable object for the configuration view.
+        """
         return self.components.create_config_view()
 
-    def get_view(self, view_name):
-        """Get the appropriate view based on the view name."""
+    def get_view(self, view_name: str) -> Union[Layout, Any]:
+        """
+        Get the appropriate view based on the view name.
+
+        Args:
+            view_name: The name of the view to create.
+
+        Returns:
+            Either a Rich Layout object or a Rich renderable object depending on the view type.
+        """
         if view_name == "dashboard":
             return self.create_dashboard()
         elif view_name == "memories":

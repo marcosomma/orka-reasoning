@@ -1,19 +1,4 @@
-# OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
-#
-# This file is part of OrKa – https://github.com/marcosomma/orka-resoning
-#
-# Licensed under the Apache License, Version 2.0 (Apache 2.0).
-# You may not use this file for commercial purposes without explicit permission.
-#
-# Full license: https://www.apache.org/licenses/LICENSE-2.0
-# For commercial use, contact: marcosomma.work@gmail.com
-#
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
-
-"""
-Fork Group Manager
-=================
+"""Fork Group Manager.
 
 The Fork Group Manager is responsible for coordinating parallel execution branches
 in the OrKa orchestration framework. It provides functionality to create, track, and
@@ -39,11 +24,13 @@ operation in distributed environments.
 """
 
 import time
+from typing import Dict, List, Optional, Set, Union
+from redis import Redis
 
 
 class ForkGroupManager:
-    """
-    Manages fork groups in the OrKa orchestrator.
+    """Manages fork groups in the OrKa orchestrator.
+
     Handles the creation, tracking, and cleanup of fork groups for parallel execution.
 
     A fork group represents a set of agent execution paths that need to run in parallel
@@ -51,16 +38,16 @@ class ForkGroupManager:
     each group and which ones have completed their execution.
     """
 
-    def __init__(self, redis_client):
+    def __init__(self, redis_client: Redis) -> None:
         """
         Initialize the fork group manager with a Redis client.
 
         Args:
             redis_client: The Redis client instance.
         """
-        self.redis = redis_client
+        self.redis: Redis = redis_client
 
-    def create_group(self, fork_group_id, agent_ids):
+    def create_group(self, fork_group_id: str, agent_ids: List[Union[str, List[str]]]) -> None:
         """
         Create a new fork group with the given agent IDs.
 
@@ -69,7 +56,7 @@ class ForkGroupManager:
             agent_ids (list): List of agent IDs to include in the group.
         """
         # Flatten any nested branch sequences (e.g., [[a, b, c], [x, y]])
-        flat_ids = []
+        flat_ids: List[str] = []
         for el in agent_ids:
             if isinstance(el, list):
                 flat_ids.extend(el)
@@ -77,7 +64,7 @@ class ForkGroupManager:
                 flat_ids.append(el)
         self.redis.sadd(self._group_key(fork_group_id), *flat_ids)
 
-    def mark_agent_done(self, fork_group_id, agent_id):
+    def mark_agent_done(self, fork_group_id: str, agent_id: str) -> None:
         """
         Mark an agent as done in the fork group.
 
@@ -87,7 +74,7 @@ class ForkGroupManager:
         """
         self.redis.srem(self._group_key(fork_group_id), agent_id)
 
-    def is_group_done(self, fork_group_id):
+    def is_group_done(self, fork_group_id: str) -> bool:
         """
         Check if all agents in the fork group are done.
 
@@ -99,7 +86,7 @@ class ForkGroupManager:
         """
         return self.redis.scard(self._group_key(fork_group_id)) == 0
 
-    def list_pending_agents(self, fork_group_id):
+    def list_pending_agents(self, fork_group_id: str) -> List[str]:
         """
         Get a list of agents still pending in the fork group.
 
@@ -112,7 +99,7 @@ class ForkGroupManager:
         pending = self.redis.smembers(self._group_key(fork_group_id))
         return [i.decode() if isinstance(i, bytes) else i for i in pending]
 
-    def delete_group(self, fork_group_id):
+    def delete_group(self, fork_group_id: str) -> None:
         """
         Delete the fork group from Redis.
 
@@ -121,7 +108,7 @@ class ForkGroupManager:
         """
         self.redis.delete(self._group_key(fork_group_id))
 
-    def generate_group_id(self, base_id):
+    def generate_group_id(self, base_id: str) -> str:
         """
         Generate a unique fork group ID based on the base ID and timestamp.
 
@@ -133,7 +120,7 @@ class ForkGroupManager:
         """
         return f"{base_id}_{int(time.time())}"
 
-    def _group_key(self, fork_group_id):
+    def _group_key(self, fork_group_id: str) -> str:
         """
         Generate the Redis key for a fork group.
 
@@ -145,7 +132,7 @@ class ForkGroupManager:
         """
         return f"fork_group:{fork_group_id}"
 
-    def _branch_seq_key(self, fork_group_id):
+    def _branch_seq_key(self, fork_group_id: str) -> str:
         """
         Generate the Redis key for a branch sequence.
 
@@ -157,7 +144,7 @@ class ForkGroupManager:
         """
         return f"fork_branch:{fork_group_id}"
 
-    def track_branch_sequence(self, fork_group_id, agent_sequence):
+    def track_branch_sequence(self, fork_group_id: str, agent_sequence: List[str]) -> None:
         """
         Track the sequence of agents in a branch.
 
@@ -170,7 +157,7 @@ class ForkGroupManager:
             next_one = agent_sequence[i + 1]
             self.redis.hset(self._branch_seq_key(fork_group_id), current, next_one)
 
-    def next_in_sequence(self, fork_group_id, agent_id):
+    def next_in_sequence(self, fork_group_id: str, agent_id: str) -> Optional[str]:
         """
         Get the next agent in the sequence after the current agent.
 
@@ -188,20 +175,22 @@ class ForkGroupManager:
 
 
 class SimpleForkGroupManager:
-    """
-    A simple in-memory fork group manager for use with non-Redis backends like Kafka.
+    """A simple in-memory fork group manager for use with non-Redis backends like Kafka.
+
     Provides the same interface as ForkGroupManager but stores data in memory.
 
     Note: This implementation is not distributed and will not work across multiple
     orchestrator instances. Use only for single-instance deployments with Kafka.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the simple fork group manager with in-memory storage."""
-        self._groups = {}  # fork_group_id -> set of agent_ids
-        self._branch_sequences = {}  # fork_group_id -> {agent_id -> next_agent_id}
+        self._groups: Dict[str, Set[str]] = {}  # fork_group_id -> set of agent_ids
+        self._branch_sequences: Dict[str, Dict[str, str]] = (
+            {}
+        )  # fork_group_id -> {agent_id -> next_agent_id}
 
-    def create_group(self, fork_group_id, agent_ids):
+    def create_group(self, fork_group_id: str, agent_ids: List[Union[str, List[str]]]) -> None:
         """
         Create a new fork group with the given agent IDs.
 
@@ -210,7 +199,7 @@ class SimpleForkGroupManager:
             agent_ids (list): List of agent IDs to include in the group.
         """
         # Flatten any nested branch sequences (e.g., [[a, b, c], [x, y]])
-        flat_ids = []
+        flat_ids: List[str] = []
         for el in agent_ids:
             if isinstance(el, list):
                 flat_ids.extend(el)
@@ -218,7 +207,7 @@ class SimpleForkGroupManager:
                 flat_ids.append(el)
         self._groups[fork_group_id] = set(flat_ids)
 
-    def mark_agent_done(self, fork_group_id, agent_id):
+    def mark_agent_done(self, fork_group_id: str, agent_id: str) -> None:
         """
         Mark an agent as done in the fork group.
 
@@ -229,7 +218,7 @@ class SimpleForkGroupManager:
         if fork_group_id in self._groups:
             self._groups[fork_group_id].discard(agent_id)
 
-    def is_group_done(self, fork_group_id):
+    def is_group_done(self, fork_group_id: str) -> bool:
         """
         Check if all agents in the fork group are done.
 
@@ -243,7 +232,7 @@ class SimpleForkGroupManager:
             return True
         return len(self._groups[fork_group_id]) == 0
 
-    def list_pending_agents(self, fork_group_id):
+    def list_pending_agents(self, fork_group_id: str) -> List[str]:
         """
         Get a list of agents still pending in the fork group.
 
@@ -257,9 +246,9 @@ class SimpleForkGroupManager:
             return []
         return list(self._groups[fork_group_id])
 
-    def delete_group(self, fork_group_id):
+    def delete_group(self, fork_group_id: str) -> None:
         """
-        Delete the fork group from memory.
+        Delete the fork group.
 
         Args:
             fork_group_id (str): ID of the fork group to delete.
@@ -267,7 +256,7 @@ class SimpleForkGroupManager:
         self._groups.pop(fork_group_id, None)
         self._branch_sequences.pop(fork_group_id, None)
 
-    def generate_group_id(self, base_id):
+    def generate_group_id(self, base_id: str) -> str:
         """
         Generate a unique fork group ID based on the base ID and timestamp.
 
@@ -279,7 +268,7 @@ class SimpleForkGroupManager:
         """
         return f"{base_id}_{int(time.time())}"
 
-    def track_branch_sequence(self, fork_group_id, agent_sequence):
+    def track_branch_sequence(self, fork_group_id: str, agent_sequence: List[str]) -> None:
         """
         Track the sequence of agents in a branch.
 
@@ -295,7 +284,7 @@ class SimpleForkGroupManager:
             next_one = agent_sequence[i + 1]
             self._branch_sequences[fork_group_id][current] = next_one
 
-    def next_in_sequence(self, fork_group_id, agent_id):
+    def next_in_sequence(self, fork_group_id: str, agent_id: str) -> Optional[str]:
         """
         Get the next agent in the sequence after the current agent.
 
@@ -309,17 +298,3 @@ class SimpleForkGroupManager:
         if fork_group_id not in self._branch_sequences:
             return None
         return self._branch_sequences[fork_group_id].get(agent_id)
-
-    def remove_group(self, group_id):
-        """
-        Remove a group (for compatibility with existing code).
-
-        Args:
-            group_id (str): ID of the group to remove.
-
-        Raises:
-            KeyError: If the group doesn't exist.
-        """
-        if group_id not in self._groups:
-            raise KeyError(f"Group {group_id} not found")
-        self.delete_group(group_id)

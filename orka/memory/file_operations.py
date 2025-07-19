@@ -11,22 +11,80 @@
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
-"""
-File operations for memory loggers.
-"""
+"""Provide file operations for memory loggers."""
 
 import json
 import logging
 from datetime import UTC, datetime
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional, TypeVar, Union, cast
 
 logger = logging.getLogger(__name__)
 
+# Type aliases
+MemoryEntry = Dict[str, Any]
+BlobStore = Dict[str, Any]
+BlobStats = Dict[str, Union[int, float]]
+OutputData = Dict[str, Any]
+JsonSerializable = Union[None, bool, int, float, str, List[Any], Dict[str, Any]]
+
+# Generic type for collections
+T = TypeVar("T")
+
 
 class FileOperationsMixin:
-    """
-    Mixin class providing file operations for memory loggers.
-    """
+    """Provide file operations for memory loggers."""
+
+    def __init__(self) -> None:
+        """Initialize file operations mixin."""
+        self.memory: List[MemoryEntry] = []
+        self._blob_store: BlobStore = {}
+        self._blob_threshold: int = 1000  # Characters threshold for blob deduplication
+        self.producer: Optional[Any] = None  # Kafka producer if used
+
+    def _process_memory_for_saving(self, memory_entries: List[MemoryEntry]) -> List[MemoryEntry]:
+        """
+        Process memory entries before saving.
+
+        Args:
+            memory_entries: List of memory entries to process
+
+        Returns:
+            Processed memory entries
+        """
+        raise NotImplementedError("Subclass must implement _process_memory_for_saving")
+
+    def _sanitize_for_json(self, obj: Any) -> JsonSerializable:
+        """
+        Sanitize object for JSON serialization.
+
+        Args:
+            obj: Object to sanitize
+
+        Returns:
+            JSON-serializable version of the object
+        """
+        raise NotImplementedError("Subclass must implement _sanitize_for_json")
+
+    def _deduplicate_object(self, obj: Any) -> Any:
+        """
+        Deduplicate object by replacing repeated content with references.
+
+        Args:
+            obj: Object to deduplicate
+
+        Returns:
+            Deduplicated object
+        """
+        raise NotImplementedError("Subclass must implement _deduplicate_object")
+
+    def _should_use_deduplication_format(self) -> bool:
+        """
+        Determine if deduplication format should be used.
+
+        Returns:
+            True if deduplication format should be used, False otherwise
+        """
+        raise NotImplementedError("Subclass must implement _should_use_deduplication_format")
 
     def save_to_file(self, file_path: str) -> None:
         """
@@ -43,7 +101,7 @@ class FileOperationsMixin:
         """
         try:
             # For Kafka backend, ensure all messages are sent before saving
-            if hasattr(self, "producer"):
+            if hasattr(self, "producer") and self.producer is not None:
                 try:
                     # Flush pending messages with a reasonable timeout
                     self.producer.flush(timeout=3)
@@ -59,24 +117,28 @@ class FileOperationsMixin:
             processed_memory = self._process_memory_for_saving(self.memory)
 
             # Pre-sanitize all memory entries
-            sanitized_memory = self._sanitize_for_json(processed_memory)
+            sanitized_memory = cast(List[MemoryEntry], self._sanitize_for_json(processed_memory))
 
             # Apply blob deduplication to reduce size
-            deduplicated_memory = []
-            blob_stats = {
+            deduplicated_memory: List[MemoryEntry] = []
+            blob_stats: BlobStats = {
                 "total_entries": len(sanitized_memory),
                 "deduplicated_blobs": 0,
-                "size_reduction": 0,
+                "size_reduction": 0.0,
             }
 
             for entry in sanitized_memory:
                 original_size = len(json.dumps(entry, separators=(",", ":")))
-                deduplicated_entry = self._deduplicate_object(entry)
+                deduplicated_entry = cast(MemoryEntry, self._deduplicate_object(entry))
                 new_size = len(json.dumps(deduplicated_entry, separators=(",", ":")))
 
                 if new_size < original_size:
-                    blob_stats["deduplicated_blobs"] += 1
-                    blob_stats["size_reduction"] += original_size - new_size
+                    blob_stats["deduplicated_blobs"] = (
+                        cast(int, blob_stats["deduplicated_blobs"]) + 1
+                    )
+                    blob_stats["size_reduction"] = cast(
+                        float, blob_stats["size_reduction"]
+                    ) + float(original_size - new_size)
 
                 deduplicated_memory.append(deduplicated_entry)
 
@@ -85,7 +147,7 @@ class FileOperationsMixin:
 
             if use_dedup_format:
                 # Create the final output structure with deduplication
-                output_data = {
+                output_data: OutputData = {
                     "_metadata": {
                         "version": "1.0",
                         "deduplication_enabled": True,
@@ -99,11 +161,20 @@ class FileOperationsMixin:
                 }
             else:
                 # Use legacy format (resolve all blob references back to original data)
-                resolved_events = []
+                resolved_events: List[MemoryEntry] = []
                 for entry in deduplicated_memory:
-                    resolved_entry = self._resolve_blob_references(entry, self._blob_store)
+                    resolved_entry = cast(
+                        MemoryEntry, self._resolve_blob_references(entry, self._blob_store)
+                    )
                     resolved_events.append(resolved_entry)
-                output_data = resolved_events
+                output_data = {
+                    "_metadata": {
+                        "version": "1.0",
+                        "deduplication_enabled": False,
+                        "generated_at": datetime.now(UTC).isoformat(),
+                    },
+                    "events": resolved_events,
+                }
 
             with open(file_path, "w", encoding="utf-8") as f:
                 json.dump(
@@ -114,13 +185,13 @@ class FileOperationsMixin:
                 )
 
             # Log deduplication statistics
-            if use_dedup_format and blob_stats["deduplicated_blobs"] > 0:
+            if use_dedup_format and cast(int, blob_stats["deduplicated_blobs"]) > 0:
+                total_size = sum(
+                    len(json.dumps(entry, separators=(",", ":"))) for entry in sanitized_memory
+                )
                 reduction_pct = (
-                    blob_stats["size_reduction"]
-                    / sum(
-                        len(json.dumps(entry, separators=(",", ":"))) for entry in sanitized_memory
-                    )
-                ) * 100
+                    cast(float, blob_stats["size_reduction"]) / float(total_size)
+                ) * 100.0
                 logger.info(
                     f"[MemoryLogger] Logs saved to {file_path} "
                     f"(deduplicated {blob_stats['deduplicated_blobs']} blobs, "
@@ -136,7 +207,7 @@ class FileOperationsMixin:
             try:
                 # Process memory first, then simplify
                 processed_memory = self._process_memory_for_saving(self.memory)
-                simplified_memory = [
+                simplified_memory: List[MemoryEntry] = [
                     {
                         "agent_id": entry.get("agent_id", "unknown"),
                         "event_type": entry.get("event_type", "unknown"),
@@ -157,7 +228,7 @@ class FileOperationsMixin:
                 ]
 
                 # Simple output without deduplication
-                simple_output = {
+                simple_output: OutputData = {
                     "_metadata": {
                         "version": "1.0",
                         "deduplication_enabled": False,
@@ -173,7 +244,7 @@ class FileOperationsMixin:
             except Exception as inner_e:
                 logger.error(f"Failed to save simplified logs to file: {inner_e!s}")
 
-    def _resolve_blob_references(self, obj: Any, blob_store: Dict[str, Any]) -> Any:
+    def _resolve_blob_references(self, obj: Any, blob_store: BlobStore) -> Any:
         """
         Recursively resolve blob references back to their original content.
 
@@ -199,7 +270,7 @@ class FileOperationsMixin:
                     }
 
             # Recursively resolve nested objects
-            resolved = {}
+            resolved: Dict[str, Any] = {}
             for key, value in obj.items():
                 resolved[key] = self._resolve_blob_references(value, blob_store)
             return resolved
@@ -210,67 +281,59 @@ class FileOperationsMixin:
         return obj
 
     @staticmethod
-    def load_from_file(file_path: str, resolve_blobs: bool = True) -> Dict[str, Any]:
+    def load_from_file(file_path: str, resolve_blobs: bool = True) -> OutputData:
         """
-        Load and optionally resolve blob references from a deduplicated log file.
+        Load and resolve blob references from a deduplicated log file.
 
         Args:
             file_path: Path to the log file
             resolve_blobs: If True, resolve blob references to original content
 
         Returns:
-            Dictionary containing metadata, events, and optionally resolved content
+            Dictionary containing the loaded log data
         """
-        try:
-            with open(file_path, encoding="utf-8") as f:
-                data = json.load(f)
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
 
-            # Handle both old format (list) and new format (dict with metadata)
-            if isinstance(data, list):
-                # Old format without deduplication
-                return {
-                    "_metadata": {
-                        "version": "legacy",
-                        "deduplication_enabled": False,
-                    },
-                    "events": data,
-                    "blob_store": {},
-                }
+        if not resolve_blobs:
+            return data
 
-            if not resolve_blobs:
-                return data
+        # Check if this is a deduplicated file
+        if not isinstance(data, dict) or "_metadata" not in data:
+            return data
 
-            # Resolve blob references if requested
-            blob_store = data.get("blob_store", {})
-            events = data.get("events", [])
+        metadata = data.get("_metadata", {})
+        if not metadata.get("deduplication_enabled", False):
+            return data
 
-            resolved_events = []
-            for event in events:
-                resolved_event = FileOperationsMixin._resolve_blob_references_static(
-                    event,
-                    blob_store,
-                )
-                resolved_events.append(resolved_event)
+        # Get blob store and events
+        blob_store = data.get("blob_store", {})
+        events = data.get("events", [])
 
-            # Return resolved data
-            return {
-                "_metadata": data.get("_metadata", {}),
-                "events": resolved_events,
-                "blob_store": blob_store,
-                "_resolved": True,
-            }
+        # Resolve all blob references
+        resolved_events = [
+            FileOperationsMixin._resolve_blob_references_static(event, blob_store)
+            for event in events
+        ]
 
-        except Exception as e:
-            logger.error(f"Failed to load log file {file_path}: {e!s}")
-            return {
-                "_metadata": {"error": str(e)},
-                "events": [],
-                "blob_store": {},
-            }
+        # Return resolved data
+        return {
+            "_metadata": metadata,
+            "events": resolved_events,
+        }
 
     @staticmethod
-    def _resolve_blob_references_static(obj: Any, blob_store: Dict[str, Any]) -> Any:
-        """Static version of _resolve_blob_references for use in load_from_file."""
+    def _resolve_blob_references_static(obj: Any, blob_store: BlobStore) -> Any:
+        """
+        Recursively resolve blob references back to their original content.
+
+        Args:
+            obj: Object that may contain blob references
+            blob_store: Dictionary mapping SHA256 hashes to blob content
+
+        Returns:
+            Object with blob references resolved to original content
+        """
         if isinstance(obj, dict):
             # Check if this is a blob reference
             if obj.get("_type") == "blob_reference" and "ref" in obj:
@@ -278,6 +341,7 @@ class FileOperationsMixin:
                 if blob_hash in blob_store:
                     return blob_store[blob_hash]
                 else:
+                    # Blob not found, return reference with error
                     return {
                         "error": f"Blob reference not found: {blob_hash}",
                         "ref": blob_hash,
@@ -285,11 +349,10 @@ class FileOperationsMixin:
                     }
 
             # Recursively resolve nested objects
-            resolved = {}
+            resolved: Dict[str, Any] = {}
             for key, value in obj.items():
                 resolved[key] = FileOperationsMixin._resolve_blob_references_static(
-                    value,
-                    blob_store,
+                    value, blob_store
                 )
             return resolved
 

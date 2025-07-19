@@ -11,23 +11,37 @@
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
-"""
-Serialization utilities for memory loggers.
-"""
+"""Provide serialization utilities for memory loggers."""
 
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set, TypeVar, Union, cast
 
 logger = logging.getLogger(__name__)
 
+# Type aliases
+JsonPrimitive = Union[None, bool, int, float, str]
+JsonList = List[Any]  # Using Any to avoid recursive type definition
+JsonDict = Dict[str, Any]  # Using Any to avoid recursive type definition
+JsonValue = Union[JsonPrimitive, JsonList, JsonDict]
+MemoryEntry = Dict[str, Any]
+BlobStore = Dict[str, Any]
+BlobUsage = Dict[str, int]
+
+# Generic type for collections
+T = TypeVar("T")
+
 
 class SerializationMixin:
-    """
-    Mixin class providing JSON serialization capabilities for memory loggers.
-    """
+    """Provide JSON serialization capabilities for memory loggers."""
 
-    def _sanitize_for_json(self, obj: Any, _seen: Optional[set] = None) -> Any:
+    def __init__(self) -> None:
+        """Initialize serialization mixin."""
+        self.debug_keep_previous_outputs: bool = False
+        self._blob_store: BlobStore = {}
+        self._blob_usage: BlobUsage = {}
+
+    def _sanitize_for_json(self, obj: Any, _seen: Optional[Set[int]] = None) -> JsonValue:
         """
         Recursively sanitize an object to be JSON serializable, with circular reference detection.
 
@@ -48,44 +62,50 @@ class SerializationMixin:
 
         try:
             if obj is None or isinstance(obj, (str, int, float, bool)):
-                return obj
+                return cast(JsonValue, obj)
             elif isinstance(obj, bytes):
                 # Convert bytes to base64-encoded string
                 import base64
 
-                return {
-                    "__type": "bytes",
-                    "data": base64.b64encode(obj).decode("utf-8"),
-                }
+                return cast(
+                    JsonValue,
+                    {
+                        "__type": "bytes",
+                        "data": base64.b64encode(obj).decode("utf-8"),
+                    },
+                )
             elif isinstance(obj, (list, tuple)):
                 _seen.add(obj_id)
                 try:
                     result = [self._sanitize_for_json(item, _seen) for item in obj]
                 finally:
                     _seen.discard(obj_id)
-                return result
+                return cast(JsonValue, result)
             elif isinstance(obj, dict):
                 _seen.add(obj_id)
                 try:
                     result = {str(k): self._sanitize_for_json(v, _seen) for k, v in obj.items()}
                 finally:
                     _seen.discard(obj_id)
-                return result
+                return cast(JsonValue, result)
             elif hasattr(obj, "__dict__"):
                 try:
                     _seen.add(obj_id)
                     try:
                         # Handle custom objects by converting to dict
-                        return {
-                            "__type": obj.__class__.__name__,
-                            "data": self._sanitize_for_json(obj.__dict__, _seen),
-                        }
+                        return cast(
+                            JsonValue,
+                            {
+                                "__type": obj.__class__.__name__,
+                                "data": self._sanitize_for_json(obj.__dict__, _seen),
+                            },
+                        )
                     finally:
                         _seen.discard(obj_id)
                 except Exception as e:
                     return f"<non-serializable object: {obj.__class__.__name__}, error: {e!s}>"
             elif hasattr(obj, "isoformat"):  # Handle datetime-like objects
-                return obj.isoformat()
+                return cast(JsonValue, obj.isoformat())
             else:
                 # Last resort - convert to string
                 return f"<non-serializable: {type(obj).__name__}>"
@@ -95,8 +115,8 @@ class SerializationMixin:
 
     def _process_memory_for_saving(
         self,
-        memory_entries: List[Dict[str, Any]],
-    ) -> List[Dict[str, Any]]:
+        memory_entries: List[MemoryEntry],
+    ) -> List[MemoryEntry]:
         """
         Process memory entries before saving to optimize storage.
 
@@ -112,13 +132,13 @@ class SerializationMixin:
             Processed memory entries optimized for storage
         """
         if not memory_entries:
-            return memory_entries
+            return []
 
         # If debug flag is set, return original entries without processing
         if self.debug_keep_previous_outputs:
             return memory_entries
 
-        processed_entries = []
+        processed_entries: List[MemoryEntry] = []
 
         for entry in memory_entries:
             # Create a copy to avoid modifying original
@@ -140,7 +160,7 @@ class SerializationMixin:
                     processed_entry["payload"] = payload
                 else:
                     # Keep only essential data: result, _metrics, and basic info
-                    cleaned_payload = {}
+                    cleaned_payload: Dict[str, Any] = {}
 
                     # Always keep these core fields
                     for key in [
@@ -165,7 +185,11 @@ class SerializationMixin:
     def _should_use_deduplication_format(self) -> bool:
         """
         Determine if deduplication format should be used based on effectiveness.
+
         Only use new format if we have meaningful deduplication.
+
+        Returns:
+            True if deduplication format should be used, False otherwise.
         """
         # Check if we have actual duplicates (same blob referenced multiple times)
         has_duplicates = any(count > 1 for count in self._blob_usage.values())

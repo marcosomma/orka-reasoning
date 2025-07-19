@@ -12,8 +12,7 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-Execution Engine
-===============
+Execution Engine.
 
 The ExecutionEngine is the core component responsible for coordinating and executing
 multi-agent workflows within the OrKa orchestration framework.

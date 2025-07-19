@@ -11,9 +11,7 @@
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
-"""
-Bootstrap Memory Index
-=====================
+"""Provide utilities for initializing and managing Redis memory indices.
 
 This module contains utility functions for initializing and ensuring the
 existence of the memory index in Redis, which is a critical component of
@@ -54,7 +52,7 @@ async def initialize_memory():
 
 import asyncio
 import logging
-from typing import Any
+from typing import Any, Coroutine, Dict, List, Optional, TypeVar, Union
 
 import numpy as np
 import redis
@@ -70,11 +68,21 @@ except ModuleNotFoundError:
 
 logger = logging.getLogger(__name__)
 
+T = TypeVar("T")
 
-def ensure_memory_index(redis_client, index_name="memory_entries"):
+
+def ensure_memory_index(redis_client: redis.Redis, index_name: str = "memory_entries") -> bool:
     """
     Ensure that the basic memory index exists.
+
     This creates a basic text search index for memory entries.
+
+    Args:
+        redis_client: Redis client instance
+        index_name: Name of the index to create/check
+
+    Returns:
+        True if index exists or was created successfully, False otherwise
     """
     try:
         # Check if index exists
@@ -109,10 +117,21 @@ def ensure_memory_index(redis_client, index_name="memory_entries"):
         return False
 
 
-def ensure_enhanced_memory_index(redis_client, index_name="orka_enhanced_memory", vector_dim=384):
+def ensure_enhanced_memory_index(
+    redis_client: redis.Redis, index_name: str = "orka_enhanced_memory", vector_dim: int = 384
+) -> bool:
     """
     Ensure that the enhanced memory index with vector search exists.
+
     This creates an index with vector search capabilities for semantic search.
+
+    Args:
+        redis_client: Redis client instance
+        index_name: Name of the index to create/check
+        vector_dim: Dimension of the vector field
+
+    Returns:
+        True if index exists or was created successfully, False otherwise
     """
     try:
         # Check if index exists
@@ -172,16 +191,28 @@ def ensure_enhanced_memory_index(redis_client, index_name="orka_enhanced_memory"
 
 
 def hybrid_vector_search(
-    redis_client,
+    redis_client: redis.Redis,
     query_text: str,
     query_vector: np.ndarray,
     num_results: int = 5,
     index_name: str = "orka_enhanced_memory",
-    trace_id: str | None = None,
-) -> list[dict[str, Any]]:
+    trace_id: Optional[str] = None,
+) -> List[Dict[str, Any]]:
     """
     Perform hybrid vector search using RedisStack.
+
     Combines semantic vector search with text search and filtering.
+
+    Args:
+        redis_client: Redis client instance
+        query_text: Text query to search for
+        query_vector: Vector representation of the query
+        num_results: Maximum number of results to return
+        index_name: Name of the index to search
+        trace_id: Optional trace ID to filter results
+
+    Returns:
+        List of dictionaries containing search results
     """
     results = []
 
@@ -213,7 +244,7 @@ def hybrid_vector_search(
                 .paging(0, num_results)
                 .return_fields("content", "node_id", "trace_id", "vector_score")
                 .dialect(2),
-                query_params={"query_vector": vector_bytes},
+                query_params={"query_vector": vector_bytes.decode("latin1")},
             )
 
             logger.debug(f"Vector search returned {len(search_results.docs)} results")
@@ -248,199 +279,131 @@ def hybrid_vector_search(
                             score = 0.0
                         # For cosine distance: 0 = identical, 2 = opposite
                         # Convert to similarity: similarity = 1 - (distance / 2)
-                        # This maps distance [0, 2] to similarity [1, 0]
-                        elif score < 0:
-                            score = 1.0  # Treat negative as perfect similarity
-                        elif score > 2:
-                            score = 0.0  # Treat > 2 as no similarity
-                        else:
-                            score = 1.0 - (score / 2.0)
+                        similarity = 1 - (score / 2)
 
-                        # Ensure final score is in [0, 1] range
-                        score = max(0.0, min(1.0, score))
-                        logger.debug(f"Converted cosine distance {raw_score} -> similarity {score}")
-                    except (ValueError, TypeError) as e:
-                        logger.debug(f"Error converting score {raw_score}: {e}")
-                        score = 0.0
-
-                    result = {
-                        "content": getattr(doc, "content", ""),
-                        "node_id": getattr(doc, "node_id", ""),
-                        "trace_id": getattr(doc, "trace_id", ""),
-                        "score": score,
-                        "key": doc.id,
-                    }
-                    results.append(result)
-                except Exception as e:
-                    logger.warning(f"Error processing search result: {e}")
-                    continue
-
-        except Exception as search_error:
-            logger.warning(f"Vector search failed: {search_error}")
-
-            # If vector search fails, try fallback to basic text search
-            try:
-                logger.info("Falling back to basic text search")
-                basic_query = f"@content:{query_text}"
-                search_results = redis_client.ft(index_name).search(
-                    Query(basic_query).paging(0, num_results),
-                )
-
-                for doc in search_results.docs:
-                    try:
+                        # Add result to list
                         result = {
                             "content": getattr(doc, "content", ""),
                             "node_id": getattr(doc, "node_id", ""),
                             "trace_id": getattr(doc, "trace_id", ""),
-                            "score": 0.5,  # Default score for text search (not perfect match)
-                            "key": doc.id,
+                            "similarity": similarity,
                         }
                         results.append(result)
-                    except Exception as e:
-                        logger.warning(f"Error processing fallback result: {e}")
-                        continue
+                    except (ValueError, TypeError) as e:
+                        logger.warning(f"Error converting score: {e}")
+                except Exception as e:
+                    logger.warning(f"Error processing search result: {e}")
 
-            except Exception as fallback_error:
-                logger.error(f"Both vector and fallback search failed: {fallback_error}")
+        except Exception as e:
+            logger.error(f"Error executing vector search: {e}")
 
     except Exception as e:
-        logger.error(f"Hybrid vector search failed: {e}")
-        logger.debug(
-            f"Query details - text: {query_text}, vector shape: {query_vector.shape if hasattr(query_vector, 'shape') else 'No shape'}",
-        )
+        logger.error(f"Error in hybrid vector search: {e}")
 
-    # Apply trace filtering if specified
-    if trace_id and results:
-        results = [r for r in results if r.get("trace_id") == trace_id]
-
-    logger.debug(f"Returning {len(results)} search results")
     return results
 
 
 def legacy_vector_search(
     client: redis.Redis,
-    query_vector: list[float] | np.ndarray,
-    namespace: str | None = None,
-    session: str | None = None,
-    agent: str | None = None,
+    query_vector: Union[List[float], np.ndarray],
+    namespace: Optional[str] = None,
+    session: Optional[str] = None,
+    agent: Optional[str] = None,
     similarity_threshold: float = 0.7,
     num_results: int = 10,
-) -> list[dict[str, Any]]:
+) -> List[Dict[str, Any]]:
     """
-    Fallback vector search using legacy FLAT indexing.
+    Legacy vector search implementation using FLAT index.
+
+    This function provides backward compatibility for older Redis installations.
 
     Args:
-        client: Redis async client instance
-        query_vector: Query vector for semantic similarity search
-        namespace: Filter by namespace (legacy support)
-        session: Filter by session ID
-        agent: Filter by agent ID
-        similarity_threshold: Minimum cosine similarity threshold
+        client: Redis client instance
+        query_vector: Vector to search for
+        namespace: Optional namespace to filter results
+        session: Optional session ID to filter results
+        agent: Optional agent ID to filter results
+        similarity_threshold: Minimum similarity score to include in results
         num_results: Maximum number of results to return
 
     Returns:
-        List of memory dictionaries with metadata and similarity scores
+        List of dictionaries containing search results
     """
+    results = []
+
     try:
-        # Convert query vector to bytes if needed
+        # Convert query vector to bytes
         if isinstance(query_vector, np.ndarray):
-            query_vector_bytes = query_vector.astype(np.float32).tobytes()
+            vector_bytes = query_vector.astype(np.float32).tobytes()
         else:
-            query_vector_bytes = np.array(query_vector, dtype=np.float32).tobytes()
+            vector_bytes = np.array(query_vector, dtype=np.float32).tobytes()
 
-        # Build search query with legacy filters
-        query_parts = []
-
+        # Build search query
+        base_query = "*=>[KNN 10 @vector $vector AS score]"
+        if namespace:
+            base_query = f"@namespace:{{{namespace}}} {base_query}"
         if session:
-            query_parts.append(f"@session:{{{session}}}")
+            base_query = f"@session:{{{session}}} {base_query}"
         if agent:
-            query_parts.append(f"@agent:{{{agent}}}")
+            base_query = f"@agent:{{{agent}}} {base_query}"
 
-        # Combine filters
-        if query_parts:
-            base_query = " ".join(query_parts)
-        else:
-            base_query = "*"
+        # Execute search
+        from redis.commands.search.query import Query
 
-        # Build vector search query for legacy index with correct syntax
-        if base_query == "*":
-            vector_query = f"*=>[KNN {num_results} @vector $query_vector AS similarity]"
-        else:
-            vector_query = f"{base_query}=>[KNN {num_results} @vector $query_vector AS similarity]"
-
-        # Execute legacy search with proper LIMIT syntax
-        search_result = client.ft("memory_idx").search(
-            query=f"{vector_query} LIMIT 0 {num_results}",
-            query_params={"query_vector": query_vector_bytes},
+        search_results = client.ft("memory_entries").search(
+            Query(base_query)
+            .sort_by("score")
+            .paging(0, num_results)
+            .return_fields("content", "vector", "score"),
+            {"vector": vector_bytes.decode("latin1")},
         )
 
         # Process results
-        results = []
-        for doc in search_result.docs:
+        for doc in search_results.docs:
             try:
-                # Extract memory data (legacy format)
-                memory_data = {
-                    "key": doc.id,
-                    "content": doc.content,
-                    "session": getattr(doc, "session", "default"),
-                    "agent": getattr(doc, "agent", "unknown"),
-                    "timestamp": float(getattr(doc, "ts", 0)),
-                    "similarity": float(doc.similarity),
-                }
-
-                # Apply similarity threshold
-                if memory_data["similarity"] >= similarity_threshold:
-                    results.append(memory_data)
-
-            except Exception as e:
-                logger.error(f"Error processing legacy search result {doc.id}: {e}")
-                continue
-
-        # Sort by similarity score (descending)
-        results.sort(key=lambda x: x["similarity"], reverse=True)
-
-        logger.info(f"Legacy vector search returned {len(results)} results")
-        return results
+                score = float(doc.score)
+                similarity = 1 - (score / 2)  # Convert cosine distance to similarity
+                if similarity >= similarity_threshold:
+                    results.append(
+                        {
+                            "content": doc.content,
+                            "similarity": similarity,
+                        }
+                    )
+            except (ValueError, AttributeError) as e:
+                logger.warning(f"Error processing search result: {e}")
 
     except Exception as e:
-        logger.error(f"Legacy vector search error: {e}")
-        return []
+        logger.error(f"Error in legacy vector search: {e}")
+
+    return results
 
 
-async def retry(coro, attempts=3, backoff=0.2):
+async def retry(coro: Coroutine[Any, Any, T], attempts: int = 3, backoff: float = 0.2) -> T:
     """
-    Retry a coroutine with exponential backoff on connection errors.
+    Retry a coroutine with exponential backoff.
 
-    This utility function helps handle transient connection issues with
-    Redis by implementing a retry mechanism with exponential backoff.
+    This function helps handle transient failures by retrying operations.
 
     Args:
-        coro: The coroutine to execute and potentially retry
-        attempts: Maximum number of attempts before giving up (default: 3)
-        backoff: Initial backoff time in seconds, doubles with each retry (default: 0.2)
+        coro: Coroutine to retry
+        attempts: Maximum number of attempts
+        backoff: Initial backoff time in seconds
 
     Returns:
-        The result of the successful coroutine execution
+        Result of the coroutine
 
     Raises:
-        redis.ConnectionError: If all retry attempts fail
-        Exception: Any other exceptions raised by the coroutine
-
-    Example:
-        ```python
-        # Retry a Redis operation up to 5 times with initial 0.5s backoff
-        result = await retry(redis_client.get("key"), attempts=5, backoff=0.5)
-        ```
+        The last exception encountered if all attempts fail
     """
-    for i in range(attempts):
+    last_error = None
+    for attempt in range(attempts):
         try:
-            # Attempt to execute the coroutine
             return await coro
-        except redis.ConnectionError:
-            # Only retry on connection errors, not other exceptions
-            if i == attempts - 1:
-                # Last attempt failed, propagate the exception
-                raise
-            # Wait with exponential backoff before next attempt
-            # Example: backoff=0.2, i=0 → wait 0.2s; i=1 → wait 0.4s; i=2 → wait 0.8s
-            await asyncio.sleep(backoff * (2**i))
+        except Exception as e:
+            last_error = e
+            if attempt < attempts - 1:  # Don't sleep on the last attempt
+                await asyncio.sleep(backoff * (2**attempt))
+    if last_error is not None:
+        raise last_error
+    raise RuntimeError("Retry failed with no error")

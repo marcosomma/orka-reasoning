@@ -1,10 +1,11 @@
-"""
-Core TUI interface coordination and lifecycle management.
-"""
+"""Coordinate and manage the core TUI interface lifecycle."""
 
 import os
 import signal
 import time
+from argparse import Namespace
+from types import FrameType
+from typing import Optional
 
 try:
     from rich.console import Console
@@ -16,7 +17,7 @@ except ImportError:
     RICH_AVAILABLE = False
 
 try:
-    from textual.app import App
+    from textual.app import App as TextualApp  # noqa: F401
 
     TEXTUAL_AVAILABLE = True
 except ImportError:
@@ -31,13 +32,14 @@ from .layouts import LayoutManager
 class ModernTUIInterface:
     """Modern TUI interface for OrKa memory monitoring."""
 
-    def __init__(self):
-        self.console = Console() if RICH_AVAILABLE else None
-        self.running = False
-        self.refresh_interval = 2.0
-        self.current_view = "dashboard"  # dashboard, memories, performance, config
-        self.selected_row = 0
-        self.filter_text = ""
+    def __init__(self) -> None:
+        """Initialize the TUI interface."""
+        self.console: Optional[Console] = Console() if RICH_AVAILABLE else None
+        self.running: bool = False
+        self.refresh_interval: float = 2.0
+        self.current_view: str = "dashboard"  # dashboard, memories, performance, config
+        self.selected_row: int = 0
+        self.filter_text: str = ""
 
         # Initialize components
         self.data_manager = DataManager()
@@ -46,10 +48,19 @@ class ModernTUIInterface:
         self.fallback = FallbackInterface()
 
         # Share running state with data manager
-        self.data_manager.running = True
+        if hasattr(self.data_manager, "running"):
+            self.data_manager.running = True  # type: ignore
 
-    def run(self, args):
-        """Main entry point for the TUI interface."""
+    def run(self, args: Namespace) -> int:
+        """
+        Run the TUI interface.
+
+        Args:
+            args: Command-line arguments namespace.
+
+        Returns:
+            0 for success, 1 for failure.
+        """
         if not RICH_AVAILABLE:
             print("❌ Modern TUI requires 'rich' library. Install with: pip install rich")
             print("Falling back to basic interface...")
@@ -64,11 +75,12 @@ class ModernTUIInterface:
 
             # Start monitoring
             self.running = True
-            self.data_manager.running = True
+            if hasattr(self.data_manager, "running"):
+                self.data_manager.running = True  # type: ignore
             self.refresh_interval = getattr(args, "interval", 2.0)
 
             # Default to Textual interface (new primary interface)
-            use_rich_fallback = (
+            use_rich_fallback: bool = (
                 getattr(args, "use_rich", False)
                 or getattr(args, "fallback", False)
                 or os.getenv("ORKA_TUI_MODE", "").lower() == "rich"
@@ -99,13 +111,28 @@ class ModernTUIInterface:
             traceback.print_exc()
             return 1
 
-    def _signal_handler(self, signum, frame):
-        """Handle interrupt signals gracefully."""
-        self.running = False
-        self.data_manager.running = False
+    def _signal_handler(self, signum: int, frame: Optional[FrameType]) -> None:
+        """
+        Handle interrupt signals gracefully.
 
-    def _run_rich_interface(self, args):
-        """Run the rich-based interface with live updates."""
+        Args:
+            signum: Signal number.
+            frame: Current stack frame.
+        """
+        self.running = False
+        if hasattr(self.data_manager, "running"):
+            self.data_manager.running = True  # type: ignore
+
+    def _run_rich_interface(self, args: Namespace) -> int:
+        """
+        Run the rich-based interface with live updates.
+
+        Args:
+            args: Command-line arguments namespace.
+
+        Returns:
+            0 for success, 1 for failure.
+        """
         try:
             with Live(
                 self.layouts.get_view(self.current_view),
@@ -133,11 +160,20 @@ class ModernTUIInterface:
         except KeyboardInterrupt:
             pass
 
-        self.console.print("\n[green]👋 OrKa TUI monitoring stopped[/green]")
+        if self.console:
+            self.console.print("\n[green]👋 OrKa TUI monitoring stopped[/green]")
         return 0
 
-    def _run_textual_interface(self, args):
-        """Run the textual-based interface (more interactive)."""
+    def _run_textual_interface(self, args: Namespace) -> int:
+        """
+        Run the textual-based interface (more interactive).
+
+        Args:
+            args: Command-line arguments namespace.
+
+        Returns:
+            0 for success, 1 for failure.
+        """
         try:
             # Import the new Textual app
             from .textual_app import OrKaTextualApp

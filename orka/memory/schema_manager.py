@@ -8,11 +8,14 @@ import logging
 import os
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import Any, Dict, List, Optional, Type, Union, TypeVar, cast, TYPE_CHECKING, Callable
 
 # Always import SerializationContext for type hints
 if TYPE_CHECKING:
     from confluent_kafka.serialization import MessageField, SerializationContext
+    from confluent_kafka.schema_registry import SchemaRegistryClient
+    from confluent_kafka.schema_registry.avro import AvroDeserializer, AvroSerializer
+    from confluent_kafka.schema_registry.protobuf import ProtobufDeserializer, ProtobufSerializer
 
 try:
     import avro.io
@@ -44,6 +47,8 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+T = TypeVar('T')  # Generic type for serialization
+
 
 class SchemaFormat(Enum):
     AVRO = "avro"
@@ -64,17 +69,17 @@ class SchemaConfig:
 class SchemaManager:
     """Manages schema serialization/deserialization for OrKa memory entries."""
 
-    def __init__(self, config: SchemaConfig):
-        self.config = config
-        self.registry_client = None
-        self.serializers: dict[str, Any] = {}
-        self.deserializers: dict[str, Any] = {}
-        self.schema_cache: dict[str, str] = {}  # Cache for loaded schemas
+    def __init__(self, config: SchemaConfig) -> None:
+        self.config: SchemaConfig = config
+        self.registry_client: Optional["SchemaRegistryClient"] = None
+        self.serializers: Dict[str, Any] = {}
+        self.deserializers: Dict[str, Any] = {}
+        self.schema_cache: Dict[str, str] = {}  # Cache for loaded schemas
 
         if config.format != SchemaFormat.JSON:
             self._init_schema_registry()
 
-    def _init_schema_registry(self):
+    def _init_schema_registry(self) -> None:
         """Initialize connection to Schema Registry."""
         if not AVRO_AVAILABLE and not PROTOBUF_AVAILABLE:
             raise RuntimeError(
@@ -143,10 +148,19 @@ class SchemaManager:
             schema_str = self._load_avro_schema(schema_name)
             from confluent_kafka.schema_registry.avro import AvroSerializer
 
+            if self.registry_client is None:
+                raise RuntimeError("Schema Registry not initialized")
+
+            # Create a type-safe wrapper for the conversion function
+            def convert_to_dict(obj: object, ctx: "SerializationContext") -> Dict[str, Any]:
+                if not isinstance(obj, dict):
+                    raise TypeError(f"Expected dict, got {type(obj)}")
+                return self._memory_to_dict(cast(Dict[str, Any], obj), ctx)
+
             serializer = AvroSerializer(
-                self.registry_client,
+                cast(SchemaRegistryClient, self.registry_client),
                 schema_str,
-                self._memory_to_dict,
+                convert_to_dict,
             )
 
         elif self.config.format == SchemaFormat.PROTOBUF:
@@ -177,10 +191,19 @@ class SchemaManager:
             schema_str = self._load_avro_schema(schema_name)
             from confluent_kafka.schema_registry.avro import AvroDeserializer
 
+            if self.registry_client is None:
+                raise RuntimeError("Schema Registry not initialized")
+
+            # Create a type-safe wrapper for the conversion function
+            def convert_from_dict(obj: object, ctx: "SerializationContext") -> Dict[str, Any]:
+                if not isinstance(obj, dict):
+                    raise TypeError(f"Expected dict, got {type(obj)}")
+                return self._dict_to_memory(cast(Dict[str, Any], obj), ctx)
+
             deserializer = AvroDeserializer(
-                self.registry_client,
+                cast(SchemaRegistryClient, self.registry_client),
                 schema_str,
-                self._dict_to_memory,
+                convert_from_dict,
             )
 
         elif self.config.format == SchemaFormat.PROTOBUF:
@@ -195,7 +218,7 @@ class SchemaManager:
         self.deserializers[cache_key] = deserializer
         return deserializer
 
-    def _memory_to_dict(self, obj: dict[str, Any], ctx: "SerializationContext") -> dict[str, Any]:
+    def _memory_to_dict(self, obj: Dict[str, Any], ctx: "SerializationContext") -> Dict[str, Any]:
         """Convert memory object to dict for serialization."""
         # Ensure metadata field exists with default values
         if "metadata" not in obj:
@@ -213,13 +236,13 @@ class SchemaManager:
             }
         return obj
 
-    def _dict_to_memory(self, obj: dict[str, Any], ctx: "SerializationContext") -> dict[str, Any]:
+    def _dict_to_memory(self, obj: Dict[str, Any], ctx: "SerializationContext") -> Dict[str, Any]:
         """Convert dict to memory object after deserialization."""
         return obj
 
     def _json_serializer(
         self,
-        obj: dict[str, Any],
+        obj: Dict[str, Any],
         ctx: "SerializationContext",
     ) -> bytes:
         """Fallback JSON serializer."""
@@ -229,7 +252,7 @@ class SchemaManager:
         self,
         data: bytes,
         ctx: "SerializationContext",
-    ) -> dict[str, Any]:
+    ) -> Dict[str, Any]:
         """Fallback JSON deserializer."""
         return json.loads(data.decode("utf-8"))
 
@@ -246,76 +269,46 @@ class SchemaManager:
                 from confluent_kafka.schema_registry import Schema
 
                 schema = Schema(schema_str, schema_type="AVRO")
+                schema_id = self.registry_client.register_schema(subject, schema)
+                return schema_id
 
             elif self.config.format == SchemaFormat.PROTOBUF:
                 schema_str = self._load_protobuf_schema(schema_name)
-
                 from confluent_kafka.schema_registry import Schema
 
                 schema = Schema(schema_str, schema_type="PROTOBUF")
+                schema_id = self.registry_client.register_schema(subject, schema)
+                return schema_id
 
             else:
-                raise ValueError("Cannot register JSON schemas")
-
-            schema_id = self.registry_client.register_schema(subject, schema)
-            logger.info(
-                f"Registered schema {schema_name} for subject {subject} with ID {schema_id}",
-            )
-            return schema_id
+                raise ValueError(f"Unsupported schema format: {self.config.format}")
 
         except Exception as e:
-            logger.error(f"Failed to register schema: {e}")
+            logger.error(f"Failed to register schema {schema_name}: {e}")
             raise
 
 
 def create_schema_manager(
-    registry_url: str | None = None,
+    registry_url: Optional[str] = None,
     format: SchemaFormat = SchemaFormat.AVRO,
 ) -> SchemaManager:
-    """Create a schema manager with configuration from environment or parameters."""
-    registry_url = registry_url or os.getenv(
-        "KAFKA_SCHEMA_REGISTRY_URL",
-        "http://localhost:8081",
-    )
+    """
+    Create a SchemaManager instance with the given configuration.
 
-    config = SchemaConfig(registry_url=registry_url, format=format)
+    Args:
+        registry_url: URL of the Schema Registry server
+        format: Schema format to use (AVRO, PROTOBUF, or JSON)
+
+    Returns:
+        SchemaManager instance
+    """
+    config = SchemaConfig(registry_url=registry_url or "", format=format)
     return SchemaManager(config)
 
 
-# Example usage and migration helper
-def migrate_from_json():
+def migrate_from_json() -> None:
     """
-    Example of how to migrate existing JSON-based Kafka messages to schema-based.
+    Migrate existing JSON memory entries to Avro/Protobuf format.
+    This is a placeholder for future implementation.
     """
-    print(
-        """
-    Migration Steps:
-    
-    1. Install dependencies:
-       pip install orka-reasoning[schema]  # Includes Avro and Protobuf support
-    
-    2. Update your Kafka producer:
-       schema_manager = create_schema_manager()
-       serializer = schema_manager.get_serializer('orka-memory-topic')
-       
-       # In your producer code:
-       producer.produce(
-           topic='orka-memory-topic',
-           value=serializer(memory_object, SerializationContext('orka-memory-topic', MessageField.VALUE))
-       )
-    
-    3. Update your Kafka consumer:
-       deserializer = schema_manager.get_deserializer('orka-memory-topic')
-       
-       # In your consumer code:
-       memory_object = deserializer(message.value(), SerializationContext('orka-memory-topic', MessageField.VALUE))
-    
-    4. Register schemas:
-       schema_manager.register_schema('orka-memory-topic-value', 'memory_entry')
-    """
-    )
-
-
-if __name__ == "__main__":
-    # Demo the schema management
-    migrate_from_json()
+    raise NotImplementedError("Schema migration not implemented yet")

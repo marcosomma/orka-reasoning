@@ -12,8 +12,10 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-Orchestrator
-============
+Orchestrator.
+
+Core engine that loads a YAML configuration, instantiates agents and nodes,
+and manages the execution of the reasoning workflow.
 
 The main orchestrator class that coordinates all components for workflow execution.
 This file uses modular components while maintaining 100% backward compatibility.
@@ -107,6 +109,7 @@ and that all functionality remains accessible through the main interface.
 """
 
 import logging
+from typing import Any, Dict
 
 from orka.orchestrator.agent_factory import AgentFactory
 from orka.orchestrator.base import OrchestratorBase
@@ -127,21 +130,27 @@ class Orchestrator(
     ExecutionEngine,
 ):
     """
-    The Orchestrator is the core engine that loads a YAML configuration,
-    instantiates agents and nodes, and manages the execution of the reasoning workflow.
-    It supports parallelism, dynamic routing, and full trace logging.
+    The Orchestrator.
+
+    Core engine that loads a YAML configuration, instantiates agents and nodes,
+    and manages the execution of the reasoning workflow. It supports parallelism,
+    dynamic routing, and full trace logging.
 
     This class now inherits from multiple mixins to provide all functionality
     while maintaining the same public interface.
     """
 
-    def __init__(self, config_path):
+    def __init__(self, config_path: str) -> None:
         """
         Initialize the Orchestrator with a YAML config file.
+
         Loads orchestrator and agent configs, sets up memory and fork management.
+
+        Args:
+            config_path: Path to the YAML configuration file.
         """
         # Initialize the base orchestrator
         super().__init__(config_path)
 
         # Initialize agents using the agent factory
-        self.agents = self._init_agents()  # Dict of agent_id -> agent instance
+        self.agents: Dict[str, Any] = self._init_agents()  # Dict of agent_id -> agent instance

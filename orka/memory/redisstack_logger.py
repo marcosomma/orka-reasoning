@@ -12,7 +12,7 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-RedisStack Memory Logger Implementation
+RedisStack Memory Logger Implementation.
 =====================================
 
 High-performance memory logger that leverages RedisStack's advanced capabilities
@@ -138,14 +138,30 @@ import threading
 import time
 import uuid
 from threading import Lock
-from typing import Any
+from typing import Any, Dict, List, Optional, Union, cast, TYPE_CHECKING
 
 import numpy as np
 import redis
+from numpy.typing import NDArray
 
 from .base_logger import BaseMemoryLogger
 
 logger = logging.getLogger(__name__)
+
+# Check if Redis search is available
+REDIS_SEARCH_AVAILABLE = False
+try:
+    import redis.commands.search.field  # type: ignore
+    import redis.commands.search.indexDefinition  # type: ignore
+
+    REDIS_SEARCH_AVAILABLE = True
+except ImportError:
+    logger.warning("RedisStack search module not available")
+
+# Type hints for Redis search modules
+if TYPE_CHECKING:
+    from redis.commands.search.field import TextField, VectorField  # type: ignore
+    from redis.commands.search.indexDefinition import IndexDefinition, IndexType  # type: ignore
 
 
 class RedisStackMemoryLogger(BaseMemoryLogger):
@@ -209,16 +225,16 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         self,
         redis_url: str = "redis://localhost:6379/0",  # Use port 6379 by default
         index_name: str = "orka_enhanced_memory",
-        embedder=None,
-        memory_decay_config: dict[str, Any] | None = None,
+        embedder: Optional[Any] = None,
+        memory_decay_config: Optional[Dict[str, Any]] = None,
         # Additional parameters for factory compatibility
         stream_key: str = "orka:memory",
         debug_keep_previous_outputs: bool = False,
-        decay_config: dict[str, Any] | None = None,
+        decay_config: Optional[Dict[str, Any]] = None,
         enable_hnsw: bool = True,
-        vector_params: dict[str, Any] | None = None,
-        **kwargs,
-    ):
+        vector_params: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> None:
         """
         Initialize the RedisStack memory logger.
 
@@ -238,105 +254,124 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         effective_decay_config = memory_decay_config or decay_config
 
         super().__init__(
-            stream_key,
-            debug_keep_previous_outputs,
-            effective_decay_config,
+            stream_key=stream_key,
+            debug_keep_previous_outputs=debug_keep_previous_outputs,
+            decay_config=effective_decay_config,
         )
 
-        self.redis_url = redis_url
-        self.index_name = index_name
-        self.embedder = embedder
-        self.enable_hnsw = enable_hnsw
-        self.vector_params = vector_params or {}
-        self.stream_key = stream_key
-        self.debug_keep_previous_outputs = debug_keep_previous_outputs
+        self.redis_url: str = redis_url
+        self.index_name: str = index_name
+        self.embedder: Optional[Any] = embedder
+        self.enable_hnsw: bool = enable_hnsw and REDIS_SEARCH_AVAILABLE
+        self.vector_params: Dict[str, Any] = vector_params or {}
+        self.memory_decay_config: Dict[str, Any] = effective_decay_config or {}
 
-        # Store memory decay config for method access
-        self.memory_decay_config = effective_decay_config
+        # Thread-local storage for Redis connections
+        self._local: threading.local = threading.local()
+        self._connection_lock: Lock = Lock()
+        self._embedding_lock: Lock = Lock()
 
-        # Thread safety for parallel operations
-        self._connection_lock = Lock()
-        self._embedding_lock = Lock()  # Separate lock for embedding operations
-        self._local = threading.local()  # Thread-local storage for connections
+        # Initialize Redis connection
+        self._redis_client: Optional[redis.Redis[Any]] = None
+        self._init_redis_client()
 
-        # Primary Redis connection (main thread)
-        self.redis_client = self._create_redis_connection()
+        # Initialize index if enabled
+        if self.enable_hnsw:
+            self._ensure_index()
 
-        # Ensure the enhanced memory index exists
-        self._ensure_index()
-
-        logger.info(f"RedisStack memory logger initialized with index: {self.index_name}")
-
-    def _create_redis_connection(self) -> redis.Redis:
-        """Create a new Redis connection with proper configuration."""
+    def _init_redis_client(self) -> None:
+        """Initialize the Redis client with proper configuration."""
         try:
-            client = redis.from_url(
+            self._redis_client = redis.from_url(
                 self.redis_url,
-                decode_responses=False,
-                socket_keepalive=True,
-                socket_keepalive_options={},
-                retry_on_timeout=True,
+                decode_responses=True,
                 health_check_interval=30,
             )
-            # Test connection
-            client.ping()
-            return client
+            logger.info(f"Connected to Redis at {self.redis_url}")
         except Exception as e:
-            logger.error(f"Failed to create Redis connection: {e}")
+            logger.error(f"Failed to connect to Redis: {e}")
             raise
 
-    def _get_thread_safe_client(self) -> redis.Redis:
-        """Get a thread-safe Redis client for the current thread."""
-        if not hasattr(self._local, "redis_client"):
-            with self._connection_lock:
-                if not hasattr(self._local, "redis_client"):
-                    self._local.redis_client = self._create_redis_connection()
-                    logger.debug(
-                        f"Created Redis connection for thread {threading.current_thread().ident}",
-                    )
+    def _create_redis_connection(self) -> redis.Redis[Any]:
+        """Create a new Redis connection."""
+        return redis.from_url(
+            self.redis_url,
+            decode_responses=True,
+            health_check_interval=30,
+        )
 
-        return self._local.redis_client
+    def _get_thread_safe_client(self) -> redis.Redis[Any]:
+        """Get a thread-safe Redis client."""
+        if not hasattr(self._local, "redis"):
+            with self._connection_lock:
+                self._local.redis = self._create_redis_connection()
+        return self._local.redis
 
     @property
-    def redis(self):
-        """Backward compatibility property for redis client access."""
-        return self.redis_client
+    def redis(self) -> redis.Redis[Any]:
+        """Get the Redis client."""
+        return self._get_thread_safe_client()
 
-    def _ensure_index(self):
-        """Ensure the enhanced memory index exists with vector search capabilities."""
+    def _ensure_index(self) -> None:
+        """Ensure the vector index exists."""
+        if not self.enable_hnsw or not REDIS_SEARCH_AVAILABLE:
+            return
+
         try:
-            from orka.utils.bootstrap_memory_index import ensure_enhanced_memory_index
+            # Import Redis search modules at runtime
+            from redis.commands.search.field import TextField, VectorField  # type: ignore
+            from redis.commands.search.indexDefinition import IndexDefinition, IndexType  # type: ignore
 
-            # Get vector dimension from embedder if available
-            vector_dim = 384  # Default dimension
-            if self.embedder and hasattr(self.embedder, "embedding_dim"):
-                vector_dim = self.embedder.embedding_dim
-
-            success = ensure_enhanced_memory_index(
-                redis_client=self.redis_client,
-                index_name=self.index_name,
-                vector_dim=vector_dim,
+            # Define index schema
+            schema = (
+                TextField("$.content", as_name="content"),
+                TextField("$.node_id", as_name="node_id"),
+                TextField("$.trace_id", as_name="trace_id"),
+                TextField("$.memory_type", as_name="memory_type"),
+                VectorField(
+                    "$.embedding",
+                    "HNSW",
+                    cast(
+                        Dict[str, Any],
+                        {
+                            "TYPE": "FLOAT32",
+                            "DIM": 1536,  # Default dimension for text-embedding-ada-002
+                            "DISTANCE_METRIC": "COSINE",
+                            **self.vector_params,
+                        },
+                    ),
+                    as_name="embedding",
+                ),
             )
 
-            if success:
-                logger.info("Enhanced HNSW memory index ready")
-            else:
-                logger.warning(
-                    "Enhanced memory index creation failed, some features may be limited",
+            # Create index
+            try:
+                self.redis.ft(self.index_name).create_index(
+                    fields=schema,
+                    definition=IndexDefinition(
+                        prefix=["orka_memory:"],
+                        index_type=IndexType.JSON,
+                    ),
                 )
+                logger.info(f"Created RedisStack index: {self.index_name}")
+            except Exception as e:
+                if "Index already exists" not in str(e):
+                    raise
+                logger.debug(f"RedisStack index {self.index_name} already exists")
 
         except Exception as e:
-            logger.error(f"Failed to ensure enhanced memory index: {e}")
+            logger.error(f"Failed to create RedisStack index: {e}")
+            self.enable_hnsw = False
 
     def log_memory(
         self,
         content: str,
         node_id: str,
         trace_id: str,
-        metadata: dict[str, Any] | None = None,
+        metadata: Optional[Dict[str, Any]] = None,
         importance_score: float = 1.0,
         memory_type: str = "short_term",
-        expiry_hours: float | None = None,
+        expiry_hours: Optional[float] = None,
     ) -> str:
         """Store memory with vector embedding for enhanced search."""
         try:
@@ -361,9 +396,6 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 if not isinstance(content, str):
                     logger.warning(f"Content is not a string: {type(content)}, converting...")
                     content = str(content)
-
-                # Test serialization of metadata
-                metadata_json = json.dumps(metadata)
 
             except Exception as serialize_error:
                 logger.error(f"Serialization error: {serialize_error}")
@@ -417,7 +449,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             logger.error(f"Failed to store memory: {e}")
             raise
 
-    def _get_embedding_sync(self, text: str) -> np.ndarray:
+    def _get_embedding_sync(self, text: str) -> NDArray[np.float32]:
         """Get embedding in a sync context, handling async embedder properly."""
         try:
             import asyncio
@@ -444,13 +476,13 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         self,
         query: str,
         num_results: int = 10,
-        trace_id: str | None = None,
-        node_id: str | None = None,
-        memory_type: str | None = None,
-        min_importance: float | None = None,
+        trace_id: Optional[str] = None,
+        node_id: Optional[str] = None,
+        memory_type: Optional[str] = None,
+        min_importance: Optional[float] = None,
         log_type: str = "memory",  # Filter by log type (default: only memories)
-        namespace: str | None = None,  # Filter by namespace
-    ) -> list[dict[str, Any]]:
+        namespace: Optional[str] = None,  # Filter by namespace
+    ) -> List[Dict[str, Any]]:
         """
         Search memories using enhanced vector search with filtering.
 
@@ -493,7 +525,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                     for result in results:
                         try:
                             # Get full memory data
-                            memory_data = self.redis_client.hgetall(result["key"])
+                            memory_data = self.redis.hgetall(result["key"])
                             if not memory_data:
                                 continue
 
@@ -624,44 +656,59 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             logger.error(f"Memory search failed: {e}")
             return []
 
-    def _safe_get_redis_value(self, memory_data: dict, key: str, default=None):
+    def _safe_get_redis_value(
+        self, memory_data: Dict[str, Any], key: str, default: Any = None
+    ) -> Any:
         """Safely get value from Redis hash data that might have bytes or string keys."""
-        # Try string key first, then bytes key
-        value = memory_data.get(key, memory_data.get(key.encode("utf-8"), default))
+        # Try string key first
+        value = memory_data.get(key, default)
+        if value is not None:
+            return value.decode() if isinstance(value, bytes) else value
 
-        # Decode bytes values to strings
+        # Try bytes key
+        bytes_key = key.encode("utf-8") if isinstance(key, str) else key
+        value = memory_data.get(bytes_key, default)
+        return value.decode() if isinstance(value, bytes) else value
+
+    def _validate_similarity_score(self, score: Any) -> float:
+        """Validate and sanitize similarity scores to prevent NaN values."""
+        try:
+            score_float = float(score)
+            if np.isnan(score_float) or np.isinf(score_float):
+                return 0.0
+            return max(0.0, min(1.0, score_float))
+        except (TypeError, ValueError):
+            return 0.0
+
+    def _encode_value(self, value: Union[str, bytes, int, float]) -> str:
+        """Encode a value for Redis storage."""
         if isinstance(value, bytes):
             try:
                 return value.decode("utf-8")
             except UnicodeDecodeError:
-                return default
-        return value
+                return str(value)
+        return str(value)
 
-    def _validate_similarity_score(self, score) -> float:
-        """Validate and sanitize similarity scores to prevent NaN values."""
-        try:
-            score_float = float(score)
-            # Check for NaN, infinity, or invalid values
-            import math
-
-            if math.isnan(score_float) or math.isinf(score_float) or score_float < 0:
-                return 0.0
-            # Clamp to reasonable range (0.0 to 1.0 for distance scores)
-            return max(0.0, min(1.0, score_float))
-        except (ValueError, TypeError):
-            return 0.0
+    def _encode_key(self, key: str) -> str:
+        """Encode a key for Redis storage."""
+        if isinstance(key, bytes):
+            try:
+                return key.decode("utf-8")
+            except UnicodeDecodeError:
+                return str(key)
+        return str(key)
 
     def _fallback_text_search(
         self,
         query: str,
         num_results: int,
-        trace_id: str | None = None,
-        node_id: str | None = None,
-        memory_type: str | None = None,
-        min_importance: float | None = None,
+        trace_id: Optional[str] = None,
+        node_id: Optional[str] = None,
+        memory_type: Optional[str] = None,
+        min_importance: Optional[float] = None,
         log_type: str = "memory",
-        namespace: str | None = None,
-    ) -> list[dict[str, Any]]:
+        namespace: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
         """Fallback text search using basic Redis search capabilities."""
         try:
             logger.info("Using fallback text search")
@@ -683,14 +730,14 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 search_query = " ".join([search_query] + filters)
 
             # Execute search
-            search_results = self.redis_client.ft(self.index_name).search(
+            search_results = self.redis.ft(self.index_name).search(
                 Query(search_query).paging(0, num_results),
             )
 
             results = []
             for doc in search_results.docs:
                 try:
-                    memory_data = self.redis_client.hgetall(doc.id)
+                    memory_data = self.redis.hgetall(doc.id)
                     if not memory_data:
                         continue
 
@@ -779,7 +826,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             # If all search methods fail, return empty list
             return []
 
-    def _is_expired(self, memory_data: dict[str, Any]) -> bool:
+    def _is_expired(self, memory_data: Dict[str, Any]) -> bool:
         """Check if memory entry has expired."""
         expiry_time = self._safe_get_redis_value(memory_data, "orka_expire_time")
         if expiry_time:
@@ -789,16 +836,16 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 pass
         return False
 
-    def get_all_memories(self, trace_id: str | None = None) -> list[dict[str, Any]]:
+    def get_all_memories(self, trace_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get all memories, optionally filtered by trace_id."""
         try:
             pattern = "orka_memory:*"
-            keys = self.redis_client.keys(pattern)
+            keys = self.redis.keys(pattern)
 
             memories = []
             for key in keys:
                 try:
-                    memory_data = self.redis_client.hgetall(key)
+                    memory_data = self.redis.hgetall(key)
                     if not memory_data:
                         continue
 
@@ -847,45 +894,41 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
     def delete_memory(self, key: str) -> bool:
         """Delete a specific memory entry."""
         try:
-            result = self.redis_client.delete(key)
+            result = self.redis.delete(key)
             logger.debug(f"Deleted memory key: {key}")
             return result > 0
         except Exception as e:
             logger.error(f"Failed to delete memory {key}: {e}")
             return False
 
-    def close(self):
+    def close(self) -> None:
         """Clean up resources."""
         try:
-            if hasattr(self, "redis_client"):
-                self.redis_client.close()
+            if self._redis_client:
+                self._redis_client.close()
             # Also close thread-local connections
-            if hasattr(self, "_local"):
-                for attr_name in dir(self._local):
-                    if not attr_name.startswith("_"):
-                        try:
-                            attr_value = getattr(self._local, attr_name)
-                            if hasattr(attr_value, "close"):
-                                attr_value.close()
-                        except Exception:
-                            pass  # Ignore errors during cleanup
+            if hasattr(self._local, "redis"):
+                try:
+                    self._local.redis.close()
+                except Exception:
+                    pass  # Ignore errors during cleanup
         except Exception as e:
             logger.error(f"Error closing RedisStack logger: {e}")
 
-    def clear_all_memories(self):
+    def clear_all_memories(self) -> None:
         """Clear all memories from the RedisStack storage."""
         try:
             pattern = "orka_memory:*"
-            keys = self.redis_client.keys(pattern)
+            keys = self.redis.keys(pattern)
             if keys:
-                deleted = self.redis_client.delete(*keys)
+                deleted = self.redis.delete(*keys)
                 logger.info(f"Cleared {deleted} memories from RedisStack")
             else:
                 logger.info("No memories to clear")
         except Exception as e:
             logger.error(f"Failed to clear memories: {e}")
 
-    def get_memory_stats(self) -> dict[str, Any]:
+    def get_memory_stats(self) -> Dict[str, Any]:
         """Get comprehensive memory storage statistics."""
         try:
             # Use thread-safe client to match log_memory() method
@@ -980,13 +1023,13 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         self,
         agent_id: str,
         event_type: str,
-        payload: dict[str, Any],
-        step: int | None = None,
-        run_id: str | None = None,
-        fork_group: str | None = None,
-        parent: str | None = None,
-        previous_outputs: dict[str, Any] | None = None,
-        agent_decay_config: dict[str, Any] | None = None,
+        payload: Dict[str, Any],
+        step: Optional[int] = None,
+        run_id: Optional[str] = None,
+        fork_group: Optional[str] = None,
+        parent: Optional[str] = None,
+        previous_outputs: Optional[Dict[str, Any]] = None,
+        agent_decay_config: Optional[Dict[str, Any]] = None,
         log_type: str = "log",  # "log" for orchestration, "memory" for stored memories
     ) -> None:
         """
@@ -1055,7 +1098,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         except Exception as e:
             logger.error(f"Failed to log orchestration event: {e}")
 
-    def _extract_content_from_payload(self, payload: dict[str, Any], event_type: str) -> str:
+    def _extract_content_from_payload(self, payload: Dict[str, Any], event_type: str) -> str:
         """Extract meaningful content from payload for memory storage."""
         content_parts = []
 
@@ -1081,7 +1124,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
 
         return " ".join(content_parts)
 
-    def _calculate_importance_score(self, event_type: str, payload: dict[str, Any]) -> float:
+    def _calculate_importance_score(self, event_type: str, payload: Dict[str, Any]) -> float:
         """Calculate importance score based on event type and payload."""
         # Base importance by event type
         importance_map = {
@@ -1128,8 +1171,8 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         self,
         memory_type: str,
         importance_score: float,
-        agent_decay_config: dict[str, Any] | None,
-    ) -> float | None:
+        agent_decay_config: Optional[Dict[str, Any]] = None,
+    ) -> Optional[float]:
         """Calculate expiry hours based on memory type and importance."""
         # Use agent-specific config if available, otherwise use default
         decay_config = agent_decay_config or self.memory_decay_config
@@ -1157,7 +1200,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
 
         return adjusted_hours
 
-    def tail(self, count: int = 10) -> list[dict[str, Any]]:
+    def tail(self, count: int = 10) -> List[Dict[str, Any]]:
         """Get recent memory entries."""
         try:
             # Get all memories and sort by timestamp
@@ -1171,7 +1214,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             logger.error(f"Error in tail operation: {e}")
             return []
 
-    def cleanup_expired_memories(self, dry_run: bool = False) -> dict[str, Any]:
+    def cleanup_expired_memories(self, dry_run: bool = False) -> Dict[str, Any]:
         """Clean up expired memories."""
         cleaned = 0
         total_checked = 0
@@ -1179,13 +1222,13 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
 
         try:
             pattern = "orka_memory:*"
-            keys = self.redis_client.keys(pattern)
+            keys = self.redis.keys(pattern)
             total_checked = len(keys)
 
             expired_keys = []
             for key in keys:
                 try:
-                    memory_data = self.redis_client.hgetall(key)
+                    memory_data = self.redis.hgetall(key)
                     if self._is_expired(memory_data):
                         expired_keys.append(key)
                 except Exception as e:
@@ -1197,7 +1240,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 for i in range(0, len(expired_keys), batch_size):
                     batch = expired_keys[i : i + batch_size]
                     try:
-                        deleted_count = self.redis_client.delete(*batch)
+                        deleted_count = self.redis.delete(*batch)
                         cleaned += deleted_count
                         logger.debug(f"Deleted batch of {deleted_count} expired memories")
                     except Exception as e:
@@ -1228,36 +1271,85 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             }
 
     # Redis interface methods (thread-safe delegated methods)
-    def hset(self, name: str, key: str, value: str | bytes | int | float) -> int:
-        return self._get_thread_safe_client().hset(name, key, value)
+    def hset(self, name: str, key: str, value: Union[str, bytes, int, float]) -> int:
+        """Set a hash field."""
+        encoded_value = self._encode_value(value)
+        encoded_key = self._encode_key(key)
+        client = self._get_thread_safe_client()
+        return client.hset(name, key=encoded_key, value=encoded_value)
 
-    def hget(self, name: str, key: str) -> str | None:
-        return self._get_thread_safe_client().hget(name, key)
+    def hget(self, name: str, key: str) -> Optional[str]:
+        """Get a hash field."""
+        client = self._get_thread_safe_client()
+        encoded_key = self._encode_key(key)
+        try:
+            value = client.hget(name, encoded_key)
+            if value is None:
+                return None
+            return value if isinstance(value, str) else value.decode("utf-8")
+        except (AttributeError, UnicodeDecodeError):
+            return None
 
-    def hkeys(self, name: str) -> list[str]:
-        return self._get_thread_safe_client().hkeys(name)
+    def hkeys(self, name: str) -> List[str]:
+        """Get all hash field names."""
+        client = self._get_thread_safe_client()
+        try:
+            keys = client.hkeys(name)
+            return [k if isinstance(k, str) else k.decode("utf-8") for k in keys]
+        except (AttributeError, UnicodeDecodeError):
+            return []
 
     def hdel(self, name: str, *keys: str) -> int:
-        return self._get_thread_safe_client().hdel(name, *keys)
+        """Delete hash fields."""
+        client = self._get_thread_safe_client()
+        encoded_keys = [self._encode_key(k) for k in keys]
+        return client.hdel(name, *encoded_keys)
 
-    def smembers(self, name: str) -> list[str]:
-        members = self._get_thread_safe_client().smembers(name)
-        return list(members)
+    def smembers(self, name: str) -> List[str]:
+        """Get all set members."""
+        client = self._get_thread_safe_client()
+        try:
+            members = client.smembers(name)
+            return [m if isinstance(m, str) else m.decode("utf-8") for m in members]
+        except (AttributeError, UnicodeDecodeError):
+            return []
 
     def sadd(self, name: str, *values: str) -> int:
-        return self._get_thread_safe_client().sadd(name, *values)
+        """Add members to a set."""
+        client = self._get_thread_safe_client()
+        encoded_values = [self._encode_value(v) for v in values]
+        return client.sadd(name, *encoded_values)
 
     def srem(self, name: str, *values: str) -> int:
-        return self._get_thread_safe_client().srem(name, *values)
+        """Remove members from a set."""
+        client = self._get_thread_safe_client()
+        encoded_values = [self._encode_value(v) for v in values]
+        return client.srem(name, *encoded_values)
 
-    def get(self, key: str) -> str | None:
-        return self._get_thread_safe_client().get(key)
+    def get(self, key: str) -> Optional[str]:
+        """Get a key's value."""
+        client = self._get_thread_safe_client()
+        encoded_key = self._encode_key(key)
+        try:
+            value = client.get(encoded_key)
+            if value is None:
+                return None
+            return value if isinstance(value, str) else value.decode("utf-8")
+        except (AttributeError, UnicodeDecodeError):
+            return None
 
-    def set(self, key: str, value: str | bytes | int | float) -> bool:
-        return self._get_thread_safe_client().set(key, value)
+    def set(self, key: str, value: Union[str, bytes, int, float]) -> bool:
+        """Set a key's value."""
+        client = self._get_thread_safe_client()
+        encoded_key = self._encode_key(key)
+        encoded_value = self._encode_value(value)
+        return bool(client.set(encoded_key, encoded_value))
 
     def delete(self, *keys: str) -> int:
-        return self._get_thread_safe_client().delete(*keys)
+        """Delete keys."""
+        client = self._get_thread_safe_client()
+        encoded_keys = [self._encode_key(k) for k in keys]
+        return client.delete(*encoded_keys)
 
     def ensure_index(self) -> bool:
         """Ensure the enhanced memory index exists - for factory compatibility."""
@@ -1268,7 +1360,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             logger.error(f"Failed to ensure index: {e}")
             return False
 
-    def get_recent_stored_memories(self, count: int = 5) -> list[dict[str, Any]]:
+    def get_recent_stored_memories(self, count: int = 5) -> List[Dict[str, Any]]:
         """Get recent stored memories (log_type='memory' only), sorted by timestamp."""
         try:
             # Use thread-safe client to match log_memory() method
@@ -1352,9 +1444,9 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
     def _get_ttl_info(
         self,
         key: str,
-        memory_data: dict[str, Any],
+        memory_data: Dict[str, Any],
         current_time_ms: int,
-    ) -> dict[str, Any]:
+    ) -> Dict[str, Any]:
         """Get TTL information for a memory entry."""
         try:
             # Check if memory has expiry time set (handle bytes keys)
@@ -1419,7 +1511,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 "expires_at_formatted": "Unknown",
             }
 
-    def get_performance_metrics(self) -> dict[str, Any]:
+    def get_performance_metrics(self) -> Dict[str, Any]:
         """Get RedisStack performance metrics including vector search status."""
         try:
             metrics = {

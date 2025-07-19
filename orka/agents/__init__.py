@@ -12,8 +12,7 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
 """
-OrKa Agents Package
-===================
+OrKa Agents Package.
 
 This package contains all agent implementations for the OrKa framework.
 Agents are the fundamental building blocks that perform specific tasks
@@ -142,7 +141,6 @@ Module Components
 
 # Import all agent types from their respective modules
 from .agents import BinaryAgent, ClassificationAgent
-from .base_agent import BaseAgent, LegacyBaseAgent
 from .llm_agents import (
     OpenAIAnswerBuilder,
     OpenAIBinaryAgent,
