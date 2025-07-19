@@ -34,6 +34,7 @@ JsonDict = Dict[str, Any]
 JsonList = List[Any]
 RedisValue = Union[str, bytes, int, float]
 RedisMapping = Mapping[str, RedisValue]
+RedisType = redis.Redis  # type: ignore
 
 
 class RedisFields(TypedDict):
@@ -130,10 +131,10 @@ class RedisMemoryLogger(BaseMemoryLogger):
             or os.getenv("REDIS_URL", "redis://localhost:6379/0")
             or "redis://localhost:6379/0"
         )  # Use port 6379 by default
-        self.client: redis.Redis = redis.from_url(self.redis_url)
+        self.client: RedisType = redis.from_url(self.redis_url)
 
     @property
-    def redis(self) -> redis.Redis:
+    def redis(self) -> RedisType:
         """
         Return the Redis client for backward compatibility.
 

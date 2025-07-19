@@ -11,7 +11,7 @@ from confluent_kafka import Producer
 from confluent_kafka.serialization import StringSerializer
 
 from .base_logger import BaseMemoryLogger
-from .redisstack_logger import RedisStackMemoryLogger
+from .redisstack_logger import RedisStackMemoryLogger, RedisType
 
 logger = logging.getLogger(__name__)
 
@@ -42,8 +42,8 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         self.bootstrap_servers: str = bootstrap_servers
         self.redis_url: str = (
             redis_url
-            or os.environ.get("REDIS_URL", "redis://localhost:6380/0")
-            or "redis://localhost:6380/0"
+            or os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+            or "redis://localhost:6379/0"
         )
         self.stream_key: str = stream_key
         self.debug_keep_previous_outputs: bool = debug_keep_previous_outputs
@@ -62,7 +62,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         self.producer: Optional[Producer] = None
         self.string_serializer: Optional[StringSerializer] = None
         self._redis_memory_logger: Optional[RedisStackMemoryLogger] = None
-        self.redis_client: redis.Redis[Any] = redis.from_url(self.redis_url)
+        self.redis_client: RedisType = redis.from_url(self.redis_url)
 
         # Initialize Kafka producer
         self._init_kafka_producer()
@@ -123,7 +123,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
             raise
 
     @property
-    def redis(self) -> redis.Redis[Any]:
+    def redis(self) -> RedisType:
         """Return Redis client - prefer RedisStack client if available."""
         if self._redis_memory_logger:
             return self._redis_memory_logger.redis

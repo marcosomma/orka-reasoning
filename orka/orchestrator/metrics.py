@@ -22,7 +22,7 @@ import os
 import platform
 import subprocess
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
 
 logger = logging.getLogger(__name__)
 

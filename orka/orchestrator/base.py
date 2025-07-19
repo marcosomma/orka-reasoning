@@ -11,158 +11,80 @@
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
-"""
-Base Orchestrator Module
-========================
-
-This module contains the core orchestrator base class that handles initialization,
-configuration management, and setup of core infrastructure components including
-memory backends, fork management, and error tracking.
-
-The :class:`OrchestratorBase` class serves as the foundation for the main
-:class:`~orka.orchestrator.Orchestrator` class through multiple inheritance composition.
-
-Core Responsibilities
---------------------
-
-**Configuration Management**
-    * Loads and validates YAML configuration files
-    * Extracts orchestrator and agent configurations
-    * Handles environment variable overrides
-
-**Infrastructure Setup**
-    * Initializes memory backend (Redis or Kafka)
-    * Configures fork group management for parallel execution
-    * Sets up error tracking and telemetry systems
-
-**Runtime State Management**
-    * Maintains execution queue and step counters
-    * Generates unique run identifiers for traceability
-    * Tracks overall execution status and metrics
-"""
+"""Base orchestrator module for OrKa."""
 
 import logging
 import os
-from typing import Any
+from typing import Any, cast
 from uuid import uuid4
 
 from ..fork_group_manager import ForkGroupManager
-from ..loader import YAMLLoader
-from ..memory_logger import create_memory_logger
+from ..loader import ConfigLoader
+from ..memory_logger import create_memory_logger, BaseMemoryLogger
 
 logger = logging.getLogger(__name__)
 
 
-class OrchestratorBase:
-    """
-    Base orchestrator class that handles initialization and configuration.
+class BaseOrchestrator:
+    """Base class for orchestrators."""
 
-    This class provides the foundational infrastructure for the OrKa orchestration
-    framework, including configuration loading, memory backend setup, and core
-    state management. It is designed to be composed with other specialized classes
-    through multiple inheritance.
-
-    The class automatically configures the appropriate backend based on environment
-    variables and provides comprehensive error tracking capabilities for monitoring
-    and debugging orchestration runs.
-
-    Attributes:
-        loader (:class:`~orka.loader.YAMLLoader`): Configuration file loader and validator
-        orchestrator_cfg (dict): Orchestrator-specific configuration settings
-        agent_cfgs (list): List of agent configuration objects
-        memory: Memory backend instance (Redis or Kafka)
-        fork_manager: Fork group manager for parallel execution
-        queue (list): Current agent execution queue
-        run_id (str): Unique identifier for this orchestration run
-        step_index (int): Current step counter for traceability
-        error_telemetry (dict): Comprehensive error tracking and metrics
-    """
-
-    def __init__(self, config_path):
-        """
-        Initialize the Orchestrator with a YAML config file.
-
-        Sets up all core infrastructure including configuration loading,
-        memory backend selection, fork management, and error tracking systems.
-
-        Args:
-            config_path (str): Path to the YAML configuration file
-
-        Environment Variables:
-            ORKA_MEMORY_BACKEND: Memory backend type ('redis' or 'kafka', default: 'redis')
-            ORKA_DEBUG_KEEP_PREVIOUS_OUTPUTS: Keep previous outputs for debugging ('true'/'false')
-            KAFKA_BOOTSTRAP_SERVERS: Kafka broker addresses (for Kafka backend)
-            KAFKA_TOPIC_PREFIX: Topic prefix for Kafka topics (default: 'orka-memory')
-            REDIS_URL: Redis connection URL (default: 'redis://localhost:6380/0')
-        """
-        self.loader = YAMLLoader(config_path)
-        self.loader.validate()
-
-        self.orchestrator_cfg = self.loader.get_orchestrator()
-        self.agent_cfgs = self.loader.get_agents()
+    def __init__(self, config_path: str) -> None:
+        """Set up the base orchestrator."""
+        self.config_path = config_path
+        self.config_loader = ConfigLoader(config_path)
+        self.config = self.config_loader.load()
+        self.orchestrator_config = self.config_loader.get_orchestrator()
+        self.agent_cfgs = self.config_loader.get_agents()
 
         # Memory backend configuration with RedisStack as default
         memory_backend = os.getenv("ORKA_MEMORY_BACKEND", "redisstack").lower()
 
         # Get debug flag from orchestrator config or environment
-        debug_keep_previous_outputs = self.orchestrator_cfg.get("debug", {}).get(
+        debug_keep_previous_outputs = self.orchestrator_config.get("debug", {}).get(
             "keep_previous_outputs",
             False,
         )
-        debug_keep_previous_outputs = (
-            debug_keep_previous_outputs
-            or os.getenv("ORKA_DEBUG_KEEP_PREVIOUS_OUTPUTS", "false").lower() == "true"
-        )
-
-        # Extract decay configuration from orchestrator config and environment
-        decay_config = self._init_decay_config()
 
         # Get memory configuration from YAML
-        memory_config = self.orchestrator_cfg.get("memory", {}).get("config", {})
+        memory_config = self.orchestrator_config.get("memory", {}).get("config", {})
 
         if memory_backend == "kafka":
-            self.memory = create_memory_logger(
-                backend="kafka",
-                bootstrap_servers=memory_config.get("bootstrap_servers")
-                or os.getenv(
-                    "KAFKA_BOOTSTRAP_SERVERS",
-                    "localhost:9092",
+            # Kafka configuration
+            bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
+            schema_registry_url = os.getenv("KAFKA_SCHEMA_REGISTRY_URL", "http://localhost:8081")
+            self.memory = cast(
+                BaseMemoryLogger,
+                create_memory_logger(
+                    "kafka",
+                    bootstrap_servers=bootstrap_servers,
+                    schema_registry_url=schema_registry_url,
+                    debug_keep_previous_outputs=debug_keep_previous_outputs,
+                    memory_config=memory_config,
                 ),
-                schema_registry_url=memory_config.get("schema_registry_url"),
-                use_schema_registry=memory_config.get("use_schema_registry", True),
-                topic_prefix=memory_config.get("topic_prefix")
-                or os.getenv("KAFKA_TOPIC_PREFIX", "orka-memory"),
-                debug_keep_previous_outputs=debug_keep_previous_outputs,
-                decay_config=decay_config,
-                redis_url=memory_config.get("redis_url")
-                or os.getenv("REDIS_URL", "redis://localhost:6380/0"),
-                enable_hnsw=True,
-                vector_params={
-                    "M": 16,
-                    "ef_construction": 200,
-                    "ef_runtime": 10,
-                },
             )
-            # For Kafka backend, now use Redis-based fork manager since we have Redis for memory
-            self.fork_manager = ForkGroupManager(self.memory.redis)
         else:
-            self.memory = create_memory_logger(
-                backend="redisstack",
-                redis_url=memory_config.get("redis_url")
-                or os.getenv("REDIS_URL", "redis://localhost:6380/0"),
-                debug_keep_previous_outputs=debug_keep_previous_outputs,
-                decay_config=decay_config,
-                enable_hnsw=True,
-                vector_params={
-                    "M": 16,
-                    "ef_construction": 200,
-                    "ef_runtime": 10,
-                },
+            # Redis configuration
+            redis_url = os.getenv("REDIS_URL", "redis://localhost:6380/0")
+            self.memory = cast(
+                BaseMemoryLogger,
+                create_memory_logger(
+                    "redisstack",
+                    redis_url=redis_url,
+                    debug_keep_previous_outputs=debug_keep_previous_outputs,
+                    memory_config=memory_config,
+                ),
             )
-            # For Redis, use the existing Redis-based fork manager
-            self.fork_manager = ForkGroupManager(self.memory.redis)
 
-        self.queue = self.orchestrator_cfg["agents"][:]  # Initial agent execution queue
+        # Initialize fork manager if Redis is available
+        self.fork_manager = None
+        try:
+            redis = self.memory.redis  # type: ignore
+            if redis is not None:
+                self.fork_manager = ForkGroupManager(redis)
+        except AttributeError:
+            pass
+
+        self.queue = self.orchestrator_config["agents"][:]  # Initial agent execution queue
         self.run_id = str(uuid4())  # Unique run/session ID
         self.step_index = 0  # Step counter for traceability
 
@@ -200,7 +122,7 @@ class OrchestratorBase:
         }
 
         # Extract from orchestrator YAML config
-        orchestrator_memory_config = self.orchestrator_cfg.get("memory", {})
+        orchestrator_memory_config = self.orchestrator_config.get("memory", {})
         orchestrator_decay_config = orchestrator_memory_config.get("decay", {})
 
         if orchestrator_decay_config:

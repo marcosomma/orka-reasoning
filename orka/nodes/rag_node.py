@@ -1,5 +1,7 @@
+"""RAG (Retrieval Augmented Generation) node implementation."""
+
 import logging
-from typing import Any
+from typing import Any, List, Optional, cast
 
 from ..contracts import Context, Registry
 from .base_node import BaseNode
@@ -9,8 +11,8 @@ logger = logging.getLogger(__name__)
 
 class RAGNode(BaseNode):
     """
-    RAG Node Implementation
-    ======================
+
+    RAG Node Implementation.
 
     A specialized node that performs Retrieval-Augmented Generation (RAG) operations
     by combining semantic search with language model generation.
@@ -180,71 +182,53 @@ class RAGNode(BaseNode):
         node_id: str,
         registry: Registry,
         prompt: str = "",
-        queue: str = "default",
-        timeout: float | None = 30.0,
+        queue: Optional[List[Any]] = None,  # Fix queue type for mypy
+        timeout: Optional[float] = 30.0,
         max_concurrency: int = 10,
         top_k: int = 5,
         score_threshold: float = 0.7,
-    ):
+    ) -> None:
+        """Set up the RAG node with the given configuration."""
         super().__init__(
             node_id=node_id,
             prompt=prompt,
-            queue=queue,
+            queue=queue or [],  # Ensure queue is a list
             timeout=timeout,
             max_concurrency=max_concurrency,
         )
         self.registry = registry
         self.top_k = top_k
         self.score_threshold = score_threshold
-        self._memory = None
-        self._embedder = None
-        self._llm = None
+        # Initialize services
+        self._embedder: Any = None
+        self._memory: Any = None
+        self._llm: Any = None
         self._initialized = False
 
     async def initialize(self) -> None:
-        """Initialize the node and its resources."""
-        self._memory = self.registry.get("memory")
-        self._embedder = self.registry.get("embedder")
-        self._llm = self.registry.get("llm")
-        self._initialized = True
+        """Initialize node services from registry."""
+        if not self._initialized:
+            self._embedder = self.registry.get("embedder")
+            self._memory = self.registry.get("memory")
+            self._llm = self.registry.get("llm")
+            self._initialized = True
 
-    async def run(self, context: Context) -> dict[str, Any]:
-        """Run the RAG node with the given context."""
+    async def process(self, context: Context) -> dict[str, Any]:
+        """Process the input query and generate a response using RAG."""
         if not self._initialized:
             await self.initialize()
 
-        try:
-            result = await self._run_impl(context)
-            return {
-                "result": result,
-                "status": "success",
-                "error": None,
-                "metadata": {"node_id": self.node_id},
-            }
-        except Exception as e:
-            logger.error(f"RAGNode {self.node_id} failed: {e!s}")
-            return {
-                "result": None,
-                "status": "error",
-                "error": str(e),
-                "metadata": {"node_id": self.node_id},
-            }
-
-    async def _run_impl(self, ctx: Context) -> dict[str, Any]:
-        """Implementation of RAG operations."""
-        query = ctx.get("query")
+        query = context.get("query")
         if not query:
-            raise ValueError("Query is required for RAG operation")
+            return {"error": "Query is required for RAG operation"}
 
-        # Get embedding for the query
+        # Get query embedding
         query_embedding = await self._get_embedding(query)
+        if not query_embedding:
+            return {"error": "Failed to generate query embedding"}
 
         # Search memory for relevant documents
-        results = await self._memory.search(
-            query_embedding,
-            limit=self.top_k,
-            score_threshold=self.score_threshold,
-        )
+        results = await self._search_memory(query_embedding)
 
         if not results:
             return {
@@ -252,45 +236,59 @@ class RAGNode(BaseNode):
                 "sources": [],
             }
 
-        # Format context from results
-        context = self._format_context(results)
+        # Format context from search results
+        context_str = self._format_context(results)
 
         # Generate answer using LLM
-        answer = await self._generate_answer(query, context)
+        answer = await self._generate_answer(query, context_str)
 
         return {"answer": answer, "sources": results}
 
-    async def _get_embedding(self, text: str) -> list[float]:
-        """Get embedding for text using the embedder."""
-        return await self._embedder.encode(text)
+    async def _get_embedding(self, text: Any) -> Optional[List[float]]:
+        """Transform text into an embedding vector."""
+        if not isinstance(text, str):
+            text = cast(str, text)  # Cast for type checker
+        if not self._embedder:
+            return None
+        result = await self._embedder.encode(text)
+        return cast(List[float], result)
+
+    async def _search_memory(self, embedding: Optional[List[float]]) -> List[dict[str, Any]]:
+        """Search memory using the provided embedding."""
+        if not embedding or not self._memory:
+            return []
+        return await self._memory.search(embedding, self.top_k, self.score_threshold)
 
     def _format_context(self, results: list[dict[str, Any]]) -> str:
         """Format search results into context for the LLM."""
         context_parts = []
-        for i, result in enumerate(results, 1):
-            context_parts.append(f"Source {i}:\n{result['content']}\n")
+        for result in results:
+            content = result.get("content", "")
+            score = result.get("score", 0.0)
+            context_parts.append(f"[Score: {score:.2f}] {content}")
         return "\n".join(context_parts)
 
-    async def _generate_answer(self, query: str, context: str) -> str:
-        """Generate answer using the LLM."""
-        prompt = f"""Based on the following context, answer the question. If the context doesn't contain relevant information, say so.
+    async def _generate_answer(self, query: Any, context: str) -> str:
+        """Generate an answer based on the query and context."""
+        if not isinstance(query, str):
+            query = cast(str, query)  # Cast for type checker
+        if not self._llm:
+            return "LLM service is not available"
 
-Context:
-{context}
-
-Question: {query}
-
-Answer:"""
-
-        response = await self._llm.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a helpful assistant that answers questions based on the provided context.",
-                },
-                {"role": "user", "content": prompt},
-            ],
+        prompt = (
+            "Based on the following context, answer the question. "
+            "If the context doesn't contain relevant information, say so.\n\n"
+            f"Context:\n{context}\n\nQuestion: {query}\n\nAnswer:"
         )
 
-        return response.choices[0].message.content
+        response = await self._llm.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=500,
+            temperature=0.7,
+        )
+
+        return (
+            response.choices[0].message.content
+            if response.choices
+            else "Failed to generate response"
+        )

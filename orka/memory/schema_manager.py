@@ -47,10 +47,16 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar('T')  # Generic type for serialization
+T = TypeVar("T")  # Generic type for serialization
 
 
 class SchemaFormat(Enum):
+    """
+    TODO: implement proper documentation.
+
+    documentation here
+    """
+
     AVRO = "avro"
     PROTOBUF = "protobuf"
     JSON = "json"  # Fallback for development
@@ -146,7 +152,6 @@ class SchemaManager:
                 raise RuntimeError("Avro dependencies not available")
 
             schema_str = self._load_avro_schema(schema_name)
-            from confluent_kafka.schema_registry.avro import AvroSerializer
 
             if self.registry_client is None:
                 raise RuntimeError("Schema Registry not initialized")
@@ -189,7 +194,6 @@ class SchemaManager:
                 raise RuntimeError("Avro dependencies not available")
 
             schema_str = self._load_avro_schema(schema_name)
-            from confluent_kafka.schema_registry.avro import AvroDeserializer
 
             if self.registry_client is None:
                 raise RuntimeError("Schema Registry not initialized")

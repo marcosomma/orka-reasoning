@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Error handling wrapper for OrKa Orchestrator.
+
 Provides comprehensive error tracking and telemetry without modifying the core orchestrator logic.
 """
 
@@ -8,16 +9,22 @@ import json
 import os
 import traceback
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 
 class OrkaErrorHandler:
     """
     Comprehensive error handling system for OrKa orchestrator.
+
     Tracks errors, retries, status codes, and provides detailed debugging reports.
     """
 
     def __init__(self, orchestrator: Any) -> None:
+        """
+        TODO: implement proper documentation.
+
+        documentation here
+        """
         self.orchestrator: Any = orchestrator
         self.error_telemetry: Dict[str, Any] = {
             "errors": [],  # List of all errors encountered
@@ -86,13 +93,11 @@ class OrkaErrorHandler:
         )
 
     def save_comprehensive_error_report(
-        self,
-        logs: List[Dict[str, Any]],
-        final_error: Optional[Exception] = None
+        self, logs: List[Dict[str, Any]], final_error: Optional[Exception] = None
     ) -> str:
         """
         Save comprehensive error report with all logged data up to the failure point.
-        
+
         Returns:
             str: Path to the saved error report file.
         """
@@ -174,7 +179,7 @@ class OrkaErrorHandler:
     def _capture_memory_snapshot(self) -> Dict[str, Any]:
         """
         Capture current state of memory backend for debugging.
-        
+
         Returns:
             Dict containing memory snapshot information.
         """
@@ -196,6 +201,7 @@ class OrkaErrorHandler:
     async def run_with_error_handling(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Run the orchestrator with comprehensive error handling.
+
         Always returns a JSON report, even on failure, for debugging purposes.
         """
         logs: List[Dict[str, Any]] = []
@@ -284,11 +290,11 @@ class OrkaErrorHandler:
 
 
 async def run_orchestrator_with_error_handling(
-    orchestrator: Any,
-    input_data: Dict[str, Any]
+    orchestrator: Any, input_data: Dict[str, Any]
 ) -> Dict[str, Any]:
     """
     Run an orchestrator with comprehensive error handling.
+
     Wraps the orchestrator in an error handler and runs it.
 
     Args:

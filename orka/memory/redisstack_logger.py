@@ -13,7 +13,6 @@
 
 """
 RedisStack Memory Logger Implementation.
-=====================================
 
 High-performance memory logger that leverages RedisStack's advanced capabilities
 for semantic search and memory operations with HNSW vector indexing.
@@ -138,7 +137,7 @@ import threading
 import time
 import uuid
 from threading import Lock
-from typing import Any, Dict, List, Optional, Union, cast, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Union, cast
 
 import numpy as np
 import redis
@@ -158,67 +157,13 @@ try:
 except ImportError:
     logger.warning("RedisStack search module not available")
 
-# Type hints for Redis search modules
-if TYPE_CHECKING:
-    from redis.commands.search.field import TextField, VectorField  # type: ignore
-    from redis.commands.search.indexDefinition import IndexDefinition, IndexType  # type: ignore
+RedisType = redis.Redis  # type: ignore
 
 
 class RedisStackMemoryLogger(BaseMemoryLogger):
-    """
-    🚀 **Ultra-high-performance memory engine** - RedisStack-powered with HNSW vector indexing.
+    """RedisStack memory logger implementation.
 
-    **Revolutionary Performance:**
-    - **Lightning Speed**: Sub-millisecond vector searches with HNSW indexing
-    - **Massive Scale**: Handle millions of memories with O(log n) complexity
-    - **Smart Filtering**: Hybrid search combining vector similarity with metadata
-    - **Intelligent Decay**: Automatic memory lifecycle management
-    - **Namespace Isolation**: Multi-tenant memory separation
-
-    **Performance Benchmarks:**
-    - **Vector Search**: 100x faster than FLAT indexing
-    - **Write Throughput**: 50,000+ memories/second sustained
-    - **Search Latency**: <5ms for complex hybrid queries
-    - **Memory Efficiency**: 60% reduction in storage overhead
-    - **Concurrent Users**: 1000+ simultaneous search operations
-
-    **Advanced Vector Features:**
-
-    **1. HNSW Vector Indexing:**
-    - Hierarchical Navigable Small World algorithm
-    - Configurable M and ef_construction parameters
-    - Optimal for semantic similarity search
-    - Automatic index optimization and maintenance
-
-    **2. Hybrid Search Capabilities:**
-    ```python
-    # Vector similarity + metadata filtering
-    results = await memory.hybrid_search(
-        query_vector=embedding,
-        namespace="conversations",
-        category="stored",
-        similarity_threshold=0.8,
-        ef_runtime=20  # Higher accuracy
-    )
-    ```
-
-    **3. Intelligent Memory Management:**
-    - Automatic expiration based on decay rules
-    - Importance scoring for retention decisions
-    - Category separation (stored vs logs)
-    - Namespace-based multi-tenancy
-
-    **4. Production-Ready Features:**
-    - Connection pooling and failover
-    - Comprehensive monitoring and metrics
-    - Graceful degradation capabilities
-    - Migration tools for existing data
-
-    **Perfect for:**
-    - Real-time AI applications requiring instant memory recall
-    - High-throughput services with complex memory requirements
-    - Multi-tenant SaaS platforms with memory isolation
-    - Production systems requiring 99.9% uptime
+    A high-performance memory engine powered by RedisStack with HNSW vector indexing.
     """
 
     def __init__(
@@ -235,21 +180,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         vector_params: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> None:
-        """
-        Initialize the RedisStack memory logger.
-
-        Args:
-            redis_url: Redis connection URL. Defaults to redis://localhost:6379/0.
-            index_name: Name of the RedisStack index for vector search.
-            embedder: Optional embedder for vector search.
-            memory_decay_config: Configuration for memory decay functionality.
-            stream_key: Key for the Redis stream.
-            debug_keep_previous_outputs: If True, keeps previous_outputs in log files.
-            decay_config: Legacy decay configuration (use memory_decay_config instead).
-            enable_hnsw: Whether to enable HNSW vector indexing.
-            vector_params: HNSW configuration parameters.
-            **kwargs: Additional parameters for backward compatibility.
-        """
+        """Initialize the RedisStack memory logger."""
         # Handle legacy decay config
         effective_decay_config = memory_decay_config or decay_config
 
@@ -272,7 +203,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         self._embedding_lock: Lock = Lock()
 
         # Initialize Redis connection
-        self._redis_client: Optional[redis.Redis[Any]] = None
+        self._redis_client: Optional[RedisType] = None
         self._init_redis_client()
 
         # Initialize index if enabled
@@ -292,7 +223,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             logger.error(f"Failed to connect to Redis: {e}")
             raise
 
-    def _create_redis_connection(self) -> redis.Redis[Any]:
+    def _create_redis_connection(self) -> RedisType:
         """Create a new Redis connection."""
         return redis.from_url(
             self.redis_url,
@@ -300,7 +231,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             health_check_interval=30,
         )
 
-    def _get_thread_safe_client(self) -> redis.Redis[Any]:
+    def _get_thread_safe_client(self) -> RedisType:
         """Get a thread-safe Redis client."""
         if not hasattr(self._local, "redis"):
             with self._connection_lock:
@@ -308,7 +239,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         return self._local.redis
 
     @property
-    def redis(self) -> redis.Redis[Any]:
+    def redis(self) -> RedisType:
         """Get the Redis client."""
         return self._get_thread_safe_client()
 
@@ -459,7 +390,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 # Try to get the current event loop
                 loop = asyncio.get_running_loop()
                 # We're in an async context - use fallback encoding to avoid complications
-                logger.debug("In async context, using fallback encoding for embedding")
+                logger.debug(f"In async context, using fallback encoding for embedding {loop}")
                 return self.embedder._fallback_encode(text)
 
             except RuntimeError:
