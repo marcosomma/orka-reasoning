@@ -27,6 +27,7 @@ Local LLM agents enable:
 - Integration with self-hosted models
 """
 
+import json
 import logging
 
 from .base_agent import LegacyBaseAgent as BaseAgent
@@ -326,7 +327,9 @@ class LocalLLMAgent(BaseAgent):
                 ),
             }
 
-    def build_prompt(self, input_text, template=None, full_context=None):
+    def build_prompt(
+        self, input_text: str, template: str | None = None, full_context: dict | None = None
+    ) -> str:
         """
         Build the prompt from template and input data.
 
@@ -356,8 +359,6 @@ class LocalLLMAgent(BaseAgent):
                 context = {
                     "input": input_text,
                     "previous_outputs": full_context.get("previous_outputs", {}),
-                    # Handle the typo in workflow files - include both spellings
-                    "preavious_outputs": full_context.get("previous_outputs", {}),
                 }
 
                 # If full_context has direct access to outputs, use them too
@@ -372,7 +373,7 @@ class LocalLLMAgent(BaseAgent):
             except Exception:
                 # If Jinja2 fails, fall back to simple replacement
                 # But try to handle common template patterns manually
-                if "previous_outputs" in template or "preavious_outputs" in template:
+                if "previous_outputs" in template:
                     # Try to extract previous_outputs from full_context
                     prev_outputs = full_context.get("previous_outputs", {})
                     if prev_outputs:
@@ -380,7 +381,7 @@ class LocalLLMAgent(BaseAgent):
                         import re
 
                         for match in re.finditer(
-                            r"\{\{\s*(preavious_outputs|previous_outputs)\.(\w+)\s*\}\}",
+                            r"\{\{\s*(previous_outputs)\.(\w+)\s*\}\}",
                             template,
                         ):
                             full_match = match.group(0)

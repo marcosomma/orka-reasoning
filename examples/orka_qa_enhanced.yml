@@ -10,9 +10,9 @@ orchestrator:
       importance_rules:
         base_score: 0.8
         event_type_boosts:
-          disagreement: 0.2  # Reward disagreement
+          disagreement: 0.4  # Reward disagreement
           challenge: 0.3
-          synthesis: 0.4
+          synthesis: 0.2
         agent_type_boosts:
           debate: 0.3
           devil_advocate: 0.4
@@ -25,7 +25,7 @@ orchestrator:
 agents:
   - id: cognitive_debate_loop
     type: loop
-    max_loops: 8  # 🔧 RESTORED: Back to reasonable complexity
+    max_loops: 3  # 🔧 RESTORED: Back to reasonable complexity
     score_threshold: 0.85  # 🔧 LOWERED: More achievable for local models
     
     # 🔧 COMPLETELY REDESIGNED: Simplified score extraction for local models
@@ -75,10 +75,10 @@ agents:
       convergence_progress: "{{ 'ON_TRACK' if score >= (0.4 + (loop_number - 1) * 0.08) else 'NEEDS_IMPROVEMENT' }}"
       collaboration_phase: "{{ 'INITIAL' if loop_number == 1 else 'BRIDGE_BUILDING' if loop_number <= 3 else 'CONSENSUS_BUILDING' }}"
       timestamp: "{{ timestamp }}"
-      agreement_finder: "{{ result.agreement_finder.result.response if result.agreement_finder else 'No agreement found' }}"
-      quality_score: "{{ result.quality_moderator.result.response if result.quality_moderator else 'No quality assessment' }}"
-      synthesis_insights: "{{ result.synthesis_attempt.result.response if result.synthesis_attempt else 'No synthesis available' }}"
-      devil_advocate_challenges: "{{ result.devil_advocate_attack.result.response if result.devil_advocate_attack else 'No challenges made' }}"
+      agreement_finder: "{{ result.agreement_finder.response if result.agreement_finder else 'No agreement found' }}"
+      quality_score: "{{ result.quality_moderator.response if result.quality_moderator else 'No quality assessment' }}"
+      synthesis_insights: "{{ result.synthesis_attempt.response if result.synthesis_attempt else 'No synthesis available' }}"
+      devil_advocate_challenges: "{{ result.devil_advocate_attack.response if result.devil_advocate_attack else 'No challenges made' }}"
     
     # 🔧 FULLY RESTORED: Complete debate structure for maximum creative tension
     internal_workflow:
@@ -1004,7 +1004,7 @@ agents:
             operation: write
             memory_type: short_term
             vector: true
-          namespace: society_memory
+          namespace: society_memory_progressive  # Separate namespace
           decay:
             enabled: true
             default_long_term: false
@@ -1027,6 +1027,7 @@ agents:
             debate_position: "progressive"
             original_input: "{{ input.input }}"
             timestamp: "{{ timestamp }}"
+            memory_category: "progressive_stance"  # Added category
           key_template: "progressive_loop_{{ loop_number }}_{{ timestamp }}"
 
         - id: conservative_memory_writer
@@ -1036,7 +1037,7 @@ agents:
             operation: write
             memory_type: short_term
             vector: true
-          namespace: society_memory
+          namespace: society_memory_conservative  # Separate namespace
           decay:
             enabled: true
             default_long_term: false
@@ -1059,6 +1060,7 @@ agents:
             debate_position: "conservative"
             original_input: "{{ input.input }}"
             timestamp: "{{ timestamp }}"
+            memory_category: "conservative_stance"  # Added category
           key_template: "conservative_loop_{{ loop_number }}_{{ timestamp }}"
 
         - id: realist_memory_writer
@@ -1068,7 +1070,7 @@ agents:
             operation: write
             memory_type: short_term
             vector: true
-          namespace: society_memory
+          namespace: society_memory_realist  # Separate namespace
           decay:
             enabled: true
             default_long_term: false
@@ -1091,6 +1093,7 @@ agents:
             debate_position: "realist"
             original_input: "{{ input.input }}"
             timestamp: "{{ timestamp }}"
+            memory_category: "realist_stance"  # Added category
           key_template: "realist_loop_{{ loop_number }}_{{ timestamp }}"
 
         - id: purist_memory_writer
@@ -1100,7 +1103,7 @@ agents:
             operation: write
             memory_type: short_term
             vector: true
-          namespace: society_memory
+          namespace: society_memory_purist  # Separate namespace
           decay:
             enabled: true
             default_long_term: false
@@ -1123,6 +1126,7 @@ agents:
             debate_position: "purist"
             original_input: "{{ input.input }}"
             timestamp: "{{ timestamp }}"
+            memory_category: "purist_stance"  # Added category
           key_template: "purist_loop_{{ loop_number }}_{{ timestamp }}"
 
         - id: advocate_memory_writer
@@ -1132,7 +1136,7 @@ agents:
             operation: write
             memory_type: short_term
             vector: true
-          namespace: society_memory
+          namespace: society_memory_advocate  # Separate namespace
           decay:
             enabled: true
             default_long_term: false
@@ -1154,6 +1158,7 @@ agents:
             debate_position: "advocate"
             original_input: "{{ input.input }}"
             timestamp: "{{ timestamp }}"
+            memory_category: "advocate_critique"  # Added category
           key_template: "advocate_loop_{{ loop_number }}_{{ timestamp }}"
 
         - id: moderator_memory_writer
@@ -1163,7 +1168,7 @@ agents:
             operation: write
             memory_type: short_term
             vector: true
-          namespace: society_memory
+          namespace: society_memory_moderator  # Separate namespace
           decay:
             enabled: true
             default_long_term: false
@@ -1186,6 +1191,7 @@ agents:
             debate_position: "moderator"
             original_input: "{{ input.input }}"
             timestamp: "{{ timestamp }}"
+            memory_category: "moderation_assessment"  # Added category
           key_template: "moderator_loop_{{ loop_number }}_{{ timestamp }}"
 
         # 🔧 RESTORED: Join individual memory writes
@@ -1227,13 +1233,13 @@ agents:
     provider: ollama
     temperature: 0.3
     prompt: |
-      ORIGINAL QUESTION: {{ input.input }}
+      ORIGINAL QUESTION: {{ input }}
       
       DEBATE SUMMARY:
-      - Total rounds: {{ previous_outputs.cognitive_debate_loop.result.loops_completed }}
-      - Final score: {{ previous_outputs.cognitive_debate_loop.result.final_score }}
+      - Total rounds: {{ previous_outputs.cognitive_debate_loop.loops_completed }}
+      - Final score: {{ previous_outputs.cognitive_debate_loop.final_score }}
       
-      TASK: Analyze the debate process for {{ input.input }}
+      TASK: Analyze the debate process for {{ input }}
       
       FORMAT:
       DEBATE_PROGRESSION: [How did the debate evolve across rounds?]
@@ -1263,27 +1269,27 @@ agents:
     provider: ollama
     temperature: 0.3
     prompt: |
-      USER QUESTION: {{ input.input }}
+      USER QUESTION: {{ input }}
       
       DEBATE RESULTS:
-      Loops completed: {{ previous_outputs.cognitive_debate_loop.result.loops_completed }}
-      Final score: {{ previous_outputs.cognitive_debate_loop.result.final_score }}
+      Loops completed: {{ previous_outputs.cognitive_debate_loop.loops_completed }}
+      Final score: {{ previous_outputs.cognitive_debate_loop.final_score }}
       
       REFLECTION: {{ previous_outputs.meta_debate_reflection.response }}
       QUALITY: {{ previous_outputs.reasoning_quality_extractor.response }}
       
       FINAL AGREEMENT:
-      {% if previous_outputs.cognitive_debate_loop.result.past_loops %}
-      {% set last_loop = previous_outputs.cognitive_debate_loop.result.past_loops[-1] %}
+      {% if previous_outputs.cognitive_debate_loop.past_loops %}
+      {% set last_loop = previous_outputs.cognitive_debate_loop.past_loops[-1] %}
       "{{ last_loop.agreement_finder if last_loop.agreement_finder else 'No agreement found' }}"
       {% else %}
       No agreement data available
       {% endif %}
       
-      TASK: Provide final comprehensive answer to: {{ input.input }}
+      TASK: Provide final comprehensive answer to: {{ input }}
       
       MANDATORY FORMAT:
-      **Question**: {{ input.input }}
+      **Question**: {{ input }}
       **Debate Summary**: [What happened in the cognitive society debate?]
       **Key Insights**: [What important discoveries were made?]
       **Final Answer**: [Direct answer to the user's question]

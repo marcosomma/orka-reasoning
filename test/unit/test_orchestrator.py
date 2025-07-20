@@ -382,43 +382,37 @@ class TestExecutionEngine:
         mock_agent = Mock()
         mock_agent.type = "binary"
         mock_agent.__class__.__name__ = "BinaryAgent"
+        mock_agent.run = AsyncMock(return_value={"status": "success", "result": True})
         mock_execution_engine.agents["test_agent"] = mock_agent
 
-        # Mock single agent execution
-        with patch.object(
-            mock_execution_engine,
-            "_execute_single_agent",
-            new_callable=AsyncMock,
-        ) as mock_execute:
-            mock_execute.return_value = {"status": "success", "result": True}
+        # Mock time.time for duration calculation
+        with patch("orka.orchestrator.execution_engine.time") as mock_time:
+            mock_time.side_effect = [1000.0, 1001.5]  # start, end times
 
-            # Mock time.time for duration calculation
-            with patch("orka.orchestrator.execution_engine.time") as mock_time:
-                mock_time.side_effect = [1000.0, 1001.5]  # start, end times
+            # Update the _generate_meta_report mock to return the expected structure
+            mock_execution_engine._generate_meta_report.return_value = {
+                "total_duration": 1.5,
+                "total_tokens": 100,
+                "total_cost_usd": 0.002,
+                "total_llm_calls": 1,
+                "avg_latency_ms": 500.0,
+                "agent_metrics": {},
+                "model_usage": {},
+            }
 
-                # Update the _generate_meta_report mock to return the expected structure
-                mock_execution_engine._generate_meta_report.return_value = {
-                    "total_duration": 1.5,
-                    "total_tokens": 100,
-                    "total_cost_usd": 0.002,
-                    "total_llm_calls": 1,
-                    "avg_latency_ms": 500.0,
-                    "agent_metrics": {},
-                    "model_usage": {},
-                }
+            result = await mock_execution_engine._run_with_comprehensive_error_handling(
+                "test input",
+                [],
+                return_logs=True,
+            )
 
-                result = await mock_execution_engine._run_with_comprehensive_error_handling(
-                    "test input",
-                    [],
-                    return_logs=True,
-                )
-
-                assert len(result) == 1
-                log_entry = result[0]
-                assert log_entry["agent_id"] == "test_agent"
-                assert log_entry["event_type"] == "BinaryAgent"
-                assert log_entry["duration"] == 1.5
-                assert "payload" in log_entry
+            assert len(result) == 1
+            log_entry = result[0]
+            assert log_entry["agent_id"] == "test_agent"
+            assert log_entry["event_type"] == "BinaryAgent"
+            assert log_entry["duration"] == 1.5
+            assert "payload" in log_entry
+        mock_agent.run.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_execution_with_retry_logic(self, mock_execution_engine):
@@ -428,49 +422,55 @@ class TestExecutionEngine:
         mock_agent.__class__.__name__ = "BinaryAgent"
         mock_execution_engine.agents["test_agent"] = mock_agent
 
+        mock_agent = Mock()
+        mock_agent.type = "binary"
+        mock_agent.__class__.__name__ = "BinaryAgent"
+        mock_execution_engine.agents["test_agent"] = mock_agent
+
         # Mock methods for retry tracking
         mock_execution_engine._record_retry = Mock()
         mock_execution_engine._record_partial_success = Mock()
 
-        # Mock single agent execution to fail twice then succeed
-        with patch.object(
-            mock_execution_engine,
-            "_execute_single_agent",
-            new_callable=AsyncMock,
-        ) as mock_execute:
-            mock_execute.side_effect = [
-                Exception("First failure"),
-                Exception("Second failure"),
-                {"status": "success", "result": True},  # Success on third try
-            ]
+        # Mock agent's run method to fail twice then succeed
+        call_count = 0
 
-            with patch("orka.orchestrator.execution_engine.time") as mock_time:
-                mock_time.side_effect = [1000.0, 1001.0]
+        def mock_run_side_effect(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count <= 2:  # Fail on first two calls
+                raise Exception("Temporary failure")
+            return {"status": "success", "result": True}  # Success on third try
 
-                # Update the _generate_meta_report mock to return the expected structure
-                mock_execution_engine._generate_meta_report.return_value = {
-                    "total_duration": 1.0,
-                    "total_tokens": 100,
-                    "total_cost_usd": 0.002,
-                    "total_llm_calls": 1,
-                    "avg_latency_ms": 500.0,
-                    "agent_metrics": {},
-                    "model_usage": {},
-                }
+        mock_agent.run = AsyncMock(side_effect=mock_run_side_effect)
 
-                with patch("asyncio.sleep"):  # Mock sleep for retry delays
-                    result = await mock_execution_engine._run_with_comprehensive_error_handling(
-                        "test input",
-                        [],
-                        return_logs=True,
-                    )
+        with patch("orka.orchestrator.execution_engine.time") as mock_time:
+            mock_time.side_effect = [1000.0, 1001.0, 1002.0, 1003.0]  # Enough times for retries
 
-                # Verify retry was recorded and partial success logged
-                assert mock_execution_engine._record_retry.call_count == 2
-                mock_execution_engine._record_partial_success.assert_called_once_with(
-                    "test_agent",
-                    2,
+            # Update the _generate_meta_report mock to return the expected structure
+            mock_execution_engine._generate_meta_report.return_value = {
+                "total_duration": 1.0,
+                "total_tokens": 100,
+                "total_cost_usd": 0.002,
+                "total_llm_calls": 1,
+                "avg_latency_ms": 500.0,
+                "agent_metrics": {},
+                "model_usage": {},
+            }
+
+            with patch("asyncio.sleep"):  # Mock sleep for retry delays
+                result = await mock_execution_engine._run_with_comprehensive_error_handling(
+                    "test input",
+                    [],
+                    return_logs=True,
                 )
+
+            # Verify retry was recorded and partial success logged
+            assert mock_execution_engine._record_retry.call_count == 2
+            mock_execution_engine._record_partial_success.assert_called_once_with(
+                "test_agent",
+                2,
+            )
+        mock_agent.run.assert_called_with({"input": "test input", "previous_outputs": {}})
 
     @pytest.mark.asyncio
     async def test_execution_with_waiting_status(self, mock_execution_engine):
@@ -480,66 +480,76 @@ class TestExecutionEngine:
         mock_agent.__class__.__name__ = "BinaryAgent"
         mock_execution_engine.agents["test_agent"] = mock_agent
 
+        mock_agent = Mock()
+        mock_agent.type = "binary"
+        mock_agent.__class__.__name__ = "BinaryAgent"
+        mock_execution_engine.agents["test_agent"] = mock_agent
+
         # Mock to return waiting status first, then success
-        with patch.object(
-            mock_execution_engine,
-            "_execute_single_agent",
-            new_callable=AsyncMock,
-        ) as mock_execute:
-            # Return waiting first, then success - provide enough values to avoid StopIteration
-            def mock_execute_side_effect(*args, **kwargs):
-                if mock_execute.call_count == 1:
-                    return {"status": "waiting"}
-                else:
-                    return {"status": "success", "result": True}
+        call_count = 0
 
-            mock_execute.side_effect = mock_execute_side_effect
+        def mock_run_side_effect(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return {"status": "waiting"}
+            else:
+                return {"status": "success", "result": True}
 
-            with patch("orka.orchestrator.execution_engine.time") as mock_time:
-                mock_time.side_effect = [1000.0, 1001.0, 1002.0, 1003.0]
+        mock_agent.run = AsyncMock(side_effect=mock_run_side_effect)
 
-                # Update the _generate_meta_report mock to return the expected structure
-                mock_execution_engine._generate_meta_report.return_value = {
-                    "total_duration": 2.0,
-                    "total_tokens": 100,
-                    "total_cost_usd": 0.002,
-                    "total_llm_calls": 1,
-                    "avg_latency_ms": 500.0,
-                    "agent_metrics": {},
-                    "model_usage": {},
-                }
+        with patch("orka.orchestrator.execution_engine.time") as mock_time:
+            mock_time.side_effect = [1000.0, 1001.0, 1002.0, 1003.0]
 
+            # Update the _generate_meta_report mock to return the expected structure
+            mock_execution_engine._generate_meta_report.return_value = {
+                "total_duration": 2.0,
+                "total_tokens": 100,
+                "total_cost_usd": 0.002,
+                "total_llm_calls": 1,
+                "avg_latency_ms": 500.0,
+                "agent_metrics": {},
+                "model_usage": {},
+            }
+
+            result = await mock_execution_engine._run_with_comprehensive_error_handling(
+                "test input",
+                [],
+                return_logs=True,
+            )
+
+            # Agent should have been executed at least twice (waiting, then success)
+            # But the actual implementation may retry, so we check >= 2
+            assert mock_agent.run.call_count >= 2
+            assert len(result) >= 1  # At least one log entry
+
+    @pytest.mark.asyncio
+    async def test_agent_run_method_direct_call(self, mock_execution_engine):
+        """Test direct call to agent's run method within the execution engine context."""
+        mock_agent = Mock()
+        mock_agent.run = AsyncMock(return_value={"result": "success"})
+        mock_agent.type = "binary"
+        mock_agent.__class__.__name__ = "BinaryAgent"
+        mock_execution_engine.agents["test_agent"] = mock_agent
+        mock_execution_engine.orchestrator_cfg = {"agents": ["test_agent"]}
+
+        with patch("orka.orchestrator.execution_engine.os.makedirs"):
+            with patch("orka.orchestrator.execution_engine.os.path.join"):
+                logs = []
                 result = await mock_execution_engine._run_with_comprehensive_error_handling(
                     "test input",
-                    [],
+                    logs,
                     return_logs=True,
                 )
 
-                # Agent should have been executed at least twice (waiting, then success)
-                # But the actual implementation may retry, so we check >= 2
-                assert mock_execute.call_count >= 2
-                assert len(result) >= 1  # At least one log entry
+        # Verify the agent's run method was called with the correct payload
+        mock_agent.run.assert_called_once_with({"input": "test input", "previous_outputs": {}})
 
-    @pytest.mark.asyncio
-    async def test_execute_single_agent_basic(self, mock_execution_engine):
-        """Test basic single agent execution."""
-        mock_agent = Mock()
-        mock_agent.run = Mock(return_value={"result": "success"})  # Use regular Mock, not AsyncMock
-
-        result = await mock_execution_engine._execute_single_agent(
-            "test_agent",
-            mock_agent,
-            "binary",
-            {"input": "test"},
-            "test",
-            [],
-            [],
-        )
-
-        # The method returns a payload structure with input and result
-        expected_result = {"input": "test", "result": {"result": "success"}}
-        assert result == expected_result
-        mock_agent.run.assert_called_once()
+        # Verify the log entry contains the expected result
+        assert len(logs) == 1
+        log_entry = logs[0]
+        assert log_entry["agent_id"] == "test_agent"
+        assert log_entry["payload"]["result"] == {"result": "success"}
 
 
 class TestMetricsCollector:

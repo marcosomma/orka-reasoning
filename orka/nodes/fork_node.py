@@ -10,6 +10,8 @@
 # For commercial use, contact: marcosomma.work@gmail.com
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
+import json
+
 from .base_node import BaseNode
 
 
@@ -41,14 +43,19 @@ class ForkNode(BaseNode):
         Execute the fork operation by creating parallel branches.
 
         Args:
-            context: Context data for the fork operation.
+            context: Context data for the fork operation, must include orchestrator.
 
         Returns:
             dict: Status and fork group information.
 
         Raises:
-            ValueError: If no targets are specified.
+            ValueError: If no targets are specified or orchestrator is missing.
         """
+        import json
+        import logging
+
+        logger = logging.getLogger(__name__)
+
         targets = self.config.get("targets", [])
         if not targets:
             raise ValueError(f"ForkNode '{self.node_id}' requires non-empty 'targets' list.")
@@ -60,7 +67,7 @@ class ForkNode(BaseNode):
 
         # Generate a unique ID for this fork group
         fork_group_id = orchestrator.fork_manager.generate_group_id(self.node_id)
-        all_flat_agents = []  # Store all agents in a flat list
+        all_flat_agents = []
 
         # Process each branch in the targets
         for branch in self.targets:
@@ -71,19 +78,68 @@ class ForkNode(BaseNode):
                     # For sequential mode, only queue the first agent
                     orchestrator.enqueue_fork([first_agent], fork_group_id)
                     orchestrator.fork_manager.track_branch_sequence(fork_group_id, branch)
+                    logger.debug(f"Queued first agent {first_agent} in sequential mode")
                 else:
                     # For parallel mode, queue all agents
                     orchestrator.enqueue_fork(branch, fork_group_id)
+                    logger.debug(f"Queued all agents {branch} in parallel mode")
                 all_flat_agents.extend(branch)
             else:
                 # Single agent, flat structure (fallback)
                 orchestrator.enqueue_fork([branch], fork_group_id)
                 all_flat_agents.append(branch)
+                logger.debug(f"Queued single agent {branch}")
 
-            # Create the fork group with all agents
-            orchestrator.fork_manager.create_group(fork_group_id, all_flat_agents)
+        # Create the fork group with all agents
+        orchestrator.fork_manager.create_group(fork_group_id, all_flat_agents)
+        logger.debug(f"Created fork group {fork_group_id} with agents {all_flat_agents}")
 
         # Store fork group mapping and agent list using backend-agnostic methods
         self.memory_logger.hset(f"fork_group_mapping:{self.node_id}", "group_id", fork_group_id)
         self.memory_logger.sadd(f"fork_group:{fork_group_id}", *all_flat_agents)
-        return {"status": "forked", "fork_group": fork_group_id}
+
+        # Store initial state for join node
+        state_key = "waitfor:join_parallel_checks:inputs"
+        for agent_id in all_flat_agents:
+            # Initialize empty result for each agent with proper structure
+            initial_result = {
+                "response": "",
+                "confidence": "0.0",
+                "internal_reasoning": "",
+                "_metrics": {},
+                "formatted_prompt": "",
+                "memories": [],
+                "query": "",
+                "backend": "",
+                "search_type": "",
+                "num_results": 0,
+                "status": "pending",
+                "fork_group": fork_group_id,
+                "agent_id": agent_id,
+            }
+
+            # Store in Redis hash for join node
+            self.memory_logger.hset(state_key, agent_id, json.dumps(initial_result))
+            logger.debug(f"Initialized state for agent {agent_id}")
+
+            # Store in Redis key for direct access
+            agent_key = f"agent_result:{fork_group_id}:{agent_id}"
+            self.memory_logger.set(agent_key, json.dumps(initial_result))
+            logger.debug(f"Stored initial result for agent {agent_id}")
+
+            # Store in Redis hash for group tracking
+            group_key = f"fork_group_results:{fork_group_id}"
+            self.memory_logger.hset(group_key, agent_id, json.dumps(initial_result))
+            logger.debug(f"Stored initial result in group for agent {agent_id}")
+
+        # Return fork status with group info
+        return {
+            "status": "forked",
+            "fork_group": fork_group_id,
+            "agents": all_flat_agents,
+            "mode": self.mode,
+            "initial_state": {
+                "state_key": state_key,
+                "group_key": f"fork_group_results:{fork_group_id}",
+            },
+        }

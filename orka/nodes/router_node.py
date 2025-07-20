@@ -134,6 +134,10 @@ class RouterNode(BaseNode):
 
         decision_value = previous_outputs.get(decision_key)
 
+        # Handle dictionary decision values
+        if isinstance(decision_value, dict):
+            decision_value = decision_value.get('response')
+
         # Normalize decision value for flexible matching
         decision_value_str = str(decision_value).strip().lower()
 

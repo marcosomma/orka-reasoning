@@ -83,7 +83,7 @@ def main(argv: list[str] | None = None) -> int | None:
         # Handle memory command
         if args.command == "memory":
             if not hasattr(args, "memory_command") or not args.memory_command:
-                if parser._subparsers is not None and hasattr(parser._subparsers, 'choices'):
+                if parser._subparsers is not None and hasattr(parser._subparsers, "choices"):
                     if "memory" in parser._subparsers.choices:
                         parser._subparsers.choices["memory"].print_help()
                         return 1
@@ -95,6 +95,7 @@ def main(argv: list[str] | None = None) -> int | None:
 
         # Handle run command
         if args.command == "run":
+            logger.log(1, {"message": "mod01"})
             if not hasattr(args, "config") or not args.config:
                 parser.print_help()
                 return 1

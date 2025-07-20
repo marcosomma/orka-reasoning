@@ -191,9 +191,9 @@ agents:
     prompt: |
       Number {{ input }} Analysis Result: {{ input }} > 5 (TRUE - greater than 5)
 
-      Classification: {{ previous_outputs.binary_classifier.result }}
+      Classification: {{ previous_outputs.binary_classifier }}
       Confidence: {{ previous_outputs.binary_classifier.confidence | default(1.0) }}
-      Validation: {{ previous_outputs.true_validation_guardian.result.valid }}
+      Validation: {{ previous_outputs.true_validation_guardian.valid }}
 
       CACHED RESULT: The number {{ input }} IS greater than 5. Classification result is TRUE.
     metadata:
@@ -201,14 +201,14 @@ agents:
       result: "true"
       condition: "greater_than_5"
       analysis_type: "number_comparison"
-      confidence: "{{ previous_outputs.binary_classifier.result.confidence | default('1.0') }}"
+      confidence: "{{ previous_outputs.binary_classifier | default('1.0') }}"
       category: "mathematical_analysis"
       processed_by: "binary_classifier"
       validated_by: "true_validation_guardian"
-      validation_status: "{{ previous_outputs.true_validation_guardian.result.valid }}"
-      validation_reason: "{{ previous_outputs.true_validation_guardian.result.reason }}"
-      validation_confidence: "{{ previous_outputs.true_validation_guardian.result.memory_object.confidence }}"
-      structured_data: "{{ previous_outputs.true_validation_guardian.result.memory_object }}"
+      validation_status: "{{ previous_outputs.true_validation_guardian.valid }}"
+      validation_reason: "{{ previous_outputs.true_validation_guardian.reason }}"
+      validation_confidence: "{{ previous_outputs.true_validation_guardian.memory_object.confidence }}"
+      structured_data: "{{ previous_outputs.true_validation_guardian.memory_object }}"
       timestamp: "{{ timestamp }}"
     key_template: "validated_number_analysis_{{ input }}_gt5"
 
@@ -234,7 +234,7 @@ agents:
     prompt: |
       Number {{ input }} Analysis Result: {{ input }} ≤ 5 (FALSE - not greater than 5)
 
-      Classification: {{ previous_outputs.binary_classifier.result }}
+      Classification: {{ previous_outputs.binary_classifier }}
       Confidence: {{ previous_outputs.binary_classifier.confidence | default(1.0) }}
       Validation: {{ previous_outputs.false_validation_guardian.result.valid }}
 
@@ -244,13 +244,13 @@ agents:
       result: "false"
       condition: "less_than_or_equal_5"
       analysis_type: "number_comparison"
-      confidence: "{{ previous_outputs.binary_classifier.result.confidence | default('1.0') }}"
+      confidence: "{{ previous_outputs.binary_classifier.confidence | default('1.0') }}"
       category: "mathematical_analysis"
       processed_by: "binary_classifier"
       validated_by: "false_validation_guardian"
-      validation_status: "{{ previous_outputs.false_validation_guardian.result.valid }}"
-      validation_reason: "{{ previous_outputs.false_validation_guardian.result.reason }}"
-      validation_confidence: "{{ previous_outputs.false_validation_guardian.result.memory_object.confidence }}"
-      structured_data: "{{ previous_outputs.false_validation_guardian.result.memory_object }}"
+      validation_status: "{{ previous_outputs.false_validation_guardian.valid }}"
+      validation_reason: "{{ previous_outputs.false_validation_guardian.reason }}"
+      validation_confidence: "{{ previous_outputs.false_validation_guardian.memory_object.confidence }}"
+      structured_data: "{{ previous_outputs.false_validation_guardian.memory_object }}"
       timestamp: "{{ timestamp }}"
     key_template: "validated_number_analysis_{{ input }}_lte5"
