@@ -32,13 +32,13 @@ if "KAFKA_BOOTSTRAP_SERVERS" not in os.environ:
 if "KAFKA_TOPIC_PREFIX" not in os.environ:
     os.environ["KAFKA_TOPIC_PREFIX"] = "orka-memory"
 
-print("🚀 Starting OrKa with Kafka + Redis Hybrid Backend...")
-print("📋 Configuration:")
-print(f"   • Memory Backend: {os.environ['ORKA_MEMORY_BACKEND']}")
-print(f"   • Kafka Servers: {os.environ['KAFKA_BOOTSTRAP_SERVERS']}")
-print(f"   • Kafka Topic Prefix: {os.environ['KAFKA_TOPIC_PREFIX']}")
-print(f"   • Redis URL: {os.environ['REDIS_URL']}")
-print()
+logger.info("🚀 Starting OrKa with Kafka + Redis Hybrid Backend...")
+logger.info("📋 Configuration:")
+logger.info(f"   • Memory Backend: {os.environ['ORKA_MEMORY_BACKEND']}")
+logger.info(f"   • Kafka Servers: {os.environ['KAFKA_BOOTSTRAP_SERVERS']}")
+logger.info(f"   • Kafka Topic Prefix: {os.environ['KAFKA_TOPIC_PREFIX']}")
+logger.info(f"   • Redis URL: {os.environ['REDIS_URL']}")
+logger.info()
 
 # Import and run the main function
 if __name__ == "__main__":

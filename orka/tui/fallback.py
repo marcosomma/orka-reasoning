@@ -2,10 +2,13 @@
 Fallback interface implementations for when Rich is not available.
 """
 
+import logging
 import json
 import os
 import sys
 import time
+
+logger = logging.getLogger(__name__)
 
 from ..memory_logger import create_memory_logger
 
@@ -35,7 +38,7 @@ class FallbackInterface:
                 return self.basic_display_watch(memory, backend, args)
 
         except Exception as e:
-            print(f"❌ Error in basic fallback: {e}", file=sys.stderr)
+            logger.error(f"Error in basic fallback: {e}")
             return 1
 
     def basic_json_watch(self, memory, backend: str, args):
@@ -51,13 +54,13 @@ class FallbackInterface:
                         "stats": stats,
                     }
 
-                    print(json.dumps(output, indent=2, default=str))
+                    logger.info(json.dumps(output, indent=2, default=str))
                     time.sleep(getattr(args, "interval", 5))
 
                 except KeyboardInterrupt:
                     break
                 except Exception as e:
-                    print(json.dumps({"error": str(e), "backend": backend}), file=sys.stderr)
+                    logger.error(json.dumps({"error": str(e), "backend": backend}))
                     time.sleep(getattr(args, "interval", 5))
 
         except KeyboardInterrupt:
@@ -74,25 +77,25 @@ class FallbackInterface:
                     if not getattr(args, "no_clear", False):
                         os.system("cls" if os.name == "nt" else "clear")
 
-                    print("=== OrKa Memory Watch ===")
-                    print(f"Backend: {backend} | Interval: {getattr(args, 'interval', 5)}s")
-                    print("-" * 60)
+                    logger.info("=== OrKa Memory Watch ===")
+                    logger.info(f"Backend: {backend} | Interval: {getattr(args, 'interval', 5)}s")
+                    logger.info("-" * 60)
 
                     # Get comprehensive stats
                     stats = memory.get_memory_stats()
 
                     # Display basic metrics
-                    print("📊 Memory Statistics:")
-                    print(f"   Total Entries: {stats.get('total_entries', 0)}")
-                    print(f"   Stored Memories: {stats.get('stored_memories', 0)}")
-                    print(f"   Orchestration Logs: {stats.get('orchestration_logs', 0)}")
+                    logger.info("📊 Memory Statistics:")
+                    logger.info(f"   Total Entries: {stats.get('total_entries', 0)}")
+                    logger.info(f"   Stored Memories: {stats.get('stored_memories', 0)}")
+                    logger.info(f"   Orchestration Logs: {stats.get('orchestration_logs', 0)}")
 
                     time.sleep(getattr(args, "interval", 5))
 
                 except KeyboardInterrupt:
                     break
                 except Exception as e:
-                    print(f"❌ Error in memory watch: {e}", file=sys.stderr)
+                    logger.error(f"Error in memory watch: {e}")
                     time.sleep(getattr(args, "interval", 5))
 
         except KeyboardInterrupt:

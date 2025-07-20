@@ -250,7 +250,7 @@ class ExecutionEngine:
                 e,
                 recovery_action="fail",
             )
-            print(f"🚨 [ORKA-CRITICAL] Orchestrator execution failed: {e}")
+            logger.critical(f"🚨 [ORKA-CRITICAL] Orchestrator execution failed: {e}")
             raise
 
     async def _run_with_comprehensive_error_handling(self, input_data, logs, return_logs=False):
@@ -286,8 +286,8 @@ class ExecutionEngine:
                     freezed_payload = json.dumps(
                         {k: v for k, v in payload.items() if k != "orchestrator"},
                     )  # Freeze the payload as a string for logging/debug, excluding orchestrator
-                    print(
-                        f"{datetime.now()} > [ORKA] {self.step_index} >  Running agent '{agent_id}' of type '{agent_type}', payload: {freezed_payload}",
+                    logger.info(
+                        f"Running agent '{agent_id}' of type '{agent_type}', payload: {freezed_payload}",
                     )
                     log_entry = {
                         "agent_id": agent_id,
@@ -327,8 +327,8 @@ class ExecutionEngine:
                                 isinstance(agent_result, dict)
                                 and agent_result.get("status") == "waiting"
                             ):
-                                print(
-                                    f"{datetime.now()} > [ORKA] {self.step_index} > Agent '{agent_id}' returned waiting status: {agent_result}",
+                                logger.info(
+                                    f"Agent '{agent_id}' returned waiting status: {agent_result}",
                                 )
                                 # Put agent back in queue to retry later
                                 queue.append(agent_id)
@@ -340,25 +340,25 @@ class ExecutionEngine:
 
                             retry_count += 1
                             if retry_count < max_retries:
-                                print(
-                                    f"{datetime.now()} > [ORKA] {self.step_index} > Agent '{agent_id}' failed (attempt {retry_count}/{max_retries}): {agent_result}",
+                                logger.warning(
+                                    f"Agent '{agent_id}' failed (attempt {retry_count}/{max_retries}): {agent_result}",
                                 )
                                 await asyncio.sleep(1)  # Wait before retry
                             else:
-                                print(
-                                    f"{datetime.now()} > [ORKA] {self.step_index} > Agent '{agent_id}' failed after {max_retries} attempts",
+                                logger.error(
+                                    f"Agent '{agent_id}' failed after {max_retries} attempts",
                                 )
 
                         except Exception as e:
                             retry_count += 1
                             if retry_count < max_retries:
-                                print(
-                                    f"{datetime.now()} > [ORKA] {self.step_index} > Agent '{agent_id}' failed (attempt {retry_count}/{max_retries}): {e}",
+                                logger.warning(
+                                    f"Agent '{agent_id}' failed (attempt {retry_count}/{max_retries}): {e}",
                                 )
                                 await asyncio.sleep(1)  # Wait before retry
                             else:
-                                print(
-                                    f"{datetime.now()} > [ORKA] {self.step_index} > Agent '{agent_id}' failed after {max_retries} attempts: {e}",
+                                logger.error(
+                                    f"Agent '{agent_id}' failed after {max_retries} attempts: {e}",
                                 )
                                 raise
 
@@ -437,11 +437,11 @@ class ExecutionEngine:
                         # Add to logs
                         log_entry["payload"] = payload_out
                         logs.append(log_entry)
-                        self.memory.memory.append(log_entry) # Add to self.memory.memory for saving
+                        self.memory.memory.append(log_entry)  # Add to self.memory.memory for saving
 
                 except Exception as agent_error:
                     # Log the error and continue with next agent
-                    print(f"Error executing agent {agent_id}: {agent_error}")
+                    logger.error(f"Error executing agent {agent_id}: {agent_error}")
                     continue
 
             # Generate meta report with aggregated metrics
@@ -472,18 +472,18 @@ class ExecutionEngine:
             try:
                 self.memory.close()
             except Exception as e:
-                print(f"Warning: Failed to cleanly close memory backend: {e!s}")
+                logger.warning(f"Warning: Failed to cleanly close memory backend: {e!s}")
 
             # Print meta report summary
-            print("\n" + "=" * 50)
-            print("ORKA EXECUTION META REPORT")
-            print("=" * 50)
-            print(f"Total Execution Time: {meta_report['total_duration']:.3f}s")
-            print(f"Total LLM Calls: {meta_report['total_llm_calls']}")
-            print(f"Total Tokens: {meta_report['total_tokens']}")
-            print(f"Total Cost: ${meta_report['total_cost_usd']:.6f}")
-            print(f"Average Latency: {meta_report['avg_latency_ms']:.2f}ms")
-            print("=" * 50)
+            logger.info("\n" + "=" * 50)
+            logger.info("ORKA EXECUTION META REPORT")
+            logger.info("=" * 50)
+            logger.info(f"Total Execution Time: {meta_report['total_duration']:.3f}s")
+            logger.info(f"Total LLM Calls: {meta_report['total_llm_calls']}")
+            logger.info(f"Total Tokens: {meta_report['total_tokens']}")
+            logger.info(f"Total Cost: ${meta_report['total_cost_usd']:.6f}")
+            logger.info(f"Average Latency: {meta_report['avg_latency_ms']:.2f}ms")
+            logger.info("=" * 50)
 
             # Return either logs or final response based on parameter
             if return_logs:
@@ -496,7 +496,7 @@ class ExecutionEngine:
 
         except Exception as e:
             # Handle any unexpected errors
-            print(f"Unexpected error in execution engine: {e}")
+            logger.error(f"Unexpected error in execution engine: {e}")
             raise
 
     async def _run_agent_async(self, agent_id, input_data, previous_outputs):
@@ -785,54 +785,58 @@ class ExecutionEngine:
             The response from the last non-memory agent, or logs if no suitable agent found
         """
         # Memory agent types that should be excluded from final response consideration
-        memory_agent_types = {
+        excluded_agent_types = {
             "MemoryReaderNode",
             "MemoryWriterNode",
             "memory",
             "memoryreadernode",
             "memorywriternode",
-            "validate_and_structure", # Exclude validator agents
-            "guardian", # Exclude agents with 'guardian' in their name/type
+            "validate_and_structure",  # Exclude validator agents
+            "guardian",  # Exclude agents with 'guardian' in their name/type
         }
 
-        # Find the last non-memory agent
-        last_non_memory_agent = None
+        # Agent types that are explicitly designed to provide a final answer
+        final_response_agent_types = {
+            "OpenAIAnswerBuilder",
+            "OpenAIBinaryAgent",  # Include binary agents if they are the last in the chain
+            "LocalLLMAgent",
+        }
+
+        # Find the last suitable agent
+        final_response_log_entry = None
         for log_entry in reversed(logs):
-            if log_entry.get("event_type") == "MetaReport":
+            _event_type = log_entry.get("event_type")
+            if _event_type == "MetaReport":
                 continue  # Skip meta reports
 
-            agent_id = log_entry.get("agent_id")
-            event_type = log_entry.get("event_type", "").lower()
+            # Prioritize agents explicitly designed to provide a final answer
+            if _event_type in final_response_agent_types:
+                # If no specific final response agent is found, consider the last non-excluded agent
+                payload = log_entry.get("payload", {})
+                final_response_log_entry = log_entry
+                if payload and "result" in payload:
+                    final_response_log_entry = log_entry
+                    break
 
-            # Skip memory agents
-            if event_type in memory_agent_types:
-                continue
-
-            # Check if this agent has a payload with results
-            payload = log_entry.get("payload", {})
-            if payload and "result" in payload:
-                last_non_memory_agent = log_entry
-                break
-
-        if not last_non_memory_agent:
-            print("[ORKA-WARNING] No suitable final agent found, returning full logs")
+        if not final_response_log_entry:
+            logger.warning("No suitable final agent found, returning full logs")
             return logs
 
-        # Extract the response from the last non-memory agent
-        payload = last_non_memory_agent.get("payload", {})
-        result = payload.get("result", {})
+        # Extract the response from the final response log entry
+        payload = final_response_log_entry.get("payload", {})
+        response = payload.get("response", {})
 
-        print(
-            f"[ORKA-FINAL] Returning response from final agent: {last_non_memory_agent.get('agent_id')}",
+        logger.info(
+            f"[ORKA-FINAL] Returning response from final agent: {final_response_log_entry.get('agent_id')} \n \"{response}\"",
         )
 
         # Try to extract a clean response from the result
-        if isinstance(result, dict):
+        if isinstance(response, dict):
             # Look for common response patterns
-            if "response" in result:
-                return result["response"]
-            elif "result" in result:
-                nested_result = result["result"]
+            if "response" in response:
+                return response["response"]
+            elif "result" in response:
+                nested_result = response["result"]
                 if isinstance(nested_result, dict):
                     # Handle nested dict structure
                     if "response" in nested_result:
@@ -845,9 +849,9 @@ class ExecutionEngine:
                     return str(nested_result)
             else:
                 # Return the entire result if no specific response field found
-                return result
-        elif isinstance(result, str):
-            return result
+                return response
+        elif isinstance(response, str):
+            return response
         else:
             # Fallback to string representation
-            return str(result)
+            return str(response)

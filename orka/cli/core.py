@@ -25,33 +25,16 @@ from typing import Any
 from orka.orchestrator import Orchestrator
 
 from .types import Event
+from .utils import setup_logging
 
 logger = logging.getLogger(__name__)
-
-
-def setup_logging():
-    """Configure logging for the OrKa CLI."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-
-    # Set specific loggers to DEBUG level
-    kafka_logger = logging.getLogger("orka.memory.kafka_logger")
-    kafka_logger.setLevel(logging.DEBUG)
-
-    redis_logger = logging.getLogger("orka.memory.redisstack_logger")
-    redis_logger.setLevel(logging.DEBUG)
-
-    memory_logger = logging.getLogger("orka.memory_logger")
-    memory_logger.setLevel(logging.DEBUG)
 
 
 async def run_cli_entrypoint(
     config_path: str,
     input_text: str,
     log_to_file: bool = False,
+    verbose: bool = False,
 ) -> dict[str, Any] | list[Event] | str:
     """
     🚀 **Primary programmatic entry point** - run OrKa workflows from any application.
@@ -107,23 +90,13 @@ async def run_cli_entrypoint(
     - Microservices requiring intelligent decision making
     - Research applications with custom AI workflows
     """
-    setup_logging()
+    setup_logging(verbose)
     orchestrator = Orchestrator(config_path)
     result = await orchestrator.run(input_text)
 
     if log_to_file:
         with open("orka_trace.log", "w") as f:
             f.write(str(result))
-    elif isinstance(result, dict):
-        for agent_id, value in result.items():
-            logger.info(f"{agent_id}: {value}")
-    elif isinstance(result, list):
-        for event in result:
-            agent_id = event.get("agent_id", "unknown")
-            payload = event.get("payload", {})
-            logger.info(f"Agent: {agent_id} | Payload: {payload}")
-    else:
-        logger.info(result)
 
     return result  # <--- VERY IMPORTANT for your test to receive it
 
@@ -132,17 +105,28 @@ def run_cli(argv: list[str]) -> int:
     """Run the CLI with the given arguments."""
     import argparse
     import asyncio
+    import json
 
     parser = argparse.ArgumentParser(description="OrKa CLI")
     parser.add_argument("command", choices=["run"], help="Command to execute")
     parser.add_argument("config", help="Path to YAML config file")
     parser.add_argument("input", help="Input text for the workflow")
     parser.add_argument("--log-to-file", action="store_true", help="Log output to file")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
 
     args = parser.parse_args(argv)
 
     if args.command == "run":
-        result = asyncio.run(run_cli_entrypoint(args.config, args.input, args.log_to_file))
-        return 0 if result else 1
+        result = asyncio.run(run_cli_entrypoint(args.config, args.input, args.log_to_file, args.verbose))
+        if result:
+            if isinstance(result, dict):
+                logger.info(json.dumps(result, indent=4))
+            elif isinstance(result, list):
+                for item in result:
+                    logger.info(json.dumps(item, indent=4))
+            else:
+                logger.info(result)
+            return 0
+        return 1
 
     return 1

@@ -85,7 +85,7 @@ class ErrorHandler:
         self.error_telemetry["errors"].append(error_entry)
 
         # Log error to console
-        print(f"🚨 [ORKA-ERROR] {error_type} in {agent_id}: {error_msg}")
+        logger.error(f"🚨 [ORKA-ERROR] {error_type} in {agent_id}: {error_msg}")
 
     def _record_retry(self, agent_id):
         """Record a retry attempt for an agent."""
@@ -179,17 +179,17 @@ class ErrorHandler:
         try:
             with open(error_report_path, "w") as f:
                 json.dump(error_report, f, indent=2, default=str)
-            print(f"Error report saved: {error_report_path}")
+            logger.info(f"Error report saved: {error_report_path}")
         except Exception as e:
-            print(f"Failed to save error report: {e}")
+            logger.error(f"Failed to save error report: {e}")
 
         # Also save to memory backend
         try:
             trace_path = os.path.join(log_dir, f"orka_trace_{timestamp}.json")
             self.memory.save_to_file(trace_path)
-            print(f"Execution trace saved: {trace_path}")
+            logger.info(f"Execution trace saved: {trace_path}")
         except Exception as e:
-            print(f"Failed to save trace to memory backend: {e}")
+            logger.error(f"Failed to save trace to memory backend: {e}")
 
         return error_report_path
 

@@ -2,9 +2,12 @@
 Core TUI interface coordination and lifecycle management.
 """
 
+import logging
 import os
 import signal
 import time
+
+logger = logging.getLogger(__name__)
 
 try:
     from rich.console import Console
@@ -51,8 +54,8 @@ class ModernTUIInterface:
     def run(self, args):
         """Main entry point for the TUI interface."""
         if not RICH_AVAILABLE:
-            print("❌ Modern TUI requires 'rich' library. Install with: pip install rich")
-            print("Falling back to basic interface...")
+            logger.error("Modern TUI requires 'rich' library. Install with: pip install rich")
+            logger.info("Falling back to basic interface...")
             return self.fallback.run_basic_fallback(args)
 
         try:
@@ -93,7 +96,7 @@ class ModernTUIInterface:
             if self.console:
                 self.console.print(f"[red]❌ Error in TUI interface: {e}[/red]")
             else:
-                print(f"❌ Error in TUI interface: {e}")
+                logger.error(f"Error in TUI interface: {e}")
             import traceback
 
             traceback.print_exc()

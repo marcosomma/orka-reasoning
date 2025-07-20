@@ -54,7 +54,7 @@ agents:
       decision_key: binary_answer_classifier
       routing_map:
         "false": [binary_classifier, classification_router] # No existing memory found, process normally
-        "true": [answer_returner] # Memory found, return stored answer
+        "true": [binary_result_returner] # Memory found, return stored answer
 
   - id: answer_returner
     type: openai-answer
@@ -74,8 +74,14 @@ agents:
     params:
       decision_key: binary_classifier
       routing_map:
-        "true": [true_validation_guardian, true_memory_writer]
-        "false": [false_validation_guardian, false_memory_writer]
+        "true": [true_validation_guardian, true_memory_writer, binary_result_returner]
+        "false": [false_validation_guardian, false_memory_writer, binary_result_returner]
+
+  - id: binary_result_returner
+    type: openai-answer
+    prompt: "The classification result is: {{ previous_outputs.binary_classifier.response }}"
+    depends_on:
+      - binary_classifier
 
   - id: true_validation_guardian
     type: validate_and_structure

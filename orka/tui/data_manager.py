@@ -537,6 +537,6 @@ class DataManager:
     def debug_memory_data(self):
         """Debug method to inspect memory data structure."""
         for i, memory in enumerate(self.memory_data[:3]):
-            print(
+            logger.debug(
                 f"  {i + 1}. log_type={self._get_log_type(memory)}, memory_type={self._get_memory_type(memory)}, key={self._get_key(memory)[:20]}...",
             )

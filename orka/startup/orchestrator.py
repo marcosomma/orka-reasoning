@@ -61,7 +61,7 @@ def start_infrastructure(backend: str) -> dict[str, subprocess.Popen]:
     """
     processes = {}
 
-    print(f"Starting {backend.upper()} backend...")
+    logger.info(f"Starting {backend.upper()} backend...")
 
     # Always start Redis natively for all backends (except when explicitly using Docker)
     if backend in ["redis", "redisstack", "kafka", "dual"]:
@@ -139,7 +139,7 @@ def run_startup() -> None:
         asyncio.run(main())
     except KeyboardInterrupt:
         # Handle any remaining KeyboardInterrupt that might bubble up
-        print("\n🛑 Shutdown complete.")
+        logger.warning("🛑 Shutdown complete.")
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         sys.exit(1)
