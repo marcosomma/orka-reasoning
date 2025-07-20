@@ -318,7 +318,7 @@ def sanitize_for_json(obj: Any) -> Any:
 async def run_execution(request: Request):
     data = await request.json()
     logger.info("\n========== [DEBUG] Incoming POST /api/run ==========")
-    pprint.plogger.info(data)
+    print(data)
 
     input_text = data.get("input")
     yaml_config = data.get("yaml_config")
@@ -348,7 +348,7 @@ async def run_execution(request: Request):
         logger.info(f"Warning: Failed to remove temporary file {tmp_path}")
 
     logger.info("\n========== [DEBUG] Orchestrator Result ==========")
-    pprint.plogger.info(result)
+    print(result)
 
     # Sanitize the result data for JSON serialization
     sanitized_result = sanitize_for_json(result)
