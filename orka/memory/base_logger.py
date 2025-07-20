@@ -512,15 +512,8 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
             True if object should be deduplicated
         """
         try:
-            # Only deduplicate JSON responses and large payloads
+            # Only deduplicate large dictionary payloads
             if not isinstance(obj, dict):
-                return False
-
-            # Check if it looks like a JSON response
-            has_response = "response" in obj
-            has_result = "result" in obj
-
-            if not (has_response or has_result):
                 return False
 
             # Check size threshold
@@ -599,14 +592,129 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         # Recursively deduplicate nested objects
         deduplicated = {}
         for key, value in obj.items():
-            if isinstance(value, dict):
-                deduplicated[key] = self._deduplicate_object(value)
-            elif isinstance(value, list):
-                deduplicated[key] = [
-                    self._deduplicate_object(item) if isinstance(item, dict) else item
-                    for item in value
-                ]
-            else:
-                deduplicated[key] = value
+            deduplicated[key] = self._recursive_deduplicate(value)
 
         return deduplicated
+
+    def _recursive_deduplicate(self, obj: Any) -> Any:
+        """
+        Helper method to recursively apply deduplication.
+        """
+        if isinstance(obj, dict):
+            return self._deduplicate_object(obj)
+        elif isinstance(obj, list):
+            return [self._recursive_deduplicate(item) for item in obj]
+        else:
+            return obj
+
+    def _process_memory_for_saving(self, memory_entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """
+        Process memory entries before saving, e.g., removing previous_outputs.
+        """
+        processed_entries = []
+        for entry in memory_entries:
+            new_entry = entry.copy()
+            if not self.debug_keep_previous_outputs:
+                # Remove previous_outputs to reduce log size unless debugging is enabled
+                if "previous_outputs" in new_entry:
+                    # Store a summary instead of the full object
+                    new_entry["previous_outputs_summary"] = {
+                        "count": len(new_entry["previous_outputs"]),
+                        "keys": list(new_entry["previous_outputs"].keys()),
+                    }
+                    del new_entry["previous_outputs"]
+            processed_entries.append(new_entry)
+        return processed_entries
+
+    def _sanitize_for_json(self, obj: Any) -> Any:
+        """
+        Sanitize an object to ensure it's JSON serializable.
+        Converts non-serializable types (like objects, functions) to strings.
+        """
+        if isinstance(obj, (int, float, str, bool)) or obj is None:
+            return obj
+        elif isinstance(obj, (list, tuple)):
+            return [self._sanitize_for_json(item) for item in obj]
+        elif isinstance(obj, dict):
+            return {k: self._sanitize_for_json(v) for k, v in obj.items()}
+        else:
+            # Fallback for non-serializable objects
+            return f"<non-serializable: {type(obj).__name__}>"
+
+    def _should_use_deduplication_format(self) -> bool:
+        """
+        Determine whether to use the deduplication format for saving logs.
+        This is based on whether any blobs were actually stored.
+        """
+        return bool(self._blob_store)
+
+    def _build_previous_outputs(self, logs):
+        """
+        Build a dictionary of previous agent outputs from the execution logs.
+        Used to provide context to downstream agents.
+        """
+        outputs = {}
+
+        # First, try to get results from Redis
+        try:
+            # Get all agent results from Redis hash
+            group_key = "agent_results"
+            result_keys = self.hkeys(group_key)
+            for agent_id in result_keys:
+                result_str = self.hget(group_key, agent_id)
+                if result_str:
+                    result = json.loads(result_str)
+                    outputs[agent_id] = result
+                    logger.debug(f"Loaded result for agent {agent_id} from Redis")
+        except Exception as e:
+            logger.warning(f"Failed to load results from Redis: {e}")
+
+        # Then process logs to update/add any missing results
+        for log in logs:
+            agent_id = log["agent_id"]
+            payload = log.get("payload", {})
+
+            # Case: regular agent output
+            if "result" in payload:
+                outputs[agent_id] = payload["result"]
+
+            # Case: JoinNode with merged dict
+            if "result" in payload and isinstance(payload["result"], dict):
+                merged = payload["result"].get("merged")
+                if isinstance(merged, dict):
+                    outputs.update(merged)
+
+            # Case: Current run agent responses
+            if "response" in payload:
+                outputs[agent_id] = {
+                    "response": payload["response"],
+                    "confidence": payload.get("confidence", "0.0"),
+                    "internal_reasoning": payload.get("internal_reasoning", ""),
+                    "_metrics": payload.get("_metrics", {}),
+                    "formatted_prompt": payload.get("formatted_prompt", ""),
+                }
+
+            # Case: Memory agent responses
+            if "memories" in payload:
+                outputs[agent_id] = {
+                    "memories": payload["memories"],
+                    "query": payload.get("query", ""),
+                    "backend": payload.get("backend", ""),
+                    "search_type": payload.get("search_type", ""),
+                    "num_results": payload.get("num_results", 0),
+                }
+
+            # Store the result in Redis for future access
+            try:
+                # Store individual result
+                result_key = f"agent_result:{agent_id}"
+                self.set(result_key, json.dumps(outputs[agent_id]))
+                logger.debug(f"Stored result for agent {agent_id}")
+
+                # Store in group hash
+                self.hset(group_key, agent_id, json.dumps(outputs[agent_id]))
+                logger.debug(f"Stored result in group for agent {agent_id}")
+            except Exception as e:
+                logger.warning(f"Failed to store result in Redis: {e}")
+
+        return outputs

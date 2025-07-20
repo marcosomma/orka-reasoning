@@ -140,35 +140,88 @@ class PromptRenderer:
 
                 # If the result has a nested structure, also provide direct access
                 if isinstance(agent_result, dict):
-                    # If agent_result has a 'result' key, also provide shortcuts
+                    # Handle nested result structures
                     if "result" in agent_result:
                         result_data = agent_result["result"]
-
-                        # Create a flattened version for easier template access
-                        flattened_result = {
-                            "result": result_data,
-                            # If result has common keys, expose them directly
-                        }
-
-                        # Add common result fields as shortcuts
                         if isinstance(result_data, dict):
-                            # For memory agents, expose memories directly
-                            if "memories" in result_data:
-                                flattened_result["memories"] = result_data["memories"]
-
                             # For LLM agents, expose response directly
                             if "response" in result_data:
-                                flattened_result["response"] = result_data["response"]
-
-                            # For other common fields
-                            for key in ["status", "confidence", "data", "content"]:
-                                if key in result_data:
-                                    flattened_result[key] = result_data[key]
-
-                        enhanced_outputs[agent_id] = flattened_result
+                                enhanced_outputs[agent_id] = {
+                                    "response": result_data["response"],
+                                    "confidence": result_data.get("confidence", "0.0"),
+                                    "internal_reasoning": result_data.get("internal_reasoning", ""),
+                                    "_metrics": result_data.get("_metrics", {}),
+                                    "formatted_prompt": result_data.get("formatted_prompt", ""),
+                                }
+                            # For memory agents, expose memories directly
+                            elif "memories" in result_data:
+                                enhanced_outputs[agent_id] = {
+                                    "memories": result_data["memories"],
+                                    "query": result_data.get("query", ""),
+                                    "backend": result_data.get("backend", ""),
+                                    "search_type": result_data.get("search_type", ""),
+                                    "num_results": result_data.get("num_results", 0),
+                                }
+                            else:
+                                # For other result types, use as is
+                                enhanced_outputs[agent_id] = result_data
                     else:
-                        # If no nested result, the agent_result is the direct result
-                        enhanced_outputs[agent_id] = agent_result
+                        # If no nested result, check for direct response fields
+                        if "response" in agent_result:
+                            enhanced_outputs[agent_id] = {
+                                "response": agent_result["response"],
+                                "confidence": agent_result.get("confidence", "0.0"),
+                                "internal_reasoning": agent_result.get("internal_reasoning", ""),
+                                "_metrics": agent_result.get("_metrics", {}),
+                                "formatted_prompt": agent_result.get("formatted_prompt", ""),
+                            }
+                        elif "memories" in agent_result:
+                            enhanced_outputs[agent_id] = {
+                                "memories": agent_result["memories"],
+                                "query": agent_result.get("query", ""),
+                                "backend": agent_result.get("backend", ""),
+                                "search_type": agent_result.get("search_type", ""),
+                                "num_results": agent_result.get("num_results", 0),
+                            }
+                        elif "merged" in agent_result:
+                            # Handle merged results from join nodes
+                            merged_results = agent_result["merged"]
+                            if isinstance(merged_results, dict):
+                                for merged_agent_id, merged_result in merged_results.items():
+                                    if isinstance(merged_result, dict):
+                                        # For LLM agents, expose response directly
+                                        if "response" in merged_result:
+                                            enhanced_outputs[merged_agent_id] = {
+                                                "response": merged_result["response"],
+                                                "confidence": merged_result.get(
+                                                    "confidence", "0.0"
+                                                ),
+                                                "internal_reasoning": merged_result.get(
+                                                    "internal_reasoning", ""
+                                                ),
+                                                "_metrics": merged_result.get("_metrics", {}),
+                                                "formatted_prompt": merged_result.get(
+                                                    "formatted_prompt", ""
+                                                ),
+                                            }
+                                        # For memory agents, expose memories directly
+                                        elif "memories" in merged_result:
+                                            enhanced_outputs[merged_agent_id] = {
+                                                "memories": merged_result["memories"],
+                                                "query": merged_result.get("query", ""),
+                                                "backend": merged_result.get("backend", ""),
+                                                "search_type": merged_result.get("search_type", ""),
+                                                "num_results": merged_result.get("num_results", 0),
+                                            }
+                                        else:
+                                            # For other result types, use as is
+                                            enhanced_outputs[merged_agent_id] = merged_result
+                                    else:
+                                        # If not a dict, use as is
+                                        enhanced_outputs[merged_agent_id] = merged_result
+                        else:
+                            # Keep other fields as is
+                            enhanced_outputs[agent_id] = agent_result
                 else:
                     # If not a dict, keep as is
                     enhanced_outputs[agent_id] = agent_result

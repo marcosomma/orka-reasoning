@@ -262,244 +262,241 @@ class ExecutionEngine:
             logs: List to store execution logs
             return_logs: If True, return full logs; if False, return final response
         """
-        queue = self.orchestrator_cfg["agents"][:]
+        try:
+            queue = self.orchestrator_cfg["agents"][:]
 
-        while queue:
-            agent_id = queue.pop(0)
+            while queue:
+                agent_id = queue.pop(0)
 
-            try:
-                agent = self.agents[agent_id]
-                agent_type = agent.type
-                self.step_index += 1
+                try:
+                    agent = self.agents[agent_id]
+                    agent_type = agent.type
+                    self.step_index += 1
 
-                # Build payload for the agent: current input and all previous outputs
-                payload = {
-                    "input": input_data,
-                    "previous_outputs": self.build_previous_outputs(logs),
-                }
-                freezed_payload = json.dumps(
-                    payload,
-                )  # Freeze the payload as a string for logging/debug
-                print(
-                    f"{datetime.now()} > [ORKA] {self.step_index} >  Running agent '{agent_id}' of type '{agent_type}', payload: {freezed_payload}",
-                )
-                log_entry = {
-                    "agent_id": agent_id,
-                    "event_type": agent.__class__.__name__,
-                    "timestamp": datetime.now(UTC).isoformat(),
-                }
+                    # Build payload for the agent: current input and all previous outputs
+                    payload = {
+                        "input": input_data,
+                        "previous_outputs": self.build_previous_outputs(logs),
+                    }
 
-                start_time = time()
+                    # Add orchestrator to context for fork nodes
+                    if agent_type == "forknode":
+                        payload["orchestrator"] = self
 
-                # Attempt to run agent with retry logic
-                max_retries = 3
-                retry_count = 0
-                agent_result = None
+                    freezed_payload = json.dumps(
+                        {k: v for k, v in payload.items() if k != "orchestrator"},
+                    )  # Freeze the payload as a string for logging/debug, excluding orchestrator
+                    print(
+                        f"{datetime.now()} > [ORKA] {self.step_index} >  Running agent '{agent_id}' of type '{agent_type}', payload: {freezed_payload}",
+                    )
+                    log_entry = {
+                        "agent_id": agent_id,
+                        "event_type": agent.__class__.__name__,
+                        "timestamp": datetime.now(UTC).isoformat(),
+                    }
 
-                while retry_count <= max_retries:
-                    try:
-                        result = await self._execute_single_agent(
-                            agent_id,
-                            agent,
-                            agent_type,
-                            payload,
-                            input_data,
-                            queue,
-                            logs,
-                        )
+                    start_time = time()
 
-                        # If result is a coroutine, await it
-                        if inspect.iscoroutine(result):
-                            result = await result
+                    # Attempt to run agent with retry logic
+                    max_retries = 3
+                    retry_count = 0
+                    agent_result = None
 
-                        agent_result = result
-                        break
-                    except Exception as e:
-                        retry_count += 1
-                        if retry_count > max_retries:
-                            raise
-                        logger.warning(f"Retrying agent {agent_id} (attempt {retry_count})")
-                        await asyncio.sleep(1 * retry_count)  # Exponential backoff
+                    while retry_count < max_retries:
+                        try:
+                            # Execute the agent with appropriate method
+                            if agent_type in (
+                                "memoryreadernode",
+                                "memorywriternode",
+                                "failovernode",
+                                "loopnode",
+                                "openaianswerbuilder",
+                                "forknode",
+                            ):
+                                # Memory nodes, failover nodes, loop nodes, and OpenAI agents have async run methods
+                                agent_result = await agent.run(payload)
+                            else:
+                                # Regular synchronous agent
+                                agent_result = agent.run(payload)
+                                # Check if result is a coroutine
+                                if inspect.iscoroutine(agent_result):
+                                    agent_result = await agent_result
 
-                # If we had retries, record partial success
-                if retry_count > 0:
-                    self._record_partial_success(agent_id, retry_count)
+                            # If agent is waiting (e.g., for async input), return waiting status
+                            if (
+                                isinstance(agent_result, dict)
+                                and agent_result.get("status") == "waiting"
+                            ):
+                                print(
+                                    f"{datetime.now()} > [ORKA] {self.step_index} > Agent '{agent_id}' returned waiting status: {agent_result}",
+                                )
+                                # Put agent back in queue to retry later
+                                queue.append(agent_id)
+                                break
 
-                # Handle waiting status - re-queue the agent
-                if isinstance(agent_result, dict) and agent_result.get("status") in [
-                    "waiting",
-                    "timeout",
-                ]:
-                    if agent_result.get("status") == "waiting":
-                        queue.append(agent_id)  # Re-queue for later
-                    # For these statuses, we should continue to the next agent in queue
+                            # If we got a result, break retry loop
+                            if agent_result is not None:
+                                break
+
+                            retry_count += 1
+                            if retry_count < max_retries:
+                                print(
+                                    f"{datetime.now()} > [ORKA] {self.step_index} > Agent '{agent_id}' failed (attempt {retry_count}/{max_retries}): {agent_result}",
+                                )
+                                await asyncio.sleep(1)  # Wait before retry
+                            else:
+                                print(
+                                    f"{datetime.now()} > [ORKA] {self.step_index} > Agent '{agent_id}' failed after {max_retries} attempts",
+                                )
+
+                        except Exception as e:
+                            retry_count += 1
+                            if retry_count < max_retries:
+                                print(
+                                    f"{datetime.now()} > [ORKA] {self.step_index} > Agent '{agent_id}' failed (attempt {retry_count}/{max_retries}): {e}",
+                                )
+                                await asyncio.sleep(1)  # Wait before retry
+                            else:
+                                print(
+                                    f"{datetime.now()} > [ORKA] {self.step_index} > Agent '{agent_id}' failed after {max_retries} attempts: {e}",
+                                )
+                                raise
+
+                    # Process agent result
+                    if agent_result is not None:
+                        # Special handling for router nodes
+                        if agent_type == "routernode":
+                            if isinstance(agent_result, list):
+                                queue = agent_result + queue
+                                continue  # Skip to the next agent in the new queue
+
+                        # Create a copy of the payload for logging (without orchestrator)
+                        payload_out = {k: v for k, v in payload.items() if k != "orchestrator"}
+
+                        # Handle different result types
+                        if isinstance(agent_result, dict):
+                            # Case 1: Local LLM agent response
+                            if "response" in agent_result:
+                                payload_out.update(
+                                    {
+                                        "response": agent_result["response"],
+                                        "confidence": agent_result.get("confidence", "0.0"),
+                                        "internal_reasoning": agent_result.get(
+                                            "internal_reasoning", ""
+                                        ),
+                                        "_metrics": agent_result.get("_metrics", {}),
+                                        "formatted_prompt": agent_result.get(
+                                            "formatted_prompt", ""
+                                        ),
+                                    }
+                                )
+                            # Case 2: Memory agent response
+                            elif "memories" in agent_result:
+                                payload_out.update(
+                                    {
+                                        "memories": agent_result["memories"],
+                                        "query": agent_result.get("query", ""),
+                                        "backend": agent_result.get("backend", ""),
+                                        "search_type": agent_result.get("search_type", ""),
+                                        "num_results": agent_result.get("num_results", 0),
+                                    }
+                                )
+                            # Case 3: Fork/Join node response
+                            elif "status" in agent_result:
+                                payload_out.update(agent_result)
+                            # Case 4: Other result types
+                            else:
+                                payload_out["result"] = agent_result
+                        else:
+                            # Case 5: Non-dict result
+                            payload_out["result"] = agent_result
+
+                        # Special handling for fork and join nodes
+                        if agent_type == "forknode":
+                            # Store fork group ID for join node
+                            fork_group_id = agent_result.get("fork_group")
+                            if fork_group_id:
+                                payload_out["fork_group_id"] = fork_group_id
+                        elif agent_type == "joinnode":
+                            # Get fork group ID from payload
+                            fork_group_id = payload.get("fork_group_id")
+                            if fork_group_id:
+                                # Add fork group ID to result for tracking
+                                agent_result["fork_group_id"] = fork_group_id
+
+                        # Store the result in memory
+                        result_key = f"agent_result:{agent_id}"
+                        self.memory.set(result_key, json.dumps(payload_out))
+                        logger.debug(f"Stored result for agent {agent_id}")
+
+                        # Store in Redis hash for group tracking
+                        group_key = "agent_results"
+                        self.memory.hset(group_key, agent_id, json.dumps(payload_out))
+                        logger.debug(f"Stored result in group for agent {agent_id}")
+
+                        # Add to logs
+                        log_entry["payload"] = payload_out
+                        logs.append(log_entry)
+                        self.memory.memory.append(log_entry) # Add to self.memory.memory for saving
+
+                except Exception as agent_error:
+                    # Log the error and continue with next agent
+                    print(f"Error executing agent {agent_id}: {agent_error}")
                     continue
 
-                # Process the result (success or failure)
-                if agent_result is not None:
-                    # Log the result and timing for this step
-                    duration = round(time() - start_time, 4)
-                    payload_out = {"input": input_data, "result": agent_result}
-                    payload_out["previous_outputs"] = payload["previous_outputs"]
-                    log_entry["duration"] = duration
+            # Generate meta report with aggregated metrics
+            meta_report = self._generate_meta_report(logs)
 
-                    # Extract LLM metrics if present (even from failed agents)
-                    try:
-                        llm_metrics = self._extract_llm_metrics(agent, agent_result)
-                        if llm_metrics:
-                            log_entry["llm_metrics"] = llm_metrics
-                    except Exception as metrics_error:
-                        self._record_error(
-                            "metrics_extraction",
-                            agent_id,
-                            f"Failed to extract metrics: {metrics_error}",
-                            metrics_error,
-                            recovery_action="continue",
-                        )
-
-                    log_entry["payload"] = payload_out
-                    logs.append(log_entry)
-
-                    # Save to memory even if agent failed
-                    try:
-                        if agent_type != "forknode":
-                            self.memory.log(
-                                agent_id,
-                                agent.__class__.__name__,
-                                payload_out,
-                                step=self.step_index,
-                                run_id=self.run_id,
-                            )
-                    except Exception as memory_error:
-                        self._record_error(
-                            "memory_logging",
-                            agent_id,
-                            f"Failed to log to memory: {memory_error}",
-                            memory_error,
-                            recovery_action="continue",
-                        )
-
-                    print(
-                        f"{datetime.now()} > [ORKA] {self.step_index} > Agent '{agent_id}' returned: {agent_result}",
-                    )
-
-            except Exception as step_error:
-                # Catch-all for any other step-level errors
-                self._record_error(
-                    "step_execution",
-                    agent_id,
-                    f"Step execution failed: {step_error}",
-                    step_error,
-                    recovery_action="continue",
-                )
-                print(
-                    f"[ORKA-STEP-ERROR] Step {self.step_index} failed for {agent_id}: {step_error}",
-                )
-                continue  # Continue to next agent
-
-        # Generate meta report with aggregated metrics
-        meta_report = self._generate_meta_report(logs)
-
-        # Save logs to file at the end of the run
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        log_dir = os.getenv("ORKA_LOG_DIR", "logs")
-        os.makedirs(log_dir, exist_ok=True)
-        log_path = os.path.join(log_dir, f"orka_trace_{timestamp}.json")
-
-        # Store meta report in memory for saving
-        meta_report_entry = {
-            "agent_id": "meta_report",
-            "event_type": "MetaReport",
-            "timestamp": datetime.now(UTC).isoformat(),
-            "payload": {
-                "meta_report": meta_report,
-                "run_id": self.run_id,
-                "timestamp": timestamp,
-            },
-        }
-        self.memory.memory.append(meta_report_entry)
-
-        # Save to memory backend
-        self.memory.save_to_file(log_path)
-
-        # Cleanup memory backend resources to prevent hanging
-        try:
-            self.memory.close()
-        except Exception as e:
-            print(f"Warning: Failed to cleanly close memory backend: {e!s}")
-
-        # Print meta report summary
-        print("\n" + "=" * 50)
-        print("ORKA EXECUTION META REPORT")
-        print("=" * 50)
-        print(f"Total Execution Time: {meta_report['total_duration']:.3f}s")
-        print(f"Total LLM Calls: {meta_report['total_llm_calls']}")
-        print(f"Total Tokens: {meta_report['total_tokens']}")
-        print(f"Total Cost: ${meta_report['total_cost_usd']:.6f}")
-        print(f"Average Latency: {meta_report['avg_latency_ms']:.2f}ms")
-        print("=" * 50)
-
-        # Return either logs or final response based on parameter
-        if return_logs:
-            # Return full logs for internal workflows (like loop nodes)
-            return logs
-        else:
-            # Extract the final response from the last non-memory agent for user-friendly output
-            final_response = self._extract_final_response(logs)
-            return final_response
-
-    async def _execute_single_agent(
-        self,
-        agent_id,
-        agent,
-        agent_type,
-        payload,
-        input_data,
-        queue,
-        logs,
-    ):
-        """Execute a single agent with full context and error handling."""
-        try:
-            # Add orchestrator to payload for nodes that need it
-            payload["orchestrator"] = self
-
-            if agent_type in (
-                "memoryreadernode",
-                "memorywriternode",
-                "failovernode",
-                "loopnode",
-                "openaianswerbuilder",
-                "forknode",
-            ):
-                # Memory nodes, failover nodes, loop nodes, and OpenAI agents have async run methods
-                result = await agent.run(payload)
-            else:
-                # Regular synchronous agent
-                result = agent.run(payload)
-                # Check if result is a coroutine
-                if inspect.iscoroutine(result):
-                    result = await result
-
-            # If agent is waiting (e.g., for async input), return waiting status
-            if isinstance(result, dict) and result.get("status") == "waiting":
-                print(
-                    f"{datetime.now()} > [ORKA] {self.step_index} > Agent '{agent_id}' returned waiting status: {result}",
-                )
-                return result
-
-            # Log the execution
-            log_entry = {
-                "agent_id": agent_id,
-                "event_type": "execute",
+            # Store meta report in memory for saving
+            meta_report_entry = {
+                "agent_id": "meta_report",
+                "event_type": "MetaReport",
                 "timestamp": datetime.now(UTC).isoformat(),
-                "payload": result,
+                "payload": {
+                    "meta_report": meta_report,
+                    "run_id": self.run_id,
+                    "timestamp": datetime.now().strftime("%Y%m%d_%H%M%S"),
+                },
             }
-            logs.append(log_entry)
+            self.memory.memory.append(meta_report_entry)
 
-            return result
+            # Save logs to file at the end of the run
+            log_dir = os.getenv("ORKA_LOG_DIR", "logs")
+            os.makedirs(log_dir, exist_ok=True)
+            log_path = os.path.join(
+                log_dir, f"orka_trace_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            )
+            self.memory.save_to_file(log_path)
+
+            # Cleanup memory backend resources to prevent hanging
+            try:
+                self.memory.close()
+            except Exception as e:
+                print(f"Warning: Failed to cleanly close memory backend: {e!s}")
+
+            # Print meta report summary
+            print("\n" + "=" * 50)
+            print("ORKA EXECUTION META REPORT")
+            print("=" * 50)
+            print(f"Total Execution Time: {meta_report['total_duration']:.3f}s")
+            print(f"Total LLM Calls: {meta_report['total_llm_calls']}")
+            print(f"Total Tokens: {meta_report['total_tokens']}")
+            print(f"Total Cost: ${meta_report['total_cost_usd']:.6f}")
+            print(f"Average Latency: {meta_report['avg_latency_ms']:.2f}ms")
+            print("=" * 50)
+
+            # Return either logs or final response based on parameter
+            if return_logs:
+                # Return full logs for internal workflows (like loop nodes)
+                return logs
+            else:
+                # Extract the final response from the last non-memory agent for user-friendly output
+                final_response = self._extract_final_response(logs)
+                return final_response
 
         except Exception as e:
-            logger.error(f"Error executing agent {agent_id}: {e}")
+            # Handle any unexpected errors
+            print(f"Unexpected error in execution engine: {e}")
             raise
 
     async def _run_agent_async(self, agent_id, input_data, previous_outputs):
@@ -507,22 +504,43 @@ class ExecutionEngine:
         Run a single agent asynchronously.
         """
         agent = self.agents[agent_id]
-        payload = {"input": input_data, "previous_outputs": previous_outputs}
+
+        # Create a complete payload with all necessary context
+        payload = {
+            "input": input_data,
+            "previous_outputs": previous_outputs,
+        }
+
+        # Add loop context if available
+        if isinstance(input_data, dict):
+            if "loop_number" in input_data:
+                payload["loop_number"] = input_data["loop_number"]
+            if "past_loops_metadata" in input_data:
+                payload["past_loops_metadata"] = input_data["past_loops_metadata"]
 
         # Render prompt before running agent if agent has a prompt
-        self._render_agent_prompt(agent, payload)
+        if hasattr(agent, "prompt") and agent.prompt:
+            try:
+                # Use the PromptRenderer to handle template rendering
+                formatted_prompt = self.render_prompt(agent.prompt, payload)
+                payload["formatted_prompt"] = formatted_prompt
 
-        # Check if template rendering worked (only if DEBUG logging is enabled)
-        if logger.isEnabledFor(logging.DEBUG) and hasattr(agent, "prompt") and agent.prompt:
-            if "formatted_prompt" in payload:
-                original_template = agent.prompt
-                rendered_template = payload["formatted_prompt"]
-
-                # Check if template was actually rendered (changed from original)
-                if original_template != rendered_template:
-                    logger.debug(f"Agent '{agent_id}' template rendered successfully")
-                else:
-                    logger.debug(f"Agent '{agent_id}' template unchanged - possible template issue")
+                # Debug logging for template rendering
+                if logger.isEnabledFor(logging.DEBUG):
+                    original_template = agent.prompt
+                    if original_template != formatted_prompt:
+                        logger.debug(f"Agent '{agent_id}' template rendered successfully")
+                        logger.debug(f"Original: {original_template}")
+                        logger.debug(f"Rendered: {formatted_prompt}")
+                    else:
+                        logger.debug(
+                            f"Agent '{agent_id}' template unchanged - possible template issue"
+                        )
+                        logger.debug(f"Template context: {payload}")
+            except Exception as e:
+                logger.error(f"Failed to render prompt for agent '{agent_id}': {e}")
+                # If rendering fails, use the original prompt
+                payload["formatted_prompt"] = agent.prompt
 
         # Inspect the run method to see if it needs orchestrator
         run_method = agent.run
@@ -530,21 +548,27 @@ class ExecutionEngine:
         needs_orchestrator = len(sig.parameters) > 1  # More than just 'self'
         is_async = inspect.iscoroutinefunction(run_method)
 
-        if needs_orchestrator:
-            # Node that needs orchestrator
-            result = run_method(self, payload)
-            if is_async or asyncio.iscoroutine(result):
-                result = await result
-        elif is_async:
-            # Async node/agent that doesn't need orchestrator
-            result = await run_method(payload)
-        else:
-            # Synchronous agent
-            loop = asyncio.get_event_loop()
-            with ThreadPoolExecutor() as pool:
-                result = await loop.run_in_executor(pool, run_method, payload)
+        # Execute the agent with appropriate method
+        try:
+            if needs_orchestrator:
+                # Node that needs orchestrator
+                result = run_method(self, payload)
+                if is_async or asyncio.iscoroutine(result):
+                    result = await result
+            elif is_async:
+                # Async node/agent that doesn't need orchestrator
+                result = await run_method(payload)
+            else:
+                # Synchronous agent
+                loop = asyncio.get_event_loop()
+                with ThreadPoolExecutor() as pool:
+                    result = await loop.run_in_executor(pool, run_method, payload)
 
-        return agent_id, result
+            return agent_id, result
+
+        except Exception as e:
+            logger.error(f"Failed to execute agent '{agent_id}': {e}")
+            raise
 
     async def _run_branch_async(self, branch_agents, input_data, previous_outputs):
         """
@@ -685,32 +709,61 @@ class ExecutionEngine:
                 # Handle different common agent result patterns
                 # Pattern 1: Direct result (like memory nodes)
                 if "memories" in agent_result and isinstance(agent_result["memories"], list):
-                    logger.debug(
-                        f"Agent '{agent_id}' has {len(agent_result['memories'])} memories directly accessible",
-                    )
+                    enhanced_outputs[agent_id] = {
+                        **agent_result,  # Keep original structure
+                        "memories": agent_result["memories"],  # Direct access
+                    }
 
-                # Pattern 2: Nested result structure
+                # Pattern 2: Local LLM agent response
+                elif "response" in agent_result:
+                    enhanced_outputs[agent_id] = {
+                        **agent_result,  # Keep original structure
+                        "response": agent_result["response"],  # Direct access
+                        "confidence": agent_result.get("confidence", "0.0"),
+                        "internal_reasoning": agent_result.get("internal_reasoning", ""),
+                        "_metrics": agent_result.get("_metrics", {}),
+                        "formatted_prompt": agent_result.get("formatted_prompt", ""),
+                    }
+
+                # Pattern 3: Nested result structure
                 elif "result" in agent_result and isinstance(agent_result["result"], dict):
                     nested_result = agent_result["result"]
-                    logger.debug(
-                        f"Agent '{agent_id}' has nested result with keys: {list(nested_result.keys())}",
-                    )
-
                     # For nested structures, also provide direct access to common fields
-                    if "memories" in nested_result:
-                        # Create a version that allows both access patterns
+                    if "response" in nested_result:
+                        enhanced_outputs[agent_id] = {
+                            **agent_result,  # Keep original structure
+                            "response": nested_result["response"],  # Direct access
+                            "confidence": nested_result.get("confidence", "0.0"),
+                            "internal_reasoning": nested_result.get("internal_reasoning", ""),
+                            "_metrics": nested_result.get("_metrics", {}),
+                            "formatted_prompt": nested_result.get("formatted_prompt", ""),
+                        }
+                    elif "memories" in nested_result:
                         enhanced_outputs[agent_id] = {
                             **agent_result,  # Keep original structure
                             "memories": nested_result["memories"],  # Direct access
+                            "query": nested_result.get("query", ""),
+                            "backend": nested_result.get("backend", ""),
+                            "search_type": nested_result.get("search_type", ""),
+                            "num_results": nested_result.get("num_results", 0),
                         }
-                        logger.debug(f"Agent '{agent_id}' enhanced with direct memory access")
 
-                    if "response" in nested_result:
-                        enhanced_outputs[agent_id] = {
-                            **enhanced_outputs.get(agent_id, agent_result),
-                            "response": nested_result["response"],  # Direct access
-                        }
-                        logger.debug(f"Agent '{agent_id}' enhanced with direct response access")
+                # Pattern 4: Fork/Join node responses
+                elif "status" in agent_result:
+                    enhanced_outputs[agent_id] = {
+                        **agent_result,  # Keep original structure
+                        "status": agent_result["status"],
+                        "fork_group": agent_result.get("fork_group", ""),
+                        "merged": agent_result.get("merged", {}),
+                    }
+
+                # Pattern 5: Other dict structures
+                else:
+                    enhanced_outputs[agent_id] = agent_result
+
+            # Pattern 6: Non-dict results
+            else:
+                enhanced_outputs[agent_id] = agent_result
 
         return enhanced_outputs
 
@@ -738,6 +791,8 @@ class ExecutionEngine:
             "memory",
             "memoryreadernode",
             "memorywriternode",
+            "validate_and_structure", # Exclude validator agents
+            "guardian", # Exclude agents with 'guardian' in their name/type
         }
 
         # Find the last non-memory agent

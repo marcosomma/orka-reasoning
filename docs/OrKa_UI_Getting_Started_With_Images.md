@@ -39,12 +39,12 @@ Here’s an example template used for an **openai-answer** agent:
 give a compelling and detailed answer to this question. Expand your knowledge for this answer using the given extra data:
 
 ## Question: {{ input }}
-## Extra data : {{ preavious_outputs }}
+## Extra data : {{ previous_outputs }}
 ```
 
 This lets the agent access:
 - `{{ input }}` — the original user query
-- `{{ preavious_outputs }}` — concatenated results from upstream agents
+- `{{ previous_outputs }}` — concatenated results from upstream agents
 
 Templates can be used in any prompt field inside OrKa agents.
 

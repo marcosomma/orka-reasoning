@@ -142,6 +142,7 @@ class AgentFactory:
                     node_id=agent_id,
                     prompt=prompt,
                     queue=queue,
+                    memory_logger=self.memory,
                     **clean_cfg,
                 )
 

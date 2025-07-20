@@ -33,7 +33,7 @@ class LoopNode(BaseNode):
     past_loops array, allowing for iterative improvement based on previous attempts.
     """
 
-    def __init__(self, node_id, prompt=None, queue=None, **kwargs):
+    def __init__(self, node_id, prompt=None, queue=None, memory_logger=None, **kwargs):
         """
         Initialize the loop node.
 
@@ -41,6 +41,7 @@ class LoopNode(BaseNode):
             node_id (str): Unique identifier for the node.
             prompt (str, optional): Prompt or instruction for the node.
             queue (list, optional): Queue of agents or nodes to be processed.
+            memory_logger: The memory logger instance.
             **kwargs: Additional configuration parameters:
                 - max_loops (int): Maximum number of loop iterations (default: 5)
                 - score_threshold (float): Score threshold to meet before continuing (default: 0.8)
@@ -51,6 +52,7 @@ class LoopNode(BaseNode):
                 - cognitive_extraction (dict): Configuration for extracting valuable cognitive data
         """
         super().__init__(node_id, prompt, queue, **kwargs)
+        self.memory_logger = memory_logger
 
         # Configuration
         self.max_loops = kwargs.get("max_loops", 5)
@@ -237,11 +239,40 @@ class LoopNode(BaseNode):
             # Add to our local past_loops array (not the original previous_outputs)
             past_loops.append(past_loop_obj)
 
+            # Store loop result in Redis
+            try:
+                # Store individual loop result
+                loop_key = f"loop_result:{self.node_id}:{current_loop}"
+                self.memory_logger.set(loop_key, json.dumps(loop_result))
+                logger.debug(f"Stored loop result: {loop_key}")
+
+                # Store past loops array
+                past_loops_key = f"past_loops:{self.node_id}"
+                self.memory_logger.set(past_loops_key, json.dumps(past_loops))
+                logger.debug(f"Stored past loops: {past_loops_key}")
+
+                # Store in Redis hash for tracking
+                group_key = f"loop_results:{self.node_id}"
+                self.memory_logger.hset(
+                    group_key,
+                    str(current_loop),
+                    json.dumps(
+                        {
+                            "result": loop_result,
+                            "score": score,
+                            "past_loop": past_loop_obj,
+                        }
+                    ),
+                )
+                logger.debug(f"Stored result in group for loop {current_loop}")
+            except Exception as e:
+                logger.error(f"Failed to store loop result in Redis: {e}")
+
             # Check threshold
             if score >= self.score_threshold:
                 logger.info(f"Threshold met: {score} >= {self.score_threshold}")
                 # Return final result with clean past_loops array and safe result
-                return {
+                final_result = {
                     "input": original_input,
                     "result": self._create_safe_result(loop_result),
                     "loops_completed": current_loop,
@@ -250,11 +281,21 @@ class LoopNode(BaseNode):
                     "past_loops": past_loops,
                 }
 
+                # Store final result in Redis
+                try:
+                    final_key = f"final_result:{self.node_id}"
+                    self.memory_logger.set(final_key, json.dumps(final_result))
+                    logger.debug(f"Stored final result: {final_key}")
+                except Exception as e:
+                    logger.error(f"Failed to store final result in Redis: {e}")
+
+                return final_result
+
             logger.info(f"Threshold not met: {score} < {self.score_threshold}, continuing...")
 
         # Max loops reached without meeting threshold
         logger.info(f"Max loops reached: {self.max_loops}")
-        return {
+        final_result = {
             "input": original_input,
             "result": self._create_safe_result(loop_result),
             "loops_completed": current_loop,
@@ -262,6 +303,16 @@ class LoopNode(BaseNode):
             "threshold_met": False,
             "past_loops": past_loops,
         }
+
+        # Store final result in Redis
+        try:
+            final_key = f"final_result:{self.node_id}"
+            self.memory_logger.set(final_key, json.dumps(final_result))
+            logger.debug(f"Stored final result: {final_key}")
+        except Exception as e:
+            logger.error(f"Failed to store final result in Redis: {e}")
+
+        return final_result
 
     async def _execute_internal_workflow(self, original_input, previous_outputs):
         """
@@ -327,6 +378,37 @@ class LoopNode(BaseNode):
                         payload = log_entry["payload"]
                         if "result" in payload:
                             agents_results[agent_id] = payload["result"]
+                            # Store agent result in Redis
+                            try:
+                                # Store individual result
+                                result_key = f"agent_result:{agent_id}:{current_loop_number}"
+                                self.memory_logger.set(result_key, json.dumps(payload["result"]))
+                                logger.debug(f"Stored agent result: {result_key}")
+
+                                # Store in Redis hash for tracking
+                                group_key = f"agent_results:{self.node_id}:{current_loop_number}"
+                                self.memory_logger.hset(
+                                    group_key, agent_id, json.dumps(payload["result"])
+                                )
+                                logger.debug(f"Stored result in group for agent {agent_id}")
+                            except Exception as e:
+                                logger.error(f"Failed to store agent result in Redis: {e}")
+
+            # Store all agent results in Redis
+            try:
+                # Store all results for this loop
+                loop_results_key = f"loop_agents:{self.node_id}:{current_loop_number}"
+                self.memory_logger.set(loop_results_key, json.dumps(agents_results))
+                logger.debug(f"Stored all agent results for loop {current_loop_number}")
+
+                # Store in Redis hash for tracking
+                group_key = f"loop_agents:{self.node_id}"
+                self.memory_logger.hset(
+                    group_key, str(current_loop_number), json.dumps(agents_results)
+                )
+                logger.debug(f"Stored all results in group for loop {current_loop_number}")
+            except Exception as e:
+                logger.error(f"Failed to store agent results in Redis: {e}")
 
             return agents_results
 
@@ -721,24 +803,20 @@ class LoopNode(BaseNode):
         if len(safe_input) > 200:
             safe_input = safe_input[:200] + "...<truncated>"
 
-        # 🔧 FIXED: Complete template context for Jinja2 rendering
+        # 🔧 FIXED: Complete template context for Jinja2 rendering with actual agent responses
         template_context = {
             "loop_number": loop_number,
             "score": score,
-            "reasoning_quality": reasoning_quality,  # 🔧 NEW: Available for templates
-            "convergence_trend": convergence_trend,  # 🔧 NEW: Available for templates
+            "reasoning_quality": reasoning_quality,
+            "convergence_trend": convergence_trend,
             "timestamp": datetime.now().isoformat(),
-            "result": safe_result,
+            "result": safe_result,  # Full result object with all agent responses
             "input": safe_input,
             "insights": cognitive_insights.get("insights", ""),
             "improvements": cognitive_insights.get("improvements", ""),
             "mistakes": cognitive_insights.get("mistakes", ""),
-            # Add previous_outputs context for complex template access
-            "previous_outputs": {
-                "synthesis_attempt": {"response": cognitive_insights.get("insights", "")},
-                "quality_moderator": {"response": f"Score: {reasoning_quality}"},
-                "agreement_moderator": {"response": f"Score: {score}, Trend: {convergence_trend}"},
-            },
+            # Use actual agent responses from safe_result
+            "previous_outputs": safe_result,  # Contains all agent responses in their original structure
         }
 
         # 🔧 FIXED: Proper Jinja2 template evaluation instead of naive string replacement

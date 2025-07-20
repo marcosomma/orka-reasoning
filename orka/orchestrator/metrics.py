@@ -291,4 +291,24 @@ class MetricsCollector:
                 if isinstance(merged, dict):
                     outputs.update(merged)
 
+            # Case: Current run agent responses
+            if "response" in payload:
+                outputs[agent_id] = {
+                    "response": payload["response"],
+                    "confidence": payload.get("confidence", "0.0"),
+                    "internal_reasoning": payload.get("internal_reasoning", ""),
+                    "_metrics": payload.get("_metrics", {}),
+                    "formatted_prompt": payload.get("formatted_prompt", ""),
+                }
+
+            # Case: Memory agent responses
+            if "memories" in payload:
+                outputs[agent_id] = {
+                    "memories": payload["memories"],
+                    "query": payload.get("query", ""),
+                    "backend": payload.get("backend", ""),
+                    "search_type": payload.get("search_type", ""),
+                    "num_results": payload.get("num_results", 0),
+                }
+
         return outputs

@@ -185,175 +185,175 @@ class TestExecutionEngineReal:
         assert mock_run.call_count == 2
 
     @pytest.mark.asyncio
-    async def test_execute_single_agent_real_router(self):
-        """Test _execute_single_agent with real router node."""
+    async def test_real_router_node_execution(self):
+        """Test real router node execution within the comprehensive error handling."""
+        input_data = {"test": "data"}
+        logs = []
+
         # Create a real router agent
-        agent = Mock()
-        agent.run = Mock(return_value=["next_agent1", "next_agent2"])
-        agent.params = {
+        router_agent = Mock(
+            type="routernode",
+            __class__=Mock(__name__="RouterAgent"),
+            run=Mock(return_value=["next_agent1", "next_agent2"]),
+        )
+        router_agent.params = {
             "decision_key": "classification",
             "routing_map": {"true": "path1", "false": "path2"},
         }
+        self.engine.agents = {"router1": router_agent}
+        self.engine.orchestrator_cfg = {"agents": ["router1"]}
 
-        agent_id = "router1"
-        payload = {
-            "input": "test",
-            "previous_outputs": {"classification": "positive"},
-        }
-        queue = ["agent2", "agent3"]
-        logs = []
+        # Mock the queue to observe changes
+        self.engine.queue = ["agent2", "agent3"]
 
-        # Call the real method
-        result = await self.engine._execute_single_agent(
-            agent_id,
-            agent,
-            "routernode",
-            payload,
-            "test",
-            queue,
-            logs,
-        )
+        with patch("orka.orchestrator.execution_engine.os.makedirs"):
+            with patch("orka.orchestrator.execution_engine.os.path.join"):
+                await self.engine._run_with_comprehensive_error_handling(
+                    input_data,
+                    logs,
+                )
 
         # Verify real behavior
-        agent.run.assert_called_once_with(payload)
-        assert queue == ["next_agent1", "next_agent2"]  # Queue should be updated
-        assert "next_agents" in result
+        router_agent.run.assert_called_once()
+        assert self.engine.queue == ["next_agent1", "next_agent2", "agent2", "agent3"]  # Queue should be updated
         self.engine.normalize_bool.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_execute_single_agent_real_normal_agent(self):
-        """Test _execute_single_agent with real normal agent."""
+    async def test_real_normal_agent_execution(self):
+        """Test real normal agent execution within the comprehensive error handling."""
+        input_data = {"test": "data"}
+        logs = []
+
         # Create a real normal agent
-        agent = Mock()
-        agent.run = Mock(return_value={"result": "normal_result"})
-
-        agent_id = "normal_agent"
-        payload = {"input": "test", "previous_outputs": {}}
-
-        # Call the real method
-        result = await self.engine._execute_single_agent(
-            agent_id,
-            agent,
-            "openai",
-            payload,
-            "test",
-            [],
-            [],
+        normal_agent = Mock(
+            type="openai",
+            __class__=Mock(__name__="NormalAgent"),
+            run=Mock(return_value={"result": "normal_result"}),
         )
+        self.engine.agents = {"normal_agent": normal_agent}
+        self.engine.orchestrator_cfg = {"agents": ["normal_agent"]}
+
+        with patch("orka.orchestrator.execution_engine.os.makedirs"):
+            with patch("orka.orchestrator.execution_engine.os.path.join"):
+                await self.engine._run_with_comprehensive_error_handling(
+                    input_data,
+                    logs,
+                )
 
         # Verify real behavior
-        agent.run.assert_called_once_with(payload)
-        assert "result" in result
-        assert result["result"] == {"result": "normal_result"}
+        normal_agent.run.assert_called_once()
         self.engine._render_agent_prompt.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_execute_single_agent_real_memory_reader(self):
-        """Test _execute_single_agent with real memory reader node."""
+    async def test_real_memory_reader_execution(self):
+        """Test real memory reader node execution within the comprehensive error handling."""
+        input_data = {"test": "data"}
+        logs = []
+
         # Create a real memory reader agent
-        agent = Mock()
-        agent.run = AsyncMock(return_value={"memories": ["mem1", "mem2"]})
-
-        agent_id = "memory_reader"
-        payload = {"input": "test", "previous_outputs": {}}
-
-        # Call the real method
-        result = await self.engine._execute_single_agent(
-            agent_id,
-            agent,
-            "memoryreadernode",
-            payload,
-            "test",
-            [],
-            [],
+        memory_reader_agent = Mock(
+            type="memoryreadernode",
+            __class__=Mock(__name__="MemoryReaderAgent"),
+            run=AsyncMock(return_value={"memories": ["mem1", "mem2"]}),
         )
+        self.engine.agents = {"memory_reader": memory_reader_agent}
+        self.engine.orchestrator_cfg = {"agents": ["memory_reader"]}
+
+        with patch("orka.orchestrator.execution_engine.os.makedirs"):
+            with patch("orka.orchestrator.execution_engine.os.path.join"):
+                await self.engine._run_with_comprehensive_error_handling(
+                    input_data,
+                    logs,
+                )
 
         # Verify real behavior
-        agent.run.assert_called_once_with(payload)
-        assert "result" in result
-        assert result["result"] == {"memories": ["mem1", "mem2"]}
+        memory_reader_agent.run.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_execute_single_agent_real_waiting_agent(self):
-        """Test _execute_single_agent with agent returning waiting status."""
+    async def test_real_waiting_agent_execution(self):
+        """Test real waiting agent execution within the comprehensive error handling."""
+        input_data = {"test": "data"}
+        logs = []
+
         # Create a real waiting agent
-        agent = Mock()
-        agent.run = Mock(return_value={"status": "waiting", "received": "partial_input"})
-
-        agent_id = "waiting_agent"
-        payload = {"input": "test", "previous_outputs": {}}
-        queue = []
-
-        # Call the real method
-        result = await self.engine._execute_single_agent(
-            agent_id,
-            agent,
-            "openai",
-            payload,
-            "test",
-            queue,
-            [],
+        waiting_agent = Mock(
+            type="openai",
+            __class__=Mock(__name__="WaitingAgent"),
+            run=Mock(return_value={"status": "waiting", "received": "partial_input"}),
         )
+        self.engine.agents = {"waiting_agent": waiting_agent}
+        self.engine.orchestrator_cfg = {"agents": ["waiting_agent"]}
+
+        # Mock the queue to observe re-queuing
+        self.engine.queue = []
+
+        with patch("orka.orchestrator.execution_engine.os.makedirs"):
+            with patch("orka.orchestrator.execution_engine.os.path.join"):
+                await self.engine._run_with_comprehensive_error_handling(
+                    input_data,
+                    logs,
+                )
 
         # Verify real behavior
-        agent.run.assert_called_once_with(payload)
-        assert result["status"] == "waiting"
-        assert agent_id in queue  # Should be re-queued
+        waiting_agent.run.assert_called_once()
+        assert "waiting_agent" in self.engine.queue  # Should be re-queued
 
     @pytest.mark.asyncio
-    async def test_execute_single_agent_real_join_node_waiting(self):
-        """Test _execute_single_agent with join node in waiting state."""
+    async def test_real_join_node_waiting_execution(self):
+        """Test real join node in waiting state within the comprehensive error handling."""
+        input_data = {"test": "data"}
+        logs = []
+
         # Create a real join node
-        agent = Mock()
-        agent.run = Mock(return_value={"status": "waiting", "message": "Waiting for fork group"})
-        agent.group_id = "fork_group_123"
-
-        agent_id = "join1"
-        payload = {"input": "test", "previous_outputs": {}}
-        queue = []
-
-        # Call the real method
-        result = await self.engine._execute_single_agent(
-            agent_id,
-            agent,
-            "joinnode",
-            payload,
-            "test",
-            queue,
-            [],
+        join_agent = Mock(
+            type="joinnode",
+            __class__=Mock(__name__="JoinNode"),
+            run=Mock(return_value={"status": "waiting", "message": "Waiting for fork group"}),
         )
+        join_agent.group_id = "fork_group_123"
+        self.engine.agents = {"join1": join_agent}
+        self.engine.orchestrator_cfg = {"agents": ["join1"]}
+
+        # Mock the queue to observe re-queuing
+        self.engine.queue = []
+
+        with patch("orka.orchestrator.execution_engine.os.makedirs"):
+            with patch("orka.orchestrator.execution_engine.os.path.join"):
+                await self.engine._run_with_comprehensive_error_handling(
+                    input_data,
+                    logs,
+                )
 
         # Verify real behavior
-        agent.run.assert_called_once()
-        assert result["status"] == "waiting"
-        assert agent_id in queue  # Should be re-queued
+        join_agent.run.assert_called_once()
+        assert "join1" in self.engine.queue  # Should be re-queued
         self.engine.memory.log.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_execute_single_agent_real_join_node_done(self):
-        """Test _execute_single_agent with join node completion."""
+    async def test_real_join_node_done_execution(self):
+        """Test real join node completion within the comprehensive error handling."""
+        input_data = {"test": "data"}
+        logs = []
+
         # Create a real join node
-        agent = Mock()
-        agent.run = Mock(return_value={"status": "done", "result": "joined_result"})
-        agent.group_id = "fork_group_123"
-
-        agent_id = "join1"
-        payload = {"input": "test", "previous_outputs": {}}
-
-        # Call the real method
-        result = await self.engine._execute_single_agent(
-            agent_id,
-            agent,
-            "joinnode",
-            payload,
-            "test",
-            [],
-            [],
+        join_agent = Mock(
+            type="joinnode",
+            __class__=Mock(__name__="JoinNode"),
+            run=Mock(return_value={"status": "done", "result": "joined_result"}),
         )
+        join_agent.group_id = "fork_group_123"
+        self.engine.agents = {"join1": join_agent}
+        self.engine.orchestrator_cfg = {"agents": ["join1"]}
+
+        with patch("orka.orchestrator.execution_engine.os.makedirs"):
+            with patch("orka.orchestrator.execution_engine.os.path.join"):
+                await self.engine._run_with_comprehensive_error_handling(
+                    input_data,
+                    logs,
+                )
 
         # Verify real behavior
-        agent.run.assert_called_once()
-        assert "result" in result
+        join_agent.run.assert_called_once()
         self.engine.fork_manager.delete_group.assert_called_once_with("fork_group_123")
 
     @pytest.mark.asyncio
