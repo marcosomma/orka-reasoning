@@ -111,7 +111,7 @@ def start_native_redis(port: int = 6380) -> Optional[subprocess.Popen]:
         raise RuntimeError(f"Redis startup failed: {e}")
 
 
-def start_redis_docker(port: int = 6380) -> Optional[subprocess.Popen]:
+def start_redis_docker(port: int = 6379) -> Optional[subprocess.Popen]:
     """
     Start Redis Stack using Docker as a fallback.
 
@@ -204,10 +204,10 @@ def wait_for_redis(port: int, max_attempts: int = 30) -> None:
 
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(2)
-            socket_result: int = sock.connect_ex(("localhost", port))
+            socket_result = sock.connect_ex(("localhost", port))
             sock.close()
 
-            if result == 0:
+            if socket_result == 0:  # Changed from result to socket_result
                 # Additional check with Redis ping
                 try:
                     import redis

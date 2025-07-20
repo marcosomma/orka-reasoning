@@ -298,7 +298,7 @@ class ExecutionEngine:
 
                 while retry_count <= max_retries:
                     try:
-                        agent_result = await self._execute_single_agent(
+                        result = await self._execute_single_agent(
                             agent_id,
                             agent,
                             agent_type,
@@ -308,49 +308,32 @@ class ExecutionEngine:
                             logs,
                         )
 
-                        # If we had retries, record partial success
-                        if retry_count > 0:
-                            self._record_partial_success(agent_id, retry_count)
+                        # If result is a coroutine, await it
+                        if inspect.iscoroutine(result):
+                            result = await result
 
-                        # Handle waiting status - re-queue the agent
-                        if isinstance(agent_result, dict) and agent_result.get("status") in [
-                            "waiting",
-                            "timeout",
-                        ]:
-                            if agent_result.get("status") == "waiting":
-                                queue.append(agent_id)  # Re-queue for later
-                            # For these statuses, we should continue to the next agent in queue
-                            continue
-
-                        break  # Success - exit retry loop
-
-                    except Exception as agent_error:
+                        agent_result = result
+                        break
+                    except Exception as e:
                         retry_count += 1
-                        self._record_retry(agent_id)
-                        self._record_error(
-                            "agent_execution",
-                            agent_id,
-                            f"Attempt {retry_count} failed: {agent_error}",
-                            agent_error,
-                            recovery_action="retry" if retry_count <= max_retries else "skip",
-                        )
+                        if retry_count > max_retries:
+                            raise
+                        logger.warning(f"Retrying agent {agent_id} (attempt {retry_count})")
+                        await asyncio.sleep(1 * retry_count)  # Exponential backoff
 
-                        if retry_count <= max_retries:
-                            print(
-                                f"🔄 [ORKA-RETRY] Agent {agent_id} failed, retrying ({retry_count}/{max_retries})",
-                            )
-                            await asyncio.sleep(1)  # Brief delay before retry
-                        else:
-                            print(
-                                f"[ORKA-SKIP] Agent {agent_id} failed {max_retries} times, skipping",
-                            )
-                            # Create a failure result
-                            agent_result = {
-                                "status": "failed",
-                                "error": str(agent_error),
-                                "retries_attempted": retry_count - 1,
-                            }
-                            break
+                # If we had retries, record partial success
+                if retry_count > 0:
+                    self._record_partial_success(agent_id, retry_count)
+
+                # Handle waiting status - re-queue the agent
+                if isinstance(agent_result, dict) and agent_result.get("status") in [
+                    "waiting",
+                    "timeout",
+                ]:
+                    if agent_result.get("status") == "waiting":
+                        queue.append(agent_id)  # Re-queue for later
+                    # For these statuses, we should continue to the next agent in queue
+                    continue
 
                 # Process the result (success or failure)
                 if agent_result is not None:
@@ -475,191 +458,49 @@ class ExecutionEngine:
         queue,
         logs,
     ):
-        """
-        Execute a single agent with proper error handling and status tracking.
-        Returns the result of the agent execution.
-        """
-        # Handle RouterNode: dynamic routing based on previous outputs
-        if agent_type == "routernode":
-            decision_key = agent.params.get("decision_key")
-            routing_map = agent.params.get("routing_map")
-            if decision_key is None:
-                raise ValueError("Router agent must have 'decision_key' in params.")
-            raw_decision_value = payload["previous_outputs"].get(decision_key)
-            normalized = self.normalize_bool(raw_decision_value)
-            payload["previous_outputs"][decision_key] = "true" if normalized else "false"
+        """Execute a single agent with full context and error handling."""
+        try:
+            # Add orchestrator to payload for nodes that need it
+            payload["orchestrator"] = self
 
-            result = agent.run(payload)
-            next_agents = result if isinstance(result, list) else [result]
-            # For router nodes, we need to update the queue
-            queue.clear()
-            queue.extend(next_agents)
-
-            payload_out = {
-                "input": input_data,
-                "decision_key": decision_key,
-                "decision_value": "true" if normalized else "false",
-                "raw_decision_value": str(raw_decision_value),
-                "routing_map": str(routing_map),
-                "next_agents": str(next_agents),
-            }
-            self._add_prompt_to_payload(agent, payload_out, payload)
-            return payload_out
-
-        # Handle ForkNode: run multiple agents in parallel branches
-        elif agent_type == "forknode":
-            result = await agent.run(self, payload)
-            fork_targets = agent.config.get("targets", [])
-            # Flatten branch steps for parallel execution
-            flat_targets = []
-            for branch in fork_targets:
-                if isinstance(branch, list):
-                    flat_targets.extend(branch)
-                else:
-                    flat_targets.append(branch)
-            fork_targets = flat_targets
-
-            if not fork_targets:
-                raise ValueError(
-                    f"ForkNode '{agent_id}' requires non-empty 'targets' list.",
-                )
-
-            fork_group_id = self.fork_manager.generate_group_id(agent_id)
-            self.fork_manager.create_group(fork_group_id, fork_targets)
-            payload["fork_group_id"] = fork_group_id
-
-            mode = agent.config.get(
-                "mode",
-                "sequential",
-            )  # Default to sequential if not set
-
-            payload_out = {
-                "input": input_data,
-                "fork_group": fork_group_id,
-                "fork_targets": fork_targets,
-            }
-            self._add_prompt_to_payload(agent, payload_out, payload)
-
-            self.memory.log(
-                agent_id,
-                agent.__class__.__name__,
-                payload_out,
-                step=self.step_index,
-                run_id=self.run_id,
-            )
-
-            print(
-                f"{datetime.now()} > [ORKA][FORK][PARALLEL] {self.step_index} >  Running forked agents in parallel for group {fork_group_id}",
-            )
-            fork_logs = await self.run_parallel_agents(
-                fork_targets,
-                fork_group_id,
-                input_data,
-                payload["previous_outputs"],
-            )
-            logs.extend(fork_logs)  # Add forked agent logs to the main log
-            return payload_out
-
-        # Handle JoinNode: wait for all forked agents to finish, then join results
-        elif agent_type == "joinnode":
-            fork_group_id = self.memory.hget(
-                f"fork_group_mapping:{agent.group_id}",
-                "group_id",
-            )
-            if fork_group_id:
-                fork_group_id = (
-                    fork_group_id.decode() if isinstance(fork_group_id, bytes) else fork_group_id
-                )
-            else:
-                fork_group_id = agent.group_id  # fallback
-
-            payload["fork_group_id"] = fork_group_id  # inject
-            result = agent.run(payload)
-            payload_out = {
-                "input": input_data,
-                "fork_group_id": fork_group_id,
-                "result": result,
-            }
-            self._add_prompt_to_payload(agent, payload_out, payload)
-
-            if not fork_group_id:
-                raise ValueError(
-                    f"JoinNode '{agent_id}' missing required group_id.",
-                )
-
-            # Handle different JoinNode statuses
-            if result.get("status") == "waiting":
-                print(
-                    f"{datetime.now()} > [ORKA][JOIN][WAITING] {self.step_index} > Node '{agent_id}' is still waiting on fork group: {fork_group_id}",
-                )
-                queue.append(agent_id)
-                self.memory.log(
-                    agent_id,
-                    agent.__class__.__name__,
-                    payload_out,
-                    step=self.step_index,
-                    run_id=self.run_id,
-                )
-                # Return waiting status instead of continue
-                return {"status": "waiting", "result": result}
-            elif result.get("status") == "timeout":
-                print(
-                    f"{datetime.now()} > [ORKA][JOIN][TIMEOUT] {self.step_index} > Node '{agent_id}' timed out waiting for fork group: {fork_group_id}",
-                )
-                self.memory.log(
-                    agent_id,
-                    agent.__class__.__name__,
-                    payload_out,
-                    step=self.step_index,
-                    run_id=self.run_id,
-                )
-                # Clean up the fork group even on timeout
-                self.fork_manager.delete_group(fork_group_id)
-                return {"status": "timeout", "result": result}
-            elif result.get("status") == "done":
-                self.fork_manager.delete_group(
-                    fork_group_id,
-                )  # Clean up fork group after successful join
-
-            return payload_out
-
-        else:
-            # Normal Agent: run and handle result
-
-            # Render prompt before running agent if agent has a prompt
-            self._render_agent_prompt(agent, payload)
-
-            if agent_type in ("memoryreadernode", "memorywriternode", "failovernode", "loopnode"):
-                # Memory nodes, failover nodes, and loop nodes have async run methods
+            if agent_type in (
+                "memoryreadernode",
+                "memorywriternode",
+                "failovernode",
+                "loopnode",
+                "openaianswerbuilder",
+                "forknode",
+            ):
+                # Memory nodes, failover nodes, loop nodes, and OpenAI agents have async run methods
                 result = await agent.run(payload)
             else:
                 # Regular synchronous agent
                 result = agent.run(payload)
+                # Check if result is a coroutine
+                if inspect.iscoroutine(result):
+                    result = await result
 
             # If agent is waiting (e.g., for async input), return waiting status
             if isinstance(result, dict) and result.get("status") == "waiting":
                 print(
-                    f"{datetime.now()} > [ORKA][WAITING] {self.step_index} > Node '{agent_id}' is still waiting: {result.get('received')}",
+                    f"{datetime.now()} > [ORKA] {self.step_index} > Agent '{agent_id}' returned waiting status: {result}",
                 )
-                queue.append(agent_id)
-                return {"status": "waiting", "result": result}
+                return result
 
-            # After normal agent finishes, mark it done if it's part of a fork
-            fork_group = payload.get("input", {})
-            if fork_group:
-                self.fork_manager.mark_agent_done(fork_group, agent_id)
+            # Log the execution
+            log_entry = {
+                "agent_id": agent_id,
+                "event_type": "execute",
+                "timestamp": datetime.now(UTC).isoformat(),
+                "payload": result,
+            }
+            logs.append(log_entry)
 
-            # Check if this agent has a next-in-sequence step in its branch
-            next_agent = self.fork_manager.next_in_sequence(fork_group, agent_id)
-            if next_agent:
-                print(
-                    f"{datetime.now()} > [ORKA][FORK-SEQUENCE] {self.step_index} > Agent '{agent_id}' finished. Enqueuing next in sequence: '{next_agent}'",
-                )
-                self.enqueue_fork([next_agent], fork_group)
+            return result
 
-            payload_out = {"input": input_data, "result": result}
-            self._add_prompt_to_payload(agent, payload_out, payload)
-            return payload_out
+        except Exception as e:
+            logger.error(f"Error executing agent {agent_id}: {e}")
+            raise
 
     async def _run_agent_async(self, agent_id, input_data, previous_outputs):
         """
