@@ -6,6 +6,7 @@ import sys
 
 from orka.cli.core import run_cli
 from orka.cli.memory.watch import memory_watch
+from orka.cli.utils import setup_logging
 
 logger = logging.getLogger(__name__)
 
@@ -57,13 +58,7 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def setup_logging(verbose: bool = False) -> None:
-    """Set up logging configuration."""
-    level = logging.DEBUG if verbose else logging.INFO
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
+
 
 
 def main(argv: list[str] | None = None) -> int | None:
@@ -103,6 +98,8 @@ def main(argv: list[str] | None = None) -> int | None:
             run_args = ["run", args.config, args.input]
             if args.log_to_file:
                 run_args.append("--log-to-file")
+            if args.verbose:
+                run_args.append("--verbose")
             return run_cli(run_args)
 
         # Execute other commands
@@ -121,10 +118,10 @@ def cli_main() -> None:
     try:
         sys.exit(main())
     except KeyboardInterrupt:
-        print("\n🛑 Operation cancelled.")
+        logger.info("\n🛑 Operation cancelled.")
         sys.exit(1)
     except Exception as e:
-        print(f"\n❌ Error: {e}")
+        logger.info(f"\n❌ Error: {e}")
         sys.exit(1)
 
 

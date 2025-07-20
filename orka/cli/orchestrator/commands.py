@@ -19,29 +19,32 @@ This module contains CLI commands related to orchestrator operations.
 """
 
 import json
+import logging
 import sys
 from pathlib import Path
 
 from orka.orchestrator import Orchestrator
+
+logger = logging.getLogger(__name__)
 
 
 async def run_orchestrator(args):
     """Run the orchestrator with the given configuration."""
     try:
         if not Path(args.config).exists():
-            print(f"Configuration file not found: {args.config}", file=sys.stderr)
+            logger.error(f"Configuration file not found: {args.config}")
             return 1
 
         orchestrator = Orchestrator(args.config)
         result = await orchestrator.run(args.input)
 
         if args.json:
-            print(json.dumps(result, indent=2))
+            logger.info(json.dumps(result, indent=2))
         else:
-            print("=== Orchestrator Result ===")
-            print(result)
+            logger.info("=== Orchestrator Result ===")
+            logger.info(result)
 
         return 0
     except Exception as e:
-        print(f"Error running orchestrator: {e}", file=sys.stderr)
+        logger.error(f"Error running orchestrator: {e}")
         return 1

@@ -37,9 +37,8 @@ if "KAFKA_TOPIC_PREFIX" not in os.environ:
     os.environ["KAFKA_TOPIC_PREFIX"] = "orka-memory"
 
 # Import all functions from the modular startup package to maintain backward compatibility
-from orka.startup import (
+from orka.startup import (  # Main orchestration functions
     initialize_schema_registry,
-    # Main orchestration functions
     main,
     run_startup,
     wait_for_redis,
@@ -63,13 +62,13 @@ __all__ = [
     "wait_for_redis",
 ]
 
-print("🚀 Starting OrKa with Kafka + Redis Hybrid Backend...")
-print("📋 Configuration:")
-print(f"   • Memory Backend: {os.environ['ORKA_MEMORY_BACKEND']}")
-print(f"   • Kafka Servers: {os.environ['KAFKA_BOOTSTRAP_SERVERS']}")
-print(f"   • Kafka Topic Prefix: {os.environ['KAFKA_TOPIC_PREFIX']}")
-print(f"   • Redis URL: {os.environ['REDIS_URL']}")
-print()
+logger.info("🚀 Starting OrKa with Kafka + Redis Hybrid Backend...")
+logger.info("📋 Configuration:")
+logger.info(f"   • Memory Backend: {os.environ['ORKA_MEMORY_BACKEND']}")
+logger.info(f"   • Kafka Servers: {os.environ['KAFKA_BOOTSTRAP_SERVERS']}")
+logger.info(f"   • Kafka Topic Prefix: {os.environ['KAFKA_TOPIC_PREFIX']}")
+logger.info(f"   • Redis URL: {os.environ['REDIS_URL']}")
+logger.info()
 
 
 def cli_main():
@@ -82,9 +81,9 @@ def cli_main():
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\n🛑 Shutdown complete.")
+        logger.info("\n🛑 Shutdown complete.")
     except Exception as e:
-        print(f"\n❌ Error: {e}")
+        logger.info(f"\n❌ Error: {e}")
         sys.exit(1)
 
 

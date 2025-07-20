@@ -72,7 +72,7 @@ class OrkaErrorHandler:
             )
 
         self.error_telemetry["errors"].append(error_entry)
-        print(f"🚨 [ORKA-ERROR] {error_type} in {agent_id}: {error_msg}")
+        logger.info(f"🚨 [ORKA-ERROR] {error_type} in {agent_id}: {error_msg}")
 
     def record_silent_degradation(self, agent_id: str, degradation_type: str, details: str):
         """Record silent degradations like JSON parsing failures."""
@@ -85,7 +85,9 @@ class OrkaErrorHandler:
             },
         )
 
-    def save_comprehensive_error_report(self, logs: List[Dict], final_error: Exception | None = None):
+    def save_comprehensive_error_report(
+        self, logs: List[Dict], final_error: Exception | None = None
+    ):
         """Save comprehensive error report with all logged data up to the failure point."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_dir = os.getenv("ORKA_LOG_DIR", "logs")
@@ -148,17 +150,17 @@ class OrkaErrorHandler:
         try:
             with open(error_report_path, "w") as f:
                 json.dump(error_report, f, indent=2, default=str)
-            print(f"📋 Comprehensive error report saved: {error_report_path}")
+            logger.info(f"📋 Comprehensive error report saved: {error_report_path}")
         except Exception as e:
-            print(f"❌ Failed to save error report: {e}")
+            logger.info(f"❌ Failed to save error report: {e}")
 
         # Also save execution trace
         try:
             trace_path = os.path.join(log_dir, f"orka_trace_{timestamp}.json")
             self.orchestrator.memory.save_to_file(trace_path)
-            print(f"📋 Execution trace saved: {trace_path}")
+            logger.info(f"📋 Execution trace saved: {trace_path}")
         except Exception as e:
-            print(f"⚠️ Failed to save trace to memory backend: {e}")
+            logger.info(f"⚠️ Failed to save trace to memory backend: {e}")
 
         return error_report_path
 
@@ -198,7 +200,7 @@ class OrkaErrorHandler:
 
             # Check if any errors occurred during execution
             if self.error_telemetry["errors"]:
-                print(
+                logger.info(
                     f"⚠️ [ORKA-WARNING] Execution completed with {len(self.error_telemetry['errors'])} errors",
                 )
                 self.error_telemetry["execution_status"] = "partial"
@@ -234,7 +236,7 @@ class OrkaErrorHandler:
                 critical_error,
             )
 
-            print(f"💥 [ORKA-CRITICAL] Orchestrator failed: {critical_error}")
+            logger.info(f"💥 [ORKA-CRITICAL] Orchestrator failed: {critical_error}")
 
             # Try to get partial logs if possible
             try:
@@ -252,7 +254,7 @@ class OrkaErrorHandler:
             try:
                 self.orchestrator.memory.close()
             except Exception as cleanup_error:
-                print(f"⚠️ Failed to cleanup memory backend: {cleanup_error}")
+                logger.info(f"⚠️ Failed to cleanup memory backend: {cleanup_error}")
 
             # Return error report for debugging instead of raising
             return {

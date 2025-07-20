@@ -11,6 +11,7 @@
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
+import json
 import logging
 import os
 import re
@@ -22,6 +23,7 @@ import yaml
 from .base_node import BaseNode
 
 logger = logging.getLogger(__name__)
+logger.info(f"DEBUG: Loading loop_node.py from {__file__}")
 
 
 class LoopNode(BaseNode):

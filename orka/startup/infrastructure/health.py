@@ -75,49 +75,49 @@ def display_service_endpoints(backend: str) -> None:
     Args:
         backend: The backend type ('redis', 'redisstack', 'kafka', or 'dual')
     """
-    print(f"🚀 Starting OrKa with {backend.upper()} backend...")
-    print("=" * 80)
+    logger.info(f"🚀 Starting OrKa with {backend.upper()} backend...")
+    logger.info("=" * 80)
 
     if backend in ["redis", "redisstack"]:
-        print("📍 Service Endpoints:")
-        print("   • Orka API: http://localhost:8000")
-        print("   • Redis:    localhost:6380 (native)")
+        logger.info("📍 Service Endpoints:")
+        logger.info("   • Orka API: http://localhost:8000")
+        logger.info("   • Redis:    localhost:6380 (native)")
     elif backend == "kafka":
-        print("📍 Service Endpoints (Hybrid Kafka + Redis):")
-        print("   • Orka API:         http://localhost:8001")
-        print("   • Kafka (Events):   localhost:9092")
-        print("   • Redis (Memory):   localhost:6380 (native)")
-        print("   • Zookeeper:        localhost:2181")
-        print("   • Schema Registry:  http://localhost:8081")
-        print("   • Schema UI:        http://localhost:8082")
+        logger.info("📍 Service Endpoints (Hybrid Kafka + Redis):")
+        logger.info("   • Orka API:         http://localhost:8001")
+        logger.info("   • Kafka (Events):   localhost:9092")
+        logger.info("   • Redis (Memory):   localhost:6380 (native)")
+        logger.info("   • Zookeeper:        localhost:2181")
+        logger.info("   • Schema Registry:  http://localhost:8081")
+        logger.info("   • Schema UI:        http://localhost:8082")
     elif backend == "dual":
-        print("📍 Service Endpoints:")
-        print("   • Orka API (Dual):  http://localhost:8002")
-        print("   • Redis:            localhost:6380 (native)")
-        print("   • Kafka:            localhost:9092")
-        print("   • Zookeeper:        localhost:2181")
-        print("   • Schema Registry:  http://localhost:8081")
-        print("   • Schema UI:        http://localhost:8082")
+        logger.info("📍 Service Endpoints:")
+        logger.info(" Orka API (Dual):  http://localhost:8002")
+        logger.info(" Redis:            localhost:6380 (native)")
+        logger.info(" Kafka:            localhost:9092")
+        logger.info("   • Zookeeper:        localhost:2181")
+        logger.info("   • Schema Registry:  http://localhost:8081")
+        logger.info("   • Schema UI:        http://localhost:8082")
 
-    print("=" * 80)
+    logger.info("=" * 80)
 
 
 def display_startup_success() -> None:
     """Display successful startup message."""
-    print("")
-    print("✅ All services started successfully!")
-    print("📝 Press Ctrl+C to stop all services")
-    print("")
+    logger.info("")
+    logger.info("✅ All services started successfully!")
+    logger.info("📝 Press Ctrl+C to stop all services")
+    logger.info("")
 
 
 def display_shutdown_message() -> None:
     """Display graceful shutdown message."""
-    print("\n🛑 Shutting down services...")
+    logger.info("\n🛑 Shutting down services...")
 
 
 def display_shutdown_complete() -> None:
     """Display shutdown complete message."""
-    print("✅ All services stopped.")
+    logger.info("✅ All services stopped.")
 
 
 def display_error(error: Exception) -> None:
@@ -128,7 +128,6 @@ def display_error(error: Exception) -> None:
         error: The exception that occurred
     """
     logger.error(f"Error during startup: {error}")
-    print(f"\n❌ Startup failed: {error}")
 
 
 def check_process_health(processes: Dict[str, subprocess.Popen]) -> bool:

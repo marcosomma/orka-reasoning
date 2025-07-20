@@ -70,8 +70,8 @@ class AgentFactory:
         Instantiate all agents/nodes as defined in the YAML config.
         Returns a dict mapping agent IDs to their instances.
         """
-        print(self.orchestrator_cfg)
-        print(self.agent_cfgs)
+        logger.debug(self.orchestrator_cfg)
+        logger.debug(self.agent_cfgs)
         instances = {}
 
         def init_single_agent(cfg):
@@ -89,8 +89,8 @@ class AgentFactory:
             clean_cfg.pop("prompt", None)
             clean_cfg.pop("queue", None)
 
-            print(
-                f"{datetime.now()} > [ORKA][INIT] Instantiating agent {agent_id} of type {agent_type}",
+            logger.info(
+                f"Instantiating agent {agent_id} of type {agent_type}",
             )
 
             # Special handling for node types with unique constructor signatures

@@ -18,6 +18,7 @@ Redis Infrastructure Management
 This module handles Redis Stack management including native startup and Docker fallback.
 """
 
+import logging
 import os
 import subprocess
 import time
@@ -25,6 +26,8 @@ from pathlib import Path
 from typing import Optional
 
 from ..config import get_docker_dir
+
+logger = logging.getLogger(__name__)
 
 
 def start_native_redis(port: int = 6380) -> Optional[subprocess.Popen]:
@@ -42,7 +45,7 @@ def start_native_redis(port: int = 6380) -> Optional[subprocess.Popen]:
     """
     try:
         # Check if Redis Stack is available natively
-        print("🔍 Checking Redis Stack availability...")
+        logger.info("🔍 Checking Redis Stack availability...")
         result = subprocess.run(
             ["redis-stack-server", "--version"],
             check=False,
@@ -52,7 +55,7 @@ def start_native_redis(port: int = 6380) -> Optional[subprocess.Popen]:
         )
 
         if result.returncode == 0:
-            print(f"🔧 Starting Redis Stack natively on port {port}...")
+            logger.info(f"🔧 Starting Redis Stack natively on port {port}...")
 
             # Create data directory if it doesn't exist
             data_dir = Path("./redis-data")
@@ -84,30 +87,30 @@ def start_native_redis(port: int = 6380) -> Optional[subprocess.Popen]:
             # Wait for Redis to be ready
             wait_for_redis(port)
 
-            print(f"✅ Redis Stack running natively on port {port}")
+            logger.info(f"✅ Redis Stack running natively on port {port}")
             return redis_proc
         else:
             raise FileNotFoundError("Redis Stack not found in PATH")
 
     except (FileNotFoundError, subprocess.TimeoutExpired):
-        print("❌ Redis Stack not found natively.")
-        print("🐳 Falling back to Docker Redis Stack...")
+        logger.warning("❌ Redis Stack not found natively.")
+        logger.info("🐳 Falling back to Docker Redis Stack...")
 
         try:
             # Use Docker fallback
             return start_redis_docker(port)
 
         except Exception as docker_error:
-            print(f"❌ Docker fallback also failed: {docker_error}")
-            print("📦 To fix this, install Redis Stack:")
-            print("   • Windows: Download from https://redis.io/download")
-            print("   • macOS: brew install redis-stack")
-            print("   • Ubuntu: sudo apt install redis-stack-server")
-            print("   • Or ensure Docker is available for fallback")
+            logger.error(f"❌ Docker fallback also failed: {docker_error}")
+            logger.info("📦 To fix this, install Redis Stack:")
+            logger.info("   • Windows: Download from https://redis.io/download")
+            logger.info("   • macOS: brew install redis-stack")
+            logger.info("   • Ubuntu: sudo apt install redis-stack-server")
+            logger.info("   • Or ensure Docker is available for fallback")
             raise RuntimeError("Both native and Docker Redis Stack unavailable")
 
     except Exception as e:
-        print(f"❌ Failed to start native Redis: {e}")
+        logger.error(f"❌ Failed to start native Redis: {e}")
         raise RuntimeError(f"Redis startup failed: {e}")
 
 
@@ -128,7 +131,7 @@ def start_redis_docker(port: int = 6379) -> Optional[subprocess.Popen]:
         docker_dir: str = get_docker_dir()
         compose_file = os.path.join(docker_dir, "docker-compose.yml")
 
-        print(f"🔧 Starting Redis Stack via Docker on port {port}...")
+        logger.info(f"🔧 Starting Redis Stack via Docker on port {port}...")
 
         # Stop any existing Redis containers
         subprocess.run(
@@ -159,7 +162,7 @@ def start_redis_docker(port: int = 6379) -> Optional[subprocess.Popen]:
         # Wait for Redis to be ready
         wait_for_redis(port)
 
-        print(f"✅ Redis Stack running via Docker on port {port}")
+        logger.info(f"✅ Redis Stack running via Docker on port {port}")
         return None
 
     except subprocess.CalledProcessError as e:
@@ -179,7 +182,7 @@ def wait_for_redis(port: int, max_attempts: int = 30) -> None:
     Raises:
         RuntimeError: If Redis doesn't become ready within the timeout
     """
-    print(f"⏳ Waiting for Redis to be ready on port {port}...")
+    logger.info(f"⏳ Waiting for Redis to be ready on port {port}...")
 
     for attempt in range(max_attempts):
         try:
@@ -194,7 +197,7 @@ def wait_for_redis(port: int, max_attempts: int = 30) -> None:
                 )
 
                 if result.returncode == 0 and "PONG" in result.stdout:
-                    print(f"✅ Redis is ready on port {port}!")
+                    logger.info(f"✅ Redis is ready on port {port}!")
                     return
             except (FileNotFoundError, subprocess.TimeoutExpired):
                 pass  # redis-cli not available, try alternative
@@ -214,7 +217,7 @@ def wait_for_redis(port: int, max_attempts: int = 30) -> None:
 
                     client = redis.Redis(host="localhost", port=port, decode_responses=True)
                     if client.ping():
-                        print(f"✅ Redis is ready on port {port}!")
+                        logger.info(f"✅ Redis is ready on port {port}!")
                         return
                 except Exception:
                     pass  # Continue trying
@@ -223,7 +226,7 @@ def wait_for_redis(port: int, max_attempts: int = 30) -> None:
             pass
 
         if attempt < max_attempts - 1:
-            print(f"Redis not ready yet, waiting... (attempt {attempt + 1}/{max_attempts})")
+            logger.info(f"Redis not ready yet, waiting... (attempt {attempt + 1}/{max_attempts})")
             time.sleep(2)
         else:
             raise RuntimeError(
@@ -237,7 +240,7 @@ def cleanup_redis_docker() -> None:
         docker_dir: str = get_docker_dir()
         compose_file = os.path.join(docker_dir, "docker-compose.yml")
 
-        print("🛑 Stopping Redis Docker services...")
+        logger.info("🛑 Stopping Redis Docker services...")
         subprocess.run(
             [
                 "docker-compose",
@@ -249,9 +252,9 @@ def cleanup_redis_docker() -> None:
             check=False,
             capture_output=True,
         )
-        print("✅ Redis Docker services stopped")
+        logger.info("✅ Redis Docker services stopped")
     except Exception as e:
-        print(f"⚠️ Error stopping Redis Docker services: {e}")
+        logger.warning(f"⚠️ Error stopping Redis Docker services: {e}")
 
 
 def terminate_redis_process(redis_proc: subprocess.Popen) -> None:
@@ -262,12 +265,12 @@ def terminate_redis_process(redis_proc: subprocess.Popen) -> None:
         redis_proc: The Redis process to terminate
     """
     if redis_proc and redis_proc.poll() is None:  # Process is still running
-        print("🛑 Stopping Redis process...")
+        logger.info("🛑 Stopping Redis process...")
         redis_proc.terminate()
         try:
             redis_proc.wait(timeout=5)
-            print("✅ Redis stopped gracefully")
+            logger.info("✅ Redis stopped gracefully")
         except subprocess.TimeoutExpired:
-            print("⚠️ Force killing Redis process...")
+            logger.warning("⚠️ Force killing Redis process...")
             redis_proc.kill()
             redis_proc.wait()

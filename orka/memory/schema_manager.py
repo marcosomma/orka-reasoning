@@ -287,7 +287,7 @@ def migrate_from_json():
     """
     Example of how to migrate existing JSON-based Kafka messages to schema-based.
     """
-    print(
+    logger.info(
         """
     Migration Steps:
     

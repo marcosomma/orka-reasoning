@@ -40,10 +40,10 @@ def start_kafka_docker() -> None:
     docker_dir: str = get_docker_dir()
     compose_file = os.path.join(docker_dir, "docker-compose.yml")
 
-    print("🔧 Starting Kafka services via Docker...")
+    logger.info("🔧 Starting Kafka services via Docker...")
 
     # Stop any existing Kafka containers (but not Redis)
-    print("Stopping any existing Kafka containers...")
+    logger.info("Stopping any existing Kafka containers...")
 
     # Stop specific Kafka services instead of using profile to avoid affecting Redis
     kafka_services = ["kafka", "zookeeper", "schema-registry", "schema-registry-ui"]
@@ -79,7 +79,7 @@ def start_kafka_docker() -> None:
     time.sleep(3)
 
     # Start Kafka services step by step
-    print("Starting Zookeeper...")
+    logger.info("Starting Zookeeper...")
     subprocess.run(
         [
             "docker-compose",
@@ -92,7 +92,7 @@ def start_kafka_docker() -> None:
         check=True,
     )
 
-    print("Starting Kafka...")
+    logger.info("Starting Kafka...")
     subprocess.run(
         [
             "docker-compose",
@@ -105,7 +105,7 @@ def start_kafka_docker() -> None:
         check=True,
     )
 
-    print("Starting Schema Registry...")
+    logger.info("Starting Schema Registry...")
     subprocess.run(
         [
             "docker-compose",
@@ -118,7 +118,7 @@ def start_kafka_docker() -> None:
         check=True,
     )
 
-    print("Starting Schema Registry UI...")
+    logger.info("Starting Schema Registry UI...")
     subprocess.run(
         [
             "docker-compose",
@@ -131,7 +131,7 @@ def start_kafka_docker() -> None:
         check=True,
     )
 
-    print("✅ Kafka services started via Docker")
+    logger.info("✅ Kafka services started via Docker")
 
 
 def wait_for_kafka_services() -> None:
@@ -141,12 +141,12 @@ def wait_for_kafka_services() -> None:
     Raises:
         RuntimeError: If Kafka services fail to become ready
     """
-    print("⏳ Waiting for Kafka services to be ready...")
+    logger.info("⏳ Waiting for Kafka services to be ready...")
     docker_dir: str = get_docker_dir()
     compose_file = os.path.join(docker_dir, "docker-compose.yml")
 
     # Wait for Kafka to be ready
-    print("⏳ Waiting for Kafka to be ready...")
+    logger.info("⏳ Waiting for Kafka to be ready...")
     time.sleep(15)  # Kafka needs more time to initialize
 
     for attempt in range(10):
@@ -167,29 +167,29 @@ def wait_for_kafka_services() -> None:
                 check=True,
                 capture_output=True,
             )
-            print("✅ Kafka is ready!")
+            logger.info("✅ Kafka is ready!")
             break
         except subprocess.CalledProcessError:
             if attempt < 9:
-                print(f"Kafka not ready yet, waiting... (attempt {attempt + 1}/10)")
+                logger.info(f"Kafka not ready yet, waiting... (attempt {attempt + 1}/10)")
                 time.sleep(3)
             else:
                 logger.error("Kafka failed to start properly")
                 raise RuntimeError("Kafka startup timeout")
 
     # Wait for Schema Registry to be ready
-    print("⏳ Waiting for Schema Registry to be ready...")
+    logger.info("⏳ Waiting for Schema Registry to be ready...")
     for attempt in range(10):
         try:
             import requests
 
             response = requests.get("http://localhost:8081/subjects", timeout=5)
             if response.status_code == 200:
-                print("✅ Schema Registry is ready!")
+                logger.info("✅ Schema Registry is ready!")
                 break
         except Exception:
             if attempt < 9:
-                print(f"Schema Registry not ready yet, waiting... (attempt {attempt + 1}/10)")
+                logger.info(f"Schema Registry not ready yet, waiting... (attempt {attempt + 1}/10)")
                 time.sleep(2)
             else:
                 logger.warning("Schema Registry may not be fully ready, but continuing...")
@@ -202,7 +202,7 @@ def initialize_schema_registry() -> None:
     This ensures schemas are registered at startup time.
     """
     try:
-        print("🔧 Initializing Schema Registry schemas...")
+        logger.info("🔧 Initializing Schema Registry schemas...")
 
         # Set environment variables for schema registry
         os.environ["KAFKA_USE_SCHEMA_REGISTRY"] = "true"
@@ -224,7 +224,7 @@ def initialize_schema_registry() -> None:
         elif hasattr(memory_logger, "close"):
             memory_logger.close()
 
-        print("✅ Schema Registry schemas initialized successfully!")
+        logger.info("✅ Schema Registry schemas initialized successfully!")
 
     except Exception as e:
         logger.warning(f"Schema Registry initialization failed: {e}")
@@ -249,9 +249,9 @@ def cleanup_kafka_docker() -> None:
             ],
             check=False,
         )
-        print("✅ Kafka Docker services stopped")
+        logger.info("✅ Kafka Docker services stopped")
     except Exception as e:
-        print(f"⚠️ Error stopping Kafka Docker services: {e}")
+        logger.warning(f"⚠️ Error stopping Kafka Docker services: {e}")
 
 
 def get_kafka_services() -> list[str]:

@@ -403,6 +403,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 except Exception as e:
                     logger.warning(f"Failed to generate embedding for memory: {e}")
 
+            logger.debug(f"RedisStackMemoryLogger: Attempting to hset memory_key={memory_key} with data={memory_data}")
             # Store the memory
             client.hset(
                 memory_key,
