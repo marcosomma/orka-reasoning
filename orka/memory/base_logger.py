@@ -25,7 +25,7 @@ import logging
 import threading
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Callable, Set
 
 from .file_operations import FileOperationsMixin
 from .serialization import SerializationMixin
@@ -194,7 +194,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         self.decay_config = self._init_decay_config(decay_config or {})
 
         # Decay state management
-        self._decay_thread = None
+        self._decay_thread: threading.Thread | None = None
         self._decay_stop_event = threading.Event()
         self._last_decay_check = datetime.now(UTC)
 
@@ -247,7 +247,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         merged_config = default_config.copy()
         for key, value in decay_config.items():
             if isinstance(value, dict) and key in merged_config:
-                target_dict = merged_config[key]
+                target_dict = merged_config.get(key)
                 if isinstance(target_dict, dict):
                     target_dict.update(value)
                 else:
@@ -275,15 +275,15 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         Returns:
             Importance score between 0.0 and 1.0
         """
-        rules = self.decay_config["importance_rules"]
-        score = rules["base_score"]
+        rules = self.decay_config.get("importance_rules", {})
+        score = rules.get("base_score", 0.5)
 
         # Apply event type boosts
-        event_boost = rules["event_type_boosts"].get(event_type, 0.0)
+        event_boost = rules.get("event_type_boosts", {}).get(event_type, 0.0)
         score += event_boost
 
         # Apply agent type boosts
-        for agent_type, boost in rules["agent_type_boosts"].items():
+        for agent_type, boost in rules.get("agent_type_boosts", {}).items():
             if agent_type in agent_id:
                 score += boost
                 break
@@ -296,7 +296,8 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
                 score -= 0.1
 
         # Clamp score between 0.0 and 1.0
-        return max(0.0, min(1.0, score))
+        return_value: float = max(0.0, min(1.0, score))
+        return return_value
 
     def _classify_memory_type(
         self,
@@ -320,12 +321,12 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         if category == "log":
             return "short_term"
 
-        rules = self.decay_config["memory_type_rules"]
+        rules = self.decay_config.get("memory_type_rules", {})
 
         # Check explicit rules first (only for stored memories)
-        if event_type in rules["long_term_events"]:
+        if event_type in rules.get("long_term_events", []):
             return "long_term"
-        if event_type in rules["short_term_events"]:
+        if event_type in rules.get("short_term_events", []):
             return "short_term"
 
         # Fallback to importance score (only for stored memories)
@@ -379,8 +380,8 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         if self._decay_thread is not None:
             return  # Already running
 
-        def decay_scheduler():
-            interval_seconds = self.decay_config["check_interval_minutes"] * 60
+        def decay_scheduler() -> None:
+            interval_seconds = self.decay_config.get("check_interval_minutes", 30) * 60
 
             while not self._decay_stop_event.wait(interval_seconds):
                 try:
@@ -607,7 +608,9 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         else:
             return obj
 
-    def _process_memory_for_saving(self, memory_entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def _process_memory_for_saving(
+        self, memory_entries: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """
         Process memory entries before saving, e.g., removing previous_outputs.
         """
@@ -626,7 +629,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
             processed_entries.append(new_entry)
         return processed_entries
 
-    def _sanitize_for_json(self, obj: Any) -> Any:
+    def _sanitize_for_json(self, obj: Any, _seen: Set[Any] | None = None) -> Any:
         """
         Sanitize an object to ensure it's JSON serializable.
         Converts non-serializable types (like objects, functions) to strings.
@@ -648,7 +651,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         """
         return bool(self._blob_store)
 
-    def _build_previous_outputs(self, logs):
+    def _build_previous_outputs(self, logs: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Build a dictionary of previous agent outputs from the execution logs.
         Used to provide context to downstream agents.
@@ -671,7 +674,9 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
 
         # Then process logs to update/add any missing results
         for log in logs:
-            agent_id = log["agent_id"]
+            agent_id = str(log.get("agent_id"))
+            if not agent_id:
+                continue
             payload = log.get("payload", {})
 
             # Case: regular agent output

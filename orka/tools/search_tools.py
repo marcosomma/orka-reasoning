@@ -28,13 +28,14 @@ be present in their training data.
 """
 
 import logging
+from typing import Any, List
 
 # Optional import for DuckDuckGo search
 try:
     from duckduckgo_search import DDGS
 
     HAS_DUCKDUCKGO = True
-    DDGS_INSTANCE: type[DDGS] | None = DDGS  # Assign the class to a variable
+    DDGS_INSTANCE: Any = DDGS  # Assign the class to a variable
 except ImportError:
     DDGS_INSTANCE = None
     HAS_DUCKDUCKGO = False
@@ -50,7 +51,7 @@ class DuckDuckGoTool(BaseTool):
     Returns search result snippets from the top results.
     """
 
-    def run(self, input_data):
+    def run(self, input_data: Any) -> List[str]:
         """
         Perform a DuckDuckGo search and return result snippets.
 

@@ -122,7 +122,7 @@ class YAMLLoader:
             The loaded YAML configuration.
         """
         with open(self.path) as f:
-            return yaml.safe_load(f)
+            return yaml.safe_load(f)  # type: ignore
 
     def get_orchestrator(self) -> Dict[str, Any]:
         """
@@ -131,7 +131,7 @@ class YAMLLoader:
         Returns:
             The orchestrator configuration.
         """
-        return self.config.get("orchestrator", {})
+        return self.config.get("orchestrator", {})  # type: ignore
 
     def get_agents(self) -> List[Dict[str, Any]]:
         """
@@ -140,7 +140,7 @@ class YAMLLoader:
         Returns:
             The list of agent configurations.
         """
-        return self.config.get("agents", [])
+        return self.config.get("agents", [])  # type: ignore
 
     def validate(self) -> bool:
         """

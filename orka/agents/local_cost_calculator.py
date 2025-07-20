@@ -13,7 +13,10 @@ No more fantasy $0.00 costs - local models have real expenses.
 import logging
 import os
 from enum import Enum
-from typing import Optional
+from typing import Any, Dict, List, Optional, Tuple
+
+import GPUtil
+import psutil
 
 logger = logging.getLogger(__name__)
 
@@ -179,7 +182,7 @@ class LocalCostCalculator:
 
         # Estimate based on detected GPU
         try:
-            import GPUtil  # type: ignore
+            import GPUtil
 
             gpus = GPUtil.getGPUs()
             if gpus:
@@ -224,7 +227,7 @@ class LocalCostCalculator:
 
         # Try to detect GPU and estimate TDP
         try:
-            import GPUtil  # type: ignore
+            import GPUtil
 
             gpus = GPUtil.getGPUs()
             if gpus:
@@ -322,7 +325,7 @@ class LocalCostCalculator:
 
 
 # Global instance - can be configured via environment
-_default_calculator = None
+_default_calculator: LocalCostCalculator | None = None
 
 
 def get_cost_calculator() -> LocalCostCalculator:

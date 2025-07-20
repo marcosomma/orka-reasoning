@@ -11,10 +11,13 @@ import json
 import re
 
 
+from typing import Any, Dict, List
+
+
 class SocietyOfMindExtractor:
     def __init__(self, file_paths: list[str]):
         self.file_paths = file_paths
-        self.data = []
+        self.data: List[Dict[str, Any]] = []
         self.reasoning_indicators = [
             "reasoning",
             "analysis",
@@ -96,7 +99,7 @@ class SocietyOfMindExtractor:
             except Exception as e:
                 print(f"Error loading {file_path}: {e}")
 
-    def safe_eval(self, response_str: str) -> dict:
+    def safe_eval(self, response_str: str) -> dict[Any, Any]:
         """Safely evaluate response strings"""
         try:
             if response_str.startswith("{") and response_str.endswith("}"):
@@ -401,7 +404,7 @@ class SocietyOfMindExtractor:
 
         return memory_analysis
 
-    def _extract_agent_type(self, blob_data) -> str:
+    def _extract_agent_type(self, blob_data: dict[str, Any]) -> str:
         """Extract agent type from blob data"""
         # Check multiple locations for agent type
         locations = [
@@ -447,7 +450,7 @@ class SocietyOfMindExtractor:
 
         return "unknown"
 
-    def _extract_loop_number(self, blob_data) -> int:
+    def _extract_loop_number(self, blob_data: dict[str, Any]) -> int:
         """Extract loop number from blob data"""
         locations = [
             ("input", "loop_number"),

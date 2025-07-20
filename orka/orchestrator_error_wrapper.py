@@ -5,10 +5,24 @@ Provides comprehensive error tracking and telemetry without modifying the core o
 """
 
 import json
+import logging
 import os
 import traceback
 from datetime import datetime, timezone
-from typing import Dict, List
+from typing import Any, Dict, List, TypedDict
+
+logger = logging.getLogger(__name__)
+
+
+class ErrorTelemetry(TypedDict):
+    errors: List[Dict[str, Any]]
+    retry_counters: Dict[str, int]
+    partial_successes: List[Any]
+    silent_degradations: List[Dict[str, Any]]
+    status_codes: Dict[str, int]
+    execution_status: str
+    critical_failures: List[Dict[str, Any]]
+    recovery_actions: List[Dict[str, Any]]
 
 
 class OrkaErrorHandler:
@@ -19,7 +33,7 @@ class OrkaErrorHandler:
 
     def __init__(self, orchestrator):
         self.orchestrator = orchestrator
-        self.error_telemetry = {
+        self.error_telemetry: ErrorTelemetry = {
             "errors": [],  # List of all errors encountered
             "retry_counters": {},  # Per-agent retry counts
             "partial_successes": [],  # Agents that succeeded after retries
@@ -44,7 +58,7 @@ class OrkaErrorHandler:
         error_entry = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "type": error_type,
-            "agent_id": agent_id,
+            "agent_id": str(agent_id),
             "message": error_msg,
             "step": step or getattr(self.orchestrator, "step_index", 0),
             "run_id": getattr(self.orchestrator, "run_id", "unknown"),

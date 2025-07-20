@@ -20,7 +20,12 @@ Comprehensive error tracking, reporting, and recovery mechanisms.
 
 import json
 import os
+import logging
 from datetime import UTC, datetime
+from typing import Any, Dict, List
+
+
+logger = logging.getLogger(__name__)
 
 
 class ErrorHandler:
@@ -28,15 +33,21 @@ class ErrorHandler:
     Handles error tracking, reporting, and recovery mechanisms.
     """
 
+    step_index: Any
+    run_id: Any
+    error_telemetry: Any
+    _generate_meta_report: Any
+    memory: Any
+
     def _record_error(
         self,
-        error_type,
-        agent_id,
-        error_msg,
-        exception=None,
-        step=None,
-        status_code=None,
-        recovery_action=None,
+        error_type: str,
+        agent_id: str,
+        error_msg: str,
+        exception: Exception | None = None,
+        step: int | None = None,
+        status_code: int | None = None,
+        recovery_action: str | None = None,
     ):
         """
         Record an error in the error telemetry system.
