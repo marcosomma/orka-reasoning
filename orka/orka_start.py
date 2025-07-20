@@ -17,7 +17,6 @@ REDIS_URL: Redis connection URL (default: redis://localhost:6380/0)
 KAFKA_BOOTSTRAP_SERVERS: Kafka broker list (default: localhost:9092)
 KAFKA_TOPIC_PREFIX: Prefix for Kafka topics (default: orka-memory)
 """
-
 import os
 import sys
 
@@ -62,13 +61,12 @@ __all__ = [
     "wait_for_redis",
 ]
 
-logger.info("🚀 Starting OrKa with Kafka + Redis Hybrid Backend...")
-logger.info("📋 Configuration:")
-logger.info(f"   • Memory Backend: {os.environ['ORKA_MEMORY_BACKEND']}")
-logger.info(f"   • Kafka Servers: {os.environ['KAFKA_BOOTSTRAP_SERVERS']}")
-logger.info(f"   • Kafka Topic Prefix: {os.environ['KAFKA_TOPIC_PREFIX']}")
-logger.info(f"   • Redis URL: {os.environ['REDIS_URL']}")
-logger.info()
+print("🚀 Starting OrKa with Kafka + Redis Hybrid Backend...")
+print("📋 Configuration:")
+print(f"   • Memory Backend: {os.environ['ORKA_MEMORY_BACKEND']}")
+print(f"   • Kafka Servers: {os.environ['KAFKA_BOOTSTRAP_SERVERS']}")
+print(f"   • Kafka Topic Prefix: {os.environ['KAFKA_TOPIC_PREFIX']}")
+print(f"   • Redis URL: {os.environ['REDIS_URL']}")
 
 
 def cli_main():
@@ -81,9 +79,9 @@ def cli_main():
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logger.info("\n🛑 Shutdown complete.")
+        print("\n🛑 Shutdown complete.")
     except Exception as e:
-        logger.info(f"\n❌ Error: {e}")
+        print(f"\n❌ Error: {e}")
         sys.exit(1)
 
 

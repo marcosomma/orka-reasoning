@@ -19,9 +19,9 @@ sys.path.insert(0, str(project_root))
 os.environ["ORKA_MEMORY_BACKEND"] = "redis"
 os.environ["ORKA_FORCE_BASIC_REDIS"] = "true"  # ← ADD: Flag to force basic Redis
 
-logger.info("🔧 Starting OrKa with BASIC Redis (no vector search)")
-logger.info("💡 For vector search, use: python -m orka.orka_start")
-logger.info("📊 Backend: Basic Redis (streams only)")
+print("🔧 Starting OrKa with BASIC Redis (no vector search)")
+print("💡 For vector search, use: python -m orka.orka_start")
+print("📊 Backend: Basic Redis (streams only)")
 
 # Import and run the main function
 if __name__ == "__main__":

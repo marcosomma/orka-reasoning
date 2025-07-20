@@ -60,6 +60,9 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
+# Set a specific cache directory for Sentence Transformers models
+os.environ['SENTENCE_TRANSFORMERS_HOME'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'models', 'sentence_transformers')
+
 # Global embedder instance for singleton pattern
 _embedder = None
 
