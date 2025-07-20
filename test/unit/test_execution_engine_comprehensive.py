@@ -823,19 +823,14 @@ class TestExecutionEngine:
             ),
         }
 
-        @pytest.mark.asyncio
-    async def test_execution_with_retry_logic(self):
-        """Test execution with retry logic for failed agents."""
-        input_data = {"test": "data"}
-        logs = []
+        self.engine.agents = {
+            "failing_agent": Mock(
+                type="openai",
+                __class__=Mock(__name__="TestAgent"),
+            ),
+        }
 
-        # Create a more detailed mock for testing retry logic
-        self.engine.orchestrator_cfg = {"agents": ["failing_agent"]}
-        failing_agent_mock = Mock(
-            type="openai",
-            __class__=Mock(__name__="TestAgent"),
-        )
-        self.engine.agents = {"failing_agent": failing_agent_mock}
+        failing_agent_mock = self.engine.agents["failing_agent"]
 
         # Mock the agent's run method to fail then succeed
         call_count = 0
@@ -891,27 +886,6 @@ class TestExecutionEngine:
         mock_print.assert_called()  # Should print next agent message
 
     @pytest.mark.asyncio
-    async def test_run_with_comprehensive_error_handling_queue_processing(self):
-        """Test comprehensive error handling with queue processing."""
-        input_data = {"test": "data"}
-        logs = []
-
-        # Set up orchestrator config
-        self.engine.orchestrator_cfg = {"agents": ["agent1", "agent2"]}
-        self.engine.agents = {
-            "agent1": Mock(
-                type="openai",
-                __class__=Mock(__name__="Agent1"),
-                run=Mock(return_value={"result": "result1"}),
-            ),
-            "agent2": Mock(
-                type="completion",
-                __class__=Mock(__name__="Agent2"),
-                run=Mock(return_value={"result": "result2"}),
-            ),
-        }
-
-        @pytest.mark.asyncio
     async def test_run_with_comprehensive_error_handling_queue_processing(self):
         """Test comprehensive error handling with queue processing."""
         input_data = {"test": "data"}

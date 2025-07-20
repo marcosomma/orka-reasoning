@@ -248,7 +248,7 @@ class FileOperationsMixin:
         """
         try:
             with open(file_path, encoding="utf-8") as f:
-                data = json.load(f)
+                data: Any = json.load(f)
 
             # Handle both old format (list) and new format (dict with metadata)
             if isinstance(data, list):
@@ -263,7 +263,8 @@ class FileOperationsMixin:
                 }
 
             if not resolve_blobs:
-                return data
+                data_dic: Dict[str, Any] = data
+                return data_dic
 
             # Resolve blob references if requested
             blob_store = data.get("blob_store", {})

@@ -40,7 +40,7 @@ class MemoryCompressor:
             return False
 
         # Check if mean importance is below threshold
-        importances = [entry["importance"] for entry in entries]
+        importances = [entry.get("importance", 0.0) for entry in entries]
         if np.mean(importances) < self.importance_threshold:
             return True
 
@@ -56,12 +56,16 @@ class MemoryCompressor:
             return entries
 
         # Sort by timestamp
-        sorted_entries = sorted(entries, key=lambda x: x["timestamp"])
+        sorted_entries = sorted(entries, key=lambda x: x.get("timestamp", datetime.min))
 
         # Split into recent and old entries
         cutoff_time = datetime.now() - self.time_window
-        recent_entries = [e for e in sorted_entries if e["timestamp"] > cutoff_time]
-        old_entries = [e for e in sorted_entries if e["timestamp"] <= cutoff_time]
+        recent_entries = [
+            e for e in sorted_entries if e.get("timestamp", datetime.min) > cutoff_time
+        ]
+        old_entries = [
+            e for e in sorted_entries if e.get("timestamp", datetime.min) <= cutoff_time
+        ]
 
         if not old_entries:
             return entries
@@ -88,14 +92,16 @@ class MemoryCompressor:
     async def _create_summary(self, entries: List[MemoryEntry], summarizer: Any) -> str:
         """Create a summary of multiple memory entries."""
         # Combine all content
-        combined_content = "\n".join(entry["content"] for entry in entries)
+        combined_content = "\n".join(entry.get("content", "") for entry in entries)
 
         # Use summarizer to create summary
         if hasattr(summarizer, "summarize"):
-            return await summarizer.summarize(combined_content)
+            result = await summarizer.summarize(combined_content)
+            return str(result)
         elif hasattr(summarizer, "generate"):
-            return await summarizer.generate(
+            result = await summarizer.generate(
                 f"Summarize the following text concisely:\n\n{combined_content}",
             )
+            return str(result)
         else:
             raise ValueError("Summarizer must have summarize() or generate() method")

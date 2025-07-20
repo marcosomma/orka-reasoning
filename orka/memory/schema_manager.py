@@ -12,14 +12,14 @@ from typing import TYPE_CHECKING, Any
 
 # Always import SerializationContext for type hints
 if TYPE_CHECKING:
-    from confluent_kafka.serialization import MessageField, SerializationContext  # type: ignore
+    from confluent_kafka.serialization import MessageField, SerializationContext
 
 try:
     import avro.io
     import avro.schema
-    from confluent_kafka.schema_registry import SchemaRegistryClient  # type: ignore
-    from confluent_kafka.schema_registry.avro import AvroDeserializer, AvroSerializer  # type: ignore
-    from confluent_kafka.serialization import MessageField, SerializationContext  # type: ignore
+    from confluent_kafka.schema_registry import SchemaRegistryClient
+    from confluent_kafka.schema_registry.avro import AvroDeserializer, AvroSerializer
+    from confluent_kafka.serialization import MessageField, SerializationContext
 
     AVRO_AVAILABLE = True
 except ImportError:
@@ -30,9 +30,9 @@ except ImportError:
 
 try:
     import google.protobuf
-    from confluent_kafka.schema_registry.protobuf import (  # type: ignore
-        ProtobufDeserializer,  # type: ignore
-        ProtobufSerializer,  # type: ignore
+    from confluent_kafka.schema_registry.protobuf import (
+        ProtobufDeserializer,
+        ProtobufSerializer,
     )
 
     PROTOBUF_AVAILABLE = True
@@ -231,38 +231,40 @@ class SchemaManager:
         ctx: "SerializationContext",
     ) -> dict[str, Any]:
         """Fallback JSON deserializer."""
-        return json.loads(data.decode("utf-8"))
+        result: dict[str, Any] = json.loads(data.decode("utf-8"))
+        return result
+
+    def _check_registry(self) -> None:
+        """Check if registry client is initialized."""
+        if self.registry_client is None:
+            logger.error("Schema Registry not initialized")
+            raise RuntimeError("Schema Registry not initialized")
 
     def register_schema(self, subject: str, schema_name: str) -> int:
         """Register a schema with the Schema Registry."""
-        if not self.registry_client:
-            raise RuntimeError("Schema Registry not initialized")
+        self._check_registry()
+        registry = self.registry_client
+        assert registry is not None  # Help mypy understand registry can't be None
 
-        try:
+        try:  # type: ignore[unreachable]
             if self.config.format == SchemaFormat.AVRO:
                 schema_str = self._load_avro_schema(schema_name)
-
-                # Use confluent_kafka's Schema class for registration
                 from confluent_kafka.schema_registry import Schema
 
                 schema = Schema(schema_str, schema_type="AVRO")
-
             elif self.config.format == SchemaFormat.PROTOBUF:
                 schema_str = self._load_protobuf_schema(schema_name)
-
                 from confluent_kafka.schema_registry import Schema
 
                 schema = Schema(schema_str, schema_type="PROTOBUF")
-
             else:
                 raise ValueError("Cannot register JSON schemas")
 
-            schema_id = self.registry_client.register_schema(subject, schema)
+            schema_id = registry.register_schema(subject, schema)
             logger.info(
-                f"Registered schema {schema_name} for subject {subject} with ID {schema_id}",
+                f"Registered schema {schema_name} for subject {subject} with ID {schema_id}"
             )
             return schema_id
-
         except Exception as e:
             logger.error(f"Failed to register schema: {e}")
             raise

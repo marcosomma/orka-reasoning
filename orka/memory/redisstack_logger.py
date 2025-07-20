@@ -142,6 +142,7 @@ from typing import Any
 
 import numpy as np
 import redis
+from redis import Redis
 
 from .base_logger import BaseMemoryLogger
 
@@ -251,8 +252,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         self.stream_key = stream_key
         self.debug_keep_previous_outputs = debug_keep_previous_outputs
 
-        # Store memory decay config for method access
-        self.memory_decay_config = effective_decay_config
+        self.memory_decay_config: dict[str, Any] | None = effective_decay_config
 
         # Thread safety for parallel operations
         self._connection_lock = Lock()
@@ -294,8 +294,8 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                     logger.debug(
                         f"Created Redis connection for thread {threading.current_thread().ident}",
                     )
-
-        return self._local.redis_client
+        _safe_client: Redis[Any] = self._local.redis_client
+        return _safe_client
 
     @property
     def redis(self):
@@ -358,13 +358,13 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             # Ensure all data is Redis-serializable
             try:
                 # Test serialization of content
-                if not isinstance(content, str):
-                    logger.warning(f"Content is not a string: {type(content)}, converting...")
-                    content = str(content)
+                content_str: str = str(content) if not isinstance(content, str) else content
+                if content != content_str:
+                    logger.warning(f"Content was converted from {type(content)} to string")
+                content = content_str
 
                 # Test serialization of metadata
                 metadata_json = json.dumps(metadata)
-
             except Exception as serialize_error:
                 logger.error(f"Serialization error: {serialize_error}")
                 # Create safe fallback data
@@ -376,8 +376,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                     "log_type": "memory",
                 }
                 metadata = safe_metadata
-                if not isinstance(content, str):
-                    content = str(content)
+                content = str(content)  # Ensure content is string
                 logger.warning("Using safe fallback metadata due to serialization error")
 
             # Store memory data
@@ -403,7 +402,9 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 except Exception as e:
                     logger.warning(f"Failed to generate embedding for memory: {e}")
 
-            logger.debug(f"RedisStackMemoryLogger: Attempting to hset memory_key={memory_key} with data={memory_data}")
+            logger.debug(
+                f"RedisStackMemoryLogger: Attempting to hset memory_key={memory_key} with data={memory_data}"
+            )
             # Store the memory
             client.hset(
                 memory_key,
@@ -424,7 +425,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             logger.error(f"Failed to store memory: {e}")
             raise
 
-    def _get_embedding_sync(self, text: str) -> np.ndarray:
+    def _get_embedding_sync(self, text: str) -> np.ndarray | None:
         """Get embedding in a sync context, handling async embedder properly."""
         try:
             import asyncio
@@ -435,11 +436,13 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 loop = asyncio.get_running_loop()
                 # We're in an async context - use fallback encoding to avoid complications
                 logger.debug("In async context, using fallback encoding for embedding")
-                return self.embedder._fallback_encode(text)
+                _self_embedder: np.ndarray[Any, Any] = self.embedder._fallback_encode(text)
+                return _self_embedder
 
             except RuntimeError:
                 # No running event loop, safe to use asyncio.run()
-                return asyncio.run(self.embedder.encode(text))
+                _self_embedder_error: np.ndarray[Any, Any] = asyncio.run(self.embedder.encode(text))
+                return _self_embedder_error
 
         except Exception as e:
             logger.warning(f"Failed to get embedding: {e}")
@@ -476,8 +479,19 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             # Try vector search if embedder is available
             if self.embedder:
                 try:
-                    # Use sync embedding wrapper
                     query_vector = self._get_embedding_sync(query)
+                    if query_vector is None:
+                        logger.warning("Failed to get embedding, falling back to text search")
+                        return self._fallback_text_search(
+                            query,
+                            num_results,
+                            trace_id,
+                            node_id,
+                            memory_type,
+                            min_importance,
+                            log_type,
+                            namespace,
+                        )
 
                     from orka.utils.bootstrap_memory_index import hybrid_vector_search
 
@@ -766,6 +780,8 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                     # Calculate TTL information
                     current_time_ms = int(time.time() * 1000)
                     expiry_info = self._get_ttl_info(doc.id, memory_data, current_time_ms)
+                    if not expiry_info:
+                        continue
 
                     # Build result with safe value access
                     result = {
@@ -844,12 +860,12 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                         "node_id": self._safe_get_redis_value(memory_data, "node_id", ""),
                         "trace_id": self._safe_get_redis_value(memory_data, "trace_id", ""),
                         "importance_score": float(
-                            self._safe_get_redis_value(memory_data, "importance_score", 0)
+                            self._safe_get_redis_value(memory_data, "importance_score", "0")
                         ),
                         "memory_type": self._safe_get_redis_value(memory_data, "memory_type", ""),
-                        "timestamp": int(self._safe_get_redis_value(memory_data, "timestamp", 0)),
+                        "timestamp": int(self._safe_get_redis_value(memory_data, "timestamp", "0")),
                         "metadata": metadata,
-                        "key": key,
+                        "key": key.decode(),
                     }
                     memories.append(memory)
 
@@ -1324,6 +1340,8 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
 
                     # Calculate TTL information
                     expiry_info = self._get_ttl_info(key, memory_data, current_time_ms)
+                    if not expiry_info:
+                        continue
 
                     memory = {
                         "content": memory_data.get(b"content") or memory_data.get("content", ""),
@@ -1331,15 +1349,15 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                         "trace_id": memory_data.get(b"trace_id") or memory_data.get("trace_id", ""),
                         "importance_score": float(
                             memory_data.get(b"importance_score")
-                            or memory_data.get("importance_score", 0),
+                            or memory_data.get("importance_score", "0"),
                         ),
                         "memory_type": memory_data.get(b"memory_type")
                         or memory_data.get("memory_type", ""),
                         "timestamp": int(
-                            memory_data.get(b"timestamp") or memory_data.get("timestamp", 0),
+                            memory_data.get(b"timestamp") or memory_data.get("timestamp", "0"),
                         ),
                         "metadata": metadata,
-                        "key": key,
+                        "key": key.decode(),
                         # TTL and expiration information
                         "ttl_seconds": expiry_info["ttl_seconds"],
                         "ttl_formatted": expiry_info["ttl_formatted"],
@@ -1362,8 +1380,8 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             return []
 
     def _get_ttl_info(
-        self, key: str, memory_data: dict[str, Any], current_time_ms: int
-    ) -> dict[str, Any]:
+        self, key: bytes, memory_data: dict[str, Any], current_time_ms: int
+    ) -> dict[str, Any] | None:
         """Calculate TTL information for a memory entry."""
         ttl_seconds = -1
         expires_at = None
@@ -1382,7 +1400,8 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 )
                 has_expiry = True
         except Exception as e:
-            logger.debug(f"Error getting Redis TTL for {key}: {e}")
+            key_str = key.decode() if isinstance(key, bytes) else str(key)
+            logger.debug(f"Error getting Redis TTL for {key_str}: {e}")
 
         # Check for orka_expire_time field if Redis TTL is not set or is -1
         if not has_expiry:
@@ -1430,7 +1449,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
     def get_performance_metrics(self) -> dict[str, Any]:
         """Get RedisStack performance metrics including vector search status."""
         try:
-            metrics = {
+            metrics: dict[str, Any] = {
                 "vector_searches": 0,
                 "hybrid_searches": 0,
                 "memory_writes": 0,
@@ -1443,6 +1462,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 "embedding_dimension": (
                     getattr(self.embedder, "embedding_dim", 0) if self.embedder else 0
                 ),
+                "index_status": {"status": "unknown"},  # Initialize with basic structure
             }
 
             # Index status
@@ -1460,7 +1480,8 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 }
 
                 # Get index options if available
-                metrics["index_status"]["index_options"] = index_info.get("index_options", {}) if index_info is not None else {}  # type: ignore
+                if index_info:
+                    metrics["index_status"]["index_options"] = index_info.get("index_options", {})
 
             except Exception as e:
                 logger.debug(f"Could not get index info: {e}")

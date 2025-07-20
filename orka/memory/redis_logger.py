@@ -208,12 +208,12 @@ class RedisMemoryLogger(BaseMemoryLogger):
                 if memory_type == "short_term":
                     expire_hours = effective_decay_config.get(
                         "short_term_hours",
-                        effective_decay_config["default_short_term_hours"],
+                        effective_decay_config.get("default_short_term_hours", 1.0),
                     )
                 else:
                     expire_hours = effective_decay_config.get(
                         "long_term_hours",
-                        effective_decay_config["default_long_term_hours"],
+                        effective_decay_config.get("default_long_term_hours", 24.0),
                     )
 
                 expire_time = current_time + timedelta(hours=expire_hours)
@@ -363,12 +363,13 @@ class RedisMemoryLogger(BaseMemoryLogger):
         try:
             results = self.client.xrevrange(self.stream_key, count=count)
             # Sanitize results for JSON serialization before returning
-            return self._sanitize_for_json(results)
+            sanitized: list[dict[str, Any]] = self._sanitize_for_json(results) if results else []
+            return sanitized
         except Exception as e:
             logger.error(f"Failed to retrieve events from Redis: {e!s}")
             return []
 
-    def hset(self, name: str, key: str, value: str | bytes | int | float) -> int:
+    def hset(self, name: str, key: str, value: Any) -> int:
         """
         Set a field in a Redis hash.
 
@@ -381,10 +382,12 @@ class RedisMemoryLogger(BaseMemoryLogger):
             Number of fields added.
         """
         try:
-            # Convert non-string values to strings if needed
-            if not isinstance(value, (str, bytes, int, float)):
-                value = json.dumps(self._sanitize_for_json(value))
-            return self.client.hset(name, key, value)
+            if isinstance(value, (str, bytes, int, float)):
+                return self.client.hset(name, key, value)
+
+            sanitized = self._sanitize_for_json(value)
+            serialized = json.dumps(sanitized)
+            return self.client.hset(name, key, serialized)
         except Exception as e:
             logger.error(f"Failed to set hash field {key} in {name}: {e!s}")
             return 0
@@ -402,7 +405,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
         """
         try:
             result = self.client.hget(name, key)
-            return result.decode() if isinstance(result, bytes) else None
+            return result.decode() if isinstance(result, bytes) else result
         except Exception as e:
             logger.error(f"Failed to get hash field {key} from {name}: {e!s}")
             return None
@@ -841,9 +844,9 @@ class RedisMemoryLogger(BaseMemoryLogger):
             # Add decay configuration info
             if self.decay_config.get("enabled", False):
                 stats["decay_config"] = {
-                    "short_term_hours": self.decay_config["default_short_term_hours"],
-                    "long_term_hours": self.decay_config["default_long_term_hours"],
-                    "check_interval_minutes": self.decay_config["check_interval_minutes"],
+                    "short_term_hours": self.decay_config.get("default_short_term_hours", 1.0),
+                    "long_term_hours": self.decay_config.get("default_long_term_hours", 24.0),
+                    "check_interval_minutes": self.decay_config.get("check_interval_minutes", 30),
                     "last_decay_check": (
                         self._last_decay_check.isoformat() if self._last_decay_check else None
                     ),

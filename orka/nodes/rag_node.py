@@ -196,17 +196,18 @@ class RAGNode(BaseNode):
         self.registry = registry
         self.top_k = top_k
         self.score_threshold = score_threshold
-        self._memory = None
-        self._embedder = None
-        self._llm = None
+        self._memory: Any = None
+        self._embedder: Any = None
+        self._llm: Any = None
         self._initialized = False
 
     async def initialize(self) -> None:
         """Initialize the node and its resources."""
-        self._memory = self.registry.get("memory")
-        self._embedder = self.registry.get("embedder")
-        self._llm = self.registry.get("llm")
-        self._initialized = True
+        if not self._initialized:
+            self._memory = self.registry.get("memory")
+            self._embedder = self.registry.get("embedder")
+            self._llm = self.registry.get("llm")
+            self._initialized = True
 
     async def run(self, context: Context) -> dict[str, Any]:
         """Run the RAG node with the given context."""
@@ -232,11 +233,15 @@ class RAGNode(BaseNode):
 
     async def _run_impl(self, ctx: Context) -> dict[str, Any]:
         """Implementation of RAG operations."""
-        assert self._memory is not None
+        memory = self._memory
+        if memory is None:
+            raise ValueError("Memory not initialized")
+
         query = ctx.get("query")
         if not query:
             raise ValueError("Query is required for RAG operation")
-        assert isinstance(query, str)
+        if not isinstance(query, str):
+            raise ValueError("Query must be a string")
 
         # Get embedding for the query
         query_embedding = await self._get_embedding(query)
@@ -264,8 +269,11 @@ class RAGNode(BaseNode):
 
     async def _get_embedding(self, text: str) -> list[float]:
         """Get embedding for text using the embedder."""
-        assert self._embedder is not None
-        return await self._embedder.encode(text)
+        embedder = self._embedder
+        if embedder is None:
+            raise ValueError("Embedder not initialized")
+        result: list[float] = await embedder.encode(text)
+        return result
 
     def _format_context(self, results: list[dict[str, Any]]) -> str:
         """Format search results into context for the LLM."""
@@ -276,17 +284,22 @@ class RAGNode(BaseNode):
 
     async def _generate_answer(self, query: str, context: str) -> str:
         """Generate answer using the LLM."""
-        assert self._llm is not None
-        prompt = f"""Based on the following context, answer the question. If the context doesn't contain relevant information, say so.
+        llm = self._llm
+        if llm is None:
+            raise ValueError("LLM not initialized")
 
-Context:
-{context}
+        prompt = f"""
+            Based on the following context, answer the question. If the context doesn't contain relevant information, say so.
 
-Question: {query}
+            Context:
+            {context}
 
-Answer:"""
+            Question: {query}
 
-        response = await self._llm.chat.completions.create(
+            Answer:
+        """
+
+        response = await llm.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {
@@ -297,4 +310,5 @@ Answer:"""
             ],
         )
 
-        return response.choices[0].message.content
+        content: str = response.choices[0].message.content
+        return content

@@ -5,6 +5,8 @@ Tests both ForkGroupManager (Redis-based) and SimpleForkGroupManager (in-memory)
 
 from unittest.mock import Mock, patch
 
+from typing import Any, Dict, List, Tuple
+
 from orka.fork_group_manager import ForkGroupManager, SimpleForkGroupManager
 
 
@@ -162,7 +164,7 @@ class TestForkGroupManager:
         self.fork_manager.track_branch_sequence(self.test_group_id, agent_sequence)
 
         expected_key = f"fork_branch:{self.test_group_id}"
-        expected_calls = [
+        expected_calls: List[Tuple[Tuple[str, str, str], Dict[Any, Any]]] = [
             ((expected_key, "agent1", "agent2"), {}),
             ((expected_key, "agent2", "agent3"), {}),
         ]
