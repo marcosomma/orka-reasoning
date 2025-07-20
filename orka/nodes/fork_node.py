@@ -36,12 +36,11 @@ class ForkNode(BaseNode):
         self.config = kwargs  # Store config explicitly
         self.mode = kwargs.get("mode", "sequential")  # Default to sequential execution
 
-    async def run(self, orchestrator, context):
+    async def run(self, context):
         """
         Execute the fork operation by creating parallel branches.
 
         Args:
-            orchestrator: The orchestrator instance managing the workflow.
             context: Context data for the fork operation.
 
         Returns:
@@ -53,6 +52,11 @@ class ForkNode(BaseNode):
         targets = self.config.get("targets", [])
         if not targets:
             raise ValueError(f"ForkNode '{self.node_id}' requires non-empty 'targets' list.")
+
+        # Get orchestrator from context
+        orchestrator = context.get("orchestrator")
+        if not orchestrator:
+            raise ValueError("ForkNode requires orchestrator in context")
 
         # Generate a unique ID for this fork group
         fork_group_id = orchestrator.fork_manager.generate_group_id(self.node_id)

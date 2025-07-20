@@ -54,7 +54,7 @@ import re
 from typing import Any, Optional
 
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 from .base_agent import LegacyBaseAgent as BaseAgent
 
@@ -73,7 +73,7 @@ if not PYTEST_RUNNING and not OPENAI_API_KEY:
     raise OSError("OPENAI_API_KEY environment variable is required")
 
 # Initialize OpenAI client
-client = OpenAI(api_key=OPENAI_API_KEY or "dummy_key_for_testing")
+client = AsyncOpenAI(api_key=OPENAI_API_KEY or "dummy_key_for_testing")
 
 
 def _extract_reasoning(text) -> tuple:
@@ -457,11 +457,72 @@ class OpenAIAnswerBuilder(BaseAgent):
         status_code = 200  # Default success
 
         try:
-            response = await client.chat.completions.create(  # type: ignore[misc]  # type: ignore
+            response = await client.chat.completions.create(
                 model=model,
                 messages=[{"role": "user", "content": full_prompt}],
                 temperature=temperature,
             )
+            # No need to await response - it's already a ChatCompletion object
+
+            # Extract usage and cost metrics
+            usage = response.usage
+            prompt_tokens = usage.prompt_tokens if usage else 0
+            completion_tokens = usage.completion_tokens if usage else 0
+            total_tokens = usage.total_tokens if usage else 0
+
+            # Calculate cost (rough estimates for GPT models)
+            cost_usd = _calculate_openai_cost(model, prompt_tokens, completion_tokens)
+
+            # Extract and clean the response
+            answer = response.choices[0].message.content
+            if answer is not None:
+                answer = answer.strip()
+            else:
+                answer = ""
+
+            # Calculate latency
+            latency_ms = round((time.time() - start_time) * 1000, 2)
+
+            # Create metrics object
+            metrics = {
+                "tokens": total_tokens,
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "latency_ms": latency_ms,
+                "cost_usd": cost_usd,
+                "model": model,
+                "status_code": status_code,
+            }
+
+            # Parse JSON if requested (simple parsing for OpenAI models)
+            if parse_json:
+                # Simple JSON extraction for OpenAI models (not reasoning models)
+                parsed_response = _simple_json_parse(answer)
+
+                # Track silent degradation if JSON parsing failed and fell back to raw text
+                if (
+                    error_tracker
+                    and parsed_response.get("internal_reasoning")
+                    == "JSON parsing failed, using raw response"
+                ):
+                    error_tracker.record_silent_degradation(
+                        agent_id,
+                        "openai_json_parsing_fallback",
+                        f"OpenAI response was not valid JSON, using raw text: {answer[:100]}...",
+                    )
+            else:
+                # When JSON parsing is disabled, return raw response in expected format
+                parsed_response = {
+                    "response": answer,
+                    "confidence": "0.5",
+                    "internal_reasoning": "Raw response without JSON parsing",
+                }
+
+            # Add metrics and formatted_prompt to parsed response
+            parsed_response["_metrics"] = metrics
+            parsed_response["formatted_prompt"] = prompt  # Store only the rendered prompt
+            return parsed_response
+
         except Exception as e:
             # Track API errors and status codes
             if error_tracker:
@@ -481,67 +542,6 @@ class OpenAIAnswerBuilder(BaseAgent):
                     status_code=status_code,
                 )
             raise
-
-        # Calculate latency
-        latency_ms = round((time.time() - start_time) * 1000, 2)
-
-        # Extract usage and cost metrics
-        usage = response.usage
-        prompt_tokens = usage.prompt_tokens if usage else 0
-        completion_tokens = usage.completion_tokens if usage else 0
-        total_tokens = usage.total_tokens if usage else 0
-
-        # Calculate cost (rough estimates for GPT models)
-        cost_usd = _calculate_openai_cost(model, prompt_tokens, completion_tokens)
-
-        # Extract and clean the response
-        answer = response.choices[0].message.content
-        if answer is not None:
-            answer = answer.strip()
-        else:
-            answer = ""
-
-        # Create metrics object
-        metrics = {
-            "tokens": total_tokens,
-            "prompt_tokens": prompt_tokens,
-            "completion_tokens": completion_tokens,
-            "latency_ms": latency_ms,
-            "cost_usd": cost_usd,
-            "model": model,
-            "status_code": status_code,
-        }
-
-        # Parse JSON if requested (simple parsing for OpenAI models)
-        if parse_json:
-            # Simple JSON extraction for OpenAI models (not reasoning models)
-            parsed_response = _simple_json_parse(answer)
-
-            # Track silent degradation if JSON parsing failed and fell back to raw text
-            if (
-                error_tracker
-                and parsed_response.get("internal_reasoning")
-                == "JSON parsing failed, using raw response"
-            ):
-                error_tracker.record_silent_degradation(
-                    agent_id,
-                    "openai_json_parsing_fallback",
-                    f"OpenAI response was not valid JSON, using raw text: {answer[:100]}...",
-                )
-        else:
-            # When JSON parsing is disabled, return raw response in expected format
-            parsed_response = {
-                "response": answer,
-                "confidence": "0.5",
-                "internal_reasoning": "Raw response without JSON parsing",
-            }
-
-        # Add metrics and formatted_prompt to parsed response
-        parsed_response["_metrics"] = metrics
-        parsed_response["formatted_prompt"] = (
-            prompt  # Store only the rendered prompt, not the full context
-        )
-        return parsed_response
 
 
 class OpenAIBinaryAgent(OpenAIAnswerBuilder):
