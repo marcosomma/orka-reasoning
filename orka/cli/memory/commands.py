@@ -23,13 +23,14 @@ import json
 import logging
 import os
 import sys
+from typing import Any
 
 from orka.memory_logger import create_memory_logger
 
 logger = logging.getLogger(__name__)
 
 
-def memory_stats(args):
+def memory_stats(args: Any) -> int:
     """Display memory usage statistics."""
     try:
         # Get backend from args or environment, default to redisstack for best performance
@@ -43,12 +44,10 @@ def memory_stats(args):
 
         # Try RedisStack first for enhanced performance, fallback to Redis if needed
         try:
-            memory = create_memory_logger(backend=backend, redis_url=redis_url)
+            memory = create_memory_logger(backend=str(backend), redis_url=redis_url)
         except ImportError as e:
             if backend == "redisstack":
-                logger.info(
-                    f"RedisStack not available ({e}), falling back to Redis", file=sys.stderr
-                )
+                logger.info(f"RedisStack not available ({e}), falling back to Redis")
                 backend = "redis"
                 redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
                 memory = create_memory_logger(backend=backend, redis_url=redis_url)
@@ -96,13 +95,13 @@ def memory_stats(args):
                     logger.info(f"  > Last cleanup: {config['last_decay_check']}")
 
     except Exception as e:
-        logger.error(f"Error getting memory statistics: {e}", file=sys.stderr)
+        logger.error(f"Error getting memory statistics: {e}")
         return 1
 
     return 0
 
 
-def memory_cleanup(args):
+def memory_cleanup(args: Any) -> int:
     """Clean up expired memory entries."""
     try:
         # Get backend from args or environment, default to redisstack for best performance
@@ -116,12 +115,10 @@ def memory_cleanup(args):
 
         # Try RedisStack first for enhanced performance, fallback to Redis if needed
         try:
-            memory = create_memory_logger(backend=backend, redis_url=redis_url)
+            memory = create_memory_logger(backend=str(backend), redis_url=redis_url)
         except ImportError as e:
             if backend == "redisstack":
-                logger.info(
-                    f"⚠️ RedisStack not available ({e}), falling back to Redis", file=sys.stderr
-                )
+                logger.info(f"⚠️ RedisStack not available ({e}), falling back to Redis")
                 backend = "redis"
                 redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
                 memory = create_memory_logger(backend=backend, redis_url=redis_url)
@@ -167,13 +164,13 @@ def memory_cleanup(args):
                     logger.info(f"  ... and {len(result['deleted_entries']) - 10} more")
 
     except Exception as e:
-        logger.error(f"Error during memory cleanup: {e}", file=sys.stderr)
+        logger.error(f"Error during memory cleanup: {e}")
         return 1
 
     return 0
 
 
-def memory_configure(args):
+def memory_configure(args: Any) -> int:
     """Enhanced memory configuration with RedisStack testing."""
     try:
         backend = args.backend or os.getenv("ORKA_MEMORY_BACKEND", "redisstack")
@@ -285,7 +282,7 @@ def memory_configure(args):
             return 1
 
     except Exception as e:
-        logger.error(f"❌ Error testing configuration: {e}", file=sys.stderr)
+        logger.error(f"❌ Error testing configuration: {e}")
         return 1
 
     return 0

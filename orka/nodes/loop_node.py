@@ -17,13 +17,56 @@ import os
 import re
 import tempfile
 from datetime import datetime
+from typing import (
+    Any,
+    Dict,
+    List,
+    Literal,
+    Mapping,
+    NoReturn,
+    Optional,
+    Protocol,
+    TypedDict,
+    TypeGuard,
+    TypeVar,
+    Union,
+    cast,
+)
 
 import yaml
+from redis import Redis
+from redis.client import Redis as RedisType
 
 from .base_node import BaseNode
 
+T = TypeVar("T")
+
 logger = logging.getLogger(__name__)
 logger.info(f"DEBUG: Loading loop_node.py from {__file__}")
+
+
+class PastLoopMetadata(TypedDict, total=False):
+    loop_number: int
+    score: float
+    timestamp: str
+    insights: str
+    improvements: str
+    mistakes: str
+    result: Dict[str, Any]
+
+
+class InsightCategory(TypedDict):
+    insights: str
+    improvements: str
+    mistakes: str
+
+
+class FloatConvertible(Protocol):
+    def __float__(self) -> float: ...
+
+
+CategoryType = Literal["insights", "improvements", "mistakes"]
+MetadataKey = Literal["loop_number", "score", "timestamp", "insights", "improvements", "mistakes"]
 
 
 class LoopNode(BaseNode):
@@ -35,14 +78,21 @@ class LoopNode(BaseNode):
     past_loops array, allowing for iterative improvement based on previous attempts.
     """
 
-    def __init__(self, node_id, prompt=None, queue=None, memory_logger=None, **kwargs):
+    def __init__(
+        self,
+        node_id: str,
+        prompt: Optional[str] = None,
+        queue: Optional[List[Any]] = None,
+        memory_logger: Optional[RedisType] = None,  # Type hint as Redis
+        **kwargs: Any,
+    ) -> None:
         """
         Initialize the loop node.
 
         Args:
             node_id (str): Unique identifier for the node.
-            prompt (str, optional): Prompt or instruction for the node.
-            queue (list, optional): Queue of agents or nodes to be processed.
+            prompt (Optional[str]): Prompt or instruction for the node.
+            queue (Optional[List[Any]]): Queue of agents or nodes to be processed.
             memory_logger: The memory logger instance.
             **kwargs: Additional configuration parameters:
                 - max_loops (int): Maximum number of loop iterations (default: 5)
@@ -56,55 +106,25 @@ class LoopNode(BaseNode):
         super().__init__(node_id, prompt, queue, **kwargs)
         self.memory_logger = memory_logger
 
-        # Configuration
-        self.max_loops = kwargs.get("max_loops", 5)
-        self.score_threshold = kwargs.get("score_threshold", 0.8)
-
-        # 🔧 FLEXIBLE SCORE EXTRACTION CONFIGURATION
-        # Replace rigid pattern/key with flexible configuration
-        self.score_extraction_config = kwargs.get(
-            "score_extraction_config",
-            {
-                # Multiple extraction strategies to try in order
-                "strategies": [
-                    {
-                        "type": "direct_key",
-                        "key": "score",
-                    },
-                    {
-                        "type": "direct_key",
-                        "key": "reasoning_quality",
-                    },
-                    {
-                        "type": "agent_key",
-                        "agents": ["quality_moderator", "scorer", "evaluator"],
-                        "key": "score",
-                    },
-                    {
-                        "type": "agent_key",
-                        "agents": ["quality_moderator", "scorer", "evaluator"],
-                        "key": "reasoning_quality",
-                    },
-                    {
-                        "type": "nested_path",
-                        "path": "result.score",
-                    },
-                    {
-                        "type": "nested_path",
-                        "path": "result.reasoning_quality",
-                    },
-                    {
-                        "type": "pattern",
-                        "patterns": [
-                            r"REASONING_QUALITY:\s*([0-9.]+)",
-                            r"SCORE:\s*([0-9.]+)",
-                            r"score:\s*([0-9.]+)",
-                            r"quality:\s*([0-9.]+)",
-                            r"([0-9.]+)",
-                        ],
-                    },
-                ],
-            },
+        # Configuration with type hints
+        self.max_loops: int = kwargs.get("max_loops", 5)
+        self.score_threshold: float = kwargs.get("score_threshold", 0.8)
+        self.score_extraction_config: Dict[str, List[Dict[str, Union[str, List[str]]]]] = (
+            kwargs.get(
+                "score_extraction_config",
+                {
+                    "strategies": [
+                        {
+                            "type": "pattern",
+                            "patterns": [
+                                r"score:\s*(\d+\.?\d*)",
+                                r"rating:\s*(\d+\.?\d*)",
+                                r"confidence:\s*(\d+\.?\d*)",
+                            ],
+                        }
+                    ]
+                },
+            )
         )
 
         # Backward compatibility - convert old format to new format
@@ -139,79 +159,44 @@ class LoopNode(BaseNode):
         self.internal_workflow = kwargs.get("internal_workflow", {})
 
         # Past loops metadata structure (user-defined)
-        self.past_loops_metadata = kwargs.get(
-            "past_loops_metadata",
-            {
-                "loop_number": "{{ loop_number }}",
-                "score": "{{ score }}",
-                "timestamp": "{{ timestamp }}",
-                "insights": "{{ insights }}",
-                "improvements": "{{ improvements }}",
-                "mistakes": "{{ mistakes }}",
-            },
-        )
+        metadata_fields: Dict[MetadataKey, str] = {
+            "loop_number": "{{ loop_number }}",
+            "score": "{{ score }}",
+            "timestamp": "{{ timestamp }}",
+            "insights": "{{ insights }}",
+            "improvements": "{{ improvements }}",
+            "mistakes": "{{ mistakes }}",
+        }
+        self.past_loops_metadata: Dict[MetadataKey, str] = metadata_fields
 
         # Cognitive extraction configuration
-        self.cognitive_extraction = kwargs.get(
+        self.cognitive_extraction: Dict[str, Any] = kwargs.get(
             "cognitive_extraction",
             {
                 "enabled": True,
                 "max_length_per_category": 300,
                 "extract_patterns": {
-                    "insights": [
-                        r"(?:key insight|insight|finding|discovery|conclusion)[:\s]+(.+?)(?:\n|$)",
-                        r"(?:provides?|identifies?|shows?|reveals?)\s+(.+?)(?:\n|$)",
-                        r"(?:solid|good|strong)\s+(.+?)(?:\n|$)",
-                        r"(?:accurately|correctly)\s+(.+?)(?:\n|$)",
-                    ],
-                    "improvements": [
-                        r"(?:lacks?|lacking|needs?|requires?|missing|should|could)\s+(.+?)(?:\n|$)",
-                        r"(?:would improve|would enhance|would strengthen)\s+(.+?)(?:\n|$)",
-                        r"(?:could benefit from|would benefit from)\s+(.+?)(?:\n|$)",
-                        r"(?:more|better|clearer|deeper|further)\s+(.+?)(?:\n|$)",
-                        r"\*\*([^*]+)\*\*:\s*(?:While|Although|However|But)?\s*(.+?)(?:\n|$)",
-                        r"(?:addressing|exploring|developing|conducting)\s+(.+?)(?:would|could)(?:\n|$)",
-                        r"\d+\.\s*\*\*([^*]+)\*\*:\s*(.+?)(?:\n|$)",
-                        r"(?:lacks depth|lacks specificity|more detailed|more thorough|clearer outline)\s+(.+?)(?:\n|$)",
-                    ],
-                    "mistakes": [
-                        r"(?:error|mistake|wrong|incorrect|flaw|oversight)\s*[:\s]*(.+?)(?:\n|$)",
-                        r"(?:overlooked|missed|ignored|failed to|not adequately|does not)\s+(.+?)(?:\n|$)",
-                        r"(?:weakness|limitation|gap|problem)\s*[:\s]*(.+?)(?:\n|$)",
-                        r"(?:lacks depth|lacks specificity|insufficient|inadequate)\s+(.+?)(?:\n|$)",
-                    ],
+                    "insights": [],
+                    "improvements": [],
+                    "mistakes": [],
                 },
-                "agent_priorities": {
-                    "analyzer": ["insights", "improvements", "mistakes"],
-                    "scorer": ["mistakes", "improvements"],
-                    "evaluator": ["insights", "improvements"],
-                    "critic": ["mistakes", "improvements"],
-                },
+                "agent_priorities": {},
             },
         )
 
-    async def run(self, payload):
-        """
-        Execute the loop node with threshold checking.
-
-        Args:
-            payload: Dictionary containing 'input' and 'previous_outputs'
-
-        Returns:
-            dict: Final result with loop metadata and past_loops array
-        """
+    async def run(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute the loop node with threshold checking."""
         original_input = payload.get("input")
         original_previous_outputs = payload.get("previous_outputs", {})
 
         # Create a working copy of previous_outputs to avoid circular references
-        # DON'T modify the original previous_outputs object
         loop_previous_outputs = original_previous_outputs.copy()
 
         # Initialize past_loops in our working copy
-        past_loops = []
+        past_loops: List[PastLoopMetadata] = []
 
         current_loop = 0
-        loop_result = None
+        loop_result: Optional[Dict[str, Any]] = None
         score = 0.0
 
         while current_loop < self.max_loops:
@@ -227,6 +212,10 @@ class LoopNode(BaseNode):
                 loop_previous_outputs,
             )
 
+            if loop_result is None:
+                logger.error("Internal workflow execution failed")
+                break
+
             # Extract score
             score = self._extract_score(loop_result)
 
@@ -238,37 +227,36 @@ class LoopNode(BaseNode):
                 original_input,
             )
 
-            # Add to our local past_loops array (not the original previous_outputs)
+            # Add to our local past_loops array
             past_loops.append(past_loop_obj)
 
-            # Store loop result in Redis
-            try:
-                # Store individual loop result
-                loop_key = f"loop_result:{self.node_id}:{current_loop}"
-                self.memory_logger.set(loop_key, json.dumps(loop_result))
-                logger.debug(f"Stored loop result: {loop_key}")
+            # Store loop result in Redis if memory_logger is available
+            if self.memory_logger is not None:
+                try:
+                    # Store individual loop result
+                    loop_key = f"loop_result:{self.node_id}:{current_loop}"
+                    self._store_in_redis(loop_key, loop_result)
+                    logger.debug(f"Stored loop result: {loop_key}")
 
-                # Store past loops array
-                past_loops_key = f"past_loops:{self.node_id}"
-                self.memory_logger.set(past_loops_key, json.dumps(past_loops))
-                logger.debug(f"Stored past loops: {past_loops_key}")
+                    # Store past loops array
+                    past_loops_key = f"past_loops:{self.node_id}"
+                    self._store_in_redis(past_loops_key, past_loops)
+                    logger.debug(f"Stored past loops: {past_loops_key}")
 
-                # Store in Redis hash for tracking
-                group_key = f"loop_results:{self.node_id}"
-                self.memory_logger.hset(
-                    group_key,
-                    str(current_loop),
-                    json.dumps(
+                    # Store in Redis hash for tracking
+                    group_key = f"loop_results:{self.node_id}"
+                    self._store_in_redis_hash(
+                        group_key,
+                        str(current_loop),
                         {
                             "result": loop_result,
                             "score": score,
                             "past_loop": past_loop_obj,
-                        }
-                    ),
-                )
-                logger.debug(f"Stored result in group for loop {current_loop}")
-            except Exception as e:
-                logger.error(f"Failed to store loop result in Redis: {e}")
+                        },
+                    )
+                    logger.debug(f"Stored result in group for loop {current_loop}")
+                except Exception as e:
+                    logger.error(f"Failed to store loop result in Redis: {e}")
 
             # Check threshold
             if score >= self.score_threshold:
@@ -284,18 +272,22 @@ class LoopNode(BaseNode):
                 }
 
                 # Store final result in Redis
-                try:
-                    final_key = f"final_result:{self.node_id}"
-                    self.memory_logger.set(final_key, json.dumps(final_result))
-                    logger.debug(f"Stored final result: {final_key}")
-                except Exception as e:
-                    logger.error(f"Failed to store final result in Redis: {e}")
+                if self.memory_logger is not None:
+                    try:
+                        final_key = f"final_result:{self.node_id}"
+                        self._store_in_redis(final_key, final_result)
+                        logger.debug(f"Stored final result: {final_key}")
+                    except Exception as e:
+                        logger.error(f"Failed to store final result in Redis: {e}")
 
                 return final_result
 
             logger.info(f"Threshold not met: {score} < {self.score_threshold}, continuing...")
 
         # Max loops reached without meeting threshold
+        if loop_result is None:
+            loop_result = {}
+
         logger.info(f"Max loops reached: {self.max_loops}")
         final_result = {
             "input": original_input,
@@ -307,26 +299,20 @@ class LoopNode(BaseNode):
         }
 
         # Store final result in Redis
-        try:
-            final_key = f"final_result:{self.node_id}"
-            self.memory_logger.set(final_key, json.dumps(final_result))
-            logger.debug(f"Stored final result: {final_key}")
-        except Exception as e:
-            logger.error(f"Failed to store final result in Redis: {e}")
+        if self.memory_logger is not None:
+            try:
+                final_key = f"final_result:{self.node_id}"
+                self._store_in_redis(final_key, final_result)
+                logger.debug(f"Stored final result: {final_key}")
+            except Exception as e:
+                logger.error(f"Failed to store final result in Redis: {e}")
 
         return final_result
 
-    async def _execute_internal_workflow(self, original_input, previous_outputs):
-        """
-        Execute the internal workflow configuration.
-
-        Args:
-            original_input: The original input data
-            previous_outputs: Dictionary containing past_loops and other outputs
-
-        Returns:
-            The result of the internal workflow execution
-        """
+    async def _execute_internal_workflow(
+        self, original_input: Any, previous_outputs: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
+        """Execute the internal workflow configuration."""
         from ..orchestrator import Orchestrator
 
         # Create temporary workflow file
@@ -341,26 +327,26 @@ class LoopNode(BaseNode):
             # Create a safe version of previous_outputs to prevent circular references
             safe_previous_outputs = self._create_safe_result(previous_outputs)
 
-            # 🔧 FIX: Calculate current loop number from past_loops length
+            # Calculate current loop number from past_loops length
             current_loop_number = len(previous_outputs.get("past_loops", [])) + 1
 
             # Prepare input with past_loops context AND loop_number
             workflow_input = {
                 "input": original_input,
                 "previous_outputs": safe_previous_outputs,
-                "loop_number": current_loop_number,  # 🔧 CRITICAL FIX: Pass loop_number to internal agents
+                "loop_number": current_loop_number,
                 "past_loops_metadata": {
                     "insights": self._extract_metadata_field(
                         "insights",
-                        previous_outputs.get("past_loops", []),
+                        cast(List[PastLoopMetadata], previous_outputs.get("past_loops", [])),
                     ),
                     "improvements": self._extract_metadata_field(
                         "improvements",
-                        previous_outputs.get("past_loops", []),
+                        cast(List[PastLoopMetadata], previous_outputs.get("past_loops", [])),
                     ),
                     "mistakes": self._extract_metadata_field(
                         "mistakes",
-                        previous_outputs.get("past_loops", []),
+                        cast(List[PastLoopMetadata], previous_outputs.get("past_loops", [])),
                     ),
                 },
             }
@@ -369,7 +355,7 @@ class LoopNode(BaseNode):
             logs = await orchestrator.run(workflow_input, return_logs=True)
 
             # Extract actual agent responses from logs
-            agents_results = {}
+            agents_results: Dict[str, Any] = {}
             for log_entry in logs:
                 if isinstance(log_entry, dict) and log_entry.get("event_type") == "MetaReport":
                     continue  # Skip meta report
@@ -381,111 +367,86 @@ class LoopNode(BaseNode):
                         if "result" in payload:
                             agents_results[agent_id] = payload["result"]
                             # Store agent result in Redis
-                            try:
-                                # Store individual result
-                                result_key = f"agent_result:{agent_id}:{current_loop_number}"
-                                self.memory_logger.set(result_key, json.dumps(payload["result"]))
-                                logger.debug(f"Stored agent result: {result_key}")
+                            result_key = f"agent_result:{agent_id}:{current_loop_number}"
+                            self._store_in_redis(result_key, payload["result"])
 
-                                # Store in Redis hash for tracking
-                                group_key = f"agent_results:{self.node_id}:{current_loop_number}"
-                                self.memory_logger.hset(
-                                    group_key, agent_id, json.dumps(payload["result"])
-                                )
-                                logger.debug(f"Stored result in group for agent {agent_id}")
-                            except Exception as e:
-                                logger.error(f"Failed to store agent result in Redis: {e}")
+                            # Store in Redis hash for tracking
+                            group_key = f"agent_results:{self.node_id}:{current_loop_number}"
+                            self._store_in_redis_hash(group_key, agent_id, payload["result"])
 
-            # Store all agent results in Redis
-            try:
-                # Store all results for this loop
-                loop_results_key = f"loop_agents:{self.node_id}:{current_loop_number}"
-                self.memory_logger.set(loop_results_key, json.dumps(agents_results))
-                logger.debug(f"Stored all agent results for loop {current_loop_number}")
+            # Store all results for this loop
+            loop_results_key = f"loop_agents:{self.node_id}:{current_loop_number}"
+            self._store_in_redis(loop_results_key, agents_results)
 
-                # Store in Redis hash for tracking
-                group_key = f"loop_agents:{self.node_id}"
-                self.memory_logger.hset(
-                    group_key, str(current_loop_number), json.dumps(agents_results)
-                )
-                logger.debug(f"Stored all results in group for loop {current_loop_number}")
-            except Exception as e:
-                logger.error(f"Failed to store agent results in Redis: {e}")
+            # Store in Redis hash for tracking
+            group_key = f"loop_agents:{self.node_id}"
+            self._store_in_redis_hash(group_key, str(current_loop_number), agents_results)
 
             return agents_results
 
+        except Exception as e:
+            logger.error(f"Failed to execute internal workflow: {e}")
+            return None
+
         finally:
-            # Clean up temporary file
-            os.unlink(temp_file)
+            try:
+                os.unlink(temp_file)
+            except Exception as e:
+                logger.warning(f"Failed to delete temporary workflow file: {e}")
 
-    def _extract_score(self, result):
-        """
-        Extract score from workflow result using flexible configuration.
+    def _is_valid_value(self, value: Any) -> TypeGuard[Union[str, int, float]]:
+        """Check if a value can be converted to float."""
+        if isinstance(value, (int, float)):
+            return True
+        if isinstance(value, str) and value.strip():
+            try:
+                float(value)
+                return True
+            except (ValueError, TypeError):
+                return False
+        return False
 
-        Args:
-            result: The workflow result to extract score from (dict of agent responses)
-
-        Returns:
-            float: Extracted score value, defaults to 0.0 if not found
-        """
-        if not isinstance(result, dict):
-            logger.warning(f"Result is not a dict, cannot extract score: {type(result)}")
+    def _extract_score(self, result: Dict[str, Any]) -> float:
+        """Extract score from result using configured extraction strategies."""
+        if not result:
             return 0.0
 
         strategies = self.score_extraction_config.get("strategies", [])
 
         for strategy in strategies:
+            if not isinstance(strategy, dict):
+                continue  # type: ignore [unreachable]
+
             strategy_type = strategy.get("type")
 
-            try:
-                if strategy_type == "direct_key":
-                    # Look for key directly in result
-                    score = self._extract_direct_key(result, strategy.get("key"))
-                    if score is not None:
-                        logger.debug(
-                            f"Score extracted via direct_key '{strategy.get('key')}': {score}",
-                        )
-                        return score
+            if strategy_type == "direct_key":
+                key = str(strategy.get("key", ""))
+                if key in result:
+                    value = result[key]
+                    if self._is_valid_value(value):
+                        return float(value)  # Now type-safe due to TypeGuard
 
-                elif strategy_type == "agent_key":
-                    # Look for key in specific agent results
-                    score = self._extract_agent_key(
-                        result,
-                        strategy.get("agents", []),
-                        strategy.get("key"),
-                    )
-                    if score is not None:
-                        logger.debug(f"Score extracted via agent_key: {score}")
-                        return score
+            elif strategy_type == "pattern":
+                patterns = strategy.get("patterns", [])
+                if not isinstance(patterns, list):
+                    continue
 
-                elif strategy_type == "nested_path":
-                    # Look for nested path (e.g., "result.score")
-                    score = self._extract_nested_path(result, strategy.get("path"))
-                    if score is not None:
-                        logger.debug(
-                            f"Score extracted via nested_path '{strategy.get('path')}': {score}",
-                        )
-                        return score
+                for pattern in patterns:
+                    if not isinstance(pattern, str):
+                        continue  # type: ignore [unreachable]
 
-                elif strategy_type == "pattern":
-                    # Pattern matching on text
-                    score = self._extract_pattern(result, strategy.get("patterns", []))
-                    if score is not None:
-                        logger.debug(f"Score extracted via pattern: {score}")
-                        return score
+                    for value in result.values():
+                        if isinstance(value, str):
+                            match = re.search(pattern, value)
+                            if match and match.group(1):
+                                try:
+                                    return float(match.group(1))
+                                except (ValueError, TypeError):
+                                    continue
 
-                else:
-                    logger.warning(f"Unknown extraction strategy type: {strategy_type}")
-
-            except Exception as e:
-                logger.debug(f"Strategy {strategy_type} failed: {e}")
-                continue
-
-        # Default: return 0
-        logger.warning("No score found in result using any strategy, defaulting to 0")
         return 0.0
 
-    def _extract_direct_key(self, result, key):
+    def _extract_direct_key(self, result: dict[str, Any], key: str) -> float | None:
         """Extract score from direct key in result."""
         if key in result:
             try:
@@ -494,7 +455,9 @@ class LoopNode(BaseNode):
                 pass
         return None
 
-    def _extract_agent_key(self, result, agents, key):
+    def _extract_agent_key(
+        self, result: dict[str, Any], agents: list[str], key: str
+    ) -> float | None:
         """Extract score from specific agent results."""
         import ast
         import json
@@ -556,7 +519,7 @@ class LoopNode(BaseNode):
 
         return None
 
-    def _extract_nested_path(self, result, path):
+    def _extract_nested_path(self, result: dict[str, Any], path: str) -> float | None:
         """Extract score from nested path (e.g., 'result.score')."""
         if not path:
             return None
@@ -570,12 +533,11 @@ class LoopNode(BaseNode):
             else:
                 return None
 
-        try:
+        if self._is_valid_value(current):
             return float(current)
-        except (ValueError, TypeError):
-            return None
+        return None
 
-    def _extract_pattern(self, result, patterns):
+    def _extract_pattern(self, result: dict[str, Any], patterns: list[str]) -> float | None:
         """Extract score using regex patterns."""
         result_text = str(result)
 
@@ -593,7 +555,9 @@ class LoopNode(BaseNode):
 
         return None
 
-    def _extract_secondary_metric(self, result, metric_key, default=0.0):
+    def _extract_secondary_metric(
+        self, result: dict[str, Any], metric_key: str, default: Any = 0.0
+    ) -> Any:
         """
         Extract secondary metrics (like REASONING_QUALITY, CONVERGENCE_TREND) from agent responses.
 
@@ -606,7 +570,7 @@ class LoopNode(BaseNode):
             The extracted metric value or default
         """
         if not isinstance(result, dict):
-            logger.warning(f"Result is not a dict, cannot extract {metric_key}: {type(result)}")
+            logger.warning(f"Result is not a dict, cannot extract {metric_key}: {type(result)}")  # type: ignore [unreachable]
             return default
 
         import ast
@@ -671,125 +635,107 @@ class LoopNode(BaseNode):
         )
         return default
 
-    def _extract_cognitive_insights(self, result):
-        """
-        Extract valuable cognitive insights from the loop result.
-
-        Args:
-            result: The workflow result (dict of agent responses)
-
-        Returns:
-            dict: Extracted cognitive insights categorized by type
-        """
+    def _extract_cognitive_insights(
+        self, result: Dict[str, Any], max_length: int = 300
+    ) -> InsightCategory:
+        """Extract cognitive insights from result using configured patterns."""
         if not self.cognitive_extraction.get("enabled", True):
-            return {"insights": "", "improvements": "", "mistakes": ""}
+            return InsightCategory(insights="", improvements="", mistakes="")
 
-        extracted = {"insights": [], "improvements": [], "mistakes": []}
+        extract_patterns = cast(
+            Dict[str, List[str]], self.cognitive_extraction.get("extract_patterns", {})
+        )
+        agent_priorities = cast(
+            Dict[str, List[str]], self.cognitive_extraction.get("agent_priorities", {})
+        )
+        max_length = self.cognitive_extraction.get("max_length_per_category", max_length)
 
-        if isinstance(result, dict):
-            for agent_id, agent_result in result.items():
-                # Extract the actual text content from the agent result
-                if isinstance(agent_result, dict):
-                    # Look for response content in common result structures
-                    if "response" in agent_result:
-                        agent_text = str(agent_result["response"])
-                    elif "result" in agent_result:
-                        agent_text = str(agent_result["result"])
-                    else:
-                        agent_text = str(agent_result)
-                else:
-                    agent_text = str(agent_result)
+        extracted: Dict[CategoryType, List[str]] = {
+            "insights": [],
+            "improvements": [],
+            "mistakes": [],
+        }
 
-                logger.debug(
-                    f"Cognitive extraction for {agent_id}: processing {len(agent_text)} chars",
-                )
+        if not isinstance(result, dict):
+            return InsightCategory(insights="", improvements="", mistakes="")  # type: ignore [unreachable]
 
-                # Get priority categories for this agent
-                agent_name = agent_id.lower()
-                priorities = None
-                for pattern, cats in self.cognitive_extraction.get("agent_priorities", {}).items():
-                    if pattern in agent_name:
-                        priorities = cats
-                        break
+        # Extract insights from each agent's response based on priorities
+        for agent_id, agent_result in result.items():
+            if not isinstance(agent_result, (str, dict)):
+                continue
 
-                # If no specific priorities, use all categories
-                if not priorities:
-                    priorities = ["insights", "improvements", "mistakes"]
+            # Get text to analyze - either direct string or from dict
+            text = agent_result if isinstance(agent_result, str) else str(agent_result)
 
-                logger.debug(f"Cognitive extraction for {agent_id}: using priorities {priorities}")
+            # Get categories to extract for this agent
+            agent_cats = agent_priorities.get(agent_id, [])
+            valid_categories = [
+                cat
+                for cat in agent_cats
+                if cat in extract_patterns and cat in ("insights", "improvements", "mistakes")
+            ]
 
-                # Extract from each priority category
-                for category in priorities:
-                    if category in extracted:
-                        patterns = self.cognitive_extraction.get("extract_patterns", {}).get(
-                            category,
-                            [],
-                        )
+            # Apply patterns for each category
+            for category in valid_categories:
+                cat_key = cast(CategoryType, category)
+                patterns = extract_patterns.get(category, [])
+                if not isinstance(patterns, list):
+                    continue  # type: ignore [unreachable]
 
-                        for pattern in patterns:
-                            matches = re.findall(
-                                pattern,
-                                agent_text,
-                                re.IGNORECASE | re.MULTILINE | re.DOTALL,
-                            )
-                            if matches:
-                                logger.debug(
-                                    f"Pattern '{pattern}' found {len(matches)} matches for {category}",
-                                )
-                            for match in matches:
-                                # Handle tuple matches (from patterns with multiple groups)
-                                if isinstance(match, tuple):
-                                    # Join all non-empty groups
-                                    clean_match = " ".join([m.strip() for m in match if m.strip()])
-                                else:
-                                    clean_match = match.strip()
+                for pattern in patterns:
+                    if not isinstance(pattern, str):
+                        continue  # type: ignore [unreachable]
 
-                                if len(clean_match) > 10:  # Only keep meaningful extractions
-                                    extracted[category].append(clean_match)
-                                    logger.debug(f"Extracted {category}: {clean_match[:100]}...")
+                    matches = re.finditer(pattern, text, re.IGNORECASE)
+                    for match in matches:
+                        if len(match.groups()) > 0:
+                            insight = match.group(1).strip()
+                            if insight and len(insight) > 10:  # Minimum length threshold
+                                extracted[cat_key].append(insight)
 
-        # Consolidate and limit length for each category
-        max_length = self.cognitive_extraction.get("max_length_per_category", 300)
+        # Process each category
+        result_insights = []
+        result_improvements = []
+        result_mistakes = []
 
-        final_insights = {}
         for category, items in extracted.items():
-            if items:
-                # Remove duplicates while preserving order
-                unique_items = []
-                seen = set()
-                for item in items:
-                    if item.lower() not in seen:
-                        unique_items.append(item)
-                        seen.add(item.lower())
+            if not items:
+                continue
 
-                # Join and truncate
-                combined = " | ".join(unique_items)
-                if len(combined) > max_length:
-                    combined = combined[:max_length] + "..."
+            # Remove duplicates while preserving order
+            unique_items = []
+            seen: set[str] = set()
+            for item in items:
+                if item.lower() not in seen:
+                    unique_items.append(item)
+                    seen.add(item.lower())
 
-                final_insights[category] = combined
-            else:
-                final_insights[category] = ""
+            # Join and truncate
+            combined = " | ".join(unique_items)
+            if len(combined) > max_length:
+                combined = combined[:max_length] + "..."
 
-        return final_insights
+            if category == "insights":
+                result_insights.append(combined)
+            elif category == "improvements":
+                result_improvements.append(combined)
+            elif category == "mistakes":
+                result_mistakes.append(combined)
 
-    def _create_past_loop_object(self, loop_number, score, result, original_input):
-        """
-        Create past_loop object using metadata template with cognitive insights.
+        return InsightCategory(
+            insights=" | ".join(result_insights),
+            improvements=" | ".join(result_improvements),
+            mistakes=" | ".join(result_mistakes),
+        )
 
-        Args:
-            loop_number (int): Current loop iteration number
-            score (float): Score extracted from this loop's result
-            result: The result from this loop's execution (dict of agent responses)
-            original_input: The original input data
-
-        Returns:
-            dict: Past loop object with templated metadata and cognitive insights
-        """
+    def _create_past_loop_object(
+        self, loop_number: int, score: float, result: Dict[str, Any], original_input: Any
+    ) -> PastLoopMetadata:
+        """Create past_loop object using metadata template with cognitive insights."""
         # Extract cognitive insights from the result
         cognitive_insights = self._extract_cognitive_insights(result)
 
-        # 🔧 NEW: Extract secondary metrics from agent responses
+        # Extract secondary metrics from agent responses
         reasoning_quality = self._extract_secondary_metric(result, "REASONING_QUALITY")
         convergence_trend = self._extract_secondary_metric(
             result,
@@ -805,84 +751,41 @@ class LoopNode(BaseNode):
         if len(safe_input) > 200:
             safe_input = safe_input[:200] + "...<truncated>"
 
-        # 🔧 FIXED: Complete template context for Jinja2 rendering with actual agent responses
+        # Complete template context for Jinja2 rendering
         template_context = {
             "loop_number": loop_number,
             "score": score,
             "reasoning_quality": reasoning_quality,
             "convergence_trend": convergence_trend,
             "timestamp": datetime.now().isoformat(),
-            "result": safe_result,  # Full result object with all agent responses
+            "result": safe_result,
             "input": safe_input,
             "insights": cognitive_insights.get("insights", ""),
             "improvements": cognitive_insights.get("improvements", ""),
             "mistakes": cognitive_insights.get("mistakes", ""),
-            # Use actual agent responses from safe_result
-            "previous_outputs": safe_result,  # Contains all agent responses in their original structure
+            "previous_outputs": safe_result,
         }
 
-        # 🔧 FIXED: Proper Jinja2 template evaluation instead of naive string replacement
-        from jinja2 import Template, TemplateSyntaxError, UndefinedError
-
-        past_loop_obj = {}
-        for key, template in self.past_loops_metadata.items():
-            try:
-                if isinstance(template, str) and "{{" in template and "}}" in template:
-                    # 🔧 NEW: Use proper Jinja2 template rendering
-                    jinja_template = Template(template)
-                    rendered_value = jinja_template.render(**template_context)
-
-                    # Try to convert to appropriate type
-                    if rendered_value.replace(".", "").replace("-", "").isdigit():
-                        # Convert numeric strings to float/int
-                        try:
-                            if "." in rendered_value:
-                                past_loop_obj[key] = float(rendered_value)
-                            else:
-                                past_loop_obj[key] = int(rendered_value)
-                        except ValueError:
-                            past_loop_obj[key] = rendered_value
-                    else:
-                        past_loop_obj[key] = rendered_value
-
-                    logger.debug(f"Template '{template}' rendered to: {rendered_value}")
-
-                # Non-template value - use as-is
-                elif isinstance(template, (str, int, float, bool, type(None))):
-                    past_loop_obj[key] = template
-                else:
-                    past_loop_obj[key] = str(template)
-
-            except (TemplateSyntaxError, UndefinedError) as e:
-                logger.warning(
-                    f"Template rendering failed for key '{key}', template '{template}': {e}",
-                )
-                # Fallback to original template string
-                past_loop_obj[key] = str(template)
-            except Exception as e:
-                logger.error(f"Unexpected error rendering template for key '{key}': {e}")
-                # Fallback to safe string representation
-                past_loop_obj[key] = str(template)
+        # Create past loop object with proper type
+        past_loop_obj: PastLoopMetadata = {
+            "loop_number": loop_number,
+            "score": score,
+            "timestamp": datetime.now().isoformat(),
+            "insights": cognitive_insights.get("insights", ""),
+            "improvements": cognitive_insights.get("improvements", ""),
+            "mistakes": cognitive_insights.get("mistakes", ""),
+            "result": safe_result,
+        }
 
         return past_loop_obj
 
-    def _create_safe_result(self, result):
-        """
-        Create a safe, serializable version of the result that avoids circular references.
+    def _create_safe_result(self, result: Any) -> Any:
+        """Create a safe, serializable version of the result that avoids circular references."""
 
-        Args:
-            result: The original result object
-
-        Returns:
-            A safe version of the result without circular references
-        """
-
-        def _make_safe(obj, seen=None):
-            """Recursively make an object safe by removing circular references."""
+        def _make_safe(obj: Any, seen: Optional[set[int]] = None) -> Any:
             if seen is None:
                 seen = set()
 
-            # Check for already seen objects (circular reference)
             obj_id = id(obj)
             if obj_id in seen:
                 return "<circular_reference>"
@@ -893,56 +796,50 @@ class LoopNode(BaseNode):
             if isinstance(obj, (str, int, float, bool)):
                 return obj
 
-            # For collections, track this object to detect cycles
             seen.add(obj_id)
 
             try:
                 if isinstance(obj, list):
-                    safe_result = []
-                    for item in obj:
-                        safe_result.append(_make_safe(item, seen.copy()))
-                    return safe_result
+                    return [_make_safe(item, seen.copy()) for item in obj]
 
                 if isinstance(obj, dict):
-                    safe_result = {}
-                    for key, value in obj.items():
-                        # Skip problematic keys that are known to cause circular references
-                        if key in ["previous_outputs", "payload"]:
-                            continue
-                        # For other keys, recursively make them safe
-                        safe_result[key] = _make_safe(value, seen.copy())
-                    return safe_result
+                    return {
+                        str(key): _make_safe(value, seen.copy())
+                        for key, value in obj.items()
+                        if key not in ("previous_outputs", "payload")
+                    }
 
-                # For any other type, convert to string (truncated if too long)
-                str_repr = str(obj)
-                if len(str_repr) > 1000:
-                    return str_repr[:1000] + "...<truncated>"
-                return str_repr
+                return str(obj)[:1000] + "..." if len(str(obj)) > 1000 else str(obj)
 
             finally:
                 seen.discard(obj_id)
 
         return _make_safe(result)
 
-    def _extract_metadata_field(self, field_name, past_loops):
-        """
-        Extract and combine a specific metadata field from past loops.
-
-        Args:
-            field_name (str): The metadata field to extract (e.g., "insights", "improvements")
-            past_loops (list): List of past loop objects
-
-        Returns:
-            str: Combined metadata from all past loops
-        """
-        if not past_loops:
-            return ""
-
+    def _extract_metadata_field(
+        self, field: MetadataKey, past_loops: List[PastLoopMetadata], max_entries: int = 5
+    ) -> str:
+        """Extract metadata field from past loops."""
         values = []
-        for loop in past_loops:
-            if isinstance(loop, dict) and field_name in loop:
-                value = loop[field_name]
-                if value and isinstance(value, str):
-                    values.append(value)
+        for loop in reversed(past_loops[-max_entries:]):
+            if field in loop and loop[field]:
+                values.append(str(loop[field]))
+        return " | ".join(values)
 
-        return " | ".join(values) if values else ""
+    def _store_in_redis(self, key: str, value: Any) -> None:
+        """Safely store a value in Redis."""
+        if self.memory_logger is not None:
+            try:
+                self.memory_logger.set(key, json.dumps(value))
+                logger.debug(f"Stored in Redis: {key}")
+            except Exception as e:
+                logger.error(f"Failed to store in Redis: {e}")
+
+    def _store_in_redis_hash(self, hash_key: str, field: str, value: Any) -> None:
+        """Safely store a value in a Redis hash."""
+        if self.memory_logger is not None:
+            try:
+                self.memory_logger.hset(hash_key, field, json.dumps(value))
+                logger.debug(f"Stored in Redis hash: {hash_key}[{field}]")
+            except Exception as e:
+                logger.error(f"Failed to store in Redis hash: {e}")

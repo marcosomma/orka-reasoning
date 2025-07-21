@@ -76,7 +76,7 @@ if not PYTEST_RUNNING and not OPENAI_API_KEY:
 client = AsyncOpenAI(api_key=OPENAI_API_KEY or "dummy_key_for_testing")
 
 
-def _extract_reasoning(text) -> tuple:
+def _extract_reasoning(text: str) -> tuple[str, str]:
     """Extract reasoning content from <think> blocks."""
     if "<think>" not in text or "</think>" not in text:
         return "", text
@@ -91,7 +91,7 @@ def _extract_reasoning(text) -> tuple:
     return reasoning, cleaned_text
 
 
-def _extract_json_content(text) -> str:
+def _extract_json_content(text: str) -> str:
     """Extract JSON content from various formats (code blocks, braces, etc.)."""
     # Try markdown code blocks first
     code_patterns = [r"```(?:json|markdown)?\s*(.*?)```", r"```\s*(.*?)```"]
@@ -101,28 +101,34 @@ def _extract_json_content(text) -> str:
         for match in matches:
             match = match.strip()
             if match and match.startswith(("{", "[")):
-                return match
+                return str(match)  # Ensure str return type
 
     # Try to find JSON-like braces
     brace_match = re.search(r"\{.*\}", text, re.DOTALL)
-    return brace_match.group(0) if brace_match else text
+    return str(brace_match.group(0)) if brace_match else text
 
 
-def _parse_json_safely(json_content) -> Optional[dict]:
+def _parse_json_safely(json_content: str) -> dict[str, Any] | None:
     """Safely parse JSON with fallback for malformed content."""
     import json
 
     try:
-        return json.loads(json_content)
+        result = json.loads(json_content)
+        if isinstance(result, dict):
+            return result
+        return None
     except json.JSONDecodeError:
         try:
             fixed_json = _fix_malformed_json(json_content)
-            return json.loads(fixed_json)
+            result = json.loads(fixed_json)
+            if isinstance(result, dict):
+                return result
+            return None
         except Exception:
             return None
 
 
-def _build_response_dict(parsed_json, fallback_text) -> dict:
+def _build_response_dict(parsed_json: dict[str, Any] | None, fallback_text: str) -> dict[str, Any]:
     """Build standardized response dictionary from parsed JSON or fallback text."""
     if not parsed_json or not isinstance(parsed_json, dict):
         return {
@@ -173,10 +179,10 @@ def _build_response_dict(parsed_json, fallback_text) -> dict:
 
 
 def parse_llm_json_response(
-    response_text,
-    error_tracker=None,
-    agent_id="unknown",
-) -> dict:
+    response_text: str,
+    error_tracker: Any = None,
+    agent_id: str = "unknown",
+) -> dict[str, Any]:
     """
     Parse JSON response from LLM that may contain reasoning (<think> blocks) or be in various formats.
 
@@ -249,7 +255,7 @@ def parse_llm_json_response(
         }
 
 
-def _fix_malformed_json(json_str) -> str:
+def _fix_malformed_json(json_str: str) -> str:
     """
     Attempt to fix common JSON formatting issues.
 
@@ -333,7 +339,7 @@ def _calculate_openai_cost(model: str, prompt_tokens: int, completion_tokens: in
     return total_cost
 
 
-def _simple_json_parse(response_text) -> dict:
+def _simple_json_parse(response_text: str) -> dict[str, Any]:
     """
     Simple JSON parser for OpenAI models (no reasoning support).
 
@@ -374,6 +380,11 @@ def _simple_json_parse(response_text) -> dict:
                 "confidence": str(parsed.get("confidence", "0.5")),
                 "internal_reasoning": str(parsed.get("internal_reasoning", "")),
             }
+        return {
+            "response": response_text.strip(),
+            "confidence": "0.5",
+            "internal_reasoning": "JSON parsing failed, using raw response",
+        }
     except json.JSONDecodeError:
         pass
 
@@ -423,7 +434,7 @@ class OpenAIAnswerBuilder(BaseAgent):
     - Template variable resolution with rich context
     """
 
-    async def run(self, input_data) -> dict[str, Any]:
+    async def run(self, input_data: Any) -> dict[str, Any]:
         # Extract parameters from input_data
         prompt = input_data.get("prompt", self.prompt)
         model = input_data.get("model", OPENAI_MODEL)
@@ -462,7 +473,6 @@ class OpenAIAnswerBuilder(BaseAgent):
                 messages=[{"role": "user", "content": full_prompt}],
                 temperature=temperature,
             )
-            # No need to await response - it's already a ChatCompletion object
 
             # Extract usage and cost metrics
             usage = response.usage
@@ -527,13 +537,7 @@ class OpenAIAnswerBuilder(BaseAgent):
             # Track API errors and status codes
             if error_tracker:
                 # Extract status code if it's an HTTP error
-                if hasattr(e, "status_code"):
-                    status_code = e.status_code
-                elif hasattr(e, "code"):
-                    status_code = e.code
-                else:
-                    status_code = 500
-
+                status_code = getattr(e, "status_code", getattr(e, "code", 500))
                 error_tracker.record_error(
                     "openai_api_error",
                     agent_id,
@@ -541,7 +545,24 @@ class OpenAIAnswerBuilder(BaseAgent):
                     e,
                     status_code=status_code,
                 )
-            raise
+
+            # Return error response before raising
+            error_response = {
+                "response": f"Error: {str(e)}",
+                "confidence": "0.0",
+                "internal_reasoning": "API call failed",
+                "_metrics": {
+                    "tokens": 0,
+                    "prompt_tokens": 0,
+                    "completion_tokens": 0,
+                    "latency_ms": 0,
+                    "cost_usd": 0,
+                    "model": model,
+                    "status_code": status_code,
+                },
+                "formatted_prompt": prompt,
+            }
+            raise type(e)(str(e)) from e  # Re-raise with the same type and message
 
 
 class OpenAIBinaryAgent(OpenAIAnswerBuilder):
@@ -584,7 +605,7 @@ class OpenAIBinaryAgent(OpenAIAnswerBuilder):
     - Handles edge cases and ambiguous inputs gracefully
     """
 
-    async def run(self, input_data) -> dict[str, Any]:
+    async def run(self, input_data: Any) -> dict[str, Any]:
         # Override the parent method to add constraints to the prompt
         # Ask the model to only return a "true" or "false" value.
         constraints = "**CONSTRAINTS** ONLY and STRICTLY Return boolean 'true' or 'false' value."
@@ -624,7 +645,7 @@ class OpenAIBinaryAgent(OpenAIAnswerBuilder):
             self._last_confidence = response_data.get("confidence", "0.0")
             self._last_internal_reasoning = response_data.get("internal_reasoning", "")
         else:
-            answer = str(response_data)
+            answer = str(response_data)  # type: ignore [unreachable]
             self._last_metrics = {}
             self._last_response = answer
             self._last_confidence = "0.0"
@@ -693,7 +714,7 @@ class OpenAIClassificationAgent(OpenAIAnswerBuilder):
     - Custom category definitions with examples
     """
 
-    async def run(self, input_data) -> dict[str, Any]:
+    async def run(self, input_data: Any) -> dict[str, Any]:
         # Extract categories from params or use defaults
         categories = self.params.get("options", [])
         constrains = "**CONSTRAINS**ONLY Return values from the given options. If not return 'not-classified'"
@@ -735,7 +756,7 @@ class OpenAIClassificationAgent(OpenAIAnswerBuilder):
             self._last_confidence = response_data.get("confidence", "0.0")
             self._last_internal_reasoning = response_data.get("internal_reasoning", "")
         else:
-            answer = str(response_data)
+            answer = str(response_data)  # type: ignore [unreachable]
             self._last_metrics = {}
             self._last_response = answer
             self._last_confidence = "0.0"
