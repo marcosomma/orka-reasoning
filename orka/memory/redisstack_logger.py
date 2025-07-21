@@ -138,7 +138,7 @@ import threading
 import time
 import uuid
 from threading import Lock
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import redis
@@ -320,6 +320,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
 
             if success:
                 logger.info("Enhanced HNSW memory index ready")
+                return
             else:
                 logger.warning(
                     "Enhanced memory index creation failed, some features may be limited",
@@ -1481,7 +1482,9 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
 
                 # Get index options if available
                 if index_info:
-                    metrics["index_status"]["index_options"] = index_info.get("index_options", {})
+                    metrics["index_status"]["index_options"] = cast(
+                        dict[str, Any], index_info.get("index_options", {})
+                    )
 
             except Exception as e:
                 logger.debug(f"Could not get index info: {e}")

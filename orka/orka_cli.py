@@ -58,10 +58,7 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-
-
-
-def main(argv: list[str] | None = None) -> int | None:
+def main(argv: list[str] | None = None) -> int:
     """Main entry point."""
     try:
         parser = create_parser()
@@ -78,15 +75,18 @@ def main(argv: list[str] | None = None) -> int | None:
         # Handle memory command
         if args.command == "memory":
             if not hasattr(args, "memory_command") or not args.memory_command:
-                if parser._subparsers is not None and hasattr(parser._subparsers, "choices"):
-                    if "memory" in parser._subparsers.choices:
-                        parser._subparsers.choices["memory"].print_help()
-                        return 1
+                if parser._subparsers is not None:
+                    for action in parser._subparsers._actions:
+                        if isinstance(action, argparse._SubParsersAction):
+                            if "memory" in action.choices:
+                                action.choices["memory"].print_help()
+                                return 1
                 return 1
 
             # Execute memory command
             if hasattr(args, "func"):
-                return args.func(args)
+                _attr_memory: int = args.func(args)
+                return _attr_memory
 
         # Handle run command
         if args.command == "run":
@@ -104,7 +104,8 @@ def main(argv: list[str] | None = None) -> int | None:
 
         # Execute other commands
         if hasattr(args, "func"):
-            return args.func(args)
+            _attr_run: int = args.func(args)
+            return _attr_run
 
         return 1
 

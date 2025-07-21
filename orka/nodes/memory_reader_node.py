@@ -1,10 +1,10 @@
 import json
 import logging
 import time
-from typing import Any
+from typing import Any, Optional
 
 from ..utils.bootstrap_memory_index import retry
-from ..utils.embedder import from_bytes
+from ..utils.embedder import AsyncEmbedder, from_bytes
 from .base_node import BaseNode
 
 logger = logging.getLogger(__name__)
@@ -34,13 +34,13 @@ class MemoryReaderNode(BaseNode):
         self.ef_runtime = kwargs.get("ef_runtime", 10)
 
         # Initialize embedder for query encoding
+        self.embedder: Optional[AsyncEmbedder] = None
         try:
             from ..utils.embedder import get_embedder
 
             self.embedder = get_embedder(kwargs.get("embedding_model"))
         except Exception as e:
             logger.error(f"Failed to initialize embedder: {e}")
-            self.embedder = None
 
         # Initialize attributes to prevent mypy errors
         self.use_hnsw = kwargs.get("use_hnsw", True)

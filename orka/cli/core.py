@@ -92,16 +92,34 @@ async def run_cli_entrypoint(
     """
     setup_logging(verbose)
     orchestrator = Orchestrator(config_path)
-    result = await orchestrator.run(input_text)
+    raw_result = await orchestrator.run(input_text)
 
     if log_to_file:
         with open("orka_trace.log", "w") as f:
-            f.write(str(result))
+            f.write(str(raw_result))
 
-    return result  # <--- VERY IMPORTANT for your test to receive it
+    # Type check and convert result to match return type
+    if isinstance(raw_result, dict):
+        return raw_result  # Already a dict[str, Any]
+    elif isinstance(raw_result, list):
+        # Check if it's a list of Event objects by checking required fields
+        if all(
+            isinstance(item, dict)
+            and "agent_id" in item
+            and "event_type" in item
+            and "timestamp" in item
+            and "payload" in item
+            for item in raw_result
+        ):
+            return raw_result  # List of Event-like dicts
+    elif isinstance(raw_result, str):
+        return raw_result  # Already a string
+
+    # Convert any other type to string for safety
+    return str(raw_result)
 
 
-def run_cli(argv: list[str]) -> int:
+def run_cli(argv: list[str] | None = None) -> int:
     """Run the CLI with the given arguments."""
     import argparse
     import asyncio
@@ -117,7 +135,9 @@ def run_cli(argv: list[str]) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "run":
-        result = asyncio.run(run_cli_entrypoint(args.config, args.input, args.log_to_file, args.verbose))
+        result = asyncio.run(
+            run_cli_entrypoint(args.config, args.input, args.log_to_file, args.verbose)
+        )
         if result:
             if isinstance(result, dict):
                 logger.info(json.dumps(result, indent=4))

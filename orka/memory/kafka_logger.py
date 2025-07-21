@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 import redis
+from redis import Redis
 
 from .base_logger import BaseMemoryLogger
 
@@ -89,8 +90,8 @@ class KafkaMemoryLogger(BaseMemoryLogger):
     def _init_kafka_producer(self):
         """Initialize the Kafka producer with proper configuration."""
         try:
-            from confluent_kafka import Producer  # type: ignore
-            from confluent_kafka.serialization import StringSerializer  # type: ignore
+            from confluent_kafka import Producer
+            from confluent_kafka.serialization import StringSerializer
 
             # Configure producer with reliability settings
             producer_config = {
@@ -121,10 +122,12 @@ class KafkaMemoryLogger(BaseMemoryLogger):
     def redis(self) -> redis.Redis:
         """Return Redis client - prefer RedisStack client if available."""
         if self._redis_memory_logger:
-            return self._redis_memory_logger.redis
+            _redis: Redis[Any] = self._redis_memory_logger.redis
+            return _redis
+        # Fallback to basic Redis client
         return self.redis_client
 
-    def _store_in_redis(self, event: dict, **kwargs):
+    def _store_in_redis(self, event: dict[str, Any], **kwargs: Any) -> None:
         """Store event using RedisStack logger if available."""
         if self._redis_memory_logger:
             # ✅ Use RedisStack logger for enhanced storage
@@ -266,37 +269,34 @@ class KafkaMemoryLogger(BaseMemoryLogger):
             logger.error(f"Failed to send event to Kafka: {e}")
             # Continue execution - Redis storage is our source of truth
 
-    def _delivery_callback(self, err, msg):
+    def _delivery_callback(self, err: Any, msg: Any) -> None:
         """Handle Kafka message delivery confirmation."""
         if err:
             logger.error(f"Message delivery failed: {err}")
         else:
             logger.debug(f"Message delivered to {msg.topic()} [{msg.partition()}]")
 
-    def tail(self, n: int = 10, run_id: str | None = None) -> list[dict[str, Any]]:
+    def tail(self, count: int = 10) -> list[dict[str, Any]]:
         """Get the last n events from Redis."""
         if self._redis_memory_logger:
-            return self._redis_memory_logger.tail(n)
+            return self._redis_memory_logger.tail(count)
 
         try:
             # Get stream entries
-            entries = self.redis_client.xrevrange(self.stream_key, count=n)
+            entries = self.redis_client.xrevrange(self.stream_key, count=count)
             result = []
 
             for _, data in entries:
-                if run_id and data.get(b"run_id", b"").decode() != run_id:  # type: ignore
-                    continue
-
                 entry = {
-                    "agent_id": data.get(b"agent_id", b"").decode(),  # type: ignore[str-bytes-safe]
-                    "event_type": data.get(b"event_type", b"").decode(),  # type: ignore[str-bytes-safe]
-                    "timestamp": int(data.get(b"timestamp", b"0").decode()),  # type: ignore[str-bytes-safe]
-                    "run_id": data.get(b"run_id", b"default").decode(),  # type: ignore[str-bytes-safe]
-                    "step": int(data.get(b"step", b"-1").decode()),  # type: ignore[str-bytes-safe]
+                    "agent_id": data.get(b"agent_id", b"").decode(),
+                    "event_type": data.get(b"event_type", b"").decode(),
+                    "timestamp": int(data.get(b"timestamp", b"0").decode()),
+                    "run_id": data.get(b"run_id", b"default").decode(),
+                    "step": int(data.get(b"step", b"-1").decode()),
                 }
 
                 try:
-                    entry["payload"] = json.loads(data.get(b"payload", b"{}").decode())  # type: ignore[str-bytes-safe]
+                    entry["payload"] = json.loads(data.get(b"payload", b"{}").decode())
                 except json.JSONDecodeError:
                     entry["payload"] = {}
 
@@ -311,10 +311,15 @@ class KafkaMemoryLogger(BaseMemoryLogger):
     def get(self, key: str) -> str | None:
         """Get a value from Redis."""
         if self._redis_memory_logger:
-            return self._redis_memory_logger.get(key)
+            result = self._redis_memory_logger.get(key)
+            if isinstance(result, bytes):
+                return result.decode()  # type: ignore
+            return result if isinstance(result, str) else None
         try:
             value = self.redis_client.get(key)
-            return value.decode() if value else None
+            if isinstance(value, bytes):
+                return value.decode()
+            return value if isinstance(value, str) else None
         except Exception as e:
             logger.error(f"Failed to get key {key}: {e}")
             return None
@@ -352,10 +357,15 @@ class KafkaMemoryLogger(BaseMemoryLogger):
     def hget(self, name: str, key: str) -> str | None:
         """Get a hash field from Redis."""
         if self._redis_memory_logger:
-            return self._redis_memory_logger.hget(name, key)
+            result = self._redis_memory_logger.hget(name, key)
+            if isinstance(result, bytes):
+                return result.decode()  # type: ignore
+            return result if isinstance(result, str) else None
         try:
             value = self.redis_client.hget(name, key)
-            return value.decode() if value else None
+            if isinstance(value, bytes):
+                return value.decode()
+            return value if isinstance(value, str) else None
         except Exception as e:
             logger.error(f"Failed to hget {name}.{key}: {e}")
             return None
