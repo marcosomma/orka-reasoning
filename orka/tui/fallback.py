@@ -2,26 +2,34 @@
 Fallback interface implementations for when Rich is not available.
 """
 
-import logging
 import json
+import logging
 import os
 import sys
 import time
+from typing import Any, TypeVar, cast
 
 logger = logging.getLogger(__name__)
 
-from ..memory_logger import create_memory_logger
+from ..memory_logger import BaseMemoryLogger, create_memory_logger
+
+# Type variable for memory logger
+MemoryLogger = TypeVar("MemoryLogger", bound=BaseMemoryLogger)
 
 
 class FallbackInterface:
     """Basic fallback interface when Rich is not available."""
 
-    def run_basic_fallback(self, args):
+    def run_basic_fallback(self, args: Any) -> int:
         """Basic fallback interface when Rich is not available."""
         try:
-            backend = getattr(args, "backend", None) or os.getenv(
-                "ORKA_MEMORY_BACKEND",
-                "redisstack",
+            backend = cast(
+                str,
+                getattr(args, "backend", None)
+                or os.getenv(
+                    "ORKA_MEMORY_BACKEND",
+                    "redisstack",
+                ),
             )
 
             # Provide proper Redis URL based on backend
@@ -41,7 +49,7 @@ class FallbackInterface:
             logger.error(f"Error in basic fallback: {e}")
             return 1
 
-    def basic_json_watch(self, memory, backend: str, args):
+    def basic_json_watch(self, memory: MemoryLogger, backend: str, args: Any) -> int:
         """Basic JSON mode memory watch."""
         try:
             while True:
@@ -68,7 +76,7 @@ class FallbackInterface:
 
         return 0
 
-    def basic_display_watch(self, memory, backend: str, args):
+    def basic_display_watch(self, memory: MemoryLogger, backend: str, args: Any) -> int:
         """Basic display mode memory watch."""
         try:
             while True:

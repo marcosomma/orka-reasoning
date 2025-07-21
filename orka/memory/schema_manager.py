@@ -29,7 +29,7 @@ except ImportError:
     )
 
 try:
-    import google.protobuf
+    import google.protobuf  # type: ignore [import-untyped, unused-ignore]
     from confluent_kafka.schema_registry.protobuf import (
         ProtobufDeserializer,
         ProtobufSerializer,

@@ -134,7 +134,7 @@ class Orchestrator(
         # Initialize all parent classes
         ExecutionEngine.__init__(self, config_path)
         OrchestratorBase.__init__(self, config_path)
-        AgentFactory.__init__(self)
+        AgentFactory.__init__(self, self.orchestrator_cfg, self.agent_cfgs, self.memory)
         PromptRenderer.__init__(self)
         ErrorHandler.__init__(self)
         MetricsCollector.__init__(self)

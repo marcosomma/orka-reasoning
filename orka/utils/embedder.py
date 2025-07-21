@@ -67,9 +67,6 @@ os.environ["SENTENCE_TRANSFORMERS_HOME"] = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "..", "..", "models", "sentence_transformers"
 )
 
-# Global embedder instance for singleton pattern
-_embedder: Optional[AsyncEmbedder] = None
-
 # Default embedding dimensions for common models
 DEFAULT_EMBEDDING_DIM = 384  # Common for smaller models like MiniLM-L6-v2
 EMBEDDING_DIMENSIONS = {
@@ -279,6 +276,10 @@ class AsyncEmbedder:
             logger.error(f"Error in fallback encoding: {str(e)}. Using zeros vector.")
             # Last resort - return zeros
             return np.zeros(self.embedding_dim, dtype=np.float32)
+
+
+# Global embedder instance for singleton pattern
+_embedder: Optional[AsyncEmbedder] = None
 
 
 def get_embedder(name: Optional[str] = None) -> AsyncEmbedder:

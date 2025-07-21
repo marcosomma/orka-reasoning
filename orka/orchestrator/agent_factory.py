@@ -20,6 +20,9 @@ Factory for creating and initializing agents and nodes based on configuration.
 
 import logging
 from datetime import datetime
+from typing import Any, Callable, Dict, List, Type, Union, cast
+
+from redis import Redis
 
 from ..agents import (
     agents,
@@ -27,6 +30,7 @@ from ..agents import (
     local_llm_agents,
     validation_and_structuring_agent,
 )
+from ..memory.base_logger import BaseMemoryLogger
 from ..nodes import (
     failing_node,
     failover_node,
@@ -41,7 +45,28 @@ from ..tools.search_tools import DuckDuckGoTool
 
 logger = logging.getLogger(__name__)
 
-AGENT_TYPES = {
+# Define a type for agent classes
+AgentClass = Union[
+    Type[agents.BinaryAgent],
+    Type[agents.ClassificationAgent],
+    Type[local_llm_agents.LocalLLMAgent],
+    Type[llm_agents.OpenAIAnswerBuilder],
+    Type[llm_agents.OpenAIBinaryAgent],
+    Type[llm_agents.OpenAIClassificationAgent],
+    Type[validation_and_structuring_agent.ValidationAndStructuringAgent],
+    Type[DuckDuckGoTool],
+    Type[router_node.RouterNode],
+    Type[failover_node.FailoverNode],
+    Type[failing_node.FailingNode],
+    Type[join_node.JoinNode],
+    Type[fork_node.ForkNode],
+    Type[loop_node.LoopNode],
+    Type[MemoryReaderNode],
+    Type[MemoryWriterNode],
+    str,  # For "special_handler"
+]
+
+AGENT_TYPES: Dict[str, AgentClass] = {
     "binary": agents.BinaryAgent,
     "classification": agents.ClassificationAgent,
     "local_llm": local_llm_agents.LocalLLMAgent,
@@ -65,7 +90,17 @@ class AgentFactory:
     Factory class for creating and initializing agents based on configuration.
     """
 
-    def _init_agents(self):
+    def __init__(
+        self,
+        orchestrator_cfg: Dict[str, Any],
+        agent_cfgs: List[Dict[str, Any]],
+        memory: BaseMemoryLogger,
+    ) -> None:
+        self.orchestrator_cfg = orchestrator_cfg
+        self.agent_cfgs = agent_cfgs
+        self.memory = memory
+
+    def _init_agents(self) -> Dict[str, Any]:
         """
         Instantiate all agents/nodes as defined in the YAML config.
         Returns a dict mapping agent IDs to their instances.
@@ -74,7 +109,7 @@ class AgentFactory:
         logger.debug(self.agent_cfgs)
         instances = {}
 
-        def init_single_agent(cfg):
+        def init_single_agent(cfg: Dict[str, Any]) -> Any:
             agent_cls = AGENT_TYPES.get(cfg["type"])
             if not agent_cls:
                 raise ValueError(f"Unsupported agent type: {cfg['type']}")
@@ -98,17 +133,22 @@ class AgentFactory:
                 # RouterNode expects node_id and params
                 prompt = cfg.get("prompt", None)
                 queue = cfg.get("queue", None)
-                return agent_cls(node_id=agent_id, **clean_cfg)
+                return router_node.RouterNode(node_id=agent_id, **clean_cfg)
 
             if agent_type in ("fork", "join"):
                 # Fork/Join nodes need memory_logger for group management
                 prompt = cfg.get("prompt", None)
                 queue = cfg.get("queue", None)
-                return agent_cls(
+                node_cls = agent_cls
+                if agent_type == "fork":
+                    node_cls = fork_node.ForkNode
+                else:
+                    node_cls = join_node.JoinNode
+                return node_cls(
                     node_id=agent_id,
                     prompt=prompt,
                     queue=queue,
-                    memory_logger=self.memory,
+                    memory_logger=cast(Redis[Any], self.memory),
                     **clean_cfg,
                 )
 
@@ -118,7 +158,7 @@ class AgentFactory:
                 child_instances = [
                     init_single_agent(child_cfg) for child_cfg in cfg.get("children", [])
                 ]
-                return agent_cls(
+                return failover_node.FailoverNode(
                     node_id=agent_id,
                     children=child_instances,
                     queue=queue,
@@ -127,7 +167,7 @@ class AgentFactory:
             if agent_type == "failing":
                 prompt = cfg.get("prompt", None)
                 queue = cfg.get("queue", None)
-                return agent_cls(
+                return failing_node.FailingNode(
                     node_id=agent_id,
                     prompt=prompt,
                     queue=queue,
@@ -138,11 +178,11 @@ class AgentFactory:
                 # LoopNode expects node_id and standard params
                 prompt = cfg.get("prompt", None)
                 queue = cfg.get("queue", None)
-                return agent_cls(
+                return loop_node.LoopNode(
                     node_id=agent_id,
                     prompt=prompt,
                     queue=queue,
-                    memory_logger=self.memory,
+                    memory_logger=cast(Redis[Any], self.memory),
                     **clean_cfg,
                 )
 
@@ -226,7 +266,7 @@ class AgentFactory:
             if agent_type in ("duckduckgo"):
                 prompt = cfg.get("prompt", None)
                 queue = cfg.get("queue", None)
-                return agent_cls(
+                return DuckDuckGoTool(
                     tool_id=agent_id,
                     prompt=prompt,
                     queue=queue,
@@ -243,12 +283,16 @@ class AgentFactory:
                     "store_structure": cfg.get("store_structure"),
                     **clean_cfg,
                 }
-                return agent_cls(params=params)
+                # Create a new dictionary with params as the only key
+                agent = validation_and_structuring_agent.ValidationAndStructuringAgent(params)
+                return agent
 
             # Default agent instantiation
             prompt = cfg.get("prompt", None)
             queue = cfg.get("queue", None)
-            return agent_cls(agent_id=agent_id, prompt=prompt, queue=queue, **clean_cfg)
+            if isinstance(agent_cls, str):
+                raise ValueError(f"Invalid agent type: {agent_type}")
+            return agent_cls(agent_id=agent_id, prompt=prompt, queue=queue, **clean_cfg)  # type: ignore [call-arg]
 
         for cfg in self.agent_cfgs:
             agent = init_single_agent(cfg)

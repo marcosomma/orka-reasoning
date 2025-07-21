@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class MemoryWriterNode(BaseNode):
     """Enhanced memory writer using RedisStack through memory logger."""
 
-    def __init__(self, node_id: str, **kwargs):
+    def __init__(self, node_id: str, **kwargs: Any) -> None:
         super().__init__(node_id=node_id, **kwargs)
 
         # ✅ CRITICAL: Use memory logger instead of direct Redis
@@ -50,7 +50,9 @@ class MemoryWriterNode(BaseNode):
             memory_content = self._extract_memory_content(context)
             if not memory_content:
                 return {"status": "error", "error": "No memory content to store"}
-            logger.debug(f"MemoryWriterNode: Extracted memory content: {memory_content[:200]}...") # Log first 200 chars
+            logger.debug(
+                f"MemoryWriterNode: Extracted memory content: {memory_content[:200]}..."
+            )  # Log first 200 chars
 
             # Extract configuration from context
             namespace = context.get("namespace", self.namespace)
@@ -85,7 +87,7 @@ class MemoryWriterNode(BaseNode):
                     rendered_key = template.render(**template_context)
 
                     # Store rendered key in metadata for identification
-                    merged_metadata["memory_key_template"] = str(rendered_key)  # type: ignore[assignment]
+                    merged_metadata["memory_key_template"] = str(rendered_key)
 
                 except Exception as e:
                     logger.warning(f"Failed to render key template: {e}")
@@ -100,7 +102,7 @@ class MemoryWriterNode(BaseNode):
                 # Set these AFTER merged_metadata to prevent overwriting
                 "category": str(merged_metadata.get("category", "stored")),
                 "log_type": "memory",  # Mark as stored memory, not orchestration log
-                "tags": ", ".join(merged_metadata.get("tags", [])),  # type: ignore[assignment]  # type: ignore[assignment]
+                "tags": ", ".join(merged_metadata.get("tags", [])),
             }
 
             assert self.memory_logger is not None, "Memory logger not initialized"
@@ -165,7 +167,9 @@ class MemoryWriterNode(BaseNode):
 
         except Exception as e:
             logger.warning(f"Error merging metadata: {e}")
-            return self.yaml_metadata.copy()
+            # Ensure we return a dict[str, Any] by copying and casting
+            metadata_copy = dict(self.yaml_metadata)
+            return {str(k): v for k, v in metadata_copy.items()}
 
     def _render_metadata_templates(
         self,
@@ -358,7 +362,9 @@ class MemoryWriterNode(BaseNode):
                         if isinstance(result, dict) and "memory_object" in result:
                             memory_obj = result["memory_object"]
                             # Convert structured object to searchable text
-                            return self._memory_object_to_text(memory_obj, context.get("input", ""))
+                            return str(
+                                self._memory_object_to_text(memory_obj, context.get("input", ""))
+                            )
 
             # Try to get the rendered prompt first, then fall back to raw input
             content = context.get("formatted_prompt", "")
@@ -383,7 +389,7 @@ class MemoryWriterNode(BaseNode):
                 else:
                     return str(input_value)
             else:
-                return content
+                return str(content)
 
         except Exception as e:
             logger.error(f"❌ Error extracting memory content: {e}")
@@ -397,11 +403,11 @@ class MemoryWriterNode(BaseNode):
         """Convert structured memory object to searchable text format."""
         try:
             # Create a natural language representation that's searchable
-            number = memory_obj.get("number", original_input)
-            result = memory_obj.get("result", "unknown")
-            condition = memory_obj.get("condition", "")
-            analysis_type = memory_obj.get("analysis_type", "")
-            confidence = memory_obj.get("confidence", 1.0)
+            number = str(memory_obj.get("number", original_input))
+            result = str(memory_obj.get("result", "unknown"))
+            condition = str(memory_obj.get("condition", ""))
+            analysis_type = str(memory_obj.get("analysis_type", ""))
+            confidence = str(memory_obj.get("confidence", 1.0))
 
             # Format as searchable text
             text_parts = [
@@ -410,12 +416,12 @@ class MemoryWriterNode(BaseNode):
                 f"Condition: {condition}",
                 f"Analysis: {analysis_type}",
                 f"Confidence: {confidence}",
-                f"Validated: {memory_obj.get('validation_status', 'unknown')}",
+                f"Validated: {str(memory_obj.get('validation_status', 'unknown'))}",
             ]
 
             # Add the structured data as JSON for exact matching
             structured_text = " | ".join(text_parts)
-            structured_text += f" | JSON: {memory_obj}"
+            structured_text += f" | JSON: {str(memory_obj)}"
 
             return structured_text
 
@@ -460,17 +466,23 @@ class MemoryWriterNode(BaseNode):
         """Get expiry time in hours based on memory type and importance."""
         if memory_type == "long_term":
             # Check agent-level config first, then fall back to global config
-            base_hours = self.decay_config.get("long_term_hours") or self.decay_config.get(
-                "default_long_term_hours",
-                24.0,
+            base_hours = float(
+                self.decay_config.get("long_term_hours")
+                or self.decay_config.get(
+                    "default_long_term_hours",
+                    24.0,
+                )
             )
         else:
             # Check agent-level config first, then fall back to global config
-            base_hours = self.decay_config.get("short_term_hours") or self.decay_config.get(
-                "default_short_term_hours",
-                1.0,
+            base_hours = float(
+                self.decay_config.get("short_term_hours")
+                or self.decay_config.get(
+                    "default_short_term_hours",
+                    1.0,
+                )
             )
 
         # Adjust based on importance (higher importance = longer retention)
         importance_multiplier = 1.0 + importance_score
-        return base_hours * importance_multiplier
+        return float(base_hours * importance_multiplier)

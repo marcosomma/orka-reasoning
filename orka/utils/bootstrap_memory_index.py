@@ -59,10 +59,7 @@ from typing import Any, cast
 import numpy as np
 import redis
 from redis.commands.search.field import NumericField, TextField
-from redis.commands.search.index_definition import (  # type: ignore
-    IndexDefinition,
-    IndexType,
-)
+from redis.commands.search.indexDefinition import IndexDefinition, IndexType
 
 # Optional vector search support
 VECTOR_SEARCH_AVAILABLE = False

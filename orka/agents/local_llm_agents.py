@@ -29,23 +29,15 @@ Local LLM agents enable:
 
 import json
 import logging
+from typing import Any, Dict, Optional, Union, cast
 
+from .base_agent import Context
 from .base_agent import LegacyBaseAgent as BaseAgent
 
 logger = logging.getLogger(__name__)
 
 
-def _count_tokens(text, model="gpt-3.5-turbo"):
-    """
-    Count tokens in text using tiktoken library with improved accuracy.
-
-    Args:
-        text (str): Text to count tokens for
-        model (str): Model name for tokenizer selection
-
-    Returns:
-        int: Number of tokens, or character-based estimate if tiktoken unavailable
-    """
+def _count_tokens(text: str, model: str = "gpt-3.5-turbo") -> int:
     if not text or not isinstance(text, str):
         return 0
 
@@ -124,57 +116,71 @@ class LocalLLMAgent(BaseAgent):
     ```
     """
 
-    def run(self, input_data):
+    async def run(self, input_data: Union[Context, Any]) -> Dict[str, Any]:
         """
         Generate an answer using a local LLM endpoint.
 
         Args:
-            input_data (dict or str): Input data containing:
+            input_data (Union[Context, Any]): Input data containing:
                 - If dict: prompt (str), model (str), temperature (float), and other params
                 - If str: Direct input text to process
 
         Returns:
-            str: Generated answer from the local model.
+            Dict[str, Any]: Generated answer from the local model with metrics.
         """
         # Handle both dict and string inputs for flexibility
         if isinstance(input_data, str):
             input_text = input_data
-            prompt = self.prompt or "Input: {{ input }}"
-            model = self.params.get("model", "llama3.2:latest")
-            temperature = float(self.params.get("temperature", 0.7))
+            prompt = self.prompt if self.prompt is not None else "Input: {{ input }}"
+            model = str(self.params.get("model", "llama3.2:latest"))
+            # Handle temperature with proper type conversion
+            temp_val = self.params.get("temperature", 0.7)
+            try:
+                temperature = float(str(temp_val)) if temp_val is not None else 0.7
+            except (ValueError, TypeError):
+                temperature = 0.7
         else:
             # Extract the actual input text from the dict structure
             # Handle OrKa's orchestrator input format properly
             if isinstance(input_data, dict):
                 # Try to get 'input' field first (OrKa standard)
                 if "input" in input_data:
-                    input_text = input_data["input"]
+                    input_text = str(input_data["input"])
                 else:
                     # Fallback to converting dict to string if no 'input' field
                     input_text = str(input_data)
+
+                # Get prompt with proper type handling
+                prompt_val = input_data.get("prompt", self.prompt)
+                prompt = str(prompt_val) if prompt_val is not None else "Input: {{ input }}"
+
+                # Get model with proper type handling
+                model_val = input_data.get("model", self.params.get("model", "llama3.2:latest"))
+                model = str(model_val)
+
+                # Get temperature with proper type handling
+                temp_val = input_data.get("temperature", self.params.get("temperature", 0.7))
+                try:
+                    temperature = float(str(temp_val)) if temp_val is not None else 0.7
+                except (ValueError, TypeError):
+                    temperature = 0.7
             else:
                 input_text = str(input_data)
-
-            prompt = (
-                input_data.get("prompt", self.prompt)
-                if isinstance(input_data, dict)
-                else self.prompt
-            )
-            model = (
-                input_data.get("model", self.params.get("model", "llama3.2:latest"))
-                if isinstance(input_data, dict)
-                else self.params.get("model", "llama3.2:latest")
-            )
-            temperature = float(
-                (
-                    input_data.get("temperature", self.params.get("temperature", 0.7))
-                    if isinstance(input_data, dict)
-                    else self.params.get("temperature", 0.7)
-                ),
-            )
+                prompt = self.prompt if self.prompt is not None else "Input: {{ input }}"
+                model = str(self.params.get("model", "llama3.2:latest"))
+                # Handle temperature with proper type conversion
+                temp_val = self.params.get("temperature", 0.7)
+                try:
+                    temperature = float(str(temp_val)) if temp_val is not None else 0.7
+                except (ValueError, TypeError):
+                    temperature = 0.7
 
         # Build the full prompt using template replacement
-        render_prompt = self.build_prompt(input_text, prompt, input_data)
+        # Convert input_data to dict if it's not already
+        context_dict: Dict[str, Any] = (
+            dict(input_data) if isinstance(input_data, dict) else {"input": str(input_data)}
+        )
+        render_prompt = self.build_prompt(input_text, prompt, context_dict)
 
         # Enhanced instructions for reasoning models to force JSON output
         self_evaluation = """
@@ -328,7 +334,10 @@ class LocalLLMAgent(BaseAgent):
             }
 
     def build_prompt(
-        self, input_text: str, template: str | None = None, full_context: dict | None = None
+        self,
+        input_text: str,
+        template: Optional[str] = None,
+        full_context: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
         Build the prompt from template and input data.
@@ -393,8 +402,13 @@ class LocalLLMAgent(BaseAgent):
 
         return rendered
 
-    def _call_ollama(self, model_url, model, prompt, temperature):
-        """Call Ollama API endpoint."""
+    def _call_ollama(self, model_url: str, model: str, prompt: str, temperature: float) -> str:
+        """
+        Call Ollama API endpoint.
+
+        Returns:
+            str: The model's response text
+        """
         import requests
 
         payload = {
@@ -407,10 +421,15 @@ class LocalLLMAgent(BaseAgent):
         response = requests.post(model_url, json=payload)
         response.raise_for_status()
         result = response.json()
-        return result.get("response", "").strip()
+        return str(result.get("response", "")).strip()
 
-    def _call_lm_studio(self, model_url, model, prompt, temperature):
-        """Call LM Studio API endpoint (OpenAI-compatible)."""
+    def _call_lm_studio(self, model_url: str, model: str, prompt: str, temperature: float) -> str:
+        """
+        Call LM Studio API endpoint (OpenAI-compatible).
+
+        Returns:
+            str: The model's response text
+        """
         import requests
 
         # LM Studio uses OpenAI-compatible endpoint structure
@@ -431,10 +450,17 @@ class LocalLLMAgent(BaseAgent):
         response = requests.post(model_url, json=payload)
         response.raise_for_status()
         result = response.json()
-        return result["choices"][0]["message"]["content"].strip()
+        return str(result["choices"][0]["message"]["content"]).strip()
 
-    def _call_openai_compatible(self, model_url, model, prompt, temperature):
-        """Call any OpenAI-compatible API endpoint."""
+    def _call_openai_compatible(
+        self, model_url: str, model: str, prompt: str, temperature: float
+    ) -> str:
+        """
+        Call any OpenAI-compatible API endpoint.
+
+        Returns:
+            str: The model's response text
+        """
         import requests
 
         payload = {
@@ -447,4 +473,4 @@ class LocalLLMAgent(BaseAgent):
         response = requests.post(model_url, json=payload)
         response.raise_for_status()
         result = response.json()
-        return result["choices"][0]["message"]["content"].strip()
+        return str(result["choices"][0]["message"]["content"]).strip()
