@@ -4,7 +4,7 @@ import json
 import logging
 import os
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 import redis
 from redis import Redis
@@ -125,7 +125,8 @@ class KafkaMemoryLogger(BaseMemoryLogger):
             _redis: Redis[Any] = self._redis_memory_logger.redis
             return _redis
         # Fallback to basic Redis client
-        return self.redis_client
+        _redis = cast(Redis[Any], self.redis_client)
+        return _redis
 
     def _store_in_redis(self, event: dict[str, Any], **kwargs: Any) -> None:
         """Store event using RedisStack logger if available."""

@@ -11,8 +11,13 @@
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 import json
+import logging
+from typing import Any, Dict, List, Optional
 
+from ..memory.redisstack_logger import RedisStackMemoryLogger
 from .base_node import BaseNode
+
+logger = logging.getLogger(__name__)
 
 
 class ForkNode(BaseNode):
@@ -21,7 +26,14 @@ class ForkNode(BaseNode):
     Can handle both sequential and parallel execution of agent branches.
     """
 
-    def __init__(self, node_id, prompt=None, queue=None, memory_logger=None, **kwargs):
+    def __init__(
+        self,
+        node_id: str,
+        prompt: Optional[str] = None,
+        queue: Optional[List[Any]] = None,
+        memory_logger: Optional[RedisStackMemoryLogger] = None,
+        **kwargs: Any,
+    ) -> None:
         """
         Initialize the fork node.
 
@@ -29,7 +41,7 @@ class ForkNode(BaseNode):
             node_id (str): Unique identifier for the node.
             prompt (str, optional): Prompt or instruction for the node.
             queue (list, optional): Queue of agents or nodes to be processed.
-            memory_logger: Logger for tracking node state.
+            memory_logger (RedisStackMemoryLogger, optional): Logger for tracking node state.
             **kwargs: Additional configuration parameters.
         """
         super().__init__(node_id=node_id, prompt=prompt, queue=queue, **kwargs)
@@ -38,7 +50,7 @@ class ForkNode(BaseNode):
         self.config = kwargs  # Store config explicitly
         self.mode = kwargs.get("mode", "sequential")  # Default to sequential execution
 
-    async def run(self, context):
+    async def run(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Execute the fork operation by creating parallel branches.
 
@@ -51,11 +63,6 @@ class ForkNode(BaseNode):
         Raises:
             ValueError: If no targets are specified or orchestrator is missing.
         """
-        import json
-        import logging
-
-        logger = logging.getLogger(__name__)
-
         targets = self.config.get("targets", [])
         if not targets:
             raise ValueError(f"ForkNode '{self.node_id}' requires non-empty 'targets' list.")
@@ -94,43 +101,44 @@ class ForkNode(BaseNode):
         orchestrator.fork_manager.create_group(fork_group_id, all_flat_agents)
         logger.debug(f"Created fork group {fork_group_id} with agents {all_flat_agents}")
 
-        # Store fork group mapping and agent list using backend-agnostic methods
-        self.memory_logger.hset(f"fork_group_mapping:{self.node_id}", "group_id", fork_group_id)
-        self.memory_logger.sadd(f"fork_group:{fork_group_id}", *all_flat_agents)
+        if self.memory_logger is not None:
+            # Store fork group mapping and agent list using backend-agnostic methods
+            self.memory_logger.hset(f"fork_group_mapping:{self.node_id}", "group_id", fork_group_id)
+            self.memory_logger.sadd(f"fork_group:{fork_group_id}", *all_flat_agents)
 
-        # Store initial state for join node
-        state_key = "waitfor:join_parallel_checks:inputs"
-        for agent_id in all_flat_agents:
-            # Initialize empty result for each agent with proper structure
-            initial_result = {
-                "response": "",
-                "confidence": "0.0",
-                "internal_reasoning": "",
-                "_metrics": {},
-                "formatted_prompt": "",
-                "memories": [],
-                "query": "",
-                "backend": "",
-                "search_type": "",
-                "num_results": 0,
-                "status": "pending",
-                "fork_group": fork_group_id,
-                "agent_id": agent_id,
-            }
+            # Store initial state for join node
+            state_key = "waitfor:join_parallel_checks:inputs"
+            for agent_id in all_flat_agents:
+                # Initialize empty result for each agent with proper structure
+                initial_result = {
+                    "response": "",
+                    "confidence": "0.0",
+                    "internal_reasoning": "",
+                    "_metrics": {},
+                    "formatted_prompt": "",
+                    "memories": [],
+                    "query": "",
+                    "backend": "",
+                    "search_type": "",
+                    "num_results": 0,
+                    "status": "pending",
+                    "fork_group": fork_group_id,
+                    "agent_id": agent_id,
+                }
 
-            # Store in Redis hash for join node
-            self.memory_logger.hset(state_key, agent_id, json.dumps(initial_result))
-            logger.debug(f"Initialized state for agent {agent_id}")
+                # Store in Redis hash for join node
+                self.memory_logger.hset(state_key, agent_id, json.dumps(initial_result))
+                logger.debug(f"Initialized state for agent {agent_id}")
 
-            # Store in Redis key for direct access
-            agent_key = f"agent_result:{fork_group_id}:{agent_id}"
-            self.memory_logger.set(agent_key, json.dumps(initial_result))
-            logger.debug(f"Stored initial result for agent {agent_id}")
+                # Store in Redis key for direct access
+                agent_key = f"agent_result:{fork_group_id}:{agent_id}"
+                self.memory_logger.set(agent_key, json.dumps(initial_result))
+                logger.debug(f"Stored initial result for agent {agent_id}")
 
-            # Store in Redis hash for group tracking
-            group_key = f"fork_group_results:{fork_group_id}"
-            self.memory_logger.hset(group_key, agent_id, json.dumps(initial_result))
-            logger.debug(f"Stored initial result in group for agent {agent_id}")
+                # Store in Redis hash for group tracking
+                group_key = f"fork_group_results:{fork_group_id}"
+                self.memory_logger.hset(group_key, agent_id, json.dumps(initial_result))
+                logger.debug(f"Stored initial result in group for agent {agent_id}")
 
         # Return fork status with group info
         return {
