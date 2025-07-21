@@ -54,43 +54,33 @@ async def initialize_memory():
 
 import asyncio
 import logging
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import redis
 from redis.commands.search.field import NumericField, TextField
-
-# Support both redis-py 4.x and 5.x versions
-try:
-    # redis-py <5 (camelCase)
-    from redis.commands.search.indexDefinition import (  # type: ignore
-        IndexDefinition,
-        IndexType,
-    )
-except ModuleNotFoundError:
-    # redis-py ≥5 (snake_case)
-    from redis.commands.search.index_definition import (  # type: ignore
-        IndexDefinition,
-        IndexType,
-    )
+from redis.commands.search.index_definition import (  # type: ignore
+    IndexDefinition,
+    IndexType,
+)
 
 # Optional vector search support
+VECTOR_SEARCH_AVAILABLE = False
+VectorField: Any = None
+Query: Any = None
+
 try:
     from redis.commands.search.field import VectorField
+    from redis.commands.search.query import Query
 
     VECTOR_SEARCH_AVAILABLE = True
 except ImportError:
-    VECTOR_SEARCH_AVAILABLE = False
-    VectorField = None  # type: ignore
+    pass
 
 logger = logging.getLogger(__name__)
 
 
-def ensure_memory_index(redis_client, index_name="memory_entries"):
-    """
-    Ensure that the basic memory index exists.
-    This creates a basic text search index for memory entries.
-    """
+def ensure_memory_index(redis_client: redis.Redis, index_name: str = "memory_entries") -> bool:
     try:
         # Check if index exists
         try:
@@ -124,7 +114,9 @@ def ensure_memory_index(redis_client, index_name="memory_entries"):
         return False
 
 
-def ensure_enhanced_memory_index(redis_client, index_name="orka_enhanced_memory", vector_dim=384):
+def ensure_enhanced_memory_index(
+    redis_client: redis.Redis, index_name: str = "orka_enhanced_memory", vector_dim: int = 384
+) -> bool:
     """
     Ensure that the enhanced memory index with vector search exists.
     This creates an index with vector search capabilities for semantic search.
@@ -170,7 +162,7 @@ def ensure_enhanced_memory_index(redis_client, index_name="orka_enhanced_memory"
                 )
 
                 logger.info(f"✅ Enhanced memory index '{index_name}' created successfully")
-                return True
+                index_created = True
             else:
                 raise
         except Exception as e:
@@ -186,10 +178,11 @@ def ensure_enhanced_memory_index(redis_client, index_name="orka_enhanced_memory"
                 logger.warning(
                     "⚠️  Redis instance does not support vector search. Please upgrade to RedisStack 7.2+ for vector capabilities.",
                 )
-            return False
+            index_created = False
     except Exception as e:
         logger.error(f"Error checking enhanced memory index: {e}")
-        return False
+        index_created = False
+    return index_created
 
 
 def hybrid_vector_search(
@@ -211,7 +204,7 @@ def hybrid_vector_search(
         from redis.commands.search.query import Query
 
         # Convert numpy array to bytes for Redis
-        if isinstance(query_vector, np.ndarray):
+        if hasattr(query_vector, "astype") and hasattr(query_vector, "tobytes"):
             vector_bytes = query_vector.astype(np.float32).tobytes()
         else:
             logger.error("Query vector must be a numpy array")
@@ -234,7 +227,7 @@ def hybrid_vector_search(
                 .paging(0, num_results)
                 .return_fields("content", "node_id", "trace_id", "vector_score")
                 .dialect(2),
-                query_params={"query_vector": vector_bytes},  # type: ignore
+                query_params={"query_vector": vector_bytes.decode("latin-1")},
             )
 
             logger.debug(f"Vector search returned {len(search_results.docs)} results")
@@ -262,20 +255,15 @@ def hybrid_vector_search(
 
                     try:
                         score = float(raw_score)
-                        # Check for NaN, infinity, or invalid values
                         import math
 
                         if math.isnan(score) or math.isinf(score):
                             score = 0.0
-                        # For cosine distance: 0 = identical, 2 = opposite
-                        # Convert to similarity: similarity = 1 - (distance / 2)
                         # This maps distance [0, 2] to similarity [1, 0]
-                        elif score < 0:
+                        if score < 0:
                             score = 1.0  # Treat negative as perfect similarity
                         elif score > 2:
                             score = 0.0  # Treat > 2 as no similarity
-                        else:
-                            score = 1.0 - (score / 2.0)
 
                         # Ensure final score is in [0, 1] range
                         score = max(0.0, min(1.0, score))
@@ -391,8 +379,8 @@ def legacy_vector_search(
 
         # Execute legacy search with proper LIMIT syntax
         search_result = client.ft("memory_idx").search(
-            query=f"{vector_query} LIMIT 0 {num_results}",
-            query_params={"query_vector": query_vector_bytes},  # type: ignore
+            Query(f"{vector_query} LIMIT 0 {num_results}").dialect(2),
+            query_params={"query_vector": query_vector_bytes.decode("latin-1")},
         )
 
         # Process results
@@ -428,7 +416,7 @@ def legacy_vector_search(
         return []
 
 
-async def retry(coro, attempts=3, backoff=0.2):
+async def retry(coro: Any, attempts: int = 3, backoff: float = 0.2) -> Any:
     """
     Retry a coroutine with exponential backoff on connection errors.
 
@@ -446,6 +434,7 @@ async def retry(coro, attempts=3, backoff=0.2):
     Raises:
         redis.ConnectionError: If all retry attempts fail
         Exception: Any other exceptions raised by the coroutine
+        RuntimeError: If attempts <= 0
 
     Example:
         ```python
@@ -453,15 +442,27 @@ async def retry(coro, attempts=3, backoff=0.2):
         result = await retry(redis_client.get("key"), attempts=5, backoff=0.5)
         ```
     """
-    for i in range(attempts):
+    if attempts <= 0:
+        raise RuntimeError("Invalid number of attempts")
+
+    last_error: redis.ConnectionError | None = None
+
+    # Try first attempt without delay
+    try:
+        return await coro
+    except redis.ConnectionError as e:
+        if attempts == 1:
+            raise
+        last_error = e
+
+    for attempt in range(1, attempts):
         try:
-            # Attempt to execute the coroutine
+            await asyncio.sleep(backoff * (2 ** (attempt - 1)))
             return await coro
-        except redis.ConnectionError:
-            # Only retry on connection errors, not other exceptions
-            if i == attempts - 1:
-                # Last attempt failed, propagate the exception
+        except redis.ConnectionError as e:
+            if attempt == attempts - 1:
                 raise
-            # Wait with exponential backoff before next attempt
-            # Example: backoff=0.2, i=0 → wait 0.2s; i=1 → wait 0.4s; i=2 → wait 0.8s
-            await asyncio.sleep(backoff * (2**i))
+            last_error = e
+
+    assert last_error is not None  # for mypy
+    raise last_error
