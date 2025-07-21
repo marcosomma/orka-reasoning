@@ -23,13 +23,14 @@ import logging
 import os
 import sys
 import time
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 from orka.memory_logger import create_memory_logger
 
 
-def memory_watch(args):
+def memory_watch(args: Any) -> int:
     """Modern TUI interface with Textual (default) or Rich fallback."""
     # Check if user explicitly wants fallback interface
     if getattr(args, "fallback", False):
@@ -55,10 +56,15 @@ def memory_watch(args):
         return 1
 
 
-def _memory_watch_fallback(args):
+def _memory_watch_fallback(args: Any) -> int:
     """Fallback memory watch with basic interface."""
     try:
-        backend = getattr(args, "backend", None) or os.getenv("ORKA_MEMORY_BACKEND", "redisstack")
+        # Get backend with default value
+        raw_backend = getattr(args, "backend", None) or os.getenv(
+            "ORKA_MEMORY_BACKEND", "redisstack"
+        )
+        # Ensure backend is a string
+        backend = str(raw_backend)
         redis_url = os.getenv(
             "REDIS_URL", "redis://localhost:6379/0"
         )  # Use same URL for all backends
@@ -75,7 +81,7 @@ def _memory_watch_fallback(args):
         return 1
 
 
-def _memory_watch_json(memory, backend: str, args):
+def _memory_watch_json(memory: Any, backend: str, args: Any) -> int:
     """JSON mode memory watch with continuous updates."""
     try:
         while True:
@@ -128,7 +134,7 @@ def _memory_watch_json(memory, backend: str, args):
     return 0
 
 
-def _memory_watch_display(memory, backend: str, args):
+def _memory_watch_display(memory: Any, backend: str, args: Any) -> int:
     """Interactive display mode with continuous updates."""
     try:
         while True:

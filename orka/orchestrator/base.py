@@ -43,11 +43,12 @@ Core Responsibilities
 
 import logging
 import os
-from typing import Any
+from typing import Any, cast
 from uuid import uuid4
 
 from ..fork_group_manager import ForkGroupManager
 from ..loader import YAMLLoader
+from ..memory.redisstack_logger import RedisStackMemoryLogger
 from ..memory_logger import create_memory_logger
 
 logger = logging.getLogger(__name__)
@@ -78,7 +79,7 @@ class OrchestratorBase:
         error_telemetry (dict): Comprehensive error tracking and metrics
     """
 
-    def __init__(self, config_path):
+    def __init__(self, config_path: str) -> None:
         """
         Initialize the Orchestrator with a YAML config file.
 
@@ -144,6 +145,9 @@ class OrchestratorBase:
                 },
             )
             # For Kafka backend, now use Redis-based fork manager since we have Redis for memory
+            self.memory = cast(
+                RedisStackMemoryLogger, self.memory
+            )  # Cast to RedisStackMemoryLogger for type checking
             self.fork_manager = ForkGroupManager(self.memory.redis)
         else:
             self.memory = create_memory_logger(
@@ -160,6 +164,9 @@ class OrchestratorBase:
                 },
             )
             # For Redis, use the existing Redis-based fork manager
+            self.memory = cast(
+                RedisStackMemoryLogger, self.memory
+            )  # Cast to RedisStackMemoryLogger for type checking
             self.fork_manager = ForkGroupManager(self.memory.redis)
 
         self.queue = self.orchestrator_cfg["agents"][:]  # Initial agent execution queue
@@ -178,7 +185,7 @@ class OrchestratorBase:
             "recovery_actions": [],  # Actions taken to recover from errors
         }
 
-    def enqueue_fork(self, agent_ids, fork_group_id):
+    def enqueue_fork(self, agent_ids: list[str], fork_group_id: str) -> None:
         """
         Enqueue a fork group for parallel execution.
         """

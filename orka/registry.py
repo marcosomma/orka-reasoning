@@ -57,7 +57,7 @@ try:
 
     HAS_SENTENCE_TRANSFORMERS = True
 except ImportError:
-    SentenceTransformer = None  # type: ignore[no-redef, misc, assignment]
+    SentenceTransformer = None  # type: ignore[misc, assignment]
     HAS_SENTENCE_TRANSFORMERS = False
     logger.warning(
         "sentence_transformers not available. Install with: pip install sentence-transformers"
