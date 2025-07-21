@@ -2,22 +2,20 @@
 Screen implementations for OrKa Textual TUI application.
 """
 
+from typing import Any
+
 from textual.app import ComposeResult
 from textual.containers import Container, Vertical
 from textual.screen import Screen
 from textual.widgets import Footer, Header, Static
 
-from .textual_widgets import (
-    LogsWidget,
-    MemoryTableWidget,
-    StatsWidget,
-)
+from .textual_widgets import LogsWidget, MemoryTableWidget, StatsWidget
 
 
 class BaseOrKaScreen(Screen):
     """Base screen for OrKa application with common functionality."""
 
-    def __init__(self, data_manager, **kwargs):
+    def __init__(self, data_manager: Any, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.data_manager = data_manager
 
@@ -136,14 +134,19 @@ class ShortMemoryScreen(BaseOrKaScreen):
         message: MemoryTableWidget.MemorySelected,
     ) -> None:
         """Handle memory selection to show content and metadata in lower panel."""
+        content_widget = None
         try:
             content_widget = self.query_one("#short-content-text", Static)
         except Exception:
+            # If we can't find the widget, log error and return
+            return
+
+        if not content_widget:
             return
 
         if message.memory_data is None:
             # Deselected - show simple placeholder
-            content_widget.update("[dim]Select a row to view memory content and metadata[/dim]")
+            content_widget.update("[dim]Select a row to view memory content and metadata[/dim]")  # type: ignore [unreachable]
         else:
             # Selected - show content and metadata
             try:
@@ -239,14 +242,19 @@ class LongMemoryScreen(BaseOrKaScreen):
         message: MemoryTableWidget.MemorySelected,
     ) -> None:
         """Handle memory selection to show content and metadata in lower panel."""
+        content_widget = None
         try:
             content_widget = self.query_one("#long-content-text", Static)
         except Exception:
+            # If we can't find the widget, log error and return
+            return
+
+        if not content_widget:
             return
 
         if message.memory_data is None:
             # Deselected - show simple placeholder
-            content_widget.update("[dim]Select a row to view memory content and metadata[/dim]")
+            content_widget.update("[dim]Select a row to view memory content and metadata[/dim]")  # type: ignore [unreachable]
         else:
             # Selected - show content and metadata
             try:
@@ -338,14 +346,19 @@ class MemoryLogsScreen(BaseOrKaScreen):
         message: MemoryTableWidget.MemorySelected,
     ) -> None:
         """Handle memory selection to show content and metadata in lower panel."""
+        content_widget = None
         try:
             content_widget = self.query_one("#logs-content-text", Static)
         except Exception:
+            # If we can't find the widget, log error and return
+            return
+
+        if not content_widget:
             return
 
         if message.memory_data is None:
             # Deselected - show simple placeholder
-            content_widget.update("[dim]Select a row to view entry details and metadata[/dim]")
+            content_widget.update("[dim]Select a row to view entry details and metadata[/dim]")  # type: ignore [unreachable]
         else:
             # Selected - show content and metadata
             try:

@@ -149,11 +149,28 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from time import time
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple, TypeVar, cast
+
+from .base import OrchestratorBase
+from .error_handling import ErrorHandler as OrchestratorErrorHandling
+from .metrics import MetricsCollector as OrchestratorMetricsCollector
 
 logger = logging.getLogger(__name__)
 
 
-class ExecutionEngine:
+# Define a type variable that is bound to ExecutionEngine and includes all necessary attributes
+class ExecutionEngineProtocol(OrchestratorBase):
+    """Protocol defining required attributes for ExecutionEngine type variable."""
+
+    agents: Dict[str, Any]
+    render_prompt: Any
+    _add_prompt_to_payload: Any
+
+
+T = TypeVar("T", bound="ExecutionEngineProtocol")
+
+
+class ExecutionEngine(OrchestratorBase, OrchestratorErrorHandling, OrchestratorMetricsCollector):
     """
     🎼 **The conductor of your AI orchestra** - coordinates complex multi-agent workflows.
 
@@ -223,7 +240,13 @@ class ExecutionEngine:
     - Fault-tolerant distributed AI applications
     """
 
-    async def run(self, input_data, return_logs=False):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.agents: Dict[str, Any] = {}
+        self.render_prompt: Any = None
+        self._add_prompt_to_payload: Any = None
+
+    async def run(self: "ExecutionEngine", input_data: Any, return_logs: bool = False) -> Any:
         """
         Execute the orchestrator with the given input data.
 
@@ -234,7 +257,7 @@ class ExecutionEngine:
         Returns:
             Either the logs array or the final response based on return_logs parameter
         """
-        logs = []
+        logs: List[Any] = []
         try:
             result = await self._run_with_comprehensive_error_handling(
                 input_data,
@@ -253,7 +276,12 @@ class ExecutionEngine:
             logger.critical(f"🚨 [ORKA-CRITICAL] Orchestrator execution failed: {e}")
             raise
 
-    async def _run_with_comprehensive_error_handling(self, input_data, logs, return_logs=False):
+    async def _run_with_comprehensive_error_handling(
+        self: "ExecutionEngine",
+        input_data: Any,
+        logs: List[Dict[str, Any]],
+        return_logs: bool = False,
+    ) -> Any:
         """
         Main execution loop with comprehensive error handling wrapper.
 
@@ -470,7 +498,8 @@ class ExecutionEngine:
 
             # Cleanup memory backend resources to prevent hanging
             try:
-                self.memory.close()
+                if hasattr(self.memory, "close"):
+                    self.memory.close()
             except Exception as e:
                 logger.warning(f"Warning: Failed to cleanly close memory backend: {e!s}")
 
@@ -499,7 +528,9 @@ class ExecutionEngine:
             logger.error(f"Unexpected error in execution engine: {e}")
             raise
 
-    async def _run_agent_async(self, agent_id, input_data, previous_outputs):
+    async def _run_agent_async(
+        self: "ExecutionEngine", agent_id: str, input_data: Any, previous_outputs: Dict[str, Any]
+    ) -> Tuple[str, Any]:
         """
         Run a single agent asynchronously.
         """
@@ -570,7 +601,12 @@ class ExecutionEngine:
             logger.error(f"Failed to execute agent '{agent_id}': {e}")
             raise
 
-    async def _run_branch_async(self, branch_agents, input_data, previous_outputs):
+    async def _run_branch_async(
+        self: "ExecutionEngine",
+        branch_agents: List[str],
+        input_data: Any,
+        previous_outputs: Dict[str, Any],
+    ) -> Dict[str, Any]:
         """
         Run a sequence of agents in a branch sequentially.
         """
@@ -587,12 +623,12 @@ class ExecutionEngine:
         return branch_results
 
     async def run_parallel_agents(
-        self,
-        agent_ids,
-        fork_group_id,
-        input_data,
-        previous_outputs,
-    ):
+        self: "ExecutionEngine",
+        agent_ids: List[str],
+        fork_group_id: str,
+        input_data: Any,
+        previous_outputs: Dict[str, Any],
+    ) -> List[Dict[str, Any]]:
         """
         Run multiple branches in parallel, with agents within each branch running sequentially.
         Returns a list of log entries for each forked agent.
@@ -642,7 +678,7 @@ class ExecutionEngine:
         updated_previous_outputs = enhanced_previous_outputs.copy()
 
         # Flatten branch results into a single list of (agent_id, result) pairs
-        all_results = []
+        all_results: List[Tuple[str, Any]] = []
         for branch_result in branch_results:
             all_results.extend(branch_result.items())
 
@@ -673,17 +709,17 @@ class ExecutionEngine:
                 "timestamp": datetime.now(UTC).isoformat(),
                 "payload": payload_data,
                 "previous_outputs": updated_previous_outputs.copy(),
-                "step": step_index,
+                "step": forked_step_index,  # Use numeric step index for memory logger
                 "run_id": self.run_id,
             }
             result_logs.append(log_data)
 
-            # Log to memory
+            # Log to memory with numeric step index
             self.memory.log(
                 agent_id,
                 f"ForkedAgent-{self.agents[agent_id].__class__.__name__}",
                 payload_data,
-                step=step_index,
+                step=forked_step_index,  # Use numeric step index
                 run_id=self.run_id,
                 previous_outputs=updated_previous_outputs.copy(),
             )
@@ -693,7 +729,9 @@ class ExecutionEngine:
 
         return result_logs
 
-    def _ensure_complete_context(self, previous_outputs):
+    def _ensure_complete_context(
+        self: "ExecutionEngine", previous_outputs: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Generic method to ensure previous_outputs has complete context for template rendering.
         This handles various agent result structures and ensures templates can access data.
@@ -767,14 +805,14 @@ class ExecutionEngine:
 
         return enhanced_outputs
 
-    def enqueue_fork(self, agent_ids, fork_group_id):
+    def enqueue_fork(self: "ExecutionEngine", agent_ids: List[str], fork_group_id: str) -> None:
         """
         Add agents to the fork queue for processing.
         """
         for agent_id in agent_ids:
             self.queue.append(agent_id)
 
-    def _extract_final_response(self, logs):
+    def _extract_final_response(self: "ExecutionEngine", logs: List[Dict[str, Any]]) -> Any:
         """
         Extract the response from the last non-memory agent to return as the main result.
 
