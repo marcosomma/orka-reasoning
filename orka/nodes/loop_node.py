@@ -37,6 +37,7 @@ import yaml
 from redis import Redis
 from redis.client import Redis as RedisType
 
+from ..memory.redisstack_logger import RedisStackMemoryLogger
 from .base_node import BaseNode
 
 T = TypeVar("T")
@@ -83,7 +84,7 @@ class LoopNode(BaseNode):
         node_id: str,
         prompt: Optional[str] = None,
         queue: Optional[List[Any]] = None,
-        memory_logger: Optional[RedisType] = None,  # Type hint as Redis
+        memory_logger: Optional[RedisStackMemoryLogger] = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -93,7 +94,7 @@ class LoopNode(BaseNode):
             node_id (str): Unique identifier for the node.
             prompt (Optional[str]): Prompt or instruction for the node.
             queue (Optional[List[Any]]): Queue of agents or nodes to be processed.
-            memory_logger: The memory logger instance.
+            memory_logger (Optional[RedisStackMemoryLogger]): The RedisStackMemoryLogger instance.
             **kwargs: Additional configuration parameters:
                 - max_loops (int): Maximum number of loop iterations (default: 5)
                 - score_threshold (float): Score threshold to meet before continuing (default: 0.8)
@@ -104,6 +105,16 @@ class LoopNode(BaseNode):
                 - cognitive_extraction (dict): Configuration for extracting valuable cognitive data
         """
         super().__init__(node_id, prompt, queue, **kwargs)
+
+        # Ensure memory_logger is of correct type
+        if memory_logger is not None and not isinstance(memory_logger, RedisStackMemoryLogger):
+            logger.warning(f"Expected RedisStackMemoryLogger but got {type(memory_logger)}")  # type: ignore [unreachable]
+            try:
+                memory_logger = cast(RedisStackMemoryLogger, memory_logger)
+            except Exception as e:
+                logger.error(f"Failed to cast memory logger: {e}")
+                memory_logger = None
+
         self.memory_logger = memory_logger
 
         # Configuration with type hints
@@ -313,16 +324,51 @@ class LoopNode(BaseNode):
         self, original_input: Any, previous_outputs: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
         """Execute the internal workflow configuration."""
+        import os
+
         from ..orchestrator import Orchestrator
+
+        # Get the original workflow configuration
+        original_workflow = self.internal_workflow.copy()
+
+        # Ensure we have the basic structure
+        if "orchestrator" not in original_workflow:
+            original_workflow["orchestrator"] = {}
+
+        # Update the orchestrator configuration while preserving agents
+        orchestrator_config = original_workflow["orchestrator"]
+        orchestrator_config.update(
+            {
+                "id": orchestrator_config.get("id", "internal-workflow"),
+                "strategy": orchestrator_config.get("strategy", "sequential"),
+                "memory": {
+                    "config": {
+                        "redis_url": os.getenv("REDIS_URL", "redis://localhost:6380/0"),
+                        "backend": "redisstack",
+                        "enable_hnsw": True,
+                        "vector_params": {
+                            "M": 16,
+                            "ef_construction": 200,
+                            "ef_runtime": 10,
+                        },
+                    }
+                },
+            }
+        )
 
         # Create temporary workflow file
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
-            yaml.dump(self.internal_workflow, f)
+            yaml.dump(original_workflow, f)
             temp_file = f.name
 
         try:
             # Create orchestrator for internal workflow
             orchestrator = Orchestrator(temp_file)
+
+            # Use parent's memory logger to maintain consistency
+            if self.memory_logger is not None:
+                orchestrator.memory = self.memory_logger
+                orchestrator.fork_manager.redis = self.memory_logger.redis  # Fixed attribute name
 
             # Create a safe version of previous_outputs to prevent circular references
             safe_previous_outputs = self._create_safe_result(previous_outputs)
@@ -396,15 +442,15 @@ class LoopNode(BaseNode):
 
     def _is_valid_value(self, value: Any) -> TypeGuard[Union[str, int, float]]:
         """Check if a value can be converted to float."""
-        if isinstance(value, (int, float)):
-            return True
-        if isinstance(value, str) and value.strip():
-            try:
+        try:
+            if isinstance(value, (int, float)):
+                return True
+            if isinstance(value, str) and value.strip():
                 float(value)
                 return True
-            except (ValueError, TypeError):
-                return False
-        return False
+            return False
+        except (ValueError, TypeError):
+            return False
 
     def _extract_score(self, result: Dict[str, Any]) -> float:
         """Extract score from result using configured extraction strategies."""

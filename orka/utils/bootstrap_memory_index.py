@@ -278,15 +278,14 @@ def hybrid_vector_search(
                     }
                     results.append(result)
                 except Exception as e:
-                    logger.warning(f"Error processing search result: {e}")
+                    # logger.warning(f"Error processing search result: {e}")
                     continue
 
         except Exception as search_error:
-            logger.warning(f"Vector search failed: {search_error}")
-
+            # logger.warning(f"Vector search failed: {search_error}")
             # If vector search fails, try fallback to basic text search
             try:
-                logger.info("Falling back to basic text search")
+                # logger.info("Falling back to basic text search")
                 basic_query = f"@content:{query_text}"
                 search_results = redis_client.ft(index_name).search(
                     Query(basic_query).paging(0, num_results),
@@ -303,11 +302,12 @@ def hybrid_vector_search(
                         }
                         results.append(result)
                     except Exception as e:
-                        logger.warning(f"Error processing fallback result: {e}")
+                        # logger.warning(f"Error processing fallback result: {e}")
                         continue
 
             except Exception as fallback_error:
-                logger.error(f"Both vector and fallback search failed: {fallback_error}")
+                # logger.error(f"Both vector and fallback search failed: {fallback_error}")
+                pass
 
     except Exception as e:
         logger.error(f"Hybrid vector search failed: {e}")

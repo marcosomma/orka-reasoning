@@ -19,10 +19,7 @@ Factory for creating and initializing agents and nodes based on configuration.
 """
 
 import logging
-from datetime import datetime
-from typing import Any, Callable, Dict, List, Type, Union, cast
-
-from redis import Redis
+from typing import Any, Dict, List, Type, Union, cast
 
 from ..agents import (
     agents,
@@ -31,6 +28,7 @@ from ..agents import (
     validation_and_structuring_agent,
 )
 from ..memory.base_logger import BaseMemoryLogger
+from ..memory.redisstack_logger import RedisStackMemoryLogger
 from ..nodes import (
     failing_node,
     failover_node,
@@ -144,11 +142,12 @@ class AgentFactory:
                     node_cls = fork_node.ForkNode
                 else:
                     node_cls = join_node.JoinNode
+
                 return node_cls(
                     node_id=agent_id,
                     prompt=prompt,
                     queue=queue,
-                    memory_logger=cast(Redis[Any], self.memory),
+                    memory_logger=cast(RedisStackMemoryLogger, self.memory),
                     **clean_cfg,
                 )
 
@@ -178,11 +177,12 @@ class AgentFactory:
                 # LoopNode expects node_id and standard params
                 prompt = cfg.get("prompt", None)
                 queue = cfg.get("queue", None)
+
                 return loop_node.LoopNode(
                     node_id=agent_id,
                     prompt=prompt,
                     queue=queue,
-                    memory_logger=cast(Redis[Any], self.memory),
+                    memory_logger=cast(RedisStackMemoryLogger, self.memory),
                     **clean_cfg,
                 )
 
