@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OrKa Cognition Engine: A Deep Dive Infographic</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
+            color: #E5E7EB;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 350px;
+            max-height: 400px;
+        }
+        .kpi-card {
+            background-color: #1F2937;
+            border: 1px solid #374151;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 240, 181, 0.1), 0 4px 6px -2px rgba(0, 240, 181, 0.05);
+        }
+        .flow-step {
+            background-color: #1F2937;
+            border: 1px solid #00A0F0;
+            min-height: 80px;
+        }
+        .flow-arrow {
+            color: #00A0F0;
+            font-size: 2rem;
+            line-height: 1;
+        }
+        .flow-line {
+            width: 2px;
+            background-color: #00A0F0;
+            height: 2rem;
+        }
+        .flow-line-h {
+            height: 2px;
+            background-color: #00A0F0;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto p-4 sm:p-6 md:p-12">
+
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-extrabold mb-2">
+                The <span style="color: #00F0B5;">OrKa</span> Cognition Engine
+            </h1>
+            <p class="text-lg text-gray-400 max-w-3xl mx-auto">
+                A visual deep dive into the performance and processes of a multi-agent AI deliberation, based on a sequence of five execution traces.
+            </p>
+        </header>
+
+        <section id="kpis" class="mb-16">
+            <h2 class="text-3xl font-bold text-center mb-8">Experiment Summary: The Total Effort</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="kpi-card p-6 rounded-xl text-center">
+                    <p class="text-sm text-gray-400 uppercase tracking-wider">Total LLM Calls</p>
+                    <p id="total-calls" class="text-5xl font-extrabold" style="color: #00F0B5;">76</p>
+                </div>
+                <div class="kpi-card p-6 rounded-xl text-center">
+                    <p class="text-sm text-gray-400 uppercase tracking-wider">Total Tokens Processed</p>
+                    <p id="total-tokens" class="text-5xl font-extrabold" style="color: #00E0F0;">98,533</p>
+                </div>
+                <div class="kpi-card p-6 rounded-xl text-center">
+                    <p class="text-sm text-gray-400 uppercase tracking-wider">Total Execution Time</p>
+                    <p id="total-time" class="text-5xl font-extrabold" style="color: #00A0F0;">22.7m</p>
+                </div>
+                <div class="kpi-card p-6 rounded-xl text-center">
+                    <p class="text-sm text-gray-400 uppercase tracking-wider">Total Cost (USD)</p>
+                    <p id="total-cost" class="text-5xl font-extrabold" style="color: #0060F0;">$0.094</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="trends" class="mb-16">
+            <div class="bg-gray-800 p-6 rounded-xl shadow-lg">
+                <h2 class="text-3xl font-bold mb-1">Performance Across Deliberation Cycles</h2>
+                <p class="text-gray-400 mb-6">This chart tracks the token usage, cost, and execution time over five sequential runs, revealing trends in efficiency and resource consumption as the deliberation process unfolds.</p>
+                <div class="chart-container">
+                    <canvas id="trendsChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section id="agent-contribution" class="mb-16">
+            <h2 class="text-3xl font-bold text-center mb-8">The Cognitive Workforce: Agent Contribution</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h3 class="text-2xl font-bold mb-1">Token Consumption by Agent</h3>
+                    <p class="text-gray-400 mb-6">This chart ranks the agents by the total number of tokens they processed across all runs, identifying the most computationally intensive cognitive tasks.</p>
+                    <div class="chart-container">
+                        <canvas id="agentTokensChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h3 class="text-2xl font-bold mb-1">Average Latency by Agent</h3>
+                    <p class="text-gray-400 mb-6">This chart shows the average time each agent took to complete its task. High-latency agents represent the primary bottlenecks in the reasoning process.</p>
+                    <div class="chart-container">
+                        <canvas id="agentLatencyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="final-run" class="mb-16">
+            <h2 class="text-3xl font-bold text-center mb-8">Deconstructing the Final Cycle</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                <div class="lg:col-span-3 bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h3 class="text-2xl font-bold mb-1">The Deliberation Flow</h3>
+                    <p class="text-gray-400 mb-6">OrKa orchestrates a structured cognitive flow. The process begins by forking the initial query to multiple persona-driven agents who then debate and defend their positions. Their outputs are synthesized and refined through moderator agents before a final answer is produced.</p>
+                    <div class="flex flex-col items-center">
+                        <div class="flow-step w-full md:w-3/4 p-4 rounded-lg text-center flex items-center justify-center"><strong>1. Input & Memory Read</strong><br>Query is received and relevant memories are retrieved.</div>
+                        <div class="flow-line"></div>
+                        <div class="flow-step w-full md:w-3/4 p-4 rounded-lg text-center flex items-center justify-center"><strong>2. Fork to Persona Agents</strong><br>The task is split among four distinct AI personas.</div>
+                        
+                        <div class="w-full px-4 lg:px-0">
+                            <div class="flex justify-center my-4"><div class="flow-line"></div></div>
+                            <div class="relative flex justify-center">
+                                <div class="flow-line-h absolute top-1/2 -translate-y-1/2"></div>
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 relative z-10">
+                                <div class="flow-step p-2 text-center flex flex-col justify-center rounded-lg"><strong>Progressive</strong><span class="text-xs text-gray-400">Opening & Defense</span></div>
+                                <div class="flow-step p-2 text-center flex flex-col justify-center rounded-lg"><strong>Conservative</strong><span class="text-xs text-gray-400">Opening & Defense</span></div>
+                                <div class="flow-step p-2 text-center flex flex-col justify-center rounded-lg"><strong>Realist</strong><span class="text-xs text-gray-400">Opening & Defense</span></div>
+                                <div class="flow-step p-2 text-center flex flex-col justify-center rounded-lg"><strong>Purist</strong><span class="text-xs text-gray-400">Opening & Defense</span></div>
+                            </div>
+                            <div class="flex justify-center my-4"><div class="flow-line"></div></div>
+                        </div>
+
+                        <div class="flow-step w-full md:w-3/4 p-4 rounded-lg text-center flex items-center justify-center"><strong>3. Initial Synthesis</strong><br>The diverse perspectives are combined into a first-draft answer.</div>
+                        <div class="flow-line"></div>
+                        <div class="flow-step w-full md:w-3/4 p-4 rounded-lg text-center flex items-center justify-center"><strong>4. Moderation & Reflection</strong><br>Moderator agents assess quality and agreement. The system reflects on the debate.</div>
+                        <div class="flow-line"></div>
+                        <div class="flow-step w-full md:w-3/4 p-4 rounded-lg text-center flex items-center justify-center"><strong>5. Final Synthesis & Output</strong><br>A refined, high-quality answer is generated.</div>
+                    </div>
+                </div>
+                <div class="lg:col-span-2 bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h3 class="text-2xl font-bold mb-1">Final Run: Token Distribution</h3>
+                    <p class="text-gray-400 mb-6">This donut chart illustrates the proportional token usage of the key agents during the last, most refined execution cycle, highlighting where cognitive effort was concentrated.</p>
+                    <div class="chart-container" style="height: 380px;">
+                        <canvas id="finalRunDonutChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="text-center mt-12 pt-8 border-t border-gray-700">
+            <p class="text-gray-500">Infographic generated based on OrKa-Reasoning trace logs.</p>
+            <p class="text-gray-600 text-sm">Visualizations created with Chart.js and Tailwind CSS. No SVG or Mermaid JS used.</p>
+        </footer>
+
+    </div>
+
+    <script>
+        const traceData = [
+            {
+                "timestamp": "2025-07-23T23:30:48",
+                "summary": { "total_cost_usd": 0.01919, "total_tokens": 20508, "total_llm_calls": 17, "total_time_ms": 364947 },
+                "agents": { "progressive_opening_statement": { "tokens": 1282 }, "conservative_opening_statement": { "tokens": 1282 }, "realist_opening_statement": { "tokens": 1282 }, "purist_opening_statement": { "tokens": 1282 }, "progressive_defense": { "tokens": 1282 }, "conservative_defense": { "tokens": 1282 }, "realist_defense": { "tokens": 1282 }, "purist_defense": { "tokens": 1282 }, "synthesis_attempt": { "tokens": 1897 }, "quality_moderator": { "tokens": 804 }, "agreement_moderator": { "tokens": 1618 }, "meta_debate_reflection": { "tokens": 717 }, "reasoning_quality_extractor": { "tokens": 944 }, "final_synthesis_processor": { "tokens": 1076 } }
+            },
+            {
+                "timestamp": "2025-07-23T23:36:43",
+                "summary": { "total_cost_usd": 0.0182, "total_tokens": 18712, "total_llm_calls": 14, "total_time_ms": 363198 },
+                "agents": { "progressive_opening_statement": { "tokens": 1282 }, "conservative_opening_statement": { "tokens": 1282 }, "realist_opening_statement": { "tokens": 1282 }, "purist_opening_statement": { "tokens": 1282 }, "progressive_defense": { "tokens": 1282 }, "conservative_defense": { "tokens": 1282 }, "realist_defense": { "tokens": 1282 }, "purist_defense": { "tokens": 1282 }, "synthesis_attempt": { "tokens": 1897 }, "quality_moderator": { "tokens": 804 }, "agreement_moderator": { "tokens": 1618 } }
+            },
+            {
+                "timestamp": "2025-07-23T23:40:06",
+                "summary": { "total_cost_usd": 0.017463, "total_tokens": 18053, "total_llm_calls": 14, "total_time_ms": 366670 },
+                "agents": { "progressive_opening_statement": { "tokens": 1282 }, "conservative_opening_statement": { "tokens": 1282 }, "realist_opening_statement": { "tokens": 1282 }, "purist_opening_statement": { "tokens": 1282 }, "progressive_defense": { "tokens": 1282 }, "conservative_defense": { "tokens": 1282 }, "realist_defense": { "tokens": 1282 }, "purist_defense": { "tokens": 1282 }, "synthesis_attempt": { "tokens": 1876 }, "quality_moderator": { "tokens": 1046 }, "agreement_moderator": { "tokens": 1600 } }
+            },
+            {
+                "timestamp": "2025-07-23T23:43:31",
+                "summary": { "total_cost_usd": 0.018454, "total_tokens": 19296, "total_llm_calls": 14, "total_time_ms": 361291 },
+                "agents": { "progressive_opening_statement": { "tokens": 1282 }, "conservative_opening_statement": { "tokens": 1282 }, "realist_opening_statement": { "tokens": 1282 }, "purist_opening_statement": { "tokens": 1282 }, "progressive_defense": { "tokens": 1282 }, "conservative_defense": { "tokens": 1282 }, "realist_defense": { "tokens": 1282 }, "purist_defense": { "tokens": 1282 }, "synthesis_attempt": { "tokens": 2145 }, "quality_moderator": { "tokens": 866 }, "agreement_moderator": { "tokens": 1666 } }
+            },
+            {
+                "timestamp": "2025-07-23T23:44:18",
+                "summary": { "total_cost_usd": 0.020643, "total_tokens": 21964, "total_llm_calls": 17, "total_time_ms": 454686 },
+                "agents": { "progressive_opening_statement": { "tokens": 1282 }, "conservative_opening_statement": { "tokens": 1282 }, "realist_opening_statement": { "tokens": 1282 }, "purist_opening_statement": { "tokens": 1282 }, "progressive_defense": { "tokens": 1282 }, "conservative_defense": { "tokens": 1282 }, "realist_defense": { "tokens": 1282 }, "purist_defense": { "tokens": 1282 }, "synthesis_attempt": { "tokens": 2145 }, "quality_moderator": { "tokens": 866 }, "agreement_moderator": { "tokens": 1666 }, "meta_debate_reflection": { "tokens": 935 }, "reasoning_quality_extractor": { "tokens": 923 }, "final_synthesis_processor": { "tokens": 810 } }
+            }
+        ];
+
+        const rawAgentData = [
+            {"agent": "progressive_opening_statement", "tokens": 1282, "latency": 26048.65, "calls": 1},
+            {"agent": "conservative_opening_statement", "tokens": 1282, "latency": 26048.65, "calls": 1},
+            {"agent": "realist_opening_statement", "tokens": 1282, "latency": 26048.65, "calls": 1},
+            {"agent": "purist_opening_statement", "tokens": 1282, "latency": 26048.65, "calls": 1},
+            {"agent": "progressive_defense", "tokens": 1282, "latency": 40848.68, "calls": 1},
+            {"agent": "conservative_defense", "tokens": 1282, "latency": 40848.68, "calls": 1},
+            {"agent": "realist_defense", "tokens": 1282, "latency": 40848.68, "calls": 1},
+            {"agent": "purist_defense", "tokens": 1282, "latency": 40848.68, "calls": 1},
+            {"agent": "synthesis_attempt", "tokens": 1897, "latency": 21096.77, "calls": 1},
+            {"agent": "quality_moderator", "tokens": 804, "latency": 10268.68, "calls": 1},
+            {"agent": "agreement_moderator", "tokens": 1618, "latency": 15967.3, "calls": 1},
+            {"agent": "meta_debate_reflection", "tokens": 717, "latency": 11206.75, "calls": 1},
+            {"agent": "reasoning_quality_extractor", "tokens": 944, "latency": 18409.03, "calls": 1},
+            {"agent": "final_synthesis_processor", "tokens": 1076, "latency": 18606.65, "calls": 1},
+            {"agent": "synthesis_attempt", "tokens": 1876, "latency": 22495.89, "calls": 1},
+            {"agent": "quality_moderator", "tokens": 1046, "latency": 16749.16, "calls": 1},
+            {"agent": "agreement_moderator", "tokens": 1600, "latency": 17380.23, "calls": 1},
+            {"agent": "synthesis_attempt", "tokens": 2145, "latency": 22672.48, "calls": 1},
+            {"agent": "quality_moderator", "tokens": 866, "latency": 12128.46, "calls": 1},
+            {"agent": "agreement_moderator", "tokens": 1666, "latency": 17728.91, "calls": 1},
+            {"agent": "synthesis_attempt", "tokens": 2145, "latency": 22672.48, "calls": 1},
+            {"agent": "quality_moderator", "tokens": 866, "latency": 12128.46, "calls": 1},
+            {"agent": "agreement_moderator", "tokens": 1666, "latency": 17728.91, "calls": 1},
+            {"agent": "meta_debate_reflection", "tokens": 935, "latency": 17131.24, "calls": 1},
+            {"agent": "reasoning_quality_extractor", "tokens": 923, "latency": 18124.58, "calls": 1},
+            {"agent": "final_synthesis_processor", "tokens": 810, "latency": 11979.68, "calls": 1}
+        ];
+
+        const palette = {
+            primary: '#00F0B5',
+            secondary: '#00E0F0',
+            tertiary: '#00A0F0',
+            quaternary: '#0060F0',
+            quinary: '#0020F0',
+            lightGray: '#9CA3AF',
+            gridColor: 'rgba(107, 114, 128, 0.3)'
+        };
+
+        function formatLabel(str, maxLen = 16) {
+            if (str.length <= maxLen) return str;
+            const words = str.replace(/_/g, ' ').split(' ');
+            const lines = [];
+            let currentLine = '';
+            for (const word of words) {
+                if ((currentLine + word).length > maxLen) {
+                    lines.push(currentLine.trim());
+                    currentLine = '';
+                }
+                currentLine += word + ' ';
+            }
+            lines.push(currentLine.trim());
+            return lines.filter(line => line.length > 0);
+        }
+
+        const tooltipTitleCallback = (tooltipItems) => {
+            const item = tooltipItems[0];
+            let label = item.chart.data.labels[item.dataIndex];
+            if (Array.isArray(label)) {
+                return label.join(' ');
+            }
+            return label;
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const totalCalls = traceData.reduce((sum, d) => sum + d.summary.total_llm_calls, 0);
+            const totalTokens = traceData.reduce((sum, d) => sum + d.summary.total_tokens, 0);
+            const totalTimeMs = traceData.reduce((sum, d) => sum + d.summary.total_time_ms, 0);
+            const totalCost = traceData.reduce((sum, d) => sum + d.summary.total_cost_usd, 0);
+
+            document.getElementById('total-calls').textContent = totalCalls;
+            document.getElementById('total-tokens').textContent = (totalTokens / 1000).toFixed(1) + 'k';
+            document.getElementById('total-time').textContent = (totalTimeMs / 1000 / 60).toFixed(1) + 'm';
+            document.getElementById('total-cost').textContent = '$' + totalCost.toFixed(3);
+
+            const trendsCtx = document.getElementById('trendsChart').getContext('2d');
+            new Chart(trendsCtx, {
+                type: 'line',
+                data: {
+                    labels: traceData.map((d, i) => `Cycle ${i + 1}`),
+                    datasets: [
+                        {
+                            label: 'Total Tokens',
+                            data: traceData.map(d => d.summary.total_tokens),
+                            borderColor: palette.primary,
+                            backgroundColor: palette.primary + '33',
+                            yAxisID: 'y',
+                            tension: 0.3,
+                            fill: true,
+                        },
+                        {
+                            label: 'Execution Time (s)',
+                            data: traceData.map(d => d.summary.total_time_ms / 1000),
+                            borderColor: palette.secondary,
+                            backgroundColor: palette.secondary + '33',
+                            yAxisID: 'y1',
+                            tension: 0.3,
+                        },
+                         {
+                            label: 'Cost (USD * 100)',
+                            data: traceData.map(d => d.summary.total_cost_usd * 100),
+                            borderColor: palette.tertiary,
+                            backgroundColor: palette.tertiary + '33',
+                            yAxisID: 'y1',
+                            tension: 0.3,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { 
+                            type: 'linear', 
+                            display: true, 
+                            position: 'left',
+                            ticks: { color: palette.lightGray },
+                            grid: { color: palette.gridColor }
+                        },
+                        y1: { 
+                            type: 'linear', 
+                            display: true, 
+                            position: 'right',
+                            ticks: { color: palette.lightGray },
+                            grid: { drawOnChartArea: false }
+                        },
+                        x: {
+                            ticks: { color: palette.lightGray },
+                            grid: { color: palette.gridColor }
+                        }
+                    },
+                    plugins: {
+                        legend: { labels: { color: palette.lightGray } },
+                        tooltip: { callbacks: { title: tooltipTitleCallback } }
+                    }
+                }
+            });
+
+            const agentUsage = rawAgentData.reduce((acc, agent) => {
+                if (!acc[agent.agent]) {
+                    acc[agent.agent] = { tokens: 0, latency: 0, calls: 0 };
+                }
+                acc[agent.agent].tokens += agent.tokens;
+                acc[agent.agent].latency += agent.latency;
+                acc[agent.agent].calls += agent.calls;
+                return acc;
+            }, {});
+
+            const sortedAgentsByToken = Object.entries(agentUsage).sort(([,a],[,b]) => b.tokens - a.tokens);
+            const agentTokensCtx = document.getElementById('agentTokensChart').getContext('2d');
+            new Chart(agentTokensCtx, {
+                type: 'bar',
+                data: {
+                    labels: sortedAgentsByToken.map(([name]) => formatLabel(name)),
+                    datasets: [{
+                        label: 'Total Tokens Consumed',
+                        data: sortedAgentsByToken.map(([,data]) => data.tokens),
+                        backgroundColor: [palette.primary, palette.secondary, palette.tertiary, palette.quaternary, palette.quinary],
+                        borderColor: '#374151',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { ticks: { color: palette.lightGray }, grid: { color: palette.gridColor } },
+                        x: { ticks: { color: palette.lightGray }, grid: { color: palette.gridColor } }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { title: tooltipTitleCallback } }
+                    }
+                }
+            });
+
+            const sortedAgentsByLatency = Object.entries(agentUsage).sort(([,a],[,b]) => (b.latency/b.calls) - (a.latency/a.calls));
+            const agentLatencyCtx = document.getElementById('agentLatencyChart').getContext('2d');
+            new Chart(agentLatencyCtx, {
+                type: 'bar',
+                data: {
+                    labels: sortedAgentsByLatency.map(([name]) => formatLabel(name)),
+                    datasets: [{
+                        label: 'Average Latency (ms)',
+                        data: sortedAgentsByLatency.map(([,data]) => data.latency / data.calls),
+                        backgroundColor: [palette.primary, palette.secondary, palette.tertiary, palette.quaternary, palette.quinary],
+                        borderColor: '#374151',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { ticks: { color: palette.lightGray }, grid: { color: palette.gridColor } },
+                        x: { ticks: { color: palette.lightGray }, grid: { color: palette.gridColor } }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { title: tooltipTitleCallback } }
+                    }
+                }
+            });
+            
+            const finalRunAgents = Object.entries(traceData[traceData.length - 1].agents)
+                .sort(([,a],[,b]) => b.tokens - a.tokens);
+            const finalRunDonutCtx = document.getElementById('finalRunDonutChart').getContext('2d');
+            new Chart(finalRunDonutCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: finalRunAgents.map(([name]) => formatLabel(name, 20)),
+                    datasets: [{
+                        label: 'Tokens in Final Cycle',
+                        data: finalRunAgents.map(([,data]) => data.tokens),
+                        backgroundColor: [palette.primary, palette.secondary, palette.tertiary, palette.quaternary, palette.quinary, '#00F0B588', '#00E0F088', '#00A0F088'],
+                        borderColor: '#1F2937',
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            position: 'bottom',
+                            labels: { color: palette.lightGray, boxWidth: 15 }
+                        },
+                        tooltip: { callbacks: { title: tooltipTitleCallback } }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
