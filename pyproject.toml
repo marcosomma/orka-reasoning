@@ -4,17 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "orka-reasoning"
-version = "0.7.7"
+version = "0.7.8"
 description = "Modular agent orchestrator for reasoning pipelines"
 authors = [
   { name = "Marco Somma", email = "marcosomma.work@gmail.com" }
 ]
 readme = "README.md"
-license = { text = "Apache 2.0" }
+license = "Apache-2.0"
 requires-python = ">=3.11"
 classifiers = [
   "Programming Language :: Python :: 3",
-  "License :: OSI Approved :: Apache Software License",
   "Operating System :: OS Independent",
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
@@ -129,6 +128,16 @@ package-dir = {"" = "."}
 [tool.setuptools.packages.find]
 where = ["."]
 exclude = ["test*", "tests*"]
+
+[tool.setuptools.package-data]
+orka = [
+    "docker/*",
+    "docker/*.sh",
+    "docker/*.bat",
+    "docker/*.yml",
+    "docker/*.md",
+    "docker/Dockerfile*"
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "strict"

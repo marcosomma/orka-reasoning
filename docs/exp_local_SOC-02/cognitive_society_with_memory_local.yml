@@ -10,9 +10,9 @@ orchestrator:
       importance_rules:
         base_score: 0.8
         event_type_boosts:
-          disagreement: 0.4  # Reward disagreement
-          challenge: 0.3
-          synthesis: 0.2
+          disagreement: 0.2
+          challenge: 0.4
+          synthesis: 0.3
         agent_type_boosts:
           debate: 0.3
           devil_advocate: 0.4
@@ -26,7 +26,7 @@ agents:
   - id: cognitive_debate_loop
     type: loop
     max_loops: 8  # 🔧 RESTORED: Back to reasonable complexity
-    score_threshold: 0.85  # 🔧 LOWERED: More achievable for local models
+    score_threshold: 0.71  # 🔧 LOWERED: More achievable for local models
     
     # 🔧 COMPLETELY REDESIGNED: Simplified score extraction for local models
     score_extraction_config:
@@ -752,7 +752,7 @@ agents:
             Realist: {{ previous_outputs.pragmatic_realist.response }}
             Purist: {{ previous_outputs.ethical_purist.response }}
             
-            Mission: DESTROY the unified agreement. Show why it's fake, dangerous, or meaningless.
+            Mission: DESTROY the unified agreement. Show why it's fake, dangerous, or meaningless. Lower intensity per loop.
             
             MANDATORY FORMAT:
             FATAL_FLAW: [Core weakness destroying this agreement]

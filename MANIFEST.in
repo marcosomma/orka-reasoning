@@ -2,28 +2,24 @@
 include README.md
 include LICENSE
 include pyproject.toml
-include setup.py
 
 # All Python source files under orka/
 recursive-include orka *.py
 
-# Include YAML config and agent files
-recursive-include orka *.yml
-recursive-include orka *.yaml
-
-# Explicitly include docker directory and all its contents
+# Include docker directory and all its contents
 recursive-include orka/docker *
-
-# Optional: include any templates or agent data (JSON, txt)
-recursive-include orka *.json
-recursive-include orka *.txt
+recursive-include orka/docker *.sh
+recursive-include orka/docker *.bat
+recursive-include orka/docker *.yml
+recursive-include orka/docker Dockerfile*
 
 # Include TUI CSS files
 recursive-include orka *.tcss
 
-# Optional: include example configs or usage demos
+# Include example configs
 recursive-include examples *.yml
 recursive-include examples *.yaml
 
-# Optional: include tests (if packaging them too)
-recursive-include test *.py
+# Include schema files
+recursive-include orka/schemas *.avsc
+recursive-include orka/schemas *.proto
