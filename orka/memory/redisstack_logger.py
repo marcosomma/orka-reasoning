@@ -1011,7 +1011,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
 
             # Force 10 second TTL for orchestration logs
             if log_type == "log":
-                expiry_hours = 10 / 3600  # 10 seconds in hours
+                expiry_hours = 120 / 3600  # 10 seconds in hours
 
             # Store as memory entry
             self.log_memory(
