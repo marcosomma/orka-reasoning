@@ -50,8 +50,8 @@ class MemoryWriterNode(BaseNode):
             memory_content = self._extract_memory_content(context)
             if not memory_content:
                 return {"status": "error", "error": "No memory content to store"}
-            logger.debug(
-                f"MemoryWriterNode: Extracted memory content: {memory_content[:200]}..."
+            logger.info(
+                f"[DEBUG] - MemoryWriterNode: Extracted memory content: {memory_content[:200]}..."
             )  # Log first 200 chars
 
             # Extract configuration from context

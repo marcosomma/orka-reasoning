@@ -180,7 +180,22 @@ class LocalLLMAgent(BaseAgent):
         context_dict: Dict[str, Any] = (
             dict(input_data) if isinstance(input_data, dict) else {"input": str(input_data)}
         )
-        render_prompt = self.build_prompt(input_text, prompt, context_dict)
+
+        # ✅ FIX: Use already-rendered prompt from execution engine if available
+        if (
+            isinstance(input_data, dict)
+            and "formatted_prompt" in input_data
+            and input_data["formatted_prompt"]
+        ):
+            render_prompt = input_data["formatted_prompt"]
+            logger.info(
+                f"[DEBUG] - Using pre-rendered prompt from execution engine (length: {len(render_prompt)})"
+            )
+        else:
+            render_prompt = self.build_prompt(input_text, prompt, context_dict)
+            logger.info(
+                f"[DEBUG] - Using agent's own template rendering (length: {len(render_prompt)})"
+            )
 
         # Enhanced instructions for reasoning models to force JSON output
         self_evaluation = """

@@ -85,21 +85,21 @@ class ForkNode(BaseNode):
                     # For sequential mode, only queue the first agent
                     orchestrator.enqueue_fork([first_agent], fork_group_id)
                     orchestrator.fork_manager.track_branch_sequence(fork_group_id, branch)
-                    logger.debug(f"Queued first agent {first_agent} in sequential mode")
+                    logger.info(f"[DEBUG] - - Queued first agent {first_agent} in sequential mode")
                 else:
                     # For parallel mode, queue all agents
                     orchestrator.enqueue_fork(branch, fork_group_id)
-                    logger.debug(f"Queued all agents {branch} in parallel mode")
+                    logger.info(f"[DEBUG] - - Queued all agents {branch} in parallel mode")
                 all_flat_agents.extend(branch)
             else:
                 # Single agent, flat structure (fallback)
                 orchestrator.enqueue_fork([branch], fork_group_id)
                 all_flat_agents.append(branch)
-                logger.debug(f"Queued single agent {branch}")
+                logger.info(f"[DEBUG] - - Queued single agent {branch}")
 
         # Create the fork group with all agents
         orchestrator.fork_manager.create_group(fork_group_id, all_flat_agents)
-        logger.debug(f"Created fork group {fork_group_id} with agents {all_flat_agents}")
+        logger.info(f"[DEBUG] - - Created fork group {fork_group_id} with agents {all_flat_agents}")
 
         if self.memory_logger is not None:
             # Store fork group mapping and agent list using backend-agnostic methods
@@ -128,17 +128,17 @@ class ForkNode(BaseNode):
 
                 # Store in Redis hash for join node
                 self.memory_logger.hset(state_key, agent_id, json.dumps(initial_result))
-                logger.debug(f"Initialized state for agent {agent_id}")
+                logger.info(f"[DEBUG] - - Initialized state for agent {agent_id}")
 
                 # Store in Redis key for direct access
                 agent_key = f"agent_result:{fork_group_id}:{agent_id}"
                 self.memory_logger.set(agent_key, json.dumps(initial_result))
-                logger.debug(f"Stored initial result for agent {agent_id}")
+                logger.info(f"[DEBUG] - - Stored initial result for agent {agent_id}")
 
                 # Store in Redis hash for group tracking
                 group_key = f"fork_group_results:{fork_group_id}"
                 self.memory_logger.hset(group_key, agent_id, json.dumps(initial_result))
-                logger.debug(f"Stored initial result in group for agent {agent_id}")
+                logger.info(f"[DEBUG] - - Stored initial result in group for agent {agent_id}")
 
         # Return fork status with group info
         return {

@@ -210,10 +210,10 @@ def hybrid_vector_search(
         # Construct the vector search query using correct RedisStack syntax
         base_query = f"*=>[KNN {num_results} @content_vector $query_vector AS vector_score]"
 
-        logger.debug(f"Vector search query: {base_query}")
-        logger.debug(f"Vector bytes length: {len(vector_bytes)}")
-        logger.debug(
-            f"Query vector shape: {query_vector.shape if hasattr(query_vector, 'shape') else 'No shape'}",
+        logger.info(f"[DEBUG] - - Vector search query: {base_query}")
+        logger.info(f"[DEBUG] - - Vector bytes length: {len(vector_bytes)}")
+        logger.info(
+            f"[DEBUG] - Query vector shape: {query_vector.shape if hasattr(query_vector, 'shape') else 'No shape'}",
         )
 
         # Execute the search with proper parameters
@@ -227,7 +227,7 @@ def hybrid_vector_search(
                 query_params={"query_vector": vector_bytes.decode("latin-1")},
             )
 
-            logger.debug(f"Vector search returned {len(search_results.docs)} results")
+            logger.info(f"[DEBUG] - - Vector search returned {len(search_results.docs)} results")
 
             # Process results
             for doc in search_results.docs:
@@ -239,15 +239,17 @@ def hybrid_vector_search(
                     for score_field in ["vector_score", "__vector_score", "score", "similarity"]:
                         if hasattr(doc, score_field):
                             raw_score = getattr(doc, score_field)
-                            logger.debug(
-                                f"Found score field '{score_field}' with value: {raw_score}",
+                            logger.info(
+                                f"[DEBUG] - Found score field '{score_field}' with value: {raw_score}",
                             )
                             break
 
                     if raw_score is None:
                         # If no score field found, log available fields for debugging
                         available_fields = [attr for attr in dir(doc) if not attr.startswith("_")]
-                        logger.debug(f"No score field found. Available fields: {available_fields}")
+                        logger.info(
+                            f"[DEBUG] - - No score field found. Available fields: {available_fields}"
+                        )
                         raw_score = 0.0
 
                     try:
@@ -264,9 +266,11 @@ def hybrid_vector_search(
 
                         # Ensure final score is in [0, 1] range
                         score = max(0.0, min(1.0, score))
-                        logger.debug(f"Converted cosine distance {raw_score} -> similarity {score}")
+                        logger.info(
+                            f"[DEBUG] - - Converted cosine distance {raw_score} -> similarity {score}"
+                        )
                     except (ValueError, TypeError) as e:
-                        logger.debug(f"Error converting score {raw_score}: {e}")
+                        logger.info(f"[DEBUG] - - Error converting score {raw_score}: {e}")
                         score = 0.0
 
                     result = {
@@ -311,15 +315,15 @@ def hybrid_vector_search(
 
     except Exception as e:
         logger.error(f"Hybrid vector search failed: {e}")
-        logger.debug(
-            f"Query details - text: {query_text}, vector shape: {query_vector.shape if hasattr(query_vector, 'shape') else 'No shape'}",
+        logger.info(
+            f"[DEBUG] - Query details - text: {query_text}, vector shape: {query_vector.shape if hasattr(query_vector, 'shape') else 'No shape'}",
         )
 
     # Apply trace filtering if specified
     if trace_id and results:
         results = [r for r in results if r.get("trace_id") == trace_id]
 
-    logger.debug(f"Returning {len(results)} search results")
+    logger.info(f"[DEBUG] - - Returning {len(results)} search results")
     return results
 
 

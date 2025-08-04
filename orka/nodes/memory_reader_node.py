@@ -232,8 +232,8 @@ class MemoryReaderNode(BaseNode):
                     result["similarity_score"] = temporal_similarity
                     result["temporal_factor"] = temporal_factor
 
-                    logger.debug(
-                        f"Applied temporal ranking: age={age_hours:.1f}h, factor={temporal_factor:.2f}",
+                    logger.info(
+                        f"[DEBUG] - Applied temporal ranking: age={age_hours:.1f}h, factor={temporal_factor:.2f}",
                     )
 
             # Re-sort by temporal-adjusted similarity
@@ -785,7 +785,7 @@ class MemoryReaderNode(BaseNode):
                 if expiry_time and expiry_time > 0:
                     if current_time > expiry_time:
                         is_active = False
-                        logger.debug(f"Memory {memory.get('id', 'unknown')} expired")
+                        logger.info(f"[DEBUG] - - Memory {memory.get('id', 'unknown')} expired")
 
             # Also check direct expiry_time field
             if is_active and "expiry_time" in memory:
@@ -793,7 +793,9 @@ class MemoryReaderNode(BaseNode):
                 if expiry_time and expiry_time > 0:
                     if current_time > expiry_time:
                         is_active = False
-                        logger.debug(f"Memory {memory.get('id', 'unknown')} expired (direct field)")
+                        logger.info(
+                            f"[DEBUG] - - Memory {memory.get('id', 'unknown')} expired (direct field)"
+                        )
 
             # Check memory_type and apply default decay rules if no explicit expiry
             if is_active and "expiry_time" not in metadata and "expiry_time" not in memory:
@@ -842,13 +844,13 @@ class MemoryReaderNode(BaseNode):
                         decay_ms = decay_hours * 3600 * 1000
                         if current_time > (created_timestamp + decay_ms):
                             is_active = False
-                            logger.debug(
-                                f"Memory {memory.get('id', 'unknown')} expired by decay rules",
+                            logger.info(
+                                f"[DEBUG] - Memory {memory.get('id', 'unknown')} expired by decay rules",
                             )
 
                     except Exception as e:
-                        logger.debug(
-                            f"Error checking decay for memory {memory.get('id', 'unknown')}: {e}",
+                        logger.info(
+                            f"[DEBUG] - Error checking decay for memory {memory.get('id', 'unknown')}: {e}",
                         )
 
             if is_active:

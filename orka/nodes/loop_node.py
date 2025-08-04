@@ -180,7 +180,7 @@ class LoopNode(BaseNode):
         self.internal_workflow = kwargs.get("internal_workflow", {})
 
         # Past loops metadata structure (user-defined)
-        metadata_fields: Dict[MetadataKey, str] = {
+        default_metadata_fields: Dict[MetadataKey, str] = {
             "loop_number": "{{ loop_number }}",
             "score": "{{ score }}",
             "timestamp": "{{ timestamp }}",
@@ -188,7 +188,17 @@ class LoopNode(BaseNode):
             "improvements": "{{ improvements }}",
             "mistakes": "{{ mistakes }}",
         }
-        self.past_loops_metadata: Dict[MetadataKey, str] = metadata_fields
+
+        # ✅ FIX: Load user-defined past_loops_metadata from YAML configuration
+        user_metadata = kwargs.get("past_loops_metadata", {})
+        if user_metadata:
+            logger.info(
+                f"Loading custom past_loops_metadata with {len(user_metadata)} fields: {list(user_metadata.keys())}"
+            )
+            self.past_loops_metadata: Dict[MetadataKey, str] = user_metadata
+        else:
+            logger.debug("Using default past_loops_metadata structure")
+            self.past_loops_metadata: Dict[MetadataKey, str] = default_metadata_fields
 
         # Cognitive extraction configuration
         self.cognitive_extraction: Dict[str, Any] = kwargs.get(
@@ -257,12 +267,12 @@ class LoopNode(BaseNode):
                     # Store individual loop result
                     loop_key = f"loop_result:{self.node_id}:{current_loop}"
                     self._store_in_redis(loop_key, loop_result)
-                    logger.debug(f"Stored loop result: {loop_key}")
+                    logger.info(f"[DEBUG] - - Stored loop result: {loop_key}")
 
                     # Store past loops array
                     past_loops_key = f"past_loops:{self.node_id}"
                     self._store_in_redis(past_loops_key, past_loops)
-                    logger.debug(f"Stored past loops: {past_loops_key}")
+                    logger.info(f"[DEBUG] - - Stored past loops: {past_loops_key}")
 
                     # Store in Redis hash for tracking
                     group_key = f"loop_results:{self.node_id}"
@@ -275,7 +285,7 @@ class LoopNode(BaseNode):
                             "past_loop": past_loop_obj,
                         },
                     )
-                    logger.debug(f"Stored result in group for loop {current_loop}")
+                    logger.info(f"[DEBUG] - - Stored result in group for loop {current_loop}")
                 except Exception as e:
                     logger.error(f"Failed to store loop result in Redis: {e}")
 
@@ -297,7 +307,7 @@ class LoopNode(BaseNode):
                     try:
                         final_key = f"final_result:{self.node_id}"
                         self._store_in_redis(final_key, final_result)
-                        logger.debug(f"Stored final result: {final_key}")
+                        logger.info(f"[DEBUG] - - Stored final result: {final_key}")
                     except Exception as e:
                         logger.error(f"Failed to store final result in Redis: {e}")
 
@@ -324,7 +334,7 @@ class LoopNode(BaseNode):
             try:
                 final_key = f"final_result:{self.node_id}"
                 self._store_in_redis(final_key, final_result)
-                logger.debug(f"Stored final result: {final_key}")
+                logger.info(f"[DEBUG] - - Stored final result: {final_key}")
             except Exception as e:
                 logger.error(f"Failed to store final result in Redis: {e}")
 
@@ -387,48 +397,142 @@ class LoopNode(BaseNode):
             current_loop_number = len(previous_outputs.get("past_loops", [])) + 1
 
             # Prepare input with past_loops context AND loop_number
+            # ✅ FIX: Build dynamic past_loops_metadata using user-defined fields
+            dynamic_metadata = {}
+            past_loops_data = cast(List[PastLoopMetadata], previous_outputs.get("past_loops", []))
+
+            for field_name in self.past_loops_metadata.keys():
+                if field_name in ["insights", "improvements", "mistakes"]:
+                    # Extract from cognitive extraction
+                    dynamic_metadata[field_name] = self._extract_metadata_field(
+                        field_name, past_loops_data
+                    )
+                else:
+                    # For other fields, extract from past loop metadata if available
+                    if past_loops_data:
+                        last_loop = past_loops_data[-1]
+                        dynamic_metadata[field_name] = last_loop.get(
+                            field_name, f"No {field_name} available"
+                        )
+                    else:
+                        dynamic_metadata[field_name] = f"No {field_name} available"
+
             workflow_input = {
                 "input": original_input,
                 "previous_outputs": safe_previous_outputs,
                 "loop_number": current_loop_number,
-                "past_loops_metadata": {
-                    "insights": self._extract_metadata_field(
-                        "insights",
-                        cast(List[PastLoopMetadata], previous_outputs.get("past_loops", [])),
-                    ),
-                    "improvements": self._extract_metadata_field(
-                        "improvements",
-                        cast(List[PastLoopMetadata], previous_outputs.get("past_loops", [])),
-                    ),
-                    "mistakes": self._extract_metadata_field(
-                        "mistakes",
-                        cast(List[PastLoopMetadata], previous_outputs.get("past_loops", [])),
-                    ),
-                },
+                "past_loops_metadata": dynamic_metadata,
             }
 
             # Execute workflow with return_logs=True to get full logs for processing
-            logs = await orchestrator.run(workflow_input, return_logs=True)
+            agent_sequence = [agent.get("id") for agent in self.internal_workflow.get("agents", [])]
+            logger.info(
+                f"[DEBUG] - About to execute internal workflow with {len(agent_sequence)} agents defined"
+            )
+            logger.info(f"[DEBUG] - Full agent sequence: {agent_sequence}")
+
+            try:
+                logs = await orchestrator.run(workflow_input, return_logs=True)
+                logger.info(
+                    f"[DEBUG] - Internal workflow execution completed with {len(logs)} log entries"
+                )
+
+                # Debug which agents actually executed
+                executed_sequence = []
+                for log_entry in logs:
+                    if (
+                        isinstance(log_entry, dict)
+                        and log_entry.get("agent_id")
+                        and log_entry.get("agent_id") not in executed_sequence
+                    ):
+                        executed_sequence.append(log_entry.get("agent_id"))
+
+                logger.info(f"[DEBUG] - Actual execution sequence: {executed_sequence}")
+                logger.info(
+                    f"[DEBUG] - Expected vs actual count: {len(agent_sequence)} expected, {len(executed_sequence)} executed"
+                )
+
+                # Identify missing agents
+                missing_agents = [
+                    agent for agent in agent_sequence if agent not in executed_sequence
+                ]
+                if missing_agents:
+                    logger.error(f"🚨 CRITICAL: Missing agents from execution: {missing_agents}")
+                else:
+                    logger.info("✅ DEBUGGING: All agents executed successfully")
+
+            except Exception as e:
+                logger.error(f"🚨 CRITICAL: Internal workflow execution failed with exception: {e}")
+                logger.error(f"🚨 CRITICAL: Exception type: {type(e)}")
+                raise
 
             # Extract actual agent responses from logs
             agents_results: Dict[str, Any] = {}
+            executed_agents = []
+
             for log_entry in logs:
                 if isinstance(log_entry, dict) and log_entry.get("event_type") == "MetaReport":
                     continue  # Skip meta report
 
                 if isinstance(log_entry, dict):
                     agent_id = log_entry.get("agent_id")
-                    if agent_id and "payload" in log_entry:
-                        payload = log_entry["payload"]
-                        if "result" in payload:
-                            agents_results[agent_id] = payload["result"]
-                            # Store agent result in Redis
-                            result_key = f"agent_result:{agent_id}:{current_loop_number}"
-                            self._store_in_redis(result_key, payload["result"])
+                    if agent_id:
+                        executed_agents.append(agent_id)
+                        if "payload" in log_entry:
+                            payload = log_entry["payload"]
+                            if "result" in payload:
+                                agents_results[agent_id] = payload["result"]
 
-                            # Store in Redis hash for tracking
-                            group_key = f"agent_results:{self.node_id}:{current_loop_number}"
-                            self._store_in_redis_hash(group_key, agent_id, payload["result"])
+            logger.info(f"[DEBUG] - Agents that actually executed: {executed_agents}")
+            logger.info(f"[DEBUG] - Agents with results: {list(agents_results.keys())}")
+
+            # Generic debugging: Check for any agents that might contain scores
+            score_patterns = ["AGREEMENT_SCORE", "SCORE:", "score:", "Score:"]
+            potential_scoring_agents = []
+
+            for agent_id, agent_result in agents_results.items():
+                if isinstance(agent_result, dict) and "response" in agent_result:
+                    response_text = str(agent_result["response"])
+                    for pattern in score_patterns:
+                        if pattern in response_text:
+                            potential_scoring_agents.append(agent_id)
+                            logger.info(
+                                f"✅ DEBUGGING: Found potential scoring agent '{agent_id}' with pattern '{pattern}'"
+                            )
+                            logger.info(
+                                f"✅ DEBUGGING: {agent_id} response: {response_text[:200]}..."
+                            )
+                            break
+
+            if potential_scoring_agents:
+                logger.info(
+                    f"✅ DEBUGGING: Potential scoring agents found: {potential_scoring_agents}"
+                )
+            else:
+                logger.warning("❌ DEBUGGING: No agents found with score patterns!")
+                logger.warning(f"❌ DEBUGGING: All executed agents: {executed_agents}")
+                logger.warning(
+                    f"❌ DEBUGGING: Expected agents: {[agent.get('id') for agent in self.internal_workflow.get('agents', [])]}"
+                )
+
+                # Show sample responses to understand format
+                for agent_id, agent_result in list(agents_results.items())[
+                    :3
+                ]:  # Show first 3 agents
+                    if isinstance(agent_result, dict) and "response" in agent_result:
+                        logger.warning(
+                            f"❌ DEBUGGING: Sample response from '{agent_id}': {str(agent_result['response'])[:100]}..."
+                        )
+
+            # Store agent results in Redis
+            for agent_id, result in agents_results.items():
+                # Store agent result in Redis
+                result_key = f"agent_result:{agent_id}:{current_loop_number}"
+                self._store_in_redis(result_key, result)
+
+                # Store in Redis hash for tracking
+                group_key = f"agent_results:{self.node_id}:{current_loop_number}"
+                self._store_in_redis_hash(group_key, agent_id, result)
 
             # Store all results for this loop
             loop_results_key = f"loop_agents:{self.node_id}:{current_loop_number}"
@@ -467,6 +571,17 @@ class LoopNode(BaseNode):
         if not result:
             return 0.0
 
+        # ✅ CRITICAL DEBUG: Force visibility with print and logger.error
+        logger.error(f"🔍🔍🔍 SCORE EXTRACTION CALLED with {len(result)} agents")
+        for agent_id, agent_result in result.items():
+            if isinstance(agent_result, dict) and "response" in agent_result:
+                response_preview = (
+                    str(agent_result["response"])[:100] + "..."
+                    if len(str(agent_result["response"])) > 100
+                    else str(agent_result["response"])
+                )
+                logger.error(f"🔍 Agent '{agent_id}' response preview: {response_preview}")
+
         strategies = self.score_extraction_config.get("strategies", [])
 
         for strategy in strategies:
@@ -491,6 +606,8 @@ class LoopNode(BaseNode):
                     if not isinstance(pattern, str):
                         continue  # type: ignore [unreachable]
 
+                    logger.warning(f"🔍 Trying pattern: {pattern}")
+
                     # ✅ FIX: Look deeper into agent result structures
                     for agent_id, agent_result in result.items():
                         # Check direct string values
@@ -498,7 +615,11 @@ class LoopNode(BaseNode):
                             match = re.search(pattern, agent_result)
                             if match and match.group(1):
                                 try:
-                                    return float(match.group(1))
+                                    score = float(match.group(1))
+                                    logger.warning(
+                                        f"✅ Found score {score} in {agent_id} (direct string) using pattern: {pattern}"
+                                    )
+                                    return score
                                 except (ValueError, TypeError):
                                     continue
 
@@ -506,16 +627,58 @@ class LoopNode(BaseNode):
                         elif isinstance(agent_result, dict):
                             for key in ["response", "result", "output", "data"]:
                                 if key in agent_result and isinstance(agent_result[key], str):
-                                    match = re.search(pattern, agent_result[key])
+                                    text_content = agent_result[key]
+                                    match = re.search(pattern, text_content)
                                     if match and match.group(1):
                                         try:
                                             score = float(match.group(1))
-                                            logger.info(
+                                            logger.warning(
                                                 f"✅ Found score {score} in {agent_id}.{key} using pattern: {pattern}"
+                                            )
+                                            logger.warning(
+                                                f"✅ Matched text: '{text_content[:200]}'"
                                             )
                                             return score
                                         except (ValueError, TypeError):
                                             continue
+                                    else:
+                                        if (
+                                            "agreement" in agent_id.lower()
+                                            or "AGREEMENT_SCORE" in text_content
+                                        ):
+                                            logger.warning(
+                                                f"🔍 No match for pattern '{pattern}' in {agent_id}.{key}: '{text_content[:100]}'"
+                                            )
+
+            elif strategy_type == "agent_key":
+                agents = strategy.get("agents", [])
+                key = str(strategy.get("key", "response"))
+                logger.warning(f"🔍 Trying agent_key strategy for agents: {agents}, key: {key}")
+
+                for agent_name in agents:
+                    if agent_name in result:
+                        logger.warning(f"🔍 Found agent '{agent_name}' in results")
+                        agent_result = result[agent_name]
+                        if isinstance(agent_result, dict) and key in agent_result:
+                            response_text = str(agent_result[key])
+                            logger.warning(
+                                f"🔍 Agent '{agent_name}' {key}: '{response_text[:100]}'"
+                            )
+                            # Try to extract score from the response
+                            score_match = re.search(r"AGREEMENT_SCORE:\s*([0-9.]+)", response_text)
+                            if score_match:
+                                try:
+                                    score = float(score_match.group(1))
+                                    logger.warning(
+                                        f"✅ Found score {score} in agent_key strategy from {agent_name}"
+                                    )
+                                    return score
+                                except (ValueError, TypeError):
+                                    pass
+                    else:
+                        logger.warning(
+                            f"🔍 Agent '{agent_name}' not found in results. Available agents: {list(result.keys())}"
+                        )
 
         return 0.0
 
@@ -703,8 +866,8 @@ class LoopNode(BaseNode):
                         return value
 
         # Fallback: return default
-        logger.debug(
-            f"Secondary metric '{metric_key}' not found in result, using default: {default}",
+        logger.info(
+            f"[DEBUG] - Secondary metric '{metric_key}' not found in result, using default: {default}",
         )
         return default
 
@@ -860,16 +1023,65 @@ class LoopNode(BaseNode):
             "previous_outputs": safe_result,
         }
 
-        # Create past loop object with proper type
-        past_loop_obj: PastLoopMetadata = {
-            "loop_number": loop_number,
-            "score": score,
-            "timestamp": datetime.now().isoformat(),
-            "insights": cognitive_insights.get("insights", ""),
-            "improvements": cognitive_insights.get("improvements", ""),
-            "mistakes": cognitive_insights.get("mistakes", ""),
-            "result": safe_result,
-        }
+        # ✅ FIX: Add helper functions to template context for LoopNode metadata rendering
+        try:
+            # Create a payload-like structure for helper functions
+            helper_payload = {
+                "input": safe_input,
+                "previous_outputs": safe_result,
+                "loop_number": loop_number,
+            }
+
+            # Add helper functions using the same approach as execution engine
+            from orka.orchestrator.prompt_rendering import PromptRenderer
+
+            renderer = PromptRenderer()
+            helper_functions = renderer._get_template_helper_functions(helper_payload)
+            template_context.update(helper_functions)
+
+            logger.info(
+                f"[DEBUG] - - Added {len(helper_functions)} helper functions to LoopNode template context"
+            )
+        except Exception as e:
+            logger.warning(f"Failed to add helper functions to LoopNode template context: {e}")
+            # Continue without helper functions - fallback gracefully
+
+        # ✅ FIX: Create past loop object using user-defined metadata template
+        past_loop_obj: PastLoopMetadata = {}
+
+        # Render each metadata field using the user-defined templates
+        for field_name, template_str in self.past_loops_metadata.items():
+            try:
+                # Create Jinja2 template and render with context
+                from jinja2 import Template
+
+                template = Template(template_str)
+                rendered_value = template.render(template_context)
+                past_loop_obj[field_name] = rendered_value
+                logger.info(
+                    f"[DEBUG] - - Rendered metadata field '{field_name}': {rendered_value[:50]}..."
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Failed to render metadata field '{field_name}' with template '{template_str}': {e}"
+                )
+                # Fallback to simple value
+                if field_name == "loop_number":
+                    past_loop_obj[field_name] = loop_number
+                elif field_name == "score":
+                    past_loop_obj[field_name] = score
+                elif field_name == "timestamp":
+                    past_loop_obj[field_name] = datetime.now().isoformat()
+                elif field_name in cognitive_insights:
+                    past_loop_obj[field_name] = cognitive_insights[field_name]
+                else:
+                    past_loop_obj[field_name] = f"Error rendering {field_name}"
+
+        # Always ensure we have the basic required fields for compatibility
+        past_loop_obj.setdefault("loop_number", loop_number)
+        past_loop_obj.setdefault("score", score)
+        past_loop_obj.setdefault("timestamp", datetime.now().isoformat())
+        past_loop_obj.setdefault("result", safe_result)
 
         return past_loop_obj
 
@@ -925,7 +1137,7 @@ class LoopNode(BaseNode):
         if self.memory_logger is not None:
             try:
                 self.memory_logger.set(key, json.dumps(value))
-                logger.debug(f"Stored in Redis: {key}")
+                logger.info(f"[DEBUG] - - Stored in Redis: {key}")
             except Exception as e:
                 logger.error(f"Failed to store in Redis: {e}")
 
@@ -934,6 +1146,6 @@ class LoopNode(BaseNode):
         if self.memory_logger is not None:
             try:
                 self.memory_logger.hset(hash_key, field, json.dumps(value))
-                logger.debug(f"Stored in Redis hash: {hash_key}[{field}]")
+                logger.info(f"[DEBUG] - - Stored in Redis hash: {hash_key}[{field}]")
             except Exception as e:
                 logger.error(f"Failed to store in Redis hash: {e}")

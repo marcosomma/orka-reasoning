@@ -30,7 +30,7 @@ orchestrator:
 agents:
   - id: cognitive_debate_loop
     type: loop
-    max_loops: 2  # 🔧 RESTORED: Back to reasonable complexity
+    max_loops: 1  # 🔧 RESTORED: Back to reasonable complexity
     score_threshold: 0.75  # 🔧 LOWERED: More achievable for local models
     
     # 🔧 COMPLETELY REDESIGNED: Simplified score extraction for local models
@@ -79,11 +79,11 @@ agents:
     
     # 🔧 ENHANCED: Restored rich metadata for past_loops
     past_loops_metadata:
-      round: "{{ loop_number }}"
+      round: "{{ get_loop_number() }}"
       agreement_score: "{{ score }}"
       convergence_target: "0.65"
-      convergence_progress: "{{ 'ON_TRACK' if score >= (0.4 + (loop_number - 1) * 0.08) else 'NEEDS_IMPROVEMENT' }}"
-      collaboration_phase: "{{ 'INITIAL' if loop_number == 1 else 'BRIDGE_BUILDING' if loop_number <= 3 else 'CONSENSUS_BUILDING' }}"
+      convergence_progress: "{{ 'ON_TRACK' if score >= (0.4 + (get_loop_number() - 1) * 0.08) else 'NEEDS_IMPROVEMENT' }}"
+      collaboration_phase: "{{ 'INITIAL' if get_loop_number() == 1 else 'BRIDGE_BUILDING' if get_loop_number() <= 3 else 'CONSENSUS_BUILDING' }}"
       timestamp: "{{ timestamp }}"
       agreement_finder: "{{ result.agreement_finder.response if result.agreement_finder else 'No agreement found' }}"
       quality_score: "{{ result.quality_moderator.response if result.quality_moderator else 'No quality assessment' }}"
@@ -293,10 +293,10 @@ agents:
           prompt: |
             TOPIC: {{ get_input() }}
             
-            Progressive: {{ previous_outputs.radical_progressive.response }}
-            Conservative: {{ previous_outputs.traditional_conservative.response }}
-            Realist: {{ previous_outputs.pragmatic_realist.response }}
-            Purist: {{ previous_outputs.ethical_purist.response }}
+            Progressive: {{ get_agent_response('radical_progressive') }}
+            Conservative: {{ get_agent_response('traditional_conservative') }}
+            Realist: {{ get_agent_response('pragmatic_realist') }}
+            Purist: {{ get_agent_response('ethical_purist') }}
             
             TASK: Find ONE sentence showing common ground between all agents.
             
@@ -312,10 +312,10 @@ agents:
           prompt: |
             TOPIC: {{ get_input() }}
             
-            Progressive: {{ previous_outputs.radical_progressive.response }}
-            Conservative: {{ previous_outputs.traditional_conservative.response }}
-            Realist: {{ previous_outputs.pragmatic_realist.response }}
-            Purist: {{ previous_outputs.ethical_purist.response }}
+            Progressive: {{ get_agent_response('radical_progressive') }}
+            Conservative: {{ get_agent_response('traditional_conservative') }}
+            Realist: {{ get_agent_response('pragmatic_realist') }}
+            Purist: {{ get_agent_response('ethical_purist') }}
             
             TASK: Generate challenging questions between agents.
             
@@ -354,13 +354,13 @@ agents:
             ROLE: PROGRESSIVE AGENT - Collaborative Refinement Round {{ get_loop_number() }}
             TOPIC: {{ get_input() }}
             
-            YOUR OPENING POSITION: {{ previous_outputs.radical_progressive.response }}
-            CONSERVATIVE VIEW: {{ previous_outputs.traditional_conservative.response }}
-            REALIST VIEW: {{ previous_outputs.pragmatic_realist.response }}
-            PURIST VIEW: {{ previous_outputs.ethical_purist.response }}
+            YOUR OPENING POSITION: {{ get_agent_response('radical_progressive') }}
+            CONSERVATIVE VIEW: {{ get_agent_response('traditional_conservative') }}
+            REALIST VIEW: {{ get_agent_response('pragmatic_realist') }}
+            PURIST VIEW: {{ get_agent_response('ethical_purist') }}
             
-            CURRENT AGREEMENT: {{ previous_outputs.agreement_finder.response }}
-            CHALLENGING QUESTIONS: {{ previous_outputs.cross_examination.response }}
+            CURRENT AGREEMENT: {{ safe_get_response('agreement_finder', 'Initial positions established, seeking agreement') }}
+            CHALLENGING QUESTIONS: {{ safe_get_response('cross_examination', 'Building collaborative understanding') }}
             
             TASK: Refine your progressive position by finding collaboration opportunities while maintaining your core values.
             
@@ -392,13 +392,13 @@ agents:
             ROLE: CONSERVATIVE AGENT - Collaborative Refinement Round {{ get_loop_number() }}
             TOPIC: {{ get_input() }}
             
-            YOUR OPENING POSITION: {{ previous_outputs.traditional_conservative.response }}
-            PROGRESSIVE VIEW: {{ previous_outputs.radical_progressive.response }}
-            REALIST VIEW: {{ previous_outputs.pragmatic_realist.response }}
-            PURIST VIEW: {{ previous_outputs.ethical_purist.response }}
+            YOUR OPENING POSITION: {{ get_agent_response('traditional_conservative') }}
+            PROGRESSIVE VIEW: {{ get_agent_response('radical_progressive') }}
+            REALIST VIEW: {{ get_agent_response('pragmatic_realist') }}
+            PURIST VIEW: {{ get_agent_response('ethical_purist') }}
             
-            CURRENT AGREEMENT: {{ previous_outputs.agreement_finder.response }}
-            CHALLENGING QUESTIONS: {{ previous_outputs.cross_examination.response }}
+            CURRENT AGREEMENT: {{ safe_get_response('agreement_finder', 'Initial positions established, seeking agreement') }}
+            CHALLENGING QUESTIONS: {{ safe_get_response('cross_examination', 'Building collaborative understanding') }}
             
             TASK: Refine your conservative position by finding collaboration opportunities while maintaining your core values.
             
@@ -430,13 +430,13 @@ agents:
             ROLE: REALIST AGENT - Collaborative Refinement Round {{ get_loop_number() }}
             TOPIC: {{ get_input() }}
             
-            YOUR OPENING POSITION: {{ previous_outputs.pragmatic_realist.response }}
-            PROGRESSIVE VIEW: {{ previous_outputs.radical_progressive.response }}
-            CONSERVATIVE VIEW: {{ previous_outputs.traditional_conservative.response }}
-            PURIST VIEW: {{ previous_outputs.ethical_purist.response }}
+            YOUR OPENING POSITION: {{ get_agent_response('pragmatic_realist') }}
+            PROGRESSIVE VIEW: {{ get_agent_response('radical_progressive') }}
+            CONSERVATIVE VIEW: {{ get_agent_response('traditional_conservative') }}
+            PURIST VIEW: {{ get_agent_response('ethical_purist') }}
             
-            CURRENT AGREEMENT: {{ previous_outputs.agreement_finder.response }}
-            CHALLENGING QUESTIONS: {{ previous_outputs.cross_examination.response }}
+            CURRENT AGREEMENT: {{ safe_get_response('agreement_finder', 'Initial positions established, seeking agreement') }}
+            CHALLENGING QUESTIONS: {{ safe_get_response('cross_examination', 'Building collaborative understanding') }}
             
             TASK: Refine your realist position by finding collaboration opportunities while maintaining your core values.
             
@@ -468,13 +468,13 @@ agents:
             ROLE: ETHICAL PURIST AGENT - Collaborative Refinement Round {{ get_loop_number() }}
             TOPIC: {{ get_input() }}
             
-            YOUR OPENING POSITION: {{ previous_outputs.ethical_purist.response }}
-            PROGRESSIVE VIEW: {{ previous_outputs.radical_progressive.response }}
-            CONSERVATIVE VIEW: {{ previous_outputs.traditional_conservative.response }}
-            REALIST VIEW: {{ previous_outputs.pragmatic_realist.response }}
+            YOUR OPENING POSITION: {{ get_agent_response('ethical_purist') }}
+            PROGRESSIVE VIEW: {{ get_agent_response('radical_progressive') }}
+            CONSERVATIVE VIEW: {{ get_agent_response('traditional_conservative') }}
+            REALIST VIEW: {{ get_agent_response('pragmatic_realist') }}
             
-            CURRENT AGREEMENT: {{ previous_outputs.agreement_finder.response }}
-            CHALLENGING QUESTIONS: {{ previous_outputs.cross_examination.response }}
+            CURRENT AGREEMENT: {{ safe_get_response('agreement_finder', 'Initial positions established, seeking agreement') }}
+            CHALLENGING QUESTIONS: {{ safe_get_response('cross_examination', 'Building collaborative understanding') }}
             
             TASK: Refine your ethical position by finding collaboration opportunities while maintaining your core values.
             
@@ -499,13 +499,10 @@ agents:
           provider: ollama
           temperature: 0.3
           prompt: |
-            TOPIC: {{ get_input() }} - Round {{ loop_number }}
+            TOPIC: {{ get_input() }} - Round {{ get_loop_number() }}
             
             REFINED POSITIONS:
-            Progressive: {{ previous_outputs.progressive_refinement.response }}
-            Conservative: {{ previous_outputs.conservative_refinement.response }}
-            Realist: {{ previous_outputs.realist_refinement.response }}
-            Purist: {{ previous_outputs.purist_refinement.response }}
+            {{ get_collaborative_responses() }}
             
             TASK: Identify specific bridges and collaboration opportunities between all four perspectives.
             
@@ -523,7 +520,7 @@ agents:
           provider: ollama
           temperature: 0.4
           prompt: |
-            TOPIC: {{ get_input() }} - ROUND {{ loop_number }}
+            TOPIC: {{ get_input() }} - ROUND {{ get_loop_number() }}
             
             ORIGINAL POSITIONS:
             Progressive: {{ previous_outputs.radical_progressive.response }}
@@ -532,12 +529,9 @@ agents:
             Purist: {{ previous_outputs.ethical_purist.response }}
             
             REFINED COLLABORATIVE POSITIONS:
-            Progressive: {{ previous_outputs.progressive_refinement.response }}
-            Conservative: {{ previous_outputs.conservative_refinement.response }}
-            Realist: {{ previous_outputs.realist_refinement.response }}
-            Purist: {{ previous_outputs.purist_refinement.response }}
+            {{ get_collaborative_responses() }}
             
-            BRIDGE OPPORTUNITIES: {{ previous_outputs.position_bridging.response }}
+            BRIDGE OPPORTUNITIES: {{ safe_get_response('position_bridging', 'Seeking collaboration opportunities') }}
             
             TASK: Synthesize insights from this collaborative refinement process.
             
@@ -555,7 +549,7 @@ agents:
           provider: ollama
           temperature: 0.2  # Very low for consistent scoring
           prompt: |
-            TOPIC: {{ get_input() }} - Round {{ loop_number }}
+            TOPIC: {{ get_input() }} - Round {{ get_loop_number() }}
             Synthesis: {{ previous_outputs.synthesis_attempt.response }}
             
             TASK: Evaluate reasoning quality (0.0-1.0)
@@ -576,7 +570,7 @@ agents:
           provider: ollama
           temperature: 0.1  # Ultra-low for scoring consistency
           prompt: |
-            TOPIC: {{ get_input() }} - Round {{ loop_number }}
+            TOPIC: {{ get_input() }} - Round {{ get_loop_number() }}
             TARGET: 0.65+ agreement to stop debate
             
             AGENTS:
@@ -608,7 +602,7 @@ agents:
             short_term_hours: 2.0
             long_term_hours: 24.0
           prompt: |
-            Q: {{ get_input() }} - Round {{ loop_number }}
+            Q: {{ get_input() }} - Round {{ get_loop_number() }}
             Agreement: {{ previous_outputs.agreement_finder.response }}
             Synthesis: {{ previous_outputs.synthesis_attempt.response }}
             Quality: {{ previous_outputs.quality_moderator.response }}
@@ -626,7 +620,7 @@ agents:
     provider: ollama
     temperature: 0.3
     prompt: |
-      QUESTION: {{ input }}
+      QUESTION: {{ get_input() }}
       ROUNDS: {{ previous_outputs.cognitive_debate_loop.result.loops_completed }}
       FINAL SCORE: {{ previous_outputs.cognitive_debate_loop.result.final_score }}
       
@@ -660,7 +654,7 @@ agents:
     provider: ollama
     temperature: 0.3
     prompt: |
-      QUESTION: {{ input }}
+      QUESTION: {{ get_input() }}
       LOOPS: {{ previous_outputs.cognitive_debate_loop.result.loops_completed }}
       SCORE: {{ previous_outputs.cognitive_debate_loop.result.final_score }}
       
@@ -678,7 +672,7 @@ agents:
       TASK: Provide comprehensive answer.
       
       FORMAT:
-      **Question**: {{ input }}
+      **Question**: {{ get_input() }}
       **Debate Summary**: [What happened in the debate]
       **Key Insights**: [Important discoveries]
       **Final Answer**: [Direct answer]

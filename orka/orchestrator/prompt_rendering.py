@@ -120,8 +120,8 @@ class PromptRenderer:
             unresolved_vars = re.findall(unresolved_pattern, rendered)
 
             if unresolved_vars:
-                logger.debug(
-                    f"Replacing {len(unresolved_vars)} unresolved variables with empty strings: {unresolved_vars}"
+                logger.info(
+                    f"[DEBUG] - Replacing {len(unresolved_vars)} unresolved variables with empty strings: {unresolved_vars}"
                 )
                 # Replace all unresolved variables with empty strings
                 rendered = re.sub(unresolved_pattern, "", rendered)
@@ -135,9 +135,9 @@ class PromptRenderer:
 
             logger = logging.getLogger(__name__)
             logger.warning(f"Template rendering failed, attempting fallback: {e}")
-            logger.debug(f"Template: {template_str}")
-            logger.debug(
-                f"Context keys: {list(payload.keys()) if isinstance(payload, dict) else 'Not a dict'}"
+            logger.info(f"[DEBUG] - - Template: {template_str}")
+            logger.info(
+                f"[DEBUG] - Context keys: {list(payload.keys()) if isinstance(payload, dict) else 'Not a dict'}"
             )
 
             # ✅ Fallback: Replace all template variables with empty strings and return
@@ -338,13 +338,136 @@ class PromptRenderer:
             return f"No {key} found"
 
         def get_agent_response(agent_name):
-            """Get an agent's response from previous_outputs."""
-            previous_outputs = payload.get("previous_outputs", {})
-            agent_result = previous_outputs.get(agent_name, {})
+            """
+            Get an agent's response from previous_outputs, handling fork executions and complex workflows.
 
-            if isinstance(agent_result, dict):
-                return agent_result.get("response", f"No response from {agent_name}")
-            return str(agent_result)
+            This function searches through:
+            1. Direct previous_outputs[agent_name]
+            2. Fork results in previous_outputs
+            3. Nested workflow results
+            4. Join node results
+            """
+            previous_outputs = payload.get("previous_outputs", {})
+
+            # First, try direct access
+            if agent_name in previous_outputs:
+                agent_result = previous_outputs[agent_name]
+                if isinstance(agent_result, dict):
+                    return agent_result.get("response", "")
+                return str(agent_result)
+
+            # Search through all previous outputs for nested results (fork executions, etc.)
+            for key, value in previous_outputs.items():
+                if isinstance(value, dict):
+                    # Check if this is a nested result containing our agent
+                    if agent_name in value:
+                        nested_result = value[agent_name]
+                        if isinstance(nested_result, dict):
+                            return nested_result.get("response", "")
+                        return str(nested_result)
+
+                    # Check if this has a "result" field containing our agent
+                    if "result" in value and isinstance(value["result"], dict):
+                        if agent_name in value["result"]:
+                            nested_result = value["result"][agent_name]
+                            if isinstance(nested_result, dict):
+                                return nested_result.get("response", "")
+                            return str(nested_result)
+
+                    # Check for fork group results
+                    if "results" in value and isinstance(value["results"], dict):
+                        if agent_name in value["results"]:
+                            nested_result = value["results"][agent_name]
+                            if isinstance(nested_result, dict):
+                                return nested_result.get("response", "")
+                            return str(nested_result)
+
+            return f"No response found for {agent_name}"
+
+        def get_fork_responses(fork_group_name):
+            """
+            Get all responses from a fork group execution.
+            Returns a dictionary of {agent_name: response} for all agents in the fork.
+            """
+            previous_outputs = payload.get("previous_outputs", {})
+
+            # Look for fork group results
+            if fork_group_name in previous_outputs:
+                fork_result = previous_outputs[fork_group_name]
+                if isinstance(fork_result, dict):
+                    responses = {}
+
+                    # Check direct agent results
+                    for key, value in fork_result.items():
+                        if isinstance(value, dict) and "response" in value:
+                            responses[key] = value["response"]
+
+                    # Check nested results structure
+                    if "result" in fork_result and isinstance(fork_result["result"], dict):
+                        for key, value in fork_result["result"].items():
+                            if isinstance(value, dict) and "response" in value:
+                                responses[key] = value["response"]
+
+                    # Check results field
+                    if "results" in fork_result and isinstance(fork_result["results"], dict):
+                        for key, value in fork_result["results"].items():
+                            if isinstance(value, dict) and "response" in value:
+                                responses[key] = value["response"]
+
+                    return responses
+
+            return {}
+
+        def get_progressive_response():
+            """Get progressive agent response using robust search."""
+            return get_agent_response("progressive_refinement") or get_agent_response(
+                "radical_progressive"
+            )
+
+        def get_conservative_response():
+            """Get conservative agent response using robust search."""
+            return get_agent_response("conservative_refinement") or get_agent_response(
+                "traditional_conservative"
+            )
+
+        def get_realist_response():
+            """Get realist agent response using robust search."""
+            return get_agent_response("realist_refinement") or get_agent_response(
+                "pragmatic_realist"
+            )
+
+        def get_purist_response():
+            """Get purist agent response using robust search."""
+            return get_agent_response("purist_refinement") or get_agent_response("ethical_purist")
+
+        def get_collaborative_responses():
+            """Get all collaborative refinement responses as a formatted string."""
+            responses = []
+
+            progressive = get_progressive_response()
+            if progressive and progressive != "No response found for progressive_refinement":
+                responses.append(f"Progressive: {progressive}")
+
+            conservative = get_conservative_response()
+            if conservative and conservative != "No response found for conservative_refinement":
+                responses.append(f"Conservative: {conservative}")
+
+            realist = get_realist_response()
+            if realist and realist != "No response found for realist_refinement":
+                responses.append(f"Realist: {realist}")
+
+            purist = get_purist_response()
+            if purist and purist != "No response found for purist_refinement":
+                responses.append(f"Purist: {purist}")
+
+            return "\n\n".join(responses) if responses else "No collaborative responses available"
+
+        def safe_get_response(agent_name, fallback="No response available"):
+            """Safely get an agent response with fallback."""
+            response = get_agent_response(agent_name)
+            if response and not response.startswith("No response found"):
+                return response
+            return fallback
 
         def format_memory_query(perspective, topic=None):
             """Format a memory query for a specific perspective."""
@@ -450,6 +573,13 @@ class PromptRenderer:
             "get_round_info": get_round_info,
             # Agent helpers
             "get_agent_response": get_agent_response,
+            "get_fork_responses": get_fork_responses,
+            "get_progressive_response": get_progressive_response,
+            "get_conservative_response": get_conservative_response,
+            "get_realist_response": get_realist_response,
+            "get_purist_response": get_purist_response,
+            "get_collaborative_responses": get_collaborative_responses,
+            "safe_get_response": safe_get_response,
             "joined_results": joined_results,
             # Memory helpers
             "format_memory_query": format_memory_query,
