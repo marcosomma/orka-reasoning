@@ -131,6 +131,16 @@ class LoopNode(BaseNode):
                                 r"score:\s*(\d+\.?\d*)",
                                 r"rating:\s*(\d+\.?\d*)",
                                 r"confidence:\s*(\d+\.?\d*)",
+                                r"agreement:\s*(\d+\.?\d*)",
+                                r"consensus:\s*(\d+\.?\d*)",
+                                r"AGREEMENT:\s*(\d+\.?\d*)",
+                                r"SCORE:\s*(\d+\.?\d*)",
+                                r"Score:\s*(\d+\.?\d*)",
+                                r"Agreement:\s*(\d+\.?\d*)",
+                                r"(\d+\.?\d*)/10",
+                                r"(\d+\.?\d*)%",
+                                r"(\d+\.?\d*)\s*out\s*of\s*10",
+                                r"(\d+\.?\d*)\s*points?",
                             ],
                         }
                     ]
@@ -481,14 +491,31 @@ class LoopNode(BaseNode):
                     if not isinstance(pattern, str):
                         continue  # type: ignore [unreachable]
 
-                    for value in result.values():
-                        if isinstance(value, str):
-                            match = re.search(pattern, value)
+                    # ✅ FIX: Look deeper into agent result structures
+                    for agent_id, agent_result in result.items():
+                        # Check direct string values
+                        if isinstance(agent_result, str):
+                            match = re.search(pattern, agent_result)
                             if match and match.group(1):
                                 try:
                                     return float(match.group(1))
                                 except (ValueError, TypeError):
                                     continue
+
+                        # ✅ FIX: Check nested response fields in agent dictionaries
+                        elif isinstance(agent_result, dict):
+                            for key in ["response", "result", "output", "data"]:
+                                if key in agent_result and isinstance(agent_result[key], str):
+                                    match = re.search(pattern, agent_result[key])
+                                    if match and match.group(1):
+                                        try:
+                                            score = float(match.group(1))
+                                            logger.info(
+                                                f"✅ Found score {score} in {agent_id}.{key} using pattern: {pattern}"
+                                            )
+                                            return score
+                                        except (ValueError, TypeError):
+                                            continue
 
         return 0.0
 
@@ -705,39 +732,60 @@ class LoopNode(BaseNode):
         if not isinstance(result, dict):
             return InsightCategory(insights="", improvements="", mistakes="")  # type: ignore [unreachable]
 
-        # Extract insights from each agent's response based on priorities
+        # ✅ FIX: Extract insights from ALL agent responses, not just prioritized ones
         for agent_id, agent_result in result.items():
             if not isinstance(agent_result, (str, dict)):
                 continue
 
-            # Get text to analyze - either direct string or from dict
-            text = agent_result if isinstance(agent_result, str) else str(agent_result)
+            # ✅ FIX: Get text from proper structure - look in response field for LLM agents
+            texts_to_analyze = []
 
-            # Get categories to extract for this agent
-            agent_cats = agent_priorities.get(agent_id, [])
-            valid_categories = [
-                cat
-                for cat in agent_cats
-                if cat in extract_patterns and cat in ("insights", "improvements", "mistakes")
-            ]
+            if isinstance(agent_result, str):
+                texts_to_analyze.append(agent_result)
+            elif isinstance(agent_result, dict):
+                # Look for response content in common fields
+                for field in ["response", "result", "output", "data"]:
+                    if field in agent_result and isinstance(agent_result[field], str):
+                        texts_to_analyze.append(agent_result[field])
 
-            # Apply patterns for each category
-            for category in valid_categories:
-                cat_key = cast(CategoryType, category)
-                patterns = extract_patterns.get(category, [])
-                if not isinstance(patterns, list):
-                    continue  # type: ignore [unreachable]
+                # Fallback: convert entire dict to string
+                if not texts_to_analyze:
+                    texts_to_analyze.append(str(agent_result))
 
-                for pattern in patterns:
-                    if not isinstance(pattern, str):
-                        continue  # type: ignore [unreachable]
+            # Apply extraction patterns to all found text content
+            for text in texts_to_analyze:
+                if not text or len(text) < 20:  # Skip very short content
+                    continue
 
-                    matches = re.finditer(pattern, text, re.IGNORECASE)
-                    for match in matches:
-                        if len(match.groups()) > 0:
-                            insight = match.group(1).strip()
-                            if insight and len(insight) > 10:  # Minimum length threshold
-                                extracted[cat_key].append(insight)
+                # ✅ FIX: Apply patterns for ALL categories to ALL agents (not just prioritized)
+                for category in ["insights", "improvements", "mistakes"]:
+                    cat_key = cast(CategoryType, category)
+                    patterns = extract_patterns.get(category, [])
+                    if not isinstance(patterns, list):
+                        continue
+
+                    for pattern in patterns:
+                        if not isinstance(pattern, str):
+                            continue
+
+                        try:
+                            matches = re.finditer(pattern, text, re.IGNORECASE | re.DOTALL)
+                            for match in matches:
+                                if len(match.groups()) > 0:
+                                    insight = match.group(1).strip()
+                                    if insight and len(insight) > 10:  # Minimum length threshold
+                                        # Clean up the insight
+                                        insight = re.sub(
+                                            r"\s+", " ", insight
+                                        )  # Normalize whitespace
+                                        if len(insight) <= 200:  # Reasonable length limit
+                                            extracted[cat_key].append(insight)
+                                            logger.debug(
+                                                f"✅ Extracted {category} from {agent_id}: {insight[:50]}..."
+                                            )
+                        except re.error as e:
+                            logger.warning(f"Invalid regex pattern '{pattern}': {e}")
+                            continue
 
         # Process each category
         result_insights = []

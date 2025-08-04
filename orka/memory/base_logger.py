@@ -25,7 +25,7 @@ import logging
 import threading
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime
-from typing import Any, Callable, Set
+from typing import Any, Dict, Set
 
 from .file_operations import FileOperationsMixin
 from .serialization import SerializationMixin
@@ -723,3 +723,16 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
                 logger.warning(f"Failed to store result in Redis: {e}")
 
         return outputs
+
+    def save_enhanced_trace(self, file_path: str, enhanced_data: Dict[str, Any]) -> None:
+        """Save enhanced trace data with memory backend references."""
+        try:
+            import json
+
+            with open(file_path, "w", encoding="utf-8") as f:
+                json.dump(enhanced_data, f, indent=2, default=str)
+            logger.info(f"Enhanced trace saved to {file_path}")
+        except Exception as e:
+            logger.error(f"Failed to save enhanced trace: {e}")
+            # Fallback to original method
+            self.save_to_file(file_path)

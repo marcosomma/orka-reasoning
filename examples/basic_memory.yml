@@ -111,7 +111,7 @@ agents:
   - id: openai-answer_15
     type: openai-answer
     queue: orka:openai-answer_15
-    prompt: "      Given identified gaps in coherence or completeness in  {{ previous_outputs['join_9'].result.merged }}, clarify or complete the information to fully answer {{ input }}."
+    prompt: "      Given identified gaps in coherence or completeness in  {{ previous_outputs['join_9'].merged }}, clarify or complete the information to fully answer {{ input }}."
     depends_on:
       - router_11
   - id: memory-write_final
@@ -120,9 +120,9 @@ agents:
     config:
       operation: write
     namespace: fact_validator
-    prompt: "{{ previous_outputs['openai-answer_14'].result.response if previous_outputs.get('openai-answer_14') else previous_outputs['openai-answer_15'].result.response }}"
+    prompt: "{{ previous_outputs['openai-answer_14'].response if previous_outputs.get('openai-answer_14') else previous_outputs['openai-answer_15'].response }}"
     metadata:
       source: '{{ "openai-answer_14" if previous_outputs.get("openai-answer_14") else "openai-answer_15" }}'
-      result: "{{ previous_outputs['openai-answer_14'].result.response if previous_outputs.get('openai-answer_14') else previous_outputs['openai-answer_15'].result.response }}"
+      result: "{{ previous_outputs['openai-answer_14'].response if previous_outputs.get('openai-answer_14') else previous_outputs['openai-answer_15'].response }}"
       category: stored
     key_template: "{{ input }}"

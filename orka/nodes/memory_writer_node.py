@@ -64,12 +64,15 @@ class MemoryWriterNode(BaseNode):
             # Process key_template if present
             if self.key_template:
                 try:
-                    # Create template context for key rendering
+                    # Create template context for key rendering (optimized - exclude previous_outputs)
                     template_context = {
                         "input": context.get("input", ""),
-                        "previous_outputs": context.get("previous_outputs", {}),
                         "timestamp": context.get("timestamp", ""),
-                        **context,  # Include all context keys
+                        # ✅ FIX: Exclude previous_outputs to reduce memory bloat
+                        # Include only essential context keys
+                        "run_id": context.get("run_id", ""),
+                        "session_id": context.get("session_id", ""),
+                        "namespace": context.get("namespace", ""),
                     }
 
                     # Apply same enhancement as in template rendering
@@ -94,11 +97,16 @@ class MemoryWriterNode(BaseNode):
                     merged_metadata["memory_key_template"] = self.key_template
 
             # Use memory logger for direct memory storage
+            # ✅ FIX: Filter out previous_outputs from merged metadata
+            filtered_merged_metadata = {
+                k: v for k, v in merged_metadata.items() if k != "previous_outputs"
+            }
+
             final_metadata = {
                 "namespace": namespace,
                 "session": session_id,
                 "content_type": "user_input",
-                **merged_metadata,  # Include all metadata from YAML and context
+                **filtered_merged_metadata,  # Include filtered metadata only
                 # Set these AFTER merged_metadata to prevent overwriting
                 "category": str(merged_metadata.get("category", "stored")),
                 "log_type": "memory",  # Mark as stored memory, not orchestration log
@@ -150,8 +158,13 @@ class MemoryWriterNode(BaseNode):
             rendered_yaml_metadata = self._render_metadata_templates(merged_metadata, context)
 
             # Add context metadata (overrides YAML where keys conflict)
+            # ✅ FIX: Filter out previous_outputs to reduce memory bloat
             context_metadata = context.get("metadata", {})
-            rendered_yaml_metadata.update(context_metadata)
+            # Remove previous_outputs if present in context metadata
+            filtered_context_metadata = {
+                k: v for k, v in context_metadata.items() if k != "previous_outputs"
+            }
+            rendered_yaml_metadata.update(filtered_context_metadata)
 
             # Extract metadata from guardian outputs if present
             guardian_metadata = self._extract_guardian_metadata(context)
@@ -180,13 +193,16 @@ class MemoryWriterNode(BaseNode):
         try:
             rendered_metadata = {}
 
-            # Create comprehensive template context with enhanced payload
+            # Create optimized template context (exclude previous_outputs to reduce memory bloat)
             template_context = {
                 "input": context.get("input", ""),
-                "previous_outputs": context.get("previous_outputs", {}),
                 "timestamp": context.get("timestamp", ""),
                 "now": lambda: context.get("timestamp", ""),  # now() function for templates
-                **context,  # Include all context keys
+                # ✅ FIX: Include only essential context keys, exclude previous_outputs
+                "run_id": context.get("run_id", ""),
+                "session_id": context.get("session_id", ""),
+                "namespace": context.get("namespace", ""),
+                "agent_id": context.get("agent_id", ""),
             }
 
             # Expose key properties from input object at root level for template access
@@ -204,6 +220,9 @@ class MemoryWriterNode(BaseNode):
                 # Expose the original input content at root level
                 if "input" in input_data:
                     template_context["original_input"] = input_data["input"]
+
+            # Add helper functions for template use (same as prompt rendering)
+            template_context.update(self._get_template_helper_functions(template_context))
 
             # Ensure timestamp is always available
             if not template_context.get("timestamp"):
@@ -486,3 +505,120 @@ class MemoryWriterNode(BaseNode):
         # Adjust based on importance (higher importance = longer retention)
         importance_multiplier = 1.0 + importance_score
         return float(base_hours * importance_multiplier)
+
+    def _get_template_helper_functions(self, payload):
+        """
+        Create helper functions available in Jinja2 templates for easier variable access.
+
+        These functions provide a cleaner, more maintainable way to access complex
+        nested data structures in YAML workflow templates.
+
+        Returns:
+            dict: Dictionary of helper functions for template context
+        """
+
+        def get_input():
+            """Get the main input string, handling nested input structures."""
+            if "input" in payload:
+                input_data = payload["input"]
+                if isinstance(input_data, dict):
+                    return input_data.get("input", str(input_data))
+                return str(input_data)
+            return ""
+
+        def get_loop_number():
+            """Get the current loop number."""
+            if "loop_number" in payload:
+                return payload["loop_number"]
+            if "input" in payload and isinstance(payload["input"], dict):
+                return payload["input"].get("loop_number", 1)
+            return 1
+
+        def has_past_loops():
+            """Check if there are past loops available."""
+            past_loops = get_past_loops()
+            return len(past_loops) > 0
+
+        def get_past_loops():
+            """Get the past loops list."""
+            if "input" in payload and isinstance(payload["input"], dict):
+                prev_outputs = payload["input"].get("previous_outputs", {})
+                return prev_outputs.get("past_loops", [])
+            return []
+
+        def get_past_insights():
+            """Get insights from the last past loop."""
+            past_loops = get_past_loops()
+            if past_loops:
+                last_loop = past_loops[-1]
+                return last_loop.get("synthesis_insights", "No synthesis insights found")
+            return "No synthesis insights found"
+
+        def get_past_loop_data(key):
+            """Get specific data from the last past loop."""
+            past_loops = get_past_loops()
+            if past_loops:
+                last_loop = past_loops[-1]
+                return last_loop.get(key, f"No {key} found")
+            return f"No {key} found"
+
+        def get_agent_response(agent_name):
+            """Get an agent's response from previous_outputs."""
+            previous_outputs = payload.get("previous_outputs", {})
+            agent_result = previous_outputs.get(agent_name, {})
+
+            if isinstance(agent_result, dict):
+                return agent_result.get("response", f"No response from {agent_name}")
+            return str(agent_result)
+
+        def format_memory_query(perspective, topic=None):
+            """Format a memory query for a specific perspective."""
+            if topic is None:
+                topic = get_input()
+            return f"{perspective.title()} perspective on: {topic}"
+
+        def get_current_topic():
+            """Get the current topic being discussed."""
+            return get_input()
+
+        def get_round_info():
+            """Get formatted round information for display."""
+            loop_num = get_loop_number()
+            if has_past_loops():
+                last_loop = get_past_loops()[-1]
+                return last_loop.get("round", str(loop_num))
+            return str(loop_num)
+
+        def safe_get(obj, key, default=""):
+            """Safely get a value from an object with a default."""
+            if isinstance(obj, dict):
+                return obj.get(key, default)
+            return default
+
+        def joined_results():
+            """Get joined results from fork operations if available."""
+            previous_outputs = payload.get("previous_outputs", {})
+            for agent_name, agent_result in previous_outputs.items():
+                if isinstance(agent_result, dict) and "joined_results" in agent_result:
+                    return agent_result["joined_results"]
+            return []
+
+        return {
+            # Input helpers
+            "get_input": get_input,
+            "get_current_topic": get_current_topic,
+            # Loop helpers
+            "get_loop_number": get_loop_number,
+            "has_past_loops": has_past_loops,
+            "get_past_loops": get_past_loops,
+            "get_past_insights": get_past_insights,
+            "get_past_loop_data": get_past_loop_data,
+            "get_round_info": get_round_info,
+            # Agent helpers
+            "get_agent_response": get_agent_response,
+            "joined_results": joined_results,
+            # Memory helpers
+            "format_memory_query": format_memory_query,
+            # Utility helpers
+            "safe_get": safe_get,
+        }
