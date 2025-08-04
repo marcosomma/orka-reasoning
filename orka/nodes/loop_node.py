@@ -197,8 +197,8 @@ class LoopNode(BaseNode):
             )
             self.past_loops_metadata: Dict[MetadataKey, str] = user_metadata
         else:
-            logger.debug("Using default past_loops_metadata structure")
-            self.past_loops_metadata: Dict[MetadataKey, str] = default_metadata_fields
+            logger.info("[DEBUG] - Using default past_loops_metadata structure")
+            self.past_loops_metadata = default_metadata_fields
 
         # Cognitive extraction configuration
         self.cognitive_extraction: Dict[str, Any] = kwargs.get(
@@ -411,9 +411,8 @@ class LoopNode(BaseNode):
                     # For other fields, extract from past loop metadata if available
                     if past_loops_data:
                         last_loop = past_loops_data[-1]
-                        dynamic_metadata[field_name] = last_loop.get(
-                            field_name, f"No {field_name} available"
-                        )
+                        value = last_loop.get(field_name, f"No {field_name} available")
+                        dynamic_metadata[field_name] = str(value)
                     else:
                         dynamic_metadata[field_name] = f"No {field_name} available"
 
@@ -925,11 +924,11 @@ class LoopNode(BaseNode):
                     cat_key = cast(CategoryType, category)
                     patterns = extract_patterns.get(category, [])
                     if not isinstance(patterns, list):
-                        continue
+                        continue  # type: ignore[unreachable]
 
                     for pattern in patterns:
                         if not isinstance(pattern, str):
-                            continue
+                            continue  # type: ignore[unreachable]
 
                         try:
                             matches = re.finditer(pattern, text, re.IGNORECASE | re.DOTALL)
@@ -1075,7 +1074,7 @@ class LoopNode(BaseNode):
                 elif field_name in cognitive_insights:
                     past_loop_obj[field_name] = cognitive_insights[field_name]
                 else:
-                    past_loop_obj[field_name] = f"Error rendering {field_name}"
+                    past_loop_obj[field_name] = f"Error rendering {field_name}"  # type: ignore[unreachable]
 
         # Always ensure we have the basic required fields for compatibility
         past_loop_obj.setdefault("loop_number", loop_number)

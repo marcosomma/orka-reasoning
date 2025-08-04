@@ -74,7 +74,7 @@ class ValidationAndStructuringAgent(BaseAgent):
         )
 
     def _parse_llm_output(
-        self, raw_llm_output: str, prompt: str, formatted_prompt: str = None
+        self, raw_llm_output: str, prompt: str, formatted_prompt: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Parse the LLM output and extract the validation result.

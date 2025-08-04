@@ -48,6 +48,7 @@ class Context(TypedDict, total=False):
         metadata: Additional information about the execution context
         trace_id: Unique identifier for tracing the execution path
         timestamp: When this context was created or last updated
+        formatted_prompt: Optional rendered prompt with template variables resolved
     """
 
     input: str
@@ -55,6 +56,7 @@ class Context(TypedDict, total=False):
     metadata: Dict[str, Any]
     trace_id: Optional[str]
     timestamp: datetime
+    formatted_prompt: Optional[str]
 
 
 class Output(TypedDict):

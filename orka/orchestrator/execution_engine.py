@@ -924,11 +924,11 @@ class ExecutionEngine(
             )
 
             # Process results and handle exceptions
-            result_logs = []
+            result_logs: List[Dict[str, Any]] = []
             updated_previous_outputs = enhanced_previous_outputs.copy()
 
             for i, branch_result in enumerate(branch_results):
-                if isinstance(branch_result, Exception):
+                if isinstance(branch_result, BaseException):
                     logger.error(f"Branch {i} failed: {branch_result}")
                     # Create error log entry
                     error_log = {
@@ -1168,10 +1168,10 @@ class ExecutionEngine(
             return str(response)
 
     def _build_enhanced_trace(
-        self, logs: List[Dict[str, Any]], meta_report: Dict[str, Any] = None
+        self, logs: List[Dict[str, Any]], meta_report: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """Build enhanced trace with memory backend references, metadata, and meta report."""
-        enhanced_trace = {
+        enhanced_trace: Dict[str, Any] = {
             "execution_metadata": {
                 "run_id": self.run_id,
                 "total_agents": len(logs),
@@ -1193,10 +1193,12 @@ class ExecutionEngine(
 
             if agent_id:
                 try:
-                    # Add memory backend references
-                    recent_memories = self.memory.search_memories(
-                        query="", node_id=agent_id, num_results=3, log_type="log"
-                    )
+                    # Add memory backend references (only for RedisStack)
+                    recent_memories = []
+                    if hasattr(self.memory, "search_memories"):
+                        recent_memories = self.memory.search_memories(
+                            query="", node_id=agent_id, num_results=3, log_type="log"
+                        )
 
                     enhanced_entry["memory_references"] = [
                         {
@@ -1460,11 +1462,12 @@ class ExecutionEngine(
                                         f"Template references agent '{part}' but available agents are: {available_keys}"
                                     )
                         else:
-                            logger.info(
+                            logger.info(  # type: ignore[unreachable]
                                 f"[DEBUG] - Cannot access key '{part}' in path '{var_path}' - current value is not a dict"
                             )
                         return False
-                    current = current[part]
+                    else:
+                        current = current[part]
 
             return True
         except Exception as e:
