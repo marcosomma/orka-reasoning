@@ -49,12 +49,15 @@ for sophisticated natural language understanding and generation tasks.
 - Multi-step reasoning workflows with transparent logic
 """
 
+import logging
 import os
 import re
 from typing import Any, Optional
 
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
+
+logger = logging.getLogger(__name__)
 
 from .base_agent import LegacyBaseAgent as BaseAgent
 
@@ -436,7 +439,7 @@ class OpenAIAnswerBuilder(BaseAgent):
 
     async def run(self, input_data: Any) -> dict[str, Any]:
         # Extract parameters from input_data
-        prompt = input_data.get("prompt", self.prompt)
+        original_prompt = input_data.get("prompt", self.prompt)
         model = input_data.get("model", OPENAI_MODEL)
         temperature = float(input_data.get("temperature", 0.7))
         parse_json = input_data.get("parse_json", True)
@@ -445,6 +448,20 @@ class OpenAIAnswerBuilder(BaseAgent):
             "agent_id",
             self.agent_id if hasattr(self, "agent_id") else "unknown",
         )
+
+        # ✅ FIX: Use already-rendered prompt from execution engine if available
+        if (
+            isinstance(input_data, dict)
+            and "formatted_prompt" in input_data
+            and input_data["formatted_prompt"]
+        ):
+            render_prompt = input_data["formatted_prompt"]
+            logger.info(
+                f"[DEBUG] - Using pre-rendered prompt from execution engine (length: {len(render_prompt)})"
+            )
+        else:
+            render_prompt = original_prompt
+            logger.info(f"[DEBUG] - Using original prompt template (length: {len(render_prompt)})")
 
         self_evaluation = """
             # CONSTRAINS
@@ -459,7 +476,7 @@ class OpenAIAnswerBuilder(BaseAgent):
                     }
                 ```
         """
-        full_prompt = f"{prompt}\n\n{input_data}\n\n{self_evaluation}"
+        full_prompt = f"{render_prompt}\n\n{input_data}\n\n{self_evaluation}"
 
         # Make API call to OpenAI
         import time
@@ -530,7 +547,19 @@ class OpenAIAnswerBuilder(BaseAgent):
 
             # Add metrics and formatted_prompt to parsed response
             parsed_response["_metrics"] = metrics
-            parsed_response["formatted_prompt"] = prompt  # Store only the rendered prompt
+
+            # ✅ FIX: Store the actual rendered template, not the original template
+            if (
+                isinstance(input_data, dict)
+                and "formatted_prompt" in input_data
+                and input_data["formatted_prompt"]
+            ):
+                # We used pre-rendered template, so it's already fully rendered
+                parsed_response["formatted_prompt"] = input_data["formatted_prompt"]
+            else:
+                # We used original template, store it for consistency
+                parsed_response["formatted_prompt"] = original_prompt
+
             return parsed_response
 
         except Exception as e:
@@ -560,7 +589,20 @@ class OpenAIAnswerBuilder(BaseAgent):
                     "model": model,
                     "status_code": status_code,
                 },
-                "formatted_prompt": prompt,
+                "formatted_prompt": (
+                    # Use same logic as success case for consistency
+                    input_data["formatted_prompt"]
+                    if (
+                        isinstance(input_data, dict)
+                        and "formatted_prompt" in input_data
+                        and input_data["formatted_prompt"]
+                    )
+                    else (
+                        original_prompt
+                        if "original_prompt" in locals()
+                        else "Error: prompt not available"
+                    )
+                ),
             }
             raise type(e)(str(e)) from e  # Re-raise with the same type and message
 
@@ -665,6 +707,9 @@ class OpenAIBinaryAgent(OpenAIAnswerBuilder):
             "confidence": self._last_confidence,
             "internal_reasoning": self._last_internal_reasoning,
             "_metrics": self._last_metrics,
+            "formatted_prompt": response_data.get(
+                "formatted_prompt", ""
+            ),  # ✅ FIX: Preserve formatted_prompt
         }
 
 
@@ -768,4 +813,7 @@ class OpenAIClassificationAgent(OpenAIAnswerBuilder):
             "confidence": self._last_confidence,
             "internal_reasoning": self._last_internal_reasoning,
             "_metrics": self._last_metrics,
+            "formatted_prompt": response_data.get(
+                "formatted_prompt", ""
+            ),  # ✅ FIX: Preserve formatted_prompt
         }

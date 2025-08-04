@@ -14,9 +14,12 @@ ValidationAndStructuringAgent
 """
 
 import json
+import logging
 from typing import Any, Dict, Optional, Union, cast
 
 from jinja2 import Template
+
+logger = logging.getLogger(__name__)
 
 from .base_agent import BaseAgent, Context
 from .llm_agents import OpenAIAnswerBuilder
@@ -70,7 +73,9 @@ class ValidationAndStructuringAgent(BaseAgent):
             queue=queue,
         )
 
-    def _parse_llm_output(self, raw_llm_output: str, prompt: str) -> Dict[str, Any]:
+    def _parse_llm_output(
+        self, raw_llm_output: str, prompt: str, formatted_prompt: str = None
+    ) -> Dict[str, Any]:
         """
         Parse the LLM output and extract the validation result.
 
@@ -84,7 +89,7 @@ class ValidationAndStructuringAgent(BaseAgent):
         # Create base response with common fields
         base_response = {
             "prompt": prompt,
-            "formatted_prompt": prompt,
+            "formatted_prompt": formatted_prompt if formatted_prompt else prompt,
             "raw_llm_output": raw_llm_output,
         }
 
@@ -190,8 +195,18 @@ class ValidationAndStructuringAgent(BaseAgent):
 
         store_structure = self.params.get("store_structure")
 
-        # Check if we have a custom prompt that needs template rendering
+        # ✅ FIX: Check for pre-rendered prompt from execution engine first
         if (
+            isinstance(input_data, dict)
+            and "formatted_prompt" in input_data
+            and input_data["formatted_prompt"]
+        ):
+            prompt = input_data["formatted_prompt"]
+            logger.info(
+                f"[DEBUG] - Using pre-rendered prompt from execution engine (length: {len(prompt)})"
+            )
+        # Check if we have a custom prompt that needs template rendering
+        elif (
             hasattr(self.llm_agent, "prompt")
             and self.llm_agent.prompt
             and self.llm_agent.prompt.strip()
@@ -211,6 +226,16 @@ class ValidationAndStructuringAgent(BaseAgent):
         # We'll handle JSON parsing manually since we expect a different schema
         llm_input = {"prompt": prompt, "parse_json": False}
 
+        # ✅ FIX: Pass the rendered prompt to the inner LLM agent
+        if (
+            isinstance(input_data, dict)
+            and "formatted_prompt" in input_data
+            and input_data["formatted_prompt"]
+        ):
+            llm_input["formatted_prompt"] = input_data["formatted_prompt"]
+        else:
+            llm_input["formatted_prompt"] = prompt
+
         # Get response from LLM
         response = await self.llm_agent.run(llm_input)
 
@@ -220,8 +245,17 @@ class ValidationAndStructuringAgent(BaseAgent):
         else:
             raw_llm_output = str(response)  # type: ignore [unreachable]
 
-        # Parse the LLM output
-        return self._parse_llm_output(raw_llm_output, prompt)
+        # Parse the LLM output - pass the correct formatted prompt
+        formatted_prompt_to_use = (
+            input_data["formatted_prompt"]
+            if (
+                isinstance(input_data, dict)
+                and "formatted_prompt" in input_data
+                and input_data["formatted_prompt"]
+            )
+            else prompt
+        )
+        return self._parse_llm_output(raw_llm_output, prompt, formatted_prompt_to_use)
 
     def build_prompt(
         self,

@@ -109,6 +109,68 @@ class MemoryReaderNode(BaseNode):
                     namespace=self.namespace,  # 🎯 NEW: Filter by namespace
                 )
 
+                # If no results found, try additional search strategies
+                if len(memories) == 0 and query.strip():
+                    # Extract key terms from the query for more flexible searching
+                    import re
+
+                    # Extract numbers, important words, remove common stopwords
+                    key_terms = re.findall(r"\b(?:\d+|\w{3,})\b", query.lower())
+                    key_terms = [
+                        term
+                        for term in key_terms
+                        if term
+                        not in [
+                            "the",
+                            "and",
+                            "for",
+                            "are",
+                            "but",
+                            "not",
+                            "you",
+                            "all",
+                            "can",
+                            "her",
+                            "was",
+                            "one",
+                            "our",
+                            "had",
+                            "but",
+                            "day",
+                            "get",
+                            "use",
+                            "man",
+                            "new",
+                            "now",
+                            "way",
+                            "may",
+                            "say",
+                        ]
+                    ]
+
+                    if key_terms:
+                        # Try searching for individual key terms
+                        for term in key_terms[
+                            :3
+                        ]:  # Limit to first 3 terms to avoid too many searches
+                            logger.info(f"🔍 FALLBACK SEARCH: Trying key term '{term}'")
+                            fallback_memories = self.memory_logger.search_memories(
+                                query=term,
+                                num_results=self.limit,
+                                trace_id=context.get("trace_id"),
+                                node_id=None,
+                                memory_type=None,
+                                min_importance=context.get("min_importance", 0.0),
+                                log_type="memory",
+                                namespace=self.namespace,
+                            )
+                            if fallback_memories:
+                                logger.info(
+                                    f"🔍 FALLBACK SUCCESS: Found {len(fallback_memories)} memories with term '{term}'"
+                                )
+                                memories = fallback_memories
+                                break
+
                 logger.info(f"🔍 SEARCH RESULTS: Found {len(memories)} memories")
                 for i, memory in enumerate(memories):
                     metadata = memory.get("metadata", {})

@@ -83,6 +83,9 @@ class MemoryWriterNode(BaseNode):
                         if "input" in input_data:
                             template_context["original_input"] = input_data["input"]
 
+                    # Add template helper functions for key rendering
+                    template_context.update(self._get_template_helper_functions(context))
+
                     # Render the key template
                     from jinja2 import Template
 
@@ -222,7 +225,8 @@ class MemoryWriterNode(BaseNode):
                     template_context["original_input"] = input_data["input"]
 
             # Add helper functions for template use (same as prompt rendering)
-            template_context.update(self._get_template_helper_functions(template_context))
+            # Pass the original context so helper functions can access previous_outputs
+            template_context.update(self._get_template_helper_functions(context))
 
             # Ensure timestamp is always available
             if not template_context.get("timestamp"):
@@ -603,6 +607,149 @@ class MemoryWriterNode(BaseNode):
                     return agent_result["joined_results"]
             return []
 
+        def get_fork_responses(fork_group_name):
+            """
+            Get all responses from a fork group execution.
+            Returns a dictionary of {agent_name: response} for all agents in the fork.
+            """
+            previous_outputs = payload.get("previous_outputs", {})
+
+            # Look for fork group results
+            if fork_group_name in previous_outputs:
+                fork_result = previous_outputs[fork_group_name]
+                if isinstance(fork_result, dict):
+                    responses = {}
+
+                    # Check direct agent results
+                    for key, value in fork_result.items():
+                        if isinstance(value, dict) and "response" in value:
+                            responses[key] = value["response"]
+
+                    # Check nested results structure
+                    if "result" in fork_result and isinstance(fork_result["result"], dict):
+                        for key, value in fork_result["result"].items():
+                            if isinstance(value, dict) and "response" in value:
+                                responses[key] = value["response"]
+
+                    # Check results field
+                    if "results" in fork_result and isinstance(fork_result["results"], dict):
+                        for key, value in fork_result["results"].items():
+                            if isinstance(value, dict) and "response" in value:
+                                responses[key] = value["response"]
+
+                    return responses
+
+            return {}
+
+        def get_progressive_response():
+            """Get progressive agent response using robust search."""
+            return get_agent_response("progressive_refinement") or get_agent_response(
+                "radical_progressive"
+            )
+
+        def get_conservative_response():
+            """Get conservative agent response using robust search."""
+            return get_agent_response("conservative_refinement") or get_agent_response(
+                "traditional_conservative"
+            )
+
+        def get_realist_response():
+            """Get realist agent response using robust search."""
+            return get_agent_response("realist_refinement") or get_agent_response(
+                "pragmatic_realist"
+            )
+
+        def get_purist_response():
+            """Get purist agent response using robust search."""
+            return get_agent_response("purist_refinement") or get_agent_response("ethical_purist")
+
+        def get_collaborative_responses():
+            """Get all collaborative refinement responses as a formatted string."""
+            responses = []
+
+            progressive = get_progressive_response()
+            if progressive and progressive != "No response found for progressive_refinement":
+                responses.append(f"Progressive: {progressive}")
+
+            conservative = get_conservative_response()
+            if conservative and conservative != "No response found for conservative_refinement":
+                responses.append(f"Conservative: {conservative}")
+
+            realist = get_realist_response()
+            if realist and realist != "No response found for realist_refinement":
+                responses.append(f"Realist: {realist}")
+
+            purist = get_purist_response()
+            if purist and purist != "No response found for purist_refinement":
+                responses.append(f"Purist: {purist}")
+
+            return "\n\n".join(responses) if responses else "No collaborative responses available"
+
+        def safe_get_response(agent_name, fallback="No response available"):
+            """Safely get an agent response with fallback."""
+            response = get_agent_response(agent_name)
+            if response and not response.startswith("No response found"):
+                return response
+            return fallback
+
+        def get_my_past_memory(agent_type):
+            """Get past memory entries for a specific agent type."""
+            previous_outputs = payload.get("previous_outputs", {})
+            memories = []
+
+            # Look for memory entries from previous steps
+            for agent_name, agent_result in previous_outputs.items():
+                if isinstance(agent_result, dict) and "memories" in agent_result:
+                    memories.extend(agent_result["memories"])
+
+            # Filter by agent type if specified
+            if agent_type:
+                filtered_memories = [m for m in memories if agent_type in str(m)]
+                return (
+                    "\n".join(filtered_memories) if filtered_memories else "No past memories found"
+                )
+
+            return "\n".join(memories) if memories else "No past memories found"
+
+        def get_my_past_decisions(agent_name):
+            """Get past decisions for a specific agent."""
+            previous_outputs = payload.get("previous_outputs", {})
+
+            # Look for past decisions from this agent
+            for output_agent_name, agent_result in previous_outputs.items():
+                if output_agent_name == agent_name and isinstance(agent_result, dict):
+                    if "response" in agent_result:
+                        return agent_result["response"]
+
+            return "No past decisions found"
+
+        def get_agent_memory_context(agent_type, agent_name):
+            """Get memory context for a specific agent."""
+            context = []
+            past_memory = get_my_past_memory(agent_type)
+            past_decisions = get_my_past_decisions(agent_name)
+
+            if past_memory != "No past memories found":
+                context.append(f"Past Memory: {past_memory}")
+
+            if past_decisions != "No past decisions found":
+                context.append(f"Past Decisions: {past_decisions}")
+
+            return "\n\n".join(context) if context else "No past context available"
+
+        def get_debate_evolution():
+            """Get how the debate has evolved across loops."""
+            past_loops = get_past_loops()
+            if not past_loops:
+                return "First round of debate"
+
+            evolution = []
+            for i, loop in enumerate(past_loops):
+                score = loop.get("agreement_score", "Unknown")
+                evolution.append(f"Round {i+1}: Agreement {score}")
+
+            return " → ".join(evolution)
+
         return {
             # Input helpers
             "get_input": get_input,
@@ -616,9 +763,24 @@ class MemoryWriterNode(BaseNode):
             "get_round_info": get_round_info,
             # Agent helpers
             "get_agent_response": get_agent_response,
+            "get_fork_responses": get_fork_responses,
+            "get_progressive_response": get_progressive_response,
+            "get_conservative_response": get_conservative_response,
+            "get_realist_response": get_realist_response,
+            "get_purist_response": get_purist_response,
+            "get_collaborative_responses": get_collaborative_responses,
+            "safe_get_response": safe_get_response,
             "joined_results": joined_results,
             # Memory helpers
             "format_memory_query": format_memory_query,
+            "get_my_past_memory": get_my_past_memory,
+            "get_my_past_decisions": get_my_past_decisions,
+            "get_agent_memory_context": get_agent_memory_context,
+            "get_debate_evolution": get_debate_evolution,
             # Utility helpers
             "safe_get": safe_get,
+            # Data context (direct access)
+            "previous_outputs": payload.get("previous_outputs", {}),
+            "input": payload.get("input", ""),
+            "payload": payload,
         }

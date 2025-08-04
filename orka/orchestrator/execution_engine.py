@@ -677,7 +677,18 @@ class ExecutionEngine(
                 payload["past_loops_metadata"] = input_data["past_loops_metadata"]
 
         # Render prompt before running agent if agent has a prompt
+        # Also check for ValidationAndStructuringAgent which stores prompt in llm_agent
+        agent_prompt = None
         if hasattr(agent, "prompt") and agent.prompt:
+            agent_prompt = agent.prompt
+        elif (
+            hasattr(agent, "llm_agent")
+            and hasattr(agent.llm_agent, "prompt")
+            and agent.llm_agent.prompt
+        ):
+            agent_prompt = agent.llm_agent.prompt
+
+        if agent_prompt:
             try:
                 # ✅ FIX: Build complete template context
                 template_context = self._build_template_context(payload, agent_id)
@@ -701,7 +712,7 @@ class ExecutionEngine(
                     logger.error(f"Available keys: {list(template_context.keys())}")
 
                 # Validate template before rendering
-                missing_vars = self._validate_template_variables(agent.prompt, template_context)
+                missing_vars = self._validate_template_variables(agent_prompt, template_context)
                 if missing_vars:
                     logger.warning(f"Agent '{agent_id}' template missing variables: {missing_vars}")
                     # Enhanced debugging for template issues
@@ -734,13 +745,13 @@ class ExecutionEngine(
                 # ✅ FIX: Use template context directly, skip double-enhancement
                 from jinja2 import Template
 
-                template = Template(agent.prompt)
+                template = Template(agent_prompt)
 
                 # Debug: Show what we're about to render
                 logger.info(
                     f"[DEBUG] - - About to render template with {len(template_context)} context items"
                 )
-                logger.info(f"[DEBUG] - - Template preview: {agent.prompt[:200]}...")
+                logger.info(f"[DEBUG] - - Template preview: {agent_prompt[:200]}...")
 
                 formatted_prompt = template.render(**template_context)
 
@@ -775,7 +786,7 @@ class ExecutionEngine(
 
                 # Debug logging for template rendering
                 if logger.isEnabledFor(logging.DEBUG):
-                    original_template = agent.prompt
+                    original_template = agent_prompt
                     if original_template != formatted_prompt:
                         logger.info(
                             f"[DEBUG] - - Agent '{agent_id}' template rendered successfully"
@@ -789,7 +800,7 @@ class ExecutionEngine(
                         logger.info(f"[DEBUG] - - Template context: {template_context}")
             except Exception as e:
                 logger.error(f"Failed to render prompt for agent '{agent_id}': {e}")
-                payload["formatted_prompt"] = agent.prompt
+                payload["formatted_prompt"] = agent_prompt if agent_prompt else ""
                 payload["template_error"] = str(e)
 
         # Inspect the run method to see if it needs orchestrator

@@ -18,11 +18,11 @@ agents:
       operation: read
       memory_category_filter: stored
     namespace: fact_validator
-    prompt: Retrieve any stored memories about how the subject '{{ input }}'' was classified or understood in the past.Return "NONE" if nothing matches.
+    prompt: Retrieve any stored memories about how the subject '{{ get_input() }}'' was classified or understood in the past.Return "NONE" if nothing matches.
   - id: openai-answer_2
     type: openai-answer
     queue: orka:openai-answer_2
-    prompt: Given previous context {{ previous_outputs['memory-read_0'].memories }}, provide an initial detailed answer to {{ input }}.
+    prompt: Given previous context {{ get_agent_response('memory-read_0') }}, provide an initial detailed answer to {{ get_input() }}.
   - id: fork_3
     type: fork
     targets:
@@ -36,19 +36,19 @@ agents:
   - id: openai-binary_4
     type: openai-binary
     queue: orka:openai-binary_4
-    prompt: Does the question {{ input }} require factual validation?
+    prompt: Does the question {{ get_input() }} require factual validation?
     depends_on:
       - fork_3
   - id: openai-answer_7
     type: openai-answer
     queue: orka:openai-answer_7
-    prompt: Provide a concise summary for the question {{ input }}.
+    prompt: Provide a concise summary for the question {{ get_input() }}.
     depends_on:
       - fork_3
   - id: openai-classification_5
     type: openai-classification
     queue: orka:openai-classification_5
-    prompt: Classify the domain of the question {{ input }}
+    prompt: Classify the domain of the question {{ get_input() }}
     options:
       - science
       - history
@@ -65,11 +65,11 @@ agents:
       - id: duckduckgo_12
         type: duckduckgo
         queue: orka:duckduckgo_12
-        prompt: "{{ input }}"
+        prompt: "{{ get_input() }}"
       - id: duckduckgo_13
         type: duckduckgo
         queue: orka:duckduckgo_13
-        prompt: "{{ input }}"
+        prompt: "{{ get_input() }}"
     depends_on:
       - openai-answer_7
       - duckduckgo_12
@@ -77,7 +77,7 @@ agents:
   - id: openai-answer_6
     type: openai-answer
     queue: orka:openai-answer_6
-    prompt: "Provide an alternative perspective or deeper insight into the question {{ input }} considering domain: {{ previous_outputs['openai-classification_5'].result }}."
+    prompt: "Provide an alternative perspective or deeper insight into the question {{ get_input() }} considering domain: {{ get_agent_response('openai-classification_5') }}."
     depends_on:
       - openai-classification_5
   - id: join_9
@@ -86,7 +86,7 @@ agents:
   - id: openai-binary_10
     type: openai-binary
     queue: orka:openai-binary_10
-    prompt: "Is the provided information coherent and complete based on outputs: {{ previous_outputs['join_9'].result.merged }}?"
+    prompt: "Is the provided information coherent and complete based on outputs: {{ get_agent_response('join_9') }}?"
     depends_on:
       - join_9
   - id: router_11
@@ -105,13 +105,13 @@ agents:
   - id: openai-answer_14
     type: openai-answer
     queue: orka:openai-answer_14
-    prompt: Given confirmed coherent inputs {{ previous_outputs['join_9'].result.merged }}, provide a polished final response to {{ input }}.
+    prompt: Given confirmed coherent inputs {{ get_agent_response('join_9') }}, provide a polished final response to {{ get_input() }}.
     depends_on:
       - router_11
   - id: openai-answer_15
     type: openai-answer
     queue: orka:openai-answer_15
-    prompt: "      Given identified gaps in coherence or completeness in  {{ previous_outputs['join_9'].merged }}, clarify or complete the information to fully answer {{ input }}."
+    prompt: "      Given identified gaps in coherence or completeness in  {{ get_agent_response('join_9') }}, clarify or complete the information to fully answer {{ get_input() }}."
     depends_on:
       - router_11
   - id: memory-write_final
@@ -120,9 +120,9 @@ agents:
     config:
       operation: write
     namespace: fact_validator
-    prompt: "{{ previous_outputs['openai-answer_14'].response if previous_outputs.get('openai-answer_14') else previous_outputs['openai-answer_15'].response }}"
+    prompt: "{{ safe_get_response('openai-answer_14', get_agent_response('openai-answer_15')) }}"
     metadata:
-      source: '{{ "openai-answer_14" if previous_outputs.get("openai-answer_14") else "openai-answer_15" }}'
-      result: "{{ previous_outputs['openai-answer_14'].response if previous_outputs.get('openai-answer_14') else previous_outputs['openai-answer_15'].response }}"
+      source: '{{ "openai-answer_14" if get_agent_response("openai-answer_14") else "openai-answer_15" }}'
+      result: "{{ safe_get_response('openai-answer_14', get_agent_response('openai-answer_15')) }}"
       category: stored
-    key_template: "{{ input }}"
+    key_template: "{{ get_input() }}"

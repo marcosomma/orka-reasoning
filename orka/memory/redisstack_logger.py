@@ -436,7 +436,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 # Try to get the current event loop
                 loop = asyncio.get_running_loop()
                 # We're in an async context - use fallback encoding to avoid complications
-                logger.debug("In async context, using fallback encoding for embedding")
+                logger.info("[DEBUG] - In async context, using fallback encoding for embedding")
                 _self_embedder: np.ndarray[Any, Any] = self.embedder._fallback_encode(text)
                 return _self_embedder
 
@@ -509,6 +509,15 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                     )
 
                     logger.info(f"[DEBUG] - - Vector search returned {len(results)} results")
+
+                    # Debug: Log some details about what was searched
+                    logger.info(
+                        f"[DEBUG] - - Vector search query: '{query}', num_results: {num_results}, index: {self.index_name}"
+                    )
+                    if len(results) == 0:
+                        logger.warning(
+                            f"[DEBUG] - - Vector search found no results for query: '{query}' - this may indicate embedding/similarity issues"
+                        )
 
                     # Convert to expected format and apply additional filters
                     formatted_results = []
@@ -641,6 +650,23 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                             continue
 
                     logger.info(f"[DEBUG] - - Returning {len(formatted_results)} filtered results")
+
+                    # If vector search returned 0 results, fall back to text search
+                    if len(formatted_results) == 0 and query.strip():
+                        logger.info(
+                            "[DEBUG] - - Vector search returned 0 results, falling back to text search"
+                        )
+                        return self._fallback_text_search(
+                            query,
+                            num_results,
+                            trace_id,
+                            node_id,
+                            memory_type,
+                            min_importance,
+                            log_type,
+                            namespace,
+                        )
+
                     return formatted_results
 
                 except Exception as e:
@@ -648,7 +674,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
 
             else:
                 # Empty query or no embedder - use text search directly
-                logger.debug("Using text search for empty query or no embedder available")
+                logger.info("[DEBUG] - Using text search for empty query or no embedder available")
 
             # Fallback to basic text search
             return self._fallback_text_search(
@@ -706,7 +732,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
     ) -> list[dict[str, Any]]:
         """Fallback text search using basic Redis search capabilities."""
         try:
-            logger.debug("Using fallback text search")
+            logger.info("[DEBUG] - Using fallback text search")
 
             # Import Query from the correct location
             from redis.commands.search.query import Query
@@ -715,28 +741,50 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             if query.strip():
                 # Escape special characters in the query for RedisStack FT.SEARCH
                 escaped_query = query.replace(":", "\\:").replace("(", "\\(").replace(")", "\\)")
-                search_query = f"@content:{escaped_query}"
+                # Quote the query to handle spaces and special characters properly
+                search_query = f'@content:"{escaped_query}"'
             else:
                 # For empty queries, use wildcard to get all records
                 search_query = "*"
 
             # Add filters with proper escaping
             filters = []
-            if trace_id:
+            if trace_id and trace_id.strip():
                 # Escape special characters in trace_id
                 escaped_trace_id = (
                     trace_id.replace(":", "\\:").replace("-", "\\-").replace("_", "\\_")
                 )
-                filters.append(f"@trace_id:{escaped_trace_id}")
-            if node_id:
+                if escaped_trace_id:  # Only add if not empty after escaping
+                    filters.append(f"@trace_id:{escaped_trace_id}")
+            if node_id and node_id.strip():
                 # Escape special characters in node_id
                 escaped_node_id = (
                     node_id.replace(":", "\\:").replace("-", "\\-").replace("_", "\\_")
                 )
-                filters.append(f"@node_id:{escaped_node_id}")
+                if escaped_node_id:  # Only add if not empty after escaping
+                    filters.append(f"@node_id:{escaped_node_id}")
 
-            if filters:
-                search_query = " ".join([search_query] + filters)
+            # Only combine filters if they exist and are valid
+            if filters and search_query and search_query.strip():
+                # Combine query and filters with proper RedisStack syntax
+                search_query = f"({search_query}) " + " ".join(filters)
+
+            # Debug: Log the actual search query being used
+            logger.info(f"[DEBUG] - - FT.SEARCH query: '{search_query}'")
+
+            # Validate search query before executing
+            if not search_query or not search_query.strip():
+                logger.warning("Empty search query, falling back to basic Redis scan")
+                return self._basic_redis_search(
+                    query,
+                    num_results,
+                    trace_id,
+                    node_id,
+                    memory_type,
+                    min_importance,
+                    log_type,
+                    namespace,
+                )
 
             # Execute search - try RedisStack first, fallback to basic Redis
             try:
@@ -758,7 +806,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                     namespace,
                 )
 
-            results = []
+            results: list[dict[str, Any]] = []
             for doc in search_results.docs:
                 try:
                     memory_data = self.redis_client.hgetall(doc.id)
@@ -865,13 +913,13 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
     ) -> list[dict[str, Any]]:
         """Basic Redis search using SCAN when RedisStack modules are not available."""
         try:
-            logger.debug("Using basic Redis SCAN for search")
+            logger.info("[DEBUG] - Using basic Redis SCAN for search")
 
             client = self._get_thread_safe_client()
             pattern = "orka_memory:*"
             keys = client.keys(pattern)
 
-            results = []
+            results: list[dict[str, Any]] = []
             current_time_ms = int(time.time() * 1000)
 
             for key in keys:

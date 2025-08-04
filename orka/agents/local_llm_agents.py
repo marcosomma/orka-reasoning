@@ -302,7 +302,19 @@ class LocalLLMAgent(BaseAgent):
                 "model": model,
                 "provider": provider,
             }
-            parsed_response["formatted_prompt"] = full_prompt
+
+            # ✅ FIX: Store the actual rendered template, not the full_prompt with evaluation instructions
+            # If we used pre-rendered template, store it; otherwise store the original prompt
+            if (
+                isinstance(input_data, dict)
+                and "formatted_prompt" in input_data
+                and input_data["formatted_prompt"]
+            ):
+                # We used pre-rendered template, so it's already fully rendered
+                parsed_response["formatted_prompt"] = input_data["formatted_prompt"]
+            else:
+                # We used our own rendering, store the original template for consistency
+                parsed_response["formatted_prompt"] = prompt
 
             return parsed_response
 
@@ -344,7 +356,14 @@ class LocalLLMAgent(BaseAgent):
                     "error": True,
                 },
                 "formatted_prompt": (
-                    full_prompt if "full_prompt" in locals() else "Error: prompt not available"
+                    # Use same logic as success case for consistency
+                    input_data["formatted_prompt"]
+                    if (
+                        isinstance(input_data, dict)
+                        and "formatted_prompt" in input_data
+                        and input_data["formatted_prompt"]
+                    )
+                    else prompt if "prompt" in locals() else "Error: prompt not available"
                 ),
             }
 
