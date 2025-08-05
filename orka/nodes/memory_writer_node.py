@@ -15,7 +15,7 @@ class MemoryWriterNode(BaseNode):
     def __init__(self, node_id: str, **kwargs: Any) -> None:
         super().__init__(node_id=node_id, **kwargs)
 
-        # ✅ CRITICAL: Use memory logger instead of direct Redis
+        # Use memory logger instead of direct Redis
         self.memory_logger = kwargs.get("memory_logger")
         if not self.memory_logger:
             # Create RedisStack memory logger
@@ -37,7 +37,7 @@ class MemoryWriterNode(BaseNode):
         self.session_id = kwargs.get("session_id", "default")
         self.decay_config = kwargs.get("decay_config", {})
 
-        # ✅ CRITICAL: Always store metadata structure defined in YAML
+        # Always store metadata structure defined in YAML
         self.yaml_metadata = kwargs.get("metadata", {})
 
         # Store key_template for rendering
@@ -415,10 +415,10 @@ class MemoryWriterNode(BaseNode):
                 return str(content)
 
         except Exception as e:
-            logger.error(f"❌ Error extracting memory content: {e}")
+            logger.error(f"Error extracting memory content: {e}")
             import traceback
 
-            logger.error(f"❌ Full traceback: {traceback.format_exc()}")
+            logger.error(f"Full traceback: {traceback.format_exc()}")
             # Safe fallback - return a simple string
             return "Memory content extraction failed"
 

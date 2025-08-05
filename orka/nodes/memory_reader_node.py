@@ -16,7 +16,7 @@ class MemoryReaderNode(BaseNode):
     def __init__(self, node_id: str, **kwargs):
         super().__init__(node_id=node_id, **kwargs)
 
-        # ✅ CRITICAL: Use memory logger instead of direct Redis
+        # Use memory logger instead of direct Redis
         self.memory_logger = kwargs.get("memory_logger")
         if not self.memory_logger:
             from ..memory_logger import create_memory_logger
@@ -95,7 +95,7 @@ class MemoryReaderNode(BaseNode):
             if self.memory_logger and hasattr(self.memory_logger, "search_memories"):
                 # 🎯 CRITICAL FIX: Search with explicit filtering for stored memories
                 logger.info(
-                    f"🔍 SEARCHING: query='{query}', namespace='{self.namespace}', log_type='memory'",
+                    f"SEARCHING: query='{query}', namespace='{self.namespace}', log_type='memory'",
                 )
 
                 memories = self.memory_logger.search_memories(
@@ -153,7 +153,7 @@ class MemoryReaderNode(BaseNode):
                         for term in key_terms[
                             :3
                         ]:  # Limit to first 3 terms to avoid too many searches
-                            logger.info(f"🔍 FALLBACK SEARCH: Trying key term '{term}'")
+                            logger.info(f"FALLBACK SEARCH: Trying key term '{term}'")
                             fallback_memories = self.memory_logger.search_memories(
                                 query=term,
                                 num_results=self.limit,
@@ -166,12 +166,12 @@ class MemoryReaderNode(BaseNode):
                             )
                             if fallback_memories:
                                 logger.info(
-                                    f"🔍 FALLBACK SUCCESS: Found {len(fallback_memories)} memories with term '{term}'"
+                                    f"FALLBACK SUCCESS: Found {len(fallback_memories)} memories with term '{term}'"
                                 )
                                 memories = fallback_memories
                                 break
 
-                logger.info(f"🔍 SEARCH RESULTS: Found {len(memories)} memories")
+                logger.info(f"SEARCH RESULTS: Found {len(memories)} memories")
                 for i, memory in enumerate(memories):
                     metadata = memory.get("metadata", {})
                     logger.info(

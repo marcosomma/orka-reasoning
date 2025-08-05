@@ -189,7 +189,7 @@ class LoopNode(BaseNode):
             "mistakes": "{{ mistakes }}",
         }
 
-        # ✅ FIX: Load user-defined past_loops_metadata from YAML configuration
+        # Load user-defined past_loops_metadata from YAML configuration
         user_metadata = kwargs.get("past_loops_metadata", {})
         if user_metadata:
             logger.info(
@@ -397,7 +397,7 @@ class LoopNode(BaseNode):
             current_loop_number = len(previous_outputs.get("past_loops", [])) + 1
 
             # Prepare input with past_loops context AND loop_number
-            # ✅ FIX: Build dynamic past_loops_metadata using user-defined fields
+            # Build dynamic past_loops_metadata using user-defined fields
             dynamic_metadata = {}
             past_loops_data = cast(List[PastLoopMetadata], previous_outputs.get("past_loops", []))
 
@@ -454,13 +454,13 @@ class LoopNode(BaseNode):
                     agent for agent in agent_sequence if agent not in executed_sequence
                 ]
                 if missing_agents:
-                    logger.error(f"🚨 CRITICAL: Missing agents from execution: {missing_agents}")
+                    logger.error(f"CRITICAL: Missing agents from execution: {missing_agents}")
                 else:
-                    logger.info("✅ DEBUGGING: All agents executed successfully")
+                    logger.info("All agents executed successfully")
 
             except Exception as e:
-                logger.error(f"🚨 CRITICAL: Internal workflow execution failed with exception: {e}")
-                logger.error(f"🚨 CRITICAL: Exception type: {type(e)}")
+                logger.error(f"CRITICAL: Internal workflow execution failed with exception: {e}")
+                logger.error(f"CRITICAL: Exception type: {type(e)}")
                 raise
 
             # Extract actual agent responses from logs
@@ -494,22 +494,18 @@ class LoopNode(BaseNode):
                         if pattern in response_text:
                             potential_scoring_agents.append(agent_id)
                             logger.info(
-                                f"✅ DEBUGGING: Found potential scoring agent '{agent_id}' with pattern '{pattern}'"
+                                f"Found potential scoring agent '{agent_id}' with pattern '{pattern}'"
                             )
-                            logger.info(
-                                f"✅ DEBUGGING: {agent_id} response: {response_text[:200]}..."
-                            )
-                            break
+                        logger.info(f"{agent_id} response: {response_text[:200]}...")
+                        break
 
             if potential_scoring_agents:
-                logger.info(
-                    f"✅ DEBUGGING: Potential scoring agents found: {potential_scoring_agents}"
-                )
+                logger.info(f"Potential scoring agents found: {potential_scoring_agents}")
             else:
-                logger.warning("❌ DEBUGGING: No agents found with score patterns!")
-                logger.warning(f"❌ DEBUGGING: All executed agents: {executed_agents}")
+                logger.warning("No agents found with score patterns!")
+                logger.warning(f"All executed agents: {executed_agents}")
                 logger.warning(
-                    f"❌ DEBUGGING: Expected agents: {[agent.get('id') for agent in self.internal_workflow.get('agents', [])]}"
+                    f"Expected agents: {[agent.get('id') for agent in self.internal_workflow.get('agents', [])]}"
                 )
 
                 # Show sample responses to understand format
@@ -518,7 +514,7 @@ class LoopNode(BaseNode):
                 ]:  # Show first 3 agents
                     if isinstance(agent_result, dict) and "response" in agent_result:
                         logger.warning(
-                            f"❌ DEBUGGING: Sample response from '{agent_id}': {str(agent_result['response'])[:100]}..."
+                            f"Sample response from '{agent_id}': {str(agent_result['response'])[:100]}..."
                         )
 
             # Store agent results in Redis
@@ -568,8 +564,8 @@ class LoopNode(BaseNode):
         if not result:
             return 0.0
 
-        # ✅ CRITICAL DEBUG: Force visibility with print and logger.error
-        logger.error(f"🔍🔍🔍 SCORE EXTRACTION CALLED with {len(result)} agents")
+        # Score extraction called
+        logger.error(f"SCORE EXTRACTION CALLED with {len(result)} agents")
         for agent_id, agent_result in result.items():
             if isinstance(agent_result, dict) and "response" in agent_result:
                 response_preview = (
@@ -577,7 +573,7 @@ class LoopNode(BaseNode):
                     if len(str(agent_result["response"])) > 100
                     else str(agent_result["response"])
                 )
-                logger.error(f"🔍 Agent '{agent_id}' response preview: {response_preview}")
+                logger.error(f"Agent '{agent_id}' response preview: {response_preview}")
 
         strategies = self.score_extraction_config.get("strategies", [])
 
@@ -603,9 +599,9 @@ class LoopNode(BaseNode):
                     if not isinstance(pattern, str):
                         continue  # type: ignore [unreachable]
 
-                    logger.warning(f"🔍 Trying pattern: {pattern}")
+                    logger.warning(f"Trying pattern: {pattern}")
 
-                    # ✅ FIX: Look deeper into agent result structures
+                    # Look deeper into agent result structures
                     for agent_id, agent_result in result.items():
                         # Check direct string values
                         if isinstance(agent_result, str):
@@ -614,26 +610,24 @@ class LoopNode(BaseNode):
                                 try:
                                     score = float(match.group(1))
                                     logger.warning(
-                                        f"✅ Found score {score} in {agent_id} (direct string) using pattern: {pattern}"
+                                        f"Found score {score} in {agent_id} (direct string) using pattern: {pattern}"
                                     )
                                     return score
                                 except (ValueError, TypeError):
                                     continue
 
-                        # ✅ FIX: Check nested response fields in agent dictionaries
+                        # Check nested response fields in agent dictionaries
                         elif isinstance(agent_result, dict):
                             for key in ["response", "result", "output", "data"]:
                                 if key in agent_result and isinstance(agent_result[key], str):
                                     text_content = agent_result[key]
                                     match = re.search(pattern, text_content)
                                     if match and match.group(1):
+                                        logger.warning(f"Matched text: '{text_content[:200]}'")
                                         try:
                                             score = float(match.group(1))
                                             logger.warning(
-                                                f"✅ Found score {score} in {agent_id}.{key} using pattern: {pattern}"
-                                            )
-                                            logger.warning(
-                                                f"✅ Matched text: '{text_content[:200]}'"
+                                                f"Found score {score} in {agent_id}.{key} using pattern: {pattern}"
                                             )
                                             return score
                                         except (ValueError, TypeError):

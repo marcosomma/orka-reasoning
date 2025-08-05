@@ -15,8 +15,6 @@ if TYPE_CHECKING:
     from confluent_kafka.serialization import MessageField, SerializationContext
 
 try:
-    import avro.io  # type: ignore[import-not-found]
-    import avro.schema  # type: ignore[import-not-found]
     from confluent_kafka.schema_registry import SchemaRegistryClient
     from confluent_kafka.schema_registry.avro import AvroDeserializer, AvroSerializer
     from confluent_kafka.serialization import MessageField, SerializationContext

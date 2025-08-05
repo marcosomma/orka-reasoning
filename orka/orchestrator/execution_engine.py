@@ -173,68 +173,45 @@ class ExecutionEngine(
     OrchestratorBase, PromptRenderer, OrchestratorErrorHandling, OrchestratorMetricsCollector
 ):
     """
-    🎼 **The conductor of your AI orchestra** - coordinates complex multi-agent workflows.
+    ExecutionEngine coordinates complex multi-agent workflows within the OrKa framework.
 
-    **What makes execution intelligent:**
-    - **Perfect Timing**: Orchestrates agent execution with precise coordination
-    - **Context Flow**: Maintains rich context across all workflow steps
-    - **Fault Tolerance**: Graceful handling of failures with automatic recovery
-    - **Performance Intelligence**: Real-time optimization and resource management
-    - **Scalable Architecture**: From single-threaded to distributed execution
+    Core Features:
+    - Agent execution with precise coordination
+    - Rich context flow across workflow steps
+    - Fault tolerance with automatic recovery
+    - Real-time optimization and resource management
+    - Scalable architecture for distributed execution
 
-    **Execution Patterns:**
+    Execution Patterns:
 
-    **1. Sequential Processing** (most common):
+    Sequential Processing:
     ```yaml
     orchestrator:
       strategy: sequential
       agents: [classifier, router, processor, responder]
-    # Each agent receives full context from all previous steps
     ```
 
-    **2. Parallel Processing** (for speed):
+    Parallel Processing:
     ```yaml
     orchestrator:
       strategy: parallel
       agents: [validator_1, validator_2, validator_3]
-    # All agents run simultaneously, results aggregated
     ```
 
-    **3. Decision Tree** (for complex logic):
+    Decision Tree:
     ```yaml
     orchestrator:
       strategy: decision-tree
       agents: [classifier, router, [path_a, path_b], aggregator]
-    # Dynamic routing based on classification results
     ```
 
-    **Advanced Features:**
+    Advanced Features:
+    - Intelligent retry logic with exponential backoff
+    - Real-time monitoring and performance metrics
+    - Resource management and connection pooling
+    - Production-ready distributed capabilities
 
-    **🔄 Intelligent Retry Logic:**
-    - Exponential backoff for transient failures
-    - Context preservation across retry attempts
-    - Configurable retry policies per agent type
-    - Partial success handling for complex workflows
-
-    **📊 Real-time Monitoring:**
-    - Agent execution timing and performance metrics
-    - LLM token usage and cost tracking
-    - Memory usage and optimization insights
-    - Error pattern detection and alerting
-
-    **⚡ Resource Management:**
-    - Connection pooling for external services
-    - Agent lifecycle management and cleanup
-    - Memory optimization for long-running workflows
-    - Graceful shutdown and resource release
-
-    **🎯 Production Features:**
-    - Distributed execution across multiple workers
-    - Load balancing and auto-scaling capabilities
-    - Health checks and service discovery
-    - Comprehensive logging and audit trails
-
-    **Perfect for:**
+    Use Cases:
     - Multi-step AI reasoning workflows
     - High-throughput content processing pipelines
     - Real-time decision systems with complex branching
@@ -276,7 +253,7 @@ class ExecutionEngine(
                 e,
                 recovery_action="fail",
             )
-            logger.critical(f"🚨 [ORKA-CRITICAL] Orchestrator execution failed: {e}")
+            logger.critical(f"[ORKA-CRITICAL] Orchestrator execution failed: {e}")
             raise
 
     async def _run_with_comprehensive_error_handling(
@@ -336,8 +313,7 @@ class ExecutionEngine(
                     while retry_count < max_retries:
                         try:
                             # Execute the agent with appropriate method
-                            # ✅ FIX: Use _run_agent_async for all agents to ensure proper template rendering
-                            # ✅ FIX: Pass the full payload to preserve orchestrator context for fork nodes
+                            # Execute agent with template rendering and context preservation
                             _, agent_result = await self._run_agent_async(
                                 agent_id,
                                 payload.get("input", payload),
@@ -436,13 +412,13 @@ class ExecutionEngine(
 
                         # Special handling for fork and join nodes
                         if agent_type == "forknode":
-                            # ✅ FIX: Fork node should log immediately, then execute children
+                            # Fork node logs immediately, then executes children
                             fork_group_id = agent_result.get("fork_group")
                             if fork_group_id:
                                 payload_out["fork_group_id"] = fork_group_id
                                 payload_out["fork_execution_status"] = "initiated"
 
-                                # ✅ Log fork node IMMEDIATELY (without children results)
+                                # Log fork node immediately
                                 log_entry = {
                                     "agent_id": agent_id,
                                     "event_type": agent.__class__.__name__,
@@ -496,7 +472,7 @@ class ExecutionEngine(
                                 continue
 
                         elif agent_type == "joinnode":
-                            # ✅ FIX: Join node should aggregate forked results
+                            # Join node aggregates forked results
                             # Get fork_group_id from payload or use the configured group
                             fork_group_id = payload.get("fork_group_id")
                             if not fork_group_id and hasattr(agent, "group_id"):
@@ -608,7 +584,7 @@ class ExecutionEngine(
                 log_dir, f"orka_trace_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
             )
 
-            # ✅ FIX: Save enhanced trace with memory backend data including meta report
+            # Save enhanced trace with memory backend data
             enhanced_trace = self._build_enhanced_trace(logs, meta_report)
             self.memory.save_enhanced_trace(log_path, enhanced_trace)
 
@@ -662,7 +638,7 @@ class ExecutionEngine(
             "previous_outputs": previous_outputs,
         }
 
-        # ✅ FIX: Include orchestrator context from full_payload if available (for fork nodes)
+        # Include orchestrator context from full_payload if available
         if full_payload and "orchestrator" in full_payload:
             payload["orchestrator"] = full_payload["orchestrator"]
             logger.debug(f"- Agent '{agent_id}' inherited orchestrator context from full_payload")
@@ -688,7 +664,7 @@ class ExecutionEngine(
 
         if agent_prompt:
             try:
-                # ✅ FIX: Build complete template context
+                # Build complete template context
                 template_context = self._build_template_context(payload, agent_id)
 
                 # Debug template context if needed
@@ -702,11 +678,11 @@ class ExecutionEngine(
                     # Test if functions are callable
                     try:
                         test_input = template_context["get_input"]()
-                        logger.debug(f"- ✅ get_input() test successful: '{test_input}'")
+                        logger.debug(f"- get_input() test successful: '{test_input}'")
                     except Exception as e:
-                        logger.error(f"❌ get_input() test failed: {e}")
+                        logger.error(f"get_input() test failed: {e}")
                 else:
-                    logger.error("❌ Helper functions NOT found in template context")
+                    logger.error("Helper functions NOT found in template context")
                     logger.error(f"Available keys: {list(template_context.keys())}")
 
                 # Validate template before rendering
@@ -740,7 +716,7 @@ class ExecutionEngine(
                                 f"[DEBUG] - Agent '{prev_agent}' result type: {type(prev_result)}"
                             )
 
-                # ✅ FIX: Use template context directly, skip double-enhancement
+                # Use template context directly
                 from jinja2 import Template
 
                 template = Template(agent_prompt)
@@ -754,9 +730,7 @@ class ExecutionEngine(
                 formatted_prompt = template.render(**template_context)
 
                 # Log successful rendering
-                logger.info(
-                    f"✅ Template rendered for '{agent_id}' - length: {len(formatted_prompt)}"
-                )
+                logger.info(f"Template rendered for '{agent_id}' - length: {len(formatted_prompt)}")
 
                 # Debug: Show a preview of the rendered result
                 logger.debug(f"- Rendered preview: {formatted_prompt[:200]}...")
@@ -805,7 +779,7 @@ class ExecutionEngine(
         needs_orchestrator = len(sig.parameters) > 1  # More than just 'self'
         is_async = inspect.iscoroutinefunction(run_method)
 
-        # ✅ DEBUG: Log orchestrator context detection
+        # Log orchestrator context detection
         logger.debug(f"- Agent '{agent_id}' run method signature: {sig}")
         logger.debug(f"- Agent '{agent_id}' parameter count: {len(sig.parameters)}")
         logger.debug(f"- Agent '{agent_id}' needs_orchestrator: {needs_orchestrator}")
@@ -820,7 +794,7 @@ class ExecutionEngine(
                     **payload,
                     "orchestrator": self.orchestrator,  # Pass the actual orchestrator
                 }
-                # ✅ DEBUG: Log orchestrator context passing
+                # Log orchestrator context passing
                 logger.debug(
                     f"Agent '{agent_id}' orchestrator context keys: {list(context_with_orchestrator.keys())}"
                 )
@@ -950,7 +924,7 @@ class ExecutionEngine(
                     payload_data = {"result": result}
                     agent = self.agents[agent_id]
 
-                    # ✅ FIX: Preserve formatted_prompt from agent result if present
+                    # Preserve formatted_prompt from agent result if present
                     if isinstance(result, dict) and "formatted_prompt" in result:
                         # Agent already includes correctly rendered formatted_prompt
                         payload_data["formatted_prompt"] = result["formatted_prompt"]
@@ -1177,7 +1151,7 @@ class ExecutionEngine(
             "agent_executions": [],
         }
 
-        # ✅ FIX: Include meta report if provided
+        # Include meta report if provided
         if meta_report:
             enhanced_trace["meta_report"] = meta_report
 
@@ -1278,7 +1252,7 @@ class ExecutionEngine(
         flattened_outputs = {}
 
         for agent_name, agent_result in prev_outputs.items():
-            # ✅ FIX: Create a simplified, template-friendly version of agent results
+            # Create a simplified, template-friendly version of agent results
             simplified_result = self._simplify_agent_result_for_templates(agent_result)
             flattened_outputs[agent_name] = simplified_result
 
@@ -1291,7 +1265,7 @@ class ExecutionEngine(
 
         context["previous_outputs"] = flattened_outputs
 
-        # ✅ FIX: Add template helper functions from PromptRenderer
+        # Add template helper functions from PromptRenderer
         try:
             helper_functions = self._get_template_helper_functions(context)
             context.update(helper_functions)
@@ -1411,25 +1385,22 @@ class ExecutionEngine(
                     current = current[key]
                     try:
                         index = int(index_str)
-                        current_value: Any = current[key]  # Reset type to Any
-                        if not isinstance(current_value, (list, tuple)):
-                            logger.debug(  # ignore: type[unreachable]
-                                f"[DEBUG] - Expected list/tuple for array access in path '{var_path}'"
+                        if not isinstance(current, (list, tuple)):
+                            logger.debug(
+                                f"Expected list/tuple for array access in path '{var_path}'"
                             )
                             return False
-                        if len(current_value) <= index:
-                            logger.debug(  # ignore: type[unreachable]
-                                f"[DEBUG] - Invalid array access [{index}] in path '{var_path}'"
-                            )
+                        if len(current) <= index:
+                            logger.debug(f"Invalid array access [{index}] in path '{var_path}'")
                             return False
-                        current = current_value[index]
+                        current = current[index]
                     except (ValueError, IndexError):
                         logger.debug(f"- Invalid array index '{index_str}' in path '{var_path}'")
                         return False
                 else:
                     # Simple key access
                     if not isinstance(current, dict) or part not in current:
-                        # ✅ FIX: Enhanced debugging for missing keys, especially agent names
+                        # Enhanced debugging for missing keys, especially agent names
                         if isinstance(current, dict):
                             available_keys = list(current.keys())
                             logger.debug(
