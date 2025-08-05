@@ -170,9 +170,8 @@ class TestAgentFactory:
     @pytest.fixture
     def mock_agent_factory(self):
         """Create a mock agent factory with necessary attributes."""
-        factory = AgentFactory()
-        factory.orchestrator_cfg = {"agents": ["test_agent"]}
-        factory.agent_cfgs = [
+        orchestrator_cfg = {"agents": ["test_agent"]}
+        agent_cfgs = [
             {"id": "binary_agent", "type": "binary", "prompt": "test prompt"},
             {"id": "router_agent", "type": "router", "params": {"decision_key": "result"}},
             {"id": "memory_reader", "type": "memory", "config": {"operation": "read"}},
@@ -180,8 +179,9 @@ class TestAgentFactory:
             {"id": "fork_node", "type": "fork", "prompt": "fork prompt"},
             {"id": "failing_node", "type": "failing", "prompt": "fail prompt"},
         ]
-        factory.memory = Mock()
-        factory.memory.decay_config = {"enabled": True}
+        memory = Mock()
+        memory.decay_config = {"enabled": True}
+        factory = AgentFactory(orchestrator_cfg, agent_cfgs, memory)
         return factory
 
     def test_agent_types_mapping(self):
@@ -295,7 +295,7 @@ class TestExecutionEngine:
     @pytest.fixture
     def mock_execution_engine(self):
         """Create a mock execution engine with necessary attributes."""
-        engine = ExecutionEngine()
+        engine = ExecutionEngine("tests/dummy.yml")
         engine.orchestrator_cfg = {"agents": ["test_agent"]}
         engine.agents = {"test_agent": Mock(type="binary")}
         engine.run_id = str(uuid4())

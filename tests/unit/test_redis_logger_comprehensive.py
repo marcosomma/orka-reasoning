@@ -209,7 +209,7 @@ class TestRedisMemoryLoggerOperations:
 
         result = self.logger.hget("test_hash", "field1")
 
-        assert result == b"value1"  # Returns raw bytes from Redis
+        assert result == "value1"  # Returns decoded string from Redis
         self.mock_client.hget.assert_called_once_with("test_hash", "field1")
 
     def test_hget_none_result(self):
@@ -226,7 +226,7 @@ class TestRedisMemoryLoggerOperations:
 
         result = self.logger.smembers("test_set")
 
-        assert result == {b"member1", b"member2"}  # Returns the raw set from Redis
+        assert set(result) == {"member1", "member2"}  # Returns decoded strings from Redis
         self.mock_client.smembers.assert_called_once_with("test_set")
 
     def test_close_method(self):

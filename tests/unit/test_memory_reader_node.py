@@ -96,8 +96,11 @@ class TestMemoryReaderNodeRun:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch("orka.memory_logger.create_memory_logger"), patch(
-            "orka.utils.embedder.get_embedder",
+        with (
+            patch("orka.memory_logger.create_memory_logger"),
+            patch(
+                "orka.utils.embedder.get_embedder",
+            ),
         ):
             self.mock_memory_logger = Mock()
             self.mock_embedder = Mock()
@@ -236,10 +239,13 @@ class TestMemoryReaderNodeHNSWSearch:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch("orka.memory_logger.create_memory_logger"), patch(
-            "orka.utils.embedder.get_embedder",
+        with (
+            patch("orka.memory_logger.create_memory_logger"),
+            patch(
+                "orka.utils.embedder.get_embedder",
+            ),
         ):
-            self.mock_memory_logger = Mock()
+            self.mock_memory_logger = AsyncMock()
 
             self.node = MemoryReaderNode(
                 node_id="test_node",
@@ -370,8 +376,11 @@ class TestMemoryReaderNodeContextScoring:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch("orka.memory_logger.create_memory_logger"), patch(
-            "orka.utils.embedder.get_embedder",
+        with (
+            patch("orka.memory_logger.create_memory_logger"),
+            patch(
+                "orka.utils.embedder.get_embedder",
+            ),
         ):
             self.node = MemoryReaderNode(node_id="test_node", prompt="test_prompt", queue=[])
             self.node.context_weight = 0.2
@@ -424,8 +433,11 @@ class TestMemoryReaderNodeTemporalRanking:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch("orka.memory_logger.create_memory_logger"), patch(
-            "orka.utils.embedder.get_embedder",
+        with (
+            patch("orka.memory_logger.create_memory_logger"),
+            patch(
+                "orka.utils.embedder.get_embedder",
+            ),
         ):
             self.node = MemoryReaderNode(node_id="test_node", prompt="test_prompt", queue=[])
             self.node.temporal_decay_hours = 24.0
@@ -510,8 +522,11 @@ class TestMemoryReaderNodeMetrics:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch("orka.memory_logger.create_memory_logger"), patch(
-            "orka.utils.embedder.get_embedder",
+        with (
+            patch("orka.memory_logger.create_memory_logger"),
+            patch(
+                "orka.utils.embedder.get_embedder",
+            ),
         ):
             self.node = MemoryReaderNode(node_id="test_node", prompt="test_prompt", queue=[])
             # Initialize metrics
@@ -574,8 +589,11 @@ class TestMemoryReaderNodeContextExtraction:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch("orka.memory_logger.create_memory_logger"), patch(
-            "orka.utils.embedder.get_embedder",
+        with (
+            patch("orka.memory_logger.create_memory_logger"),
+            patch(
+                "orka.utils.embedder.get_embedder",
+            ),
         ):
             self.node = MemoryReaderNode(node_id="test_node", prompt="test_prompt", queue=[])
             self.node.context_window_size = 5
@@ -670,8 +688,11 @@ class TestMemoryReaderNodeQueryVariations:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch("orka.memory_logger.create_memory_logger"), patch(
-            "orka.utils.embedder.get_embedder",
+        with (
+            patch("orka.memory_logger.create_memory_logger"),
+            patch(
+                "orka.utils.embedder.get_embedder",
+            ),
         ):
             self.node = MemoryReaderNode(node_id="test_node", prompt="test_prompt", queue=[])
 
@@ -762,8 +783,11 @@ class TestMemoryReaderNodeEdgeCases:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch("orka.memory_logger.create_memory_logger"), patch(
-            "orka.utils.embedder.get_embedder",
+        with (
+            patch("orka.memory_logger.create_memory_logger"),
+            patch(
+                "orka.utils.embedder.get_embedder",
+            ),
         ):
             self.mock_memory_logger = Mock()
             self.node = MemoryReaderNode(
@@ -862,8 +886,11 @@ class TestMemoryReaderNodeEnhancedKeywordSearch:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch("orka.memory_logger.create_memory_logger"), patch(
-            "orka.utils.embedder.get_embedder",
+        with (
+            patch("orka.memory_logger.create_memory_logger"),
+            patch(
+                "orka.utils.embedder.get_embedder",
+            ),
         ):
             self.node = MemoryReaderNode(node_id="test_node", prompt="test_prompt", queue=[])
             # Add missing attributes for enhanced keyword search
@@ -873,17 +900,15 @@ class TestMemoryReaderNodeEnhancedKeywordSearch:
     @pytest.mark.asyncio
     async def test_enhanced_keyword_search_basic(self):
         """Test basic enhanced keyword search."""
-        self.node.redis = AsyncMock()
+        self.node.memory_logger = AsyncMock()
 
-        # Mock Redis responses
-        self.node.redis.keys.return_value = [b"orka:mem:test1", b"orka:mem:test2"]
-        self.node.redis.hget.side_effect = [
-            b"test_namespace",  # namespace for test1
-            b"test content with important keywords",  # content for test1
-            b'{"category": "stored"}',  # metadata for test1
-            b"test_namespace",  # namespace for test2
-            b"different content",  # content for test2
-            b'{"category": "temporary"}',  # metadata for test2
+        # Mock memory logger responses
+        self.node.memory_logger.search_memories.return_value = [
+            {
+                "content": "test content with important keywords",
+                "metadata": {"category": "stored"},
+                "namespace": "test_namespace",
+            }
         ]
 
         results = await self.node._enhanced_keyword_search(
@@ -900,15 +925,16 @@ class TestMemoryReaderNodeEnhancedKeywordSearch:
     @pytest.mark.asyncio
     async def test_enhanced_keyword_search_with_context(self):
         """Test enhanced keyword search with conversation context."""
-        self.node.redis = AsyncMock()
+        self.node.memory_logger = AsyncMock()
         self.node.context_weight = 0.3
 
-        # Mock Redis responses
-        self.node.redis.keys.return_value = [b"orka:mem:test1"]
-        self.node.redis.hget.side_effect = [
-            b"test_namespace",
-            b"content with context words and query terms",
-            b'{"timestamp": "2023-01-01T00:00:00Z"}',
+        # Mock memory logger responses
+        self.node.memory_logger.search_memories.return_value = [
+            {
+                "content": "content with context words and query terms",
+                "metadata": {"timestamp": "2023-01-01T00:00:00Z"},
+                "namespace": "test_namespace",
+            }
         ]
 
         context = [
@@ -925,14 +951,15 @@ class TestMemoryReaderNodeEnhancedKeywordSearch:
     @pytest.mark.asyncio
     async def test_enhanced_keyword_search_short_words(self):
         """Test enhanced keyword search with short words."""
-        self.node.redis = AsyncMock()
+        self.node.memory_logger = AsyncMock()
 
-        # Mock Redis responses
-        self.node.redis.keys.return_value = [b"orka:mem:test1"]
-        self.node.redis.hget.side_effect = [
-            b"test_namespace",
-            b"content with a an the",
-            b"{}",
+        # Mock memory logger responses
+        self.node.memory_logger.search_memories.return_value = [
+            {
+                "content": "content with a an the",
+                "metadata": {},
+                "namespace": "test_namespace",
+            }
         ]
 
         # Query with only short words should use all words
@@ -944,10 +971,10 @@ class TestMemoryReaderNodeEnhancedKeywordSearch:
     @pytest.mark.asyncio
     async def test_enhanced_keyword_search_redis_error(self):
         """Test enhanced keyword search with Redis errors."""
-        self.node.redis = AsyncMock()
+        self.node.memory_logger = AsyncMock()
 
-        # Mock Redis error
-        self.node.redis.keys.side_effect = Exception("Redis connection error")
+        # Mock memory logger error
+        self.node.memory_logger.search_memories.side_effect = Exception("Memory logger error")
 
         results = await self.node._enhanced_keyword_search("test_namespace", "test query", [])
 
@@ -959,8 +986,11 @@ class TestMemoryReaderNodeContextAwareVectorSearch:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch("orka.memory_logger.create_memory_logger"), patch(
-            "orka.utils.embedder.get_embedder",
+        with (
+            patch("orka.memory_logger.create_memory_logger"),
+            patch(
+                "orka.utils.embedder.get_embedder",
+            ),
         ):
             self.node = MemoryReaderNode(node_id="test_node", prompt="test_prompt", queue=[])
             # Add missing attributes for context-aware vector search
@@ -971,31 +1001,29 @@ class TestMemoryReaderNodeContextAwareVectorSearch:
     @pytest.mark.asyncio
     async def test_context_aware_vector_search_basic(self):
         """Test basic context-aware vector search."""
-        self.node.redis = AsyncMock()
+        self.node.memory_logger = AsyncMock()
         self.node.embedder = AsyncMock()
         self.node.similarity_threshold = 0.5
 
-        # Mock Redis responses
-        self.node.redis.keys.return_value = [b"orka:mem:test1"]
-        self.node.redis.hget.side_effect = [
-            b"test_namespace",
-            b"mock_vector_bytes",
-            b"test content",
-            b'{"category": "stored"}',
+        # Mock memory logger responses
+        self.node.memory_logger.search_memories.return_value = [
+            {
+                "content": "test content",
+                "metadata": {"category": "stored"},
+                "namespace": "test_namespace",
+                "vector": [0.1, 0.2, 0.3],
+            }
         ]
 
         # Mock vector operations
         query_embedding = [0.1, 0.2, 0.3]
-        with patch("orka.nodes.memory_reader_node.from_bytes") as mock_from_bytes:
-            mock_from_bytes.return_value = [0.1, 0.2, 0.3]
-
-            with patch.object(self.node, "_cosine_similarity", return_value=0.8):
-                results = await self.node._context_aware_vector_search(
-                    query_embedding,
-                    "test_namespace",
-                    [],
-                    0.5,
-                )
+        with patch.object(self.node, "_cosine_similarity", return_value=0.8):
+            results = await self.node._context_aware_vector_search(
+                query_embedding,
+                "test_namespace",
+                [],
+                0.5,
+            )
 
         assert len(results) == 1
         assert results[0]["match_type"] == "context_aware_vector"
@@ -1004,33 +1032,31 @@ class TestMemoryReaderNodeContextAwareVectorSearch:
     @pytest.mark.asyncio
     async def test_context_aware_vector_search_with_context(self):
         """Test context-aware vector search with conversation context."""
-        self.node.redis = AsyncMock()
+        self.node.memory_logger = AsyncMock()
         self.node.embedder = AsyncMock()
         self.node.enable_context_search = True
         self.node.context_weight = 0.3
 
-        # Mock Redis responses
-        self.node.redis.keys.return_value = [b"orka:mem:test1"]
-        self.node.redis.hget.side_effect = [
-            b"test_namespace",
-            b"mock_vector_bytes",
-            b"test content",
-            b"{}",
+        # Mock memory logger responses
+        self.node.memory_logger.search_memories.return_value = [
+            {
+                "content": "test content",
+                "metadata": {},
+                "namespace": "test_namespace",
+                "vector": [0.1, 0.2, 0.3],
+            }
         ]
 
         context = [{"content": "context information"}]
 
-        with patch("orka.nodes.memory_reader_node.from_bytes") as mock_from_bytes:
-            mock_from_bytes.return_value = [0.1, 0.2, 0.3]
-
-            with patch.object(self.node, "_generate_context_vector", return_value=[0.2, 0.3, 0.4]):
-                with patch.object(self.node, "_cosine_similarity", side_effect=[0.7, 0.6]):
-                    results = await self.node._context_aware_vector_search(
-                        [0.1, 0.2, 0.3],
-                        "test_namespace",
-                        context,
-                        0.5,
-                    )
+        with patch.object(self.node, "_generate_context_vector", return_value=[0.2, 0.3, 0.4]):
+            with patch.object(self.node, "_cosine_similarity", side_effect=[0.7, 0.6]):
+                results = await self.node._context_aware_vector_search(
+                    [0.1, 0.2, 0.3],
+                    "test_namespace",
+                    context,
+                    0.5,
+                )
 
         assert len(results) == 1
         assert results[0]["primary_similarity"] == 0.7
@@ -1069,8 +1095,11 @@ class TestMemoryReaderNodeContextVector:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch("orka.memory_logger.create_memory_logger"), patch(
-            "orka.utils.embedder.get_embedder",
+        with (
+            patch("orka.memory_logger.create_memory_logger"),
+            patch(
+                "orka.utils.embedder.get_embedder",
+            ),
         ):
             self.node = MemoryReaderNode(node_id="test_node", prompt="test_prompt", queue=[])
 
@@ -1135,8 +1164,11 @@ class TestMemoryReaderNodeContextAwareStreamSearch:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch("orka.memory_logger.create_memory_logger"), patch(
-            "orka.utils.embedder.get_embedder",
+        with (
+            patch("orka.memory_logger.create_memory_logger"),
+            patch(
+                "orka.utils.embedder.get_embedder",
+            ),
         ):
             self.node = MemoryReaderNode(node_id="test_node", prompt="test_prompt", queue=[])
             self.node.similarity_threshold = 0.5
@@ -1146,11 +1178,9 @@ class TestMemoryReaderNodeContextAwareStreamSearch:
     @pytest.mark.asyncio
     async def test_context_aware_stream_search_basic(self):
         """Test basic context-aware stream search."""
-        self.node.redis = AsyncMock()
-        self.node.embedder = AsyncMock()
-
-        # Mock stream entries
-        stream_entries = [
+        # Mock Redis client
+        mock_redis = AsyncMock()
+        mock_redis.xrange.return_value = [
             (
                 b"1234567890-0",
                 {b"payload": b'{"content": "test content", "metadata": {}}', b"ts": b"1234567890"},
@@ -1160,7 +1190,9 @@ class TestMemoryReaderNodeContextAwareStreamSearch:
                 {b"payload": b'{"content": "other content", "metadata": {}}', b"ts": b"1234567891"},
             ),
         ]
-        self.node.redis.xrange.return_value = stream_entries
+        self.node.memory_logger = AsyncMock()
+        self.node.memory_logger.redis = mock_redis
+        self.node.embedder = AsyncMock()
         self.node.embedder.encode.side_effect = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
 
         query_embedding = [0.1, 0.2, 0.3]
@@ -1182,17 +1214,18 @@ class TestMemoryReaderNodeContextAwareStreamSearch:
     @pytest.mark.asyncio
     async def test_context_aware_stream_search_with_context(self):
         """Test context-aware stream search with conversation context."""
-        self.node.redis = AsyncMock()
-        self.node.embedder = AsyncMock()
-        self.node.enable_context_search = True
-
-        stream_entries = [
+        # Mock Redis client
+        mock_redis = AsyncMock()
+        mock_redis.xrange.return_value = [
             (
                 b"1234567890-0",
                 {b"payload": b'{"content": "test content", "metadata": {}}', b"ts": b"1234567890"},
             ),
         ]
-        self.node.redis.xrange.return_value = stream_entries
+        self.node.memory_logger = AsyncMock()
+        self.node.memory_logger.redis = mock_redis
+        self.node.embedder = AsyncMock()
+        self.node.enable_context_search = True
         self.node.embedder.encode.return_value = [0.1, 0.2, 0.3]
 
         context = [{"content": "context information"}]
@@ -1214,10 +1247,9 @@ class TestMemoryReaderNodeContextAwareStreamSearch:
     @pytest.mark.asyncio
     async def test_context_aware_stream_search_keyword_bonus(self):
         """Test context-aware stream search with keyword matching bonus."""
-        self.node.redis = AsyncMock()
-        self.node.embedder = AsyncMock()
-
-        stream_entries = [
+        # Mock Redis client
+        mock_redis = AsyncMock()
+        mock_redis.xrange.return_value = [
             (
                 b"1234567890-0",
                 {
@@ -1226,7 +1258,9 @@ class TestMemoryReaderNodeContextAwareStreamSearch:
                 },
             ),
         ]
-        self.node.redis.xrange.return_value = stream_entries
+        self.node.memory_logger = AsyncMock()
+        self.node.memory_logger.redis = mock_redis
+        self.node.embedder = AsyncMock()
         self.node.embedder.encode.return_value = [0.1, 0.2, 0.3]
 
         with patch.object(
@@ -1249,16 +1283,17 @@ class TestMemoryReaderNodeContextAwareStreamSearch:
     @pytest.mark.asyncio
     async def test_context_aware_stream_search_malformed_payload(self):
         """Test context-aware stream search with malformed payload."""
-        self.node.redis = AsyncMock()
-
-        stream_entries = [
+        # Mock Redis client
+        mock_redis = AsyncMock()
+        mock_redis.xrange.return_value = [
             (b"1234567890-0", {b"payload": b"invalid_json{", b"ts": b"1234567890"}),
             (
                 b"1234567891-0",
                 {b"payload": b'{"content": "valid content", "metadata": {}}', b"ts": b"1234567891"},
             ),
         ]
-        self.node.redis.xrange.return_value = stream_entries
+        self.node.memory_logger = AsyncMock()
+        self.node.memory_logger.redis = mock_redis
         self.node.embedder = AsyncMock()
         self.node.embedder.encode.return_value = [0.1, 0.2, 0.3]
 
@@ -1297,8 +1332,11 @@ class TestMemoryReaderNodeHybridScoring:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch("orka.memory_logger.create_memory_logger"), patch(
-            "orka.utils.embedder.get_embedder",
+        with (
+            patch("orka.memory_logger.create_memory_logger"),
+            patch(
+                "orka.utils.embedder.get_embedder",
+            ),
         ):
             self.node = MemoryReaderNode(node_id="test_node", prompt="test_prompt", queue=[])
             self.node.enable_temporal_ranking = True
@@ -1427,8 +1465,11 @@ class TestMemoryReaderNodeFilteringMethods:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch("orka.memory_logger.create_memory_logger"), patch(
-            "orka.utils.embedder.get_embedder",
+        with (
+            patch("orka.memory_logger.create_memory_logger"),
+            patch(
+                "orka.utils.embedder.get_embedder",
+            ),
         ):
             self.node = MemoryReaderNode(node_id="test_node", prompt="test_prompt", queue=[])
 
@@ -1585,8 +1626,11 @@ class TestMemoryReaderNodeLegacyMethods:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch("orka.memory_logger.create_memory_logger"), patch(
-            "orka.utils.embedder.get_embedder",
+        with (
+            patch("orka.memory_logger.create_memory_logger"),
+            patch(
+                "orka.utils.embedder.get_embedder",
+            ),
         ):
             self.node = MemoryReaderNode(node_id="test_node", prompt="test_prompt", queue=[])
 
@@ -1647,8 +1691,11 @@ class TestMemoryReaderNodeCosineSimilarity:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch("orka.memory_logger.create_memory_logger"), patch(
-            "orka.utils.embedder.get_embedder",
+        with (
+            patch("orka.memory_logger.create_memory_logger"),
+            patch(
+                "orka.utils.embedder.get_embedder",
+            ),
         ):
             self.node = MemoryReaderNode(node_id="test_node", prompt="test_prompt", queue=[])
 
@@ -1712,8 +1759,11 @@ class TestMemoryReaderNodeAdditionalEdgeCases:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch("orka.memory_logger.create_memory_logger"), patch(
-            "orka.utils.embedder.get_embedder",
+        with (
+            patch("orka.memory_logger.create_memory_logger"),
+            patch(
+                "orka.utils.embedder.get_embedder",
+            ),
         ):
             self.node = MemoryReaderNode(node_id="test_node", prompt="test_prompt", queue=[])
             self.node.similarity_threshold = 0.5
@@ -1739,10 +1789,9 @@ class TestMemoryReaderNodeAdditionalEdgeCases:
     @pytest.mark.asyncio
     async def test_stream_search_empty_content_handling(self):
         """Test stream search with empty content in payload."""
-        self.node.redis = AsyncMock()
-        self.node.embedder = AsyncMock()
-
-        stream_entries = [
+        # Mock Redis client
+        mock_redis = AsyncMock()
+        mock_redis.xrange.return_value = [
             (
                 b"1234567890-0",
                 {b"payload": b'{"content": "", "metadata": {}}', b"ts": b"1234567890"},
@@ -1752,7 +1801,9 @@ class TestMemoryReaderNodeAdditionalEdgeCases:
                 {b"payload": b'{"content": "valid content", "metadata": {}}', b"ts": b"1234567891"},
             ),
         ]
-        self.node.redis.xrange.return_value = stream_entries
+        self.node.memory_logger = AsyncMock()
+        self.node.memory_logger.redis = mock_redis
+        self.node.embedder = AsyncMock()
         self.node.embedder.encode.return_value = [0.1, 0.2, 0.3]
 
         with patch.object(self.node, "_cosine_similarity", return_value=0.8):
@@ -1868,14 +1919,14 @@ class TestMemoryReaderNodeAdditionalEdgeCases:
     @pytest.mark.asyncio
     async def test_enhanced_keyword_search_metadata_json_error(self):
         """Test enhanced keyword search with JSON parsing error in metadata."""
-        self.node.redis = AsyncMock()
-
-        # Mock Redis responses with invalid JSON
-        self.node.redis.keys.return_value = [b"orka:mem:test1"]
-        self.node.redis.hget.side_effect = [
-            b"test_namespace",
-            b"test content with keywords",
-            b"invalid_json{[",  # Invalid JSON
+        # Mock memory logger
+        self.node.memory_logger = AsyncMock()
+        self.node.memory_logger.search_memories.return_value = [
+            {
+                "content": "test content with keywords",
+                "metadata": "invalid_json{[",  # Invalid JSON
+                "namespace": "test_namespace",
+            }
         ]
 
         results = await self.node._enhanced_keyword_search("test_namespace", "keywords", [])

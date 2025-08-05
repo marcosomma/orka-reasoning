@@ -23,7 +23,7 @@ import os
 import sys
 from datetime import datetime
 
-DEFAULT_LOG_LEVEL: str = "DEBUG"
+DEFAULT_LOG_LEVEL: str = "INFO"
 
 
 class SafeFormatter(logging.Formatter):

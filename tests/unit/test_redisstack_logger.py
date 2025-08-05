@@ -729,7 +729,9 @@ class TestRedisStackLoggerAdvanced:
     async def test_embedding_generation_success(self):
         """Test successful generation of embeddings."""
         mock_embedder = AsyncMock()
-        mock_embedder._fallback_encode = Mock(return_value=np.array([0.1, 0.2, 0.3], dtype=np.float32))
+        mock_embedder._fallback_encode = Mock(
+            return_value=np.array([0.1, 0.2, 0.3], dtype=np.float32)
+        )
         mock_embedder.embedding_dim = 3
 
         # Mock Redis client
@@ -737,7 +739,9 @@ class TestRedisStackLoggerAdvanced:
         mock_redis.ping.return_value = True
 
         with (
-            patch.object(RedisStackMemoryLogger, "_create_redis_connection", return_value=mock_redis),
+            patch.object(
+                RedisStackMemoryLogger, "_create_redis_connection", return_value=mock_redis
+            ),
             patch.object(RedisStackMemoryLogger, "_ensure_index"),
             patch("asyncio.get_running_loop"),  # This will make it think we're in an async context
         ):
@@ -859,7 +863,7 @@ class TestRedisStackLoggerAdvanced:
         ttl_info = self.logger._get_ttl_info("test_key", memory_data, current_time_ms)
 
         assert ttl_info["has_expiry"] is False
-        assert ttl_info["ttl_formatted"] == "Never"
+        assert ttl_info["ttl_formatted"] == "N/A"
         assert ttl_info["expires_at"] is None
 
     def test_close_cleanup(self):

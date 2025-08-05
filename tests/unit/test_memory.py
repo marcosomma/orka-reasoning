@@ -329,7 +329,12 @@ class TestFileOperationsMixin:
         # Should use legacy format (list of resolved events)
         mock_json_dump.assert_called_once()
         call_args = mock_json_dump.call_args[0]
-        assert call_args[0] == [{"resolved": "data"}]  # Resolved events list
+        output_data = call_args[0]
+        # Legacy format now uses dict with metadata structure
+        assert isinstance(output_data, dict)
+        assert "_metadata" in output_data
+        assert "events" in output_data
+        assert output_data["events"] == [{"resolved": "data"}]
 
     @patch("builtins.open", new_callable=mock_open)
     @patch("json.dump")
@@ -731,9 +736,9 @@ class TestBaseMemoryLogger:
         small_obj = {"small": "data"}
         assert not logger._should_deduplicate_blob(small_obj)
 
-        # Large object without response/result should not be deduplicated
+        # Large object without response/result should be deduplicated based on size
         large_obj_no_key = {"large": "x" * 300}
-        assert not logger._should_deduplicate_blob(large_obj_no_key)
+        assert logger._should_deduplicate_blob(large_obj_no_key)
 
         # Large object with response key should be deduplicated
         large_obj_with_response = {"response": "x" * 300}

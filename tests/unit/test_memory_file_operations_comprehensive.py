@@ -117,12 +117,14 @@ class TestFileOperationsMixinSaveToFile:
 
         self.mixin.save_to_file("test.json")
 
-        # Should use legacy format (list of resolved events)
+        # Legacy format now uses dict with metadata structure
         call_args = mock_json_dump.call_args[0]
         output_data = call_args[0]
 
-        assert isinstance(output_data, list)
-        assert output_data == [{"resolved": "data"}]
+        assert isinstance(output_data, dict)
+        assert "_metadata" in output_data
+        assert "events" in output_data
+        assert output_data["events"] == [{"resolved": "data"}]
 
     @patch("builtins.open", new_callable=mock_open)
     @patch("json.dump")

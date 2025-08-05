@@ -95,17 +95,14 @@ nodes:
         assert "nodes" in config
 
     @pytest.mark.asyncio
-    @patch("orka.orchestrator.OrchestratorBase.__init__")
     @patch.object(Orchestrator, "_init_agents")
     async def test_orchestrator_with_registry_integration(
         self,
         mock_init_agents,
-        mock_base_init,
         temp_yaml_config,
     ):
         """Test Orchestrator working with ResourceRegistry."""
         # Mock the orchestrator initialization
-        mock_base_init.return_value = None
         mock_init_agents.return_value = {}
 
         # Create and initialize a registry

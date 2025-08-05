@@ -3,7 +3,7 @@ Unit tests for the orka.nodes module.
 Tests node initialization, execution, routing, and specialized functionality with heavy mocking.
 """
 
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, call, patch
 
 import pytest
 
@@ -441,7 +441,7 @@ class TestForkNode:
         )
 
         with pytest.raises(ValueError, match="requires non-empty 'targets' list"):
-            await node.run(self.mock_orchestrator, {})
+            await node.run({"orchestrator": self.mock_orchestrator})
 
     @pytest.mark.asyncio
     async def test_fork_node_run_sequential_mode(self):
@@ -459,7 +459,7 @@ class TestForkNode:
         # Mock fork manager methods
         self.mock_fork_manager.generate_group_id.return_value = "fork_group_123"
 
-        result = await node.run(self.mock_orchestrator, {"test": "context"})
+        result = await node.run({"test": "context", "orchestrator": self.mock_orchestrator})
 
         # Verify fork group generation
         self.mock_fork_manager.generate_group_id.assert_called_once_with("fork_test")
@@ -481,11 +481,19 @@ class TestForkNode:
         # ForkNode calls create_group for each branch, so check it was called
         assert self.mock_fork_manager.create_group.call_count >= 1
 
-        # Verify memory operations
-        self.mock_memory_logger.hset.assert_called_once_with(
-            "fork_group_mapping:fork_test",
-            "group_id",
-            "fork_group_123",
+        # Verify memory operations - implementation makes multiple hset calls
+        # (1 for fork group mapping + 2 calls per agent for waitfor and results storage)
+        assert self.mock_memory_logger.hset.call_count == 7
+
+        # Check that fork group mapping was called
+        fork_mapping_calls = [
+            call
+            for call in self.mock_memory_logger.hset.call_args_list
+            if call[0][0] == "fork_group_mapping:fork_test"
+        ]
+        assert len(fork_mapping_calls) == 1
+        assert fork_mapping_calls[0] == call(
+            "fork_group_mapping:fork_test", "group_id", "fork_group_123"
         )
 
         self.mock_memory_logger.sadd.assert_called_once_with(
@@ -495,8 +503,11 @@ class TestForkNode:
             "agent3",
         )
 
-        # Verify result
-        assert result == {"status": "forked", "fork_group": "fork_group_123"}
+        # Verify result - implementation now returns more detailed structure
+        assert result["status"] == "forked"
+        assert result["fork_group"] == "fork_group_123"
+        assert "agents" in result
+        assert "initial_state" in result
 
     @pytest.mark.asyncio
     async def test_fork_node_run_parallel_mode(self):
@@ -513,7 +524,7 @@ class TestForkNode:
 
         self.mock_fork_manager.generate_group_id.return_value = "fork_group_456"
 
-        result = await node.run(self.mock_orchestrator, {})
+        result = await node.run({"orchestrator": self.mock_orchestrator})
 
         # In parallel mode, should queue all agents in branches
         expected_calls = [
@@ -544,7 +555,7 @@ class TestForkNode:
 
         self.mock_fork_manager.generate_group_id.return_value = "fork_group_789"
 
-        await node.run(self.mock_orchestrator, {})
+        await node.run({"orchestrator": self.mock_orchestrator})
 
         # Verify groups were created (may be called multiple times)
         assert self.mock_fork_manager.create_group.call_count >= 1
@@ -953,5 +964,5 @@ class TestNodeIntegration:
         mock_orchestrator = Mock()
         mock_orchestrator.fork_manager.generate_group_id.return_value = "group123"
 
-        result = await node2.run(mock_orchestrator, {})
+        result = await node2.run({"orchestrator": mock_orchestrator})
         assert result["status"] == "forked"

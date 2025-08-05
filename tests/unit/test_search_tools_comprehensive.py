@@ -41,6 +41,7 @@ class TestDuckDuckGoTool:
             {"body": "Result 2"},
             {"body": "Result 3"},
         ]
+        mock_ddgs_instance.news.return_value = []  # Mock news search to return empty results
         mock_ddgs.return_value.__exit__.return_value = None
 
         tool = DuckDuckGoTool("test_tool")
@@ -61,6 +62,7 @@ class TestDuckDuckGoTool:
         mock_ddgs_instance.text.return_value = [
             {"body": "Tool formatted result"},
         ]
+        mock_ddgs_instance.news.return_value = []  # Mock news search to return empty results
         mock_ddgs.return_value.__exit__.return_value = None
 
         tool = DuckDuckGoTool("test_tool")
@@ -82,6 +84,7 @@ class TestDuckDuckGoTool:
         mock_ddgs_instance.text.return_value = [
             {"body": "Tool prompt result"},
         ]
+        mock_ddgs_instance.news.return_value = []  # Mock news search to return empty results
         mock_ddgs.return_value.__exit__.return_value = None
 
         tool = DuckDuckGoTool("test_tool", prompt="tool prompt query")
@@ -102,6 +105,7 @@ class TestDuckDuckGoTool:
         mock_ddgs_instance.text.return_value = [
             {"body": "Input query result"},
         ]
+        mock_ddgs_instance.news.return_value = []  # Mock news search to return empty results
         mock_ddgs.return_value.__exit__.return_value = None
 
         tool = DuckDuckGoTool("test_tool")
@@ -122,6 +126,7 @@ class TestDuckDuckGoTool:
         mock_ddgs_instance.text.return_value = [
             {"body": "Query key result"},
         ]
+        mock_ddgs_instance.news.return_value = []  # Mock news search to return empty results
         mock_ddgs.return_value.__exit__.return_value = None
 
         tool = DuckDuckGoTool("test_tool")
@@ -142,6 +147,7 @@ class TestDuckDuckGoTool:
         mock_ddgs_instance.text.return_value = [
             {"body": "String input result"},
         ]
+        mock_ddgs_instance.news.return_value = []  # Mock news search to return empty results
         mock_ddgs.return_value.__exit__.return_value = None
 
         tool = DuckDuckGoTool("test_tool")
@@ -201,6 +207,7 @@ class TestDuckDuckGoTool:
         mock_ddgs_instance.text.return_value = [
             {"body": "Number query result"},
         ]
+        mock_ddgs_instance.news.return_value = []  # Mock news search to return empty results
         mock_ddgs.return_value.__exit__.return_value = None
 
         tool = DuckDuckGoTool("test_tool")
@@ -225,6 +232,7 @@ class TestDuckDuckGoTool:
             {"body": "Result 4"},
             {"body": "Result 5"},
         ]
+        mock_ddgs_instance.news.return_value = []  # Mock news search to return empty results
         mock_ddgs.return_value.__exit__.return_value = None
 
         tool = DuckDuckGoTool("test_tool")
@@ -244,6 +252,9 @@ class TestDuckDuckGoTool:
         mock_ddgs_instance = MagicMock()
         mock_ddgs.return_value.__enter__.return_value = mock_ddgs_instance
         mock_ddgs_instance.text.side_effect = Exception("Search API error")
+        mock_ddgs_instance.news.side_effect = Exception(
+            "Search API error"
+        )  # Mock news search to also fail
         mock_ddgs.return_value.__exit__.return_value = None
 
         tool = DuckDuckGoTool("test_tool")
@@ -264,6 +275,7 @@ class TestDuckDuckGoTool:
         mock_ddgs_instance = MagicMock()
         mock_ddgs.return_value.__enter__.return_value = mock_ddgs_instance
         mock_ddgs_instance.text.return_value = []
+        mock_ddgs_instance.news.return_value = []  # Mock news search to return empty results
         mock_ddgs.return_value.__exit__.return_value = None
 
         tool = DuckDuckGoTool("test_tool")
@@ -282,6 +294,7 @@ class TestDuckDuckGoTool:
         mock_ddgs_instance = MagicMock()
         mock_ddgs.return_value.__enter__.return_value = mock_ddgs_instance
         mock_ddgs_instance.text.return_value = [{"body": "Priority test"}]
+        mock_ddgs_instance.news.return_value = []  # Mock news search to return empty results
         mock_ddgs.return_value.__exit__.return_value = None
 
         tool = DuckDuckGoTool("test_tool")
@@ -307,6 +320,7 @@ class TestDuckDuckGoTool:
         mock_ddgs_instance = MagicMock()
         mock_ddgs.return_value.__enter__.return_value = mock_ddgs_instance
         mock_ddgs_instance.text.return_value = [{"body": "Priority test"}]
+        mock_ddgs_instance.news.return_value = []  # Mock news search to return empty results
         mock_ddgs.return_value.__exit__.return_value = None
 
         tool = DuckDuckGoTool("test_tool")
@@ -331,6 +345,7 @@ class TestDuckDuckGoTool:
         mock_ddgs_instance = MagicMock()
         mock_ddgs.return_value.__enter__.return_value = mock_ddgs_instance
         mock_ddgs_instance.text.return_value = [{"body": "Priority test"}]
+        mock_ddgs_instance.news.return_value = []  # Mock news search to return empty results
         mock_ddgs.return_value.__exit__.return_value = None
 
         tool = DuckDuckGoTool("test_tool", prompt="tool prompt")
@@ -353,6 +368,7 @@ class TestDuckDuckGoTool:
         mock_ddgs_instance = MagicMock()
         mock_ddgs.return_value.__enter__.return_value = mock_ddgs_instance
         mock_ddgs_instance.text.return_value = [{"body": "Priority test"}]
+        mock_ddgs_instance.news.return_value = []  # Mock news search to return empty results
         mock_ddgs.return_value.__exit__.return_value = None
 
         tool = DuckDuckGoTool("test_tool")
@@ -375,6 +391,7 @@ class TestDuckDuckGoTool:
         mock_ddgs_instance = MagicMock()
         mock_ddgs.return_value.__enter__.return_value = mock_ddgs_instance
         mock_ddgs_instance.text.return_value = [{"body": "Priority test"}]
+        mock_ddgs_instance.news.return_value = []  # Mock news search to return empty results
         mock_ddgs.return_value.__exit__.return_value = None
 
         tool = DuckDuckGoTool("test_tool")
@@ -399,6 +416,7 @@ class TestDuckDuckGoTool:
         mock_ddgs_instance = MagicMock()
         mock_ddgs.return_value.__enter__.return_value = mock_ddgs_instance
         mock_ddgs_instance.text.return_value = [{"body": "Fallback result"}]
+        mock_ddgs_instance.news.return_value = []  # Mock news search to return empty results
         mock_ddgs.return_value.__exit__.return_value = None
 
         result = tool.run(input_data)

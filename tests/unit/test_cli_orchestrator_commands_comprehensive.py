@@ -3,6 +3,7 @@ Comprehensive tests for CLI orchestrator commands module to improve coverage.
 """
 
 import json
+import logging
 import sys
 from io import StringIO
 from pathlib import Path
@@ -11,6 +12,40 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 
 import orka.cli.orchestrator.commands as commands_module
+
+
+class LogCaptureHandler(logging.StreamHandler):
+    """Custom handler that captures log output for testing."""
+
+    def __init__(self):
+        super().__init__()
+        self.stream = StringIO()
+        self.setFormatter(logging.Formatter("%(message)s"))
+
+    def get_output(self):
+        """Get the captured output."""
+        return self.stream.getvalue()
+
+    def reset(self):
+        """Reset the capture buffer."""
+        self.stream = StringIO()
+
+
+@pytest.fixture(autouse=True)
+def setup_logging():
+    """Set up logging capture for tests."""
+    # Create and configure handler
+    handler = LogCaptureHandler()
+    logger = logging.getLogger("orka.cli.orchestrator.commands")
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+
+    # Yield the handler for test use
+    yield handler
+
+    # Cleanup
+    logger.removeHandler(handler)
+    handler.close()
 
 
 class TestRunOrchestrator:
@@ -38,19 +73,18 @@ class TestRunOrchestrator:
         args.json = True
 
         # Capture stdout
-        with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
+        with patch("orka.cli.orchestrator.commands.logger") as mock_logger:
             result = await commands_module.run_orchestrator(args)
 
-        # Assertions
-        assert result == 0
-        mock_path.assert_called_once_with("test_config.yml")
-        mock_orchestrator_class.assert_called_once_with("test_config.yml")
-        mock_orchestrator.run.assert_called_once_with("test input")
+            # Assertions
+            assert result == 0
+            mock_path.assert_called_once_with("test_config.yml")
+            mock_orchestrator_class.assert_called_once_with("test_config.yml")
+            mock_orchestrator.run.assert_called_once_with("test input")
 
-        # Check JSON output
-        output = mock_stdout.getvalue()
-        expected_json = json.dumps({"result": "success", "data": "test"}, indent=2)
-        assert output.strip() == expected_json
+            # Check JSON output
+            expected_json = json.dumps({"result": "success", "data": "test"}, indent=2)
+            mock_logger.info.assert_called_once_with(expected_json)
 
     @pytest.mark.asyncio
     @patch("orka.cli.orchestrator.commands.Orchestrator")
@@ -74,19 +108,18 @@ class TestRunOrchestrator:
         args.json = False
 
         # Capture stdout
-        with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
+        with patch("orka.cli.orchestrator.commands.logger") as mock_logger:
             result = await commands_module.run_orchestrator(args)
 
-        # Assertions
-        assert result == 0
-        mock_path.assert_called_once_with("test_config.yml")
-        mock_orchestrator_class.assert_called_once_with("test_config.yml")
-        mock_orchestrator.run.assert_called_once_with("test input")
+            # Assertions
+            assert result == 0
+            mock_path.assert_called_once_with("test_config.yml")
+            mock_orchestrator_class.assert_called_once_with("test_config.yml")
+            mock_orchestrator.run.assert_called_once_with("test input")
 
-        # Check regular output
-        output = mock_stdout.getvalue()
-        assert "=== Orchestrator Result ===" in output
-        assert "Simple result string" in output
+            # Check regular output
+            mock_logger.info.assert_any_call("=== Orchestrator Result ===")
+            mock_logger.info.assert_any_call("Simple result string")
 
     @pytest.mark.asyncio
     @patch("orka.cli.orchestrator.commands.Path")
@@ -102,16 +135,17 @@ class TestRunOrchestrator:
         args.json = False
 
         # Capture stderr
-        with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
+        with patch("orka.cli.orchestrator.commands.logger") as mock_logger:
             result = await commands_module.run_orchestrator(args)
 
-        # Assertions
-        assert result == 1
-        mock_path.assert_called_once_with("nonexistent_config.yml")
+            # Assertions
+            assert result == 1
+            mock_path.assert_called_once_with("nonexistent_config.yml")
 
-        # Check error message
-        error_output = mock_stderr.getvalue()
-        assert "Configuration file not found: nonexistent_config.yml" in error_output
+            # Check error message
+            mock_logger.error.assert_called_once_with(
+                "Configuration file not found: nonexistent_config.yml"
+            )
 
     @pytest.mark.asyncio
     @patch("orka.cli.orchestrator.commands.Orchestrator")
@@ -133,17 +167,18 @@ class TestRunOrchestrator:
         args.json = False
 
         # Capture stderr
-        with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
+        with patch("orka.cli.orchestrator.commands.logger") as mock_logger:
             result = await commands_module.run_orchestrator(args)
 
-        # Assertions
-        assert result == 1
-        mock_path.assert_called_once_with("test_config.yml")
-        mock_orchestrator_class.assert_called_once_with("test_config.yml")
+            # Assertions
+            assert result == 1
+            mock_path.assert_called_once_with("test_config.yml")
+            mock_orchestrator_class.assert_called_once_with("test_config.yml")
 
-        # Check error message
-        error_output = mock_stderr.getvalue()
-        assert "Error running orchestrator: Failed to create orchestrator" in error_output
+            # Check error message
+            mock_logger.error.assert_called_once_with(
+                "Error running orchestrator: Failed to create orchestrator"
+            )
 
     @pytest.mark.asyncio
     @patch("orka.cli.orchestrator.commands.Orchestrator")
@@ -163,18 +198,19 @@ class TestRunOrchestrator:
         args.json = False
 
         # Capture stderr
-        with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
+        with patch("orka.cli.orchestrator.commands.logger") as mock_logger:
             result = await commands_module.run_orchestrator(args)
 
-        # Assertions
-        assert result == 1
-        mock_path.assert_called_once_with("test_config.yml")
-        mock_orchestrator_class.assert_called_once_with("test_config.yml")
-        mock_orchestrator.run.assert_called_once_with("test input")
+            # Assertions
+            assert result == 1
+            mock_path.assert_called_once_with("test_config.yml")
+            mock_orchestrator_class.assert_called_once_with("test_config.yml")
+            mock_orchestrator.run.assert_called_once_with("test input")
 
-        # Check error message
-        error_output = mock_stderr.getvalue()
-        assert "Error running orchestrator: Orchestrator run failed" in error_output
+            # Check error message
+            mock_logger.error.assert_called_once_with(
+                "Error running orchestrator: Orchestrator run failed"
+            )
 
     @pytest.mark.asyncio
     @patch("orka.cli.orchestrator.commands.Orchestrator")
@@ -204,17 +240,16 @@ class TestRunOrchestrator:
         args.json = True
 
         # Capture stdout
-        with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
+        with patch("orka.cli.orchestrator.commands.logger") as mock_logger:
             result = await commands_module.run_orchestrator(args)
 
-        # Assertions
-        assert result == 0
-        mock_orchestrator.run.assert_called_once_with("complex input")
+            # Assertions
+            assert result == 0
+            mock_orchestrator.run.assert_called_once_with("complex input")
 
-        # Check JSON output
-        output = mock_stdout.getvalue()
-        expected_json = json.dumps(complex_result, indent=2)
-        assert output.strip() == expected_json
+            # Check JSON output
+            expected_json = json.dumps(complex_result, indent=2)
+            mock_logger.info.assert_called_once_with(expected_json)
 
     @pytest.mark.asyncio
     @patch("orka.cli.orchestrator.commands.Orchestrator")
@@ -234,16 +269,15 @@ class TestRunOrchestrator:
         args.json = True
 
         # Capture stdout
-        with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
+        with patch("orka.cli.orchestrator.commands.logger") as mock_logger:
             result = await commands_module.run_orchestrator(args)
 
-        # Assertions
-        assert result == 0
+            # Assertions
+            assert result == 0
 
-        # Check JSON output for None
-        output = mock_stdout.getvalue()
-        expected_json = json.dumps(None, indent=2)
-        assert output.strip() == expected_json
+            # Check JSON output for None
+            expected_json = json.dumps(None, indent=2)
+            mock_logger.info.assert_called_once_with(expected_json)
 
     @pytest.mark.asyncio
     @patch("orka.cli.orchestrator.commands.Orchestrator")
@@ -263,16 +297,16 @@ class TestRunOrchestrator:
         args.json = False
 
         # Capture stdout
-        with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
+        with patch("orka.cli.orchestrator.commands.logger") as mock_logger:
             result = await commands_module.run_orchestrator(args)
 
-        # Assertions
-        assert result == 0
-        mock_orchestrator.run.assert_called_once_with("")
+            # Assertions
+            assert result == 0
+            mock_orchestrator.run.assert_called_once_with("")
 
-        # Check output
-        output = mock_stdout.getvalue()
-        assert "Result with empty input" in output
+            # Check output
+            mock_logger.info.assert_any_call("=== Orchestrator Result ===")
+            mock_logger.info.assert_any_call("Result with empty input")
 
     @pytest.mark.asyncio
     @patch("orka.cli.orchestrator.commands.Orchestrator")
@@ -281,6 +315,7 @@ class TestRunOrchestrator:
         self,
         mock_path,
         mock_orchestrator_class,
+        setup_logging,
     ):
         """Test orchestrator run with special characters in config path."""
         # Setup mocks
@@ -295,14 +330,15 @@ class TestRunOrchestrator:
         args.input = "test input"
         args.json = False
 
-        # Capture stdout
-        with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
-            result = await commands_module.run_orchestrator(args)
+        result = await commands_module.run_orchestrator(args)
 
         # Assertions
         assert result == 0
         mock_path.assert_called_once_with("config with spaces & symbols.yml")
         mock_orchestrator_class.assert_called_once_with("config with spaces & symbols.yml")
+        output = setup_logging.get_output()
+        assert "=== Orchestrator Result ===" in output
+        assert "Success" in output
 
     @pytest.mark.asyncio
     @patch("orka.cli.orchestrator.commands.Orchestrator")
@@ -311,6 +347,7 @@ class TestRunOrchestrator:
         self,
         mock_path,
         mock_orchestrator_class,
+        setup_logging,
     ):
         """Test orchestrator run when JSON serialization fails."""
         # Setup mocks
@@ -331,16 +368,15 @@ class TestRunOrchestrator:
         args.input = "test input"
         args.json = True
 
-        # Capture stderr
-        with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
-            result = await commands_module.run_orchestrator(args)
+        result = await commands_module.run_orchestrator(args)
 
         # Assertions
         assert result == 1
-
-        # Check error message
-        error_output = mock_stderr.getvalue()
-        assert "Error running orchestrator:" in error_output
+        output = setup_logging.get_output()
+        assert (
+            "Error running orchestrator: Object of type NonSerializable is not JSON serializable"
+            in output
+        )
 
     @pytest.mark.asyncio
     @patch("orka.cli.orchestrator.commands.Orchestrator")
@@ -349,6 +385,7 @@ class TestRunOrchestrator:
         self,
         mock_path,
         mock_orchestrator_class,
+        setup_logging,
     ):
         """Test orchestrator run with different config file extensions."""
         # Setup mocks
@@ -368,10 +405,14 @@ class TestRunOrchestrator:
 
             result = await commands_module.run_orchestrator(args)
             assert result == 0
+            output = setup_logging.get_output()
+            assert "=== Orchestrator Result ===" in output
+            assert "Success" in output
+            setup_logging.reset()
 
     @pytest.mark.asyncio
     @patch("orka.cli.orchestrator.commands.Path")
-    async def test_run_orchestrator_path_check_with_pathlib(self, mock_path):
+    async def test_run_orchestrator_path_check_with_pathlib(self, mock_path, setup_logging):
         """Test that Path is used correctly for file existence check."""
         # Setup mocks
         mock_path_instance = Mock()
@@ -391,6 +432,8 @@ class TestRunOrchestrator:
         assert result == 1
         mock_path.assert_called_once_with("/absolute/path/to/config.yml")
         mock_path_instance.exists.assert_called_once()
+        output = setup_logging.get_output()
+        assert "Configuration file not found: /absolute/path/to/config.yml" in output
 
 
 class TestModuleImports:
@@ -446,7 +489,9 @@ class TestIntegration:
     @pytest.mark.asyncio
     @patch("orka.cli.orchestrator.commands.Orchestrator")
     @patch("orka.cli.orchestrator.commands.Path")
-    async def test_run_orchestrator_return_values(self, mock_path, mock_orchestrator_class):
+    async def test_run_orchestrator_return_values(
+        self, mock_path, mock_orchestrator_class, setup_logging
+    ):
         """Test that run_orchestrator returns appropriate values."""
         # Test success case
         mock_path.return_value.exists.return_value = True
@@ -456,17 +501,21 @@ class TestIntegration:
 
         args = Mock(config="test.yml", input="test", json=False)
 
-        with patch("sys.stdout", new_callable=StringIO):
-            result = await commands_module.run_orchestrator(args)
+        result = await commands_module.run_orchestrator(args)
 
         assert result == 0
         assert isinstance(result, int)
+        output = setup_logging.get_output()
+        assert "=== Orchestrator Result ===" in output
+        assert "Success" in output
+        setup_logging.reset()
 
         # Test failure case
         mock_path.return_value.exists.return_value = False
 
-        with patch("sys.stderr", new_callable=StringIO):
-            result = await commands_module.run_orchestrator(args)
+        result = await commands_module.run_orchestrator(args)
 
         assert result == 1
         assert isinstance(result, int)
+        output = setup_logging.get_output()
+        assert "Configuration file not found: test.yml" in output

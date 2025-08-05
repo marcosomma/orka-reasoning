@@ -99,7 +99,10 @@ class JoinNode(BaseNode):
                 result_str = self.memory_logger.hget(state_key, agent_id)
                 if result_str:
                     # Parse result JSON
-                    result = json.loads(result_str)
+                    try:
+                        result = json.loads(result_str)
+                    except (json.JSONDecodeError, TypeError):
+                        result = result_str
                     # Store result in merged dict
                     if isinstance(result, dict):
                         if "result" in result:

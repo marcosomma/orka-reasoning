@@ -1,9 +1,5 @@
-"""
-Comprehensive unit tests for the local_llm_agents.py module.
-Tests LocalLLMAgent and the _count_tokens utility function.
-"""
-
-from unittest.mock import Mock, patch
+import pytest
+from unittest.mock import MagicMock, patch, Mock
 
 from orka.agents.local_llm_agents import LocalLLMAgent, _count_tokens
 
@@ -72,29 +68,32 @@ class TestLocalLLMAgent:
         assert agent.prompt is None
         assert isinstance(agent.params, dict)
 
+    @pytest.mark.asyncio
+    @patch("requests.post")
+    async def test_run_with_string_input(self, mock_post):
+        """Test agent run with a simple string input."""
+        mock_post.return_value.json.return_value = {"response": "summary"}
+        agent = LocalLLMAgent(
+            "test_agent",
+            "Summarize: {{ input }}",
+            queue=[],
+            params={"model": "test_model", "provider": "ollama"},
+        )
+
+        result = await agent.run("test input")
+        assert isinstance(result, dict)
+        assert result["response"] == "summary"
+        mock_post.assert_called_once()
+
+    @pytest.mark.asyncio
+    @patch("requests.post")
     @patch("orka.agents.local_llm_agents._count_tokens")
     @patch("time.time")
-    def test_run_with_string_input(self, mock_time, mock_count_tokens):
-        """Test run method with string input."""
-        mock_time.side_effect = [1000.0, 1000.5]  # 500ms latency
-        mock_count_tokens.side_effect = [10, 15, 25]  # prompt, completion, total
-
-        with patch.object(self.agent, "_call_ollama", return_value="Mock response"):
-            result = self.agent.run("Test input")
-
-            assert isinstance(result, dict)
-            assert "response" in result
-            assert "_metrics" in result
-            assert result["_metrics"]["latency_ms"] == 500
-            assert result["_metrics"]["model"] == "llama3.2:latest"
-            assert result["_metrics"]["provider"] == "ollama"
-
-    @patch("orka.agents.local_llm_agents._count_tokens")
-    @patch("time.time")
-    def test_run_with_dict_input(self, mock_time, mock_count_tokens):
+    async def test_run_with_dict_input(self, mock_time, mock_count_tokens, mock_post):
         """Test run method with dictionary input."""
         mock_time.side_effect = [1000.0, 1001.0]  # 1000ms latency
         mock_count_tokens.side_effect = [20, 30, 50]
+        mock_post.return_value.json.return_value = {"response": "Custom response"}
 
         input_data = {
             "input": "Test content",
@@ -102,78 +101,86 @@ class TestLocalLLMAgent:
             "temperature": 0.9,
         }
 
-        with patch.object(self.agent, "_call_ollama", return_value="Custom response"):
-            result = self.agent.run(input_data)
+        result = await self.agent.run(input_data)
 
-            assert isinstance(result, dict)
-            assert result["_metrics"]["model"] == "custom_model"
-            assert result["_metrics"]["latency_ms"] == 1000
+        assert isinstance(result, dict)
+        assert result["_metrics"]["model"] == "custom_model"
+        assert result["_metrics"]["latency_ms"] == 1000
 
+    @pytest.mark.asyncio
+    @patch("requests.post")
     @patch("orka.agents.local_llm_agents._count_tokens")
-    def test_run_with_lm_studio_provider(self, mock_count_tokens):
+    async def test_run_with_lm_studio_provider(self, mock_count_tokens, mock_post):
         """Test run method with LM Studio provider."""
         mock_count_tokens.return_value = 10
+        mock_post.return_value.json.return_value = {"choices": [{"message": {"content": "LM Studio response"}}]}
 
         self.agent.params["provider"] = "lm_studio"
         self.agent.params["model_url"] = "http://localhost:1234"
 
-        with patch.object(self.agent, "_call_lm_studio", return_value="LM Studio response"):
-            with patch("time.time", side_effect=[1000.0, 1000.2]):
-                result = self.agent.run("Test input")
+        with patch("time.time", side_effect=[1000.0, 1000.2]):
+            result = await self.agent.run("Test input")
 
-                assert result["_metrics"]["provider"] == "lm_studio"
+            assert result["_metrics"]["provider"] == "lm_studio"
 
+    @pytest.mark.asyncio
+    @patch("requests.post")
     @patch("orka.agents.local_llm_agents._count_tokens")
-    def test_run_with_openai_compatible_provider(self, mock_count_tokens):
+    async def test_run_with_openai_compatible_provider(self, mock_count_tokens, mock_post):
         """Test run method with OpenAI-compatible provider."""
         mock_count_tokens.return_value = 10
+        mock_post.return_value.json.return_value = {"choices": [{"message": {"content": "OpenAI response"}}]}
 
         self.agent.params["provider"] = "openai_compatible"
         self.agent.params["model_url"] = "http://localhost:8000"
 
-        with patch.object(self.agent, "_call_openai_compatible", return_value="OpenAI response"):
-            with patch("time.time", side_effect=[1000.0, 1000.3]):
-                result = self.agent.run("Test input")
+        with patch("time.time", side_effect=[1000.0, 1000.3]):
+            result = await self.agent.run("Test input")
 
-                assert result["_metrics"]["provider"] == "openai_compatible"
+            assert result["_metrics"]["provider"] == "openai_compatible"
 
-    def test_run_parse_llm_json_response_success(self):
+    @pytest.mark.asyncio
+    @patch("requests.post")
+    async def test_run_parse_llm_json_response_success(self, mock_post):
         """Test run method with successful JSON parsing."""
-        mock_response = '```json\n{"response": "Parsed response", "confidence": "0.95"}\n```'
+        mock_post.return_value.json.return_value = {"response": '```json\n{"response": "Parsed response", "confidence": "0.95"}\n```'}
 
-        with patch.object(self.agent, "_call_ollama", return_value=mock_response):
-            with patch("time.time", side_effect=[1000.0, 1000.1]):
-                with patch("orka.agents.local_llm_agents._count_tokens", return_value=10):
-                    result = self.agent.run("Test input")
+        with patch("time.time", side_effect=[1000.0, 1000.1]):
+            with patch("orka.agents.local_llm_agents._count_tokens", return_value=10):
+                result = await self.agent.run("Test input")
 
-                    assert result["response"] == "Parsed response"
-                    assert result["confidence"] == "0.95"
+                assert result["response"] == "Parsed response"
+                assert result["confidence"] == "0.95"
 
-    def test_run_parse_llm_json_response_failure(self):
+    @pytest.mark.asyncio
+    @patch("requests.post")
+    async def test_run_parse_llm_json_response_failure(self, mock_post):
         """Test run method with failed JSON parsing."""
-        mock_response = "Invalid JSON response"
+        mock_post.return_value.json.return_value = {"response": "Invalid JSON response"}
 
-        with patch.object(self.agent, "_call_ollama", return_value=mock_response):
-            with patch("time.time", side_effect=[1000.0, 1000.1]):
-                with patch("orka.agents.local_llm_agents._count_tokens", return_value=10):
-                    result = self.agent.run("Test input")
+        with patch("time.time", side_effect=[1000.0, 1000.1]):
+            with patch("orka.agents.local_llm_agents._count_tokens", return_value=10):
+                result = await self.agent.run("Test input")
 
-                    assert result["response"] == "Invalid JSON response"
-                    assert (
-                        result["internal_reasoning"]
-                        == "Could not parse as JSON, using raw response"
-                    )
+                assert result["response"] == "Invalid JSON response"
+                assert (
+                    result["internal_reasoning"]
+                    == "Could not parse as JSON, using raw response"
+                )
 
-    def test_run_with_exception(self):
+    @pytest.mark.asyncio
+    @patch("requests.post")
+    async def test_run_with_exception(self, mock_post):
         """Test run method when an exception occurs."""
-        with patch.object(self.agent, "_call_ollama", side_effect=Exception("LLM error")):
-            with patch("time.time", side_effect=[1000.0, 1000.1]):
-                with patch("orka.agents.local_llm_agents._count_tokens", return_value=10):
-                    result = self.agent.run("Test input")
+        mock_post.side_effect = Exception("LLM error")
 
-                    assert "[LocalLLMAgent error: LLM error]" in result["response"]
-                    assert result["confidence"] == "0.0"
-                    assert result["_metrics"]["error"] is True
+        with patch("time.time", side_effect=[1000.0, 1000.1]):
+            with patch("orka.agents.local_llm_agents._count_tokens", return_value=10):
+                result = await self.agent.run("Test input")
+
+                assert "[LocalLLMAgent error: LLM error]" in result["response"]
+                assert result["confidence"] == "0.0"
+                assert result["_metrics"]["error"] is True
 
     def test_build_prompt_simple(self):
         """Test build_prompt with simple template replacement."""
@@ -348,63 +355,67 @@ class TestLocalLLMAgent:
             assert payload["temperature"] == 0.9
             assert payload["stream"] is False
 
-    def test_provider_method_selection(self):
+    @pytest.mark.asyncio
+    @patch("requests.post")
+    async def test_provider_method_selection(self, mock_post):
         """Test correct provider method selection."""
         test_cases = [
-            ("ollama", "_call_ollama"),
-            ("lm_studio", "_call_lm_studio"),
-            ("openai_compatible", "_call_openai_compatible"),
-            ("unknown", "_call_ollama"),  # Default fallback
+            ("ollama", {"response": "ollama"}),
+            ("lm_studio", {"choices": [{"message": {"content": "lm_studio"}}]}),
+            ("openai_compatible", {"choices": [{"message": {"content": "openai"}}]}),
+            ("unknown", {"response": "ollama"}),  # Default fallback
         ]
 
-        for provider, expected_method in test_cases:
+        for provider, response in test_cases:
             self.agent.params["provider"] = provider
+            mock_post.return_value.json.return_value = response
 
-            with patch.object(self.agent, "_call_ollama", return_value="ollama"):
-                with patch.object(self.agent, "_call_lm_studio", return_value="lm_studio"):
-                    with patch.object(self.agent, "_call_openai_compatible", return_value="openai"):
-                        with patch("time.time", side_effect=[1000.0, 1000.1]):
-                            with patch(
-                                "orka.agents.local_llm_agents._count_tokens",
-                                return_value=10,
-                            ):
-                                result = self.agent.run("test")
+            with patch("time.time", side_effect=[1000.0, 1000.1]):
+                with patch(
+                    "orka.agents.local_llm_agents._count_tokens",
+                    return_value=10,
+                ):
+                    result = await self.agent.run("test")
 
-                                if provider == "ollama" or provider == "unknown":
-                                    assert "ollama" in str(result)
-                                elif provider == "lm_studio":
-                                    assert "lm_studio" in str(result)
-                                elif provider == "openai_compatible":
-                                    assert "openai" in str(result)
+                    if provider == "ollama" or provider == "unknown":
+                        assert "ollama" in result["response"]
+                    elif provider == "lm_studio":
+                        assert "lm_studio" in result["response"]
+                    elif provider == "openai_compatible":
+                        assert "openai" in result["response"]
 
-    def test_complex_input_handling(self):
+    @pytest.mark.asyncio
+    @patch("requests.post")
+    async def test_complex_input_handling(self, mock_post):
         """Test handling of complex input data structures."""
+        mock_post.return_value.json.return_value = {"response": "Complex response"}
         complex_input = {
             "input": "Complex test",
             "metadata": {"type": "test", "priority": "high"},
             "previous_outputs": {"agent1": "result1"},
         }
 
-        with patch.object(self.agent, "_call_ollama", return_value="Complex response"):
-            with patch("time.time", side_effect=[1000.0, 1000.1]):
-                with patch("orka.agents.local_llm_agents._count_tokens", return_value=10):
-                    result = self.agent.run(complex_input)
+        with patch("time.time", side_effect=[1000.0, 1000.1]):
+            with patch("orka.agents.local_llm_agents._count_tokens", return_value=10):
+                result = await self.agent.run(complex_input)
 
-                    assert isinstance(result, dict)
-                    assert "response" in result
-                    assert "formatted_prompt" in result
+                assert isinstance(result, dict)
+                assert "response" in result
+                assert "formatted_prompt" in result
 
-    def test_self_evaluation_prompt_inclusion(self):
+    @pytest.mark.asyncio
+    @patch("requests.post")
+    async def test_self_evaluation_prompt_inclusion(self, mock_post):
         """Test that self-evaluation instructions are included in prompts."""
-        with patch.object(self.agent, "_call_ollama", return_value="Response") as mock_call:
-            with patch("time.time", side_effect=[1000.0, 1000.1]):
-                with patch("orka.agents.local_llm_agents._count_tokens", return_value=10):
-                    self.agent.run("Test input")
+        mock_post.return_value.json.return_value = {"response": "Response"}
+        with patch("time.time", side_effect=[1000.0, 1000.1]):
+            with patch("orka.agents.local_llm_agents._count_tokens", return_value=10):
+                await self.agent.run("Test input")
 
-                    # Verify self-evaluation instructions were added to prompt
-                    call_args = mock_call.call_args[0]
-                    full_prompt = call_args[2]  # prompt parameter
+                # Verify self-evaluation instructions were added to prompt
+                call_args = mock_post.call_args[1]
+                full_prompt = call_args['json']['prompt']
 
-                    assert "CRITICAL INSTRUCTIONS" in full_prompt
-                    assert "valid JSON" in full_prompt
-                    assert "confidence" in full_prompt
+                assert "CRITICAL INSTRUCTIONS" in full_prompt
+                assert "valid JSON" in full_prompt
+                assert "confidence" in full_prompt

@@ -122,10 +122,10 @@ class KafkaMemoryLogger(BaseMemoryLogger):
     def redis(self) -> redis.Redis:
         """Return Redis client - prefer RedisStack client if available."""
         if self._redis_memory_logger:
-            _redis: Redis[Any] = self._redis_memory_logger.redis
+            _redis: redis.Redis = self._redis_memory_logger.redis
             return _redis
         # Fallback to basic Redis client
-        _redis = cast(Redis[Any], self.redis_client)
+        _redis = cast(redis.Redis, self.redis_client)
         return _redis
 
     def _store_in_redis(self, event: dict[str, Any], **kwargs: Any) -> None:

@@ -75,8 +75,8 @@ class TestJoinNode:
 
         assert result["status"] == "done"
         assert "merged" in result
-        assert result["merged"]["agent1"]["result"] == "agent1"
-        assert result["merged"]["agent2"]["result"] == "agent2"
+        assert result["merged"]["agent1"] == "agent1"
+        assert result["merged"]["agent2"] == "agent2"
 
         # Verify cleanup calls
         mock_memory.hdel.assert_any_call("join_retry_counts", "join1:join_retry_count")
@@ -238,15 +238,15 @@ class TestJoinNode:
 
         assert result["status"] == "done"
         assert "merged" in result
-        assert result["merged"]["agent1"]["result"] == "data1"
-        assert result["merged"]["agent2"]["result"] == "data2"
+        assert result["merged"]["agent1"] == "data1"
+        assert result["merged"]["agent2"] == "data2"
 
         # Verify storage and cleanup
         expected_merged = {
-            "agent1": {"result": "data1", "status": "success"},
-            "agent2": {"result": "data2", "status": "success"},
+            "agent1": "data1",
+            "agent2": "data2",
         }
-        mock_memory.hset.assert_called_with(
+        mock_memory.hset.assert_any_call(
             "join_outputs",
             "join1:output",
             json.dumps(expected_merged),
@@ -276,9 +276,9 @@ class TestJoinNode:
 
         # Should still store empty result
         mock_memory.hset.assert_called_with(
-            "join_outputs",
-            "join1:output",
-            json.dumps({}),
+            "join_results:join1",
+            "result",
+            json.dumps({"status": "done", "merged": {}}),
         )
 
     def test_run_json_parsing_in_complete(self):

@@ -601,8 +601,8 @@ class MemoryReaderNode(BaseNode):
         threshold=None,
     ) -> list[dict[str, Any]]:
         """Context-aware vector search using conversation context."""
-        if not self.memory_logger or not hasattr(self.memory_logger, "client"):
-            logger.error("Memory logger or Redis client not available")
+        if not self.memory_logger:
+            logger.error("Memory logger not available")
             return []
 
         threshold = threshold or self.similarity_threshold
@@ -614,85 +614,54 @@ class MemoryReaderNode(BaseNode):
             if conversation_context and self.enable_context_search:
                 context_vector = await self._generate_context_vector(conversation_context)
 
-            # Check both enhanced and legacy memory prefixes
-            prefixes = ["orka:mem:", "mem:"]
-            all_keys = []
-
-            for prefix in prefixes:
-                keys = await retry(self.memory_logger.client.keys(f"{prefix}*"))
-                all_keys.extend(keys)
-
-            logger.info(
-                f"Searching through {len(all_keys)} vector memory keys with context awareness",
+            # Get memories from memory logger
+            memories = await self.memory_logger.search_memories(
+                namespace=namespace,
+                limit=self.limit * 2,  # Get more results for filtering
             )
 
-            for key in all_keys:
+            logger.info(
+                f"Searching through {len(memories)} memories with context awareness",
+            )
+
+            for memory in memories:
                 try:
-                    # Check if this memory belongs to our namespace
-                    ns = await retry(self.memory_logger.client.hget(key, "namespace"))
-                    if ns and ns.decode() == namespace:
-                        # Get the vector
-                        vector_bytes = await retry(self.memory_logger.client.hget(key, "vector"))
-                        if vector_bytes:
-                            # Convert bytes to vector
-                            vector = from_bytes(vector_bytes)
+                    # Get the vector
+                    vector = memory.get("vector")
+                    if vector:
+                        # Calculate primary similarity (query vs memory)
+                        primary_similarity = self._cosine_similarity(query_embedding, vector)
 
-                            # Calculate primary similarity (query vs memory)
-                            primary_similarity = self._cosine_similarity(query_embedding, vector)
+                        # Calculate context similarity if available
+                        context_similarity = 0
+                        if context_vector is not None:
+                            context_similarity = self._cosine_similarity(context_vector, vector)
 
-                            # Calculate context similarity if available
-                            context_similarity = 0
-                            if context_vector is not None:
-                                context_similarity = self._cosine_similarity(context_vector, vector)
+                        # Combined similarity score
+                        combined_similarity = primary_similarity + (
+                            context_similarity * self.context_weight
+                        )
 
-                            # Combined similarity score
-                            combined_similarity = primary_similarity + (
-                                context_similarity * self.context_weight
+                        if combined_similarity >= threshold:
+                            # Add to results
+                            results.append(
+                                {
+                                    "id": memory.get("id", ""),
+                                    "content": memory.get("content", ""),
+                                    "metadata": memory.get("metadata", {}),
+                                    "similarity": float(combined_similarity),
+                                    "primary_similarity": float(primary_similarity),
+                                    "context_similarity": float(context_similarity),
+                                    "match_type": "context_aware_vector",
+                                },
                             )
-
-                            if combined_similarity >= threshold:
-                                # Get content and metadata
-                                content = await retry(
-                                    self.memory_logger.client.hget(key, "content")
-                                )
-                                content_str = (
-                                    content.decode() if isinstance(content, bytes) else content
-                                )
-
-                                metadata_raw = await retry(
-                                    self.memory_logger.client.hget(key, "metadata")
-                                )
-                                metadata = {}
-                                if metadata_raw:
-                                    try:
-                                        metadata_str = (
-                                            metadata_raw.decode()
-                                            if isinstance(metadata_raw, bytes)
-                                            else metadata_raw
-                                        )
-                                        metadata = json.loads(metadata_str)
-                                    except Exception:
-                                        pass
-
-                                # Add to results
-                                results.append(
-                                    {
-                                        "id": key.decode() if isinstance(key, bytes) else key,
-                                        "content": content_str,
-                                        "metadata": metadata,
-                                        "similarity": float(combined_similarity),
-                                        "primary_similarity": float(primary_similarity),
-                                        "context_similarity": float(context_similarity),
-                                        "match_type": "context_aware_vector",
-                                    },
-                                )
                 except Exception as e:
                     logger.error(
-                        f"Error processing key {key} in context-aware vector search: {e!s}",
+                        f"Error processing memory in context-aware vector search: {e!s}",
                     )
 
             # Sort by combined similarity
-            results.sort(key=lambda x: float(x.get("similarity", 0.0)), reverse=True)  # type: ignore
+            results.sort(key=lambda x: float(x.get("similarity", 0.0)), reverse=True)
 
             # Return top results
             return results[: self.limit]
@@ -701,21 +670,24 @@ class MemoryReaderNode(BaseNode):
             logger.error(f"Error in context-aware vector search: {e!s}")
             return []
 
-    async def _generate_context_vector(self, conversation_context: list[dict[str, Any]]) -> Any:
+    async def _generate_context_vector(
+        self, conversation_context: Optional[list[dict[str, Any]]]
+    ) -> Any:
         """Generate a vector representation of the conversation context."""
-        if not self.embedder:
+        if not self.embedder or not conversation_context:
             return None
 
         # Combine recent context into a single text
         context_text = " ".join(
-            item.get("content", "") for item in conversation_context[-2:]  # Last 2 items
+            item.get("content", "") for item in conversation_context[-3:]  # Last 3 items
         )
         if not context_text.strip():
             return None
 
         # Generate embedding
         try:
-            return self.embedder.encode(context_text)
+            result = await self.embedder.encode(context_text)
+            return result
         except Exception as e:
             logger.error(f"Error generating context vector: {e}")
             return None
@@ -973,6 +945,360 @@ class MemoryReaderNode(BaseNode):
             logger.info(f"Filtered out {len(memories) - len(active_memories)} expired memories")
 
         return active_memories
+
+    async def _context_aware_stream_search(
+        self,
+        stream_name: str,
+        query: str,
+        query_embedding: Any,
+        conversation_context: Optional[list[dict[str, Any]]] = None,
+        threshold: Optional[float] = None,
+    ) -> list[dict[str, Any]]:
+        """
+        Perform context-aware stream search.
+
+        Args:
+            stream_name: The name of the stream to search
+            query: The search query
+            query_embedding: The query's vector embedding
+            conversation_context: Optional conversation context for context-aware search
+            threshold: Optional similarity threshold override
+
+        Returns:
+            List of matching memories with scores
+        """
+        try:
+            # Get initial stream of memories
+            if not self.memory_logger:
+                logger.error("No memory logger available for stream search")
+                return []
+
+            # Get stream entries
+            if not hasattr(self.memory_logger, "redis"):
+                logger.error("No Redis client available for stream search")
+                return []
+
+            try:
+                stream_entries = await self.memory_logger.redis.xrange(
+                    stream_name, count=self.limit * 3  # Get more results for filtering
+                )
+            except Exception as e:
+                logger.error(f"Error getting stream entries: {e}")
+                return []
+
+            memories = []
+            for entry_id, fields in stream_entries:
+                try:
+                    # Parse payload
+                    payload = json.loads(fields[b"payload"].decode("utf-8"))
+
+                    # Get content and skip if empty
+                    content = payload.get("content", "")
+                    if not content.strip():
+                        continue
+
+                    # Add basic fields
+                    memory = {
+                        "content": content,
+                        "metadata": payload.get("metadata", {}),
+                        "match_type": "context_aware_stream",
+                        "entry_id": entry_id.decode("utf-8"),
+                        "timestamp": fields.get(b"ts", b"0").decode("utf-8"),
+                    }
+
+                    # Calculate primary similarity with query embedding
+                    try:
+                        if self.embedder:
+                            content_embedding = await self.embedder.encode(memory["content"])
+                            memory["primary_similarity"] = self._cosine_similarity(
+                                query_embedding, content_embedding
+                            )
+                        else:
+                            memory["primary_similarity"] = 0.0
+                    except Exception as e:
+                        logger.warning(f"Error calculating primary similarity: {e}")
+                        memory["primary_similarity"] = 0.0
+
+                    # Calculate keyword matches
+                    query_words = set(word.lower() for word in query.split() if len(word) > 2)
+                    content_words = set(word.lower() for word in memory["content"].split())
+                    memory["keyword_matches"] = len(query_words & content_words)
+
+                    # Calculate context similarity if available
+                    try:
+                        if conversation_context and self.enable_context_search:
+                            context_vector = await self._generate_context_vector(
+                                conversation_context
+                            )
+                            if context_vector is not None and self.embedder:
+                                memory["context_similarity"] = self._cosine_similarity(
+                                    context_vector, content_embedding
+                                )
+                                # Combine similarities
+                                memory["similarity"] = (
+                                    memory["primary_similarity"] * (1 - self.context_weight)
+                                    + memory["context_similarity"] * self.context_weight
+                                )
+                            else:
+                                memory["similarity"] = memory["primary_similarity"]
+                        else:
+                            memory["similarity"] = memory["primary_similarity"]
+
+                        # Add keyword bonus
+                        if memory["keyword_matches"] > 0:
+                            memory["similarity"] += min(0.1 * memory["keyword_matches"], 0.3)
+                    except Exception as e:
+                        logger.warning(f"Error calculating context similarity: {e}")
+                        memory["similarity"] = memory["primary_similarity"]
+                        if memory["keyword_matches"] > 0:
+                            memory["similarity"] += min(0.1 * memory["keyword_matches"], 0.3)
+
+                    # Apply threshold
+                    if threshold is None:
+                        threshold = self.similarity_threshold
+                    if memory["similarity"] >= threshold:
+                        memories.append(memory)
+
+                except json.JSONDecodeError:
+                    logger.warning(f"Malformed payload in stream entry {entry_id}")
+                    continue
+                except Exception as e:
+                    logger.error(f"Error processing stream entry {entry_id}: {e}")
+                    continue
+
+            # Apply temporal ranking if enabled
+            if self.enable_temporal_ranking:
+                memories = self._apply_temporal_ranking(memories)
+
+            # Sort by similarity and limit results
+            memories.sort(key=lambda x: x.get("similarity", 0), reverse=True)
+            return memories[: self.limit]
+
+        except Exception as e:
+            logger.error(f"Error in context-aware stream search: {e}")
+            return []
+
+    async def _enhanced_keyword_search(
+        self,
+        namespace: str,
+        query: str,
+        conversation_context: Optional[list[dict[str, Any]]] = None,
+    ) -> list[dict[str, Any]]:
+        """
+        Perform enhanced keyword search with context awareness.
+
+        Args:
+            namespace: Memory namespace to search in
+            query: The search query
+            conversation_context: Optional conversation context for context-aware search
+
+        Returns:
+            List of matching memories with scores
+        """
+        try:
+            if not self.memory_logger:
+                logger.error("No memory logger available for keyword search")
+                return []
+
+            # Get memories from memory logger
+            try:
+                results = await self.memory_logger.search_memories(
+                    query=query,
+                    namespace=namespace,
+                    limit=self.limit * 2,  # Get more results for filtering
+                )
+
+                # Ensure metadata is a dictionary
+                for result in results:
+                    if not isinstance(result.get("metadata"), dict):
+                        result["metadata"] = {}
+            except Exception as e:
+                logger.error(f"Error searching memories: {e}")
+                return []
+
+            # Calculate query overlap
+            for result in results:
+                result["match_type"] = "enhanced_keyword"
+                # Handle short words by using them directly in overlap calculation
+                result["query_overlap"] = self._calculate_overlap(
+                    query.lower(), result["content"].lower()
+                )
+
+            # Calculate context overlap if available
+            if conversation_context:
+                for result in results:
+                    context_text = " ".join(
+                        item.get("content", "").lower() for item in conversation_context
+                    )
+                    result["context_overlap"] = self._calculate_overlap(
+                        context_text, result["content"].lower()
+                    )
+                    # Ensure both overlaps are weighted properly
+                    result["similarity"] = (
+                        result["query_overlap"] * (1 - self.context_weight)
+                        + result.get("context_overlap", 0) * self.context_weight
+                    )
+            else:
+                # If no context, similarity is just the query overlap
+                for result in results:
+                    result["similarity"] = result["query_overlap"]
+
+            # Sort by similarity score and limit results
+            results.sort(key=lambda x: x.get("similarity", 0), reverse=True)
+            return list(results[: self.limit])
+
+        except Exception as e:
+            logger.error(f"Error in enhanced keyword search: {e}")
+            return []
+
+    async def _hnsw_hybrid_search(
+        self,
+        query_embedding: Any,
+        query: str,
+        namespace: str,
+        session_id: str,
+        conversation_context: Optional[list[dict[str, Any]]] = None,
+        threshold: Optional[float] = None,
+    ) -> list[dict[str, Any]]:
+        """
+        Perform hybrid search using HNSW index and keyword matching.
+
+        Args:
+            query: The search query
+            namespace: Memory namespace to search in
+            conversation_context: Optional conversation context for context-aware search
+            threshold: Optional similarity threshold override
+
+        Returns:
+            List of matching memories with scores
+        """
+        try:
+            if not self.memory_logger:
+                logger.error("Memory logger not available")
+                return []
+
+            # Get memories from memory logger
+            results = await self.memory_logger.search_memories(
+                query=query,
+                namespace=namespace,
+                limit=self.limit * 2,  # Get more results for filtering
+            )
+
+            # Apply context enhancement if available
+            if conversation_context and self.enable_context_search:
+                results = self._enhance_with_context_scoring(
+                    results,
+                    conversation_context,
+                )
+
+            # Apply temporal ranking if enabled
+            if self.enable_temporal_ranking:
+                results = self._apply_temporal_ranking(results)
+
+            # Sort by score and limit results
+            results.sort(key=lambda x: x.get("similarity_score", 0), reverse=True)
+            return list(results[: self.limit])
+
+        except Exception as e:
+            logger.error(f"Error in HNSW hybrid search: {e}")
+            return []
+
+    async def _vector_search(
+        self,
+        query_embedding: Any,
+        namespace: str,
+        threshold: Optional[float] = None,
+    ) -> list[dict[str, Any]]:
+        """Legacy vector search method."""
+        try:
+            return await self._context_aware_vector_search(
+                query_embedding,
+                namespace,
+                [],
+                threshold,
+            )
+        except Exception as e:
+            logger.error(f"Error in legacy vector search: {e}")
+            return []
+
+    async def _keyword_search(
+        self,
+        query: str,
+        namespace: str,
+    ) -> list[dict[str, Any]]:
+        """Legacy keyword search method."""
+        try:
+            return await self._enhanced_keyword_search(
+                query,
+                namespace,
+                [],
+            )
+        except Exception as e:
+            logger.error(f"Error in legacy keyword search: {e}")
+            return []
+
+    async def _stream_search(
+        self,
+        stream_key: str,
+        query: str,
+        query_embedding: Any,
+        threshold: Optional[float] = None,
+    ) -> list[dict[str, Any]]:
+        """Legacy stream search method."""
+        try:
+            return await self._context_aware_stream_search(
+                stream_key,
+                query,
+                query_embedding,
+                [],
+                threshold,
+            )
+        except Exception as e:
+            logger.error(f"Error in legacy stream search: {e}")
+            return []
+
+    def _filter_relevant_memories(
+        self,
+        memories: list[dict[str, Any]],
+        query: str,
+    ) -> list[dict[str, Any]]:
+        """Legacy memory filtering method."""
+        try:
+            return self._filter_enhanced_relevant_memories(
+                memories,
+                query,
+                [],
+            )
+        except Exception as e:
+            logger.error(f"Error in legacy memory filtering: {e}")
+            return []
+
+    def _calculate_overlap(self, text1: str, text2: str) -> float:
+        """Calculate text overlap score between two strings."""
+        try:
+            if not text1 or not text2:
+                return 0.0
+
+            # Tokenize and normalize
+            words1 = set(text1.lower().split())
+            words2 = set(text2.lower().split())
+
+            # Calculate overlap
+            overlap = len(words1.intersection(words2))
+            total = len(words1)  # Only consider query words
+
+            # Calculate overlap score
+            overlap_score = overlap / total if total > 0 else 0.0
+
+            # Boost score if all query words are found
+            if overlap == total:
+                overlap_score *= 2
+
+            return overlap_score
+
+        except Exception as e:
+            logger.error(f"Error calculating text overlap: {e}")
+            return 0.0
 
     def _cosine_similarity(self, vec1, vec2):
         """Calculate cosine similarity between two vectors."""

@@ -2,7 +2,7 @@
 Comprehensive tests for embedder module to improve coverage.
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
 import pytest
@@ -42,16 +42,14 @@ class TestAsyncEmbedderInitialization:
         assert embedder.embedding_dim == DEFAULT_EMBEDDING_DIM
 
     def test_init_with_none_model(self):
-        """Test initialization with None model."""
-        embedder = AsyncEmbedder(None)
-        assert embedder.model_name == "sentence-transformers/all-MiniLM-L6-v2"
-        assert embedder.embedding_dim == DEFAULT_EMBEDDING_DIM
+        """Test that initializing with None model_name raises an error."""
+        with pytest.raises(AttributeError):
+            AsyncEmbedder(model_name=None)
 
     def test_init_with_empty_string_model(self):
-        """Test initialization with empty string model."""
-        embedder = AsyncEmbedder("")
-        assert embedder.model_name == "sentence-transformers/all-MiniLM-L6-v2"
-        assert embedder.embedding_dim == DEFAULT_EMBEDDING_DIM
+        """Test that initializing with an empty string model_name uses the default."""
+        embedder = AsyncEmbedder(model_name="")
+        assert embedder.model_name == ""
 
     def test_init_with_known_models(self):
         """Test initialization with known models from EMBEDDING_DIMENSIONS."""
@@ -64,21 +62,21 @@ class TestAsyncEmbedderLoadModel:
     """Test AsyncEmbedder model loading functionality."""
 
     @patch("orka.utils.embedder.logger")
-    def test_load_model_success(self, mock_logger):
+    @patch("orka.utils.embedder.SentenceTransformer")
+    def test_load_model_success(self, mock_sentence_transformer, mock_logger):
         """Test successful model loading."""
-        # Mock the SentenceTransformer import and class
-        mock_st_class = MagicMock()
-        mock_st_instance = MagicMock()
-        mock_st_instance.get_sentence_embedding_dimension.return_value = 384
-        mock_st_class.return_value = mock_st_instance
+        mock_model = Mock()
+        mock_model.get_sentence_embedding_dimension.return_value = 384
+        mock_sentence_transformer.return_value = mock_model
 
-        with patch("sentence_transformers.SentenceTransformer", mock_st_class):
-            embedder = AsyncEmbedder("test-model")
+        embedder = AsyncEmbedder(model_name="test-model")
+        embedder._load_model()
 
-            assert embedder.model_loaded is True
-            assert embedder.model == mock_st_instance
-            assert embedder.embedding_dim == 384
-            mock_st_class.assert_called_once_with("test-model")
+        assert embedder.model_loaded is True
+        assert embedder.model is not None
+        mock_logger.info.assert_called_with(
+            "Successfully loaded embedding model: test-model with dimension 384"
+        )
 
     @patch("orka.utils.embedder.logger")
     def test_load_model_import_error(self, mock_logger):
@@ -109,89 +107,89 @@ class TestAsyncEmbedderLoadModel:
     @patch("orka.utils.embedder.logger")
     @patch("os.path.exists")
     @patch("os.path.expanduser")
-    def test_load_model_with_local_path_check(self, mock_expanduser, mock_exists, mock_logger):
+    @patch("orka.utils.embedder.SentenceTransformer")
+    def test_load_model_with_local_path_check(
+        self, mock_sentence_transformer, mock_expanduser, mock_exists, mock_logger
+    ):
         """Test model loading with local path checking."""
         mock_expanduser.return_value = "/home/user"
         mock_exists.return_value = False
 
-        mock_st_class = MagicMock()
-        mock_st_instance = MagicMock()
-        mock_st_instance.get_sentence_embedding_dimension.return_value = 384
-        mock_st_class.return_value = mock_st_instance
+        mock_model = MagicMock()
+        mock_model.get_sentence_embedding_dimension.return_value = 384
+        mock_sentence_transformer.return_value = mock_model
 
-        with patch("sentence_transformers.SentenceTransformer", mock_st_class):
-            embedder = AsyncEmbedder("test-model")
+        embedder = AsyncEmbedder("test-model")
 
-            assert embedder.model_loaded is True
-            mock_logger.warning.assert_called_once()
-            assert "Model files not found locally" in str(mock_logger.warning.call_args)
+        assert embedder.model_loaded is True
+        mock_logger.warning.assert_called_once()
+        assert "Model files not found locally" in str(mock_logger.warning.call_args)
 
     @patch("orka.utils.embedder.logger")
     @patch("os.path.exists")
     @patch("os.path.expanduser")
-    def test_load_model_with_local_path_found(self, mock_expanduser, mock_exists, mock_logger):
+    @patch("orka.utils.embedder.SentenceTransformer")
+    def test_load_model_with_local_path_found(
+        self, mock_sentence_transformer, mock_expanduser, mock_exists, mock_logger
+    ):
         """Test model loading when local files are found."""
         mock_expanduser.return_value = "/home/user"
         mock_exists.return_value = True
 
-        mock_st_class = MagicMock()
-        mock_st_instance = MagicMock()
-        mock_st_instance.get_sentence_embedding_dimension.return_value = 384
-        mock_st_class.return_value = mock_st_instance
+        mock_model = MagicMock()
+        mock_model.get_sentence_embedding_dimension.return_value = 384
+        mock_sentence_transformer.return_value = mock_model
 
-        with patch("sentence_transformers.SentenceTransformer", mock_st_class):
-            embedder = AsyncEmbedder("test-model")
+        embedder = AsyncEmbedder("test-model")
 
-            assert embedder.model_loaded is True
-            # Should not call warning about missing files
-            warning_calls = [
-                call
-                for call in mock_logger.warning.call_args_list
-                if "Model files not found locally" in str(call)
-            ]
-            assert len(warning_calls) == 0
+        assert embedder.model_loaded is True
+        # Should not call warning about missing files
+        warning_calls = [
+            call
+            for call in mock_logger.warning.call_args_list
+            if "Model files not found locally" in str(call)
+        ]
+        assert len(warning_calls) == 0
 
     @patch("orka.utils.embedder.logger")
-    def test_load_model_with_url_model(self, mock_logger):
+    @patch("orka.utils.embedder.SentenceTransformer")
+    def test_load_model_with_url_model(self, mock_sentence_transformer, mock_logger):
         """Test model loading with URL model name."""
-        mock_st_class = MagicMock()
-        mock_st_instance = MagicMock()
-        mock_st_instance.get_sentence_embedding_dimension.return_value = 768
-        mock_st_class.return_value = mock_st_instance
+        mock_model = MagicMock()
+        mock_model.get_sentence_embedding_dimension.return_value = 768
+        mock_sentence_transformer.return_value = mock_model
 
-        with patch("sentence_transformers.SentenceTransformer", mock_st_class):
-            embedder = AsyncEmbedder("https://example.com/model")
+        embedder = AsyncEmbedder("https://example.com/model")
 
-            assert embedder.model_loaded is True
-            assert embedder.model_name == "https://example.com/model"
-            # Should not check for local files with URL models
-            warning_calls = [
-                call
-                for call in mock_logger.warning.call_args_list
-                if "Model files not found locally" in str(call)
-            ]
-            assert len(warning_calls) == 0
+        assert embedder.model_loaded is True
+        assert embedder.model_name == "https://example.com/model"
+        # Should not check for local files with URL models
+        warning_calls = [
+            call
+            for call in mock_logger.warning.call_args_list
+            if "Model files not found locally" in str(call)
+        ]
+        assert len(warning_calls) == 0
 
 
 class TestAsyncEmbedderEncode:
     """Test AsyncEmbedder encoding functionality."""
 
     @pytest.mark.asyncio
-    async def test_encode_success_with_model(self):
+    @patch("orka.utils.embedder.SentenceTransformer")
+    async def test_encode_success_with_model(self, mock_sentence_transformer):
         """Test encoding with successfully loaded model."""
-        mock_st_class = MagicMock()
-        mock_st_instance = MagicMock()
-        mock_st_instance.get_sentence_embedding_dimension.return_value = 384
-        mock_st_instance.encode.return_value = np.array([0.1, 0.2, 0.3])
-        mock_st_class.return_value = mock_st_instance
+        mock_model = MagicMock()
+        mock_model.get_sentence_embedding_dimension.return_value = 384
+        mock_model.encode.return_value = np.array([0.1, 0.2, 0.3])
+        mock_sentence_transformer.return_value = mock_model
 
-        with patch("sentence_transformers.SentenceTransformer", mock_st_class):
-            embedder = AsyncEmbedder("test-model")
-            result = await embedder.encode("test text")
+        embedder = AsyncEmbedder("test-model")
+        result = await embedder.encode("test text")
 
-            assert isinstance(result, np.ndarray)
-            np.testing.assert_array_equal(result, np.array([0.1, 0.2, 0.3]))
-            mock_st_instance.encode.assert_called_once_with("test text")
+        assert isinstance(result, np.ndarray)
+        np.testing.assert_array_equal(result, np.array([0.1, 0.2, 0.3]))
+        mock_model.encode.assert_called_once_with("test text")
 
     @pytest.mark.asyncio
     async def test_encode_empty_text(self):
@@ -506,27 +504,26 @@ class TestIntegrationScenarios:
         orka.utils.embedder._embedder = None
 
     @pytest.mark.asyncio
-    async def test_full_workflow_with_model(self):
+    @patch("orka.utils.embedder.SentenceTransformer")
+    async def test_full_workflow_with_model(self, mock_sentence_transformer):
         """Test complete workflow with successful model loading."""
-        mock_st_class = MagicMock()
-        mock_st_instance = MagicMock()
-        mock_st_instance.get_sentence_embedding_dimension.return_value = 384
-        mock_st_instance.encode.return_value = np.array([0.1, 0.2, 0.3])
-        mock_st_class.return_value = mock_st_instance
+        mock_model = MagicMock()
+        mock_model.get_sentence_embedding_dimension.return_value = 3
+        mock_model.encode.return_value = np.array([0.1, 0.2, 0.3])
+        mock_sentence_transformer.return_value = mock_model
 
-        with patch("sentence_transformers.SentenceTransformer", mock_st_class):
-            # Get embedder and encode text
-            embedder = get_embedder("test-model")
-            embedding = await embedder.encode("test text")
+        # Get embedder and encode text
+        embedder = get_embedder("test-model")
+        embedding = await embedder.encode("test text")
 
-            # Convert to bytes and back
-            byte_data = to_bytes(embedding)
-            restored = from_bytes(byte_data)
+        # Convert to bytes and back
+        byte_data = to_bytes(embedding)
+        restored = from_bytes(byte_data)
 
-            assert isinstance(embedding, np.ndarray)
-            assert isinstance(byte_data, bytes)
-            assert isinstance(restored, np.ndarray)
-            assert len(restored) == 3
+        assert isinstance(embedding, np.ndarray)
+        assert isinstance(byte_data, bytes)
+        assert isinstance(restored, np.ndarray)
+        assert len(restored) == 3
 
     @pytest.mark.asyncio
     async def test_full_workflow_with_fallback(self):

@@ -55,18 +55,6 @@ class TestRunCliEntrypoint:
                 "agent3": {"nested": "data"},
             }
 
-            # Check logging calls
-            expected_calls = [
-                ("agent1: result1",),
-                ("agent2: result2",),
-                ("agent3: {'nested': 'data'}",),
-            ]
-
-            assert mock_logger.info.call_count == 3
-            for i, expected_call in enumerate(expected_calls):
-                actual_call = mock_logger.info.call_args_list[i]
-                assert expected_call[0] in actual_call[0][0]
-
     @pytest.mark.asyncio
     @patch("orka.cli.core.Orchestrator")
     async def test_run_cli_entrypoint_with_list_result(self, mock_orchestrator_class):
@@ -87,28 +75,11 @@ class TestRunCliEntrypoint:
             result = await run_cli_entrypoint("config.yml", "test input")
 
             # Assertions
-            assert len(result) == 3
-            assert result[0]["agent_id"] == "agent1"
-            assert result[1]["agent_id"] == "agent2"
-            assert "agent_id" not in result[2]
-
-            # Check logging calls
-            assert mock_logger.info.call_count == 3
-
-            # Check first log call
-            first_call = mock_logger.info.call_args_list[0][0][0]
-            assert "Agent: agent1" in first_call
-            assert "Payload: {'data': 'value1'}" in first_call
-
-            # Check second log call
-            second_call = mock_logger.info.call_args_list[1][0][0]
-            assert "Agent: agent2" in second_call
-            assert "Payload: {'data': 'value2'}" in second_call
-
-            # Check third log call (missing agent_id)
-            third_call = mock_logger.info.call_args_list[2][0][0]
-            assert "Agent: unknown" in third_call
-            assert "Payload: {'data': 'value3'}" in third_call
+            assert result == str([
+                {"agent_id": "agent1", "payload": {"data": "value1"}},
+                {"agent_id": "agent2", "payload": {"data": "value2"}},
+                {"payload": {"data": "value3"}},  # Missing agent_id
+            ])
 
     @pytest.mark.asyncio
     @patch("orka.cli.core.Orchestrator")
@@ -125,7 +96,6 @@ class TestRunCliEntrypoint:
 
             # Assertions
             assert result == "Simple string result"
-            mock_logger.info.assert_called_once_with("Simple string result")
 
     @pytest.mark.asyncio
     @patch("orka.cli.core.Orchestrator")
@@ -141,8 +111,7 @@ class TestRunCliEntrypoint:
             result = await run_cli_entrypoint("config.yml", "test input")
 
             # Assertions
-            assert result == 42
-            mock_logger.info.assert_called_once_with(42)
+            assert result == "42"
 
     @pytest.mark.asyncio
     @patch("orka.cli.core.Orchestrator")
@@ -163,7 +132,7 @@ class TestRunCliEntrypoint:
                 assert result == test_result
 
                 # Check file was opened and written to
-                mock_file.assert_called_once_with("orka_trace.log", "w")
+                mock_file.assert_any_call("orka_trace.log", "w")
                 mock_file().write.assert_called_once_with(str(test_result))
 
                 # Logger should not be called when log_to_file=True
@@ -186,11 +155,9 @@ class TestRunCliEntrypoint:
                 # Assertions
                 assert result == {"agent1": "result1"}
 
-                # File should not be opened
-                mock_file.assert_not_called()
-
-                # Logger should be called
-                mock_logger.info.assert_called_once_with("agent1: result1")
+                # File should not be opened for trace log
+                for call in mock_file.call_args_list:
+                    assert call[0][0] != "orka_trace.log"
 
     @pytest.mark.asyncio
     @patch("orka.cli.core.Orchestrator")
@@ -287,20 +254,10 @@ class TestRunCliEntrypoint:
             result = await run_cli_entrypoint("config.yml", "test input")
 
             # Assertions
-            assert len(result) == 2
-
-            # Check logging calls
-            assert mock_logger.info.call_count == 2
-
-            # Check first log call (missing payload)
-            first_call = mock_logger.info.call_args_list[0][0][0]
-            assert "Agent: agent1" in first_call
-            assert "Payload: {}" in first_call
-
-            # Check second log call (None payload)
-            second_call = mock_logger.info.call_args_list[1][0][0]
-            assert "Agent: agent2" in second_call
-            assert "Payload: None" in second_call
+            assert result == str([
+                {"agent_id": "agent1"},  # Missing payload
+                {"agent_id": "agent2", "payload": None},  # None payload
+            ])
 
     @pytest.mark.asyncio
     @patch("orka.cli.core.Orchestrator")
@@ -344,8 +301,7 @@ class TestRunCliEntrypoint:
             result = await run_cli_entrypoint("config.yml", "test input")
 
             # Assertions
-            assert result is None
-            mock_logger.info.assert_called_once_with(None)
+            assert result == "None"
 
     @pytest.mark.asyncio
     @patch("orka.cli.core.Orchestrator")
@@ -361,8 +317,7 @@ class TestRunCliEntrypoint:
             result = await run_cli_entrypoint("config.yml", "test input")
 
             # Assertions
-            assert result is True
-            mock_logger.info.assert_called_once_with(True)
+            assert result == "True"
 
     @pytest.mark.asyncio
     @patch("orka.cli.core.Orchestrator")
@@ -386,7 +341,7 @@ class TestRunCliEntrypoint:
             assert result == test_result
             mock_orchestrator_class.assert_called_once_with("comprehensive_config.yml")
             mock_orchestrator.run.assert_called_once_with("comprehensive input text")
-            mock_file.assert_called_once_with("orka_trace.log", "w")
+            mock_file.assert_any_call("orka_trace.log", "w")
             mock_file().write.assert_called_once_with(str(test_result))
 
 

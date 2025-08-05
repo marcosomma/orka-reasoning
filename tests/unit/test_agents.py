@@ -4,7 +4,7 @@ Tests agent initialization, execution, and error handling with mocked dependenci
 """
 
 import asyncio
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -446,7 +446,8 @@ class TestOpenAIAgents:
         assert agent.agent_id == "answer_builder"
         assert "{{ input }}" in agent.prompt
 
-    def test_openai_answer_builder_run(self, mock_client):
+    @pytest.mark.asyncio
+    async def test_openai_answer_builder_run(self, mock_client):
         """Test OpenAIAnswerBuilder run method."""
         # Mock the OpenAI response
         mock_response = MagicMock()
@@ -456,7 +457,7 @@ class TestOpenAIAgents:
         """
         mock_response.usage.prompt_tokens = 100
         mock_response.usage.completion_tokens = 50
-        mock_client.chat.completions.create.return_value = mock_response
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
         agent = OpenAIAnswerBuilder(
             agent_id="test_answer",
@@ -464,13 +465,14 @@ class TestOpenAIAgents:
             queue=[],
         )
 
-        result = agent.run({"input": "What is 2+2?"})
+        result = await agent.run({"input": "What is 2+2?"})
 
         assert isinstance(result, dict)
         assert "response" in result
         mock_client.chat.completions.create.assert_called_once()
 
-    def test_openai_binary_agent_run(self, mock_client):
+    @pytest.mark.asyncio
+    async def test_openai_binary_agent_run(self, mock_client):
         """Test OpenAIBinaryAgent run method."""
         # Mock the OpenAI response for true case
         mock_response = MagicMock()
@@ -480,7 +482,7 @@ class TestOpenAIAgents:
         """
         mock_response.usage.prompt_tokens = 100
         mock_response.usage.completion_tokens = 50
-        mock_client.chat.completions.create.return_value = mock_response
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
         agent = OpenAIBinaryAgent(
             agent_id="test_binary",
@@ -488,12 +490,13 @@ class TestOpenAIAgents:
             queue=[],
         )
 
-        result = agent.run({"input": "The sky is blue"})
+        result = await agent.run({"input": "The sky is blue"})
 
-        assert isinstance(result, bool)
-        assert result is True
+        assert isinstance(result, dict)
+        assert result["response"] is True
 
-    def test_openai_binary_agent_false_response(self, mock_client):
+    @pytest.mark.asyncio
+    async def test_openai_binary_agent_false_response(self, mock_client):
         """Test OpenAIBinaryAgent with false response."""
         # Mock the OpenAI response for false case
         mock_response = MagicMock()
@@ -503,7 +506,7 @@ class TestOpenAIAgents:
         """
         mock_response.usage.prompt_tokens = 100
         mock_response.usage.completion_tokens = 50
-        mock_client.chat.completions.create.return_value = mock_response
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
         agent = OpenAIBinaryAgent(
             agent_id="test_binary_false",
@@ -511,12 +514,13 @@ class TestOpenAIAgents:
             queue=[],
         )
 
-        result = agent.run({"input": "1+1=3"})
+        result = await agent.run({"input": "1+1=3"})
 
-        assert isinstance(result, bool)
-        assert result is False
+        assert isinstance(result, dict)
+        assert result["response"] is False
 
-    def test_openai_classification_agent_run(self, mock_client):
+    @pytest.mark.asyncio
+    async def test_openai_classification_agent_run(self, mock_client):
         """Test OpenAIClassificationAgent run method."""
         # Mock the OpenAI response
         mock_response = MagicMock()
@@ -526,7 +530,7 @@ class TestOpenAIAgents:
         """
         mock_response.usage.prompt_tokens = 100
         mock_response.usage.completion_tokens = 50
-        mock_client.chat.completions.create.return_value = mock_response
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
         agent = OpenAIClassificationAgent(
             agent_id="test_classifier",
@@ -535,15 +539,16 @@ class TestOpenAIAgents:
             options=["urgent", "normal", "low"],
         )
 
-        result = agent.run({"input": "URGENT: Server is down!"})
+        result = await agent.run({"input": "URGENT: Server is down!"})
 
-        assert isinstance(result, str)
-        assert result == "urgent"
+        assert isinstance(result, dict)
+        assert result["response"] == "urgent"
 
-    def test_openai_agent_with_api_error(self, mock_client):
+    @pytest.mark.asyncio
+    async def test_openai_agent_with_api_error(self, mock_client):
         """Test OpenAI agent behavior with API errors."""
         # Mock an API error
-        mock_client.chat.completions.create.side_effect = Exception("API Error")
+        mock_client.chat.completions.create = AsyncMock(side_effect=Exception("API Error"))
 
         agent = OpenAIAnswerBuilder(
             agent_id="error_test",
@@ -553,9 +558,10 @@ class TestOpenAIAgents:
 
         # The error is not caught in the current implementation
         with pytest.raises(Exception):
-            agent.run({"input": "test"})
+            await agent.run({"input": "test"})
 
-    def test_openai_agent_with_malformed_response(self, mock_client):
+    @pytest.mark.asyncio
+    async def test_openai_agent_with_malformed_response(self, mock_client):
         """Test OpenAI agent with malformed JSON response."""
         # Mock malformed response
         mock_response = MagicMock()
@@ -563,7 +569,7 @@ class TestOpenAIAgents:
         mock_response.choices[0].message.content = "This is not JSON at all"
         mock_response.usage.prompt_tokens = 100
         mock_response.usage.completion_tokens = 50
-        mock_client.chat.completions.create.return_value = mock_response
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
         agent = OpenAIAnswerBuilder(
             agent_id="malformed_test",
@@ -571,7 +577,7 @@ class TestOpenAIAgents:
             queue=[],
         )
 
-        result = agent.run({"input": "test"})
+        result = await agent.run({"input": "test"})
 
         # Should handle malformed response gracefully
         assert isinstance(result, dict)

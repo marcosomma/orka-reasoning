@@ -3,6 +3,7 @@ Error handling tests for OrKa components.
 These tests run at the end of the test suite to avoid interfering with other tests.
 """
 
+import logging
 import sys
 from io import StringIO
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
@@ -15,6 +16,40 @@ try:
 except ImportError:
     # If the module doesn't exist, create a mock for testing
     commands_module = MagicMock()
+
+
+class LogCaptureHandler(logging.StreamHandler):
+    """Custom handler that captures log output for testing."""
+
+    def __init__(self):
+        super().__init__()
+        self.stream = StringIO()
+        self.setFormatter(logging.Formatter("%(message)s"))
+
+    def get_output(self):
+        """Get the captured output."""
+        return self.stream.getvalue()
+
+    def reset(self):
+        """Reset the capture buffer."""
+        self.stream = StringIO()
+
+
+@pytest.fixture(autouse=True)
+def setup_logging():
+    """Set up logging capture for tests."""
+    # Create and configure handler
+    handler = LogCaptureHandler()
+    logger = logging.getLogger("orka.cli.orchestrator.commands")
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+
+    # Yield the handler for test use
+    yield handler
+
+    # Cleanup
+    logger.removeHandler(handler)
+    handler.close()
 
 
 class TestErrorHandling:
@@ -156,19 +191,20 @@ class TestErrorHandling:
         result = simulate_general_exception()
         assert "Error: General error" in result
 
-    def test_stderr_capture(self):
+    def test_stderr_capture(self, setup_logging):
         """Test stderr capture functionality."""
         # Test that we can capture stderr output
-        with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
-            print("Error message", file=sys.stderr)
-            error_output = mock_stderr.getvalue()
+        logger = logging.getLogger("orka.cli.orchestrator.commands")
+        logger.error("Error message")
+        error_output = setup_logging.get_output()
 
         assert "Error message" in error_output
 
     @pytest.mark.asyncio
-    async def test_orchestrator_error_simulation(self):
+    async def test_orchestrator_error_simulation(self, setup_logging):
         """Test orchestrator error scenarios in isolation."""
         # Simulate different error scenarios without actually running the orchestrator
+        logger = logging.getLogger("orka.cli.orchestrator.commands")
 
         error_scenarios = [
             ("KeyboardInterrupt", KeyboardInterrupt("User interrupted")),
@@ -179,6 +215,9 @@ class TestErrorHandling:
         ]
 
         for error_name, error in error_scenarios:
+            # Reset the log buffer for each scenario
+            setup_logging.reset()
+
             # Simulate error handling for each scenario
             try:
                 raise error
@@ -186,7 +225,9 @@ class TestErrorHandling:
                 # This is how the real error handler would work
                 error_code = 1
                 error_message = str(e)
+                logger.error(f"Error in orchestrator: {error_message}")
 
                 # Verify error handling worked
                 assert error_code == 1
-                assert len(error_message) > 0
+                output = setup_logging.get_output()
+                assert error_message in output

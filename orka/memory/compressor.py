@@ -41,10 +41,12 @@ class MemoryCompressor:
 
         # Check if mean importance is below threshold
         importances = [entry.get("importance", 0.0) for entry in entries]
-        if np.mean(importances) < self.importance_threshold:
-            return True
+        mean_importance = np.mean(importances) if importances else 0.0
 
-        return False
+        # Compress only if both conditions are met:
+        # 1. Too many entries
+        # 2. Low average importance
+        return bool(len(entries) > self.max_entries and mean_importance < self.importance_threshold)
 
     async def compress(
         self,
@@ -52,6 +54,9 @@ class MemoryCompressor:
         summarizer: Any,  # LLM or summarization model
     ) -> List[MemoryEntry]:
         """Compress memory by summarizing older entries."""
+        if not entries:
+            return entries
+
         if not self.should_compress(entries):
             return entries
 
@@ -63,12 +68,22 @@ class MemoryCompressor:
         recent_entries = [
             e for e in sorted_entries if e.get("timestamp", datetime.min) > cutoff_time
         ]
-        old_entries = [
-            e for e in sorted_entries if e.get("timestamp", datetime.min) <= cutoff_time
-        ]
+        old_entries = [e for e in sorted_entries if e.get("timestamp", datetime.min) <= cutoff_time]
 
-        if not old_entries:
+        # If no old entries, try to compress based on max entries
+        if not old_entries and len(entries) > self.max_entries:
+            split_point = len(entries) - self.max_entries
+            old_entries = sorted_entries[:split_point]
+            recent_entries = sorted_entries[split_point:]
+        elif not old_entries:
+            # No old entries and not over max entries, return as is
             return entries
+
+        # Check summarizer type first
+        if not (hasattr(summarizer, "summarize") or hasattr(summarizer, "generate")):
+            msg = "Summarizer must have summarize() or generate() method"
+            logger.error(f"Error during memory compression: {msg}")
+            raise ValueError(msg)
 
         # Create summary of old entries
         try:
@@ -94,14 +109,22 @@ class MemoryCompressor:
         # Combine all content
         combined_content = "\n".join(entry.get("content", "") for entry in entries)
 
+        # Check summarizer type first to avoid unnecessary try/except
+        if not (hasattr(summarizer, "summarize") or hasattr(summarizer, "generate")):
+            msg = "Summarizer must have summarize() or generate() method"
+            logger.error(f"Error during memory compression: {msg}")
+            raise ValueError(msg)
+
         # Use summarizer to create summary
-        if hasattr(summarizer, "summarize"):
-            result = await summarizer.summarize(combined_content)
-            return str(result)
-        elif hasattr(summarizer, "generate"):
-            result = await summarizer.generate(
-                f"Summarize the following text concisely:\n\n{combined_content}",
-            )
-            return str(result)
-        else:
-            raise ValueError("Summarizer must have summarize() or generate() method")
+        try:
+            if hasattr(summarizer, "summarize"):
+                result = await summarizer.summarize(combined_content)
+                return str(result)
+            else:  # Must have generate() method
+                result = await summarizer.generate(
+                    f"Summarize the following text concisely:\n\n{combined_content}",
+                )
+                return str(result)
+        except Exception as e:
+            logger.error(f"Error during memory compression: {e}")
+            raise

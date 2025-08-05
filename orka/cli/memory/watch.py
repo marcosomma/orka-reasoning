@@ -71,7 +71,10 @@ def _memory_watch_fallback(args: Any) -> int:
 
         memory = create_memory_logger(backend=backend, redis_url=redis_url)
 
+        # Log the backend being used
+        logger.info(f"Using {backend.title()} backend")
         if getattr(args, "json", False):
+            logger.info("Using JSON output mode")
             return _memory_watch_json(memory, backend, args)
         else:
             return _memory_watch_display(memory, backend, args)

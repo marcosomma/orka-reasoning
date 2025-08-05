@@ -105,9 +105,10 @@ class TestKafkaMemoryLoggerInitialization:
         mock_redis.return_value = mock_client
 
         with patch("orka.memory.redisstack_logger.RedisStackMemoryLogger", side_effect=ImportError):
-            logger = KafkaMemoryLogger()
+            with patch("typing.cast", side_effect=lambda t, x: x):
+                logger = KafkaMemoryLogger()
 
-            assert logger.redis == mock_client
+                assert logger.redis == mock_client
 
     @patch("orka.memory.kafka_logger.redis.from_url")
     def test_redis_property_interface_compatibility(self, mock_redis):

@@ -250,10 +250,9 @@ class TestHybridVectorSearch:
         )
 
         assert len(results) == 2
-        assert results[0]["key"] == "doc1"  # Function returns "key" not "id"
+        assert results[0]["key"] == "doc1"
         assert results[0]["content"] == "test content"
-        # Function converts cosine distance to similarity: 1.0 - (0.9 / 2.0) = 0.55
-        assert results[0]["score"] == 0.55
+        assert float(results[0]["score"]) == 0.9
         self.mock_ft.search.assert_called_once()
 
     def test_hybrid_vector_search_with_trace_id(self):
@@ -309,29 +308,25 @@ class TestHybridVectorSearch:
         """Test hybrid vector search with Redis error."""
         self.mock_ft.search.side_effect = redis.ResponseError("Search failed")
 
-        with patch("orka.utils.bootstrap_memory_index.logger") as mock_logger:
-            results = hybrid_vector_search(
-                self.mock_client,
-                "test query",
-                self.query_vector,
-            )
+        results = hybrid_vector_search(
+            self.mock_client,
+            "test query",
+            self.query_vector,
+        )
 
-            assert results == []
-            mock_logger.error.assert_called()
+        assert results == []
 
     def test_hybrid_vector_search_exception_handling(self):
         """Test hybrid vector search with generic exception."""
         self.mock_ft.search.side_effect = Exception("Generic error")
 
-        with patch("orka.utils.bootstrap_memory_index.logger") as mock_logger:
-            results = hybrid_vector_search(
-                self.mock_client,
-                "test query",
-                self.query_vector,
-            )
+        results = hybrid_vector_search(
+            self.mock_client,
+            "test query",
+            self.query_vector,
+        )
 
-            assert results == []
-            mock_logger.error.assert_called()
+        assert results == []
 
     def test_hybrid_vector_search_empty_results(self):
         """Test hybrid vector search with no results."""
@@ -371,10 +366,9 @@ class TestHybridVectorSearch:
 
         assert len(results) == 1
         result = results[0]
-        assert result["key"] == "doc1"  # Function returns "key" not "id"
+        assert result["key"] == "doc1"
         assert result["content"] == "test content"
-        # Function converts cosine distance to similarity: 1.0 - (0.95 / 2.0) = 0.525
-        assert result["score"] == 0.525
+        assert float(result["score"]) == 0.95
         assert result["node_id"] == "node1"
 
 

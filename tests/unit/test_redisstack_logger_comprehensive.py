@@ -468,22 +468,22 @@ class TestRedisStackMemoryLogger:
     def test_get_all_memories(self):
         """Test retrieving all memories."""
         # Mock the keys method to return keys with the correct pattern
-        mock_keys = ["orka_memory:mem1", "orka_memory:mem2"]
+        mock_keys = [b"orka_memory:mem1", b"orka_memory:mem2"]
         self.mock_redis.keys.return_value = mock_keys
 
         # The get_all_memories method uses .get() with string keys, not bytes keys
         self.mock_redis.hgetall.side_effect = [
             {
-                "content": "Memory 1",
-                "node_id": "node1",
-                "timestamp": str(int(time.time() * 1000)),
-                "metadata": '{"log_type": "memory"}',
+                b"content": b"Memory 1",
+                b"node_id": b"node1",
+                b"timestamp": str(int(time.time() * 1000)).encode(),
+                b"metadata": b'{"log_type": "memory"}',
             },
             {
-                "content": "Memory 2",
-                "node_id": "node2",
-                "timestamp": str(int(time.time() * 1000)),
-                "metadata": '{"log_type": "memory"}',
+                b"content": b"Memory 2",
+                b"node_id": b"node2",
+                b"timestamp": str(int(time.time() * 1000)).encode(),
+                b"metadata": b'{"log_type": "memory"}',
             },
         ]
 
@@ -497,15 +497,15 @@ class TestRedisStackMemoryLogger:
     def test_get_all_memories_with_trace_filter(self):
         """Test retrieving memories with trace ID filter."""
         # Mock the keys method to return keys with correct pattern
-        mock_keys = ["orka_memory:mem1"]
+        mock_keys = [b"orka_memory:mem1"]
         self.mock_redis.keys.return_value = mock_keys
 
-        # Use string keys to match the implementation
+        # Use bytes keys to match the implementation expectations
         self.mock_redis.hgetall.return_value = {
-            "content": "Filtered memory",
-            "trace_id": "specific_trace",
-            "timestamp": str(int(time.time() * 1000)),
-            "metadata": '{"log_type": "memory"}',
+            b"content": b"Filtered memory",
+            b"trace_id": b"specific_trace",
+            b"timestamp": str(int(time.time() * 1000)).encode(),
+            b"metadata": b'{"log_type": "memory"}',
         }
 
         memories = self.logger.get_all_memories(trace_id="specific_trace")
@@ -689,7 +689,7 @@ class TestRedisStackMemoryLogger:
     def test_tail(self):
         """Test tailing recent logs."""
         # Mock the keys method to return an iterable list
-        mock_keys = ["orka_memory:log1", "orka_memory:log2"]
+        mock_keys = [b"orka_memory:log1", b"orka_memory:log2"]
         self.mock_redis.keys.return_value = mock_keys
 
         self.mock_redis.hgetall.side_effect = [
@@ -823,7 +823,7 @@ class TestRedisStackMemoryLogger:
         current_time = int(time.time() * 1000)
 
         # Mock the keys method to return an iterable list
-        mock_keys = ["orka_memory:stored1", "orka_memory:stored2"]
+        mock_keys = [b"orka_memory:stored1", b"orka_memory:stored2"]
         self.mock_redis.keys.return_value = mock_keys
 
         self.mock_redis.hgetall.side_effect = [
@@ -1160,7 +1160,7 @@ class TestRedisStackMemoryLogger:
         """Test importance score calculation."""
         payload = {"importance": 0.8}
 
-        score = self.logger._calculate_importance_score("TestEvent", payload)
+        score = self.logger._calculate_importance_score("TestEvent", payload, "memory")
 
         assert isinstance(score, float)
         assert 0 <= score <= 1
@@ -1279,7 +1279,7 @@ class TestRedisStackMemoryLogger:
         memory_data = {}
         ttl_info = self.logger._get_ttl_info("test_key", memory_data, current_time_ms)
         assert ttl_info["has_expiry"] is False
-        assert ttl_info["ttl_formatted"] == "Never"
+        assert ttl_info["ttl_formatted"] == "N/A"
 
         # Test with very long expiry
         far_future = current_time_ms + (365 * 24 * 60 * 60 * 1000)  # 1 year
