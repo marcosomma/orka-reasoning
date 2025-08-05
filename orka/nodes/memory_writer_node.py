@@ -10,7 +10,54 @@ logger = logging.getLogger(__name__)
 
 
 class MemoryWriterNode(BaseNode):
-    """Enhanced memory writer using RedisStack through memory logger."""
+    """
+    A node that stores information in OrKa's memory system with intelligent classification.
+
+    The MemoryWriterNode is responsible for persisting information in OrKa's memory backend
+    (RedisStack by default) with automatic memory type classification, vector embeddings for
+    semantic search, and configurable metadata.
+
+    Key Features:
+        - Automatic memory type classification (short_term vs long_term)
+        - Vector embeddings for 100x faster semantic search
+        - Configurable metadata and namespaces
+        - Intelligent decay management
+        - Importance-based retention
+
+    Attributes:
+        namespace (str): Memory namespace for organizing stored data
+        vector (bool): Whether to enable vector embeddings for semantic search
+        metadata (dict): Additional metadata to store with the memory
+        memory_type (str): Override for automatic memory type classification
+        importance_score (float): Override for automatic importance scoring
+
+    Example:
+        ```yaml
+        - id: memory_store
+          type: memory-writer
+          namespace: knowledge_base
+          params:
+            vector: true
+            metadata:
+              source: "user_input"
+              confidence: "high"
+              timestamp: "{{ now() }}"
+          prompt: |
+            Store this information:
+            {{ input }}
+
+            With metadata:
+            Category: {{ previous_outputs.classifier }}
+            Confidence: {{ previous_outputs.validator.confidence }}
+        ```
+
+    The node automatically:
+        1. Classifies memory as short_term or long_term based on importance
+        2. Generates vector embeddings if enabled
+        3. Adds system metadata (timestamp, memory type, etc.)
+        4. Configures decay based on memory type
+        5. Stores in the specified namespace with RedisStack HNSW indexing
+    """
 
     def __init__(self, node_id: str, **kwargs: Any) -> None:
         super().__init__(node_id=node_id, **kwargs)

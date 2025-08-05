@@ -72,11 +72,48 @@ MetadataKey = Literal["loop_number", "score", "timestamp", "insights", "improvem
 
 class LoopNode(BaseNode):
     """
-    Simple loop node that repeats an internal workflow until threshold is met.
+    A specialized node that executes an internal workflow repeatedly until a condition is met.
 
-    This node executes an internal workflow repeatedly until a score threshold is reached
-    or the maximum number of loops is exceeded. Each loop's result is tracked in the
-    past_loops array, allowing for iterative improvement based on previous attempts.
+    The LoopNode enables iterative improvement workflows by running a sub-workflow multiple
+    times, learning from each iteration, and stopping when either a quality threshold is met
+    or a maximum number of iterations is reached.
+
+    Key Features:
+        - Iterative execution with quality thresholds
+        - Cognitive insight extraction from each iteration
+        - Learning from past iterations
+        - Automatic loop termination based on scores or max iterations
+        - Metadata tracking across iterations
+
+    Attributes:
+        max_loops (int): Maximum number of iterations allowed
+        score_threshold (float): Quality score required to stop iteration
+        score_extraction_pattern (str): Regex pattern to extract quality scores
+        cognitive_extraction (dict): Configuration for extracting insights
+        past_loops_metadata (dict): Template for tracking iteration data
+        internal_workflow (dict): The workflow to execute in each iteration
+
+    Example:
+        ```yaml
+        - id: improvement_loop
+          type: loop
+          max_loops: 5
+          score_threshold: 0.85
+          score_extraction_pattern: "QUALITY_SCORE:\\s*([0-9.]+)"
+          cognitive_extraction:
+            enabled: true
+            extract_patterns:
+              insights: ["(?:provides?|shows?)\\s+(.+?)(?:\\n|$)"]
+              improvements: ["(?:lacks?|needs?)\\s+(.+?)(?:\\n|$)"]
+          past_loops_metadata:
+            iteration: "{{ loop_number }}"
+            score: "{{ score }}"
+            insights: "{{ insights }}"
+          internal_workflow:
+            orchestrator:
+              id: improvement-cycle
+              agents: [analyzer, scorer]
+        ```
     """
 
     def __init__(

@@ -11,7 +11,58 @@ logger = logging.getLogger(__name__)
 
 
 class MemoryReaderNode(BaseNode):
-    """Enhanced memory reader using RedisStack through memory logger."""
+    """
+    A node that retrieves information from OrKa's memory system using semantic search.
+
+    The MemoryReaderNode performs intelligent memory retrieval using RedisStack's HNSW
+    indexing for 100x faster vector search. It supports context-aware search, temporal
+    ranking, and configurable similarity thresholds.
+
+    Key Features:
+        - 100x faster semantic search with HNSW indexing
+        - Context-aware memory retrieval
+        - Temporal ranking of results
+        - Configurable similarity thresholds
+        - Namespace-based organization
+
+    Attributes:
+        namespace (str): Memory namespace to search in
+        limit (int): Maximum number of results to return
+        enable_context_search (bool): Whether to use conversation context
+        context_weight (float): Weight given to context in search (0-1)
+        temporal_weight (float): Weight given to recency in ranking (0-1)
+        similarity_threshold (float): Minimum similarity score (0-1)
+        enable_temporal_ranking (bool): Whether to boost recent memories
+
+    Example:
+        ```yaml
+        - id: memory_search
+          type: memory-reader
+          namespace: knowledge_base
+          params:
+            limit: 5
+            enable_context_search: true
+            context_weight: 0.4
+            temporal_weight: 0.3
+            similarity_threshold: 0.8
+            enable_temporal_ranking: true
+          prompt: |
+            Find relevant information about:
+            {{ input }}
+
+            Consider:
+            - Similar topics
+            - Recent interactions
+            - Related context
+        ```
+
+    The node automatically:
+        1. Converts input to vector embeddings
+        2. Performs HNSW-accelerated similarity search
+        3. Applies temporal ranking if enabled
+        4. Filters by similarity threshold
+        5. Returns formatted results with metadata
+    """
 
     def __init__(self, node_id: str, **kwargs):
         super().__init__(node_id=node_id, **kwargs)
