@@ -202,9 +202,7 @@ class ValidationAndStructuringAgent(BaseAgent):
             and input_data["formatted_prompt"]
         ):
             prompt = input_data["formatted_prompt"]
-            logger.info(
-                f"[DEBUG] - Using pre-rendered prompt from execution engine (length: {len(prompt)})"
-            )
+            logger.debug(f"Using pre-rendered prompt from execution engine (length: {len(prompt)})")
         # Check if we have a custom prompt that needs template rendering
         elif (
             hasattr(self.llm_agent, "prompt")

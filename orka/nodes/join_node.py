@@ -121,18 +121,18 @@ class JoinNode(BaseNode):
                         # If not a dict, use as is
                         merged[agent_id] = result
 
-                    logger.info(f"[DEBUG] - - Merged result for agent {agent_id}")
+                    logger.debug(f"- Merged result for agent {agent_id}")
 
                     # Store the result in Redis key for direct access
                     fork_group_id = result.get("fork_group", "unknown")
                     agent_key = f"agent_result:{fork_group_id}:{agent_id}"
                     self.memory_logger.set(agent_key, json.dumps(merged[agent_id]))
-                    logger.info(f"[DEBUG] - - Stored result for agent {agent_id}")
+                    logger.debug(f"- Stored result for agent {agent_id}")
 
                     # Store in Redis hash for group tracking
                     group_key = f"fork_group_results:{fork_group_id}"
                     self.memory_logger.hset(group_key, agent_id, json.dumps(merged[agent_id]))
-                    logger.info(f"[DEBUG] - - Stored result in group for agent {agent_id}")
+                    logger.debug(f"- Stored result in group for agent {agent_id}")
                 else:
                     logger.warning(f"No result found for agent {agent_id}")
             except Exception as e:
@@ -157,11 +157,11 @@ class JoinNode(BaseNode):
         # Store the final result in Redis
         join_key = f"join_result:{self.node_id}"
         self.memory_logger.set(join_key, json.dumps(result))
-        logger.info(f"[DEBUG] - - Stored final join result: {join_key}")
+        logger.debug(f"- Stored final join result: {join_key}")
 
         # Store in Redis hash for group tracking
         group_key = f"join_results:{self.node_id}"
         self.memory_logger.hset(group_key, "result", json.dumps(result))
-        logger.info(f"[DEBUG] - - Stored final result in group")
+        logger.debug(f"- Stored final result in group")
 
         return result

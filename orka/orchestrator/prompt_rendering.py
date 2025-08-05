@@ -120,8 +120,8 @@ class PromptRenderer:
             unresolved_vars = re.findall(unresolved_pattern, rendered)
 
             if unresolved_vars:
-                logger.info(
-                    f"[DEBUG] - Replacing {len(unresolved_vars)} unresolved variables with empty strings: {unresolved_vars}"
+                logger.debug(
+                    f"Replacing {len(unresolved_vars)} unresolved variables with empty strings: {unresolved_vars}"
                 )
                 # Replace all unresolved variables with empty strings
                 rendered = re.sub(unresolved_pattern, "", rendered)
@@ -135,9 +135,9 @@ class PromptRenderer:
 
             logger = logging.getLogger(__name__)
             logger.warning(f"Template rendering failed, attempting fallback: {e}")
-            logger.info(f"[DEBUG] - - Template: {template_str}")
-            logger.info(
-                f"[DEBUG] - Context keys: {list(payload.keys()) if isinstance(payload, dict) else 'Not a dict'}"
+            logger.debug(f"- Template: {template_str}")
+            logger.debug(
+                f"Context keys: {list(payload.keys()) if isinstance(payload, dict) else 'Not a dict'}"
             )
 
             # ✅ Fallback: Replace all template variables with empty strings and return

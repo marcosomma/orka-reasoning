@@ -555,12 +555,12 @@ class ExecutionEngine(
                         # Store the result in memory
                         result_key = f"agent_result:{agent_id}"
                         self.memory.set(result_key, json.dumps(payload_out))
-                        logger.info(f"[DEBUG] - - Stored result for agent {agent_id}")
+                        logger.debug(f"- Stored result for agent {agent_id}")
 
                         # Store in Redis hash for group tracking
                         group_key = "agent_results"
                         self.memory.hset(group_key, agent_id, json.dumps(payload_out))
-                        logger.info(f"[DEBUG] - - Stored result in group for agent {agent_id}")
+                        logger.debug(f"- Stored result in group for agent {agent_id}")
 
                         # Add to logs
                         log_entry["payload"] = payload_out
@@ -665,9 +665,7 @@ class ExecutionEngine(
         # ✅ FIX: Include orchestrator context from full_payload if available (for fork nodes)
         if full_payload and "orchestrator" in full_payload:
             payload["orchestrator"] = full_payload["orchestrator"]
-            logger.info(
-                f"[DEBUG] - - Agent '{agent_id}' inherited orchestrator context from full_payload"
-            )
+            logger.debug(f"- Agent '{agent_id}' inherited orchestrator context from full_payload")
 
         # Add loop context if available
         if isinstance(input_data, dict):
@@ -694,17 +692,17 @@ class ExecutionEngine(
                 template_context = self._build_template_context(payload, agent_id)
 
                 # Debug template context if needed
-                logger.info(
-                    f"[DEBUG] - - Template context for '{agent_id}': {list(template_context.keys())}"
+                logger.debug(
+                    f"- Template context for '{agent_id}': {list(template_context.keys())}"
                 )
                 if "get_input" in template_context:
-                    logger.info(
-                        f"[DEBUG] - Helper functions available: get_input, get_loop_number, get_agent_response"
+                    logger.debug(
+                        f"Helper functions available: get_input, get_loop_number, get_agent_response"
                     )
                     # Test if functions are callable
                     try:
                         test_input = template_context["get_input"]()
-                        logger.info(f"[DEBUG] - - ✅ get_input() test successful: '{test_input}'")
+                        logger.debug(f"- ✅ get_input() test successful: '{test_input}'")
                     except Exception as e:
                         logger.error(f"❌ get_input() test failed: {e}")
                 else:
@@ -726,16 +724,16 @@ class ExecutionEngine(
                         else:
                             logger.warning(f"  {agent_name}: {type(agent_result)} = {agent_result}")
 
-                logger.info(f"[DEBUG] - - Available context keys: {list(template_context.keys())}")
+                logger.debug(f"- Available context keys: {list(template_context.keys())}")
                 if "previous_outputs" in template_context:
-                    logger.info(
-                        f"[DEBUG] - Available previous_outputs: {list(template_context['previous_outputs'].keys())}"
+                    logger.debug(
+                        f"Available previous_outputs: {list(template_context['previous_outputs'].keys())}"
                     )
                     # Show structure of each agent result for debugging
                     for prev_agent, prev_result in template_context["previous_outputs"].items():
                         if isinstance(prev_result, dict):
-                            logger.info(
-                                f"[DEBUG] - Agent '{prev_agent}' result keys: {list(prev_result.keys())}"
+                            logger.debug(
+                                f"Agent '{prev_agent}' result keys: {list(prev_result.keys())}"
                             )
                         else:
                             logger.debug(
@@ -748,10 +746,10 @@ class ExecutionEngine(
                 template = Template(agent_prompt)
 
                 # Debug: Show what we're about to render
-                logger.info(
-                    f"[DEBUG] - - About to render template with {len(template_context)} context items"
+                logger.debug(
+                    f"- About to render template with {len(template_context)} context items"
                 )
-                logger.info(f"[DEBUG] - - Template preview: {agent_prompt[:200]}...")
+                logger.debug(f"- Template preview: {agent_prompt[:200]}...")
 
                 formatted_prompt = template.render(**template_context)
 
@@ -761,7 +759,7 @@ class ExecutionEngine(
                 )
 
                 # Debug: Show a preview of the rendered result
-                logger.info(f"[DEBUG] - - Rendered preview: {formatted_prompt[:200]}...")
+                logger.debug(f"- Rendered preview: {formatted_prompt[:200]}...")
 
                 # Check for unresolved variables and warn if found
                 import re
@@ -788,16 +786,14 @@ class ExecutionEngine(
                 if logger.isEnabledFor(logging.DEBUG):
                     original_template = agent_prompt
                     if original_template != formatted_prompt:
-                        logger.info(
-                            f"[DEBUG] - - Agent '{agent_id}' template rendered successfully"
-                        )
-                        logger.info(f"[DEBUG] - - Original: {original_template}")
-                        logger.info(f"[DEBUG] - - Rendered: {formatted_prompt}")
+                        logger.debug(f"- Agent '{agent_id}' template rendered successfully")
+                        logger.debug(f"- Original: {original_template}")
+                        logger.debug(f"- Rendered: {formatted_prompt}")
                     else:
-                        logger.info(
-                            f"[DEBUG] - Agent '{agent_id}' template unchanged - possible template issue"
+                        logger.debug(
+                            f"Agent '{agent_id}' template unchanged - possible template issue"
                         )
-                        logger.info(f"[DEBUG] - - Template context: {template_context}")
+                        logger.debug(f"- Template context: {template_context}")
             except Exception as e:
                 logger.error(f"Failed to render prompt for agent '{agent_id}': {e}")
                 payload["formatted_prompt"] = agent_prompt if agent_prompt else ""
@@ -810,11 +806,11 @@ class ExecutionEngine(
         is_async = inspect.iscoroutinefunction(run_method)
 
         # ✅ DEBUG: Log orchestrator context detection
-        logger.info(f"[DEBUG] - - Agent '{agent_id}' run method signature: {sig}")
-        logger.info(f"[DEBUG] - - Agent '{agent_id}' parameter count: {len(sig.parameters)}")
-        logger.info(f"[DEBUG] - - Agent '{agent_id}' needs_orchestrator: {needs_orchestrator}")
-        logger.info(f"[DEBUG] - - Agent '{agent_id}' is_async: {is_async}")
-        logger.info(f"[DEBUG] - - Agent '{agent_id}' agent type: {type(agent).__name__}")
+        logger.debug(f"- Agent '{agent_id}' run method signature: {sig}")
+        logger.debug(f"- Agent '{agent_id}' parameter count: {len(sig.parameters)}")
+        logger.debug(f"- Agent '{agent_id}' needs_orchestrator: {needs_orchestrator}")
+        logger.debug(f"- Agent '{agent_id}' is_async: {is_async}")
+        logger.debug(f"- Agent '{agent_id}' agent type: {type(agent).__name__}")
 
         # Execute the agent with appropriate method
         try:
@@ -825,14 +821,14 @@ class ExecutionEngine(
                     "orchestrator": self.orchestrator,  # Pass the actual orchestrator
                 }
                 # ✅ DEBUG: Log orchestrator context passing
-                logger.info(
-                    f"[DEBUG] - Agent '{agent_id}' orchestrator context keys: {list(context_with_orchestrator.keys())}"
+                logger.debug(
+                    f"Agent '{agent_id}' orchestrator context keys: {list(context_with_orchestrator.keys())}"
                 )
-                logger.info(
-                    f"[DEBUG] - Agent '{agent_id}' orchestrator object: {type(self.orchestrator).__name__}"
+                logger.debug(
+                    f"Agent '{agent_id}' orchestrator object: {type(self.orchestrator).__name__}"
                 )
-                logger.info(
-                    f"[DEBUG] - Agent '{agent_id}' orchestrator has fork_manager: {hasattr(self.orchestrator, 'fork_manager')}"
+                logger.debug(
+                    f"Agent '{agent_id}' orchestrator has fork_manager: {hasattr(self.orchestrator, 'fork_manager')}"
                 )
 
                 result = run_method(context_with_orchestrator)
@@ -908,7 +904,7 @@ class ExecutionEngine(
         else:
             branches = getattr(fork_node, "targets", [[agent_id] for agent_id in agent_ids])
 
-        logger.info(f"[DEBUG] - - Executing {len(branches)} branches: {branches}")
+        logger.debug(f"- Executing {len(branches)} branches: {branches}")
 
         # Execute branches in parallel
         try:
@@ -1002,9 +998,7 @@ class ExecutionEngine(
             logger.error(f"Parallel execution failed: {e}")
             raise
 
-    def _ensure_complete_context(
-        self: "ExecutionEngine", previous_outputs: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _ensure_complete_context(self, previous_outputs: Dict[str, Any]) -> Dict[str, Any]:
         """
         Generic method to ensure previous_outputs has complete context for template rendering.
         This handles various agent result structures and ensures templates can access data.
@@ -1301,9 +1295,7 @@ class ExecutionEngine(
         try:
             helper_functions = self._get_template_helper_functions(context)
             context.update(helper_functions)
-            logger.info(
-                f"[DEBUG] - - Added {len(helper_functions)} helper functions to template context"
-            )
+            logger.debug(f"- Added {len(helper_functions)} helper functions to template context")
         except Exception as e:
             logger.error(f"Failed to add helper functions to template context: {e}")
             logger.error(f"Exception details: {type(e).__name__}: {e}")
@@ -1393,17 +1385,15 @@ class ExecutionEngine(
                 func_name = var_path.split("(")[0].strip()
                 # Check if the function exists in context
                 if func_name in context and callable(context[func_name]):
-                    logger.info(
-                        f"[DEBUG] - Found callable function '{func_name}' for template path '{var_path}'"
+                    logger.debug(
+                        f"Found callable function '{func_name}' for template path '{var_path}'"
                     )
                     return True
                 else:
-                    logger.info(
-                        f"[DEBUG] - - Function '{func_name}' not found or not callable in context"
-                    )
+                    logger.debug(f"- Function '{func_name}' not found or not callable in context")
                     # Show available functions for debugging
                     available_funcs = [k for k, v in context.items() if callable(v)]
-                    logger.info(f"[DEBUG] - - Available callable functions: {available_funcs}")
+                    logger.debug(f"- Available callable functions: {available_funcs}")
                     return False
 
             # Split the path by dots
@@ -1416,21 +1406,25 @@ class ExecutionEngine(
                     key = part.split("[")[0]
                     index_str = part.split("[")[1].split("]")[0]
                     if key not in current:
-                        logger.info(f"[DEBUG] - - Missing key '{key}' in path '{var_path}'")
+                        logger.debug(f"- Missing key '{key}' in path '{var_path}'")
                         return False
                     current = current[key]
                     try:
                         index = int(index_str)
-                        if not isinstance(current, (list, tuple)) or len(current) <= index:
-                            logger.debug(
+                        current_value: Any = current[key]  # Reset type to Any
+                        if not isinstance(current_value, (list, tuple)):
+                            logger.debug(  # ignore: type[unreachable]
+                                f"[DEBUG] - Expected list/tuple for array access in path '{var_path}'"
+                            )
+                            return False
+                        if len(current_value) <= index:
+                            logger.debug(  # ignore: type[unreachable]
                                 f"[DEBUG] - Invalid array access [{index}] in path '{var_path}'"
                             )
                             return False
-                        current = current[index]
+                        current = current_value[index]
                     except (ValueError, IndexError):
-                        logger.info(
-                            f"[DEBUG] - - Invalid array index '{index_str}' in path '{var_path}'"
-                        )
+                        logger.debug(f"- Invalid array index '{index_str}' in path '{var_path}'")
                         return False
                 else:
                     # Simple key access
@@ -1438,8 +1432,8 @@ class ExecutionEngine(
                         # ✅ FIX: Enhanced debugging for missing keys, especially agent names
                         if isinstance(current, dict):
                             available_keys = list(current.keys())
-                            logger.info(
-                                f"[DEBUG] - Missing key '{part}' in path '{var_path}'. Available keys: {available_keys}"
+                            logger.debug(
+                                f"Missing key '{part}' in path '{var_path}'. Available keys: {available_keys}"
                             )
 
                             # Special handling for agent name mismatches in previous_outputs
@@ -1471,7 +1465,7 @@ class ExecutionEngine(
 
             return True
         except Exception as e:
-            logger.info(f"[DEBUG] - - Error validating template path '{var_path}': {e}")
+            logger.debug(f"- Error validating template path '{var_path}': {e}")
             return False
 
     def _simplify_agent_result_for_templates(self, agent_result: Any) -> Any:

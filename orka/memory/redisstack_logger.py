@@ -291,8 +291,8 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             with self._connection_lock:
                 if not hasattr(self._local, "redis_client"):
                     self._local.redis_client = self._create_redis_connection()
-                    logger.info(
-                        f"[DEBUG] - Created Redis connection for thread {threading.current_thread().ident}",
+                    logger.debug(
+                        f"Created Redis connection for thread {threading.current_thread().ident}",
                     )
         _safe_client: Redis[Any] = self._local.redis_client
         return _safe_client
@@ -403,8 +403,8 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 except Exception as e:
                     logger.warning(f"Failed to generate embedding for memory: {e}")
 
-            logger.info(
-                f"[DEBUG] - RedisStackMemoryLogger: Attempting to hset memory_key={memory_key} with data={memory_data}"
+            logger.debug(
+                f"RedisStackMemoryLogger: Attempting to hset memory_key={memory_key} with data={memory_data}"
             )
             # Store the memory
             client.hset(
@@ -436,7 +436,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 # Try to get the current event loop
                 loop = asyncio.get_running_loop()
                 # We're in an async context - use fallback encoding to avoid complications
-                logger.info("[DEBUG] - In async context, using fallback encoding for embedding")
+                logger.debug("In async context, using fallback encoding for embedding")
                 _self_embedder: np.ndarray[Any, Any] = self.embedder._fallback_encode(text)
                 return _self_embedder
 
@@ -496,7 +496,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
 
                     from orka.utils.bootstrap_memory_index import hybrid_vector_search
 
-                    logger.info(f"[DEBUG] - - Performing vector search for: {query}")
+                    logger.debug(f"- Performing vector search for: {query}")
 
                     client = self._get_thread_safe_client()
                     results = hybrid_vector_search(
@@ -508,11 +508,11 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                         trace_id=trace_id,
                     )
 
-                    logger.info(f"[DEBUG] - - Vector search returned {len(results)} results")
+                    logger.debug(f"- Vector search returned {len(results)} results")
 
                     # Debug: Log some details about what was searched
-                    logger.info(
-                        f"[DEBUG] - - Vector search query: '{query}', num_results: {num_results}, index: {self.index_name}"
+                    logger.debug(
+                        f"- Vector search query: '{query}', num_results: {num_results}, index: {self.index_name}"
                     )
                     if len(results) == 0:
                         logger.warning(
@@ -649,7 +649,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                             logger.warning(f"Error processing search result: {e}")
                             continue
 
-                    logger.info(f"[DEBUG] - - Returning {len(formatted_results)} filtered results")
+                    logger.debug(f"- Returning {len(formatted_results)} filtered results")
 
                     # If vector search returned 0 results, fall back to text search
                     if len(formatted_results) == 0 and query.strip():
@@ -674,7 +674,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
 
             else:
                 # Empty query or no embedder - use text search directly
-                logger.info("[DEBUG] - Using text search for empty query or no embedder available")
+                logger.debug("Using text search for empty query or no embedder available")
 
             # Fallback to basic text search
             return self._fallback_text_search(
@@ -732,7 +732,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
     ) -> list[dict[str, Any]]:
         """Fallback text search using basic Redis search capabilities."""
         try:
-            logger.info("[DEBUG] - Using fallback text search")
+            logger.debug("Using fallback text search")
 
             # Import Query from the correct location
             from redis.commands.search.query import Query
@@ -770,7 +770,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 search_query = f"({search_query}) " + " ".join(filters)
 
             # Debug: Log the actual search query being used
-            logger.info(f"[DEBUG] - - FT.SEARCH query: '{search_query}'")
+            logger.debug(f"- FT.SEARCH query: '{search_query}'")
 
             # Validate search query before executing
             if not search_query or not search_query.strip():
@@ -792,9 +792,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                     Query(search_query).paging(0, num_results),
                 )
             except Exception as ft_error:
-                logger.info(
-                    f"[DEBUG] - - RedisStack FT.SEARCH failed: {ft_error}, using basic Redis scan"
-                )
+                logger.debug(f"- RedisStack FT.SEARCH failed: {ft_error}, using basic Redis scan")
                 return self._basic_redis_search(
                     query,
                     num_results,
@@ -837,7 +835,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                         metadata_value = self._safe_get_redis_value(memory_data, "metadata", "{}")
                         metadata = json.loads(metadata_value)
                     except Exception as e:
-                        logger.info(f"[DEBUG] - - Error parsing metadata for key {doc.id}: {e}")
+                        logger.debug(f"- Error parsing metadata for key {doc.id}: {e}")
                         metadata = {}
 
                     # Filter by log_type (same logic as vector search)
@@ -913,7 +911,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
     ) -> list[dict[str, Any]]:
         """Basic Redis search using SCAN when RedisStack modules are not available."""
         try:
-            logger.info("[DEBUG] - Using basic Redis SCAN for search")
+            logger.debug("Using basic Redis SCAN for search")
 
             client = self._get_thread_safe_client()
             pattern = "orka_memory:*"
@@ -1012,10 +1010,10 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                     results.append(result)
 
                 except Exception as e:
-                    logger.info(f"[DEBUG] - - Error processing key {key}: {e}")
+                    logger.debug(f"- Error processing key {key}: {e}")
                     continue
 
-            logger.info(f"[DEBUG] - - Basic Redis search returned {len(results)} results")
+            logger.debug(f"- Basic Redis search returned {len(results)} results")
             return results
 
         except Exception as e:
@@ -1058,7 +1056,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                         metadata_value = self._safe_get_redis_value(memory_data, "metadata", "{}")
                         metadata = json.loads(metadata_value)
                     except Exception as e:
-                        logger.info(f"[DEBUG] - - Error parsing metadata for key {key}: {e}")
+                        logger.debug(f"- Error parsing metadata for key {key}: {e}")
                         metadata = {}
 
                     memory = {
@@ -1091,7 +1089,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         """Delete a specific memory entry."""
         try:
             result = self.redis_client.delete(key)
-            logger.info(f"[DEBUG] - - Deleted memory key: {key}")
+            logger.debug(f"- Deleted memory key: {key}")
             return result > 0
         except Exception as e:
             logger.error(f"Failed to delete memory {key}: {e}")
@@ -1160,7 +1158,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                         metadata_value = self._safe_get_redis_value(memory_data, "metadata", "{}")
                         metadata = json.loads(metadata_value)
                     except Exception as e:
-                        logger.info(f"[DEBUG] - - Error parsing metadata for key {key}: {e}")
+                        logger.debug(f"- Error parsing metadata for key {key}: {e}")
                         metadata = {}
 
                     # Count by log_type and determine correct category
@@ -1437,9 +1435,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                     try:
                         deleted_count = self.redis_client.delete(*batch)
                         cleaned += deleted_count
-                        logger.info(
-                            f"[DEBUG] - - Deleted batch of {deleted_count} expired memories"
-                        )
+                        logger.debug(f"- Deleted batch of {deleted_count} expired memories")
                     except Exception as e:
                         errors.append(f"Batch deletion error: {e}")
 
@@ -1542,7 +1538,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                             metadata_value = metadata_value.decode()
                         metadata = json.loads(metadata_value)
                     except Exception as e:
-                        logger.info(f"[DEBUG] - - Error parsing metadata for key {key}: {e}")
+                        logger.debug(f"- Error parsing metadata for key {key}: {e}")
                         metadata = {}
 
                         # Only include stored memories (not orchestration logs)
@@ -1616,7 +1612,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 has_expiry = True
         except Exception as e:
             key_str = key.decode() if isinstance(key, bytes) else str(key)
-            logger.info(f"[DEBUG] - - Error getting Redis TTL for {key_str}: {e}")
+            logger.debug(f"- Error getting Redis TTL for {key_str}: {e}")
 
         # Check for orka_expire_time field if Redis TTL is not set or is -1
         if not has_expiry:
@@ -1701,7 +1697,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                     )
 
             except Exception as e:
-                logger.info(f"[DEBUG] - - Could not get index info: {e}")
+                logger.debug(f"- Could not get index info: {e}")
                 metrics["index_status"] = {
                     "status": "unavailable",
                     "error": str(e),
@@ -1733,7 +1729,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 metrics["namespace_distribution"] = namespace_dist
 
             except Exception as e:
-                logger.info(f"[DEBUG] - - Could not get namespace distribution: {e}")
+                logger.debug(f"- Could not get namespace distribution: {e}")
                 metrics["namespace_distribution"] = {}
 
             # Memory quality metrics
@@ -1763,7 +1759,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                     }
 
             except Exception as e:
-                logger.info(f"[DEBUG] - - Could not get memory quality metrics: {e}")
+                logger.debug(f"- Could not get memory quality metrics: {e}")
                 metrics["memory_quality"] = {}
 
             return metrics

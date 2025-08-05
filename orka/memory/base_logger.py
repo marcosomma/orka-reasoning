@@ -668,7 +668,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
                 if result_str:
                     result = json.loads(result_str)
                     outputs[agent_id] = result
-                    logger.info(f"[DEBUG] - - Loaded result for agent {agent_id} from Redis")
+                    logger.debug(f"- Loaded result for agent {agent_id} from Redis")
         except Exception as e:
             logger.warning(f"Failed to load results from Redis: {e}")
 
@@ -714,11 +714,11 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
                 # Store individual result
                 result_key = f"agent_result:{agent_id}"
                 self.set(result_key, json.dumps(outputs[agent_id]))
-                logger.info(f"[DEBUG] - - Stored result for agent {agent_id}")
+                logger.debug(f"- Stored result for agent {agent_id}")
 
                 # Store in group hash
                 self.hset(group_key, agent_id, json.dumps(outputs[agent_id]))
-                logger.info(f"[DEBUG] - - Stored result in group for agent {agent_id}")
+                logger.debug(f"- Stored result in group for agent {agent_id}")
             except Exception as e:
                 logger.warning(f"Failed to store result in Redis: {e}")
 

@@ -23,6 +23,8 @@ import os
 import sys
 from datetime import datetime
 
+DEFAULT_LOG_LEVEL: str = "DEBUG"
+
 
 class SafeFormatter(logging.Formatter):
     """Formatter that handles encoding errors."""
@@ -37,7 +39,12 @@ class SafeFormatter(logging.Formatter):
 
 def setup_logging(verbose: bool = False):
     """Setup logging configuration."""
-    level = logging.DEBUG if verbose else logging.INFO
+    # Check environment variable first, then fall back to verbose flag
+    env_level = os.getenv("ORKA_LOG_LEVEL", DEFAULT_LOG_LEVEL).upper()
+    if env_level in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
+        level = getattr(logging, env_level)
+    else:
+        level = logging.DEBUG if verbose else logging.INFO
     # Remove all handlers associated with the root logger to prevent duplicate output
     for handler in logging.root.handlers[:]:
         logging.root.removeHandler(handler)

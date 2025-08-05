@@ -99,12 +99,12 @@ class FailoverNode(BaseNode):
                     continue
 
                 # Check if result is valid (not None, not empty, and contains meaningful data)
-                logger.info(
-                    f"[DEBUG] - Child '{child_id}' returned result type: {type(result)}",
+                logger.debug(
+                    f"Child '{child_id}' returned result type: {type(result)}",
                 )
                 if result:
-                    logger.info(
-                        f"[DEBUG] - Result preview: {str(result)[:200]}...",
+                    logger.debug(
+                        f"Result preview: {str(result)[:200]}...",
                     )
 
                 if result and self._is_valid_result(result):
@@ -217,8 +217,8 @@ class FailoverNode(BaseNode):
                         "503",
                     ]
                     if any(indicator in item_lower for indicator in error_indicators):
-                        logger.info(
-                            f"[DEBUG] - Rejecting error message: {item[:50]}...",
+                        logger.debug(
+                            f"Rejecting error message: {item[:50]}...",
                         )
                         return False
 
@@ -240,8 +240,8 @@ class FailoverNode(BaseNode):
                             "web-based",
                         ]
                         if any(indicator in item_lower for indicator in html_indicators):
-                            logger.info(
-                                f"[DEBUG] - Rejecting HTML content: {item[:50]}...",
+                            logger.debug(
+                                f"Rejecting HTML content: {item[:50]}...",
                             )
                             return False
 

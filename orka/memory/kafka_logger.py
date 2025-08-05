@@ -164,7 +164,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
 
                 # Write to Redis stream
                 self.redis_client.xadd(self.stream_key, redis_entry)
-                logger.info(f"[DEBUG] - - Stored event in basic Redis stream: {self.stream_key}")
+                logger.debug(f"- Stored event in basic Redis stream: {self.stream_key}")
 
             except Exception as e:
                 logger.error(f"Failed to store event in basic Redis: {e}")
@@ -275,7 +275,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         if err:
             logger.error(f"Message delivery failed: {err}")
         else:
-            logger.info(f"[DEBUG] - - Message delivered to {msg.topic()} [{msg.partition()}]")
+            logger.debug(f"- Message delivered to {msg.topic()} [{msg.partition()}]")
 
     def tail(self, count: int = 10) -> list[dict[str, Any]]:
         """Get the last n events from Redis."""

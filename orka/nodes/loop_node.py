@@ -197,7 +197,7 @@ class LoopNode(BaseNode):
             )
             self.past_loops_metadata: Dict[MetadataKey, str] = user_metadata
         else:
-            logger.info("[DEBUG] - Using default past_loops_metadata structure")
+            logger.debug("Using default past_loops_metadata structure")
             self.past_loops_metadata = default_metadata_fields
 
         # Cognitive extraction configuration
@@ -267,12 +267,12 @@ class LoopNode(BaseNode):
                     # Store individual loop result
                     loop_key = f"loop_result:{self.node_id}:{current_loop}"
                     self._store_in_redis(loop_key, loop_result)
-                    logger.info(f"[DEBUG] - - Stored loop result: {loop_key}")
+                    logger.debug(f"- Stored loop result: {loop_key}")
 
                     # Store past loops array
                     past_loops_key = f"past_loops:{self.node_id}"
                     self._store_in_redis(past_loops_key, past_loops)
-                    logger.info(f"[DEBUG] - - Stored past loops: {past_loops_key}")
+                    logger.debug(f"- Stored past loops: {past_loops_key}")
 
                     # Store in Redis hash for tracking
                     group_key = f"loop_results:{self.node_id}"
@@ -285,7 +285,7 @@ class LoopNode(BaseNode):
                             "past_loop": past_loop_obj,
                         },
                     )
-                    logger.info(f"[DEBUG] - - Stored result in group for loop {current_loop}")
+                    logger.debug(f"- Stored result in group for loop {current_loop}")
                 except Exception as e:
                     logger.error(f"Failed to store loop result in Redis: {e}")
 
@@ -307,7 +307,7 @@ class LoopNode(BaseNode):
                     try:
                         final_key = f"final_result:{self.node_id}"
                         self._store_in_redis(final_key, final_result)
-                        logger.info(f"[DEBUG] - - Stored final result: {final_key}")
+                        logger.debug(f"- Stored final result: {final_key}")
                     except Exception as e:
                         logger.error(f"Failed to store final result in Redis: {e}")
 
@@ -334,7 +334,7 @@ class LoopNode(BaseNode):
             try:
                 final_key = f"final_result:{self.node_id}"
                 self._store_in_redis(final_key, final_result)
-                logger.info(f"[DEBUG] - - Stored final result: {final_key}")
+                logger.debug(f"- Stored final result: {final_key}")
             except Exception as e:
                 logger.error(f"Failed to store final result in Redis: {e}")
 
@@ -425,16 +425,14 @@ class LoopNode(BaseNode):
 
             # Execute workflow with return_logs=True to get full logs for processing
             agent_sequence = [agent.get("id") for agent in self.internal_workflow.get("agents", [])]
-            logger.info(
-                f"[DEBUG] - About to execute internal workflow with {len(agent_sequence)} agents defined"
+            logger.debug(
+                f"About to execute internal workflow with {len(agent_sequence)} agents defined"
             )
-            logger.info(f"[DEBUG] - Full agent sequence: {agent_sequence}")
+            logger.debug(f"Full agent sequence: {agent_sequence}")
 
             try:
                 logs = await orchestrator.run(workflow_input, return_logs=True)
-                logger.info(
-                    f"[DEBUG] - Internal workflow execution completed with {len(logs)} log entries"
-                )
+                logger.debug(f"Internal workflow execution completed with {len(logs)} log entries")
 
                 # Debug which agents actually executed
                 executed_sequence = []
@@ -446,9 +444,9 @@ class LoopNode(BaseNode):
                     ):
                         executed_sequence.append(log_entry.get("agent_id"))
 
-                logger.info(f"[DEBUG] - Actual execution sequence: {executed_sequence}")
-                logger.info(
-                    f"[DEBUG] - Expected vs actual count: {len(agent_sequence)} expected, {len(executed_sequence)} executed"
+                logger.debug(f"Actual execution sequence: {executed_sequence}")
+                logger.debug(
+                    f"Expected vs actual count: {len(agent_sequence)} expected, {len(executed_sequence)} executed"
                 )
 
                 # Identify missing agents
@@ -482,8 +480,8 @@ class LoopNode(BaseNode):
                             if "result" in payload:
                                 agents_results[agent_id] = payload["result"]
 
-            logger.info(f"[DEBUG] - Agents that actually executed: {executed_agents}")
-            logger.info(f"[DEBUG] - Agents with results: {list(agents_results.keys())}")
+            logger.debug(f"Agents that actually executed: {executed_agents}")
+            logger.debug(f"Agents with results: {list(agents_results.keys())}")
 
             # Generic debugging: Check for any agents that might contain scores
             score_patterns = ["AGREEMENT_SCORE", "SCORE:", "score:", "Score:"]
@@ -865,8 +863,8 @@ class LoopNode(BaseNode):
                         return value
 
         # Fallback: return default
-        logger.info(
-            f"[DEBUG] - Secondary metric '{metric_key}' not found in result, using default: {default}",
+        logger.debug(
+            f"Secondary metric '{metric_key}' not found in result, using default: {default}",
         )
         return default
 
@@ -1038,8 +1036,8 @@ class LoopNode(BaseNode):
             helper_functions = renderer._get_template_helper_functions(helper_payload)
             template_context.update(helper_functions)
 
-            logger.info(
-                f"[DEBUG] - - Added {len(helper_functions)} helper functions to LoopNode template context"
+            logger.debug(
+                f"- Added {len(helper_functions)} helper functions to LoopNode template context"
             )
         except Exception as e:
             logger.warning(f"Failed to add helper functions to LoopNode template context: {e}")
@@ -1057,9 +1055,7 @@ class LoopNode(BaseNode):
                 template = Template(template_str)
                 rendered_value = template.render(template_context)
                 past_loop_obj[field_name] = rendered_value
-                logger.info(
-                    f"[DEBUG] - - Rendered metadata field '{field_name}': {rendered_value[:50]}..."
-                )
+                logger.debug(f"- Rendered metadata field '{field_name}': {rendered_value[:50]}...")
             except Exception as e:
                 logger.warning(
                     f"Failed to render metadata field '{field_name}' with template '{template_str}': {e}"
@@ -1136,7 +1132,7 @@ class LoopNode(BaseNode):
         if self.memory_logger is not None:
             try:
                 self.memory_logger.set(key, json.dumps(value))
-                logger.info(f"[DEBUG] - - Stored in Redis: {key}")
+                logger.debug(f"- Stored in Redis: {key}")
             except Exception as e:
                 logger.error(f"Failed to store in Redis: {e}")
 
@@ -1145,6 +1141,6 @@ class LoopNode(BaseNode):
         if self.memory_logger is not None:
             try:
                 self.memory_logger.hset(hash_key, field, json.dumps(value))
-                logger.info(f"[DEBUG] - - Stored in Redis hash: {hash_key}[{field}]")
+                logger.debug(f"- Stored in Redis hash: {hash_key}[{field}]")
             except Exception as e:
                 logger.error(f"Failed to store in Redis hash: {e}")

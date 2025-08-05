@@ -134,8 +134,8 @@ class LocalCostCalculator:
 
         total_cost = electricity_cost + amortization_cost
 
-        logger.info(
-            f"[DEBUG] - Local cost breakdown: electricity=${electricity_cost:.6f}, "
+        logger.debug(
+            f"Local cost breakdown: electricity=${electricity_cost:.6f}, "
             f"amortization=${amortization_cost:.6f}, total=${total_cost:.6f} "
             f"(model={model}, {tokens}tok, {latency_ms}ms)",
         )

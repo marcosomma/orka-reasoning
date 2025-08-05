@@ -456,12 +456,12 @@ class OpenAIAnswerBuilder(BaseAgent):
             and input_data["formatted_prompt"]
         ):
             render_prompt = input_data["formatted_prompt"]
-            logger.info(
-                f"[DEBUG] - Using pre-rendered prompt from execution engine (length: {len(render_prompt)})"
+            logger.debug(
+                f"Using pre-rendered prompt from execution engine (length: {len(render_prompt)})"
             )
         else:
             render_prompt = original_prompt
-            logger.info(f"[DEBUG] - Using original prompt template (length: {len(render_prompt)})")
+            logger.debug(f"Using original prompt template (length: {len(render_prompt)})")
 
         self_evaluation = """
             # CONSTRAINS

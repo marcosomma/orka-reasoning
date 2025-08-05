@@ -314,7 +314,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
             for stream_key in streams_to_write:
                 try:
                     self.client.xadd(stream_key, redis_entry)
-                    logger.info(f"[DEBUG] - - Successfully wrote to stream: {stream_key}")
+                    logger.debug(f"- Successfully wrote to stream: {stream_key}")
                 except Exception as stream_e:
                     logger.error(f"Failed to write to stream {stream_key}: {stream_e!s}")
 
