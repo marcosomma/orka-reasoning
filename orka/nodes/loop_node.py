@@ -138,8 +138,10 @@ class LoopNode(BaseNode):
             **kwargs: Additional configuration parameters:
                 - max_loops (int): Maximum number of loop iterations (default: 5)
                 - score_threshold (float): Score threshold to meet before continuing (default: 0.8)
-                - score_extraction_pattern (str): Regex pattern to extract score from results
-                - score_extraction_key (str): Direct key to look for score in result dict
+                - high_priority_agents (List[str]): Agent names to check first for scores (default: ["agreement_moderator", "quality_moderator", "score_moderator"])
+                - score_extraction_config (dict): Complete score extraction configuration with strategies
+                - score_extraction_pattern (str): Regex pattern to extract score from results (deprecated, use score_extraction_config)
+                - score_extraction_key (str): Direct key to look for score in result dict (deprecated, use score_extraction_config)
                 - internal_workflow (dict): Complete workflow configuration to execute in loop
                 - past_loops_metadata (dict): Template for past_loops object structure
                 - cognitive_extraction (dict): Configuration for extracting valuable cognitive data
@@ -160,6 +162,31 @@ class LoopNode(BaseNode):
         # Configuration with type hints
         self.max_loops: int = kwargs.get("max_loops", 5)
         self.score_threshold: float = kwargs.get("score_threshold", 0.8)
+
+        # High-priority agents for score extraction (configurable)
+        self.high_priority_agents: List[str] = kwargs.get(
+            "high_priority_agents", ["agreement_moderator", "quality_moderator", "score_moderator"]
+        )
+
+        # Debug: Log the received configuration
+        if "score_extraction_config" in kwargs:
+            logger.debug(f"LoopNode {node_id}: Received custom score_extraction_config from YAML")
+            custom_config = kwargs["score_extraction_config"]
+            if "strategies" in custom_config:
+                logger.debug(
+                    f"LoopNode {node_id}: Found {len(custom_config['strategies'])} strategies"
+                )
+                for i, strategy in enumerate(custom_config["strategies"]):
+                    if strategy.get("type") == "pattern" and "patterns" in strategy:
+                        logger.debug(
+                            f"LoopNode {node_id}: Strategy {i+1} has {len(strategy['patterns'])} patterns"
+                        )
+                        logger.debug(
+                            f"LoopNode {node_id}: First pattern: {strategy['patterns'][0] if strategy['patterns'] else 'None'}"
+                        )
+        else:
+            logger.debug(f"LoopNode {node_id}: No custom score_extraction_config, using defaults")
+
         self.score_extraction_config: Dict[str, List[Dict[str, Union[str, List[str]]]]] = (
             kwargs.get(
                 "score_extraction_config",
@@ -181,12 +208,26 @@ class LoopNode(BaseNode):
                                 r"(\d+\.?\d*)%",
                                 r"(\d+\.?\d*)\s*out\s*of\s*10",
                                 r"(\d+\.?\d*)\s*points?",
+                                r"0\.[6-9][0-9]?",  # Pattern for high agreement scores
+                                r"([0-9])\.[0-9]+",  # Any decimal number
                             ],
                         }
                     ]
                 },
             )
         )
+
+        # Debug: Log which configuration is actually being used
+        if "strategies" in self.score_extraction_config:
+            strategy_count = len(self.score_extraction_config["strategies"])
+            logger.debug(f"LoopNode {node_id}: Using {strategy_count} extraction strategies")
+            for i, strategy in enumerate(self.score_extraction_config["strategies"]):
+                if strategy.get("type") == "pattern" and "patterns" in strategy:
+                    pattern_count = len(strategy["patterns"])
+                    first_pattern = strategy["patterns"][0] if strategy["patterns"] else "None"
+                    logger.debug(
+                        f"LoopNode {node_id}: Strategy {i+1} (pattern): {pattern_count} patterns, first: {first_pattern}"
+                    )
 
         # Backward compatibility - convert old format to new format
         if "score_extraction_pattern" in kwargs or "score_extraction_key" in kwargs:
@@ -505,9 +546,17 @@ class LoopNode(BaseNode):
                 logger.error(f"CRITICAL: Exception type: {type(e)}")
                 raise
 
-            # Extract actual agent responses from logs
+            # Extract actual agent responses from logs - ENHANCED for all execution types
             agents_results: Dict[str, Any] = {}
             executed_agents = []
+
+            # Track extraction statistics for debugging
+            extraction_stats: Dict[str, Any] = {
+                "total_log_entries": len(logs),
+                "agent_entries": 0,
+                "successful_extractions": 0,
+                "extraction_methods": {},
+            }
 
             for log_entry in logs:
                 if isinstance(log_entry, dict) and log_entry.get("event_type") == "MetaReport":
@@ -517,13 +566,133 @@ class LoopNode(BaseNode):
                     agent_id = log_entry.get("agent_id")
                     if agent_id:
                         executed_agents.append(agent_id)
-                        if "payload" in log_entry:
+                        extraction_stats["agent_entries"] += 1
+
+                        # ENHANCED: Multiple extraction strategies for different agent execution types
+                        result_found = False
+                        extraction_method = None
+
+                        # Strategy 1: Standard payload.result (for most agents)
+                        if not result_found and "payload" in log_entry:
                             payload = log_entry["payload"]
                             if "result" in payload:
                                 agents_results[agent_id] = payload["result"]
+                                result_found = True
+                                extraction_method = "payload.result"
+
+                        # Strategy 2: Check if the log entry itself contains result data
+                        if not result_found and "result" in log_entry:
+                            agents_results[agent_id] = log_entry["result"]
+                            result_found = True
+                            extraction_method = "direct_result"
+
+                        # Strategy 3: Extract from structured log content (for embedded results)
+                        if not result_found:
+                            # Parse the full log entry content for embedded data structures
+                            log_content = str(log_entry)
+
+                            # Look for JSON-like structures containing our agent
+                            if f'"{agent_id}":' in log_content and '"response":' in log_content:
+                                try:
+                                    # Try to extract the JSON structure
+                                    import json
+                                    import re
+
+                                    # Look for the pattern: "agent_id": {"response": "...", ...}
+                                    pattern = f'"{re.escape(agent_id)}":\\s*\\{{[^}}]+\\}}'
+                                    match = re.search(pattern, log_content)
+
+                                    if match:
+                                        agent_data_str = "{" + match.group(0) + "}"
+                                        # Clean up the string to make it valid JSON
+                                        agent_data_str = agent_data_str.replace(
+                                            f'"{agent_id}":', f'"{agent_id}":'
+                                        )
+                                        try:
+                                            agent_data = json.loads(agent_data_str)
+                                            if agent_id in agent_data:
+                                                agents_results[agent_id] = agent_data[agent_id]
+                                                result_found = True
+                                                extraction_method = "embedded_json"
+                                        except json.JSONDecodeError:
+                                            pass
+                                except Exception as e:
+                                    logger.debug(
+                                        f"Failed to parse embedded JSON for {agent_id}: {e}"
+                                    )
+
+                        # Strategy 4: For LocalLLM agents, check for response/content patterns in log entry
+                        if not result_found and isinstance(log_entry, dict):
+                            potential_response = None
+
+                            # Check common response patterns
+                            if "response" in log_entry:
+                                potential_response = {"response": log_entry["response"]}
+                            elif "content" in log_entry:
+                                potential_response = {"response": log_entry["content"]}
+                            elif "output" in log_entry:
+                                potential_response = {"response": log_entry["output"]}
+                            # Check nested payload structures
+                            elif "payload" in log_entry and isinstance(log_entry["payload"], dict):
+                                payload = log_entry["payload"]
+                                if "response" in payload:
+                                    potential_response = {"response": payload["response"]}
+                                elif "content" in payload:
+                                    potential_response = {"response": payload["content"]}
+                                elif "output" in payload:
+                                    potential_response = {"response": payload["output"]}
+
+                            if potential_response:
+                                agents_results[agent_id] = potential_response
+                                result_found = True
+                                extraction_method = "response_pattern"
+
+                        # Strategy 5: Search for agent data in the entire log structure
+                        if not result_found:
+                            # Convert entire log entry to string and search for response patterns
+                            full_content = str(log_entry)
+
+                            # Look for common score patterns that indicate this agent has useful data
+                            score_indicators = [
+                                "AGREEMENT_SCORE:",
+                                "SCORE:",
+                                "score:",
+                                "Score:",
+                                "RATING:",
+                                "rating:",
+                            ]
+                            for indicator in score_indicators:
+                                if indicator in full_content and agent_id in full_content:
+                                    # Create a basic response structure with the content
+                                    agents_results[agent_id] = {"response": full_content}
+                                    result_found = True
+                                    extraction_method = "content_search"
+                                    break
+
+                        # Track extraction statistics
+                        if result_found:
+                            extraction_stats["successful_extractions"] += 1
+                            extraction_stats["extraction_methods"][extraction_method] = (
+                                extraction_stats["extraction_methods"].get(extraction_method, 0) + 1
+                            )
+                            logger.debug(
+                                f"✅ Extracted result for '{agent_id}' via {extraction_method}"
+                            )
+                        else:
+                            logger.debug(
+                                f"❌ No result found for '{agent_id}' - Available keys: {list(log_entry.keys())}"
+                            )
+                            # Log a sample of the log entry for debugging
+                            sample_content = (
+                                str(log_entry)[:500] + "..."
+                                if len(str(log_entry)) > 500
+                                else str(log_entry)
+                            )
+                            logger.debug(f"   Sample content: {sample_content}")
 
             logger.debug(f"Agents that actually executed: {executed_agents}")
             logger.debug(f"Agents with results: {list(agents_results.keys())}")
+            logger.info(f"Extraction statistics: {extraction_stats}")
 
             # Generic debugging: Check for any agents that might contain scores
             score_patterns = ["AGREEMENT_SCORE", "SCORE:", "score:", "Score:"]
@@ -606,19 +775,65 @@ class LoopNode(BaseNode):
         if not result:
             return 0.0
 
-        # Score extraction called
-        logger.error(f"SCORE EXTRACTION CALLED with {len(result)} agents")
+        # DEBUG: Log what data we're trying to extract from
+        logger.debug(f"Score extraction called with {len(result)} agents")
         for agent_id, agent_result in result.items():
             if isinstance(agent_result, dict) and "response" in agent_result:
+                response_text = str(agent_result["response"])
                 response_preview = (
-                    str(agent_result["response"])[:100] + "..."
-                    if len(str(agent_result["response"])) > 100
-                    else str(agent_result["response"])
+                    response_text[:100] + "..." if len(response_text) > 100 else response_text
                 )
-                logger.error(f"Agent '{agent_id}' response preview: {response_preview}")
+                logger.debug(f"Agent '{agent_id}' response preview: {response_preview}")
 
         strategies = self.score_extraction_config.get("strategies", [])
 
+        # PRIORITY 1: Check for high-priority agents first (configurable)
+        for priority_agent in self.high_priority_agents:
+            if priority_agent in result:
+                agent_result = result[priority_agent]
+                if isinstance(agent_result, dict) and "response" in agent_result:
+                    response_text = str(agent_result["response"])
+                    logger.info(
+                        f"🔍 Checking high-priority agent '{priority_agent}': {response_text[:100]}..."
+                    )
+
+                    # Collect all patterns from the configuration
+                    all_patterns = []
+                    for strategy in strategies:
+                        if strategy.get("type") == "pattern" and "patterns" in strategy:
+                            patterns = strategy["patterns"]
+                            if isinstance(patterns, list):
+                                all_patterns.extend(patterns)
+
+                    # If no patterns in config, use basic fallback patterns
+                    if not all_patterns:
+                        all_patterns = [
+                            r"AGREEMENT_SCORE:\s*([0-9.]+)",
+                            r"Agreement Score:\s*([0-9.]+)",
+                            r"AGREEMENT_SCORE\s*([0-9.]+)",
+                            r"Score:\s*([0-9.]+)",
+                            r"SCORE:\s*([0-9.]+)",
+                        ]
+
+                    score_patterns = all_patterns
+
+                    for score_pattern in score_patterns:
+                        match = re.search(score_pattern, response_text)
+                        if match and match.group(1):
+                            try:
+                                score = float(match.group(1))
+                                logger.info(
+                                    f"✅ Found score {score} from high-priority agent '{priority_agent}' using pattern: {score_pattern}"
+                                )
+                                return score
+                            except (ValueError, TypeError):
+                                continue
+
+                    logger.warning(
+                        f"❌ High-priority agent '{priority_agent}' found but no score extracted from: {response_text}"
+                    )
+
+        # PRIORITY 2: Use configured extraction strategies
         for strategy in strategies:
             if not isinstance(strategy, dict):
                 continue  # type: ignore [unreachable]
@@ -630,6 +845,7 @@ class LoopNode(BaseNode):
                 if key in result:
                     value = result[key]
                     if self._is_valid_value(value):
+                        logger.info(f"✅ Found score {value} via direct_key strategy")
                         return float(value)  # Now type-safe due to TypeGuard
 
             elif strategy_type == "pattern":
@@ -641,7 +857,7 @@ class LoopNode(BaseNode):
                     if not isinstance(pattern, str):
                         continue  # type: ignore [unreachable]
 
-                    logger.warning(f"Trying pattern: {pattern}")
+                    logger.debug(f"🔍 Trying pattern: {pattern}")
 
                     # Look deeper into agent result structures
                     for agent_id, agent_result in result.items():
@@ -651,8 +867,8 @@ class LoopNode(BaseNode):
                             if match and match.group(1):
                                 try:
                                     score = float(match.group(1))
-                                    logger.warning(
-                                        f"Found score {score} in {agent_id} (direct string) using pattern: {pattern}"
+                                    logger.info(
+                                        f"✅ Found score {score} in {agent_id} (direct string) using pattern: {pattern}"
                                     )
                                     return score
                                 except (ValueError, TypeError):
@@ -663,13 +879,16 @@ class LoopNode(BaseNode):
                             for key in ["response", "result", "output", "data"]:
                                 if key in agent_result and isinstance(agent_result[key], str):
                                     text_content = agent_result[key]
+                                    logger.debug(
+                                        f"🔍 Searching in {agent_id}.{key}: {repr(text_content[:200])}"
+                                    )
                                     match = re.search(pattern, text_content)
                                     if match and match.group(1):
-                                        logger.warning(f"Matched text: '{text_content[:200]}'")
+                                        logger.debug(f"✅ Matched text: '{text_content[:200]}'")
                                         try:
                                             score = float(match.group(1))
-                                            logger.warning(
-                                                f"Found score {score} in {agent_id}.{key} using pattern: {pattern}"
+                                            logger.info(
+                                                f"✅ Found score {score} in {agent_id}.{key} using pattern: {pattern}"
                                             )
                                             return score
                                         except (ValueError, TypeError):
@@ -679,68 +898,95 @@ class LoopNode(BaseNode):
                                             "agreement" in agent_id.lower()
                                             or "AGREEMENT_SCORE" in text_content
                                         ):
-                                            logger.warning(
-                                                f"🔍 No match for pattern '{pattern}' in {agent_id}.{key}: '{text_content[:100]}'"
+                                            logger.debug(
+                                                f"❌ No match for pattern '{pattern}' in {agent_id}.{key}: '{text_content[:100]}'"
                                             )
 
             elif strategy_type == "agent_key":
                 agents = strategy.get("agents", [])
                 key = str(strategy.get("key", "response"))
-                logger.warning(f"🔍 Trying agent_key strategy for agents: {agents}, key: {key}")
+                logger.debug(f"🔍 Trying agent_key strategy for agents: {agents}, key: {key}")
 
                 for agent_name in agents:
                     if agent_name in result:
-                        logger.warning(f"🔍 Found agent '{agent_name}' in results")
+                        logger.debug(f"🔍 Found agent '{agent_name}' in results")
                         agent_result = result[agent_name]
                         if isinstance(agent_result, dict) and key in agent_result:
                             response_text = str(agent_result[key])
-                            logger.warning(
-                                f"🔍 Agent '{agent_name}' {key}: '{response_text[:100]}'"
-                            )
-                            # Try to extract score from the response
-                            score_match = re.search(r"AGREEMENT_SCORE:\s*([0-9.]+)", response_text)
-                            if score_match:
-                                try:
-                                    score = float(score_match.group(1))
-                                    logger.warning(
-                                        f"✅ Found score {score} in agent_key strategy from {agent_name}"
-                                    )
-                                    return score
-                                except (ValueError, TypeError):
-                                    pass
+                            logger.debug(f"🔍 Agent '{agent_name}' {key}: '{response_text[:100]}'")
+                            # Use configured patterns for agent_key strategy
+                            agent_score_patterns = []
+                            for strategy in strategies:
+                                if strategy.get("type") == "pattern" and "patterns" in strategy:
+                                    patterns = strategy["patterns"]
+                                    if isinstance(patterns, list):
+                                        agent_score_patterns.extend(patterns)
+
+                            # If no patterns in config, use basic fallback patterns
+                            if not agent_score_patterns:
+                                agent_score_patterns = [
+                                    r"AGREEMENT_SCORE:\s*([0-9.]+)",
+                                    r"Agreement Score:\s*([0-9.]+)",
+                                    r"SCORE:\s*([0-9.]+)",
+                                    r"Score:\s*([0-9.]+)",
+                                ]
+
+                            for score_pattern in agent_score_patterns:
+                                score_match = re.search(score_pattern, response_text)
+                                if score_match:
+                                    try:
+                                        score = float(score_match.group(1))
+                                        logger.info(
+                                            f"✅ Found score {score} in agent_key strategy from {agent_name} using pattern: {score_pattern}"
+                                        )
+                                        return score
+                                    except (ValueError, TypeError):
+                                        continue
                     else:
-                        logger.warning(
+                        logger.debug(
                             f"🔍 Agent '{agent_name}' not found in results. Available agents: {list(result.keys())}"
                         )
 
-        # If no score found through traditional methods, try agreement computation
-        logger.info(
-            "No score found through traditional extraction, attempting agreement computation"
-        )
-
-        # Check if this appears to be a cognitive debate scenario
+        # PRIORITY 3: Fallback to embedding computation ONLY if no explicit scores found
+        # AND this appears to be a cognitive debate scenario without explicit moderators
         agent_ids = list(result.keys())
+
+        # Check if we have any explicit score agents that might have failed
+        has_score_agents = any(agent_id in result for agent_id in self.high_priority_agents)
+
+        if has_score_agents:
+            logger.warning(
+                "❌ Score agents present but no scores extracted. NOT using embedding fallback to avoid overriding explicit scores."
+            )
+            return 0.0
+
+        # Only use embedding fallback for pure cognitive debates without score moderators
         cognitive_agents = [
             aid
             for aid in agent_ids
             if any(
                 word in aid.lower()
-                for word in ["progressive", "conservative", "realist", "purist", "agreement"]
+                for word in ["progressive", "conservative", "realist", "purist"]
+                # Note: "agreement" excluded to avoid confusion with agreement_moderator
             )
         ]
 
         if len(cognitive_agents) >= 2:
-            logger.info(f"Detected cognitive debate with agents: {cognitive_agents}")
+            logger.info(
+                f"Detected cognitive debate with agents: {cognitive_agents} (no score moderators found)"
+            )
+            logger.info("Using embedding-based agreement computation as final fallback")
             try:
                 # Run agreement computation directly since we're already in async context
                 agreement_score = await self._compute_agreement_score(result)
-                logger.info(f"Computed agreement score: {agreement_score}")
+                logger.info(f"✅ Computed fallback agreement score: {agreement_score}")
                 return agreement_score
 
             except Exception as e:
                 logger.error(f"Failed to compute agreement score: {e}")
                 return 0.0
 
+        logger.warning("❌ No valid score extraction method succeeded")
         return 0.0
 
     def _extract_direct_key(self, result: dict[str, Any], key: str) -> float | None:
