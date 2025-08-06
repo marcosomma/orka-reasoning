@@ -11,6 +11,8 @@
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
 
+import ast
+import asyncio
 import json
 import logging
 import os
@@ -22,8 +24,6 @@ from typing import (
     Dict,
     List,
     Literal,
-    Mapping,
-    NoReturn,
     Optional,
     Protocol,
     TypedDict,
@@ -33,11 +33,14 @@ from typing import (
     cast,
 )
 
+import numpy as np
 import yaml
+from jinja2 import Template
 from redis import Redis
 from redis.client import Redis as RedisType
 
 from ..memory.redisstack_logger import RedisStackMemoryLogger
+from ..utils.embedder import get_embedder
 from .base_node import BaseNode
 
 T = TypeVar("T")
@@ -274,6 +277,9 @@ class LoopNode(BaseNode):
             # Update the working copy with current past_loops for this iteration
             loop_previous_outputs["past_loops"] = past_loops
 
+            # Clear any Redis cache that might cause response duplication
+            await self._clear_loop_cache(current_loop)
+
             # Execute internal workflow
             loop_result = await self._execute_internal_workflow(
                 original_input,
@@ -285,7 +291,7 @@ class LoopNode(BaseNode):
                 break
 
             # Extract score
-            score = self._extract_score(loop_result)
+            score = await self._extract_score(loop_result)
 
             # Create past_loop object using metadata template
             past_loop_obj = self._create_past_loop_object(
@@ -381,8 +387,6 @@ class LoopNode(BaseNode):
         self, original_input: Any, previous_outputs: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
         """Execute the internal workflow configuration."""
-        import os
-
         from ..orchestrator import Orchestrator
 
         # Get the original workflow configuration
@@ -428,7 +432,8 @@ class LoopNode(BaseNode):
                 orchestrator.fork_manager.redis = self.memory_logger.redis  # Fixed attribute name
 
             # Create a safe version of previous_outputs to prevent circular references
-            safe_previous_outputs = self._create_safe_result(previous_outputs)
+            # BUT preserve important loop context for agents to see previous results
+            safe_previous_outputs = self._create_safe_result_with_context(previous_outputs)
 
             # Calculate current loop number from past_loops length
             current_loop_number = len(previous_outputs.get("past_loops", [])) + 1
@@ -596,7 +601,7 @@ class LoopNode(BaseNode):
         except (ValueError, TypeError):
             return False
 
-    def _extract_score(self, result: Dict[str, Any]) -> float:
+    async def _extract_score(self, result: Dict[str, Any]) -> float:
         """Extract score from result using configured extraction strategies."""
         if not result:
             return 0.0
@@ -708,6 +713,34 @@ class LoopNode(BaseNode):
                             f"🔍 Agent '{agent_name}' not found in results. Available agents: {list(result.keys())}"
                         )
 
+        # If no score found through traditional methods, try agreement computation
+        logger.info(
+            "No score found through traditional extraction, attempting agreement computation"
+        )
+
+        # Check if this appears to be a cognitive debate scenario
+        agent_ids = list(result.keys())
+        cognitive_agents = [
+            aid
+            for aid in agent_ids
+            if any(
+                word in aid.lower()
+                for word in ["progressive", "conservative", "realist", "purist", "agreement"]
+            )
+        ]
+
+        if len(cognitive_agents) >= 2:
+            logger.info(f"Detected cognitive debate with agents: {cognitive_agents}")
+            try:
+                # Run agreement computation directly since we're already in async context
+                agreement_score = await self._compute_agreement_score(result)
+                logger.info(f"Computed agreement score: {agreement_score}")
+                return agreement_score
+
+            except Exception as e:
+                logger.error(f"Failed to compute agreement score: {e}")
+                return 0.0
+
         return 0.0
 
     def _extract_direct_key(self, result: dict[str, Any], key: str) -> float | None:
@@ -723,8 +756,6 @@ class LoopNode(BaseNode):
         self, result: dict[str, Any], agents: list[str], key: str
     ) -> float | None:
         """Extract score from specific agent results."""
-        import ast
-        import json
 
         for agent_id, agent_result in result.items():
             # Check if this agent matches our priority list
@@ -766,9 +797,6 @@ class LoopNode(BaseNode):
                             except (ValueError, SyntaxError):
                                 pass
 
-                            # Try regex pattern matching on the string
-                            import re
-
                             pattern = rf"['\"]?{re.escape(key)}['\"]?\s*:\s*([0-9.]+)"
                             match = re.search(pattern, nested_value)
                             if match:
@@ -782,6 +810,115 @@ class LoopNode(BaseNode):
                     continue
 
         return None
+
+    async def _compute_agreement_score(self, result: dict[str, Any]) -> float:
+        """
+        Compute agreement score between agent responses using embeddings and cosine similarity.
+
+        This function replaces the text-based agreement_finder agent with proper
+        embedding-based similarity calculation.
+
+        Args:
+            result: Dictionary containing agent responses
+
+        Returns:
+            float: Agreement score between 0.0 and 1.0
+        """
+        try:
+            # Extract responses from all agents
+            agent_responses: List[Dict[str, Any]] = []
+            for agent_id, agent_result in result.items():
+                if isinstance(agent_result, dict):
+                    # Look for response content in common fields
+                    response_text = None
+                    for field in ["response", "result", "output", "content", "answer"]:
+                        if field in agent_result and agent_result[field]:
+                            response_text = str(agent_result[field])
+                            break
+
+                    if response_text:
+                        agent_responses.append(
+                            {"agent_id": agent_id, "response": response_text, "embedding": None}
+                        )
+                elif isinstance(agent_result, str) and agent_result.strip():
+                    # Handle direct string responses
+                    agent_responses.append(
+                        {"agent_id": agent_id, "response": agent_result, "embedding": None}
+                    )
+
+            # Need at least 2 responses to compute agreement
+            if len(agent_responses) < 2:
+                logger.warning(
+                    f"Only {len(agent_responses)} agent responses found, need at least 2 for agreement"
+                )
+                return 0.0
+
+            # Generate embeddings for each response
+
+            embedder = get_embedder()
+
+            for agent_data in agent_responses:
+                try:
+                    response_text = agent_data["response"]
+                    if response_text and isinstance(response_text, str):
+                        embedding = await embedder.encode(response_text)
+                        agent_data["embedding"] = (
+                            np.array(embedding) if embedding is not None else None
+                        )
+                    else:
+                        agent_data["embedding"] = None
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to generate embedding for {agent_data['agent_id']}: {e}"
+                    )
+                    agent_data["embedding"] = None
+
+            # Filter out responses without valid embeddings
+            valid_embeddings = []
+            valid_agents = []
+            for agent_data in agent_responses:
+                if agent_data["embedding"] is not None and len(agent_data["embedding"]) > 0:
+                    valid_embeddings.append(agent_data["embedding"])
+                    valid_agents.append(agent_data["agent_id"])
+
+            if len(valid_embeddings) < 2:
+                logger.warning(f"Only {len(valid_embeddings)} valid embeddings, returning 0.0")
+                return 0.0
+
+            # Compute pairwise cosine similarities
+            from sklearn.metrics.pairwise import (  # type: ignore[import-untyped]
+                cosine_similarity,
+            )
+
+            embeddings_matrix = np.array(valid_embeddings)
+            similarity_matrix = cosine_similarity(embeddings_matrix)
+
+            # Calculate mean similarity (excluding diagonal)
+            n = len(similarity_matrix)
+            if n < 2:
+                return 0.0
+
+            # Sum all similarities except diagonal, then normalize
+            total_similarity = np.sum(similarity_matrix) - np.trace(similarity_matrix)
+            max_pairs = n * (n - 1)  # All pairs excluding self-similarity
+
+            if max_pairs == 0:
+                return 0.0
+
+            mean_agreement = total_similarity / max_pairs
+
+            # Ensure score is between 0 and 1
+            agreement_score = max(0.0, min(1.0, float(mean_agreement)))
+
+            logger.info(
+                f"Computed agreement score: {agreement_score:.3f} from {len(valid_agents)} agents: {valid_agents}"
+            )
+
+            return agreement_score
+
+        except Exception as e:
+            logger.error(f"Error computing agreement score: {e}")
+            return 0.0
 
     def _extract_nested_path(self, result: dict[str, Any], path: str) -> float | None:
         """Extract score from nested path (e.g., 'result.score')."""
@@ -836,10 +973,6 @@ class LoopNode(BaseNode):
         if not isinstance(result, dict):
             logger.warning(f"Result is not a dict, cannot extract {metric_key}: {type(result)}")  # type: ignore [unreachable]
             return default
-
-        import ast
-        import json
-        import re
 
         # Try different extraction strategies
         for agent_id, agent_result in result.items():
@@ -1080,8 +1213,6 @@ class LoopNode(BaseNode):
         # Render each metadata field using the user-defined templates
         for field_name, template_str in self.past_loops_metadata.items():
             try:
-                # Create Jinja2 template and render with context
-                from jinja2 import Template
 
                 template = Template(template_str)
                 rendered_value = template.render(template_context)
@@ -1147,6 +1278,154 @@ class LoopNode(BaseNode):
                 seen.discard(obj_id)
 
         return _make_safe(result)
+
+    def _create_safe_result_with_context(self, result: Any) -> Any:
+        """
+        Create a safe, serializable version of the result that preserves important loop context.
+
+        This version preserves agent responses and past_loops data needed for context
+        in subsequent loop iterations, unlike _create_safe_result which truncates everything.
+        """
+
+        def _make_safe_with_context(
+            obj: Any, seen: Optional[set[int]] = None, depth: int = 0
+        ) -> Any:
+            if seen is None:
+                seen = set()
+
+            # Prevent infinite depth
+            if depth > 10:
+                return "<max_depth_reached>"
+
+            obj_id = id(obj)
+            if obj_id in seen:
+                return "<circular_reference>"
+
+            if obj is None:
+                return None
+
+            if isinstance(obj, (str, int, float, bool)):
+                return obj
+
+            seen.add(obj_id)
+
+            try:
+                if isinstance(obj, list):
+                    return [_make_safe_with_context(item, seen.copy(), depth + 1) for item in obj]
+
+                if isinstance(obj, dict):
+                    safe_dict = {}
+                    for key, value in obj.items():
+                        key_str = str(key)
+
+                        # Always preserve past_loops for context
+                        if key_str == "past_loops":
+                            safe_dict[key_str] = _make_safe_with_context(
+                                value, seen.copy(), depth + 1
+                            )
+
+                        # Preserve agent responses for cognitive debate context
+                        elif any(
+                            agent_type in key_str.lower()
+                            for agent_type in [
+                                "progressive",
+                                "conservative",
+                                "realist",
+                                "purist",
+                                "agreement",
+                            ]
+                        ):
+                            if isinstance(value, dict):
+                                # For agent dictionaries, preserve response but limit size
+                                agent_dict = {}
+                                for agent_key, agent_value in value.items():
+                                    if agent_key == "response":
+                                        # Preserve full response for context but limit to reasonable size
+                                        response_str = str(agent_value)
+                                        if len(response_str) > 2000:
+                                            agent_dict[agent_key] = (
+                                                response_str[:2000] + "...<truncated_for_safety>"
+                                            )
+                                        else:
+                                            agent_dict[agent_key] = response_str
+                                    elif agent_key in ["confidence", "internal_reasoning"]:
+                                        # Preserve other important fields
+                                        agent_dict[agent_key] = (
+                                            str(agent_value)[:500]
+                                            if len(str(agent_value)) > 500
+                                            else agent_value
+                                        )
+                                    # Skip large metadata like _metrics, formatted_prompt
+                                safe_dict[key_str] = agent_dict
+                            else:
+                                safe_dict[key_str] = (
+                                    str(value)[:1000] if len(str(value)) > 1000 else value
+                                )
+
+                        # Skip problematic circular references but preserve simple values
+                        elif key_str not in ("previous_outputs", "payload"):
+                            if isinstance(value, (str, int, float, bool, type(None))):
+                                safe_dict[key_str] = value
+                            elif isinstance(value, (dict, list)):
+                                safe_dict[key_str] = _make_safe_with_context(
+                                    value, seen.copy(), depth + 1
+                                )
+                            else:
+                                # Convert complex objects to strings with size limit
+                                str_value = str(value)
+                                if len(str_value) > 500:
+                                    safe_dict[key_str] = str_value[:500] + "...<truncated>"
+                                else:
+                                    safe_dict[key_str] = str_value
+
+                    return safe_dict
+
+                # Convert other objects to strings with size limit
+                str_obj = str(obj)
+                return str_obj[:1000] + "..." if len(str_obj) > 1000 else str_obj
+
+            finally:
+                seen.discard(obj_id)
+
+        return _make_safe_with_context(result)
+
+    async def _clear_loop_cache(self, loop_number: int) -> None:
+        """
+        Clear Redis cache that might cause response duplication between loop iterations.
+
+        This ensures that agents in subsequent loops don't reuse cached responses
+        from previous iterations.
+        """
+        if self.memory_logger is None:
+            return
+
+        try:
+            # Clear loop-specific caches
+            cache_patterns = [
+                f"loop_cache:{self.node_id}:{loop_number}",
+                f"loop_cache:{self.node_id}:*",
+                f"agent_cache:{self.node_id}:{loop_number}:*",
+                f"response_cache:{self.node_id}:{loop_number}:*",
+            ]
+
+            for pattern in cache_patterns:
+                try:
+                    # Use SCAN to find keys matching pattern
+                    cursor = 0
+                    while True:
+                        cursor, keys = self.memory_logger.redis.scan(
+                            cursor, match=pattern, count=100
+                        )
+                        if keys:
+                            self.memory_logger.redis.delete(*keys)
+                            logger.debug(f"Cleared {len(keys)} cache keys matching {pattern}")
+                        if cursor == 0:
+                            break
+                except Exception as e:
+                    logger.warning(f"Failed to clear cache pattern {pattern}: {e}")
+
+        except Exception as e:
+            logger.warning(f"Failed to clear loop cache for loop {loop_number}: {e}")
 
     def _extract_metadata_field(
         self, field: MetadataKey, past_loops: List[PastLoopMetadata], max_entries: int = 5

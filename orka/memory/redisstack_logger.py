@@ -101,7 +101,7 @@ results = logger.search_memories(
 # With memory decay configuration
 decay_config = {
     "enabled": True,
-    "short_term_hours": 24,
+    "short_term_hours": 2,
     "long_term_hours": 168,  # 1 week
     "importance_threshold": 0.7
 }
@@ -494,11 +494,51 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                             namespace,
                         )
 
-                    from orka.utils.bootstrap_memory_index import hybrid_vector_search
+                    from orka.utils.bootstrap_memory_index import (
+                        hybrid_vector_search,
+                        verify_memory_index,
+                    )
 
                     logger.debug(f"- Performing vector search for: {query}")
 
                     client = self._get_thread_safe_client()
+
+                    # Verify index exists and has correct schema before searching
+                    index_status = verify_memory_index(client, self.index_name)
+                    if not index_status["exists"]:
+                        logger.error(
+                            f"Memory index {self.index_name} does not exist: {index_status.get('error', 'Unknown error')}"
+                        )
+                        return self._fallback_text_search(
+                            query,
+                            num_results,
+                            trace_id,
+                            node_id,
+                            memory_type,
+                            min_importance,
+                            log_type,
+                            namespace,
+                        )
+
+                    if not index_status["vector_field_exists"]:
+                        logger.error(
+                            f"Memory index {self.index_name} missing vector field. Available fields: {index_status['fields']}"
+                        )
+                        return self._fallback_text_search(
+                            query,
+                            num_results,
+                            trace_id,
+                            node_id,
+                            memory_type,
+                            min_importance,
+                            log_type,
+                            namespace,
+                        )
+
+                    logger.debug(
+                        f"Index verification passed: {index_status['num_docs']} docs, vector field exists"
+                    )
+
                     results = hybrid_vector_search(
                         redis_client=client,
                         query_text=query,
@@ -1379,13 +1419,15 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         if decay_config is None or not decay_config.get("enabled", True):
             return None
 
-        # Base expiry times
+        # Base expiry times - standardized to reasonable defaults
         if memory_type == "long_term":
             # Check agent-level config first, then fall back to global config
-            base_hours = decay_config.get("long_term_hours", 24.0) if decay_config else 24.0
+            # Default: 168 hours (7 days) for long-term memories
+            base_hours = decay_config.get("long_term_hours", 168.0) if decay_config else 168.0
         else:
             # Check agent-level config first, then fall back to global config
-            base_hours = decay_config.get("short_term_hours", 1.0) if decay_config else 1.0
+            # Default: 2 hours for short-term memories
+            base_hours = decay_config.get("short_term_hours", 2.0) if decay_config else 2.0
 
         # Adjust based on importance (higher importance = longer retention)
         importance_multiplier = 1.0 + importance_score

@@ -67,6 +67,7 @@ print(f"   • Memory Backend: {os.environ['ORKA_MEMORY_BACKEND']}")
 print(f"   • Kafka Servers: {os.environ['KAFKA_BOOTSTRAP_SERVERS']}")
 print(f"   • Kafka Topic Prefix: {os.environ['KAFKA_TOPIC_PREFIX']}")
 print(f"   • Redis URL: {os.environ['REDIS_URL']}")
+print(f"   • LOG_LEVEL: {os.environ['ORKA_LOG_LEVEL']}")
 
 
 def cli_main():

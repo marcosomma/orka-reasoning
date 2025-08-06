@@ -224,7 +224,7 @@ def hybrid_vector_search(
                 .paging(0, num_results)
                 .return_fields("content", "node_id", "trace_id", "vector_score")
                 .dialect(2),
-                query_params={"query_vector": vector_bytes.decode("latin-1")},
+                query_params={"query_vector": vector_bytes},
             )
 
             logger.debug(f"- Vector search returned {len(search_results.docs)} results")
@@ -286,7 +286,10 @@ def hybrid_vector_search(
                     continue
 
         except Exception as search_error:
-            # logger.warning(f"Vector search failed: {search_error}")
+            logger.error(f"Vector search failed: {search_error}")
+            logger.error(f"Search query was: {base_query}")
+            logger.error(f"Vector bytes length: {len(vector_bytes)}")
+            logger.error(f"Index name: {index_name}")
             # If vector search fails, try fallback to basic text search
             try:
                 # logger.info("Falling back to basic text search")
@@ -310,7 +313,8 @@ def hybrid_vector_search(
                         continue
 
             except Exception as fallback_error:
-                # logger.error(f"Both vector and fallback search failed: {fallback_error}")
+                logger.error(f"Both vector and fallback search failed: {fallback_error}")
+                logger.error(f"Fallback query was: {basic_query}")
                 pass
 
     except Exception as e:
@@ -325,6 +329,61 @@ def hybrid_vector_search(
 
     logger.debug(f"- Returning {len(results)} search results")
     return results
+
+
+def verify_memory_index(redis_client, index_name: str = "orka_enhanced_memory") -> dict[str, Any]:
+    """
+    Verify that the memory index exists and has the correct schema.
+
+    Returns:
+        dict: Status information about the index
+    """
+    try:
+        # Check if index exists
+        info = redis_client.ft(index_name).info()
+
+        # Parse index info
+        index_info = {
+            "exists": True,
+            "num_docs": info.get("num_docs", 0),
+            "fields": {},
+            "vector_field_exists": False,
+            "content_field_exists": False,
+        }
+
+        # Extract field information
+        if "attributes" in info:
+            for attr in info["attributes"]:
+                if isinstance(attr, list) and len(attr) >= 2:
+                    # Handle both bytes and string field names
+                    field_name = attr[1]
+                    if isinstance(field_name, bytes):
+                        field_name = field_name.decode("utf-8")
+
+                    field_type = attr[3] if len(attr) > 3 else "UNKNOWN"
+                    if isinstance(field_type, bytes):
+                        field_type = field_type.decode("utf-8")
+
+                    index_info["fields"][field_name] = field_type
+
+                    if field_name == "content_vector" and field_type == "VECTOR":
+                        index_info["vector_field_exists"] = True
+                    elif field_name == "content" and field_type == "TEXT":
+                        index_info["content_field_exists"] = True
+
+        logger.info(f"Index {index_name} verification: {index_info}")
+        return index_info
+
+    except Exception as e:
+        logger.error(f"Failed to verify index {index_name}: {e}")
+        return {
+            "exists": False,
+            "error": str(e),
+            "num_docs": 0,
+            "fields": {},
+            "vector_field_exists": False,
+            "content_field_exists": False,
+        }
 
 
 def legacy_vector_search(
