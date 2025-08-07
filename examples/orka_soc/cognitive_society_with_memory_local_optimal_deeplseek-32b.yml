@@ -1,0 +1,805 @@
+# 🔧 COLLABORATIVE SOCIETY WORKFLOW - Refactored for Cooperation
+# Removed devil's advocate attack and defensive responses
+# Added collaborative refinement and position bridging for productive consensus-building
+# Agents maintain their distinct perspectives while working together constructively
+
+orchestrator:
+  id: cognitive-society-collaborative-enhanced-local
+  strategy: sequential
+  memory_config:
+    decay:
+      enabled: true
+      default_short_term_hours: 2.0   # 2 hours for active debate memories
+      default_long_term_hours: 24.0   # 24 hours for important insights
+      check_interval_minutes: 1
+      importance_rules:
+        base_score: 0.8
+        event_type_boosts:
+          disagreement: 0.2
+          challenge: 0.4
+          synthesis: 0.3
+        agent_type_boosts:
+          debate: 0.3
+          devil_advocate: 0.4
+  agents:
+    - cognitive_debate_loop
+    - meta_debate_reflection
+    - reasoning_quality_extractor
+    - final_synthesis_processor
+
+agents:
+  - id: cognitive_debate_loop
+    type: loop
+    max_loops: 3  # 🔧 RESTORED: Back to reasonable complexity
+    score_threshold: 0.75  # 🔧 LOWERED: More achievable for local models
+    
+    # 🔧 NEW: High-priority agents for score extraction (checked first)
+    high_priority_agents:
+      - "agreement_moderator"    # Primary scoring agent
+      - "quality_moderator"      # Secondary scoring agent
+    
+    # 🔧 COMPLETELY REDESIGNED: Simplified score extraction for local models
+    score_extraction_config:
+      strategies:
+        # Strategy 1: Simple pattern matching for AGREEMENT_SCORE (PRIMARY)
+        - type: pattern
+          patterns:
+            - "AGREEMENT_SCORE: ([0-9.]+)"
+            - "Agreement Score: ([0-9.]+)"
+            - "Score: ([0-9.]+)"
+            - "AGREEMENT_SCORE\\s*([0-9.]+)"
+            - "agreement_score: ([0-9.]+)"
+        
+        # Strategy 2: Look for any decimal between 0.6-1.0 (FALLBACK)
+        - type: pattern
+          patterns:
+            - "(0\\.[6-9][0-9]?)"
+            - "([0-9])\\.[0-9]+"
+        
+        # Strategy 3: Agent response parsing (FALLBACK)
+        - type: agent_key
+          agents: ["agreement_moderator"]
+          key: "response"
+          transform: "extract_score"
+    
+    # 🔧 ENHANCED: Focus on collaborative responses for extraction
+    cognitive_extraction:
+      enabled: true
+      max_length_per_category: 150
+      extract_patterns:
+        insights:
+          - "REFINED_POSITION[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+          - "COLLABORATIVE_INSIGHTS[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+          - "INTEGRATED_APPROACH[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+          - "POSITION[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+        improvements:
+          - "COLLABORATION_OPPORTUNITIES[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+          - "BRIDGE_OPPORTUNITIES[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+          - "SHARED_IMPLEMENTATION[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+          - "BREAKTHROUGH_OPPORTUNITIES[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+        mistakes:
+          - "SHARED_VALUES[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+          - "MAINTAINED_DIVERSITY[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+          - "CONTRIBUTION_TO_SOLUTION[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+    
+    # 🔧 ENHANCED: Restored rich metadata for past_loops
+    past_loops_metadata:
+      round: "{{ get_loop_number() }}"
+      agreement_score: "{{ score }}"
+      convergence_target: "0.65"
+      convergence_progress: "{{ 'ON_TRACK' if score >= (0.4 + (get_loop_number() - 1) * 0.08) else 'NEEDS_IMPROVEMENT' }}"
+      collaboration_phase: "{{ 'INITIAL' if get_loop_number() == 1 else 'BRIDGE_BUILDING' if get_loop_number() <= 3 else 'CONSENSUS_BUILDING' }}"
+      timestamp: "{{ timestamp }}"
+      agreement_finder: "{{ result.agreement_finder.response if result.agreement_finder else 'No agreement found' }}"
+      quality_score: "{{ result.quality_moderator.response if result.quality_moderator else 'No quality assessment' }}"
+      synthesis_insights: "{{ result.synthesis_attempt.response if result.synthesis_attempt else 'No synthesis available' }}"
+      collaborative_insights: "{{ result.collaborative_refinement.response if result.collaborative_refinement else 'No collaborative insights' }}"
+    
+    # 🔧 COLLABORATIVE REDESIGN: Complete collaborative structure for productive consensus-building
+    internal_workflow:
+      orchestrator:
+        id: cognitive-collaborative-internal
+        strategy: sequential
+        agents:
+          - shared_memory_reader      # Single memory read at start
+          - opening_positions         # Agents with integrated memory writing
+          - join_opening_positions    
+          - agreement_finder          
+          - cross_examination         
+          - collaborative_refinement  # Agents refine positions through collaboration
+          - join_collaborative_refinement  # Join the collaborative refinement fork
+          - position_bridging         # Find bridges between different viewpoints
+          - synthesis_attempt         
+          - quality_moderator         
+          - agreement_moderator       
+          - shared_memory_writer      # Single memory write at end
+      
+      agents:
+        # Single memory reader at start - gets all relevant past memories
+        - id: shared_memory_reader
+          type: memory
+          queue: orka:shared-debate-memory
+          config:
+            operation: read
+            limit: 10  # Get more comprehensive memory
+            enable_context_search: true
+            similarity_threshold: 0.1
+            enable_temporal_ranking: true
+            temporal_weight: 0.4
+            memory_type: short_term
+            memory_category_filter: store
+            memory_type_filter: "all"
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 2.0
+            long_term_hours: 24.0
+          prompt: |
+            Debate context for: {{ get_input() }}
+        
+        # 🔧 RESTORED: Enhanced opening positions with individual memory integration
+        - id: opening_positions
+          type: fork
+          targets:
+            - - radical_progressive
+            - - traditional_conservative
+            - - pragmatic_realist
+            - - ethical_purist
+        
+        # Progressive agent with integrated memory and context
+        - id: radical_progressive
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.3
+          memory_config:
+            operation: write
+            memory_type: short_term
+            vector: true
+            namespace: society_memory
+            metadata:
+              agent_type: "radical_progressive"
+              loop_number: "{{ get_loop_number() }}"
+              position_type: "progressive"
+          prompt: |
+            ROLE: PROGRESSIVE AGENT - ROUND {{ get_loop_number() }}
+            TOPIC: {{ get_input() }}
+            
+            {{ get_agent_memory_context('radical_progressive', 'radical_progressive') }}
+            
+            DEBATE EVOLUTION: {{ get_debate_evolution() }}
+            
+            TASK: Give your detailed progressive answer, building on your past positions.
+            
+            VALUES: Social justice, equality, transformative change, human rights
+            
+            FORMAT:
+            POSITION: [Your progressive stance]
+            ARGUMENTS: [2-3 key arguments]
+            COLLABORATION: [How you can work with others]
+        
+        # Conservative agent with integrated memory and context
+        - id: traditional_conservative
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.3
+          memory_config:
+            operation: write
+            memory_type: short_term
+            vector: true
+            namespace: society_memory
+            metadata:
+              agent_type: "traditional_conservative"
+              loop_number: "{{ get_loop_number() }}"
+              position_type: "conservative"
+          prompt: |
+            ROLE: CONSERVATIVE AGENT - ROUND {{ get_loop_number() }}
+            TOPIC: {{ get_input() }}
+            
+            {{ get_agent_memory_context('traditional_conservative', 'traditional_conservative') }}
+            
+            DEBATE EVOLUTION: {{ get_debate_evolution() }}
+            
+            TASK: Give your detailed conservative answer, building on your past positions.
+            
+            VALUES: Tradition, stability, gradual change, tested wisdom, responsibility
+            
+            FORMAT:
+            POSITION: [Your conservative stance]
+            ARGUMENTS: [2-3 key arguments]
+            COLLABORATION: [How you can work with others]
+        
+        # Realist agent with integrated memory and context
+        - id: pragmatic_realist
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.2
+          memory_config:
+            operation: write
+            memory_type: short_term
+            vector: true
+            namespace: society_memory
+            metadata:
+              agent_type: "pragmatic_realist"
+              loop_number: "{{ get_loop_number() }}"
+              position_type: "realist"
+          prompt: |
+            ROLE: REALIST AGENT - ROUND {{ get_loop_number() }}
+            TOPIC: {{ get_input() }}
+            
+            {{ get_agent_memory_context('pragmatic_realist', 'pragmatic_realist') }}
+            
+            DEBATE EVOLUTION: {{ get_debate_evolution() }}
+            
+            TASK: Give your detailed practical answer, building on your past positions.
+            
+            VALUES: Evidence-based solutions, pragmatism, measurable outcomes, workable compromises
+            
+            FORMAT:
+            POSITION: [Your practical stance]
+            ARGUMENTS: [2-3 evidence-based arguments]
+            COLLABORATION: [How you bridge different views]
+        
+        # Purist agent with integrated memory and context
+        - id: ethical_purist
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.4
+          memory_config:
+            operation: write
+            memory_type: short_term
+            vector: true
+            namespace: society_memory
+            metadata:
+              agent_type: "ethical_purist"
+              loop_number: "{{ get_loop_number() }}"
+              position_type: "purist"
+          prompt: |
+            ROLE: ETHICAL PURIST AGENT - ROUND {{ get_loop_number() }}
+            TOPIC: {{ get_input() }}
+            
+            {{ get_agent_memory_context('ethical_purist', 'ethical_purist') }}
+            
+            DEBATE EVOLUTION: {{ get_debate_evolution() }}
+            
+            TASK: Give your detailed ethical answer, building on your past positions.
+            
+            VALUES: Moral principles, ethical consistency, core values, moral compass
+            
+            FORMAT:
+            POSITION: [Your ethical stance]
+            PRINCIPLES: [2-3 key moral principles]
+            COLLABORATION: [How you maintain ethics while working with others]
+
+
+        
+        # 🔧 RESTORED: Join the opening positions fork
+        - id: join_opening_positions
+          type: join
+          group: opening_positions
+        
+        # 🔧 SIMPLIFIED: Agreement finder with clear format
+        - id: agreement_finder
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.2  # Very low for consistency
+          prompt: |
+            TOPIC: {{ get_input() }}
+            
+            Progressive Answer: {{ get_agent_response('radical_progressive') }}
+            Conservative Answer: {{ get_agent_response('traditional_conservative') }}
+            Realist Answer: {{ get_agent_response('pragmatic_realist') }}
+            Purist Answer: {{ get_agent_response('ethical_purist') }}
+            
+            TASK: Synthesize these four perspectives into ONE clear answer to the original TOPIC that all agents can agree on. Focus on answering the TOPIC, not just finding common ground.
+            
+            FORMAT: AGREEMENT: [Clear, direct answer to the original TOPIC that incorporates insights from all perspectives]
+        
+        # 🔧 SIMPLIFIED: Cross-examination with clear format
+        - id: cross_examination
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.5
+          prompt: |
+            TOPIC: {{ get_input() }}
+            
+            Progressive: {{ get_agent_response('radical_progressive') }}
+            Conservative: {{ get_agent_response('traditional_conservative') }}
+            Realist: {{ get_agent_response('pragmatic_realist') }}
+            Purist: {{ get_agent_response('ethical_purist') }}
+            
+            TASK: Generate challenging questions between agents.
+            
+            FORMAT:
+            PROGRESSIVE asks Conservative: [Challenging question]
+            CONSERVATIVE asks Progressive: [Challenging question]  
+            REALIST asks both: [Practical challenge]
+            PURIST challenges all: [Ethical concern]
+
+        # 🔧 NEW: Collaborative refinement - agents work together while maintaining positions
+        - id: collaborative_refinement
+          type: fork
+          targets:
+            - - progressive_refinement
+            - - conservative_refinement
+            - - realist_refinement
+            - - purist_refinement
+        
+        # Progressive refinement through collaboration
+        - id: progressive_refinement
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.4
+          memory_config:
+            operation: write
+            memory_type: short_term
+            vector: true
+            namespace: society_memory
+            metadata:
+              agent_type: "progressive_collaborative"
+              loop_number: "{{ get_loop_number() }}"
+              refinement_type: "progressive"
+          prompt: |
+            ROLE: PROGRESSIVE AGENT - Collaborative Refinement Round {{ get_loop_number() }}
+            TOPIC: {{ get_input() }}
+            
+            YOUR OPENING POSITION: {{ get_agent_response('radical_progressive') }}
+            CONSERVATIVE VIEW: {{ get_agent_response('traditional_conservative') }}
+            REALIST VIEW: {{ get_agent_response('pragmatic_realist') }}
+            PURIST VIEW: {{ get_agent_response('ethical_purist') }}
+            
+            CURRENT AGREEMENT: {{ safe_get_response('agreement_finder', 'Initial positions established, seeking agreement') }}
+            CHALLENGING QUESTIONS: {{ safe_get_response('cross_examination', 'Building collaborative understanding') }}
+            
+            TASK: Refine your progressive position by finding collaboration opportunities while maintaining your core values.
+            
+            VALUES: Social justice, equality, transformative change, human rights
+            
+            FORMAT:
+            REFINED_POSITION: [Your evolved progressive stance incorporating insights from others]
+            COLLABORATION_OPPORTUNITIES: [Specific ways you can work with other perspectives]
+            SHARED_VALUES: [Common ground you've identified with others]
+            CONTRIBUTION_TO_SOLUTION: [How your perspective strengthens the overall approach]
+        
+        # Conservative refinement through collaboration
+        - id: conservative_refinement
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.4
+          memory_config:
+            operation: write
+            memory_type: short_term
+            vector: true
+            namespace: society_memory
+            metadata:
+              agent_type: "conservative_collaborative"
+              loop_number: "{{ get_loop_number() }}"
+              refinement_type: "conservative"
+          prompt: |
+            ROLE: CONSERVATIVE AGENT - Collaborative Refinement Round {{ get_loop_number() }}
+            TOPIC: {{ get_input() }}
+            
+            YOUR OPENING POSITION: {{ get_agent_response('traditional_conservative') }}
+            PROGRESSIVE VIEW: {{ get_agent_response('radical_progressive') }}
+            REALIST VIEW: {{ get_agent_response('pragmatic_realist') }}
+            PURIST VIEW: {{ get_agent_response('ethical_purist') }}
+            
+            CURRENT AGREEMENT: {{ safe_get_response('agreement_finder', 'Initial positions established, seeking agreement') }}
+            CHALLENGING QUESTIONS: {{ safe_get_response('cross_examination', 'Building collaborative understanding') }}
+            
+            TASK: Refine your conservative position by finding collaboration opportunities while maintaining your core values.
+            
+            VALUES: Tradition, stability, gradual change, tested wisdom, responsibility
+            
+            FORMAT:
+            REFINED_POSITION: [Your evolved conservative stance incorporating insights from others]
+            COLLABORATION_OPPORTUNITIES: [Specific ways you can work with other perspectives]
+            SHARED_VALUES: [Common ground you've identified with others]
+            CONTRIBUTION_TO_SOLUTION: [How your perspective strengthens the overall approach]
+        
+        # Realist refinement through collaboration
+        - id: realist_refinement
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.3
+          memory_config:
+            operation: write
+            memory_type: short_term
+            vector: true
+            namespace: society_memory
+            metadata:
+              agent_type: "realist_collaborative"
+              loop_number: "{{ get_loop_number() }}"
+              refinement_type: "realist"
+          prompt: |
+            ROLE: REALIST AGENT - Collaborative Refinement Round {{ get_loop_number() }}
+            TOPIC: {{ get_input() }}
+            
+            YOUR OPENING POSITION: {{ get_agent_response('pragmatic_realist') }}
+            PROGRESSIVE VIEW: {{ get_agent_response('radical_progressive') }}
+            CONSERVATIVE VIEW: {{ get_agent_response('traditional_conservative') }}
+            PURIST VIEW: {{ get_agent_response('ethical_purist') }}
+            
+            CURRENT AGREEMENT: {{ safe_get_response('agreement_finder', 'Initial positions established, seeking agreement') }}
+            CHALLENGING QUESTIONS: {{ safe_get_response('cross_examination', 'Building collaborative understanding') }}
+            
+            TASK: Refine your realist position by finding collaboration opportunities while maintaining your core values.
+            
+            VALUES: Evidence-based solutions, pragmatism, measurable outcomes, workable compromises
+            
+            FORMAT:
+            REFINED_POSITION: [Your evolved practical stance incorporating insights from others]
+            COLLABORATION_OPPORTUNITIES: [Specific ways you can work with other perspectives]
+            SHARED_VALUES: [Common ground you've identified with others]
+            CONTRIBUTION_TO_SOLUTION: [How your perspective strengthens the overall approach]
+        
+        # Purist refinement through collaboration
+        - id: purist_refinement
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.5
+          memory_config:
+            operation: write
+            memory_type: short_term
+            vector: true
+            namespace: society_memory
+            metadata:
+              agent_type: "purist_collaborative"
+              loop_number: "{{ get_loop_number() }}"
+              refinement_type: "purist"
+          prompt: |
+            ROLE: ETHICAL PURIST AGENT - Collaborative Refinement Round {{ get_loop_number() }}
+            TOPIC: {{ get_input() }}
+            
+            YOUR OPENING POSITION: {{ get_agent_response('ethical_purist') }}
+            PROGRESSIVE VIEW: {{ get_agent_response('radical_progressive') }}
+            CONSERVATIVE VIEW: {{ get_agent_response('traditional_conservative') }}
+            REALIST VIEW: {{ get_agent_response('pragmatic_realist') }}
+            
+            CURRENT AGREEMENT: {{ safe_get_response('agreement_finder', 'Initial positions established, seeking agreement') }}
+            CHALLENGING QUESTIONS: {{ safe_get_response('cross_examination', 'Building collaborative understanding') }}
+            
+            TASK: Refine your ethical position by finding collaboration opportunities while maintaining your core values.
+            
+            VALUES: Moral principles, ethical consistency, core values, moral compass
+            
+            FORMAT:
+            REFINED_POSITION: [Your evolved ethical stance incorporating insights from others]
+            COLLABORATION_OPPORTUNITIES: [Specific ways you can work with other perspectives]
+            SHARED_VALUES: [Common ground you've identified with others]
+            CONTRIBUTION_TO_SOLUTION: [How your perspective strengthens the overall approach]
+        
+        # Join the collaborative refinement fork
+        - id: join_collaborative_refinement
+          type: join
+          group: collaborative_refinement
+        
+        # 🔧 NEW: Position bridging - find concrete bridges between perspectives  
+        - id: position_bridging
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.3
+          prompt: |
+            TOPIC: {{ get_input() }} - Round {{ get_loop_number() }}
+            
+            REFINED POSITIONS:
+            {{ get_collaborative_responses() }}
+            
+            TASK: Identify specific bridges and collaboration opportunities between all four perspectives.
+            
+            FORMAT:
+            BRIDGE_OPPORTUNITIES: [Concrete ways different perspectives can work together]
+            SHARED_IMPLEMENTATION: [Specific collaborative approaches all can support]
+            SYNERGISTIC_SOLUTIONS: [How combining perspectives creates stronger solutions]
+            COLLABORATIVE_FRAMEWORK: [Structure for ongoing cooperation]
+         
+        # 🔧 ENHANCED: Collaborative synthesis attempt
+        - id: synthesis_attempt
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.4
+          prompt: |
+            TOPIC: {{ get_input() }} - ROUND {{ get_loop_number() }}
+            
+            ORIGINAL POSITIONS:
+            Progressive: {{ safe_get_response('radical_progressive', 'No progressive response') }}
+            Conservative: {{ safe_get_response('traditional_conservative', 'No conservative response') }}
+            Realist: {{ safe_get_response('pragmatic_realist', 'No realist response') }}
+            Purist: {{ safe_get_response('ethical_purist', 'No purist response') }}
+            
+            REFINED COLLABORATIVE POSITIONS:
+            {{ get_collaborative_responses() }}
+            
+            BRIDGE OPPORTUNITIES: {{ safe_get_response('position_bridging', 'Seeking collaboration opportunities') }}
+            
+            TASK: Synthesize insights from this collaborative refinement process.
+            
+            FORMAT:
+            COLLABORATIVE_INSIGHTS: [New understanding emerged through cooperation]
+            INTEGRATED_APPROACH: [How perspectives can work together effectively]
+            MAINTAINED_DIVERSITY: [How each perspective's unique value is preserved]
+            BREAKTHROUGH_OPPORTUNITIES: [Novel solutions emerging from collaboration]
+
+        # 🔧 RESTORED: Quality moderator - LOCAL LLM VERSION
+        - id: quality_moderator
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.2  # Very low for consistent scoring
+          prompt: |
+            TOPIC: {{ get_input() }} - Round {{ get_loop_number() }}
+            Synthesis: {{ safe_get_response('synthesis_attempt', 'No synthesis available') }}
+            
+            TASK: Evaluate reasoning quality (0.0-1.0)
+            Factors: depth, insights, logic, creativity, productive disagreement
+            
+            FORMAT:
+            REASONING_QUALITY: [score 0.0-1.0]
+            QUALITY_ANALYSIS: [Why this score]
+            NOVEL_INSIGHTS_COUNT: [Number of breakthroughs]
+            PRODUCTIVE_DISAGREEMENTS: [Which conflicts generated value]
+            NEXT_ROUND_POTENTIAL: [Can debate produce more insights]
+        
+        # 🔧 COMPLETELY REDESIGNED: Ultra-simple agreement moderator
+        - id: agreement_moderator
+          type: local_llm
+          model: deepseek-r1:32b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.1  # Ultra-low for scoring consistency
+          prompt: |
+            TOPIC: {{ get_input() }} - Round {{ get_loop_number() }}
+            TARGET: 0.65+ agreement to stop debate
+            
+            AGENTS:
+            Progressive: {{ safe_get_response('radical_progressive', 'No progressive response') }}
+            Conservative: {{ safe_get_response('traditional_conservative', 'No conservative response') }}
+            Realist: {{ safe_get_response('pragmatic_realist', 'No realist response') }}
+            Purist: {{ safe_get_response('ethical_purist', 'No purist response') }}
+            
+            AGREEMENT: {{ safe_get_response('agreement_finder', 'No agreement found') }}
+            
+            TASK: Rate agent agreement (0.0-1.0). Must start with "AGREEMENT_SCORE:"
+            
+            FORMAT:
+            AGREEMENT_SCORE: [your score 0.0-1.0]
+            ANALYSIS: [Why this score]
+            CONTINUE: [YES if below 0.65, NO if 0.65+]
+
+        # Single shared memory writer - captures final debate state
+        - id: shared_memory_writer
+          type: memory
+          queue: orka:shared-debate-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 2.0
+            long_term_hours: 24.0
+          prompt: |
+            Q: {{ get_input() }} - Round {{ get_loop_number() }}
+            Agreement: {{ safe_get_response('agreement_finder', 'No agreement found') }}
+            Synthesis: {{ safe_get_response('synthesis_attempt', 'No synthesis available') }}
+            Quality: {{ safe_get_response('quality_moderator', 'No quality assessment') }}
+            Score: {{ safe_get_response('agreement_moderator', 'No score available') }}
+          metadata:
+            debate_round: "{{ loop_number }}"
+            original_input: "{{ get_input() }}"
+            timestamp: "{{ timestamp }}"
+
+  # 🔧 ENHANCED: Comprehensive meta-analysis agents with full LoopNode data
+  - id: meta_debate_reflection
+    type: local_llm
+    model: deepseek-r1:32b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      QUESTION: {{ get_input() }}
+      
+      LOOP RESULTS SUMMARY:
+      {% if previous_outputs.cognitive_debate_loop %}
+      - Rounds Completed: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'loops_completed', 'Unknown') }}
+      - Final Score: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'final_score', 'Unknown') }}
+      - Score Threshold: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'score_threshold', '0.75') }}
+      - Loop Status: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'status', 'completed') }}
+      {% else %}
+      - Loop data not available
+      {% endif %}
+      
+      DETAILED ROUND-BY-ROUND ANALYSIS:
+      {% if has_past_loops() %}
+      {% for round_data in get_past_loops() %}
+      === ROUND {{ safe_get(round_data, 'round', loop.index) }} ===
+      Agreement Score: {{ safe_get(round_data, 'agreement_score', 'Unknown') }}
+      Convergence: {{ safe_get(round_data, 'convergence_progress', 'Unknown') }}
+      Phase: {{ safe_get(round_data, 'collaboration_phase', 'Unknown') }}
+      Agreement Found: {{ safe_get(round_data, 'agreement_finder', 'No agreement recorded') | truncate(200) }}
+      Quality Assessment: {{ safe_get(round_data, 'quality_score', 'No quality assessment') | truncate(200) }}
+      Synthesis: {{ safe_get(round_data, 'synthesis_insights', 'No synthesis available') | truncate(200) }}
+      Collaborative Insights: {{ safe_get(round_data, 'collaborative_insights', 'No collaborative insights') | truncate(200) }}
+      
+      {% endfor %}
+      {% else %}
+      No detailed loop data available
+      {% endif %}
+      
+      FINAL LOOP SNAPSHOT:
+      {% if has_past_loops() %}
+      {% set past_loops_data = get_past_loops() %}
+      {% if past_loops_data %}
+      {% set last_loop = past_loops_data[-1] %}
+      Last Agreement: {{ safe_get(last_loop, 'agreement_finder', 'No agreement recorded') }}
+      Last Quality Score: {{ safe_get(last_loop, 'quality_score', 'No quality assessment') }}
+      Last Synthesis: {{ safe_get(last_loop, 'synthesis_insights', 'No synthesis available') }}
+      {% endif %}
+      {% else %}
+      No final loop data available
+      {% endif %}
+      
+      TASK: Analyze the complete debate process with access to all round data.
+      
+      FORMAT:
+      DEBATE_PROGRESSION: [How debate evolved across all rounds - specific examples]
+      KEY_INSIGHTS: [Important discoveries from each round]
+      COLLABORATION_SUCCESS: [How well agents worked together - evidence from rounds]
+      CONVERGENCE_ANALYSIS: [How agreement scores changed and why]
+      QUALITY_EVOLUTION: [How reasoning quality developed]
+      CRITICAL_TURNING_POINTS: [Key moments that changed the debate direction]
+
+  - id: reasoning_quality_extractor
+    type: local_llm
+    model: deepseek-r1:32b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.2
+    prompt: |
+      QUESTION: {{ get_input() }}
+      META-ANALYSIS: {{ safe_get_response('meta_debate_reflection', 'No meta-analysis available') }}
+      
+      RAW LOOP DATA FOR QUALITY ASSESSMENT:
+      {% if previous_outputs.cognitive_debate_loop %}
+      - Total Rounds: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'loops_completed', 'Unknown') }}
+      - Final Agreement Score: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'final_score', 'Unknown') }}
+      {% else %}
+      - Loop data not available
+      {% endif %}
+      
+      ROUND-BY-ROUND QUALITY DATA:
+      {% if has_past_loops() %}
+      {% for round_data in get_past_loops() %}
+      
+      ROUND {{ safe_get(round_data, 'round', loop.index) }} QUALITY INDICATORS:
+      - Agreement Score: {{ safe_get(round_data, 'agreement_score', 'Unknown') }} (Target: {{ safe_get(round_data, 'convergence_target', 'Unknown') }})
+      - Progress Status: {{ safe_get(round_data, 'convergence_progress', 'Unknown') }}
+      - Collaboration Phase: {{ safe_get(round_data, 'collaboration_phase', 'Unknown') }}
+      
+      Quality Moderator Assessment:
+      {{ safe_get(round_data, 'quality_score', 'No quality assessment available') }}
+      
+      Synthesis Quality:
+      {{ safe_get(round_data, 'synthesis_insights', 'No synthesis available') }}
+      
+      Collaborative Insights Quality:
+      {{ safe_get(round_data, 'collaborative_insights', 'No collaborative insights') }}
+      
+      {% endfor %}
+      {% endif %}
+      
+      TASK: Extract comprehensive quality insights from the complete debate data.
+      
+      FORMAT:
+      OVERALL_QUALITY_SCORE: [Rate overall reasoning quality 0.0-1.0]
+      ROUND_QUALITY_PROGRESSION: [How quality evolved across rounds]
+      BEST_ARGUMENTS: [Strongest reasoning examples from each round]
+      COLLABORATION_QUALITY: [Quality of inter-agent collaboration]
+      SYNTHESIS_QUALITY: [Quality of idea synthesis and integration]
+      PROCESS_VALUE: [How debate improved understanding - specific examples]
+      REASONING_DEPTH: [Depth of analysis achieved]
+      NOVEL_INSIGHTS_COUNT: [Number of breakthrough insights]
+      QUALITY_BOTTLENECKS: [What limited higher quality reasoning]
+
+  - id: final_synthesis_processor
+    type: local_llm
+    model: deepseek-r1:32b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      QUESTION: {{ get_input() }}
+      
+      COMPLETE DEBATE ANALYSIS:
+      {% set loop_result = safe_get_response('cognitive_debate_loop', '') %}
+      {% if loop_result and previous_outputs.cognitive_debate_loop %}
+      - Total Rounds: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'loops_completed', 'Unknown') }}
+      - Final Agreement Score: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'final_score', 'Unknown') }}
+      - Score Threshold Met: {{ 'YES' if (safe_get(previous_outputs.cognitive_debate_loop.result, 'final_score', 0) | float) >= (safe_get(previous_outputs.cognitive_debate_loop.result, 'score_threshold', 0.75) | float) else 'NO' }}
+      {% else %}
+      - Debate data not available
+      {% endif %}
+      
+      META-ANALYSIS INSIGHTS:
+      {{ safe_get_response('meta_debate_reflection', 'No meta-analysis available') }}
+      
+      QUALITY ASSESSMENT:
+      {{ safe_get_response('reasoning_quality_extractor', 'No quality assessment available') }}
+      
+      COMPREHENSIVE ROUND DATA:
+      {% if has_past_loops() %}
+      {% for round_data in get_past_loops() %}
+      
+      === ROUND {{ safe_get(round_data, 'round', loop.index) }} COMPLETE DATA ===
+      Score: {{ safe_get(round_data, 'agreement_score', 'Unknown') }} | Progress: {{ safe_get(round_data, 'convergence_progress', 'Unknown') }} | Phase: {{ safe_get(round_data, 'collaboration_phase', 'Unknown') }}
+      
+      Agreement Found:
+      {{ safe_get(round_data, 'agreement_finder', 'No agreement recorded') }}
+      
+      Quality Assessment:
+      {{ safe_get(round_data, 'quality_score', 'No quality assessment') }}
+      
+      Synthesis Insights:
+      {{ safe_get(round_data, 'synthesis_insights', 'No synthesis available') }}
+      
+      Collaborative Insights:
+      {{ safe_get(round_data, 'collaborative_insights', 'No collaborative insights') }}
+      
+      {% endfor %}
+      {% else %}
+      No detailed round data available
+      {% endif %}
+      
+      FINAL ROUND AGREEMENTS:
+      {% if has_past_loops() %}
+      {% set past_loops_data = get_past_loops() %}
+      {% if past_loops_data %}
+      {% set last_loop = past_loops_data[-1] %}
+      Last Agreement: {{ safe_get(last_loop, 'agreement_finder', 'No agreement found') }}
+      Last Synthesis: {{ safe_get(last_loop, 'synthesis_insights', 'No synthesis available') }}
+      Last Collaborative Outcome: {{ safe_get(last_loop, 'collaborative_insights', 'No collaborative outcome') }}
+      {% endif %}
+      {% else %}
+      No final round data available
+      {% endif %}
+      
+      TASK: Provide comprehensive final answer using ALL available debate data and analysis.
+      
+      FORMAT:
+      **Question**: {{ get_input() }}
+      **Debate Journey**: [Complete story of how the debate evolved across rounds]
+      **Round-by-Round Progress**: [Key developments in each round]
+      **Convergence Analysis**: [How agents reached (or didn't reach) agreement]
+      **Quality Evolution**: [How reasoning quality changed]
+      **Key Breakthrough Moments**: [Critical insights that emerged]
+      **Final Consensus**: [The agreement reached, with confidence level]
+      **Collaborative Success**: [How well agents worked together]
+      **Answer Quality**: [Reliability and depth of the final conclusion]
+      **Direct Answer**: [Clear, actionable response to the original question]
+      **Confidence Score**: [0.0-1.0 reliability rating with justification] 

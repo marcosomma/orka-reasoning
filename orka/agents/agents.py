@@ -1,7 +1,7 @@
 # OrKa: Orchestrator Kit Agents
 # Copyright © 2025 Marco Somma
 #
-# This file is part of OrKa – https://github.com/marcosomma/orka-resoning
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
 # Licensed under the Apache License, Version 2.0 (Apache 2.0).
 # You may not use this file for commercial purposes without explicit permission.
@@ -9,7 +9,7 @@
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 # For commercial use, contact: marcosomma.work@gmail.com
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
+# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Basic Agents Module
@@ -81,18 +81,30 @@ class ClassificationAgent(BaseAgent):
     """
     A simple agent that performs multi-class classification.
 
-    This agent categorizes input text into predefined classes based on
-    keyword matching. It demonstrates how to implement basic classification
-    functionality in the OrKa framework.
+    .. deprecated:: 0.5.6
+        This agent is deprecated and will be removed in a future version.
+        The run method now returns "deprecated" instead of performing
+        classification. Use other classification agents from the
+        :mod:`orka.agents.llm_agents` module for current classification needs.
 
-    The current implementation uses a simple rule-based approach to classify
-    input into 'cat' or 'dog' categories based on the presence of specific
-    question words, but could be extended to support more sophisticated
-    classification schemes.
+    Legacy Implementation:
+        This agent previously categorized input text into predefined classes
+        based on keyword matching using a simple rule-based approach.
     """
 
     def run(self, input_data):
         """
-        Deprecated in v 0.5.6
+        Deprecated method that returns "deprecated".
+
+        .. deprecated:: 0.5.6
+            This method no longer performs classification and simply
+            returns the string "deprecated" to indicate the agent
+            should not be used.
+
+        Args:
+            input_data: Input data (ignored)
+
+        Returns:
+            str: Always returns "deprecated"
         """
         return "deprecated"

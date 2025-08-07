@@ -1,7 +1,7 @@
 # OrKa: Orchestrator Kit Agents
 # Copyright © 2025 Marco Somma
 #
-# This file is part of OrKa – https://github.com/marcosomma/orka-resoning
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
 # Licensed under the Apache License, Version 2.0 (Apache 2.0).
 # You may not use this file for commercial purposes without explicit permission.
@@ -9,7 +9,7 @@
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 # For commercial use, contact: marcosomma.work@gmail.com
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
+# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Memory Package
@@ -129,10 +129,10 @@ Performance Characteristics
 
 **RedisStack vs Redis Logger:**
 
-* **Vector Search**: 100x faster with HNSW vs manual cosine similarity
-* **Scalability**: O(log n) vs O(n) search complexity
-* **Memory Usage**: 60% reduction in memory overhead
-* **Concurrent Operations**: Support for 1000+ simultaneous searches
+* **Vector Search**: Up to 100x faster with HNSW indexing vs manual cosine similarity for large datasets
+* **Scalability**: O(log n) vs O(n) search complexity (HNSW vs brute force)
+* **Memory Usage**: ~60% reduction in memory overhead with optimized vector storage
+* **Concurrent Operations**: Support for 1000+ simultaneous searches in typical deployments
 
 Backward Compatibility
 ----------------------

@@ -1,7 +1,7 @@
 # OrKa: Orchestrator Kit Agents
 # Copyright © 2025 Marco Somma
 #
-# This file is part of OrKa – https://github.com/marcosomma/orka-resoning
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
 # Licensed under the Apache License, Version 2.0 (Apache 2.0).
 # You may not use this file for commercial purposes without explicit permission.
@@ -9,7 +9,7 @@
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 # For commercial use, contact: marcosomma.work@gmail.com
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
+# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Agent Factory
@@ -68,7 +68,7 @@ AGENT_TYPES: Dict[str, AgentClass] = {
     "binary": agents.BinaryAgent,
     "classification": agents.ClassificationAgent,
     "local_llm": local_llm_agents.LocalLLMAgent,
-    "openai-answer": llm_agents.OpenAIAnswerBuilder,
+    "openai-builder": llm_agents.OpenAIAnswerBuilder,
     "openai-binary": llm_agents.OpenAIBinaryAgent,
     "openai-classification": llm_agents.OpenAIClassificationAgent,
     "validate_and_structure": validation_and_structuring_agent.ValidationAndStructuringAgent,

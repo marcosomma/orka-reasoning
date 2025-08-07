@@ -160,6 +160,7 @@ orchestrator:
       enabled: true
       default_short_term_hours: 2    # Conversations fade after 2 hours
       default_long_term_hours: 168   # Important info lasts 1 week
+      check_interval_minutes: 30     # Memory cleanup frequency
   agents:
     - conversation_context
     - interaction_classifier  
@@ -832,9 +833,11 @@ export ORKA_MEMORY_BACKEND=redisstack
 |-------|-----------|
 | `"unknown command 'FT.CREATE'"` | You're using basic Redis. Install RedisStack: `docker run -d -p 6379:6379 redis/redis-stack:latest` |
 | `"Cannot connect to Redis"` | Check Redis is running: `redis-cli ping` |
-| Memory search returns no results | Check vector indexing: `redis-cli FT._LIST` |
+| Memory search returns no results | Check vector indexing: `redis-cli FT._LIST` and see [Debugging Guide](./docs/DEBUGGING.md) |
 | Slow performance | Verify RedisStack HNSW: `orka memory configure` |
 | Out of memory errors | Run cleanup: `orka memory cleanup` |
+| TTL mismatch (0.1h vs 2h) | Environment variables override YAML - see [Configuration Guide](./docs/CONFIGURATION.md) |
+| FT.SEARCH syntax errors | Check query syntax in [Components Guide](./docs/COMPONENTS.md#shared-memory-reader) |
 
 ### Performance Optimization
 
@@ -864,6 +867,10 @@ redis-cli INFO memory
 
 ## 📚 Learn More
 
+- 📖 **[Configuration Guide](./docs/CONFIGURATION.md)** - Detailed TTL, RedisStack, and component configuration
+- 🐛 **[Debugging Guide](./docs/DEBUGGING.md)** - Troubleshooting procedures and diagnostic tools
+- 🧩 **[Core Components](./docs/COMPONENTS.md)** - Agreement Finder, LoopNode, Memory Reader documentation
+- 🧠 **[Memory System Guide](./docs/MEMORY_SYSTEM_GUIDE.md)** - Complete memory architecture and patterns
 - 🎥 **[Video Tutorial](https://www.youtube.com/watch?v=hvVc8lSoADI)** - 5-minute OrKa overview
 - 📚 **[Full Documentation](https://orkacore.web.app/docs)** - Complete API reference
 - 💬 **[Community Discord](https://discord.gg/orka)** - Get help and share workflows

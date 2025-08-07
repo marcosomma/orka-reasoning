@@ -1,0 +1,481 @@
+# 🔧 OPTIMIZED COLLABORATIVE SOCIETY WORKFLOW - Token Efficient 8B Version
+# Reduced token consumption by 60-80% while maintaining core functionality
+# Key optimizations:
+# - Condensed agent responses to summaries
+# - Reduced memory context injection
+# - Streamlined format requirements
+# - Essential-only metadata
+# - Simplified cross-examination and bridging
+
+orchestrator:
+  id: cognitive-society-collaborative-enhanced-local-optimized-8b
+  strategy: sequential
+  memory_config:
+    decay:
+      enabled: true
+      default_short_term_hours: 2.0
+      default_long_term_hours: 24.0
+      check_interval_minutes: 1
+      importance_rules:
+        base_score: 0.8
+        event_type_boosts:
+          disagreement: 0.2
+          challenge: 0.4
+          synthesis: 0.3
+        agent_type_boosts:
+          debate: 0.3
+          devil_advocate: 0.4
+  agents:
+    - cognitive_debate_loop
+    - meta_debate_reflection
+    - final_synthesis_processor
+
+agents:
+  - id: cognitive_debate_loop
+    type: loop
+    max_loops: 3
+    score_threshold: 0.75
+    
+    high_priority_agents:
+      - "agreement_moderator"
+      - "quality_moderator"
+    
+    score_extraction_config:
+      strategies:
+        - type: pattern
+          patterns:
+            - "AGREEMENT_SCORE: ([0-9.]+)"
+            - "Agreement Score: ([0-9.]+)"
+            - "Score: ([0-9.]+)"
+            - "AGREEMENT_SCORE\\s*([0-9.]+)"
+            - "agreement_score: ([0-9.]+)"
+        - type: pattern
+          patterns:
+            - "(0\\.[6-9][0-9]?)"
+            - "([0-9])\\.[0-9]+"
+        - type: agent_key
+          agents: ["agreement_moderator"]
+          key: "response"
+          transform: "extract_score"
+    
+    # 🔧 OPTIMIZED: Reduced extraction patterns and length
+    cognitive_extraction:
+      enabled: true
+      max_length_per_category: 80  # Reduced from 150
+      extract_patterns:
+        insights:
+          - "POSITION[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+        improvements:
+          - "COLLABORATION[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+        mistakes:
+          - "SHARED_VALUES[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+    
+    # 🔧 OPTIMIZED: Essential metadata only
+    past_loops_metadata:
+      round: "{{ get_loop_number() }}"
+      agreement_score: "{{ score }}"
+      timestamp: "{{ timestamp }}"
+      status: "{{ 'CONVERGED' if score >= 0.75 else 'CONTINUING' }}"
+    
+    internal_workflow:
+      orchestrator:
+        id: cognitive-collaborative-internal-optimized-8b
+        strategy: sequential
+        agents:
+          - shared_memory_reader
+          - opening_positions
+          - join_opening_positions
+          - agreement_finder
+          - collaborative_refinement
+          - join_collaborative_refinement
+          - synthesis_attempt
+          - agreement_moderator
+          - shared_memory_writer
+      
+      agents:
+        # 🔧 OPTIMIZED: Reduced memory context
+        - id: shared_memory_reader
+          type: memory
+          queue: orka:shared-debate-memory
+          config:
+            operation: read
+            limit: 5  # Reduced from 10
+            enable_context_search: true
+            similarity_threshold: 0.2  # Increased threshold
+            enable_temporal_ranking: true
+            temporal_weight: 0.4
+            memory_type: short_term
+            memory_category_filter: store
+            memory_type_filter: "all"
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 2.0
+            long_term_hours: 24.0
+          prompt: |
+            Context for: {{ get_input() }}
+        
+        # 🔧 OPTIMIZED: Simplified opening positions
+        - id: opening_positions
+          type: fork
+          targets:
+            - - radical_progressive
+            - - traditional_conservative
+            - - pragmatic_realist
+            - - ethical_purist
+        
+        # 🔧 OPTIMIZED: Condensed progressive agent
+        - id: radical_progressive
+          type: local_llm
+          model: deepseek-r1:8b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.3
+          memory_config:
+            operation: write
+            memory_type: short_term
+            vector: true
+            namespace: society_memory
+            metadata:
+              agent_type: "radical_progressive"
+              loop_number: "{{ get_loop_number() }}"
+          prompt: |
+            PROGRESSIVE AGENT - Round {{ get_loop_number() }}
+            TOPIC: {{ get_input() }}
+            
+            {% if get_loop_number() > 1 %}CONTEXT: {{ get_debate_evolution() }}{% endif %}
+            
+            Give your progressive stance focusing on social justice and equality.
+            
+            FORMAT:
+            POSITION: [Your stance in 2-3 sentences]
+            COLLABORATION: [How you can work with others in 1 sentence]
+        
+        # 🔧 OPTIMIZED: Condensed conservative agent
+        - id: traditional_conservative
+          type: local_llm
+          model: deepseek-r1:8b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.3
+          memory_config:
+            operation: write
+            memory_type: short_term
+            vector: true
+            namespace: society_memory
+            metadata:
+              agent_type: "traditional_conservative"
+              loop_number: "{{ get_loop_number() }}"
+          prompt: |
+            CONSERVATIVE AGENT - Round {{ get_loop_number() }}
+            TOPIC: {{ get_input() }}
+            
+            {% if get_loop_number() > 1 %}CONTEXT: {{ get_debate_evolution() }}{% endif %}
+            
+            Give your conservative stance focusing on tradition and stability.
+            
+            FORMAT:
+            POSITION: [Your stance in 2-3 sentences]
+            COLLABORATION: [How you can work with others in 1 sentence]
+        
+        # 🔧 OPTIMIZED: Condensed realist agent
+        - id: pragmatic_realist
+          type: local_llm
+          model: deepseek-r1:8b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.2
+          memory_config:
+            operation: write
+            memory_type: short_term
+            vector: true
+            namespace: society_memory
+            metadata:
+              agent_type: "pragmatic_realist"
+              loop_number: "{{ get_loop_number() }}"
+          prompt: |
+            REALIST AGENT - Round {{ get_loop_number() }}
+            TOPIC: {{ get_input() }}
+            
+            {% if get_loop_number() > 1 %}CONTEXT: {{ get_debate_evolution() }}{% endif %}
+            
+            Give your practical stance focusing on evidence and measurable outcomes.
+            
+            FORMAT:
+            POSITION: [Your stance in 2-3 sentences]
+            COLLABORATION: [How you bridge views in 1 sentence]
+        
+        # 🔧 OPTIMIZED: Condensed purist agent
+        - id: ethical_purist
+          type: local_llm
+          model: deepseek-r1:8b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.4
+          memory_config:
+            operation: write
+            memory_type: short_term
+            vector: true
+            namespace: society_memory
+            metadata:
+              agent_type: "ethical_purist"
+              loop_number: "{{ get_loop_number() }}"
+          prompt: |
+            ETHICAL PURIST AGENT - Round {{ get_loop_number() }}
+            TOPIC: {{ get_input() }}
+            
+            {% if get_loop_number() > 1 %}CONTEXT: {{ get_debate_evolution() }}{% endif %}
+            
+            Give your ethical stance focusing on moral principles.
+            
+            FORMAT:
+            POSITION: [Your stance in 2-3 sentences]
+            COLLABORATION: [How you maintain ethics while collaborating in 1 sentence]
+        
+        - id: join_opening_positions
+          type: join
+          group: opening_positions
+        
+        # 🔧 OPTIMIZED: Simple agreement finder
+        - id: agreement_finder
+          type: local_llm
+          model: deepseek-r1:8b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.2
+          prompt: |
+            TOPIC: {{ get_input() }}
+            
+            POSITIONS:
+            - Progressive: {{ get_agent_response('radical_progressive') | truncate(200) }}
+            - Conservative: {{ get_agent_response('traditional_conservative') | truncate(200) }}
+            - Realist: {{ get_agent_response('pragmatic_realist') | truncate(200) }}
+            - Purist: {{ get_agent_response('ethical_purist') | truncate(200) }}
+            
+            Find ONE clear answer that all can agree on.
+            
+            AGREEMENT: [Direct answer incorporating all perspectives]
+
+        # 🔧 OPTIMIZED: Simplified collaborative refinement
+        - id: collaborative_refinement
+          type: fork
+          targets:
+            - - progressive_refinement
+            - - conservative_refinement
+            - - realist_refinement
+            - - purist_refinement
+        
+        # 🔧 OPTIMIZED: Condensed progressive refinement
+        - id: progressive_refinement
+          type: local_llm
+          model: deepseek-r1:8b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.4
+          memory_config:
+            operation: write
+            memory_type: short_term
+            vector: true
+            namespace: society_memory
+            metadata:
+              agent_type: "progressive_collaborative"
+              loop_number: "{{ get_loop_number() }}"
+          prompt: |
+            PROGRESSIVE REFINEMENT - Round {{ get_loop_number() }}
+            TOPIC: {{ get_input() }}
+            
+            YOUR POSITION: {{ get_agent_response('radical_progressive') | truncate(150) }}
+            CURRENT AGREEMENT: {{ safe_get_response('agreement_finder', 'Seeking agreement') | truncate(150) }}
+            
+            Refine your position for collaboration.
+            
+            REFINED_POSITION: [Evolved stance in 2-3 sentences]
+            SHARED_VALUES: [Common ground found in 1 sentence]
+        
+        # 🔧 OPTIMIZED: Condensed conservative refinement
+        - id: conservative_refinement
+          type: local_llm
+          model: deepseek-r1:8b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.4
+          memory_config:
+            operation: write
+            memory_type: short_term
+            vector: true
+            namespace: society_memory
+            metadata:
+              agent_type: "conservative_collaborative"
+              loop_number: "{{ get_loop_number() }}"
+          prompt: |
+            CONSERVATIVE REFINEMENT - Round {{ get_loop_number() }}
+            TOPIC: {{ get_input() }}
+            
+            YOUR POSITION: {{ get_agent_response('traditional_conservative') | truncate(150) }}
+            CURRENT AGREEMENT: {{ safe_get_response('agreement_finder', 'Seeking agreement') | truncate(150) }}
+            
+            Refine your position for collaboration.
+            
+            REFINED_POSITION: [Evolved stance in 2-3 sentences]
+            SHARED_VALUES: [Common ground found in 1 sentence]
+        
+        # 🔧 OPTIMIZED: Condensed realist refinement
+        - id: realist_refinement
+          type: local_llm
+          model: deepseek-r1:8b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.3
+          memory_config:
+            operation: write
+            memory_type: short_term
+            vector: true
+            namespace: society_memory
+            metadata:
+              agent_type: "realist_collaborative"
+              loop_number: "{{ get_loop_number() }}"
+          prompt: |
+            REALIST REFINEMENT - Round {{ get_loop_number() }}
+            TOPIC: {{ get_input() }}
+            
+            YOUR POSITION: {{ get_agent_response('pragmatic_realist') | truncate(150) }}
+            CURRENT AGREEMENT: {{ safe_get_response('agreement_finder', 'Seeking agreement') | truncate(150) }}
+            
+            Refine your position for collaboration.
+            
+            REFINED_POSITION: [Evolved stance in 2-3 sentences]
+            SHARED_VALUES: [Common ground found in 1 sentence]
+        
+        # 🔧 OPTIMIZED: Condensed purist refinement
+        - id: purist_refinement
+          type: local_llm
+          model: deepseek-r1:8b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.5
+          memory_config:
+            operation: write
+            memory_type: short_term
+            vector: true
+            namespace: society_memory
+            metadata:
+              agent_type: "purist_collaborative"
+              loop_number: "{{ get_loop_number() }}"
+          prompt: |
+            PURIST REFINEMENT - Round {{ get_loop_number() }}
+            TOPIC: {{ get_input() }}
+            
+            YOUR POSITION: {{ get_agent_response('ethical_purist') | truncate(150) }}
+            CURRENT AGREEMENT: {{ safe_get_response('agreement_finder', 'Seeking agreement') | truncate(150) }}
+            
+            Refine your position for collaboration.
+            
+            REFINED_POSITION: [Evolved stance in 2-3 sentences]
+            SHARED_VALUES: [Common ground found in 1 sentence]
+        
+        - id: join_collaborative_refinement
+          type: join
+          group: collaborative_refinement
+         
+        # 🔧 OPTIMIZED: Simplified synthesis
+        - id: synthesis_attempt
+          type: local_llm
+          model: deepseek-r1:8b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.4
+          prompt: |
+            SYNTHESIS - Round {{ get_loop_number() }}
+            TOPIC: {{ get_input() }}
+            
+            AGREEMENT: {{ safe_get_response('agreement_finder', 'No agreement') | truncate(200) }}
+            
+            REFINED POSITIONS (SUMMARY):
+            - Progressive: {{ safe_get_response('progressive_refinement', 'No refinement') | truncate(100) }}
+            - Conservative: {{ safe_get_response('conservative_refinement', 'No refinement') | truncate(100) }}
+            - Realist: {{ safe_get_response('realist_refinement', 'No refinement') | truncate(100) }}
+            - Purist: {{ safe_get_response('purist_refinement', 'No refinement') | truncate(100) }}
+            
+            SYNTHESIS: [How perspectives work together in 2-3 sentences]
+
+        # 🔧 OPTIMIZED: Ultra-simple agreement moderator
+        - id: agreement_moderator
+          type: local_llm
+          model: deepseek-r1:8b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.1
+          prompt: |
+            AGREEMENT ASSESSMENT - Round {{ get_loop_number() }}
+            TOPIC: {{ get_input() }}
+            TARGET: 0.75+ agreement to stop
+            
+            CURRENT AGREEMENT: {{ safe_get_response('agreement_finder', 'No agreement') | truncate(150) }}
+            SYNTHESIS: {{ safe_get_response('synthesis_attempt', 'No synthesis') | truncate(150) }}
+            
+            Rate agent agreement (0.0-1.0). Start with "AGREEMENT_SCORE:"
+            
+            AGREEMENT_SCORE: [your score 0.0-1.0]
+            CONTINUE: [YES if below 0.75, NO if 0.75+]
+
+        # 🔧 OPTIMIZED: Minimal memory writer
+        - id: shared_memory_writer
+          type: memory
+          queue: orka:shared-debate-writer
+          config:
+            operation: write
+            memory_type: short_term
+            vector: true
+          namespace: society_memory
+          decay:
+            enabled: true
+            short_term_hours: 2.0
+            long_term_hours: 24.0
+          prompt: |
+            Round {{ get_loop_number() }}: {{ get_input() }}
+            Agreement: {{ safe_get_response('agreement_finder', 'None') | truncate(100) }}
+            Score: {{ safe_get_response('agreement_moderator', 'None') | truncate(50) }}
+
+  # 🔧 OPTIMIZED: Simplified meta-analysis
+  - id: meta_debate_reflection
+    type: local_llm
+    model: deepseek-r1:8b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      QUESTION: {{ get_input() }}
+      
+      DEBATE SUMMARY:
+      {% if previous_outputs.cognitive_debate_loop %}
+      - Rounds: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'loops_completed', 'Unknown') }}
+      - Final Score: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'final_score', 'Unknown') }}
+      - Status: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'status', 'completed') }}
+      {% endif %}
+      
+      PROGRESSION: [How debate evolved in 2-3 sentences]
+      SUCCESS: [How well agents collaborated in 1-2 sentences]
+
+  # 🔧 OPTIMIZED: Essential final synthesis only
+  - id: final_synthesis_processor
+    type: local_llm
+    model: deepseek-r1:8b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      QUESTION: {{ get_input() }}
+      
+      DEBATE RESULTS:
+      {% if previous_outputs.cognitive_debate_loop %}
+      - Rounds: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'loops_completed', 'Unknown') }}
+      - Score: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'final_score', 'Unknown') }}
+      {% endif %}
+      
+      META-ANALYSIS: {{ safe_get_response('meta_debate_reflection', 'No analysis') | truncate(200) }}
+      
+      **Question**: {{ get_input() }}
+      **Debate Summary**: [Key developments in 2-3 sentences]
+      **Final Answer**: [Clear, actionable response]
+      **Confidence**: [0.0-1.0 with brief justification]

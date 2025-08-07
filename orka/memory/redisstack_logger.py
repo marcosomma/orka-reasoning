@@ -1,7 +1,7 @@
 # OrKa: Orchestrator Kit Agents
 # Copyright © 2025 Marco Somma
 #
-# This file is part of OrKa – https://github.com/marcosomma/orka-resoning
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
 # Licensed under the Apache License, Version 2.0 (Apache 2.0).
 # You may not use this file for commercial purposes without explicit permission.
@@ -9,7 +9,7 @@
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 # For commercial use, contact: marcosomma.work@gmail.com
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
+# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 RedisStack Memory Logger Implementation
@@ -161,11 +161,11 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
     - **Namespace Isolation**: Multi-tenant memory separation
 
     **Performance Benchmarks:**
-    - **Vector Search**: 100x faster than FLAT indexing
-    - **Write Throughput**: 50,000+ memories/second sustained
-    - **Search Latency**: <5ms for complex hybrid queries
-    - **Memory Efficiency**: 60% reduction in storage overhead
-    - **Concurrent Users**: 1000+ simultaneous search operations
+    - **Vector Search**: Up to 100x faster than FLAT indexing for large datasets
+    - **Write Throughput**: 50,000+ memories/second sustained (typical configurations)
+    - **Search Latency**: <5ms for complex hybrid queries (optimized deployments)
+    - **Memory Efficiency**: ~60% reduction in storage overhead vs unoptimized storage
+    - **Concurrent Users**: 1000+ simultaneous search operations (typical deployments)
 
     **Advanced Vector Features:**
 
