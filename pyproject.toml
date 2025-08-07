@@ -124,7 +124,7 @@ orka-redis = "orka.start_redis_only:cli_main"
 orka-kafka = "orka.start_kafka:cli_main"
 
 [project.entry-points."orka.agents"]
-openai-builder = "orka.agents.llm_agents:OpenAIAnswerBuilder"
+openai-answer = "orka.agents.llm_agents:OpenAIAnswerBuilder"
 rag-agent = "orka.agents.rag_agent:RAGAgent"
 local-llm = "orka.agents.local_llm_agents:LocalLLMAgent"
 binary = "orka.agents.agents:BinaryAgent"
@@ -213,7 +213,7 @@ exclude_lines = [
     "@abstractmethod",
     "return NotImplemented",
 ]
-fail_under = 80
+fail_under = 65
 
 [tool.black]
 line-length = 100

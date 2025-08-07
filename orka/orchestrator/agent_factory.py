@@ -68,7 +68,7 @@ AGENT_TYPES: Dict[str, AgentClass] = {
     "binary": agents.BinaryAgent,
     "classification": agents.ClassificationAgent,
     "local_llm": local_llm_agents.LocalLLMAgent,
-    "openai-builder": llm_agents.OpenAIAnswerBuilder,
+    "openai-answer": llm_agents.OpenAIAnswerBuilder,
     "openai-binary": llm_agents.OpenAIBinaryAgent,
     "openai-classification": llm_agents.OpenAIClassificationAgent,
     "validate_and_structure": validation_and_structuring_agent.ValidationAndStructuringAgent,
