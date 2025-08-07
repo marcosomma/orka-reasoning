@@ -153,7 +153,7 @@ Usage Patterns
     orka memory cleanup --dry-run
 
     # Real-time monitoring
-    orka memory watch --live
+    orka memory watch --run-id <run_id>
 
 Backward Compatibility
 ---------------------

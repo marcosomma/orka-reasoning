@@ -129,10 +129,10 @@ Performance Characteristics
 
 **RedisStack vs Redis Logger:**
 
-* **Vector Search**: 100x faster with HNSW vs manual cosine similarity
-* **Scalability**: O(log n) vs O(n) search complexity
-* **Memory Usage**: 60% reduction in memory overhead
-* **Concurrent Operations**: Support for 1000+ simultaneous searches
+* **Vector Search**: Up to 100x faster with HNSW indexing vs manual cosine similarity for large datasets
+* **Scalability**: O(log n) vs O(n) search complexity (HNSW vs brute force)
+* **Memory Usage**: ~60% reduction in memory overhead with optimized vector storage
+* **Concurrent Operations**: Support for 1000+ simultaneous searches in typical deployments
 
 Backward Compatibility
 ----------------------
