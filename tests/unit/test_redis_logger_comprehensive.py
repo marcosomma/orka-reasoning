@@ -22,7 +22,9 @@ class TestRedisMemoryLoggerInitialization:
         mock_client = Mock()
         mock_redis.return_value = mock_client
 
-        logger = RedisMemoryLogger()
+        # Ensure clean environment for this test to work reliably in CI/CD
+        with patch.dict("os.environ", {}, clear=True):
+            logger = RedisMemoryLogger()
 
         assert logger.redis_url == "redis://localhost:6379/0"
         assert logger.stream_key == "orka:memory"
