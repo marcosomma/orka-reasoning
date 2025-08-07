@@ -217,7 +217,7 @@ class TestAgentFactory:
         mock_router_node.return_value = Mock(type="router")
 
         # Patch the AGENT_TYPES dict to use our mock
-        with patch.dict(AGENT_TYPES, {"router": mock_router_node}):
+        with patch.dict("orka.orchestrator.agent_factory.AGENT_TYPES", {"router": mock_router_node}):
             agents = mock_agent_factory._init_agents()
 
         assert "router_agent" in agents

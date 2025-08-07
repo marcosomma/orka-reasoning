@@ -46,7 +46,7 @@ class TestOrkaErrorHandler:
         assert handler.error_telemetry["critical_failures"] == []
         assert handler.error_telemetry["recovery_actions"] == []
 
-    def test_record_error_basic(self, error_handler, capsys):
+    def test_record_error_basic(self, error_handler, caplog):
         """Test basic error recording."""
         error_handler.record_error(
             error_type="api_error",
@@ -54,8 +54,7 @@ class TestOrkaErrorHandler:
             error_msg="API call failed",
         )
 
-        captured = capsys.readouterr()
-        assert "🚨 [ORKA-ERROR] api_error in test_agent: API call failed" in captured.out
+        assert "🚨 [ORKA-ERROR] api_error in test_agent: API call failed" in caplog.text
 
         assert len(error_handler.error_telemetry["errors"]) == 1
         error = error_handler.error_telemetry["errors"][0]
@@ -214,8 +213,12 @@ class TestOrkaErrorHandler:
     @patch.dict(os.environ, {"ORKA_LOG_DIR": "custom_logs"})
     def test_save_error_report_custom_log_dir(self, error_handler):
         """Test error report saves to custom log directory."""
-        with patch("os.makedirs"), patch("builtins.open"), patch(
-            "orka.orchestrator_error_wrapper.datetime",
+        with (
+            patch("os.makedirs"),
+            patch("builtins.open"),
+            patch(
+                "orka.orchestrator_error_wrapper.datetime",
+            ),
         ):
             error_handler.save_comprehensive_error_report([])
 
@@ -228,8 +231,12 @@ class TestOrkaErrorHandler:
             "Meta generation failed",
         )
 
-        with patch("os.makedirs"), patch("builtins.open"), patch(
-            "orka.orchestrator_error_wrapper.datetime",
+        with (
+            patch("os.makedirs"),
+            patch("builtins.open"),
+            patch(
+                "orka.orchestrator_error_wrapper.datetime",
+            ),
         ):
             error_handler.save_comprehensive_error_report([])
 
@@ -243,9 +250,14 @@ class TestOrkaErrorHandler:
 
     def test_save_error_report_execution_status_logic(self, error_handler):
         """Test execution status determination logic."""
-        with patch("os.makedirs"), patch("builtins.open"), patch(
-            "orka.orchestrator_error_wrapper.datetime",
-        ), patch.object(error_handler.orchestrator, "_generate_meta_report"):
+        with (
+            patch("os.makedirs"),
+            patch("builtins.open"),
+            patch(
+                "orka.orchestrator_error_wrapper.datetime",
+            ),
+            patch.object(error_handler.orchestrator, "_generate_meta_report"),
+        ):
             # Test completed status (no errors, no final error)
             error_handler.save_comprehensive_error_report([])
             assert error_handler.error_telemetry["execution_status"] == "completed"
@@ -273,7 +285,7 @@ class TestOrkaErrorHandler:
         assert result["data"] == input_data
 
     @pytest.mark.asyncio
-    async def test_run_with_error_handling_with_recorded_errors(self, error_handler, capsys):
+    async def test_run_with_error_handling_with_recorded_errors(self, error_handler, caplog):
         """Test orchestrator run with recorded errors but successful completion."""
 
         async def mock_run(input_data):
@@ -285,12 +297,11 @@ class TestOrkaErrorHandler:
 
         result = await error_handler.run_with_error_handling({})
 
-        captured = capsys.readouterr()
-        assert "⚠️ [ORKA-WARNING] Execution completed with 1 errors" in captured.out
+        assert "⚠️ [ORKA-WARNING] Execution completed with 1 errors" in caplog.text
         assert result["result"] == "success_with_warnings"
 
     @pytest.mark.asyncio
-    async def test_run_with_error_handling_exception(self, error_handler, capsys):
+    async def test_run_with_error_handling_exception(self, error_handler, caplog):
         """Test orchestrator run with exception - handler should catch and record."""
 
         async def mock_run(input_data):
@@ -302,8 +313,7 @@ class TestOrkaErrorHandler:
         result = await error_handler.run_with_error_handling({})
 
         # Should record critical failure
-        captured = capsys.readouterr()
-        assert "💥 [ORKA-CRITICAL]" in captured.out
+        assert "💥 [ORKA-CRITICAL]" in caplog.text
 
         # Should have recorded the error
         assert len(error_handler.error_telemetry["errors"]) > 0

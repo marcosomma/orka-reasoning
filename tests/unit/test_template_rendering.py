@@ -10,7 +10,7 @@ from orka.orchestrator.prompt_rendering import PromptRenderer
 
 def test_local_llm_response_access():
     """Test that local LLM agent responses can be accessed via templates."""
-    engine = ExecutionEngine({})  # Empty config for testing
+    engine = ExecutionEngine("tests/dummy.yml")  # Use dummy config for testing
 
     # Simulate local LLM agent response
     previous_outputs = {
@@ -40,15 +40,15 @@ def test_local_llm_response_access():
 
 def test_nested_response_access():
     """Test that nested response structures can be accessed via templates."""
-    engine = ExecutionEngine({})
+    engine = ExecutionEngine("tests/dummy.yml")
 
-    # Simulate nested response structure
+    # Simulate nested response structure (memories only, no response to test memories path)
     previous_outputs = {
         "memory_reader": {
             "result": {
                 "memories": ["memory1", "memory2"],
-                "response": "Memory response",
-                "confidence": "0.8",
+                "query": "test query",
+                "backend": "redis",
             }
         }
     }
@@ -56,29 +56,34 @@ def test_nested_response_access():
     # Process through context enhancement
     enhanced = engine._ensure_complete_context(previous_outputs)
 
-    # Verify structure
+    # Verify structure - the _ensure_complete_context method flattens the result into the agent response
     assert "memory_reader" in enhanced
+    # The memories from the nested "result" are now at the top level of the agent response
     assert "memories" in enhanced["memory_reader"]
-    assert "response" in enhanced["memory_reader"]
+    assert "query" in enhanced["memory_reader"]
+    assert "backend" in enhanced["memory_reader"]
     assert enhanced["memory_reader"]["memories"] == ["memory1", "memory2"]
-    assert enhanced["memory_reader"]["response"] == "Memory response"
+    assert enhanced["memory_reader"]["query"] == "test query"
+    assert enhanced["memory_reader"]["backend"] == "redis"
 
     # Test template rendering
     renderer = PromptRenderer()
     template = """
     Memories: {{ previous_outputs.memory_reader.memories }}
-    Response: {{ previous_outputs.memory_reader.response }}
+    Query: {{ previous_outputs.memory_reader.query }}
+    Backend: {{ previous_outputs.memory_reader.backend }}
     """
     rendered = renderer.render_prompt(template, {"previous_outputs": enhanced})
 
     assert "memory1" in rendered
     assert "memory2" in rendered
-    assert "Memory response" in rendered
+    assert "test query" in rendered
+    assert "redis" in rendered
 
 
 def test_mixed_agent_responses():
     """Test that different types of agent responses can be accessed together."""
-    engine = ExecutionEngine({})
+    engine = ExecutionEngine("tests/dummy.yml")
 
     # Simulate mixed agent responses
     previous_outputs = {
@@ -106,7 +111,7 @@ def test_mixed_agent_responses():
 
 def test_response_structure_preservation():
     """Test that original response structure is preserved while enabling template access."""
-    engine = ExecutionEngine({})
+    engine = ExecutionEngine("tests/dummy.yml")
 
     # Original response with metrics
     original_response = {

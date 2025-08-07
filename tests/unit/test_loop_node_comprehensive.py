@@ -180,36 +180,40 @@ class TestLoopNode:
                     # File cleanup still happens even when execution fails
                     mock_unlink.assert_called_once()
 
-    def test_extract_score_from_pattern(self):
+    @pytest.mark.asyncio
+    async def test_extract_score_from_pattern(self):
         """Test score extraction using regex pattern."""
         result_with_pattern = {
             "response": "The analysis shows good quality. SCORE: 0.85 out of 1.0",
         }
 
-        score = self.node._extract_score(result_with_pattern)
+        score = await self.node._extract_score(result_with_pattern)
         assert score == 0.85
 
-    def test_extract_score_from_key(self):
+    @pytest.mark.asyncio
+    async def test_extract_score_from_key(self):
         """Test score extraction using direct key access."""
         result_with_key = {
             "score": 0.92,
             "response": "Good quality response",
         }
 
-        score = self.node._extract_score(result_with_key)
+        score = await self.node._extract_score(result_with_key)
         assert score == 0.92
 
-    def test_extract_score_key_priority_over_pattern(self):
+    @pytest.mark.asyncio
+    async def test_extract_score_key_priority_over_pattern(self):
         """Test that direct key access takes priority over pattern matching."""
         result_with_both = {
             "score": 0.95,
             "response": "The analysis shows SCORE: 0.75 but direct score is higher",
         }
 
-        score = self.node._extract_score(result_with_both)
+        score = await self.node._extract_score(result_with_both)
         assert score == 0.95
 
-    def test_extract_score_pattern_fallback(self):
+    @pytest.mark.asyncio
+    async def test_extract_score_pattern_fallback(self):
         """Test pattern matching when key is not available."""
         # Set score_extraction_config to try non-existent key first, then pattern
         self.node.score_extraction_config = {
@@ -223,19 +227,21 @@ class TestLoopNode:
             "response": "Quality assessment yields SCORE: 0.78",
         }
 
-        score = self.node._extract_score(result)
+        score = await self.node._extract_score(result)
         assert score == 0.78
 
-    def test_extract_score_no_match(self):
+    @pytest.mark.asyncio
+    async def test_extract_score_no_match(self):
         """Test score extraction when no score is found."""
         result_no_score = {
             "response": "No score information available",
         }
 
-        score = self.node._extract_score(result_no_score)
+        score = await self.node._extract_score(result_no_score)
         assert score == 0.0
 
-    def test_extract_score_invalid_pattern(self):
+    @pytest.mark.asyncio
+    async def test_extract_score_invalid_pattern(self):
         """Test score extraction with invalid regex pattern."""
         # Set an invalid regex pattern in the new configuration format
         self.node.score_extraction_config = {
@@ -250,9 +256,10 @@ class TestLoopNode:
 
         # Invalid regex pattern should raise an error
         with pytest.raises(re.error, match="unterminated character set"):
-            score = self.node._extract_score(result)
+            score = await self.node._extract_score(result)
 
-    def test_extract_score_agent_key_strategy(self):
+    @pytest.mark.asyncio
+    async def test_extract_score_agent_key_strategy(self):
         """Test score extraction using agent_key strategy."""
         self.node.score_extraction_config = {
             "strategies": [
@@ -265,10 +272,11 @@ class TestLoopNode:
             "other_agent": {"score": "AGREEMENT_SCORE: 0.60"},
         }
 
-        score = self.node._extract_score(result)
+        score = await self.node._extract_score(result)
         assert score == 0.85
 
-    def test_extract_score_nested_path_strategy(self):
+    @pytest.mark.asyncio
+    async def test_extract_score_nested_path_strategy(self):
         """Test score extraction using direct_key strategy."""
         self.node.score_extraction_config = {
             "strategies": [
@@ -280,10 +288,11 @@ class TestLoopNode:
             "score": 0.92,
         }
 
-        score = self.node._extract_score(result)
+        score = await self.node._extract_score(result)
         assert score == 0.92
 
-    def test_extract_score_multiple_strategies(self):
+    @pytest.mark.asyncio
+    async def test_extract_score_multiple_strategies(self):
         """Test score extraction with multiple strategies in order."""
         self.node.score_extraction_config = {
             "strategies": [
@@ -299,10 +308,11 @@ class TestLoopNode:
         }
 
         # Should find the first matching strategy (agent_key)
-        score = self.node._extract_score(result)
+        score = await self.node._extract_score(result)
         assert score == 0.88
 
-    def test_extract_score_agent_key_with_nested_response(self):
+    @pytest.mark.asyncio
+    async def test_extract_score_agent_key_with_nested_response(self):
         """Test agent_key strategy with nested response structures."""
         self.node.score_extraction_config = {
             "strategies": [
@@ -317,10 +327,11 @@ class TestLoopNode:
             },
         }
 
-        score = self.node._extract_score(result)
+        score = await self.node._extract_score(result)
         assert score == 0.91
 
-    def test_extract_score_pattern_strategy_multiple_patterns(self):
+    @pytest.mark.asyncio
+    async def test_extract_score_pattern_strategy_multiple_patterns(self):
         """Test pattern strategy with multiple patterns."""
         self.node.score_extraction_config = {
             "strategies": [
@@ -339,7 +350,7 @@ class TestLoopNode:
             "response": "Assessment complete. RATING: 0.87 overall quality.",
         }
 
-        score = self.node._extract_score(result)
+        score = await self.node._extract_score(result)
         assert score == 0.87
 
     def test_extract_cognitive_insights_enabled(self):
@@ -476,7 +487,8 @@ class TestLoopNode:
         metric = self.node._extract_secondary_metric(result, "REASONING_QUALITY")
         assert metric == 0.93
 
-    def test_backward_compatibility_score_extraction_key(self):
+    @pytest.mark.asyncio
+    async def test_backward_compatibility_score_extraction_key(self):
         """Test backward compatibility with deprecated score_extraction_key."""
         # Test with deprecated attribute
         node = LoopNode(
@@ -495,10 +507,11 @@ class TestLoopNode:
 
         # Test extraction works
         result = {"rating": 0.85}
-        score = node._extract_score(result)
+        score = await node._extract_score(result)
         assert score == 0.85
 
-    def test_backward_compatibility_score_extraction_pattern(self):
+    @pytest.mark.asyncio
+    async def test_backward_compatibility_score_extraction_pattern(self):
         """Test backward compatibility with deprecated score_extraction_pattern."""
         # Test with deprecated attribute
         node = LoopNode(
@@ -518,10 +531,11 @@ class TestLoopNode:
 
         # Test extraction works
         result = {"response": "Assessment complete. RATING: 0.92"}
-        score = node._extract_score(result)
+        score = await node._extract_score(result)
         assert score == 0.92
 
-    def test_backward_compatibility_both_deprecated_attributes(self):
+    @pytest.mark.asyncio
+    async def test_backward_compatibility_both_deprecated_attributes(self):
         """Test backward compatibility with both deprecated attributes."""
         # Test with both deprecated attributes
         node = LoopNode(
@@ -537,15 +551,16 @@ class TestLoopNode:
 
         # Test that key strategy works
         result = {"quality": 0.88}
-        score = node._extract_score(result)
+        score = await node._extract_score(result)
         assert score == 0.88
 
         # Test that pattern strategy works when key is not available
         result = {"response": "Analysis shows QUALITY: 0.91"}
-        score = node._extract_score(result)
+        score = await node._extract_score(result)
         assert score == 0.91
 
-    def test_new_config_overrides_deprecated_attributes(self):
+    @pytest.mark.asyncio
+    async def test_new_config_overrides_deprecated_attributes(self):
         """Test that deprecated attributes are processed when provided, but new config takes precedence."""
         # Both new and deprecated attributes provided
         node = LoopNode(
@@ -563,7 +578,7 @@ class TestLoopNode:
         # The deprecated attributes get processed last, so they override the new config
         # This is the current behavior, though not ideal
         result = {"new_key": 0.95, "old_key": 0.50}
-        score = node._extract_score(result)
+        score = await node._extract_score(result)
         # The deprecated key strategy is processed and finds the old_key
         assert score == 0.50
 

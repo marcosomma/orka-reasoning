@@ -197,7 +197,7 @@ class TestRedisStackLoggerMemoryOperations:
         call_args = self.mock_redis_client.hset.call_args
         memory_data = call_args[1]["mapping"]
         assert "orka_expire_time" in memory_data
-        assert memory_data["orka_expire_time"] == int((1000.0 + 3600) * 1000)
+        assert memory_data["orka_expire_time"] == str(int((1000.0 + 3600) * 1000))
 
     def test_log_orchestration_event_with_extraction(self):
         """Test logging orchestration events with content extraction."""
@@ -238,7 +238,7 @@ class TestRedisStackLoggerMemoryOperations:
         assert "orka_expire_time" in memory_data
         # agent_response gets 0.5 importance, so expiry = 1.0 * (1.0 + 0.5) = 1.5 hours = 5400 seconds
         expected_expiry = int((1000.0 + 5400) * 1000)
-        assert memory_data["orka_expire_time"] == expected_expiry
+        assert memory_data["orka_expire_time"] == str(expected_expiry)
 
     def test_content_extraction_from_payload(self):
         """Test content extraction from different payload types."""

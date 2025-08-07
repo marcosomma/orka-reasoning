@@ -169,7 +169,7 @@ class TestMemoryWatch:
         with (
             patch("orka.cli.memory.watch.create_memory_logger") as mock_create,
             patch("orka.cli.memory.watch._memory_watch_display") as mock_display,
-            patch.dict(os.environ, {"ORKA_MEMORY_BACKEND": "kafka"}),
+            patch.dict(os.environ, {"ORKA_MEMORY_BACKEND": "kafka"}, clear=True),
         ):
             mock_memory = MagicMock()
             mock_create.return_value = mock_memory

@@ -403,13 +403,13 @@ class TestUtilityFunctions:
         assert manager.config.registry_url == "http://custom:8081"
         assert manager.config.format == SchemaFormat.PROTOBUF
 
-    @patch("builtins.print")
-    def test_migrate_from_json(self, mock_print):
-        """Test migrate_from_json prints migration instructions."""
+    @patch("orka.memory.schema_manager.logger")
+    def test_migrate_from_json(self, mock_logger):
+        """Test migrate_from_json logs migration instructions."""
         migrate_from_json()
 
-        # Should print migration instructions
-        mock_print.assert_called_once()
-        call_args = mock_print.call_args[0][0]
+        # Should log migration instructions
+        mock_logger.info.assert_called_once()
+        call_args = mock_logger.info.call_args[0][0]
         assert "Migration Steps" in call_args
         assert "pip install orka-reasoning[schema]" in call_args

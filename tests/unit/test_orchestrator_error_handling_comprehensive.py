@@ -38,7 +38,7 @@ class TestErrorHandler:
         agent_id = "test_agent"
         error_msg = "Test error message"
 
-        with patch("builtins.print") as mock_print:
+        with patch("orka.orchestrator.error_handling.logger") as mock_logger:
             self.handler._record_error(error_type, agent_id, error_msg)
 
         # Check error was recorded
@@ -53,11 +53,11 @@ class TestErrorHandler:
         assert "timestamp" in error_entry
 
         # Check console output
-        mock_print.assert_called_once()
-        assert "🚨 [ORKA-ERROR]" in mock_print.call_args[0][0]
-        assert error_type in mock_print.call_args[0][0]
-        assert agent_id in mock_print.call_args[0][0]
-        assert error_msg in mock_print.call_args[0][0]
+        mock_logger.error.assert_called_once()
+        assert "🚨 [ORKA-ERROR]" in mock_logger.error.call_args[0][0]
+        assert error_type in mock_logger.error.call_args[0][0]
+        assert agent_id in mock_logger.error.call_args[0][0]
+        assert error_msg in mock_logger.error.call_args[0][0]
 
     def test_record_error_with_exception(self):
         """Test _record_error with exception object."""
@@ -341,7 +341,7 @@ class TestErrorHandler:
             patch("os.makedirs"),
             patch("builtins.open", mock_open()) as mock_file,
             patch("json.dump") as mock_json_dump,
-            patch("builtins.print") as mock_print,
+            patch("orka.orchestrator.error_handling.logger") as mock_logger,
             patch.object(self.handler, "_capture_memory_snapshot") as mock_memory_snapshot,
         ):
             mock_memory_snapshot.return_value = {"test": "memory_snapshot"}
@@ -349,8 +349,8 @@ class TestErrorHandler:
 
             self.handler._save_error_report(logs)
 
-        # Check error message was printed
-        mock_print.assert_any_call("Failed to save error report: File save failed")
+        # Check error message was logged
+        mock_logger.error.assert_any_call("Failed to save error report: File save failed")
 
     def test_save_error_report_memory_save_fails(self):
         """Test _save_error_report when memory save fails."""
@@ -360,7 +360,7 @@ class TestErrorHandler:
             patch("os.makedirs"),
             patch("builtins.open", mock_open()) as mock_file,
             patch("json.dump") as mock_json_dump,
-            patch("builtins.print") as mock_print,
+            patch("orka.orchestrator.error_handling.logger") as mock_logger,
             patch.object(self.handler, "_capture_memory_snapshot") as mock_memory_snapshot,
         ):
             mock_memory_snapshot.return_value = {"test": "memory_snapshot"}
@@ -368,8 +368,10 @@ class TestErrorHandler:
 
             self.handler._save_error_report(logs)
 
-        # Check error message was printed
-        mock_print.assert_any_call("Failed to save trace to memory backend: Memory save failed")
+        # Check error message was logged
+        mock_logger.error.assert_any_call(
+            "Failed to save trace to memory backend: Memory save failed"
+        )
 
     def test_save_error_report_with_retries(self):
         """Test _save_error_report includes retry counts in report."""

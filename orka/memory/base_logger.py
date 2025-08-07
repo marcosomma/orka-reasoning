@@ -25,7 +25,7 @@ import logging
 import threading
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime
-from typing import Any, Dict, Set
+from typing import Any, Dict, List, Set
 
 from .file_operations import FileOperationsMixin
 from .serialization import SerializationMixin
@@ -725,14 +725,329 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         return outputs
 
     def save_enhanced_trace(self, file_path: str, enhanced_data: Dict[str, Any]) -> None:
-        """Save enhanced trace data with memory backend references."""
+        """Save enhanced trace data with memory backend references and blob deduplication."""
         try:
+            # Apply blob deduplication to the enhanced trace data
+            deduplicated_data = self._apply_deduplication_to_enhanced_trace(enhanced_data)
+
             import json
 
             with open(file_path, "w", encoding="utf-8") as f:
-                json.dump(enhanced_data, f, indent=2, default=str)
-            logger.info(f"Enhanced trace saved to {file_path}")
+                json.dump(deduplicated_data, f, indent=2, default=str)
+
+            # Log deduplication statistics
+            if (
+                "_metadata" in deduplicated_data
+                and "deduplication_enabled" in deduplicated_data["_metadata"]
+            ):
+                if deduplicated_data["_metadata"]["deduplication_enabled"]:
+                    stats = deduplicated_data["_metadata"].get("stats", {})
+                    blob_count = deduplicated_data["_metadata"].get("total_blobs_stored", 0)
+                    size_reduction = stats.get("size_reduction", 0)
+                    logger.info(
+                        f"Enhanced trace saved with deduplication: {blob_count} blobs, {size_reduction} bytes saved"
+                    )
+                else:
+                    logger.info(f"Enhanced trace saved (no deduplication needed)")
+            else:
+                logger.info(f"Enhanced trace saved to {file_path}")
+
         except Exception as e:
-            logger.error(f"Failed to save enhanced trace: {e}")
-            # Fallback to original method
-            self.save_to_file(file_path)
+            logger.error(f"Failed to save enhanced trace with deduplication: {e}")
+            # Fallback to simple JSON dump
+            try:
+                import json
+
+                with open(file_path, "w", encoding="utf-8") as f:
+                    json.dump(enhanced_data, f, indent=2, default=str)
+                logger.info(f"Enhanced trace saved (fallback mode) to {file_path}")
+            except Exception as fallback_e:
+                logger.error(f"Fallback save also failed: {fallback_e}")
+                # Last resort: use the original save_to_file method
+                self.save_to_file(file_path)
+
+    def _apply_deduplication_to_enhanced_trace(
+        self, enhanced_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Apply blob deduplication to enhanced trace data using original events format."""
+        try:
+            import json
+            from datetime import UTC, datetime
+
+            # Reset blob store for this operation
+            original_blob_store = getattr(self, "_blob_store", {})
+            self._blob_store = {}
+
+            # Convert enhanced trace format to original events format for deduplication
+            events = []
+            blob_stats = {
+                "total_entries": 0,
+                "deduplicated_blobs": 0,
+                "size_reduction": 0,
+            }
+
+            # Process agent_executions into events format
+            if "agent_executions" in enhanced_data:
+                for execution in enhanced_data["agent_executions"]:
+                    blob_stats["total_entries"] += 1
+
+                    # Create event preserving original structure (agent_id, event_type, timestamp)
+                    event = {
+                        "agent_id": execution.get("agent_id"),
+                        "event_type": execution.get("event_type"),
+                        "timestamp": execution.get("timestamp"),
+                    }
+
+                    # Add other top-level fields if they exist
+                    for key in ["step", "run_id", "fork_group", "parent"]:
+                        if key in execution:
+                            event[key] = execution[key]
+
+                    # Handle payload separately - only deduplicate if large
+                    if "payload" in execution:
+                        payload = execution["payload"]
+
+                        # Calculate payload size to decide if it needs deduplication
+                        payload_size = len(json.dumps(payload, separators=(",", ":")))
+
+                        if payload_size > getattr(self, "_blob_threshold", 200):
+                            # Payload is large, deduplicate it
+                            original_size = payload_size
+                            deduplicated_payload = self._deduplicate_object(payload)
+                            new_size = len(json.dumps(deduplicated_payload, separators=(",", ":")))
+
+                            if new_size < original_size:
+                                blob_stats["deduplicated_blobs"] += 1
+                                blob_stats["size_reduction"] += original_size - new_size
+
+                            event["payload"] = deduplicated_payload
+                        else:
+                            # Payload is small, keep as-is
+                            event["payload"] = payload
+
+                    # Add enhanced trace specific fields (memory_references, template_resolution)
+                    for key in ["memory_references", "template_resolution"]:
+                        if key in execution:
+                            event[key] = execution[key]
+
+                    events.append(event)
+
+            # Decide whether to use deduplication format
+            use_dedup_format = bool(self._blob_store)
+
+            if use_dedup_format:
+                # Extract token and cost data from agent executions
+                cost_analysis = self._extract_cost_analysis(enhanced_data, events)
+
+                # Create the original blob_store + events format with cost analysis
+                result = {
+                    "_metadata": {
+                        "version": "1.2.0",  # Use original version for compatibility
+                        "deduplication_enabled": True,
+                        "blob_threshold_chars": getattr(self, "_blob_threshold", 200),
+                        "total_blobs_stored": len(self._blob_store),
+                        "stats": blob_stats,
+                        "generated_at": datetime.now(UTC).isoformat(),
+                    },
+                    "blob_store": self._blob_store.copy(),
+                    "events": events,  # Use 'events' key like original format
+                    "cost_analysis": cost_analysis,  # New key for token/cost data
+                }
+            else:
+                # No deduplication needed - use enhanced format with metadata
+                result = enhanced_data.copy()
+                result["_metadata"] = {
+                    "version": "1.2.0",
+                    "deduplication_enabled": False,
+                    "generated_at": datetime.now(UTC).isoformat(),
+                }
+                # Add cost analysis even when no deduplication
+                result["cost_analysis"] = self._extract_cost_analysis(enhanced_data, events)
+
+            # Restore original blob store
+            self._blob_store = original_blob_store
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Failed to apply deduplication to enhanced trace: {e}")
+            # Restore original blob store on error
+            if "original_blob_store" in locals():
+                self._blob_store = original_blob_store
+            # Return original data if deduplication fails
+            return enhanced_data
+
+    def _extract_cost_analysis(
+        self, enhanced_data: Dict[str, Any], events: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Extract token and cost analysis from agent executions."""
+        try:
+            cost_analysis: Dict[str, Any] = {
+                "summary": {
+                    "total_agents": 0,
+                    "total_tokens": 0,
+                    "total_prompt_tokens": 0,
+                    "total_completion_tokens": 0,
+                    "total_cost_usd": 0.0,
+                    "total_latency_ms": 0.0,
+                    "models_used": set(),
+                    "providers_used": set(),
+                },
+                "agents": {},
+                "by_model": {},
+                "by_provider": {},
+            }
+
+            # Process each agent execution to extract cost data
+            for event in events:
+                agent_id = event.get("agent_id")
+                event_type = event.get("event_type")
+
+                # Only process LLM agents that have cost data
+                if not agent_id or not event_type or "LLMAgent" not in str(event_type):
+                    continue
+
+                # Extract metrics from payload or blob_store
+                metrics = self._extract_agent_metrics(event, enhanced_data)
+
+                if metrics:
+                    # Update agent-specific data
+                    if agent_id not in cost_analysis["agents"]:
+                        cost_analysis["agents"][agent_id] = {
+                            "executions": 0,
+                            "total_tokens": 0,
+                            "total_prompt_tokens": 0,
+                            "total_completion_tokens": 0,
+                            "total_cost_usd": 0.0,
+                            "total_latency_ms": 0.0,
+                            "models": set(),
+                            "providers": set(),
+                            "event_type": event_type,
+                        }
+
+                    agent_data = cost_analysis["agents"][agent_id]
+                    agent_data["executions"] += 1
+                    agent_data["total_tokens"] += metrics.get("tokens", 0)
+                    agent_data["total_prompt_tokens"] += metrics.get("prompt_tokens", 0)
+                    agent_data["total_completion_tokens"] += metrics.get("completion_tokens", 0)
+                    agent_data["total_cost_usd"] += metrics.get("cost_usd", 0.0)
+                    agent_data["total_latency_ms"] += metrics.get("latency_ms", 0.0)
+
+                    model = metrics.get("model", "unknown")
+                    provider = metrics.get("provider", "unknown")
+                    agent_data["models"].add(model)
+                    agent_data["providers"].add(provider)
+
+                    # Update summary
+                    summary = cost_analysis["summary"]
+                    summary["total_agents"] += 1
+                    summary["total_tokens"] += metrics.get("tokens", 0)
+                    summary["total_prompt_tokens"] += metrics.get("prompt_tokens", 0)
+                    summary["total_completion_tokens"] += metrics.get("completion_tokens", 0)
+                    summary["total_cost_usd"] += metrics.get("cost_usd", 0.0)
+                    summary["total_latency_ms"] += metrics.get("latency_ms", 0.0)
+                    summary["models_used"].add(model)
+                    summary["providers_used"].add(provider)
+
+                    # Update by_model aggregation
+                    if model not in cost_analysis["by_model"]:
+                        cost_analysis["by_model"][model] = {
+                            "agents": 0,
+                            "total_tokens": 0,
+                            "total_cost_usd": 0.0,
+                            "total_latency_ms": 0.0,
+                        }
+                    model_data = cost_analysis["by_model"][model]
+                    model_data["agents"] += 1
+                    model_data["total_tokens"] += metrics.get("tokens", 0)
+                    model_data["total_cost_usd"] += metrics.get("cost_usd", 0.0)
+                    model_data["total_latency_ms"] += metrics.get("latency_ms", 0.0)
+
+                    # Update by_provider aggregation
+                    if provider not in cost_analysis["by_provider"]:
+                        cost_analysis["by_provider"][provider] = {
+                            "agents": 0,
+                            "total_tokens": 0,
+                            "total_cost_usd": 0.0,
+                            "total_latency_ms": 0.0,
+                        }
+                    provider_data = cost_analysis["by_provider"][provider]
+                    provider_data["agents"] += 1
+                    provider_data["total_tokens"] += metrics.get("tokens", 0)
+                    provider_data["total_cost_usd"] += metrics.get("cost_usd", 0.0)
+                    provider_data["total_latency_ms"] += metrics.get("latency_ms", 0.0)
+
+            # Convert sets to lists for JSON serialization
+            cost_analysis["summary"]["models_used"] = list(cost_analysis["summary"]["models_used"])
+            cost_analysis["summary"]["providers_used"] = list(
+                cost_analysis["summary"]["providers_used"]
+            )
+
+            for agent_data in cost_analysis["agents"].values():
+                agent_data["models"] = list(agent_data["models"])
+                agent_data["providers"] = list(agent_data["providers"])
+
+            return cost_analysis
+
+        except Exception as e:
+            logger.error(f"Failed to extract cost analysis: {e}")
+            return {"error": str(e)}
+
+    def _extract_agent_metrics(
+        self, event: Dict[str, Any], enhanced_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Extract metrics from an agent event, resolving blob references if needed."""
+        try:
+            payload = event.get("payload", {})
+
+            # If payload is a blob reference, resolve it
+            if isinstance(payload, dict) and payload.get("_type") == "blob_reference":
+                blob_ref = payload.get("ref")
+                if blob_ref and hasattr(self, "_blob_store") and blob_ref in self._blob_store:
+                    # Get from current blob store
+                    resolved_payload = self._blob_store[blob_ref]
+                elif (
+                    blob_ref
+                    and "blob_store" in enhanced_data
+                    and blob_ref in enhanced_data["blob_store"]
+                ):
+                    # Get from enhanced_data blob store
+                    resolved_payload = enhanced_data["blob_store"][blob_ref]
+                else:
+                    return {}
+            else:
+                resolved_payload = payload
+
+            # Look for metrics in various locations within the resolved payload
+            metrics = {}
+
+            # Check if there's a direct _metrics field
+            if "_metrics" in resolved_payload:
+                metrics = resolved_payload["_metrics"]
+
+            # Check in previous_outputs for agent responses with _metrics
+            elif "previous_outputs" in resolved_payload:
+                prev_outputs = resolved_payload["previous_outputs"]
+                for agent_response in prev_outputs.values():
+                    if isinstance(agent_response, dict) and "_metrics" in agent_response:
+                        # Merge metrics from all agent responses
+                        agent_metrics = agent_response["_metrics"]
+                        for key, value in agent_metrics.items():
+                            if key in ["tokens", "prompt_tokens", "completion_tokens"]:
+                                metrics[key] = metrics.get(key, 0) + value
+                            elif key in ["cost_usd", "latency_ms"]:
+                                metrics[key] = metrics.get(key, 0.0) + value
+                            else:
+                                metrics[key] = value  # model, provider, etc.
+
+            # Check for response field with _metrics
+            elif "response" in resolved_payload and isinstance(resolved_payload["response"], dict):
+                response = resolved_payload["response"]
+                if "_metrics" in response:
+                    metrics = response["_metrics"]
+
+            return metrics
+
+        except Exception as e:
+            logger.error(f"Failed to extract agent metrics: {e}")
+            return {}

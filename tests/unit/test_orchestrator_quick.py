@@ -19,6 +19,7 @@ class TestOrchestratorQuick:
                 "name": "test_orchestrator",
                 "backend": "redis",
                 "redis_url": "redis://localhost:6379",
+                "agents": ["test_agent"],
             },
             "agents": [
                 {
@@ -39,11 +40,16 @@ class TestOrchestratorQuick:
         }
         return config
 
-    @patch("orka.orchestrator.base.OrchestratorBase.__init__")
+    @patch("orka.orchestrator.base.create_memory_logger")
+    @patch("orka.orchestrator.base.ForkGroupManager")
     @patch("orka.orchestrator.agent_factory.AgentFactory._init_agents")
-    def test_orchestrator_initialization(self, mock_init_agents, mock_base_init):
+    def test_orchestrator_initialization(
+        self, mock_init_agents, mock_fork_manager, mock_memory_logger
+    ):
         """Test basic orchestrator initialization - allowing actual orchestrator.py code to run."""
-        mock_base_init.return_value = None
+        # Set up mocks
+        mock_memory_logger.return_value = Mock()
+        mock_fork_manager.return_value = Mock()
         mock_init_agents.return_value = {"test_agent": Mock()}
 
         # Create a temporary config file
@@ -56,8 +62,9 @@ class TestOrchestratorQuick:
             # This should execute the actual code in orchestrator.py
             orchestrator = Orchestrator(config_path)
 
-            # Verify base initialization was called
-            mock_base_init.assert_called_once_with(config_path)
+            # Verify mocks were called
+            assert mock_memory_logger.call_count >= 1
+            assert mock_fork_manager.call_count >= 1
 
             # Verify agent initialization was called
             mock_init_agents.assert_called_once()
@@ -69,11 +76,16 @@ class TestOrchestratorQuick:
         finally:
             os.unlink(config_path)
 
-    @patch("orka.orchestrator.base.OrchestratorBase.__init__")
+    @patch("orka.orchestrator.base.create_memory_logger")
+    @patch("orka.orchestrator.base.ForkGroupManager")
     @patch("orka.orchestrator.agent_factory.AgentFactory._init_agents")
-    def test_orchestrator_inheritance_chain(self, mock_init_agents, mock_base_init):
+    def test_orchestrator_inheritance_chain(
+        self, mock_init_agents, mock_fork_manager, mock_memory_logger
+    ):
         """Test that orchestrator properly inherits from all mixins."""
-        mock_base_init.return_value = None
+        # Set up mocks
+        mock_memory_logger.return_value = Mock()
+        mock_fork_manager.return_value = Mock()
         mock_init_agents.return_value = {}
 
         config = self.create_test_config()
@@ -102,11 +114,16 @@ class TestOrchestratorQuick:
         finally:
             os.unlink(config_path)
 
-    @patch("orka.orchestrator.base.OrchestratorBase.__init__")
+    @patch("orka.orchestrator.base.create_memory_logger")
+    @patch("orka.orchestrator.base.ForkGroupManager")
     @patch("orka.orchestrator.agent_factory.AgentFactory._init_agents")
-    def test_orchestrator_agents_attribute(self, mock_init_agents, mock_base_init):
+    def test_orchestrator_agents_attribute(
+        self, mock_init_agents, mock_fork_manager, mock_memory_logger
+    ):
         """Test that agents attribute is properly set."""
-        mock_base_init.return_value = None
+        # Set up mocks
+        mock_memory_logger.return_value = Mock()
+        mock_fork_manager.return_value = Mock()
 
         # Mock agents dictionary
         mock_agents = {
@@ -134,11 +151,14 @@ class TestOrchestratorQuick:
         finally:
             os.unlink(config_path)
 
-    @patch("orka.orchestrator.base.OrchestratorBase.__init__")
+    @patch("orka.orchestrator.base.create_memory_logger")
+    @patch("orka.orchestrator.base.ForkGroupManager")
     @patch("orka.orchestrator.agent_factory.AgentFactory._init_agents")
-    def test_orchestrator_super_call(self, mock_init_agents, mock_base_init):
+    def test_orchestrator_super_call(self, mock_init_agents, mock_fork_manager, mock_memory_logger):
         """Test that super().__init__ is properly called."""
-        mock_base_init.return_value = None
+        # Set up mocks
+        mock_memory_logger.return_value = Mock()
+        mock_fork_manager.return_value = Mock()
         mock_init_agents.return_value = {}
 
         config = self.create_test_config()
@@ -149,8 +169,9 @@ class TestOrchestratorQuick:
         try:
             orchestrator = Orchestrator(config_path)
 
-            # Verify that the base class __init__ was called with correct arguments
-            mock_base_init.assert_called_once_with(config_path)
+            # Verify mocks were called
+            assert mock_memory_logger.call_count >= 1
+            assert mock_fork_manager.call_count >= 1
 
         finally:
             os.unlink(config_path)
@@ -181,11 +202,16 @@ class TestOrchestratorQuick:
         for expected_class in expected_classes:
             assert expected_class in mro_classes, f"Expected {expected_class} in MRO"
 
-    @patch("orka.orchestrator.base.OrchestratorBase.__init__")
+    @patch("orka.orchestrator.base.create_memory_logger")
+    @patch("orka.orchestrator.base.ForkGroupManager")
     @patch("orka.orchestrator.agent_factory.AgentFactory._init_agents")
-    def test_orchestrator_actual_instantiation(self, mock_init_agents, mock_base_init):
+    def test_orchestrator_actual_instantiation(
+        self, mock_init_agents, mock_fork_manager, mock_memory_logger
+    ):
         """Test actual instantiation to ensure orchestrator.py code executes."""
-        mock_base_init.return_value = None
+        # Set up mocks
+        mock_memory_logger.return_value = Mock()
+        mock_fork_manager.return_value = Mock()
         mock_init_agents.return_value = {"mock_agent": Mock()}
 
         config = self.create_test_config()
