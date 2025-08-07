@@ -10,9 +10,45 @@ jobs:
   test-and-coverage:
     runs-on: ubuntu-latest
     
+    services:
+      redis:
+        image: redis/redis-stack:latest
+        ports:
+          - 6380:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      
+      kafka:
+        image: confluentinc/cp-kafka:latest
+        ports:
+          - 9092:9092
+        env:
+          KAFKA_BROKER_ID: 1
+          KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+          KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+          KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+        options: >-
+          --health-cmd "kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 0"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 3
+      
+      zookeeper:
+        image: confluentinc/cp-zookeeper:latest
+        ports:
+          - 2181:2181
+        env:
+          ZOOKEEPER_CLIENT_PORT: 2181
+          ZOOKEEPER_TICK_TIME: 2000
+    
     strategy:
       matrix:
-        python-version: ['3.11', '3.12']
+        python-version: ['3.11','3.12']
     
     steps:
       - name: 📥 Checkout repository
@@ -37,12 +73,24 @@ jobs:
           pip install -e .[all]
           pip install pytest pytest-cov pytest-asyncio anyio
           pip install -e .[schema]  # Install schema dependencies for testing
+          # Install additional dependencies for CI
+          pip install GPUtil || echo "GPUtil optional dependency failed"
+          
+      - name: ⏳ Wait for services
+        run: |
+          # Wait for Redis
+          echo "Waiting for Redis..."
+          timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/localhost/6380; do sleep 1; done' || echo "Redis not available, tests will use mocks"
+          # Wait for Kafka (optional since some tests use mocks)
+          echo "Waiting for Kafka..."
+          timeout 60 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/localhost/9092; do sleep 1; done' || echo "Kafka not available, tests will use mocks"
           
       - name: 🧪 Run tests with coverage
         run: |
           python -m pytest \
             --cov=orka \
             --cov-report=xml:coverage.xml \
+            --cov-fail-under=65 \
             --tb=short \
             -v
         env:
@@ -51,6 +99,9 @@ jobs:
           SKIP_LLM_TESTS: true
           USE_REAL_REDIS: false
           PYTEST_RUNNING: true
+          REDIS_URL: redis://localhost:6380/0
+          KAFKA_SERVERS: localhost:9092
+          KAFKA_TOPIC_PREFIX: orka-memory
           
       - name: 📤 Upload coverage to Codecov
         uses: codecov/codecov-action@v4
