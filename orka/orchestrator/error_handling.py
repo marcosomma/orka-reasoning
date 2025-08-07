@@ -19,8 +19,12 @@ Comprehensive error tracking, reporting, and recovery mechanisms.
 """
 
 import json
+import logging
 import os
 from datetime import UTC, datetime
+from typing import Any, Dict, List
+
+logger = logging.getLogger(__name__)
 
 
 class ErrorHandler:
@@ -28,15 +32,21 @@ class ErrorHandler:
     Handles error tracking, reporting, and recovery mechanisms.
     """
 
+    step_index: Any
+    run_id: Any
+    error_telemetry: Any
+    _generate_meta_report: Any
+    memory: Any
+
     def _record_error(
         self,
-        error_type,
-        agent_id,
-        error_msg,
-        exception=None,
-        step=None,
-        status_code=None,
-        recovery_action=None,
+        error_type: str,
+        agent_id: str,
+        error_msg: str,
+        exception: Exception | None = None,
+        step: int | None = None,
+        status_code: int | None = None,
+        recovery_action: str | None = None,
     ):
         """
         Record an error in the error telemetry system.
@@ -85,7 +95,7 @@ class ErrorHandler:
         self.error_telemetry["errors"].append(error_entry)
 
         # Log error to console
-        print(f"🚨 [ORKA-ERROR] {error_type} in {agent_id}: {error_msg}")
+        logger.error(f"🚨 [ORKA-ERROR] {error_type} in {agent_id}: {error_msg}")
 
     def _record_retry(self, agent_id):
         """Record a retry attempt for an agent."""
@@ -179,17 +189,17 @@ class ErrorHandler:
         try:
             with open(error_report_path, "w") as f:
                 json.dump(error_report, f, indent=2, default=str)
-            print(f"Error report saved: {error_report_path}")
+            logger.info(f"Error report saved: {error_report_path}")
         except Exception as e:
-            print(f"Failed to save error report: {e}")
+            logger.error(f"Failed to save error report: {e}")
 
         # Also save to memory backend
         try:
             trace_path = os.path.join(log_dir, f"orka_trace_{timestamp}.json")
             self.memory.save_to_file(trace_path)
-            print(f"Execution trace saved: {trace_path}")
+            logger.info(f"Execution trace saved: {trace_path}")
         except Exception as e:
-            print(f"Failed to save trace to memory backend: {e}")
+            logger.error(f"Failed to save trace to memory backend: {e}")
 
         return error_report_path
 

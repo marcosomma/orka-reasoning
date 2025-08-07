@@ -17,13 +17,13 @@ agents:
     type: duckduckgo
     queue: orka:duckduckgo_4
     prompt: |
-      {{ input }}
+      {{ get_input() }}
   - id: openai-classification_5
     type: openai-classification
     queue: orka:openai-classification_5
     prompt: |-
       Classify the sentence in the the following category.
-      SENTENCE: {{ input }}
+      SENTENCE: {{ get_input() }}
     options:
       - tech
       - nature
@@ -37,7 +37,7 @@ agents:
     queue: orka:openai-binary_6
     prompt: |-
       Are the sentence or the extra data relate to a person?
-      SENTENCE: {{ input }}
+      SENTENCE: {{ get_input() }}
       EXTRA DATA: {{ previous_outputs }}
   - id: router_7
     type: router
@@ -56,7 +56,7 @@ agents:
     prompt: |-
       Return me ONLY name and surname of the person pointed in this sentence or extra data.
 
-      SENTENCE: {{ input }}
+      SENTENCE: {{ get_input() }}
       EXTRA DATA: {{ previous_outputs }}
   - id: failover_10
     type: failover
@@ -68,7 +68,7 @@ agents:
         prompt: |-
           Based on the sentence. Return me a compelling answer or a deeper overview. based also on the extra data
 
-          SENTENCE: {{ input }}
+          SENTENCE: {{ get_input() }}
           EXTRA DATA: {{ previous_outputs }}
       - id: openai-answer_12
         type: openai-answer
@@ -76,7 +76,7 @@ agents:
         prompt: |-
           Based on the sentence. Return me a compelling answer or a deeper overview. based also on the extra data
 
-          SENTENCE: {{ input }}
+          SENTENCE: {{ get_input() }}
           EXTRA DATA: {{ previous_outputs }}
   - id: duckduckgo_8
     type: duckduckgo
@@ -88,5 +88,5 @@ agents:
     prompt: |-
       Based on the sentence. Return me a compelling answer or a deeper overview. based also on the extra data
 
-      SENTENCE: {{ input }}
+      SENTENCE: {{ get_input() }}
       EXTRA DATA: {{ previous_outputs }}

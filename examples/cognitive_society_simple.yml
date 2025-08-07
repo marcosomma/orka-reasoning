@@ -28,10 +28,10 @@ agents:
             - "\"AGREEMENT_SCORE\":\\s*([0-9.]+)"
     
     past_loops_metadata:
-      round: "{{ loop_number }}"
+      round: "{{ get_loop_number() }}"
       agreement_score: "{{ score }}"
       timestamp: "{{ timestamp }}"
-      debate_summary: "{{ result.debate_summary.response if result.debate_summary else 'No summary' }}"
+      debate_summary: "{{ get_agent_response('debate_summary') if get_agent_response('debate_summary') else 'No summary' }}"
     
     internal_workflow:
       orchestrator:
@@ -60,7 +60,7 @@ agents:
             short_term_hours: 1.0
             long_term_hours: 1.0
           prompt: |
-            {{ input.input }}
+            {{ get_input() }}
 
         # Simplified debate with just 2 agents
         - id: opening_debate
@@ -74,19 +74,19 @@ agents:
           temperature: 0.7
           model: gpt-4o-mini
           prompt: |
-            You are a PROGRESSIVE agent analyzing: {{ input.input }}
+            You are a PROGRESSIVE agent analyzing: {{ get_input() }}
             
-            Round {{ loop_number }}
+            Round {{ get_loop_number() }}
             
-            Past Memory: {{ previous_outputs.memory_reader.memories }}
+            Past Memory: {{ get_agent_response('memory_reader') }}
             
             Your role: Advocate for change and innovation while being open to compromise.
             
             **CONVERGENCE GOAL**: Work toward agreement with conservative perspective. Score target: 0.8+
             
-            {% if loop_number == 1 %}
+            {% if get_loop_number() == 1 %}
             Present your progressive position while noting common ground opportunities.
-            {% elif loop_number == 2 %}
+            {% elif get_loop_number() == 2 %}
             Build on previous round. Actively seek synthesis with conservative views.
             {% else %}
             PRIORITIZE AGREEMENT: Find collaborative solutions that incorporate both perspectives.
@@ -102,19 +102,19 @@ agents:
           temperature: 0.7
           model: gpt-4o-mini
           prompt: |
-            You are a CONSERVATIVE agent analyzing: {{ input.input }}
+            You are a CONSERVATIVE agent analyzing: {{ get_input() }}
             
-            Round {{ loop_number }}
+            Round {{ get_loop_number() }}
             
-            Past Memory: {{ previous_outputs.memory_reader.memories }}
+            Past Memory: {{ get_agent_response('memory_reader') }}
             
             Your role: Defend stability and tradition while being open to gradual change.
             
             **CONVERGENCE GOAL**: Work toward agreement with progressive perspective. Score target: 0.8+
             
-            {% if loop_number == 1 %}
+            {% if get_loop_number() == 1 %}
             Present your conservative position while noting areas for potential compromise.
-            {% elif loop_number == 2 %}
+            {% elif get_loop_number() == 2 %}
             Build on previous round. Show how tradition can accommodate progressive concerns.
             {% else %}
             PRIORITIZE AGREEMENT: Find stable solutions that address progressive goals.
@@ -133,10 +133,10 @@ agents:
           prompt: |
             Evaluate agreement between these positions:
             
-            Progressive: {{ previous_outputs.progressive_agent.response }}
-            Conservative: {{ previous_outputs.conservative_agent.response }}
+            Progressive: {{ get_agent_response('progressive_agent') }}
+            Conservative: {{ get_agent_response('conservative_agent') }}
             
-            Round {{ loop_number }} - Target: 0.8+ agreement
+            Round {{ get_loop_number() }} - Target: 0.8+ agreement
             
             Look for:
             - Shared values and concerns
@@ -171,12 +171,12 @@ agents:
             short_term_hours: 1.0
             long_term_hours: 1.0
           prompt: |
-            Debate round {{ loop_number }} summary:
-            Progressive: {{ previous_outputs.progressive_agent.response }}
-            Conservative: {{ previous_outputs.conservative_agent.response }}
-            Agreement: {{ previous_outputs.agreement_check.response }}
+            Debate round {{ get_loop_number() }} summary:
+            Progressive: {{ get_agent_response('progressive_agent') }}
+            Conservative: {{ get_agent_response('conservative_agent') }}
+            Agreement: {{ get_agent_response('agreement_check') }}
           metadata:
-            round: "{{ loop_number }}"
+            round: "{{ get_loop_number() }}"
             agreement_score: "{{ score }}"
             timestamp: "{{ timestamp }}"
 
@@ -191,16 +191,16 @@ agents:
     temperature: 0.3
     model: gpt-4o-mini
     prompt: |
-      USER ASKED: {{ input }}
+      USER ASKED: {{ get_input() }}
       
       Debate completed:
-      - Loops: {{ previous_outputs.simple_debate_loop.result.loops_completed }}
-      - Final Score: {{ previous_outputs.simple_debate_loop.result.final_score }}
-      - Agreement: {{ previous_outputs.simple_debate_loop.result.final_score >= 0.8 }}
+      - Loops: {{ get_agent_response('simple_debate_loop')['loops_completed'] if get_agent_response('simple_debate_loop') else 'Unknown' }}
+      - Final Score: {{ get_agent_response('simple_debate_loop')['final_score'] if get_agent_response('simple_debate_loop') else 'Unknown' }}
+      - Agreement: {{ (get_agent_response('simple_debate_loop')['final_score'] >= 0.8) if get_agent_response('simple_debate_loop') and get_agent_response('simple_debate_loop')['final_score'] else False }}
       
       Final Summary:
-      {% if previous_outputs.simple_debate_loop.result.past_loops %}
-      {% set last_loop = previous_outputs.simple_debate_loop.result.past_loops[-1] %}
+      {% if get_agent_response('simple_debate_loop') and get_agent_response('simple_debate_loop')['past_loops'] %}
+      {% set last_loop = get_agent_response('simple_debate_loop')['past_loops'][-1] %}
       {{ last_loop.debate_summary }}
       {% endif %}
       
@@ -208,5 +208,5 @@ agents:
       
       Format:
       **Answer**: [Direct response to user's question]
-      **Consensus Reached**: [Yes/No - {{ 'Yes' if previous_outputs.simple_debate_loop.result.final_score >= 0.8 else 'No' }}]
+      **Consensus Reached**: [Yes/No - {{ 'Yes' if get_agent_response('simple_debate_loop') and get_agent_response('simple_debate_loop')['final_score'] >= 0.8 else 'No' }}]
       **Key Insights**: [2-3 main takeaways from the debate] 

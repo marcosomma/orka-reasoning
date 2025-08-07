@@ -46,12 +46,16 @@ Footer {
     background: $secondary 20%;
     border: solid $secondary;
     color: $text;
+    height: 45%;
+    min-height: 12;
 }
 
 .logs-container {
     background: $warning 20%;
     border: solid $warning;
     color: $text;
+    height: 50%;
+    min-height: 15;
 }
 
 .health-container {
@@ -146,6 +150,7 @@ Button.-error {
     layout: grid;
     grid-size: 2 3;
     grid-gutter: 1;
+    grid-rows: 1fr 2fr 2fr;
 }
 
 .memory-grid {
@@ -161,6 +166,23 @@ Button.-error {
     padding: 0;
     margin: 1;
     overflow: hidden;
+}
+
+/* DataTable styling for better space utilization */
+DataTable {
+    height: 100%;
+    min-height: 8;
+    background: $surface;
+}
+
+LogsWidget {
+    height: 100%;
+    min-height: 10;
+}
+
+MemoryTableWidget {
+    height: 100%;
+    min-height: 10;
 }
 
 #short-content-panel, #long-content-panel, #logs-content-panel {

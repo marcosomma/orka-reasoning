@@ -15,11 +15,11 @@ agents:
       operation: read
       memory_category_filter: stored
     namespace: landmarks
-    prompt: Retrieve any stored memories about {{ input }}.Return "NONE" if nothing matches.
+    prompt: Retrieve any stored memories about {{ get_input() }}.Return "NONE" if nothing matches.
   - id: memory-check
     type: openai-binary
     queue: orka:memory-check
-    prompt: 'Check if the following memory data is relevant to the question and has high confidence:Question: {{ input }}Memory: {{ previous_outputs[''memory-reader''].memories }}Return true if:1. The memory contains relevant information about the question2. The memory has a confidence score higher than 0.893. The memory is not "NONE"Return false otherwise.'
+    prompt: 'Check if the following memory data is relevant to the question and has high confidence:Question: {{ get_input() }}Memory: {{ get_agent_response(''memory-reader'') }}Return true if:1. The memory contains relevant information about the question2. The memory has a confidence score higher than 0.893. The memory is not "NONE"Return false otherwise.'
   - id: router
     type: router
     params:
@@ -38,25 +38,25 @@ agents:
   - id: memory-path
     type: openai-answer
     queue: orka:memory-path
-    prompt: Format the stored memory information about the {{ input }} into a clear answer:{{ previous_outputs['memory-reader'].memories if previous_outputs['memory-reader'].memories else 'NONE' }}
+    prompt: Format the stored memory information about the {{ get_input() }} into a clear answer:{{ get_agent_response('memory-reader') if get_agent_response('memory-reader') else 'NONE' }}
     depends_on:
       - router
   - id: context-collector
     type: openai-answer
     queue: orka:context-collector
-    prompt: Based on the question "{{ input }}", collect relevant context and background information. Focus on gathering factual information that will help validate the answer. If no specific information is available, explain what type of information would be needed and suggest research directions. Do not return just "NONE" - provide a meaningful response about the information availability.
+    prompt: Based on the question "{{ get_input() }}", collect relevant context and background information. Focus on gathering factual information that will help validate the answer. If no specific information is available, explain what type of information would be needed and suggest research directions. Do not return just "NONE" - provide a meaningful response about the information availability.
     depends_on:
       - router
   - id: answer-builder
     type: openai-answer
     queue: orka:answer-builder
-    prompt: " Using the context: {{ previous_outputs['context-collector'].result.response }}Provide a detailed answer to: {{ input }}. If the context indicates no information is available, provide a clear explanation of what is known and what would need to be researched. Do not return just 'NONE' - provide a meaningful response."
+    prompt: " Using the context: {{ get_agent_response('context-collector') }}Provide a detailed answer to: {{ get_input() }}. If the context indicates no information is available, provide a clear explanation of what is known and what would need to be researched. Do not return just 'NONE' - provide a meaningful response."
     depends_on:
       - context-collector
   - id: validation-guard
     type: validate_and_structure
     queue: orka:validation-guard
-    prompt: "Validate the answer and structure it into a memory format.Question: {{ input }}Answer to validate: {{ previous_outputs['answer-builder'].result.response }}"
+    prompt: "Validate the answer and structure it into a memory format.Question: {{ get_input() }}Answer to validate: {{ get_agent_response('answer-builder') }}"
     depends_on:
       - answer-builder
       - context-collector
@@ -74,4 +74,4 @@ agents:
       reason: "{{ previous_outputs['validation-guard'].result.reason if previous_outputs.get('validation-guard') and previous_outputs['validation-guard'].result.valid else 'unknown' }}"
       fact: "{{ previous_outputs['validation-guard'].result.memory_object.fact if previous_outputs.get('validation-guard') and previous_outputs['validation-guard'].result.valid else 'unknown' }}"
       category: "stored"
-    key_template: "{{ input }}"
+    key_template: "{{ get_input() }}"

@@ -11,7 +11,7 @@ agents:
   - id: answer_9
     type: openai-answer
     queue: orka:answer_9
-    prompt: Frase this input in a more undestandable way."{{ input }}"
+    prompt: Frase this input in a more undestandable way."{{ get_input() }}"
   - id: test_failover
     type: failover
     input: answer_9
@@ -22,7 +22,7 @@ agents:
       - id: actual_working_agent
         type: duckduckgo
         queue: orka:actual_working_agent
-        prompt: "{{ input }}"
+        prompt: "{{ get_input() }}"
     depends_on:
       - failing_test_agent1
       - actual_working_agent
@@ -30,7 +30,7 @@ agents:
   - id: need_answer
     type: openai-binary
     queue: orka:is_fact
-    prompt: "Is this a {{ input }} is a question that requires an answer or a fact to be validated? - TRUE: ia s question and requires an answer - FALSE: is an assertion requires a fact to be validated"
+    prompt: "Is this a {{ get_input() }} is a question that requires an answer or a fact to be validated? - TRUE: ia s question and requires an answer - FALSE: is an assertion requires a fact to be validated"
     depends_on:
       - test_failover
   - id: router_answer
@@ -54,7 +54,7 @@ agents:
       - id: build_answer
         type: openai-answer
         queue: orka:validation_queue
-        prompt: Given this question "{{ input }}", and the search results "{{ previous_outputs.test_failover.result.response }}", return a compelling answer.
+        prompt: Given this question "{{ get_input() }}", and the search results "{{ get_agent_response('test_failover') }}", return a compelling answer.
     depends_on:
       - router_answer
       - failing_test_agent2
@@ -62,6 +62,6 @@ agents:
   - id: validate_fact
     type: openai-binary
     queue: orka:validation_queue
-    prompt: Given the fact "{{ input }}", and the search results "{{ previous_outputs.test_failover.result.response }}"?
+    prompt: Given the fact "{{ get_input() }}", and the search results "{{ get_agent_response('test_failover') }}"?
     depends_on:
       - router_answer

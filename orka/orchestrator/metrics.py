@@ -23,6 +23,7 @@ import os
 import platform
 import subprocess
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ class MetricsCollector:
     Handles metrics collection, aggregation, and reporting.
     """
 
-    def _extract_llm_metrics(self, agent, result):
+    def _extract_llm_metrics(self, agent: Any, result: Any) -> Dict[str, Any] | None:
         """
         Extract LLM metrics from agent result or agent state.
 
@@ -45,19 +46,21 @@ class MetricsCollector:
         """
         # Check if result is a dict with _metrics
         if isinstance(result, dict) and "_metrics" in result:
-            return result["_metrics"]
+            metrics: Dict[str, Any] = result["_metrics"]
+            return metrics
 
         # Check if agent has stored metrics (for binary/classification agents)
         if hasattr(agent, "_last_metrics") and agent._last_metrics:
-            return agent._last_metrics
+            agent_metrics: Dict[str, Any] = agent._last_metrics
+            return agent_metrics
 
         return None
 
-    def _get_runtime_environment(self):
+    def _get_runtime_environment(self) -> Dict[str, Any]:
         """
         Get runtime environment information for debugging and reproducibility.
         """
-        env_info = {
+        env_info: Dict[str, Any] = {
             "platform": platform.platform(),
             "python_version": platform.python_version(),
             "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -76,12 +79,12 @@ class MetricsCollector:
                 .strip()
             )
             env_info["git_sha"] = git_sha[:12]  # Short SHA
-        except:
+        except Exception:
             env_info["git_sha"] = "unknown"
 
         # Check for Docker environment
         if os.path.exists("/.dockerenv") or os.environ.get("DOCKER_CONTAINER"):
-            env_info["docker_image"] = os.environ.get("DOCKER_IMAGE", "unknown")
+            env_info["docker_image"] = os.environ.get("DOCKER_IMAGE")
         else:
             env_info["docker_image"] = None
 
@@ -96,7 +99,7 @@ class MetricsCollector:
                 )
             else:
                 env_info["gpu_type"] = "none"
-        except:
+        except Exception:
             env_info["gpu_type"] = "unknown"
 
         # Pricing version (current month-year)
@@ -104,7 +107,9 @@ class MetricsCollector:
 
         return env_info
 
-    def _generate_meta_report(self, logs):
+    run_id: Any
+
+    def _generate_meta_report(self, logs: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
         Generate a meta report with aggregated metrics from execution logs.
 
@@ -114,26 +119,28 @@ class MetricsCollector:
         Returns:
             dict: Meta report with aggregated metrics
         """
-        total_duration = 0
-        total_tokens = 0
-        total_cost_usd = 0
+        total_duration = 0.0
+        total_tokens = 0.0
+        total_cost_usd = 0.0
         total_llm_calls = 0
-        latencies = []
+        latencies: List[float] = []
 
-        agent_metrics = {}
-        model_usage = {}
+        agent_metrics: Dict[str, Any] = {}
+        model_usage: Dict[str, Any] = {}
 
         # Track seen metrics to avoid double-counting due to deduplication
         seen_metrics = set()
 
-        def extract_metrics_recursively(data, source_agent_id="unknown"):
+        def extract_metrics_recursively(
+            data: Any, source_agent_id: str = "unknown"
+        ) -> List[Tuple[Dict[str, Any], str]]:
             """Recursively extract _metrics from nested data structures, avoiding duplicates."""
-            found_metrics = []
+            found_metrics: List[Tuple[Dict[str, Any], str]] = []
 
             if isinstance(data, dict):
                 # Check if this dict has _metrics
                 if "_metrics" in data:
-                    metrics = data["_metrics"]
+                    metrics: Dict[str, Any] = data["_metrics"]
                     # Create a unique identifier for this metrics object
                     metrics_id = (
                         metrics.get("model", ""),
@@ -170,7 +177,7 @@ class MetricsCollector:
             agent_id = log_entry.get("agent_id", "unknown")
 
             # Extract all LLM metrics from the log entry recursively
-            all_metrics = []
+            all_metrics: List[Tuple[Dict[str, Any], str]] = []
 
             # First check for llm_metrics at root level (legacy format)
             if log_entry.get("llm_metrics"):
@@ -190,7 +197,7 @@ class MetricsCollector:
                 total_tokens += llm_metrics.get("tokens", 0)
 
                 # Handle null costs (real local LLM cost calculation may return None)
-                cost = llm_metrics.get("cost_usd")
+                cost: float | None = llm_metrics.get("cost_usd")
                 if cost is not None:
                     total_cost_usd += cost
                 else:
@@ -205,7 +212,7 @@ class MetricsCollector:
                         f"Agent '{source_agent}' returned null cost - excluding from total",
                     )
 
-                latency = llm_metrics.get("latency_ms", 0)
+                latency: float = llm_metrics.get("latency_ms", 0)
                 if latency > 0:
                     latencies.append(latency)
 
@@ -271,12 +278,12 @@ class MetricsCollector:
         }
 
     @staticmethod
-    def build_previous_outputs(logs):
+    def build_previous_outputs(logs: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
         Build a dictionary of previous agent outputs from the execution logs.
         Used to provide context to downstream agents.
         """
-        outputs = {}
+        outputs: Dict[str, Any] = {}
         for log in logs:
             agent_id = log["agent_id"]
             payload = log.get("payload", {})
@@ -290,5 +297,25 @@ class MetricsCollector:
                 merged = payload["result"].get("merged")
                 if isinstance(merged, dict):
                     outputs.update(merged)
+
+            # Case: Current run agent responses
+            if "response" in payload:
+                outputs[agent_id] = {
+                    "response": payload["response"],
+                    "confidence": payload.get("confidence", "0.0"),
+                    "internal_reasoning": payload.get("internal_reasoning", ""),
+                    "_metrics": payload.get("_metrics", {}),
+                    "formatted_prompt": payload.get("formatted_prompt", ""),
+                }
+
+            # Case: Memory agent responses
+            if "memories" in payload:
+                outputs[agent_id] = {
+                    "memories": payload["memories"],
+                    "query": payload.get("query", ""),
+                    "backend": payload.get("backend", ""),
+                    "search_type": payload.get("search_type", ""),
+                    "num_results": payload.get("num_results", 0),
+                }
 
         return outputs

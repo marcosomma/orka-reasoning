@@ -55,13 +55,17 @@ import hashlib
 import logging
 import os
 import random
+from typing import Any, Optional, Union, cast
 
 import numpy as np
+from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger(__name__)
 
-# Global embedder instance for singleton pattern
-_embedder = None
+# Set a specific cache directory for Sentence Transformers models
+os.environ["SENTENCE_TRANSFORMERS_HOME"] = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..", "models", "sentence_transformers"
+)
 
 # Default embedding dimensions for common models
 DEFAULT_EMBEDDING_DIM = 384  # Common for smaller models like MiniLM-L6-v2
@@ -71,6 +75,21 @@ EMBEDDING_DIMENSIONS = {
     "all-distilroberta-v1": 768,
     "all-MiniLM-L12-v2": 384,
 }
+
+
+def _ensure_numpy_array(data: Any) -> np.ndarray:
+    """Convert any array-like data to a numpy array."""
+    if isinstance(data, np.ndarray):
+        return data
+    try:
+        # Try to convert to numpy array
+        arr = np.array(data, dtype=np.float32)
+        if arr.size > 0:
+            return arr
+    except Exception as e:
+        logger.error(f"Error converting to numpy array: {e}")
+    # Return zero array as fallback
+    return np.zeros(DEFAULT_EMBEDDING_DIM, dtype=np.float32)
 
 
 class AsyncEmbedder:
@@ -94,36 +113,21 @@ class AsyncEmbedder:
         embedding_dim (int): Dimension of the embedding vectors produced
     """
 
-    def __init__(self, model_name="sentence-transformers/all-MiniLM-L6-v2"):
-        """
-        Initialize the AsyncEmbedder with the specified model.
-
-        Args:
-            model_name (str): Name of the sentence transformer model to use.
-                Defaults to "sentence-transformers/all-MiniLM-L6-v2", a lightweight
-                but effective general-purpose embedding model.
-
-        Note:
-            Model loading happens during initialization but has fallback mechanisms
-            to ensure the embedder remains functional even if loading fails.
-        """
-        self.model_name = model_name if model_name else "sentence-transformers/all-MiniLM-L6-v2"
-        self.model = None
+    def __init__(self, model_name: str = "sentence-transformers/all-MiniLM-L6-v2") -> None:
+        self.model_name = model_name
+        self.model: Optional[SentenceTransformer] = None
         self.model_loaded = False
 
         # Set embedding dimension based on model or use default
-        if model_name:
-            base_name = model_name.split("/")[-1]
-            self.embedding_dim = EMBEDDING_DIMENSIONS.get(base_name, DEFAULT_EMBEDDING_DIM)
-        else:
-            self.embedding_dim = DEFAULT_EMBEDDING_DIM
+        base_name = model_name.split("/")[-1]
+        self.embedding_dim = EMBEDDING_DIMENSIONS.get(base_name, DEFAULT_EMBEDDING_DIM)
 
         logger.info(f"Using embedding dimension: {self.embedding_dim}")
 
         # Try to load the model
         self._load_model()
 
-    def _load_model(self):
+    def _load_model(self) -> None:
         """
         Load the sentence transformer model with comprehensive error handling.
 
@@ -137,11 +141,8 @@ class AsyncEmbedder:
         Even on failure, the embedder will remain functional using fallback mechanisms.
         """
         try:
-            # Only import if needed to reduce startup time
-            from sentence_transformers import SentenceTransformer
-
             # Check for model file existence before loading
-            if self.model_name and not self.model_name.startswith(("http:", "https:")):
+            if not self.model_name.startswith(("http:", "https:")):
                 # Check if model exists in common locations
                 home_dir = os.path.expanduser("~")
                 model_paths = [
@@ -168,20 +169,26 @@ class AsyncEmbedder:
                     )
 
             # Load the model
-            self.model = SentenceTransformer(self.model_name)
+            model = SentenceTransformer(self.model_name)
+            self.model = model
             self.model_loaded = True
-            self.embedding_dim = self.model.get_sentence_embedding_dimension()
+            dim = model.get_sentence_embedding_dimension()
+            if dim is not None:
+                self.embedding_dim = dim
             logger.info(
                 f"Successfully loaded embedding model: {self.model_name} with dimension {self.embedding_dim}"
             )
+            return  # Return early on success
         except ImportError as e:
             logger.error(
                 f"Failed to import SentenceTransformer: {str(e)}. Using fallback encoding."
             )
-            self.model_loaded = False
         except Exception as e:
             logger.warning(f"Failed to load embedding model: {str(e)}. Using fallback encoding.")
-            self.model_loaded = False
+
+        # If we get here, model loading failed
+        self.model_loaded = False
+        self.model = None
 
     async def encode(self, text: str) -> np.ndarray:
         """
@@ -217,12 +224,9 @@ class AsyncEmbedder:
         # Try using the primary model
         if self.model_loaded and self.model is not None:
             try:
-                embedding = self.model.encode(text)
-                # Ensure the embedding is the right shape
-                if isinstance(embedding, np.ndarray) and embedding.size > 0:
-                    return embedding
-                else:
-                    logger.error(f"Model produced invalid embedding: {embedding}. Using fallback.")
+                # Get the embedding and ensure it's a numpy array
+                result = self.model.encode(text)
+                return _ensure_numpy_array(result)
             except Exception as e:
                 logger.error(f"Error encoding text with model: {str(e)}. Using fallback.")
 
@@ -274,7 +278,11 @@ class AsyncEmbedder:
             return np.zeros(self.embedding_dim, dtype=np.float32)
 
 
-def get_embedder(name=None):
+# Global embedder instance for singleton pattern
+_embedder: Optional[AsyncEmbedder] = None
+
+
+def get_embedder(name: Optional[str] = None) -> AsyncEmbedder:
     """
     Get or create the singleton embedder instance.
 
@@ -302,7 +310,7 @@ def get_embedder(name=None):
     """
     global _embedder
     if _embedder is None:
-        _embedder = AsyncEmbedder(name)
+        _embedder = AsyncEmbedder(name or "sentence-transformers/all-MiniLM-L6-v2")
     return _embedder
 
 

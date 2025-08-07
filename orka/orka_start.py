@@ -17,7 +17,6 @@ REDIS_URL: Redis connection URL (default: redis://localhost:6380/0)
 KAFKA_BOOTSTRAP_SERVERS: Kafka broker list (default: localhost:9092)
 KAFKA_TOPIC_PREFIX: Prefix for Kafka topics (default: orka-memory)
 """
-
 import os
 import sys
 
@@ -37,9 +36,8 @@ if "KAFKA_TOPIC_PREFIX" not in os.environ:
     os.environ["KAFKA_TOPIC_PREFIX"] = "orka-memory"
 
 # Import all functions from the modular startup package to maintain backward compatibility
-from orka.startup import (
+from orka.startup import (  # Main orchestration functions
     initialize_schema_registry,
-    # Main orchestration functions
     main,
     run_startup,
     wait_for_redis,
@@ -69,7 +67,7 @@ print(f"   • Memory Backend: {os.environ['ORKA_MEMORY_BACKEND']}")
 print(f"   • Kafka Servers: {os.environ['KAFKA_BOOTSTRAP_SERVERS']}")
 print(f"   • Kafka Topic Prefix: {os.environ['KAFKA_TOPIC_PREFIX']}")
 print(f"   • Redis URL: {os.environ['REDIS_URL']}")
-print()
+print(f"   • LOG_LEVEL: {os.environ['ORKA_LOG_LEVEL']}")
 
 
 def cli_main():

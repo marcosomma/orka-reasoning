@@ -49,12 +49,15 @@ for sophisticated natural language understanding and generation tasks.
 - Multi-step reasoning workflows with transparent logic
 """
 
+import logging
 import os
 import re
-from typing import Optional
+from typing import Any, Optional
 
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import AsyncOpenAI
+
+logger = logging.getLogger(__name__)
 
 from .base_agent import LegacyBaseAgent as BaseAgent
 
@@ -73,10 +76,10 @@ if not PYTEST_RUNNING and not OPENAI_API_KEY:
     raise OSError("OPENAI_API_KEY environment variable is required")
 
 # Initialize OpenAI client
-client = OpenAI(api_key=OPENAI_API_KEY or "dummy_key_for_testing")
+client = AsyncOpenAI(api_key=OPENAI_API_KEY or "dummy_key_for_testing")
 
 
-def _extract_reasoning(text) -> tuple:
+def _extract_reasoning(text: str) -> tuple[str, str]:
     """Extract reasoning content from <think> blocks."""
     if "<think>" not in text or "</think>" not in text:
         return "", text
@@ -91,7 +94,7 @@ def _extract_reasoning(text) -> tuple:
     return reasoning, cleaned_text
 
 
-def _extract_json_content(text) -> str:
+def _extract_json_content(text: str) -> str:
     """Extract JSON content from various formats (code blocks, braces, etc.)."""
     # Try markdown code blocks first
     code_patterns = [r"```(?:json|markdown)?\s*(.*?)```", r"```\s*(.*?)```"]
@@ -101,28 +104,34 @@ def _extract_json_content(text) -> str:
         for match in matches:
             match = match.strip()
             if match and match.startswith(("{", "[")):
-                return match
+                return str(match)  # Ensure str return type
 
     # Try to find JSON-like braces
     brace_match = re.search(r"\{.*\}", text, re.DOTALL)
-    return brace_match.group(0) if brace_match else text
+    return str(brace_match.group(0)) if brace_match else text
 
 
-def _parse_json_safely(json_content) -> Optional[dict]:
+def _parse_json_safely(json_content: str) -> dict[str, Any] | None:
     """Safely parse JSON with fallback for malformed content."""
     import json
 
     try:
-        return json.loads(json_content)
+        result = json.loads(json_content)
+        if isinstance(result, dict):
+            return result
+        return None
     except json.JSONDecodeError:
         try:
             fixed_json = _fix_malformed_json(json_content)
-            return json.loads(fixed_json)
-        except:
+            result = json.loads(fixed_json)
+            if isinstance(result, dict):
+                return result
+            return None
+        except Exception:
             return None
 
 
-def _build_response_dict(parsed_json, fallback_text) -> dict:
+def _build_response_dict(parsed_json: dict[str, Any] | None, fallback_text: str) -> dict[str, Any]:
     """Build standardized response dictionary from parsed JSON or fallback text."""
     if not parsed_json or not isinstance(parsed_json, dict):
         return {
@@ -173,10 +182,10 @@ def _build_response_dict(parsed_json, fallback_text) -> dict:
 
 
 def parse_llm_json_response(
-    response_text,
-    error_tracker=None,
-    agent_id="unknown",
-) -> dict:
+    response_text: str,
+    error_tracker: Any = None,
+    agent_id: str = "unknown",
+) -> dict[str, Any]:
     """
     Parse JSON response from LLM that may contain reasoning (<think> blocks) or be in various formats.
 
@@ -249,7 +258,7 @@ def parse_llm_json_response(
         }
 
 
-def _fix_malformed_json(json_str) -> str:
+def _fix_malformed_json(json_str: str) -> str:
     """
     Attempt to fix common JSON formatting issues.
 
@@ -333,7 +342,7 @@ def _calculate_openai_cost(model: str, prompt_tokens: int, completion_tokens: in
     return total_cost
 
 
-def _simple_json_parse(response_text) -> dict:
+def _simple_json_parse(response_text: str) -> dict[str, Any]:
     """
     Simple JSON parser for OpenAI models (no reasoning support).
 
@@ -374,6 +383,11 @@ def _simple_json_parse(response_text) -> dict:
                 "confidence": str(parsed.get("confidence", "0.5")),
                 "internal_reasoning": str(parsed.get("internal_reasoning", "")),
             }
+        return {
+            "response": response_text.strip(),
+            "confidence": "0.5",
+            "internal_reasoning": "JSON parsing failed, using raw response",
+        }
     except json.JSONDecodeError:
         pass
 
@@ -423,25 +437,9 @@ class OpenAIAnswerBuilder(BaseAgent):
     - Template variable resolution with rich context
     """
 
-    def run(self, input_data) -> dict:
-        """
-        Generate an answer using OpenAI's GPT model.
-
-        Args:
-            input_data (dict): Input data containing:
-                - prompt (str): The prompt to use (optional, defaults to agent's prompt)
-                - model (str): The model to use (optional, defaults to OPENAI_MODEL)
-                - temperature (float): Temperature for generation (optional, defaults to 0.7)
-                - parse_json (bool): Whether to parse JSON response (defaults to True)
-                - error_tracker: Optional error tracking object
-                - agent_id (str): Agent ID for error tracking
-
-        Returns:
-            dict: Returns parsed JSON dict with keys:
-                  response, confidence, internal_reasoning, _metrics
-        """
+    async def run(self, input_data: Any) -> dict[str, Any]:
         # Extract parameters from input_data
-        prompt = input_data.get("prompt", self.prompt)
+        original_prompt = input_data.get("prompt", self.prompt)
         model = input_data.get("model", OPENAI_MODEL)
         temperature = float(input_data.get("temperature", 0.7))
         parse_json = input_data.get("parse_json", True)
@@ -450,6 +448,20 @@ class OpenAIAnswerBuilder(BaseAgent):
             "agent_id",
             self.agent_id if hasattr(self, "agent_id") else "unknown",
         )
+
+        # ✅ FIX: Use already-rendered prompt from execution engine if available
+        if (
+            isinstance(input_data, dict)
+            and "formatted_prompt" in input_data
+            and input_data["formatted_prompt"]
+        ):
+            render_prompt = input_data["formatted_prompt"]
+            logger.debug(
+                f"Using pre-rendered prompt from execution engine (length: {len(render_prompt)})"
+            )
+        else:
+            render_prompt = original_prompt
+            logger.debug(f"Using original prompt template (length: {len(render_prompt)})")
 
         self_evaluation = """
             # CONSTRAINS
@@ -464,7 +476,7 @@ class OpenAIAnswerBuilder(BaseAgent):
                     }
                 ```
         """
-        full_prompt = f"{prompt}\n\n{input_data}\n\n{self_evaluation}"
+        full_prompt = f"{render_prompt}\n\n{input_data}\n\n{self_evaluation}"
 
         # Make API call to OpenAI
         import time
@@ -473,22 +485,88 @@ class OpenAIAnswerBuilder(BaseAgent):
         status_code = 200  # Default success
 
         try:
-            response = client.chat.completions.create(
+            response = await client.chat.completions.create(
                 model=model,
                 messages=[{"role": "user", "content": full_prompt}],
                 temperature=temperature,
             )
+
+            # Extract usage and cost metrics
+            usage = response.usage
+            prompt_tokens = usage.prompt_tokens if usage else 0
+            completion_tokens = usage.completion_tokens if usage else 0
+            total_tokens = usage.total_tokens if usage else 0
+
+            # Calculate cost (rough estimates for GPT models)
+            cost_usd = _calculate_openai_cost(model, prompt_tokens, completion_tokens)
+
+            # Extract and clean the response
+            answer = response.choices[0].message.content
+            if answer is not None:
+                answer = answer.strip()
+            else:
+                answer = ""
+
+            # Calculate latency
+            latency_ms = round((time.time() - start_time) * 1000, 2)
+
+            # Create metrics object
+            metrics = {
+                "tokens": total_tokens,
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "latency_ms": latency_ms,
+                "cost_usd": cost_usd,
+                "model": model,
+                "status_code": status_code,
+            }
+
+            # Parse JSON if requested (simple parsing for OpenAI models)
+            if parse_json:
+                # Simple JSON extraction for OpenAI models (not reasoning models)
+                parsed_response = _simple_json_parse(answer)
+
+                # Track silent degradation if JSON parsing failed and fell back to raw text
+                if (
+                    error_tracker
+                    and parsed_response.get("internal_reasoning")
+                    == "JSON parsing failed, using raw response"
+                ):
+                    error_tracker.record_silent_degradation(
+                        agent_id,
+                        "openai_json_parsing_fallback",
+                        f"OpenAI response was not valid JSON, using raw text: {answer[:100]}...",
+                    )
+            else:
+                # When JSON parsing is disabled, return raw response in expected format
+                parsed_response = {
+                    "response": answer,
+                    "confidence": "0.5",
+                    "internal_reasoning": "Raw response without JSON parsing",
+                }
+
+            # Add metrics and formatted_prompt to parsed response
+            parsed_response["_metrics"] = metrics
+
+            # ✅ FIX: Store the actual rendered template, not the original template
+            if (
+                isinstance(input_data, dict)
+                and "formatted_prompt" in input_data
+                and input_data["formatted_prompt"]
+            ):
+                # We used pre-rendered template, so it's already fully rendered
+                parsed_response["formatted_prompt"] = input_data["formatted_prompt"]
+            else:
+                # We used original template, store it for consistency
+                parsed_response["formatted_prompt"] = original_prompt
+
+            return parsed_response
+
         except Exception as e:
             # Track API errors and status codes
             if error_tracker:
                 # Extract status code if it's an HTTP error
-                if hasattr(e, "status_code"):
-                    status_code = e.status_code
-                elif hasattr(e, "code"):
-                    status_code = e.code
-                else:
-                    status_code = 500
-
+                status_code = getattr(e, "status_code", getattr(e, "code", 500))
                 error_tracker.record_error(
                     "openai_api_error",
                     agent_id,
@@ -496,64 +574,37 @@ class OpenAIAnswerBuilder(BaseAgent):
                     e,
                     status_code=status_code,
                 )
-            raise
 
-        # Calculate latency
-        latency_ms = round((time.time() - start_time) * 1000, 2)
-
-        # Extract usage and cost metrics
-        usage = response.usage
-        prompt_tokens = usage.prompt_tokens if usage else 0
-        completion_tokens = usage.completion_tokens if usage else 0
-        total_tokens = usage.total_tokens if usage else 0
-
-        # Calculate cost (rough estimates for GPT models)
-        cost_usd = _calculate_openai_cost(model, prompt_tokens, completion_tokens)
-
-        # Extract and clean the response
-        answer = response.choices[0].message.content.strip()
-
-        # Create metrics object
-        metrics = {
-            "tokens": total_tokens,
-            "prompt_tokens": prompt_tokens,
-            "completion_tokens": completion_tokens,
-            "latency_ms": latency_ms,
-            "cost_usd": cost_usd,
-            "model": model,
-            "status_code": status_code,
-        }
-
-        # Parse JSON if requested (simple parsing for OpenAI models)
-        if parse_json:
-            # Simple JSON extraction for OpenAI models (not reasoning models)
-            parsed_response = _simple_json_parse(answer)
-
-            # Track silent degradation if JSON parsing failed and fell back to raw text
-            if (
-                error_tracker
-                and parsed_response.get("internal_reasoning")
-                == "JSON parsing failed, using raw response"
-            ):
-                error_tracker.record_silent_degradation(
-                    agent_id,
-                    "openai_json_parsing_fallback",
-                    f"OpenAI response was not valid JSON, using raw text: {answer[:100]}...",
-                )
-        else:
-            # When JSON parsing is disabled, return raw response in expected format
-            parsed_response = {
-                "response": answer,
-                "confidence": "0.5",
-                "internal_reasoning": "Raw response without JSON parsing",
+            # Return error response before raising
+            error_response = {
+                "response": f"Error: {str(e)}",
+                "confidence": "0.0",
+                "internal_reasoning": "API call failed",
+                "_metrics": {
+                    "tokens": 0,
+                    "prompt_tokens": 0,
+                    "completion_tokens": 0,
+                    "latency_ms": 0,
+                    "cost_usd": 0,
+                    "model": model,
+                    "status_code": status_code,
+                },
+                "formatted_prompt": (
+                    # Use same logic as success case for consistency
+                    input_data["formatted_prompt"]
+                    if (
+                        isinstance(input_data, dict)
+                        and "formatted_prompt" in input_data
+                        and input_data["formatted_prompt"]
+                    )
+                    else (
+                        original_prompt
+                        if "original_prompt" in locals()
+                        else "Error: prompt not available"
+                    )
+                ),
             }
-
-        # Add metrics and formatted_prompt to parsed response
-        parsed_response["_metrics"] = metrics
-        parsed_response["formatted_prompt"] = (
-            prompt  # Store only the rendered prompt, not the full context
-        )
-        return parsed_response
+            raise type(e)(str(e)) from e  # Re-raise with the same type and message
 
 
 class OpenAIBinaryAgent(OpenAIAnswerBuilder):
@@ -596,21 +647,9 @@ class OpenAIBinaryAgent(OpenAIAnswerBuilder):
     - Handles edge cases and ambiguous inputs gracefully
     """
 
-    def run(self, input_data) -> bool:
-        """
-        Make a true/false decision using OpenAI's GPT model.
-
-        Args:
-            input_data (dict): Input data containing:
-                - prompt (str): The prompt to use (optional, defaults to agent's prompt)
-                - model (str): The model to use (optional, defaults to OPENAI_MODEL)
-                - temperature (float): Temperature for generation (optional, defaults to 0.7)
-
-        Returns:
-            bool: True or False based on the model's response.
-        """
+    async def run(self, input_data: Any) -> dict[str, Any]:
         # Override the parent method to add constraints to the prompt
-        # Ask the model to only return a "true" or "false" response
+        # Ask the model to only return a "true" or "false" value.
         constraints = "**CONSTRAINTS** ONLY and STRICTLY Return boolean 'true' or 'false' value."
 
         # Get the original prompt and add constraints
@@ -629,7 +668,7 @@ class OpenAIBinaryAgent(OpenAIAnswerBuilder):
             template = Template(enhanced_prompt)
             rendered_enhanced_prompt = template.render(input=input_data.get("input", ""))
             self._last_formatted_prompt = rendered_enhanced_prompt
-        except:
+        except Exception:
             # Fallback: simple replacement if Jinja2 fails
             self._last_formatted_prompt = enhanced_prompt.replace(
                 "{{ input }}",
@@ -637,7 +676,7 @@ class OpenAIBinaryAgent(OpenAIAnswerBuilder):
             )
 
         # Get the answer using the enhanced prompt
-        response_data = super().run(enhanced_input)
+        response_data = await super().run(enhanced_input)
 
         # Extract answer and preserve metrics and LLM response details
         if isinstance(response_data, dict):
@@ -648,19 +687,30 @@ class OpenAIBinaryAgent(OpenAIAnswerBuilder):
             self._last_confidence = response_data.get("confidence", "0.0")
             self._last_internal_reasoning = response_data.get("internal_reasoning", "")
         else:
-            answer = str(response_data)
+            answer = str(response_data)  # type: ignore [unreachable]
             self._last_metrics = {}
             self._last_response = answer
             self._last_confidence = "0.0"
             self._last_internal_reasoning = "Non-JSON response from LLM"
 
         # Convert to binary decision
+        is_true = False
         positive_indicators = ["yes", "true", "correct", "right", "affirmative"]
         for indicator in positive_indicators:
             if indicator in answer.lower():
-                return True
+                is_true = True
+                break
 
-        return False
+        # Return a dictionary matching the supertype's return
+        return {
+            "response": is_true,
+            "confidence": self._last_confidence,
+            "internal_reasoning": self._last_internal_reasoning,
+            "_metrics": self._last_metrics,
+            "formatted_prompt": response_data.get(
+                "formatted_prompt", ""
+            ),  # ✅ FIX: Preserve formatted_prompt
+        }
 
 
 class OpenAIClassificationAgent(OpenAIAnswerBuilder):
@@ -709,19 +759,7 @@ class OpenAIClassificationAgent(OpenAIAnswerBuilder):
     - Custom category definitions with examples
     """
 
-    def run(self, input_data) -> str:
-        """
-        Classify input using OpenAI's GPT model.
-
-        Args:
-            input_data (dict): Input data containing:
-                - prompt (str): The prompt to use (optional, defaults to agent's prompt)
-                - model (str): The model to use (optional, defaults to OPENAI_MODEL)
-                - temperature (float): Temperature for generation (optional, defaults to 0.7)
-
-        Returns:
-            str: Category name based on the model's classification.
-        """
+    async def run(self, input_data: Any) -> dict[str, Any]:
         # Extract categories from params or use defaults
         categories = self.params.get("options", [])
         constrains = "**CONSTRAINS**ONLY Return values from the given options. If not return 'not-classified'"
@@ -744,7 +782,7 @@ class OpenAIClassificationAgent(OpenAIAnswerBuilder):
             template = Template(enhanced_prompt)
             rendered_enhanced_prompt = template.render(input=input_data.get("input", ""))
             self._last_formatted_prompt = rendered_enhanced_prompt
-        except:
+        except Exception:
             # Fallback: simple replacement if Jinja2 fails
             self._last_formatted_prompt = enhanced_prompt.replace(
                 "{{ input }}",
@@ -752,7 +790,7 @@ class OpenAIClassificationAgent(OpenAIAnswerBuilder):
             )
 
         # Use parent class to make the API call
-        response_data = super().run(enhanced_input)
+        response_data = await super().run(enhanced_input)
 
         # Extract answer and preserve metrics and LLM response details
         if isinstance(response_data, dict):
@@ -763,10 +801,19 @@ class OpenAIClassificationAgent(OpenAIAnswerBuilder):
             self._last_confidence = response_data.get("confidence", "0.0")
             self._last_internal_reasoning = response_data.get("internal_reasoning", "")
         else:
-            answer = str(response_data)
+            answer = str(response_data)  # type: ignore [unreachable]
             self._last_metrics = {}
             self._last_response = answer
             self._last_confidence = "0.0"
             self._last_internal_reasoning = "Non-JSON response from LLM"
 
-        return answer
+        # Return a dictionary matching the supertype's return
+        return {
+            "response": answer,
+            "confidence": self._last_confidence,
+            "internal_reasoning": self._last_internal_reasoning,
+            "_metrics": self._last_metrics,
+            "formatted_prompt": response_data.get(
+                "formatted_prompt", ""
+            ),  # ✅ FIX: Preserve formatted_prompt
+        }

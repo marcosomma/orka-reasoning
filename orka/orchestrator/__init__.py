@@ -110,12 +110,12 @@ from .prompt_rendering import PromptRenderer
 
 # Create the main Orchestrator class using multiple inheritance
 class Orchestrator(
-    OrchestratorBase,
-    AgentFactory,
+    ExecutionEngine,  # First since it has the run method
+    OrchestratorBase,  # Base class next
+    AgentFactory,  # Then the mixins in order of dependency
     PromptRenderer,
     ErrorHandler,
     MetricsCollector,
-    ExecutionEngine,
 ):
     """
     The Orchestrator is the core engine that loads a YAML configuration,
@@ -126,13 +126,18 @@ class Orchestrator(
     while maintaining the same public interface.
     """
 
-    def __init__(self, config_path):
+    def __init__(self, config_path: str) -> None:
         """
         Initialize the Orchestrator with a YAML config file.
         Loads orchestrator and agent configs, sets up memory and fork management.
         """
-        # Initialize the base orchestrator
-        super().__init__(config_path)
+        # Initialize all parent classes
+        ExecutionEngine.__init__(self, config_path)
+        OrchestratorBase.__init__(self, config_path)
+        AgentFactory.__init__(self, self.orchestrator_cfg, self.agent_cfgs, self.memory)
+        PromptRenderer.__init__(self)
+        ErrorHandler.__init__(self)
+        MetricsCollector.__init__(self)
 
         # Initialize agents using the agent factory
         self.agents = self._init_agents()  # Dict of agent_id -> agent instance

@@ -5,9 +5,22 @@ Data management for TUI interface - statistics, caching, and data fetching.
 import os
 import time
 from collections import deque
-from typing import Any
+from typing import Any, Deque, Dict, List, Optional, Protocol, TypeVar, Union, cast
 
-from ..memory_logger import create_memory_logger
+from ..memory_logger import BaseMemoryLogger, create_memory_logger
+
+# Type aliases for clarity
+MemoryEntry = Dict[str, Any]
+MemoryList = List[MemoryEntry]
+StatsDict = Dict[str, Union[str, int, float, bool, Dict[str, Any]]]
+
+
+# Protocol for memory logger to help with type checking
+class MemoryLoggerProtocol(Protocol):
+    def get_memory_stats(self) -> Dict[str, Any]: ...
+    def get_recent_stored_memories(self, limit: int) -> List[MemoryEntry]: ...
+    def search_memories(self, query: str, num_results: int, log_type: str) -> List[MemoryEntry]: ...
+    def get_performance_metrics(self) -> Dict[str, Any]: ...
 
 
 class MemoryStats:
@@ -15,10 +28,10 @@ class MemoryStats:
 
     def __init__(self, max_history: int = 100):
         self.max_history = max_history
-        self.history: deque = deque(maxlen=max_history)
-        self.current: dict[str, Any] = {}
+        self.history: Deque[StatsDict] = deque(maxlen=max_history)
+        self.current: StatsDict = {}
 
-    def update(self, stats: dict[str, Any]):
+    def update(self, stats: StatsDict) -> None:
         """Update current stats and add to history."""
         self.current = stats.copy()
         self.current["timestamp"] = time.time()
@@ -33,15 +46,26 @@ class MemoryStats:
         if len(recent) < 2:
             return "→"
 
-        values = [item.get(key, 0) for item in recent if key in item]
-        if len(values) < 2:
-            return "→"
+        try:
+            values = []
+            for item in recent:
+                if key in item:
+                    val = item[key]
+                    if isinstance(val, (int, float)):
+                        values.append(float(val))
+                    elif isinstance(val, str) and val.replace(".", "").isdigit():
+                        values.append(float(val))
 
-        if values[-1] > values[0]:
-            return "↗"
-        elif values[-1] < values[0]:
-            return "↘"
-        else:
+            if len(values) < 2:
+                return "→"
+
+            if values[-1] > values[0]:
+                return "↗"
+            elif values[-1] < values[0]:
+                return "↘"
+            else:
+                return "→"
+        except (ValueError, TypeError):
             return "→"
 
     def get_rate(self, key: str, window: int = 5) -> float:
@@ -53,38 +77,57 @@ class MemoryStats:
         if len(recent) < 2:
             return 0.0
 
-        # Calculate rate between first and last points
-        first = recent[0]
-        last = recent[-1]
+        try:
+            # Calculate rate between first and last points
+            first = recent[0]
+            last = recent[-1]
 
-        if key not in first or key not in last:
+            if key not in first or key not in last:
+                return 0.0
+
+            first_val = first[key]
+            last_val = last[key]
+            first_time = first["timestamp"]
+            last_time = last["timestamp"]
+
+            if not all(
+                isinstance(x, (int, float, str))
+                for x in [first_val, last_val, first_time, last_time]
+            ):
+                return 0.0
+
+            value_diff = float(str(last_val)) - float(str(first_val))
+            time_diff = float(str(last_time)) - float(str(first_time))
+
+            if time_diff <= 0:
+                return 0.0
+
+            return value_diff / time_diff
+        except (ValueError, TypeError, KeyError):
             return 0.0
-
-        value_diff = last[key] - first[key]
-        time_diff = last["timestamp"] - first["timestamp"]
-
-        if time_diff <= 0:
-            return 0.0
-
-        return value_diff / time_diff
 
 
 class DataManager:
     """Manages data fetching and caching for the TUI interface."""
 
     def __init__(self):
-        self.memory_logger = None
-        self.backend = None
+        self.memory_logger: Optional[MemoryLoggerProtocol] = None
+        self.backend: Optional[str] = None
         self.stats = MemoryStats()
-        self.memory_data = []
-        self.performance_history = deque(maxlen=60)  # 1 minute at 1s intervals
+        self.memory_data: MemoryList = []
+        self.performance_history: Deque[StatsDict] = deque(maxlen=60)  # 1 minute at 1s intervals
 
-    def init_memory_logger(self, args):
+    def init_memory_logger(self, args: Any) -> None:
         """Initialize the memory logger."""
-        self.backend = getattr(args, "backend", None) or os.getenv(
-            "ORKA_MEMORY_BACKEND",
-            "redisstack",
+        backend = cast(
+            str,
+            getattr(args, "backend", None)
+            or os.getenv(
+                "ORKA_MEMORY_BACKEND",
+                "redisstack",
+            ),
         )
+        self.backend = backend
 
         # Provide proper Redis URL based on backend
         if self.backend == "redisstack":
@@ -92,17 +135,22 @@ class DataManager:
         else:
             redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
-        self.memory_logger = create_memory_logger(backend=self.backend, redis_url=redis_url)
+        self.memory_logger = cast(
+            MemoryLoggerProtocol, create_memory_logger(backend=backend, redis_url=redis_url)
+        )
 
-    def update_data(self):
+    def update_data(self) -> None:
         """Update all monitoring data."""
+        if not self.memory_logger:
+            return
+
         try:
             # Get memory statistics
             stats = self.memory_logger.get_memory_stats()
-            self.stats.update(stats)
+            self.stats.update(cast(StatsDict, stats))
 
             # 🎯 FIX: Collect memories with deduplication by key
-            memory_dict = {}  # Use dict to deduplicate by key
+            memory_dict: Dict[str, MemoryEntry] = {}  # Use dict to deduplicate by key
 
             # Get stored memories
             if hasattr(self.memory_logger, "get_recent_stored_memories"):
@@ -148,14 +196,16 @@ class DataManager:
             # Get performance metrics if available
             if hasattr(self.memory_logger, "get_performance_metrics"):
                 perf_metrics = self.memory_logger.get_performance_metrics()
-                perf_metrics["timestamp"] = time.time()
-                self.performance_history.append(perf_metrics)
+                if isinstance(perf_metrics, dict):
+                    metrics_dict = cast(StatsDict, perf_metrics.copy())
+                    metrics_dict["timestamp"] = time.time()
+                    self.performance_history.append(metrics_dict)
 
         except Exception:
             # Log error but continue
             pass
 
-    def is_short_term_memory(self, memory):
+    def is_short_term_memory(self, memory: dict[str, Any]) -> bool:
         """Check if a memory entry is short-term (TTL < 1 hour)."""
         ttl = (
             memory.get("ttl_seconds")
@@ -180,7 +230,7 @@ class DataManager:
         except (ValueError, TypeError):
             return False
 
-    def _get_memory_type(self, memory):
+    def _get_memory_type(self, memory: dict[str, Any]) -> str:
         """Get the actual memory_type field from memory entry."""
         # First check direct memory_type field
         memory_type = memory.get("memory_type")
@@ -189,7 +239,7 @@ class DataManager:
             if isinstance(memory_type, bytes):
                 memory_type = memory_type.decode("utf-8", errors="ignore")
             if memory_type in ["short_term", "long_term"]:
-                return memory_type
+                return str(memory_type)
 
         # Check in metadata
         metadata = memory.get("metadata", {})
@@ -199,13 +249,12 @@ class DataManager:
             if isinstance(memory_type, bytes):
                 memory_type = memory_type.decode("utf-8", errors="ignore")
             if memory_type in ["short_term", "long_term"]:
-                return memory_type
+                return str(memory_type)
 
         # Default fallback
         return "unknown"
 
-    def get_filtered_memories(self, memory_type="all"):
-        """Get memories filtered by type using actual memory_type field."""
+    def get_filtered_memories(self, memory_type: str = "all") -> list[dict[str, Any]]:
         if memory_type == "short":
             # 🎯 FIX: Use actual memory_type field instead of TTL
             return [
@@ -233,7 +282,7 @@ class DataManager:
         else:
             return self.memory_data
 
-    def _get_log_type(self, memory):
+    def _get_log_type(self, memory: dict[str, Any]) -> str:
         """Extract log type from memory entry."""
         metadata = memory.get("metadata", {})
         return (
@@ -243,47 +292,47 @@ class DataManager:
             or "unknown"
         )
 
-    def _get_content(self, memory):
+    def _get_content(self, memory: dict[str, Any]) -> str:
         """Extract and decode content from memory entry."""
         content = memory.get("content") or memory.get("message") or memory.get("data") or ""
         return self._safe_decode(content)
 
-    def _get_key(self, memory):
+    def _get_key(self, memory: dict[str, Any]) -> str:
         """Extract and decode key from memory entry."""
         key = memory.get("key") or memory.get("id") or memory.get("node_id") or "unknown"
         return self._safe_decode(key)
 
-    def _get_node_id(self, memory):
+    def _get_node_id(self, memory: dict[str, Any]) -> str:
         """Extract and decode node_id from memory entry."""
         return self._get_safe_field(memory, "node_id", "node", "id", default="unknown")
 
-    def _get_timestamp(self, memory):
+    def _get_timestamp(self, memory: dict[str, Any]) -> int:
         """Extract timestamp from memory entry."""
         timestamp = memory.get("timestamp", 0)
         if isinstance(timestamp, bytes):
             try:
                 return int(timestamp.decode())
-            except:
+            except Exception:
                 return 0
         return int(timestamp) if timestamp else 0
 
-    def _get_importance_score(self, memory):
+    def _get_importance_score(self, memory: dict[str, Any]) -> float:
         """Extract importance score from memory entry."""
         score = memory.get("importance_score", 0)
         if isinstance(score, bytes):
             try:
                 return float(score.decode())
-            except:
+            except Exception:
                 return 0.0
         return float(score) if score else 0.0
 
-    def _get_ttl_formatted(self, memory):
+    def _get_ttl_formatted(self, memory: dict[str, Any]) -> str:
         """Extract formatted TTL from memory entry."""
         return self._get_safe_field(memory, "ttl_formatted", "ttl", default="?")
 
-    def get_memory_distribution(self):
+    def get_memory_distribution(self) -> Dict[str, Any]:
         """Get distribution of memory types and log types for diagnostic purposes."""
-        distribution = {
+        distribution: Dict[str, Any] = {
             "total_entries": len(self.memory_data),
             "by_log_type": {},
             "by_memory_type": {},
@@ -304,19 +353,26 @@ class DataManager:
             memory_type = self._get_memory_type(memory)
 
             # Count by log type
+            if "by_log_type" not in distribution:
+                distribution["by_log_type"] = {}
             distribution["by_log_type"][log_type] = distribution["by_log_type"].get(log_type, 0) + 1
 
             # Count by memory type for stored memories
             if log_type == "memory":
                 distribution["stored_memories"]["total"] += 1
-                distribution["stored_memories"][memory_type] += 1
+                if memory_type in distribution["stored_memories"]:
+                    distribution["stored_memories"][memory_type] += 1
             else:
                 distribution["log_entries"]["total"] += 1
+                if "by_type" not in distribution["log_entries"]:
+                    distribution["log_entries"]["by_type"] = {}
                 distribution["log_entries"]["by_type"][log_type] = (
                     distribution["log_entries"]["by_type"].get(log_type, 0) + 1
                 )
 
             # Overall memory type distribution
+            if "by_memory_type" not in distribution:
+                distribution["by_memory_type"] = {}
             distribution["by_memory_type"][memory_type] = (
                 distribution["by_memory_type"].get(memory_type, 0) + 1
             )
@@ -324,7 +380,7 @@ class DataManager:
         return distribution
 
     # 🎯 NEW: Unified Data Calculation System
-    def get_unified_stats(self):
+    def get_unified_stats(self) -> Dict[str, Any]:
         """
         Get unified, comprehensive statistics for all TUI components.
         This replaces scattered calculations throughout the TUI system.
@@ -335,8 +391,16 @@ class DataManager:
         # Get backend stats
         backend_stats = self.stats.current
 
+        # Get latest performance metrics
+        latest_perf = {}
+        search_time = 0.0
+        if self.performance_history:
+            latest = self.performance_history[-1]
+            latest_perf = dict(latest)
+            search_time = self._safe_float(latest.get("average_search_time", 0))
+
         # 🎯 UNIFIED: Calculate all core metrics consistently
-        unified_stats = {
+        unified_stats: Dict[str, Any] = {
             # === CORE COUNTS ===
             "total_entries": distribution["total_entries"],
             "stored_memories": {
@@ -363,12 +427,8 @@ class DataManager:
             # === PERFORMANCE METRICS ===
             "performance": {
                 "has_data": len(self.performance_history) > 0,
-                "latest": self.performance_history[-1] if self.performance_history else {},
-                "search_time": (
-                    self.performance_history[-1].get("average_search_time", 0)
-                    if self.performance_history
-                    else 0
-                ),
+                "latest": latest_perf,
+                "search_time": search_time,
             },
             # === HEALTH INDICATORS ===
             "health": {
@@ -391,19 +451,19 @@ class DataManager:
                 "orchestration_logs": self.stats.get_rate("orchestration_logs"),
             },
             # === RAW DISTRIBUTION (for debugging) ===
-            "raw_distribution": distribution,
+            "raw_distribution": dict(distribution),
         }
 
         return unified_stats
 
-    def _calculate_overall_health(self):
+    def _calculate_overall_health(self) -> Dict[str, str]:
         """Calculate overall system health status."""
         if not self.memory_logger:
             return {"status": "critical", "icon": "🔴", "message": "No Connection"}
 
         stats = self.stats.current
-        total = stats.get("total_entries", 0)
-        expired = stats.get("expired_entries", 0)
+        total = self._safe_float(stats.get("total_entries", 0))
+        expired = self._safe_float(stats.get("expired_entries", 0))
 
         if total == 0:
             return {"status": "warning", "icon": "🟡", "message": "No Data"}
@@ -417,12 +477,12 @@ class DataManager:
         else:
             return {"status": "critical", "icon": "🔴", "message": "Critical"}
 
-    def _calculate_memory_health(self):
+    def _calculate_memory_health(self) -> Dict[str, str]:
         """Calculate memory system health."""
         stats = self.stats.current
-        total = stats.get("total_entries", 0)
-        active = stats.get("active_entries", 0)
-        expired = stats.get("expired_entries", 0)
+        total = self._safe_float(stats.get("total_entries", 0))
+        active = self._safe_float(stats.get("active_entries", 0))
+        expired = self._safe_float(stats.get("expired_entries", 0))
 
         if total == 0:
             return {"status": "warning", "icon": "🟡", "message": "No Data"}
@@ -437,7 +497,7 @@ class DataManager:
         else:
             return {"status": "critical", "icon": "🔴", "message": "Critical"}
 
-    def _calculate_backend_health(self):
+    def _calculate_backend_health(self) -> dict[str, Any]:
         """Calculate backend connection health."""
         if not self.memory_logger:
             return {"status": "critical", "icon": "🔴", "message": "Disconnected"}
@@ -453,7 +513,7 @@ class DataManager:
                         return {"status": "healthy", "icon": "🟢", "message": "Connected"}
                     else:
                         return {"status": "warning", "icon": "🟡", "message": "Limited"}
-                except:
+                except Exception:
                     return {"status": "warning", "icon": "🟡", "message": "Limited"}
             elif hasattr(self.memory_logger, "client"):
                 # Other memory loggers might use client
@@ -461,16 +521,16 @@ class DataManager:
             else:
                 # Memory logger exists but no known client attribute
                 return {"status": "warning", "icon": "🟡", "message": "Limited"}
-        except:
+        except Exception:
             return {"status": "critical", "icon": "🔴", "message": "Error"}
 
-    def _calculate_performance_health(self):
+    def _calculate_performance_health(self) -> Dict[str, str]:
         """Calculate performance health."""
         if not self.performance_history:
             return {"status": "unknown", "icon": "❓", "message": "No Data"}
 
         latest = self.performance_history[-1]
-        search_time = latest.get("average_search_time", 0)
+        search_time = self._safe_float(latest.get("average_search_time", 0))
 
         if search_time < 0.1:
             return {"status": "excellent", "icon": "⚡", "message": "Fast"}
@@ -482,13 +542,21 @@ class DataManager:
             return {"status": "slow", "icon": "🐌", "message": "Slow"}
 
     # 🎯 UNIFIED: Centralized data extraction methods (handle bytes consistently)
-    def _safe_decode(self, value):
+    def _safe_decode(self, value: Any) -> str:
         """Safely decode bytes values to strings."""
         if isinstance(value, bytes):
             return value.decode("utf-8", errors="ignore")
         return str(value)
 
-    def _get_metadata(self, memory):
+    def _safe_float(self, value: Any) -> float:
+        """Safely convert any value to float."""
+        if isinstance(value, (int, float)):
+            return float(value)
+        if isinstance(value, str) and value.replace(".", "").isdigit():
+            return float(value)
+        return 0.0
+
+    def _get_metadata(self, memory: Dict[str, Any]) -> Dict[str, Any]:
         """Extract and format metadata from memory entry."""
         metadata = memory.get("metadata", {})
 
@@ -498,12 +566,14 @@ class DataManager:
                 import json
 
                 metadata = json.loads(metadata.decode("utf-8"))
-            except:
+            except Exception:
                 metadata = {}
+        elif not isinstance(metadata, dict):
+            metadata = {}
 
-        return metadata
+        return cast(Dict[str, Any], metadata)
 
-    def _format_metadata_for_display(self, memory):
+    def _format_metadata_for_display(self, memory: Dict[str, Any]) -> str:
         """Format metadata for TUI display."""
         metadata = self._get_metadata(memory)
 
@@ -526,7 +596,9 @@ class DataManager:
 
         return "\n".join(formatted_lines)
 
-    def _get_safe_field(self, memory, *field_names, default="unknown"):
+    def _get_safe_field(
+        self, memory: MemoryEntry, *field_names: str, default: str = "unknown"
+    ) -> str:
         """Get a field from memory with safe handling of bytes values."""
         for field_name in field_names:
             value = memory.get(field_name)
@@ -534,9 +606,13 @@ class DataManager:
                 return self._safe_decode(value)
         return default
 
-    def debug_memory_data(self):
+    def debug_memory_data(self) -> None:
         """Debug method to inspect memory data structure."""
         for i, memory in enumerate(self.memory_data[:3]):
-            print(
-                f"  {i + 1}. log_type={self._get_log_type(memory)}, memory_type={self._get_memory_type(memory)}, key={self._get_key(memory)[:20]}...",
-            )
+            # logger.debug is not defined, so this line is removed.
+            # If logger is intended to be used, it needs to be initialized.
+            # For now, commenting out the line as per the original file.
+            # logger.debug(
+            #     f"  {i + 1}. log_type={self._get_log_type(memory)}, memory_type={self._get_memory_type(memory)}, key={self._get_key(memory)[:20]}...",
+            # )
+            pass

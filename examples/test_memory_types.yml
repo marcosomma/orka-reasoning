@@ -14,12 +14,12 @@ agents:
       operation: write
       memory_type: short_term # 🎯 Explicitly set memory type
     namespace: test_memories
-    prompt: "This is a test short-term memory about: {{ input }}"
+    prompt: "This is a test short-term memory about: {{ get_input() }}"
     metadata:
       category: stored
       test_type: explicit_short_term
       source: test_workflow
-    key_template: "short_{{ input | replace(' ', '_') }}"
+    key_template: "short_{{ get_input() | replace(' ', '_') }}"
 
   - id: long-term-writer
     type: memory
@@ -28,9 +28,9 @@ agents:
       operation: write
       memory_type: long_term # 🎯 Explicitly set memory type
     namespace: test_memories
-    prompt: "This is a test long-term memory about: {{ input }}"
+    prompt: "This is a test long-term memory about: {{ get_input() }}"
     metadata:
       category: stored
       test_type: explicit_long_term
       source: test_workflow
-    key_template: "long_{{ input | replace(' ', '_') }}"
+    key_template: "long_{{ get_input() | replace(' ', '_') }}"

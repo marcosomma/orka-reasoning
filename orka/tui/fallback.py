@@ -3,22 +3,33 @@ Fallback interface implementations for when Rich is not available.
 """
 
 import json
+import logging
 import os
 import sys
 import time
+from typing import Any, TypeVar, cast
 
-from ..memory_logger import create_memory_logger
+logger = logging.getLogger(__name__)
+
+from ..memory_logger import BaseMemoryLogger, create_memory_logger
+
+# Type variable for memory logger
+MemoryLogger = TypeVar("MemoryLogger", bound=BaseMemoryLogger)
 
 
 class FallbackInterface:
     """Basic fallback interface when Rich is not available."""
 
-    def run_basic_fallback(self, args):
+    def run_basic_fallback(self, args: Any) -> int:
         """Basic fallback interface when Rich is not available."""
         try:
-            backend = getattr(args, "backend", None) or os.getenv(
-                "ORKA_MEMORY_BACKEND",
-                "redisstack",
+            backend = cast(
+                str,
+                getattr(args, "backend", None)
+                or os.getenv(
+                    "ORKA_MEMORY_BACKEND",
+                    "redisstack",
+                ),
             )
 
             # Provide proper Redis URL based on backend
@@ -35,10 +46,10 @@ class FallbackInterface:
                 return self.basic_display_watch(memory, backend, args)
 
         except Exception as e:
-            print(f"❌ Error in basic fallback: {e}", file=sys.stderr)
+            logger.error(f"Error in basic fallback: {e}")
             return 1
 
-    def basic_json_watch(self, memory, backend: str, args):
+    def basic_json_watch(self, memory: MemoryLogger, backend: str, args: Any) -> int:
         """Basic JSON mode memory watch."""
         try:
             while True:
@@ -51,13 +62,13 @@ class FallbackInterface:
                         "stats": stats,
                     }
 
-                    print(json.dumps(output, indent=2, default=str))
+                    logger.info(json.dumps(output, indent=2, default=str))
                     time.sleep(getattr(args, "interval", 5))
 
                 except KeyboardInterrupt:
                     break
                 except Exception as e:
-                    print(json.dumps({"error": str(e), "backend": backend}), file=sys.stderr)
+                    logger.error(json.dumps({"error": str(e), "backend": backend}))
                     time.sleep(getattr(args, "interval", 5))
 
         except KeyboardInterrupt:
@@ -65,7 +76,7 @@ class FallbackInterface:
 
         return 0
 
-    def basic_display_watch(self, memory, backend: str, args):
+    def basic_display_watch(self, memory: MemoryLogger, backend: str, args: Any) -> int:
         """Basic display mode memory watch."""
         try:
             while True:
@@ -74,25 +85,25 @@ class FallbackInterface:
                     if not getattr(args, "no_clear", False):
                         os.system("cls" if os.name == "nt" else "clear")
 
-                    print("=== OrKa Memory Watch ===")
-                    print(f"Backend: {backend} | Interval: {getattr(args, 'interval', 5)}s")
-                    print("-" * 60)
+                    logger.info("=== OrKa Memory Watch ===")
+                    logger.info(f"Backend: {backend} | Interval: {getattr(args, 'interval', 5)}s")
+                    logger.info("-" * 60)
 
                     # Get comprehensive stats
                     stats = memory.get_memory_stats()
 
                     # Display basic metrics
-                    print("📊 Memory Statistics:")
-                    print(f"   Total Entries: {stats.get('total_entries', 0)}")
-                    print(f"   Stored Memories: {stats.get('stored_memories', 0)}")
-                    print(f"   Orchestration Logs: {stats.get('orchestration_logs', 0)}")
+                    logger.info("📊 Memory Statistics:")
+                    logger.info(f"   Total Entries: {stats.get('total_entries', 0)}")
+                    logger.info(f"   Stored Memories: {stats.get('stored_memories', 0)}")
+                    logger.info(f"   Orchestration Logs: {stats.get('orchestration_logs', 0)}")
 
                     time.sleep(getattr(args, "interval", 5))
 
                 except KeyboardInterrupt:
                     break
                 except Exception as e:
-                    print(f"❌ Error in memory watch: {e}", file=sys.stderr)
+                    logger.error(f"Error in memory watch: {e}")
                     time.sleep(getattr(args, "interval", 5))
 
         except KeyboardInterrupt:

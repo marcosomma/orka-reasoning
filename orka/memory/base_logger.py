@@ -25,7 +25,7 @@ import logging
 import threading
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Dict, List, Set
 
 from .file_operations import FileOperationsMixin
 from .serialization import SerializationMixin
@@ -194,7 +194,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         self.decay_config = self._init_decay_config(decay_config or {})
 
         # Decay state management
-        self._decay_thread = None
+        self._decay_thread: threading.Thread | None = None
         self._decay_stop_event = threading.Event()
         self._last_decay_check = datetime.now(UTC)
 
@@ -247,7 +247,12 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         merged_config = default_config.copy()
         for key, value in decay_config.items():
             if isinstance(value, dict) and key in merged_config:
-                merged_config[key].update(value)
+                target_dict = merged_config.get(key)
+                if isinstance(target_dict, dict):
+                    target_dict.update(value)
+                else:
+                    # If merged_config[key] is not a dict, replace it entirely
+                    merged_config[key] = value
             else:
                 merged_config[key] = value
 
@@ -270,15 +275,15 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         Returns:
             Importance score between 0.0 and 1.0
         """
-        rules = self.decay_config["importance_rules"]
-        score = rules["base_score"]
+        rules = self.decay_config.get("importance_rules", {})
+        score = rules.get("base_score", 0.5)
 
         # Apply event type boosts
-        event_boost = rules["event_type_boosts"].get(event_type, 0.0)
+        event_boost = rules.get("event_type_boosts", {}).get(event_type, 0.0)
         score += event_boost
 
         # Apply agent type boosts
-        for agent_type, boost in rules["agent_type_boosts"].items():
+        for agent_type, boost in rules.get("agent_type_boosts", {}).items():
             if agent_type in agent_id:
                 score += boost
                 break
@@ -291,7 +296,8 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
                 score -= 0.1
 
         # Clamp score between 0.0 and 1.0
-        return max(0.0, min(1.0, score))
+        return_value: float = max(0.0, min(1.0, score))
+        return return_value
 
     def _classify_memory_type(
         self,
@@ -315,12 +321,12 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         if category == "log":
             return "short_term"
 
-        rules = self.decay_config["memory_type_rules"]
+        rules = self.decay_config.get("memory_type_rules", {})
 
         # Check explicit rules first (only for stored memories)
-        if event_type in rules["long_term_events"]:
+        if event_type in rules.get("long_term_events", []):
             return "long_term"
-        if event_type in rules["short_term_events"]:
+        if event_type in rules.get("short_term_events", []):
             return "short_term"
 
         # Fallback to importance score (only for stored memories)
@@ -374,8 +380,8 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         if self._decay_thread is not None:
             return  # Already running
 
-        def decay_scheduler():
-            interval_seconds = self.decay_config["check_interval_minutes"] * 60
+        def decay_scheduler() -> None:
+            interval_seconds = self.decay_config.get("check_interval_minutes", 30) * 60
 
             while not self._decay_stop_event.wait(interval_seconds):
                 try:
@@ -507,15 +513,8 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
             True if object should be deduplicated
         """
         try:
-            # Only deduplicate JSON responses and large payloads
+            # Only deduplicate large dictionary payloads
             if not isinstance(obj, dict):
-                return False
-
-            # Check if it looks like a JSON response
-            has_response = "response" in obj
-            has_result = "result" in obj
-
-            if not (has_response or has_result):
                 return False
 
             # Check size threshold
@@ -550,7 +549,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
     def _create_blob_reference(
         self,
         blob_hash: str,
-        original_keys: list[str] = None,
+        original_keys: list[str] | None = None,
     ) -> dict[str, Any]:
         """
         Create a blob reference object.
@@ -562,9 +561,10 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         Returns:
             Blob reference dictionary
         """
-        ref = {
+        ref: dict[str, Any] = {
             "ref": blob_hash,
             "_type": "blob_reference",
+            "_original_keys": None,
         }
 
         if original_keys:
@@ -593,14 +593,461 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         # Recursively deduplicate nested objects
         deduplicated = {}
         for key, value in obj.items():
-            if isinstance(value, dict):
-                deduplicated[key] = self._deduplicate_object(value)
-            elif isinstance(value, list):
-                deduplicated[key] = [
-                    self._deduplicate_object(item) if isinstance(item, dict) else item
-                    for item in value
-                ]
-            else:
-                deduplicated[key] = value
+            deduplicated[key] = self._recursive_deduplicate(value)
 
         return deduplicated
+
+    def _recursive_deduplicate(self, obj: Any) -> Any:
+        """
+        Helper method to recursively apply deduplication.
+        """
+        if isinstance(obj, dict):
+            return self._deduplicate_object(obj)
+        elif isinstance(obj, list):
+            return [self._recursive_deduplicate(item) for item in obj]
+        else:
+            return obj
+
+    def _process_memory_for_saving(
+        self, memory_entries: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        """
+        Process memory entries before saving, e.g., removing previous_outputs.
+        """
+        processed_entries = []
+        for entry in memory_entries:
+            new_entry = entry.copy()
+            if not self.debug_keep_previous_outputs:
+                # Remove previous_outputs to reduce log size unless debugging is enabled
+                if "previous_outputs" in new_entry:
+                    # Store a summary instead of the full object
+                    new_entry["previous_outputs_summary"] = {
+                        "count": len(new_entry["previous_outputs"]),
+                        "keys": list(new_entry["previous_outputs"].keys()),
+                    }
+                    del new_entry["previous_outputs"]
+            processed_entries.append(new_entry)
+        return processed_entries
+
+    def _sanitize_for_json(self, obj: Any, _seen: Set[Any] | None = None) -> Any:
+        """
+        Sanitize an object to ensure it's JSON serializable.
+        Converts non-serializable types (like objects, functions) to strings.
+        """
+        if isinstance(obj, (int, float, str, bool)) or obj is None:
+            return obj
+        elif isinstance(obj, (list, tuple)):
+            return [self._sanitize_for_json(item) for item in obj]
+        elif isinstance(obj, dict):
+            return {k: self._sanitize_for_json(v) for k, v in obj.items()}
+        else:
+            # Fallback for non-serializable objects
+            return f"<non-serializable: {type(obj).__name__}>"
+
+    def _should_use_deduplication_format(self) -> bool:
+        """
+        Determine whether to use the deduplication format for saving logs.
+        This is based on whether any blobs were actually stored.
+        """
+        return bool(self._blob_store)
+
+    def _build_previous_outputs(self, logs: list[dict[str, Any]]) -> dict[str, Any]:
+        """
+        Build a dictionary of previous agent outputs from the execution logs.
+        Used to provide context to downstream agents.
+        """
+        outputs = {}
+
+        # First, try to get results from Redis
+        try:
+            # Get all agent results from Redis hash
+            group_key = "agent_results"
+            result_keys = self.hkeys(group_key)
+            for agent_id in result_keys:
+                result_str = self.hget(group_key, agent_id)
+                if result_str:
+                    result = json.loads(result_str)
+                    outputs[agent_id] = result
+                    logger.debug(f"- Loaded result for agent {agent_id} from Redis")
+        except Exception as e:
+            logger.warning(f"Failed to load results from Redis: {e}")
+
+        # Then process logs to update/add any missing results
+        for log in logs:
+            agent_id = str(log.get("agent_id"))
+            if not agent_id:
+                continue
+            payload = log.get("payload", {})
+
+            # Case: regular agent output
+            if "result" in payload:
+                outputs[agent_id] = payload["result"]
+
+            # Case: JoinNode with merged dict
+            if "result" in payload and isinstance(payload["result"], dict):
+                merged = payload["result"].get("merged")
+                if isinstance(merged, dict):
+                    outputs.update(merged)
+
+            # Case: Current run agent responses
+            if "response" in payload:
+                outputs[agent_id] = {
+                    "response": payload["response"],
+                    "confidence": payload.get("confidence", "0.0"),
+                    "internal_reasoning": payload.get("internal_reasoning", ""),
+                    "_metrics": payload.get("_metrics", {}),
+                    "formatted_prompt": payload.get("formatted_prompt", ""),
+                }
+
+            # Case: Memory agent responses
+            if "memories" in payload:
+                outputs[agent_id] = {
+                    "memories": payload["memories"],
+                    "query": payload.get("query", ""),
+                    "backend": payload.get("backend", ""),
+                    "search_type": payload.get("search_type", ""),
+                    "num_results": payload.get("num_results", 0),
+                }
+
+            # Store the result in Redis for future access
+            try:
+                # Store individual result
+                result_key = f"agent_result:{agent_id}"
+                self.set(result_key, json.dumps(outputs[agent_id]))
+                logger.debug(f"- Stored result for agent {agent_id}")
+
+                # Store in group hash
+                self.hset(group_key, agent_id, json.dumps(outputs[agent_id]))
+                logger.debug(f"- Stored result in group for agent {agent_id}")
+            except Exception as e:
+                logger.warning(f"Failed to store result in Redis: {e}")
+
+        return outputs
+
+    def save_enhanced_trace(self, file_path: str, enhanced_data: Dict[str, Any]) -> None:
+        """Save enhanced trace data with memory backend references and blob deduplication."""
+        try:
+            # Apply blob deduplication to the enhanced trace data
+            deduplicated_data = self._apply_deduplication_to_enhanced_trace(enhanced_data)
+
+            import json
+
+            with open(file_path, "w", encoding="utf-8") as f:
+                json.dump(deduplicated_data, f, indent=2, default=str)
+
+            # Log deduplication statistics
+            if (
+                "_metadata" in deduplicated_data
+                and "deduplication_enabled" in deduplicated_data["_metadata"]
+            ):
+                if deduplicated_data["_metadata"]["deduplication_enabled"]:
+                    stats = deduplicated_data["_metadata"].get("stats", {})
+                    blob_count = deduplicated_data["_metadata"].get("total_blobs_stored", 0)
+                    size_reduction = stats.get("size_reduction", 0)
+                    logger.info(
+                        f"Enhanced trace saved with deduplication: {blob_count} blobs, {size_reduction} bytes saved"
+                    )
+                else:
+                    logger.info(f"Enhanced trace saved (no deduplication needed)")
+            else:
+                logger.info(f"Enhanced trace saved to {file_path}")
+
+        except Exception as e:
+            logger.error(f"Failed to save enhanced trace with deduplication: {e}")
+            # Fallback to simple JSON dump
+            try:
+                import json
+
+                with open(file_path, "w", encoding="utf-8") as f:
+                    json.dump(enhanced_data, f, indent=2, default=str)
+                logger.info(f"Enhanced trace saved (fallback mode) to {file_path}")
+            except Exception as fallback_e:
+                logger.error(f"Fallback save also failed: {fallback_e}")
+                # Last resort: use the original save_to_file method
+                self.save_to_file(file_path)
+
+    def _apply_deduplication_to_enhanced_trace(
+        self, enhanced_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Apply blob deduplication to enhanced trace data using original events format."""
+        try:
+            import json
+            from datetime import UTC, datetime
+
+            # Reset blob store for this operation
+            original_blob_store = getattr(self, "_blob_store", {})
+            self._blob_store = {}
+
+            # Convert enhanced trace format to original events format for deduplication
+            events = []
+            blob_stats = {
+                "total_entries": 0,
+                "deduplicated_blobs": 0,
+                "size_reduction": 0,
+            }
+
+            # Process agent_executions into events format
+            if "agent_executions" in enhanced_data:
+                for execution in enhanced_data["agent_executions"]:
+                    blob_stats["total_entries"] += 1
+
+                    # Create event preserving original structure (agent_id, event_type, timestamp)
+                    event = {
+                        "agent_id": execution.get("agent_id"),
+                        "event_type": execution.get("event_type"),
+                        "timestamp": execution.get("timestamp"),
+                    }
+
+                    # Add other top-level fields if they exist
+                    for key in ["step", "run_id", "fork_group", "parent"]:
+                        if key in execution:
+                            event[key] = execution[key]
+
+                    # Handle payload separately - only deduplicate if large
+                    if "payload" in execution:
+                        payload = execution["payload"]
+
+                        # Calculate payload size to decide if it needs deduplication
+                        payload_size = len(json.dumps(payload, separators=(",", ":")))
+
+                        if payload_size > getattr(self, "_blob_threshold", 200):
+                            # Payload is large, deduplicate it
+                            original_size = payload_size
+                            deduplicated_payload = self._deduplicate_object(payload)
+                            new_size = len(json.dumps(deduplicated_payload, separators=(",", ":")))
+
+                            if new_size < original_size:
+                                blob_stats["deduplicated_blobs"] += 1
+                                blob_stats["size_reduction"] += original_size - new_size
+
+                            event["payload"] = deduplicated_payload
+                        else:
+                            # Payload is small, keep as-is
+                            event["payload"] = payload
+
+                    # Add enhanced trace specific fields (memory_references, template_resolution)
+                    for key in ["memory_references", "template_resolution"]:
+                        if key in execution:
+                            event[key] = execution[key]
+
+                    events.append(event)
+
+            # Decide whether to use deduplication format
+            use_dedup_format = bool(self._blob_store)
+
+            if use_dedup_format:
+                # Extract token and cost data from agent executions
+                cost_analysis = self._extract_cost_analysis(enhanced_data, events)
+
+                # Create the original blob_store + events format with cost analysis
+                result = {
+                    "_metadata": {
+                        "version": "1.2.0",  # Use original version for compatibility
+                        "deduplication_enabled": True,
+                        "blob_threshold_chars": getattr(self, "_blob_threshold", 200),
+                        "total_blobs_stored": len(self._blob_store),
+                        "stats": blob_stats,
+                        "generated_at": datetime.now(UTC).isoformat(),
+                    },
+                    "blob_store": self._blob_store.copy(),
+                    "events": events,  # Use 'events' key like original format
+                    "cost_analysis": cost_analysis,  # New key for token/cost data
+                }
+            else:
+                # No deduplication needed - use enhanced format with metadata
+                result = enhanced_data.copy()
+                result["_metadata"] = {
+                    "version": "1.2.0",
+                    "deduplication_enabled": False,
+                    "generated_at": datetime.now(UTC).isoformat(),
+                }
+                # Add cost analysis even when no deduplication
+                result["cost_analysis"] = self._extract_cost_analysis(enhanced_data, events)
+
+            # Restore original blob store
+            self._blob_store = original_blob_store
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Failed to apply deduplication to enhanced trace: {e}")
+            # Restore original blob store on error
+            if "original_blob_store" in locals():
+                self._blob_store = original_blob_store
+            # Return original data if deduplication fails
+            return enhanced_data
+
+    def _extract_cost_analysis(
+        self, enhanced_data: Dict[str, Any], events: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Extract token and cost analysis from agent executions."""
+        try:
+            cost_analysis: Dict[str, Any] = {
+                "summary": {
+                    "total_agents": 0,
+                    "total_tokens": 0,
+                    "total_prompt_tokens": 0,
+                    "total_completion_tokens": 0,
+                    "total_cost_usd": 0.0,
+                    "total_latency_ms": 0.0,
+                    "models_used": set(),
+                    "providers_used": set(),
+                },
+                "agents": {},
+                "by_model": {},
+                "by_provider": {},
+            }
+
+            # Process each agent execution to extract cost data
+            for event in events:
+                agent_id = event.get("agent_id")
+                event_type = event.get("event_type")
+
+                # Only process LLM agents that have cost data
+                if not agent_id or not event_type or "LLMAgent" not in str(event_type):
+                    continue
+
+                # Extract metrics from payload or blob_store
+                metrics = self._extract_agent_metrics(event, enhanced_data)
+
+                if metrics:
+                    # Update agent-specific data
+                    if agent_id not in cost_analysis["agents"]:
+                        cost_analysis["agents"][agent_id] = {
+                            "executions": 0,
+                            "total_tokens": 0,
+                            "total_prompt_tokens": 0,
+                            "total_completion_tokens": 0,
+                            "total_cost_usd": 0.0,
+                            "total_latency_ms": 0.0,
+                            "models": set(),
+                            "providers": set(),
+                            "event_type": event_type,
+                        }
+
+                    agent_data = cost_analysis["agents"][agent_id]
+                    agent_data["executions"] += 1
+                    agent_data["total_tokens"] += metrics.get("tokens", 0)
+                    agent_data["total_prompt_tokens"] += metrics.get("prompt_tokens", 0)
+                    agent_data["total_completion_tokens"] += metrics.get("completion_tokens", 0)
+                    agent_data["total_cost_usd"] += metrics.get("cost_usd", 0.0)
+                    agent_data["total_latency_ms"] += metrics.get("latency_ms", 0.0)
+
+                    model = metrics.get("model", "unknown")
+                    provider = metrics.get("provider", "unknown")
+                    agent_data["models"].add(model)
+                    agent_data["providers"].add(provider)
+
+                    # Update summary
+                    summary = cost_analysis["summary"]
+                    summary["total_agents"] += 1
+                    summary["total_tokens"] += metrics.get("tokens", 0)
+                    summary["total_prompt_tokens"] += metrics.get("prompt_tokens", 0)
+                    summary["total_completion_tokens"] += metrics.get("completion_tokens", 0)
+                    summary["total_cost_usd"] += metrics.get("cost_usd", 0.0)
+                    summary["total_latency_ms"] += metrics.get("latency_ms", 0.0)
+                    summary["models_used"].add(model)
+                    summary["providers_used"].add(provider)
+
+                    # Update by_model aggregation
+                    if model not in cost_analysis["by_model"]:
+                        cost_analysis["by_model"][model] = {
+                            "agents": 0,
+                            "total_tokens": 0,
+                            "total_cost_usd": 0.0,
+                            "total_latency_ms": 0.0,
+                        }
+                    model_data = cost_analysis["by_model"][model]
+                    model_data["agents"] += 1
+                    model_data["total_tokens"] += metrics.get("tokens", 0)
+                    model_data["total_cost_usd"] += metrics.get("cost_usd", 0.0)
+                    model_data["total_latency_ms"] += metrics.get("latency_ms", 0.0)
+
+                    # Update by_provider aggregation
+                    if provider not in cost_analysis["by_provider"]:
+                        cost_analysis["by_provider"][provider] = {
+                            "agents": 0,
+                            "total_tokens": 0,
+                            "total_cost_usd": 0.0,
+                            "total_latency_ms": 0.0,
+                        }
+                    provider_data = cost_analysis["by_provider"][provider]
+                    provider_data["agents"] += 1
+                    provider_data["total_tokens"] += metrics.get("tokens", 0)
+                    provider_data["total_cost_usd"] += metrics.get("cost_usd", 0.0)
+                    provider_data["total_latency_ms"] += metrics.get("latency_ms", 0.0)
+
+            # Convert sets to lists for JSON serialization
+            cost_analysis["summary"]["models_used"] = list(cost_analysis["summary"]["models_used"])
+            cost_analysis["summary"]["providers_used"] = list(
+                cost_analysis["summary"]["providers_used"]
+            )
+
+            for agent_data in cost_analysis["agents"].values():
+                agent_data["models"] = list(agent_data["models"])
+                agent_data["providers"] = list(agent_data["providers"])
+
+            return cost_analysis
+
+        except Exception as e:
+            logger.error(f"Failed to extract cost analysis: {e}")
+            return {"error": str(e)}
+
+    def _extract_agent_metrics(
+        self, event: Dict[str, Any], enhanced_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Extract metrics from an agent event, resolving blob references if needed."""
+        try:
+            payload = event.get("payload", {})
+
+            # If payload is a blob reference, resolve it
+            if isinstance(payload, dict) and payload.get("_type") == "blob_reference":
+                blob_ref = payload.get("ref")
+                if blob_ref and hasattr(self, "_blob_store") and blob_ref in self._blob_store:
+                    # Get from current blob store
+                    resolved_payload = self._blob_store[blob_ref]
+                elif (
+                    blob_ref
+                    and "blob_store" in enhanced_data
+                    and blob_ref in enhanced_data["blob_store"]
+                ):
+                    # Get from enhanced_data blob store
+                    resolved_payload = enhanced_data["blob_store"][blob_ref]
+                else:
+                    return {}
+            else:
+                resolved_payload = payload
+
+            # Look for metrics in various locations within the resolved payload
+            metrics = {}
+
+            # Check if there's a direct _metrics field
+            if "_metrics" in resolved_payload:
+                metrics = resolved_payload["_metrics"]
+
+            # Check in previous_outputs for agent responses with _metrics
+            elif "previous_outputs" in resolved_payload:
+                prev_outputs = resolved_payload["previous_outputs"]
+                for agent_response in prev_outputs.values():
+                    if isinstance(agent_response, dict) and "_metrics" in agent_response:
+                        # Merge metrics from all agent responses
+                        agent_metrics = agent_response["_metrics"]
+                        for key, value in agent_metrics.items():
+                            if key in ["tokens", "prompt_tokens", "completion_tokens"]:
+                                metrics[key] = metrics.get(key, 0) + value
+                            elif key in ["cost_usd", "latency_ms"]:
+                                metrics[key] = metrics.get(key, 0.0) + value
+                            else:
+                                metrics[key] = value  # model, provider, etc.
+
+            # Check for response field with _metrics
+            elif "response" in resolved_payload and isinstance(resolved_payload["response"], dict):
+                response = resolved_payload["response"]
+                if "_metrics" in response:
+                    metrics = response["_metrics"]
+
+            return metrics
+
+        except Exception as e:
+            logger.error(f"Failed to extract agent metrics: {e}")
+            return {}

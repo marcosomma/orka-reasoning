@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "orka-reasoning"
-version = "0.7.8"
+version = "0.8.0"
 description = "Modular agent orchestrator for reasoning pipelines"
 authors = [
   { name = "Marco Somma", email = "marcosomma.work@gmail.com" }
@@ -22,16 +22,22 @@ classifiers = [
 
 dependencies = [
   # Core Dependencies
-  "redis[async]>=5.0.0",
-  "redis-om>=0.2.1",
+  "confluent-kafka>=2.11.0",
+  "redis[async,search]<=4.5.5",
+  "redis-om>=0.3.5",
+  "redis-py-cluster>=1.3.5",
+  "redisearch>=2.0.0",
+  "rmtest>=0.7.0",
   "pyyaml>=6.0.2",
   "python-dotenv>=0.19.0",
+  "GPUtil>=1.4.0",
+  "psutil>=7.0.0",
   
-  # AI and ML
+  # AI and LLM
   "openai>=1.0.0",
   "litellm>=1.0.0",
-  "sentence-transformers>=2.2.0",
-  "numpy>=1.21.0",
+  "numpy>=2.3.1",
+  "sentence_transformers>=5.0.0",
   
   # Search and APIs
   "duckduckgo-search>=3.0.0",
@@ -67,6 +73,11 @@ dev = [
   "flake8-bugbear>=24.1.0",
   "flake8-comprehensions>=3.14.0",
   "flake8-pytest-style>=1.7.0",
+  "mypy>=1.17.0",  # Type checking with daemon support
+  "types-redis>=4.2.0",  # Type stubs for redis
+  "types-PyYAML>=6.0.12",
+  "types-requests>=2.32.0",
+  "types-psutil>=7.0.0",
   
   # Documentation
   "sphinx>=7.0.0",
@@ -80,7 +91,8 @@ schema = [
   "fastavro>=1.9.0",
   "protobuf>=4.25.0",
   "jsonschema>=4.20.0",
-  "kafka-python>=2.0.2"
+  "kafka-python>=2.0.2",
+  "confluent_kafka>=2.11.0"
 ]
 
 # Production Dependencies
@@ -89,9 +101,15 @@ prod = [
   "supervisor>=4.2.0"
 ]
 
+# ML and vector embeddings for semantic search
+ml = [
+  "sentence-transformers>=2.2.0",
+  "numpy>=1.21.0"
+]
+
 # All Dependencies (for development with all features)
 all = [
-  "orka-reasoning[dev,schema,prod]"
+  "orka-reasoning[dev,schema,prod,ml]"
 ]
 
 [project.urls]
@@ -127,7 +145,7 @@ package-dir = {"" = "."}
 
 [tool.setuptools.packages.find]
 where = ["."]
-exclude = ["test*", "tests*"]
+exclude = ["tests*"]
 
 [tool.setuptools.package-data]
 orka = [
@@ -142,7 +160,7 @@ orka = [
 [tool.pytest.ini_options]
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
-testpaths = ["test"]
+testpaths = ["tests"]
 python_files = "test_*.py"
 python_functions = "test_*"
 pythonpath = ["."]
@@ -161,6 +179,7 @@ markers = [
     "asyncio: marks tests as async",
 ]
 
+
 [tool.coverage.run]
 source = ["orka"]
 branch = true
@@ -168,7 +187,6 @@ parallel = true
 omit = [
     "*/site-packages/*",
     "*/tests/*",
-    "test/*",
     "setup.py",
     "orka/start_kafka.py",
     "orka/start_redis_only.py",
@@ -206,6 +224,9 @@ extend-exclude = '''
 # in the root of the project.
 ^/docs/
 '''
+
+[tool.pyright]
+typeCheckingMode = "off"
 
 [tool.flake8]
 max-line-length = 100

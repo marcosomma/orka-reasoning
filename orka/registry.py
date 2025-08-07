@@ -57,7 +57,7 @@ try:
 
     HAS_SENTENCE_TRANSFORMERS = True
 except ImportError:
-    SentenceTransformer = None
+    SentenceTransformer = None  # type: ignore[misc, assignment]
     HAS_SENTENCE_TRANSFORMERS = False
     logger.warning(
         "sentence_transformers not available. Install with: pip install sentence-transformers"
@@ -74,7 +74,7 @@ class ResourceRegistry:
     for all OrKa components.
     """
 
-    def __init__(self, config: Dict[str, ResourceConfig]):
+    def __init__(self, config: Dict[str, Any]):
         """
         Initialize the registry with resource configurations.
 
@@ -108,7 +108,7 @@ class ResourceRegistry:
 
         self._initialized = True
 
-    async def _init_resource(self, config: ResourceConfig) -> Any:
+    async def _init_resource(self, config: Dict[str, Any]) -> Any:
         """
         Initialize a single resource based on its type and configuration.
 
@@ -185,7 +185,7 @@ class ResourceRegistry:
                 logger.error(f"Error closing resource {name}: {e}")
 
 
-def init_registry(config: Dict[str, ResourceConfig]) -> ResourceRegistry:
+def init_registry(config: Dict[str, Any]) -> ResourceRegistry:
     """
     Create and initialize a new resource registry.
 

@@ -13,6 +13,7 @@
 
 
 import json
+import logging
 
 from .base_node import BaseNode
 
@@ -32,6 +33,9 @@ class JoinNode(BaseNode):
         self._retry_key = f"{self.node_id}:join_retry_count"
 
     def run(self, input_data):
+        """
+        Run the join operation by collecting and merging results from forked agents.
+        """
         fork_group_id = input_data.get("fork_group_id", self.group_id)
         state_key = "waitfor:join_parallel_checks:inputs"
 
@@ -75,15 +79,92 @@ class JoinNode(BaseNode):
         }
 
     def _complete(self, fork_targets, state_key):
-        merged = {
-            agent_id: json.loads(self.memory_logger.hget(state_key, agent_id))
-            for agent_id in fork_targets
-        }
+        """
+        Complete the join operation by merging all fork results.
+
+        Args:
+            fork_targets (list): List of agent IDs to collect results from
+            state_key (str): Redis key where results are stored
+
+        Returns:
+            dict: Merged results from all agents
+        """
+        logger = logging.getLogger(__name__)
+
+        # Get all results from Redis
+        merged = {}
+        for agent_id in fork_targets:
+            try:
+                # Get result from Redis
+                result_str = self.memory_logger.hget(state_key, agent_id)
+                if result_str:
+                    # Parse result JSON
+                    try:
+                        result = json.loads(result_str)
+                    except (json.JSONDecodeError, TypeError):
+                        result = result_str
+                    # Store result in merged dict
+                    if isinstance(result, dict):
+                        if "result" in result:
+                            # If result has a nested result field, use that
+                            merged[agent_id] = result["result"]
+                        elif "response" in result:
+                            # If result has a response field (common for LLM agents), use that
+                            merged[agent_id] = {
+                                "response": result["response"],
+                                "confidence": result.get("confidence", "0.0"),
+                                "internal_reasoning": result.get("internal_reasoning", ""),
+                                "_metrics": result.get("_metrics", {}),
+                                "formatted_prompt": result.get("formatted_prompt", ""),
+                            }
+                        else:
+                            # Otherwise use the whole result
+                            merged[agent_id] = result
+                    else:
+                        # If not a dict, use as is
+                        merged[agent_id] = result
+
+                    logger.debug(f"- Merged result for agent {agent_id}")
+
+                    # Store the result in Redis key for direct access
+                    fork_group_id = result.get("fork_group", "unknown")
+                    agent_key = f"agent_result:{fork_group_id}:{agent_id}"
+                    self.memory_logger.set(agent_key, json.dumps(merged[agent_id]))
+                    logger.debug(f"- Stored result for agent {agent_id}")
+
+                    # Store in Redis hash for group tracking
+                    group_key = f"fork_group_results:{fork_group_id}"
+                    self.memory_logger.hset(group_key, agent_id, json.dumps(merged[agent_id]))
+                    logger.debug(f"- Stored result in group for agent {agent_id}")
+                else:
+                    logger.warning(f"No result found for agent {agent_id}")
+            except Exception as e:
+                logger.error(f"Error processing result for agent {agent_id}: {e}")
+                # Add error result to show something went wrong
+                merged[agent_id] = {"error": str(e)}
+
         # Store output using hash operations
         self.memory_logger.hset("join_outputs", self.output_key, json.dumps(merged))
+
         # Clean up state using hash operations
         if fork_targets:  # Only call hdel (hash delete) if there are keys to delete
             self.memory_logger.hdel(state_key, *fork_targets)
-        # Note: For now, we'll leave the fork group cleanup to the orchestrator
-        # since the delete operation isn't available in the base interface yet
-        return {"status": "done", "merged": merged}
+
+        # Return merged results with status and individual agent results
+        result = {
+            "status": "done",
+            "merged": merged,
+            **merged,  # Expose individual agent results at top level
+        }
+
+        # Store the final result in Redis
+        join_key = f"join_result:{self.node_id}"
+        self.memory_logger.set(join_key, json.dumps(result))
+        logger.debug(f"- Stored final join result: {join_key}")
+
+        # Store in Redis hash for group tracking
+        group_key = f"join_results:{self.node_id}"
+        self.memory_logger.hset(group_key, "result", json.dumps(result))
+        logger.debug(f"- Stored final result in group")
+
+        return result

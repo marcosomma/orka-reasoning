@@ -28,6 +28,23 @@ class FileOperationsMixin:
     Mixin class providing file operations for memory loggers.
     """
 
+    def __init__(self):
+        self.memory: list = []
+        self._blob_threshold: int = 0
+        self._blob_store: dict = {}
+
+    def _process_memory_for_saving(self, memory_entries: list) -> list:
+        raise NotImplementedError
+
+    def _sanitize_for_json(self, obj: Any) -> Any:
+        raise NotImplementedError
+
+    def _deduplicate_object(self, obj: Any) -> Any:
+        raise NotImplementedError
+
+    def _should_use_deduplication_format(self) -> bool:
+        raise NotImplementedError
+
     def save_to_file(self, file_path: str) -> None:
         """
         Save the logged events to a JSON file with blob deduplication.
@@ -103,7 +120,15 @@ class FileOperationsMixin:
                 for entry in deduplicated_memory:
                     resolved_entry = self._resolve_blob_references(entry, self._blob_store)
                     resolved_events.append(resolved_entry)
-                output_data = resolved_events
+                output_data = {
+                    "_metadata": {
+                        "version": "1.0",
+                        "deduplication_enabled": False,
+                        "generated_at": datetime.now(UTC).isoformat(),
+                    },
+                    "blob_store": {},
+                    "events": resolved_events,
+                }
 
             with open(file_path, "w", encoding="utf-8") as f:
                 json.dump(
@@ -223,7 +248,7 @@ class FileOperationsMixin:
         """
         try:
             with open(file_path, encoding="utf-8") as f:
-                data = json.load(f)
+                data: Any = json.load(f)
 
             # Handle both old format (list) and new format (dict with metadata)
             if isinstance(data, list):
@@ -238,7 +263,8 @@ class FileOperationsMixin:
                 }
 
             if not resolve_blobs:
-                return data
+                data_dic: Dict[str, Any] = data
+                return data_dic
 
             # Resolve blob references if requested
             blob_store = data.get("blob_store", {})

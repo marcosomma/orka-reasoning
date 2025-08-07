@@ -19,18 +19,22 @@ This module contains memory watch functionality with TUI interface support.
 """
 
 import json
+import logging
 import os
 import sys
 import time
+from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from orka.memory_logger import create_memory_logger
 
 
-def memory_watch(args):
+def memory_watch(args: Any) -> int:
     """Modern TUI interface with Textual (default) or Rich fallback."""
     # Check if user explicitly wants fallback interface
     if getattr(args, "fallback", False):
-        print("ℹ️  Using basic terminal interface as requested")
+        logger.info("Using basic terminal interface as requested")
         return _memory_watch_fallback(args)
 
     try:
@@ -41,38 +45,46 @@ def memory_watch(args):
         return tui.run(args)
 
     except ImportError as e:
-        print(f"❌ Could not import TUI interface: {e}")
-        print("Falling back to basic terminal interface...")
+        logger.error(f"Could not import TUI interface: {e}")
+        logger.info("Falling back to basic terminal interface...")
         return _memory_watch_fallback(args)
     except Exception as e:
-        print(f"❌ Error starting memory watch: {e}", file=sys.stderr)
+        logger.error(f"Error starting memory watch: {e}")
         import traceback
 
         traceback.print_exc()
         return 1
 
 
-def _memory_watch_fallback(args):
+def _memory_watch_fallback(args: Any) -> int:
     """Fallback memory watch with basic interface."""
     try:
-        backend = getattr(args, "backend", None) or os.getenv("ORKA_MEMORY_BACKEND", "redisstack")
+        # Get backend with default value
+        raw_backend = getattr(args, "backend", None) or os.getenv(
+            "ORKA_MEMORY_BACKEND", "redisstack"
+        )
+        # Ensure backend is a string
+        backend = str(raw_backend)
         redis_url = os.getenv(
             "REDIS_URL", "redis://localhost:6379/0"
         )  # Use same URL for all backends
 
         memory = create_memory_logger(backend=backend, redis_url=redis_url)
 
+        # Log the backend being used
+        logger.info(f"Using {backend.title()} backend")
         if getattr(args, "json", False):
+            logger.info("Using JSON output mode")
             return _memory_watch_json(memory, backend, args)
         else:
             return _memory_watch_display(memory, backend, args)
 
     except Exception as e:
-        print(f"❌ Error in fallback memory watch: {e}", file=sys.stderr)
+        logger.error(f"Error in fallback memory watch: {e}")
         return 1
 
 
-def _memory_watch_json(memory, backend: str, args):
+def _memory_watch_json(memory: Any, backend: str, args: Any) -> int:
     """JSON mode memory watch with continuous updates."""
     try:
         while True:
@@ -109,14 +121,14 @@ def _memory_watch_json(memory, backend: str, args):
                     except Exception:
                         pass
 
-                print(json.dumps(output, indent=2, default=str))
+                logger.info(json.dumps(output, indent=2, default=str))
 
                 time.sleep(args.interval)
 
             except KeyboardInterrupt:
                 break
             except Exception as e:
-                print(json.dumps({"error": str(e), "backend": backend}), file=sys.stderr)
+                logger.error(json.dumps({"error": str(e), "backend": backend}))
                 time.sleep(args.interval)
 
     except KeyboardInterrupt:
@@ -125,7 +137,7 @@ def _memory_watch_json(memory, backend: str, args):
     return 0
 
 
-def _memory_watch_display(memory, backend: str, args):
+def _memory_watch_display(memory: Any, backend: str, args: Any) -> int:
     """Interactive display mode with continuous updates."""
     try:
         while True:
@@ -134,25 +146,25 @@ def _memory_watch_display(memory, backend: str, args):
                 if not getattr(args, "no_clear", False):
                     os.system("cls" if os.name == "nt" else "clear")
 
-                print("=== OrKa Memory Watch ===")
-                print(
+                logger.info("=== OrKa Memory Watch ===")
+                logger.info(
                     f"Backend: {backend} | Interval: {getattr(args, 'interval', 5)}s | Press Ctrl+C to exit",
                 )
-                print("-" * 60)
+                logger.info("-" * 60)
 
                 # Get comprehensive stats
                 stats = memory.get_memory_stats()
 
                 # Display basic metrics
-                print("📊 Memory Statistics:")
-                print(f"   Total Entries: {stats.get('total_entries', 0)}")
-                print(f"   Active Entries: {stats.get('active_entries', 0)}")
-                print(f"   Expired Entries: {stats.get('expired_entries', 0)}")
-                print(f"   Stored Memories: {stats.get('stored_memories', 0)}")
-                print(f"   Orchestration Logs: {stats.get('orchestration_logs', 0)}")
+                logger.info("📊 Memory Statistics:")
+                logger.info(f"   Total Entries: {stats.get('total_entries', 0)}")
+                logger.info(f"   Active Entries: {stats.get('active_entries', 0)}")
+                logger.info(f"   Expired Entries: {stats.get('expired_entries', 0)}")
+                logger.info(f"   Stored Memories: {stats.get('stored_memories', 0)}")
+                logger.info(f"   Orchestration Logs: {stats.get('orchestration_logs', 0)}")
 
                 # Show recent stored memories
-                print("\n🧠 Recent Stored Memories:")
+                logger.info("\n🧠 Recent Stored Memories:")
                 try:
                     # Get recent memories using the dedicated method
                     if hasattr(memory, "get_recent_stored_memories"):
@@ -182,19 +194,19 @@ def _memory_watch_display(memory, backend: str, args):
                                 else raw_node_id
                             )
 
-                            print(f"   [{i}] {node_id}: {content}")
+                            logger.info(f"   [{i}] {node_id}: {content}")
                     else:
-                        print("   No stored memories found")
+                        logger.info("   No stored memories found")
 
                 except Exception as e:
-                    print(f"   ❌ Error retrieving memories: {e}")
+                    logger.error(f"   Error retrieving memories: {e}")
 
                 time.sleep(getattr(args, "interval", 5))
 
             except KeyboardInterrupt:
                 break
             except Exception as e:
-                print(f"❌ Error in memory watch: {e}", file=sys.stderr)
+                logger.error(f"❌ Error in memory watch: {e}, file:{sys.stderr}")
                 time.sleep(getattr(args, "interval", 5))
 
     except KeyboardInterrupt:

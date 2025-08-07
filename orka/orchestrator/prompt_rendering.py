@@ -74,7 +74,7 @@ class PromptRenderer:
 
     def render_prompt(self, template_str, payload):
         """
-        Render a Jinja2 template string with the given payload.
+        Render a Jinja2 template string with comprehensive error handling.
 
         This method is the core template rendering functionality, taking a template
         string and context payload to produce a rendered prompt for agent execution.
@@ -103,10 +103,50 @@ class PromptRenderer:
                 f"Expected template_str to be str, got {type(template_str)} instead.",
             )
 
-        # Enhance payload for better template rendering
-        enhanced_payload = self._enhance_payload_for_templates(payload)
+        try:
+            # Enhance payload for better template rendering
+            enhanced_payload = self._enhance_payload_for_templates(payload)
 
-        return Template(template_str).render(**enhanced_payload)
+            # Render template with fault tolerance
+            template = Template(template_str)
+            rendered = template.render(**enhanced_payload)
+
+            # ✅ FIX: Replace unresolved variables with empty strings
+            import logging
+            import re
+
+            logger = logging.getLogger(__name__)
+            unresolved_pattern = r"\{\{\s*[^}]+\s*\}\}"
+            unresolved_vars = re.findall(unresolved_pattern, rendered)
+
+            if unresolved_vars:
+                logger.debug(
+                    f"Replacing {len(unresolved_vars)} unresolved variables with empty strings: {unresolved_vars}"
+                )
+                # Replace all unresolved variables with empty strings
+                rendered = re.sub(unresolved_pattern, "", rendered)
+                # Clean up any resulting double spaces or newlines
+                rendered = re.sub(r"\s+", " ", rendered).strip()
+
+            return rendered
+
+        except Exception as e:
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Template rendering failed, attempting fallback: {e}")
+            logger.debug(f"- Template: {template_str}")
+            logger.debug(
+                f"Context keys: {list(payload.keys()) if isinstance(payload, dict) else 'Not a dict'}"
+            )
+
+            # ✅ Fallback: Replace all template variables with empty strings and return
+            import re
+
+            fallback_rendered = re.sub(r"\{\{\s*[^}]+\s*\}\}", "", template_str)
+            fallback_rendered = re.sub(r"\s+", " ", fallback_rendered).strip()
+            logger.warning(f"Using fallback rendering: '{fallback_rendered}'")
+            return fallback_rendered
 
     def _enhance_payload_for_templates(self, payload):
         """
@@ -140,42 +180,416 @@ class PromptRenderer:
 
                 # If the result has a nested structure, also provide direct access
                 if isinstance(agent_result, dict):
-                    # If agent_result has a 'result' key, also provide shortcuts
+                    # Handle nested result structures
                     if "result" in agent_result:
                         result_data = agent_result["result"]
-
-                        # Create a flattened version for easier template access
-                        flattened_result = {
-                            "result": result_data,
-                            # If result has common keys, expose them directly
-                        }
-
-                        # Add common result fields as shortcuts
                         if isinstance(result_data, dict):
-                            # For memory agents, expose memories directly
-                            if "memories" in result_data:
-                                flattened_result["memories"] = result_data["memories"]
-
                             # For LLM agents, expose response directly
                             if "response" in result_data:
-                                flattened_result["response"] = result_data["response"]
-
-                            # For other common fields
-                            for key in ["status", "confidence", "data", "content"]:
-                                if key in result_data:
-                                    flattened_result[key] = result_data[key]
-
-                        enhanced_outputs[agent_id] = flattened_result
+                                enhanced_outputs[agent_id] = {
+                                    "response": result_data["response"],
+                                    "confidence": result_data.get("confidence", "0.0"),
+                                    "internal_reasoning": result_data.get("internal_reasoning", ""),
+                                    "_metrics": result_data.get("_metrics", {}),
+                                    "formatted_prompt": result_data.get("formatted_prompt", ""),
+                                }
+                            # For memory agents, expose memories directly
+                            elif "memories" in result_data:
+                                enhanced_outputs[agent_id] = {
+                                    "memories": result_data["memories"],
+                                    "query": result_data.get("query", ""),
+                                    "backend": result_data.get("backend", ""),
+                                    "search_type": result_data.get("search_type", ""),
+                                    "num_results": result_data.get("num_results", 0),
+                                }
+                            else:
+                                # For other result types, use as is
+                                enhanced_outputs[agent_id] = result_data
                     else:
-                        # If no nested result, the agent_result is the direct result
-                        enhanced_outputs[agent_id] = agent_result
+                        # If no nested result, check for direct response fields
+                        if "response" in agent_result:
+                            enhanced_outputs[agent_id] = {
+                                "response": agent_result["response"],
+                                "confidence": agent_result.get("confidence", "0.0"),
+                                "internal_reasoning": agent_result.get("internal_reasoning", ""),
+                                "_metrics": agent_result.get("_metrics", {}),
+                                "formatted_prompt": agent_result.get("formatted_prompt", ""),
+                            }
+                        elif "memories" in agent_result:
+                            enhanced_outputs[agent_id] = {
+                                "memories": agent_result["memories"],
+                                "query": agent_result.get("query", ""),
+                                "backend": agent_result.get("backend", ""),
+                                "search_type": agent_result.get("search_type", ""),
+                                "num_results": agent_result.get("num_results", 0),
+                            }
+                        elif "merged" in agent_result:
+                            # Handle merged results from join nodes
+                            merged_results = agent_result["merged"]
+                            if isinstance(merged_results, dict):
+                                for merged_agent_id, merged_result in merged_results.items():
+                                    if isinstance(merged_result, dict):
+                                        # For LLM agents, expose response directly
+                                        if "response" in merged_result:
+                                            enhanced_outputs[merged_agent_id] = {
+                                                "response": merged_result["response"],
+                                                "confidence": merged_result.get(
+                                                    "confidence", "0.0"
+                                                ),
+                                                "internal_reasoning": merged_result.get(
+                                                    "internal_reasoning", ""
+                                                ),
+                                                "_metrics": merged_result.get("_metrics", {}),
+                                                "formatted_prompt": merged_result.get(
+                                                    "formatted_prompt", ""
+                                                ),
+                                            }
+                                        # For memory agents, expose memories directly
+                                        elif "memories" in merged_result:
+                                            enhanced_outputs[merged_agent_id] = {
+                                                "memories": merged_result["memories"],
+                                                "query": merged_result.get("query", ""),
+                                                "backend": merged_result.get("backend", ""),
+                                                "search_type": merged_result.get("search_type", ""),
+                                                "num_results": merged_result.get("num_results", 0),
+                                            }
+                                        else:
+                                            # For other result types, use as is
+                                            enhanced_outputs[merged_agent_id] = merged_result
+                                    else:
+                                        # If not a dict, use as is
+                                        enhanced_outputs[merged_agent_id] = merged_result
+                        else:
+                            # Keep other fields as is
+                            enhanced_outputs[agent_id] = agent_result
                 else:
                     # If not a dict, keep as is
                     enhanced_outputs[agent_id] = agent_result
 
             enhanced_payload["previous_outputs"] = enhanced_outputs
 
+        # Add helper functions for template use
+        enhanced_payload.update(self._get_template_helper_functions(enhanced_payload))
+
         return enhanced_payload
+
+    def _get_template_helper_functions(self, payload):
+        """
+        Create helper functions available in Jinja2 templates for easier variable access.
+
+        These functions provide a cleaner, more maintainable way to access complex
+        nested data structures in YAML workflow templates.
+
+        Returns:
+            dict: Dictionary of helper functions for template context
+        """
+
+        def get_input():
+            """Get the main input string, handling nested input structures."""
+            if "input" in payload:
+                input_data = payload["input"]
+                if isinstance(input_data, dict):
+                    return input_data.get("input", str(input_data))
+                return str(input_data)
+            return ""
+
+        def get_loop_number():
+            """Get the current loop number."""
+            if "loop_number" in payload:
+                return payload["loop_number"]
+            if "input" in payload and isinstance(payload["input"], dict):
+                return payload["input"].get("loop_number", 1)
+            return 1
+
+        def has_past_loops():
+            """Check if there are past loops available."""
+            past_loops = get_past_loops()
+            return len(past_loops) > 0
+
+        def get_past_loops():
+            """Get the past loops list."""
+            # Try multiple locations for past_loops data
+            if "input" in payload and isinstance(payload["input"], dict):
+                prev_outputs = payload["input"].get("previous_outputs", {})
+                if "past_loops" in prev_outputs:
+                    return prev_outputs["past_loops"]
+
+            # Also check direct previous_outputs
+            prev_outputs = payload.get("previous_outputs", {})
+            if "past_loops" in prev_outputs:
+                return prev_outputs["past_loops"]
+
+            return []
+
+        def get_past_insights():
+            """Get insights from the last past loop."""
+            past_loops = get_past_loops()
+            if past_loops:
+                last_loop = past_loops[-1]
+                return last_loop.get("synthesis_insights", "No synthesis insights found")
+            return "No synthesis insights found"
+
+        def get_past_loop_data(key):
+            """Get specific data from the last past loop."""
+            past_loops = get_past_loops()
+            if past_loops:
+                last_loop = past_loops[-1]
+                return last_loop.get(key, f"No {key} found")
+            return f"No {key} found"
+
+        def get_agent_response(agent_name):
+            """
+            Get an agent's response from previous_outputs, handling fork executions and complex workflows.
+
+            This function searches through:
+            1. Direct previous_outputs[agent_name]
+            2. Fork results in previous_outputs
+            3. Nested workflow results
+            4. Join node results
+            """
+            previous_outputs = payload.get("previous_outputs", {})
+
+            # First, try direct access
+            if agent_name in previous_outputs:
+                agent_result = previous_outputs[agent_name]
+                if isinstance(agent_result, dict):
+                    return agent_result.get("response", "")
+                return str(agent_result)
+
+            # Search through all previous outputs for nested results (fork executions, etc.)
+            for key, value in previous_outputs.items():
+                if isinstance(value, dict):
+                    # Check if this is a nested result containing our agent
+                    if agent_name in value:
+                        nested_result = value[agent_name]
+                        if isinstance(nested_result, dict):
+                            return nested_result.get("response", "")
+                        return str(nested_result)
+
+                    # Check if this has a "result" field containing our agent
+                    if "result" in value and isinstance(value["result"], dict):
+                        if agent_name in value["result"]:
+                            nested_result = value["result"][agent_name]
+                            if isinstance(nested_result, dict):
+                                return nested_result.get("response", "")
+                            return str(nested_result)
+
+                    # Check for fork group results
+                    if "results" in value and isinstance(value["results"], dict):
+                        if agent_name in value["results"]:
+                            nested_result = value["results"][agent_name]
+                            if isinstance(nested_result, dict):
+                                return nested_result.get("response", "")
+                            return str(nested_result)
+
+            return f"No response found for {agent_name}"
+
+        def get_fork_responses(fork_group_name):
+            """
+            Get all responses from a fork group execution.
+            Returns a dictionary of {agent_name: response} for all agents in the fork.
+            """
+            previous_outputs = payload.get("previous_outputs", {})
+
+            # Look for fork group results
+            if fork_group_name in previous_outputs:
+                fork_result = previous_outputs[fork_group_name]
+                if isinstance(fork_result, dict):
+                    responses = {}
+
+                    # Check direct agent results
+                    for key, value in fork_result.items():
+                        if isinstance(value, dict) and "response" in value:
+                            responses[key] = value["response"]
+
+                    # Check nested results structure
+                    if "result" in fork_result and isinstance(fork_result["result"], dict):
+                        for key, value in fork_result["result"].items():
+                            if isinstance(value, dict) and "response" in value:
+                                responses[key] = value["response"]
+
+                    # Check results field
+                    if "results" in fork_result and isinstance(fork_result["results"], dict):
+                        for key, value in fork_result["results"].items():
+                            if isinstance(value, dict) and "response" in value:
+                                responses[key] = value["response"]
+
+                    return responses
+
+            return {}
+
+        def get_progressive_response():
+            """Get progressive agent response using robust search."""
+            return get_agent_response("progressive_refinement") or get_agent_response(
+                "radical_progressive"
+            )
+
+        def get_conservative_response():
+            """Get conservative agent response using robust search."""
+            return get_agent_response("conservative_refinement") or get_agent_response(
+                "traditional_conservative"
+            )
+
+        def get_realist_response():
+            """Get realist agent response using robust search."""
+            return get_agent_response("realist_refinement") or get_agent_response(
+                "pragmatic_realist"
+            )
+
+        def get_purist_response():
+            """Get purist agent response using robust search."""
+            return get_agent_response("purist_refinement") or get_agent_response("ethical_purist")
+
+        def get_collaborative_responses():
+            """Get all collaborative refinement responses as a formatted string."""
+            responses = []
+
+            progressive = get_progressive_response()
+            if progressive and progressive != "No response found for progressive_refinement":
+                responses.append(f"Progressive: {progressive}")
+
+            conservative = get_conservative_response()
+            if conservative and conservative != "No response found for conservative_refinement":
+                responses.append(f"Conservative: {conservative}")
+
+            realist = get_realist_response()
+            if realist and realist != "No response found for realist_refinement":
+                responses.append(f"Realist: {realist}")
+
+            purist = get_purist_response()
+            if purist and purist != "No response found for purist_refinement":
+                responses.append(f"Purist: {purist}")
+
+            return "\n\n".join(responses) if responses else "No collaborative responses available"
+
+        def safe_get_response(agent_name, fallback="No response available"):
+            """Safely get an agent response with fallback."""
+            response = get_agent_response(agent_name)
+            if response and not response.startswith("No response found"):
+                return response
+            return fallback
+
+        def format_memory_query(perspective, topic=None):
+            """Format a memory query for a specific perspective."""
+            if topic is None:
+                topic = get_input()
+            return f"{perspective.title()} perspective on: {topic}"
+
+        def get_current_topic():
+            """Get the current topic being discussed."""
+            return get_input()
+
+        def get_round_info():
+            """Get formatted round information for display."""
+            loop_num = get_loop_number()
+            if has_past_loops():
+                last_loop = get_past_loops()[-1]
+                return last_loop.get("round", str(loop_num))
+            return str(loop_num)
+
+        def safe_get(obj, key, default=""):
+            """Safely get a value from an object with a default."""
+            if isinstance(obj, dict):
+                return obj.get(key, default)
+            return default
+
+        def joined_results():
+            """Get joined results from fork operations if available."""
+            previous_outputs = payload.get("previous_outputs", {})
+            for agent_name, agent_result in previous_outputs.items():
+                if isinstance(agent_result, dict) and "joined_results" in agent_result:
+                    return agent_result["joined_results"]
+            return []
+
+        def get_my_past_memory(agent_type):
+            """Get past memory entries for a specific agent type."""
+            memories = payload.get("memories", [])
+            if not memories:
+                return "No past memory available"
+
+            # Filter memories by agent type
+            my_memories = []
+            for memory in memories:
+                if isinstance(memory, dict):
+                    metadata = memory.get("metadata", {})
+                    if metadata.get("agent_type") == agent_type:
+                        my_memories.append(memory.get("content", ""))
+
+            if my_memories:
+                return "\n".join(my_memories[-3:])  # Last 3 memories
+            return "No past memory for this agent type"
+
+        def get_my_past_decisions(agent_name):
+            """Get past loop decisions for a specific agent."""
+            past_loops = get_past_loops()
+            if not past_loops:
+                return "No past decisions available"
+
+            my_decisions = []
+            for loop in past_loops:
+                if agent_name in loop:
+                    my_decisions.append(f"Loop {loop.get('round', '?')}: {loop[agent_name]}")
+
+            if my_decisions:
+                return "\n".join(my_decisions[-2:])  # Last 2 decisions
+            return f"No past decisions for {agent_name}"
+
+        def get_agent_memory_context(agent_type, agent_name):
+            """Get comprehensive context for an agent including memory and decisions."""
+            memory = get_my_past_memory(agent_type)
+            decisions = get_my_past_decisions(agent_name)
+
+            context = []
+            if memory != "No past memory available":
+                context.append(f"PAST MEMORY:\n{memory}")
+            if decisions != f"No past decisions for {agent_name}":
+                context.append(f"PAST DECISIONS:\n{decisions}")
+
+            return "\n\n".join(context) if context else "No past context available"
+
+        def get_debate_evolution():
+            """Get how the debate has evolved across loops."""
+            past_loops = get_past_loops()
+            if not past_loops:
+                return "First round of debate"
+
+            evolution = []
+            for i, loop in enumerate(past_loops):
+                score = loop.get("agreement_score", "Unknown")
+                evolution.append(f"Round {i+1}: Agreement {score}")
+
+            return " → ".join(evolution)
+
+        return {
+            # Input helpers
+            "get_input": get_input,
+            "get_current_topic": get_current_topic,
+            # Loop helpers
+            "get_loop_number": get_loop_number,
+            "has_past_loops": has_past_loops,
+            "get_past_loops": get_past_loops,
+            "get_past_insights": get_past_insights,
+            "get_past_loop_data": get_past_loop_data,
+            "get_round_info": get_round_info,
+            # Agent helpers
+            "get_agent_response": get_agent_response,
+            "get_fork_responses": get_fork_responses,
+            "get_progressive_response": get_progressive_response,
+            "get_conservative_response": get_conservative_response,
+            "get_realist_response": get_realist_response,
+            "get_purist_response": get_purist_response,
+            "get_collaborative_responses": get_collaborative_responses,
+            "safe_get_response": safe_get_response,
+            "joined_results": joined_results,
+            # Memory helpers
+            "format_memory_query": format_memory_query,
+            "get_my_past_memory": get_my_past_memory,
+            "get_my_past_decisions": get_my_past_decisions,
+            "get_agent_memory_context": get_agent_memory_context,
+            "get_debate_evolution": get_debate_evolution,
+            # Utility helpers
+            "safe_get": safe_get,
+        }
 
     def _add_prompt_to_payload(self, agent, payload_out, payload):
         """
@@ -200,6 +614,9 @@ class PromptRenderer:
             # Check if agent has an enhanced formatted_prompt (e.g., from binary/classification agents)
             if hasattr(agent, "_last_formatted_prompt") and agent._last_formatted_prompt:
                 payload_out["formatted_prompt"] = agent._last_formatted_prompt
+            # ✅ FIX: Use already-rendered formatted_prompt from payload if available
+            elif "formatted_prompt" in payload and payload["formatted_prompt"]:
+                payload_out["formatted_prompt"] = payload["formatted_prompt"]
             else:
                 # If the agent has a prompt, render it with the current payload context
                 try:

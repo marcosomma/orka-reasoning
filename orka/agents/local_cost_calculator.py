@@ -13,7 +13,10 @@ No more fantasy $0.00 costs - local models have real expenses.
 import logging
 import os
 from enum import Enum
-from typing import Optional
+from typing import Any, Dict, List, Optional, Tuple
+
+import GPUtil
+import psutil
 
 logger = logging.getLogger(__name__)
 
@@ -39,11 +42,11 @@ class LocalCostCalculator:
     def __init__(
         self,
         policy: str = "calculate",
-        electricity_rate_usd_per_kwh: float = None,
-        hardware_cost_usd: float = None,
+        electricity_rate_usd_per_kwh: float | None = None,
+        hardware_cost_usd: float | None = None,
         hardware_lifespan_months: int = 36,
-        gpu_tdp_watts: float = None,
-        cpu_tdp_watts: float = None,
+        gpu_tdp_watts: float | None = None,
+        cpu_tdp_watts: float | None = None,
     ):
         """
         Initialize cost calculator.
@@ -200,11 +203,11 @@ class LocalCostCalculator:
                     "titan": 2500,
                 }
 
-                for name_pattern, cost in gpu_costs.items():
+                for name_pattern, gpu_cost in gpu_costs.items():
                     if name_pattern in gpu_name:
                         # Add estimated system cost (CPU, RAM, storage, etc.)
-                        system_cost = cost * 0.5  # System typically 50% of GPU cost
-                        return cost + system_cost
+                        system_cost = gpu_cost * 0.5  # System typically 50% of GPU cost
+                        return gpu_cost + system_cost
 
         except ImportError:
             pass
@@ -271,8 +274,9 @@ class LocalCostCalculator:
 
             cpu_count = psutil.cpu_count(logical=False)  # Physical cores
 
-            # Estimate ~15W per physical core for modern CPUs under load
-            return cpu_count * 15
+            if cpu_count is not None:
+                # Estimate ~15W per physical core for modern CPUs under load
+                return cpu_count * 15
 
         except ImportError:
             pass
@@ -321,7 +325,7 @@ class LocalCostCalculator:
 
 
 # Global instance - can be configured via environment
-_default_calculator = None
+_default_calculator: LocalCostCalculator | None = None
 
 
 def get_cost_calculator() -> LocalCostCalculator:

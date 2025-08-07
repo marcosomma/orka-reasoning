@@ -317,14 +317,14 @@ def sanitize_for_json(obj: Any) -> Any:
 @app.post("/api/run")
 async def run_execution(request: Request):
     data = await request.json()
-    print("\n========== [DEBUG] Incoming POST /api/run ==========")
-    pprint.pprint(data)
+    logger.info("\n========== [DEBUG] Incoming POST /api/run ==========")
+    print(data)
 
     input_text = data.get("input")
     yaml_config = data.get("yaml_config")
 
-    print("\n========== [DEBUG] YAML Config String ==========")
-    print(yaml_config)
+    logger.info("\n========== [DEBUG] YAML Config String ==========")
+    logger.info(yaml_config)
 
     # Create a temporary file path with UTF-8 encoding
     tmp_fd, tmp_path = tempfile.mkstemp(suffix=".yml")
@@ -334,21 +334,21 @@ async def run_execution(request: Request):
     with open(tmp_path, "w", encoding="utf-8") as tmp:
         tmp.write(yaml_config)
 
-    print("\n========== [DEBUG] Instantiating Orchestrator ==========")
+    logger.info("\n========== [DEBUG] Instantiating Orchestrator ==========")
     orchestrator = Orchestrator(tmp_path)
-    print(f"Orchestrator: {orchestrator}")
+    logger.info(f"Orchestrator: {orchestrator}")
 
-    print("\n========== [DEBUG] Running Orchestrator ==========")
+    logger.info("\n========== [DEBUG] Running Orchestrator ==========")
     result = await orchestrator.run(input_text)
 
     # Clean up the temporary file
     try:
         os.remove(tmp_path)
-    except:
-        print(f"Warning: Failed to remove temporary file {tmp_path}")
+    except Exception:
+        logger.info(f"Warning: Failed to remove temporary file {tmp_path}")
 
-    print("\n========== [DEBUG] Orchestrator Result ==========")
-    pprint.pprint(result)
+    logger.info("\n========== [DEBUG] Orchestrator Result ==========")
+    print(result)
 
     # Sanitize the result data for JSON serialization
     sanitized_result = sanitize_for_json(result)

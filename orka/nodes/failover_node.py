@@ -10,9 +10,12 @@
 # For commercial use, contact: marcosomma.work@gmail.com
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-resoning
+import logging
 from datetime import datetime
 
 from .base_node import BaseNode
+
+logger = logging.getLogger(__name__)
 
 
 class FailoverNode(BaseNode):
@@ -54,8 +57,8 @@ class FailoverNode(BaseNode):
         """
         last_error = None
 
-        print(
-            f"{datetime.now()} > [ORKA][NODE][FAILOVER][INFO] Starting failover with {len(self.children)} children",
+        logger.info(
+            f"Starting failover with {len(self.children)} children",
         )
 
         for i, child in enumerate(self.children):
@@ -64,8 +67,8 @@ class FailoverNode(BaseNode):
                 "agent_id",
                 getattr(child, "node_id", f"unknown_child_{i}"),
             )
-            print(
-                f"{datetime.now()} > [ORKA][NODE][FAILOVER][INFO] Trying child {i + 1}/{len(self.children)}: {child_id}",
+            logger.info(
+                f"Trying child {i + 1}/{len(self.children)}: {child_id}",
             )
             try:
                 # Render prompt for child before running (fix for {{ input }} template access)
@@ -90,23 +93,23 @@ class FailoverNode(BaseNode):
                     else:
                         result = child.run(child_payload)
                 else:
-                    print(
-                        f"{datetime.now()} > [ORKA][NODE][FAILOVER][ERROR] Child '{child_id}' has no run method",
+                    logger.error(
+                        f"Child '{child_id}' has no run method",
                     )
                     continue
 
                 # Check if result is valid (not None, not empty, and contains meaningful data)
-                print(
-                    f"{datetime.now()} > [ORKA][NODE][FAILOVER][DEBUG] Child '{child_id}' returned result type: {type(result)}",
+                logger.debug(
+                    f"Child '{child_id}' returned result type: {type(result)}",
                 )
                 if result:
-                    print(
-                        f"{datetime.now()} > [ORKA][NODE][FAILOVER][DEBUG] Result preview: {str(result)[:200]}...",
+                    logger.debug(
+                        f"Result preview: {str(result)[:200]}...",
                     )
 
                 if result and self._is_valid_result(result):
-                    print(
-                        f"{datetime.now()} > [ORKA][NODE][FAILOVER][SUCCESS] Agent '{child_id}' succeeded",
+                    logger.info(
+                        f"Agent '{child_id}' succeeded",
                     )
                     # Return result in a more accessible format
                     return {
@@ -115,23 +118,23 @@ class FailoverNode(BaseNode):
                         child_id: result,  # Keep backward compatibility
                     }
                 else:
-                    print(
-                        f"{datetime.now()} > [ORKA][NODE][FAILOVER][INFO] Agent '{child_id}' returned empty/invalid result",
+                    logger.info(
+                        f"Agent '{child_id}' returned empty/invalid result",
                     )
 
             except Exception as e:
                 # Log the failure and continue to next child
                 last_error = e
-                print(
-                    f"{datetime.now()} > [ORKA][NODE][FAILOVER][WARNING] Agent '{child_id}' failed: {e}",
+                logger.warning(
+                    f"Agent '{child_id}' failed: {e}",
                 )
 
                 # Add delay before trying next child to avoid rate limiting
                 if "ratelimit" in str(e).lower() or "rate" in str(e).lower():
                     import asyncio
 
-                    print(
-                        f"{datetime.now()} > [ORKA][NODE][FAILOVER][INFO] Rate limit detected, waiting 2 seconds before next attempt",
+                    logger.info(
+                        f"Rate limit detected, waiting 2 seconds before next attempt",
                     )
                     await asyncio.sleep(2)
 
@@ -141,7 +144,7 @@ class FailoverNode(BaseNode):
             if last_error
             else "All fallback agents failed."
         )
-        print(f"{datetime.now()} > [ORKA][NODE][FAILOVER][ERROR] {error_msg}")
+        logger.error(f"{datetime.now()} > [ORKA][NODE][FAILOVER][ERROR] {error_msg}")
 
         # Return structured error result instead of raising exception
         return {
@@ -214,8 +217,8 @@ class FailoverNode(BaseNode):
                         "503",
                     ]
                     if any(indicator in item_lower for indicator in error_indicators):
-                        print(
-                            f"{datetime.now()} > [ORKA][NODE][FAILOVER][DEBUG] Rejecting error message: {item[:50]}...",
+                        logger.debug(
+                            f"Rejecting error message: {item[:50]}...",
                         )
                         return False
 
@@ -237,8 +240,8 @@ class FailoverNode(BaseNode):
                             "web-based",
                         ]
                         if any(indicator in item_lower for indicator in html_indicators):
-                            print(
-                                f"{datetime.now()} > [ORKA][NODE][FAILOVER][DEBUG] Rejecting HTML content: {item[:50]}...",
+                            logger.debug(
+                                f"Rejecting HTML content: {item[:50]}...",
                             )
                             return False
 
@@ -262,7 +265,7 @@ class FailoverNode(BaseNode):
                 "503",
             ]
             if any(indicator in result_lower for indicator in error_indicators):
-                print(
+                logger.error(
                     f"{datetime.now()} > [ORKA][NODE][FAILOVER][DEBUG] Rejecting error message: {result[:50]}...",
                 )
                 return False

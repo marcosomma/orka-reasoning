@@ -4,9 +4,10 @@ import json
 import logging
 import os
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 import redis
+from redis import Redis
 
 from .base_logger import BaseMemoryLogger
 
@@ -30,10 +31,14 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         use_schema_registry: bool = True,
     ) -> None:
         """Initialize the Kafka memory logger."""
-        super().__init__(decay_config)
+        super().__init__(stream_key, debug_keep_previous_outputs, decay_config)
 
         self.bootstrap_servers = bootstrap_servers
-        self.redis_url = redis_url or os.environ.get("REDIS_URL", "redis://localhost:6380/0")
+        self.redis_url = (
+            redis_url
+            if redis_url is not None
+            else os.environ.get("REDIS_URL", "redis://localhost:6380/0")
+        )
         self.stream_key = stream_key
         self.debug_keep_previous_outputs = debug_keep_previous_outputs
         self.main_topic = f"{topic_prefix}-events"
@@ -117,10 +122,13 @@ class KafkaMemoryLogger(BaseMemoryLogger):
     def redis(self) -> redis.Redis:
         """Return Redis client - prefer RedisStack client if available."""
         if self._redis_memory_logger:
-            return self._redis_memory_logger.redis
-        return self.redis_client
+            _redis: redis.Redis = self._redis_memory_logger.redis
+            return _redis
+        # Fallback to basic Redis client
+        _redis = cast(redis.Redis, self.redis_client)
+        return _redis
 
-    def _store_in_redis(self, event: dict, **kwargs):
+    def _store_in_redis(self, event: dict[str, Any], **kwargs: Any) -> None:
         """Store event using RedisStack logger if available."""
         if self._redis_memory_logger:
             # ✅ Use RedisStack logger for enhanced storage
@@ -134,6 +142,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
                 parent=kwargs.get("parent"),
                 previous_outputs=kwargs.get("previous_outputs"),
                 agent_decay_config=kwargs.get("agent_decay_config"),
+                log_type=kwargs.get("log_type", "log"),
             )
         else:
             # Fallback to basic Redis streams
@@ -155,7 +164,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
 
                 # Write to Redis stream
                 self.redis_client.xadd(self.stream_key, redis_entry)
-                logger.debug(f"Stored event in basic Redis stream: {self.stream_key}")
+                logger.debug(f"- Stored event in basic Redis stream: {self.stream_key}")
 
             except Exception as e:
                 logger.error(f"Failed to store event in basic Redis: {e}")
@@ -186,6 +195,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
         parent: str | None = None,
         previous_outputs: dict[str, Any] | None = None,
         agent_decay_config: dict[str, Any] | None = None,
+        log_type: str = "log",
     ) -> None:
         """Log an event to both Kafka and Redis."""
         if not agent_id:
@@ -235,6 +245,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
             parent=parent,
             previous_outputs=previous_outputs,
             agent_decay_config=agent_decay_config,
+            log_type=log_type,
         )
 
         # Then send to Kafka
@@ -259,33 +270,30 @@ class KafkaMemoryLogger(BaseMemoryLogger):
             logger.error(f"Failed to send event to Kafka: {e}")
             # Continue execution - Redis storage is our source of truth
 
-    def _delivery_callback(self, err, msg):
+    def _delivery_callback(self, err: Any, msg: Any) -> None:
         """Handle Kafka message delivery confirmation."""
         if err:
             logger.error(f"Message delivery failed: {err}")
         else:
-            logger.debug(f"Message delivered to {msg.topic()} [{msg.partition()}]")
+            logger.debug(f"- Message delivered to {msg.topic()} [{msg.partition()}]")
 
-    def tail(self, n: int = 10, run_id: str | None = None) -> list[dict[str, Any]]:
+    def tail(self, count: int = 10) -> list[dict[str, Any]]:
         """Get the last n events from Redis."""
         if self._redis_memory_logger:
-            return self._redis_memory_logger.tail(n, run_id)
+            return self._redis_memory_logger.tail(count)
 
         try:
             # Get stream entries
-            entries = self.redis_client.xrevrange(self.stream_key, count=n)
+            entries = self.redis_client.xrevrange(self.stream_key, count=count)
             result = []
 
             for _, data in entries:
-                if run_id and data.get(b"run_id", b"").decode() != run_id:
-                    continue
-
                 entry = {
                     "agent_id": data.get(b"agent_id", b"").decode(),
                     "event_type": data.get(b"event_type", b"").decode(),
-                    "timestamp": int(data.get(b"timestamp", 0)),
+                    "timestamp": int(data.get(b"timestamp", b"0").decode()),
                     "run_id": data.get(b"run_id", b"default").decode(),
-                    "step": int(data.get(b"step", -1)),
+                    "step": int(data.get(b"step", b"-1").decode()),
                 }
 
                 try:
@@ -304,15 +312,20 @@ class KafkaMemoryLogger(BaseMemoryLogger):
     def get(self, key: str) -> str | None:
         """Get a value from Redis."""
         if self._redis_memory_logger:
-            return self._redis_memory_logger.get(key)
+            result = self._redis_memory_logger.get(key)
+            if isinstance(result, bytes):
+                return result.decode()  # type: ignore
+            return result if isinstance(result, str) else None
         try:
             value = self.redis_client.get(key)
-            return value.decode() if value else None
+            if isinstance(value, bytes):
+                return value.decode()
+            return value if isinstance(value, str) else None
         except Exception as e:
             logger.error(f"Failed to get key {key}: {e}")
             return None
 
-    def set(self, key: str, value: str) -> bool:
+    def set(self, key: str, value: str | bytes | int | float) -> bool:
         """Set a value in Redis."""
         if self._redis_memory_logger:
             return self._redis_memory_logger.set(key, value)
@@ -322,90 +335,95 @@ class KafkaMemoryLogger(BaseMemoryLogger):
             logger.error(f"Failed to set key {key}: {e}")
             return False
 
-    def delete(self, key: str) -> bool:
-        """Delete a key from Redis."""
+    def delete(self, *keys: str) -> int:
+        """Delete keys from Redis."""
         if self._redis_memory_logger:
-            return self._redis_memory_logger.delete(key)
+            return self._redis_memory_logger.delete(*keys)
         try:
-            return bool(self.redis_client.delete(key))
+            return self.redis_client.delete(*keys)
         except Exception as e:
-            logger.error(f"Failed to delete key {key}: {e}")
-            return False
-
-    def hset(self, key: str, field: str, value: str) -> int:
-        """Set a hash field in Redis."""
-        if self._redis_memory_logger:
-            return self._redis_memory_logger.hset(key, field, value)
-        try:
-            return self.redis_client.hset(key, field, value)
-        except Exception as e:
-            logger.error(f"Failed to hset {key}.{field}: {e}")
+            logger.error(f"Failed to delete keys {keys}: {e}")
             return 0
 
-    def hget(self, key: str, field: str) -> str | None:
+    def hset(self, name: str, key: str, value: str | bytes | int | float) -> int:
+        """Set a hash field in Redis."""
+        if self._redis_memory_logger:
+            return self._redis_memory_logger.hset(name, key, value)
+        try:
+            return self.redis_client.hset(name, key, value)
+        except Exception as e:
+            logger.error(f"Failed to hset {name}.{key}: {e}")
+            return 0
+
+    def hget(self, name: str, key: str) -> str | None:
         """Get a hash field from Redis."""
         if self._redis_memory_logger:
-            return self._redis_memory_logger.hget(key, field)
+            result = self._redis_memory_logger.hget(name, key)
+            if isinstance(result, bytes):
+                return result.decode()  # type: ignore
+            return result if isinstance(result, str) else None
         try:
-            value = self.redis_client.hget(key, field)
-            return value.decode() if value else None
+            value = self.redis_client.hget(name, key)
+            if isinstance(value, bytes):
+                return value.decode()
+            return value if isinstance(value, str) else None
         except Exception as e:
-            logger.error(f"Failed to hget {key}.{field}: {e}")
+            logger.error(f"Failed to hget {name}.{key}: {e}")
             return None
 
-    def hdel(self, key: str, field: str) -> bool:
-        """Delete a hash field from Redis."""
+    def hdel(self, name: str, *keys: str) -> int:
+        """Delete fields from a hash structure."""
         if self._redis_memory_logger:
-            return self._redis_memory_logger.hdel(key, field)
+            return self._redis_memory_logger.hdel(name, *keys)
         try:
-            return bool(self.redis_client.hdel(key, field))
+            return self.redis_client.hdel(name, *keys)
         except Exception as e:
-            logger.error(f"Failed to hdel {key}.{field}: {e}")
-            return False
+            logger.error(f"Failed to hdel {name}.{keys}: {e}")
+            return 0
 
-    def hkeys(self, key: str) -> list[str]:
+    def hkeys(self, name: str) -> list[str]:
         """Get all hash fields from Redis."""
         if self._redis_memory_logger:
-            return self._redis_memory_logger.hkeys(key)
+            return self._redis_memory_logger.hkeys(name)
         try:
-            keys = self.redis_client.hkeys(key)
+            keys = self.redis_client.hkeys(name)
             return [k.decode() for k in keys]
         except Exception as e:
-            logger.error(f"Failed to get hkeys for {key}: {e}")
+            logger.error(f"Failed to get hkeys for {name}: {e}")
             return []
 
-    def sadd(self, key: str, value: str) -> bool:
-        """Add a value to a Redis set."""
+    def sadd(self, name: str, *values: str) -> int:
+        """Add members to a set."""
         if self._redis_memory_logger:
-            return self._redis_memory_logger.sadd(key, value)
+            return self._redis_memory_logger.sadd(name, *values)
         try:
-            return bool(self.redis_client.sadd(key, value))
+            return self.redis_client.sadd(name, *values)
         except Exception as e:
-            logger.error(f"Failed to sadd to {key}: {e}")
-            return False
+            logger.error(f"Failed to sadd to {name}: {e}")
+            return 0
 
-    def srem(self, key: str, value: str) -> bool:
-        """Remove a value from a Redis set."""
+    def srem(self, name: str, *values: str) -> int:
+        """Remove members from a set."""
         if self._redis_memory_logger:
-            return self._redis_memory_logger.srem(key, value)
+            return self._redis_memory_logger.srem(name, *values)
         try:
-            return bool(self.redis_client.srem(key, value))
+            return self.redis_client.srem(name, *values)
         except Exception as e:
-            logger.error(f"Failed to srem from {key}: {e}")
-            return False
+            logger.error(f"Failed to srem from {name}: {e}")
+            return 0
 
-    def smembers(self, key: str) -> list[str]:
+    def smembers(self, name: str) -> list[str]:
         """Get all members of a Redis set."""
         if self._redis_memory_logger:
-            return self._redis_memory_logger.smembers(key)
+            return self._redis_memory_logger.smembers(name)
         try:
-            members = self.redis_client.smembers(key)
+            members = self.redis_client.smembers(name)
             return [m.decode() for m in members]
         except Exception as e:
-            logger.error(f"Failed to get smembers for {key}: {e}")
+            logger.error(f"Failed to get smembers for {name}: {e}")
             return []
 
-    def cleanup_expired_memories(self, dry_run: bool = False) -> int:
+    def cleanup_expired_memories(self, dry_run: bool = False) -> dict[str, Any]:
         """Clean up expired memories."""
         if self._redis_memory_logger:
             return self._redis_memory_logger.cleanup_expired_memories(dry_run=dry_run)
@@ -418,9 +436,9 @@ class KafkaMemoryLogger(BaseMemoryLogger):
             for key in keys:
                 try:
                     # Get expiry time if set
-                    expire_time = self.redis_client.hget(key, "orka_expire_time")
-                    if expire_time:
-                        expire_time = int(expire_time.decode())
+                    expire_time_bytes = self.redis_client.hget(key, "orka_expire_time")
+                    if expire_time_bytes:
+                        expire_time = int(expire_time_bytes.decode())
                         current_time = int(datetime.now(UTC).timestamp() * 1000)
 
                         if current_time > expire_time:
@@ -429,14 +447,28 @@ class KafkaMemoryLogger(BaseMemoryLogger):
                             cleaned += 1
 
                 except Exception as e:
-                    logger.warning(f"Error checking expiry for key {key}: {e}")
+                    logger.warning(f"Error checking: {e}")
                     continue
 
-            return cleaned
+            return {
+                "cleaned": cleaned,
+                "total_checked": len(keys),
+                "expired_found": cleaned,
+                "dry_run": dry_run,
+                "cleanup_type": "kafka_redis_fallback",
+                "errors": [],
+            }
 
         except Exception as e:
             logger.error(f"Failed to cleanup expired memories: {e}")
-            return 0
+            return {
+                "cleaned": 0,
+                "total_checked": 0,
+                "expired_found": 0,
+                "dry_run": dry_run,
+                "cleanup_type": "kafka_redis_fallback",
+                "errors": [str(e)],
+            }
 
     def get_memory_stats(self) -> dict[str, Any]:
         """Get memory statistics."""
@@ -448,7 +480,7 @@ class KafkaMemoryLogger(BaseMemoryLogger):
             total_memories = len(keys)
 
             # Count memories by type
-            memory_types = {}
+            memory_types: dict[str, int] = {}
             expired_count = 0
             current_time = int(datetime.now(UTC).timestamp() * 1000)
 
@@ -461,14 +493,14 @@ class KafkaMemoryLogger(BaseMemoryLogger):
                     memory_types[memory_type] = memory_types.get(memory_type, 0) + 1
 
                     # Check expiry
-                    expire_time = memory_data.get(b"orka_expire_time")
-                    if expire_time:
-                        expire_time = int(expire_time.decode())
+                    expire_time_bytes = memory_data.get(b"orka_expire_time")
+                    if expire_time_bytes:
+                        expire_time = int(expire_time_bytes.decode())
                         if current_time > expire_time:
                             expired_count += 1
 
                 except Exception as e:
-                    logger.warning(f"Error processing memory stats for key {key}: {e}")
+                    logger.warning(f"Error processing memory: {e}")
                     continue
 
             return {

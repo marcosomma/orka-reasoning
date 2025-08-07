@@ -6,6 +6,7 @@ import sys
 
 from orka.cli.core import run_cli
 from orka.cli.memory.watch import memory_watch
+from orka.cli.utils import setup_logging
 
 logger = logging.getLogger(__name__)
 
@@ -57,16 +58,7 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def setup_logging(verbose: bool = False) -> None:
-    """Set up logging configuration."""
-    level = logging.DEBUG if verbose else logging.INFO
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
-
-
-def main(argv: list[str] | None = None) -> int | None:
+def main(argv: list[str] | None = None) -> int:
     """Main entry point."""
     try:
         parser = create_parser()
@@ -83,18 +75,22 @@ def main(argv: list[str] | None = None) -> int | None:
         # Handle memory command
         if args.command == "memory":
             if not hasattr(args, "memory_command") or not args.memory_command:
-                memory_parser = [
-                    p for p in parser._subparsers._group_actions if p.dest == "command"
-                ][0]
-                memory_parser.choices["memory"].print_help()
+                if parser._subparsers is not None:
+                    for action in parser._subparsers._actions:
+                        if isinstance(action, argparse._SubParsersAction):
+                            if "memory" in action.choices:
+                                action.choices["memory"].print_help()
+                                return 1
                 return 1
 
             # Execute memory command
             if hasattr(args, "func"):
-                return args.func(args)
+                _attr_memory: int = args.func(args)
+                return _attr_memory
 
         # Handle run command
         if args.command == "run":
+            logger.log(1, {"message": "mod01"})
             if not hasattr(args, "config") or not args.config:
                 parser.print_help()
                 return 1
@@ -102,11 +98,14 @@ def main(argv: list[str] | None = None) -> int | None:
             run_args = ["run", args.config, args.input]
             if args.log_to_file:
                 run_args.append("--log-to-file")
+            if args.verbose:
+                run_args.append("--verbose")
             return run_cli(run_args)
 
         # Execute other commands
         if hasattr(args, "func"):
-            return args.func(args)
+            _attr_run: int = args.func(args)
+            return _attr_run
 
         return 1
 
@@ -120,10 +119,10 @@ def cli_main() -> None:
     try:
         sys.exit(main())
     except KeyboardInterrupt:
-        print("\n🛑 Operation cancelled.")
+        logger.info("\n🛑 Operation cancelled.")
         sys.exit(1)
     except Exception as e:
-        print(f"\n❌ Error: {e}")
+        logger.info(f"\n❌ Error: {e}")
         sys.exit(1)
 
 

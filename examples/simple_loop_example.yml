@@ -42,7 +42,7 @@ agents:
     
     # Define past_loops object structure with cognitive insights
     past_loops_metadata:
-      loop_number: "{{ loop_number }}"
+      loop_number: "{{ get_loop_number() }}"
       score: "{{ score }}"
       timestamp: "{{ timestamp }}"
       key_insights: "{{ insights }}"
@@ -59,11 +59,11 @@ agents:
         - id: analyzer
           type: openai-answer
           prompt: |
-            Analyze this question: {{ input }}
+            Analyze this question: {{ get_input() }}
             
-            {% if previous_outputs.past_loops %}
-            Previous attempts ({{ previous_outputs.past_loops | length }}):
-            {% for loop in previous_outputs.past_loops %}
+            {% if get_past_loops() %}
+            Previous attempts ({{ get_past_loops() | length }}):
+            {% for loop in get_past_loops() %}
             - Loop {{ loop.loop_number }} (Score: {{ loop.score }}):
               * Key insights: {{ loop.key_insights }}
               * Needed improvements: {{ loop.improvements_needed }}
@@ -84,7 +84,7 @@ agents:
           type: openai-answer
           prompt: |
             Rate the quality of this analysis (0.0 to 1.0):
-            {{ previous_outputs.analyzer.result }}
+            {{ get_agent_response('analyzer') }}
             
             Consider:
             - Completeness and depth
@@ -102,19 +102,21 @@ agents:
     prompt: |
       Process the final result from the cognitive loop:
       
-      Loops completed: {{ previous_outputs.simple_loop.loops_completed }}
-      Final score: {{ previous_outputs.simple_loop.final_score }}
-      Threshold met: {{ previous_outputs.simple_loop.threshold_met }}
+      Loops completed: {{ get_agent_response('simple_loop')['loops_completed'] if get_agent_response('simple_loop') else 'Unknown' }}
+      Final score: {{ get_agent_response('simple_loop')['final_score'] if get_agent_response('simple_loop') else 'Unknown' }}
+      Threshold met: {{ get_agent_response('simple_loop')['threshold_met'] if get_agent_response('simple_loop') else 'Unknown' }}
       
       Cognitive Evolution Summary:
-      {% for loop in previous_outputs.simple_loop.past_loops %}
+      {% if get_agent_response('simple_loop') and get_agent_response('simple_loop')['past_loops'] %}
+      {% for loop in get_agent_response('simple_loop')['past_loops'] %}
       
       **Loop {{ loop.loop_number }}** (Score: {{ loop.score }}):
       - Key Insights: {{ loop.key_insights }}
       - Improvements: {{ loop.improvements_needed }}
       - Mistakes: {{ loop.mistakes_found }}
       {% endfor %}
+      {% endif %}
       
-      Final Analysis: {{ previous_outputs.simple_loop.result }}
+      Final Analysis: {{ get_agent_response('simple_loop')['result'] if get_agent_response('simple_loop') else 'No result available' }}
       
       Provide a meta-analysis of how the thinking evolved through the loops and what the final insights reveal. 

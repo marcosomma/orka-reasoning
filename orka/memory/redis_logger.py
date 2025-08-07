@@ -109,9 +109,11 @@ class RedisMemoryLogger(BaseMemoryLogger):
             decay_config: Configuration for memory decay functionality.
         """
         super().__init__(stream_key, debug_keep_previous_outputs, decay_config)
-        self.redis_url = redis_url or os.getenv(
-            "REDIS_URL", "redis://localhost:6379/0"
-        )  # Use port 6379 by default
+        self.redis_url = (
+            redis_url
+            if redis_url is not None
+            else os.getenv("REDIS_URL", "redis://localhost:6379/0")
+        )
         self.client = redis.from_url(self.redis_url)
 
     @property
@@ -133,6 +135,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
         parent: str | None = None,
         previous_outputs: dict[str, Any] | None = None,
         agent_decay_config: dict[str, Any] | None = None,
+        log_type: str = "log",
     ) -> None:
         """
         Log an event to the Redis stream.
@@ -182,7 +185,9 @@ class RedisMemoryLogger(BaseMemoryLogger):
                 )
 
                 # Classify memory category for separation first
-                memory_category = self._classify_memory_category(event_type, agent_id, safe_payload)
+                memory_category = self._classify_memory_category(
+                    event_type, agent_id, safe_payload, log_type
+                )
 
                 # Check for agent-specific default memory type first
                 if "default_long_term" in effective_decay_config:
@@ -203,12 +208,12 @@ class RedisMemoryLogger(BaseMemoryLogger):
                 if memory_type == "short_term":
                     expire_hours = effective_decay_config.get(
                         "short_term_hours",
-                        effective_decay_config["default_short_term_hours"],
+                        effective_decay_config.get("default_short_term_hours", 1.0),
                     )
                 else:
                     expire_hours = effective_decay_config.get(
                         "long_term_hours",
-                        effective_decay_config["default_long_term_hours"],
+                        effective_decay_config.get("default_long_term_hours", 24.0),
                     )
 
                 expire_time = current_time + timedelta(hours=expire_hours)
@@ -309,7 +314,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
             for stream_key in streams_to_write:
                 try:
                     self.client.xadd(stream_key, redis_entry)
-                    logger.debug(f"Successfully wrote to stream: {stream_key}")
+                    logger.debug(f"- Successfully wrote to stream: {stream_key}")
                 except Exception as stream_e:
                     logger.error(f"Failed to write to stream {stream_key}: {stream_e!s}")
 
@@ -358,12 +363,13 @@ class RedisMemoryLogger(BaseMemoryLogger):
         try:
             results = self.client.xrevrange(self.stream_key, count=count)
             # Sanitize results for JSON serialization before returning
-            return self._sanitize_for_json(results)
+            sanitized: list[dict[str, Any]] = self._sanitize_for_json(results) if results else []
+            return sanitized
         except Exception as e:
             logger.error(f"Failed to retrieve events from Redis: {e!s}")
             return []
 
-    def hset(self, name: str, key: str, value: str | bytes | int | float) -> int:
+    def hset(self, name: str, key: str, value: Any) -> int:
         """
         Set a field in a Redis hash.
 
@@ -376,10 +382,12 @@ class RedisMemoryLogger(BaseMemoryLogger):
             Number of fields added.
         """
         try:
-            # Convert non-string values to strings if needed
-            if not isinstance(value, (str, bytes, int, float)):
-                value = json.dumps(self._sanitize_for_json(value))
-            return self.client.hset(name, key, value)
+            if isinstance(value, (str, bytes, int, float)):
+                return self.client.hset(name, key, value)
+
+            sanitized = self._sanitize_for_json(value)
+            serialized = json.dumps(sanitized)
+            return self.client.hset(name, key, serialized)
         except Exception as e:
             logger.error(f"Failed to set hash field {key} in {name}: {e!s}")
             return 0
@@ -396,7 +404,8 @@ class RedisMemoryLogger(BaseMemoryLogger):
             Field value.
         """
         try:
-            return self.client.hget(name, key)
+            result = self.client.hget(name, key)
+            return result.decode() if isinstance(result, bytes) else result
         except Exception as e:
             logger.error(f"Failed to get hash field {key} from {name}: {e!s}")
             return None
@@ -412,7 +421,8 @@ class RedisMemoryLogger(BaseMemoryLogger):
             List of keys.
         """
         try:
-            return self.client.hkeys(name)
+            keys = self.client.hkeys(name)
+            return [k.decode() for k in keys]
         except Exception as e:
             logger.error(f"Failed to get hash keys from {name}: {e!s}")
             return []
@@ -458,7 +468,8 @@ class RedisMemoryLogger(BaseMemoryLogger):
             Set of members.
         """
         try:
-            return self.client.smembers(name)
+            members = self.client.smembers(name)
+            return [m.decode() for m in members]
         except Exception as e:
             logger.error(f"Failed to get set members from {name}: {e!s}")
             return []
@@ -526,7 +537,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
             True if successful, False otherwise.
         """
         try:
-            return self.client.set(key, value)
+            return bool(self.client.set(key, value))
         except Exception as e:
             logger.error(f"Failed to set key {key}: {e!s}")
             return False
@@ -568,7 +579,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
         """Cleanup when object is destroyed."""
         try:
             self.close()
-        except:
+        except Exception:
             # Ignore all errors during cleanup
             pass
 
@@ -607,7 +618,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
 
         try:
             current_time = datetime.now(UTC)
-            stats = {
+            stats: dict[str, Any] = {
                 "start_time": current_time.isoformat(),
                 "dry_run": dry_run,
                 "deleted_count": 0,
@@ -628,14 +639,15 @@ class RedisMemoryLogger(BaseMemoryLogger):
             for pattern in stream_patterns:
                 stream_keys = self.client.keys(pattern)
 
-                for stream_key in stream_keys:
-                    if stream_key.decode() in processed_streams:
+                for stream_key_bytes in stream_keys:
+                    stream_key = stream_key_bytes.decode()
+                    if stream_key in processed_streams:
                         continue
-                    processed_streams.add(stream_key.decode())
+                    processed_streams.add(stream_key)
 
                     try:
                         # Get all entries from the stream
-                        entries = self.client.xrange(stream_key)
+                        entries = self.client.xrange(stream_key_bytes)
                         stats["streams_processed"] += 1
                         stats["total_entries_checked"] += len(entries)
 
@@ -649,7 +661,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
                                 if current_time > expire_time:
                                     # Entry has expired
                                     entry_info = {
-                                        "stream": stream_key.decode(),
+                                        "stream": stream_key,
                                         "entry_id": entry_id.decode(),
                                         "agent_id": entry_data.get(
                                             b"agent_id",
@@ -668,19 +680,19 @@ class RedisMemoryLogger(BaseMemoryLogger):
 
                                     if not dry_run:
                                         # Actually delete the entry
-                                        self.client.xdel(stream_key, entry_id)
+                                        self.client.xdel(stream_key_bytes, entry_id)
 
                                     stats["deleted_entries"].append(entry_info)
                                     stats["deleted_count"] += 1
 
                             except (ValueError, TypeError) as e:
                                 logger.warning(
-                                    f"Invalid expire_time format in entry {entry_id}: {e}",
+                                    f"Invalid expire_time format in entry {entry_id.decode()}: {e}",
                                 )
                                 stats["error_count"] += 1
 
                     except Exception as e:
-                        logger.error(f"Error processing stream {stream_key}: {e}")
+                        logger.error(f"Error processing stream {str(stream_key)}: {e}")
                         stats["error_count"] += 1
 
             stats["end_time"] = datetime.now(UTC).isoformat()
@@ -714,7 +726,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
         """
         try:
             current_time = datetime.now(UTC)
-            stats = {
+            stats: dict[str, Any] = {
                 "timestamp": current_time.isoformat(),
                 "decay_enabled": self.decay_config.get("enabled", False),
                 "total_streams": 0,
@@ -723,8 +735,9 @@ class RedisMemoryLogger(BaseMemoryLogger):
                 "entries_by_memory_type": {"short_term": 0, "long_term": 0, "unknown": 0},
                 "entries_by_category": {"stored": 0, "log": 0, "unknown": 0},
                 "expired_entries": 0,
-                "streams_detail": [],
             }
+
+            streams_detail: list[dict[str, Any]] = []
 
             # Get all stream keys that match our pattern
             stream_patterns = [
@@ -737,18 +750,19 @@ class RedisMemoryLogger(BaseMemoryLogger):
             for pattern in stream_patterns:
                 stream_keys = self.client.keys(pattern)
 
-                for stream_key in stream_keys:
-                    if stream_key.decode() in processed_streams:
+                for stream_key_bytes in stream_keys:
+                    stream_key = stream_key_bytes.decode()
+                    if stream_key in processed_streams:
                         continue
-                    processed_streams.add(stream_key.decode())
+                    processed_streams.add(stream_key)
 
                     try:
                         # Get stream info
-                        stream_info = self.client.xinfo_stream(stream_key)
-                        entries = self.client.xrange(stream_key)
+                        stream_info: dict[str, Any] = self.client.xinfo_stream(stream_key_bytes)
+                        entries = self.client.xrange(stream_key_bytes)
 
-                        stream_stats = {
-                            "stream": stream_key.decode(),
+                        stream_stats: dict[str, Any] = {
+                            "stream": stream_key,
                             "length": stream_info.get("length", 0),
                             "entries_by_type": {},
                             "entries_by_memory_type": {
@@ -822,7 +836,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
                                         stream_stats["entries_by_memory_type"]["unknown"] += 1
                                         stats["entries_by_memory_type"]["unknown"] += 1
 
-                        stats["streams_detail"].append(stream_stats)
+                                    streams_detail.append(stream_stats)
 
                     except Exception as e:
                         logger.error(f"Error getting stats for stream {stream_key}: {e}")
@@ -830,9 +844,9 @@ class RedisMemoryLogger(BaseMemoryLogger):
             # Add decay configuration info
             if self.decay_config.get("enabled", False):
                 stats["decay_config"] = {
-                    "short_term_hours": self.decay_config["default_short_term_hours"],
-                    "long_term_hours": self.decay_config["default_long_term_hours"],
-                    "check_interval_minutes": self.decay_config["check_interval_minutes"],
+                    "short_term_hours": self.decay_config.get("default_short_term_hours", 1.0),
+                    "long_term_hours": self.decay_config.get("default_long_term_hours", 24.0),
+                    "check_interval_minutes": self.decay_config.get("check_interval_minutes", 30),
                     "last_decay_check": (
                         self._last_decay_check.isoformat() if self._last_decay_check else None
                     ),

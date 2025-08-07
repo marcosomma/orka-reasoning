@@ -54,28 +54,30 @@ async def initialize_memory():
 
 import asyncio
 import logging
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import redis
-from redis.commands.search.field import NumericField, TextField, VectorField
+from redis.commands.search.field import NumericField, TextField
+from redis.commands.search.indexDefinition import IndexDefinition, IndexType
 
-# Support both redis-py 4.x and 5.x versions
+# Optional vector search support
+VECTOR_SEARCH_AVAILABLE = False
+VectorField: Any = None
+Query: Any = None
+
 try:
-    # redis-py <5 (camelCase)
-    from redis.commands.search.indexDefinition import IndexDefinition, IndexType
-except ModuleNotFoundError:
-    # redis-py ≥5 (snake_case)
-    from redis.commands.search.index_definition import IndexDefinition, IndexType
+    from redis.commands.search.field import VectorField
+    from redis.commands.search.query import Query
+
+    VECTOR_SEARCH_AVAILABLE = True
+except ImportError:
+    pass
 
 logger = logging.getLogger(__name__)
 
 
-def ensure_memory_index(redis_client, index_name="memory_entries"):
-    """
-    Ensure that the basic memory index exists.
-    This creates a basic text search index for memory entries.
-    """
+def ensure_memory_index(redis_client: redis.Redis, index_name: str = "memory_entries") -> bool:
     try:
         # Check if index exists
         try:
@@ -109,11 +111,19 @@ def ensure_memory_index(redis_client, index_name="memory_entries"):
         return False
 
 
-def ensure_enhanced_memory_index(redis_client, index_name="orka_enhanced_memory", vector_dim=384):
+def ensure_enhanced_memory_index(
+    redis_client: redis.Redis, index_name: str = "orka_enhanced_memory", vector_dim: int = 384
+) -> bool:
     """
     Ensure that the enhanced memory index with vector search exists.
     This creates an index with vector search capabilities for semantic search.
     """
+    if not VECTOR_SEARCH_AVAILABLE:
+        logger.warning(
+            "Vector search not available in this Redis version. Using basic index instead."
+        )
+        return ensure_memory_index(redis_client, index_name)
+
     try:
         # Check if index exists
         try:
@@ -149,7 +159,7 @@ def ensure_enhanced_memory_index(redis_client, index_name="orka_enhanced_memory"
                 )
 
                 logger.info(f"✅ Enhanced memory index '{index_name}' created successfully")
-                return True
+                index_created = True
             else:
                 raise
         except Exception as e:
@@ -165,10 +175,11 @@ def ensure_enhanced_memory_index(redis_client, index_name="orka_enhanced_memory"
                 logger.warning(
                     "⚠️  Redis instance does not support vector search. Please upgrade to RedisStack 7.2+ for vector capabilities.",
                 )
-            return False
+            index_created = False
     except Exception as e:
         logger.error(f"Error checking enhanced memory index: {e}")
-        return False
+        index_created = False
+    return index_created
 
 
 def hybrid_vector_search(
@@ -190,7 +201,7 @@ def hybrid_vector_search(
         from redis.commands.search.query import Query
 
         # Convert numpy array to bytes for Redis
-        if isinstance(query_vector, np.ndarray):
+        if hasattr(query_vector, "astype") and hasattr(query_vector, "tobytes"):
             vector_bytes = query_vector.astype(np.float32).tobytes()
         else:
             logger.error("Query vector must be a numpy array")
@@ -199,8 +210,8 @@ def hybrid_vector_search(
         # Construct the vector search query using correct RedisStack syntax
         base_query = f"*=>[KNN {num_results} @content_vector $query_vector AS vector_score]"
 
-        logger.debug(f"Vector search query: {base_query}")
-        logger.debug(f"Vector bytes length: {len(vector_bytes)}")
+        logger.debug(f"- Vector search query: {base_query}")
+        logger.debug(f"- Vector bytes length: {len(vector_bytes)}")
         logger.debug(
             f"Query vector shape: {query_vector.shape if hasattr(query_vector, 'shape') else 'No shape'}",
         )
@@ -216,7 +227,7 @@ def hybrid_vector_search(
                 query_params={"query_vector": vector_bytes},
             )
 
-            logger.debug(f"Vector search returned {len(search_results.docs)} results")
+            logger.debug(f"- Vector search returned {len(search_results.docs)} results")
 
             # Process results
             for doc in search_results.docs:
@@ -236,31 +247,30 @@ def hybrid_vector_search(
                     if raw_score is None:
                         # If no score field found, log available fields for debugging
                         available_fields = [attr for attr in dir(doc) if not attr.startswith("_")]
-                        logger.debug(f"No score field found. Available fields: {available_fields}")
+                        logger.debug(
+                            f"- No score field found. Available fields: {available_fields}"
+                        )
                         raw_score = 0.0
 
                     try:
                         score = float(raw_score)
-                        # Check for NaN, infinity, or invalid values
                         import math
 
                         if math.isnan(score) or math.isinf(score):
                             score = 0.0
-                        # For cosine distance: 0 = identical, 2 = opposite
-                        # Convert to similarity: similarity = 1 - (distance / 2)
                         # This maps distance [0, 2] to similarity [1, 0]
-                        elif score < 0:
+                        if score < 0:
                             score = 1.0  # Treat negative as perfect similarity
                         elif score > 2:
                             score = 0.0  # Treat > 2 as no similarity
-                        else:
-                            score = 1.0 - (score / 2.0)
 
                         # Ensure final score is in [0, 1] range
                         score = max(0.0, min(1.0, score))
-                        logger.debug(f"Converted cosine distance {raw_score} -> similarity {score}")
+                        logger.debug(
+                            f"- Converted cosine distance {raw_score} -> similarity {score}"
+                        )
                     except (ValueError, TypeError) as e:
-                        logger.debug(f"Error converting score {raw_score}: {e}")
+                        logger.debug(f"- Error converting score {raw_score}: {e}")
                         score = 0.0
 
                     result = {
@@ -272,15 +282,17 @@ def hybrid_vector_search(
                     }
                     results.append(result)
                 except Exception as e:
-                    logger.warning(f"Error processing search result: {e}")
+                    # logger.warning(f"Error processing search result: {e}")
                     continue
 
         except Exception as search_error:
-            logger.warning(f"Vector search failed: {search_error}")
-
+            logger.error(f"Vector search failed: {search_error}")
+            logger.error(f"Search query was: {base_query}")
+            logger.error(f"Vector bytes length: {len(vector_bytes)}")
+            logger.error(f"Index name: {index_name}")
             # If vector search fails, try fallback to basic text search
             try:
-                logger.info("Falling back to basic text search")
+                # logger.info("Falling back to basic text search")
                 basic_query = f"@content:{query_text}"
                 search_results = redis_client.ft(index_name).search(
                     Query(basic_query).paging(0, num_results),
@@ -297,11 +309,13 @@ def hybrid_vector_search(
                         }
                         results.append(result)
                     except Exception as e:
-                        logger.warning(f"Error processing fallback result: {e}")
+                        # logger.warning(f"Error processing fallback result: {e}")
                         continue
 
             except Exception as fallback_error:
                 logger.error(f"Both vector and fallback search failed: {fallback_error}")
+                logger.error(f"Fallback query was: {basic_query}")
+                pass
 
     except Exception as e:
         logger.error(f"Hybrid vector search failed: {e}")
@@ -313,8 +327,63 @@ def hybrid_vector_search(
     if trace_id and results:
         results = [r for r in results if r.get("trace_id") == trace_id]
 
-    logger.debug(f"Returning {len(results)} search results")
+    logger.debug(f"- Returning {len(results)} search results")
     return results
+
+
+def verify_memory_index(redis_client, index_name: str = "orka_enhanced_memory") -> dict[str, Any]:
+    """
+    Verify that the memory index exists and has the correct schema.
+
+    Returns:
+        dict: Status information about the index
+    """
+    try:
+        # Check if index exists
+        info = redis_client.ft(index_name).info()
+
+        # Parse index info
+        index_info = {
+            "exists": True,
+            "num_docs": info.get("num_docs", 0),
+            "fields": {},
+            "vector_field_exists": False,
+            "content_field_exists": False,
+        }
+
+        # Extract field information
+        if "attributes" in info:
+            for attr in info["attributes"]:
+                if isinstance(attr, list) and len(attr) >= 2:
+                    # Handle both bytes and string field names
+                    field_name = attr[1]
+                    if isinstance(field_name, bytes):
+                        field_name = field_name.decode("utf-8")
+
+                    field_type = attr[3] if len(attr) > 3 else "UNKNOWN"
+                    if isinstance(field_type, bytes):
+                        field_type = field_type.decode("utf-8")
+
+                    index_info["fields"][field_name] = field_type
+
+                    if field_name == "content_vector" and field_type == "VECTOR":
+                        index_info["vector_field_exists"] = True
+                    elif field_name == "content" and field_type == "TEXT":
+                        index_info["content_field_exists"] = True
+
+        logger.info(f"Index {index_name} verification: {index_info}")
+        return index_info
+
+    except Exception as e:
+        logger.error(f"Failed to verify index {index_name}: {e}")
+        return {
+            "exists": False,
+            "error": str(e),
+            "num_docs": 0,
+            "fields": {},
+            "vector_field_exists": False,
+            "content_field_exists": False,
+        }
 
 
 def legacy_vector_search(
@@ -370,8 +439,8 @@ def legacy_vector_search(
 
         # Execute legacy search with proper LIMIT syntax
         search_result = client.ft("memory_idx").search(
-            query=f"{vector_query} LIMIT 0 {num_results}",
-            query_params={"query_vector": query_vector_bytes},
+            Query(f"{vector_query} LIMIT 0 {num_results}").dialect(2),
+            query_params={"query_vector": query_vector_bytes.decode("latin-1")},
         )
 
         # Process results
@@ -407,7 +476,7 @@ def legacy_vector_search(
         return []
 
 
-async def retry(coro, attempts=3, backoff=0.2):
+async def retry(coro: Any, attempts: int = 3, backoff: float = 0.2) -> Any:
     """
     Retry a coroutine with exponential backoff on connection errors.
 
@@ -425,6 +494,7 @@ async def retry(coro, attempts=3, backoff=0.2):
     Raises:
         redis.ConnectionError: If all retry attempts fail
         Exception: Any other exceptions raised by the coroutine
+        RuntimeError: If attempts <= 0
 
     Example:
         ```python
@@ -432,15 +502,27 @@ async def retry(coro, attempts=3, backoff=0.2):
         result = await retry(redis_client.get("key"), attempts=5, backoff=0.5)
         ```
     """
-    for i in range(attempts):
+    if attempts <= 0:
+        raise RuntimeError("Invalid number of attempts")
+
+    last_error: redis.ConnectionError | None = None
+
+    # Try first attempt without delay
+    try:
+        return await coro
+    except redis.ConnectionError as e:
+        if attempts == 1:
+            raise
+        last_error = e
+
+    for attempt in range(1, attempts):
         try:
-            # Attempt to execute the coroutine
+            await asyncio.sleep(backoff * (2 ** (attempt - 1)))
             return await coro
-        except redis.ConnectionError:
-            # Only retry on connection errors, not other exceptions
-            if i == attempts - 1:
-                # Last attempt failed, propagate the exception
+        except redis.ConnectionError as e:
+            if attempt == attempts - 1:
                 raise
-            # Wait with exponential backoff before next attempt
-            # Example: backoff=0.2, i=0 → wait 0.2s; i=1 → wait 0.4s; i=2 → wait 0.8s
-            await asyncio.sleep(backoff * (2**i))
+            last_error = e
+
+    assert last_error is not None  # for mypy
+    raise last_error

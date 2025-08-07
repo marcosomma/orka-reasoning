@@ -14,11 +14,14 @@ ValidationAndStructuringAgent
 """
 
 import json
-from typing import Any, Dict, Optional
+import logging
+from typing import Any, Dict, Optional, Union, cast
 
 from jinja2 import Template
 
-from .base_agent import BaseAgent
+logger = logging.getLogger(__name__)
+
+from .base_agent import BaseAgent, Context
 from .llm_agents import OpenAIAnswerBuilder
 
 
@@ -51,25 +54,114 @@ class ValidationAndStructuringAgent(BaseAgent):
         The LLM agent used for validation and structuring
     """
 
-    def __init__(self, params: Dict[str, Any] = None):
+    def __init__(self, params: Dict[str, Any]):
         """Initialize the agent with an OpenAIAnswerBuilder for LLM calls."""
-        super().__init__(params)
+        _agent_id = params.get("agent_id", "validation_agent")
+        super().__init__(
+            agent_id=_agent_id,  # Pass agent_id to BaseAgent
+            stream_key=_agent_id,  # Use agent_id as stream_key
+            debug_keep_previous_outputs=False,  # Default value
+            decay_config=None,  # Default value
+        )
         # Initialize LLM agent with required parameters
-        prompt = params.get("prompt", "") if params else ""
-        queue = params.get("queue") if params else None
-        agent_id = params.get("agent_id", "validation_agent") if params else "validation_agent"
+        prompt = params.get("prompt", "")
+        queue = params.get("queue")
+        agent_id = params.get("agent_id", "validation_agent")
         self.llm_agent = OpenAIAnswerBuilder(
             agent_id=f"{agent_id}_llm",
             prompt=prompt,
             queue=queue,
         )
 
-    def run(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _parse_llm_output(
+        self, raw_llm_output: str, prompt: str, formatted_prompt: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Parse the LLM output and extract the validation result.
+
+        Args:
+            raw_llm_output: The raw output from the LLM
+            prompt: The prompt used to generate the output
+
+        Returns:
+            Dict[str, Any]: The parsed validation result
+        """
+        # Create base response with common fields
+        base_response = {
+            "prompt": prompt,
+            "formatted_prompt": formatted_prompt if formatted_prompt else prompt,
+            "raw_llm_output": raw_llm_output,
+        }
+
+        try:
+            # Look for JSON in markdown code blocks first
+            import re
+
+            json_match = re.search(r"```json\s*(.*?)\s*```", raw_llm_output, re.DOTALL)
+            json_text = json_match.group(1) if json_match else raw_llm_output
+
+            # Clean up the JSON text to handle potential formatting issues
+            json_text = json_text.strip()
+
+            # Try to fix common JSON issues
+            # Replace single quotes with double quotes (if any)
+            json_text = re.sub(r"'([^']*)':", r'"\1":', json_text)
+
+            # Parse JSON
+            result = json.loads(json_text)
+
+            # Handle non-dict responses
+            if not isinstance(result, dict):
+                return {
+                    **base_response,
+                    "valid": False,
+                    "reason": "Invalid JSON structure - not a dictionary",
+                    "memory_object": None,
+                }
+
+            # Handle dict responses based on their content
+            if "valid" in result:
+                # Add common fields to the result
+                result.update(base_response)
+                return result
+
+            if "response" in result:
+                return {
+                    **base_response,
+                    "valid": False,
+                    "reason": f"LLM returned wrong JSON format. Response: {result.get('response', 'Unknown')}",
+                    "memory_object": None,
+                }
+
+            # Handle unknown dict structure
+            return {
+                **base_response,
+                "valid": False,
+                "reason": "Invalid JSON structure - unrecognized format",
+                "memory_object": None,
+            }
+
+        except (json.JSONDecodeError, ValueError, AttributeError) as e:
+            return {
+                **base_response,
+                "valid": False,
+                "reason": f"Failed to parse JSON: {e}",
+                "memory_object": None,
+            }
+        except Exception as e:
+            return {
+                **base_response,
+                "valid": False,
+                "reason": f"Unexpected error: {e}",
+                "memory_object": None,
+            }
+
+    async def run(self, input_data: Union[Context, Any]) -> Dict[str, Any]:
         """
         Process the input data to validate and structure the answer.
 
         Args:
-            input_data: Dictionary containing:
+            input_data: Union[Context, Any] containing:
                 - question: The original question
                 - full_context: The context used to generate the answer
                 - latest_answer: The answer to validate and structure
@@ -81,16 +173,21 @@ class ValidationAndStructuringAgent(BaseAgent):
                 - reason: Explanation of validation decision
                 - memory_object: Structured memory object if valid, None otherwise
         """
-        question = input_data.get("input", "")
+        # Convert input_data to dict if it's not already
+        input_dict = (
+            dict(input_data) if isinstance(input_data, dict) else {"input": str(input_data)}
+        )
+
+        question = input_dict.get("input", "")
 
         # Extract clean response text from complex agent outputs
-        context_output = input_data.get("previous_outputs", {}).get("context-collector", {})
+        context_output = input_dict.get("previous_outputs", {}).get("context-collector", {})
         if isinstance(context_output, dict) and "result" in context_output:
             context = context_output["result"].get("response", "NONE")
         else:
             context = str(context_output) if context_output else "NONE"
 
-        answer_output = input_data.get("previous_outputs", {}).get("answer-builder", {})
+        answer_output = input_dict.get("previous_outputs", {}).get("answer-builder", {})
         if isinstance(answer_output, dict) and "result" in answer_output:
             answer = answer_output["result"].get("response", "NONE")
         else:
@@ -98,8 +195,16 @@ class ValidationAndStructuringAgent(BaseAgent):
 
         store_structure = self.params.get("store_structure")
 
-        # Check if we have a custom prompt that needs template rendering
+        # ✅ FIX: Check for pre-rendered prompt from execution engine first
         if (
+            isinstance(input_data, dict)
+            and "formatted_prompt" in input_data
+            and input_data["formatted_prompt"]
+        ):
+            prompt = input_data["formatted_prompt"]
+            logger.debug(f"Using pre-rendered prompt from execution engine (length: {len(prompt)})")
+        # Check if we have a custom prompt that needs template rendering
+        elif (
             hasattr(self.llm_agent, "prompt")
             and self.llm_agent.prompt
             and self.llm_agent.prompt.strip()
@@ -107,7 +212,7 @@ class ValidationAndStructuringAgent(BaseAgent):
             # Use custom prompt with template rendering
             try:
                 template = Template(self.llm_agent.prompt)
-                prompt = template.render(**input_data)
+                prompt = template.render(**input_dict)
             except Exception:
                 # Fallback to original prompt if rendering fails
                 prompt = self.llm_agent.prompt
@@ -119,88 +224,36 @@ class ValidationAndStructuringAgent(BaseAgent):
         # We'll handle JSON parsing manually since we expect a different schema
         llm_input = {"prompt": prompt, "parse_json": False}
 
+        # ✅ FIX: Pass the rendered prompt to the inner LLM agent
+        if (
+            isinstance(input_data, dict)
+            and "formatted_prompt" in input_data
+            and input_data["formatted_prompt"]
+        ):
+            llm_input["formatted_prompt"] = input_data["formatted_prompt"]
+        else:
+            llm_input["formatted_prompt"] = prompt
+
         # Get response from LLM
-        response = self.llm_agent.run(llm_input)
+        response = await self.llm_agent.run(llm_input)
 
         # Extract the raw LLM output
         if isinstance(response, dict):
             raw_llm_output = response.get("response", "")
         else:
-            raw_llm_output = str(response)
+            raw_llm_output = str(response)  # type: ignore [unreachable]
 
-        try:
-            # Manual JSON extraction from markdown code blocks
-            import re
-
-            # Look for JSON in markdown code blocks first
-            json_match = re.search(r"```json\s*(.*?)\s*```", raw_llm_output, re.DOTALL)
-            if json_match:
-                json_text = json_match.group(1)
-            else:
-                # Look for JSON object directly - use a more robust pattern
-                # Find the first { and match to the corresponding }
-                start_idx = raw_llm_output.find("{")
-                if start_idx != -1:
-                    # Count braces to find the matching closing brace
-                    brace_count = 0
-                    end_idx = start_idx
-                    for i, char in enumerate(raw_llm_output[start_idx:], start_idx):
-                        if char == "{":
-                            brace_count += 1
-                        elif char == "}":
-                            brace_count -= 1
-                            if brace_count == 0:
-                                end_idx = i + 1
-                                break
-
-                    if brace_count == 0:  # Found matching closing brace
-                        json_text = raw_llm_output[start_idx:end_idx]
-                    else:
-                        raise ValueError("Unmatched braces in JSON")
-                else:
-                    raise ValueError("No JSON structure found in response")
-
-            # Parse the extracted JSON
-            # Clean up the JSON text to handle potential formatting issues
-            json_text = json_text.strip()
-
-            # Try to fix common JSON issues
-            # Replace single quotes with double quotes (if any)
-            json_text = re.sub(r"'([^']*)':", r'"\1":', json_text)
-
-            result = json.loads(json_text)
-
-            # Check if we have the expected validation format
-            if isinstance(result, dict) and "valid" in result:
-                # Perfect - we have the expected format
-                result["prompt"] = prompt
-                result["formatted_prompt"] = prompt
-                result["raw_llm_output"] = raw_llm_output
-                return result
-            elif isinstance(result, dict) and "response" in result:
-                # LLM returned wrong format - convert it to validation format
-                return {
-                    "valid": False,
-                    "reason": f"LLM returned wrong JSON format. Response: {result.get('response', 'Unknown')}",
-                    "memory_object": None,
-                    "prompt": prompt,
-                    "formatted_prompt": prompt,
-                    "raw_llm_output": raw_llm_output,
-                }
-            else:
-                # Unknown JSON structure
-                raise ValueError("Invalid JSON structure - unrecognized format")
-
-        except Exception as e:
-            # Fallback error handling
-            return {
-                "valid": False,
-                "reason": f"Failed to parse model output: {e}. Raw output: {raw_llm_output}",
-                "memory_object": None,
-                "prompt": prompt,
-                "formatted_prompt": prompt,
-                "raw_llm_output": raw_llm_output,
-            }
+        # Parse the LLM output - pass the correct formatted prompt
+        formatted_prompt_to_use = (
+            input_data["formatted_prompt"]
+            if (
+                isinstance(input_data, dict)
+                and "formatted_prompt" in input_data
+                and input_data["formatted_prompt"]
+            )
+            else prompt
+        )
+        return self._parse_llm_output(raw_llm_output, prompt, formatted_prompt_to_use)
 
     def build_prompt(
         self,
@@ -221,77 +274,62 @@ class ValidationAndStructuringAgent(BaseAgent):
         Returns:
             The complete prompt for the LLM
         """
-        # If we have a custom prompt from the configuration, use it instead of the default logic
-        if (
-            hasattr(self.llm_agent, "prompt")
-            and self.llm_agent.prompt
-            and self.llm_agent.prompt.strip()
-        ):
-            # Use the custom prompt from the YAML configuration
-            # The custom prompt should handle template variables itself
-            return self.llm_agent.prompt
-
-        # Fallback to default prompt building logic if no custom prompt is provided
         # Handle cases where context or answer is "NONE" or empty
-        if context in ["NONE", "", None]:
-            context = "No context available"
-        if answer in ["NONE", "", None]:
-            answer = "No answer provided"
+        context = "No context available" if context in ["NONE", "", None] else context
+        answer = "No answer provided" if answer in ["NONE", "", None] else answer
 
-        # Special handling for "NONE" responses - treat them as valid but low confidence
+        # Build the prompt parts
+        parts = [
+            "Validate the following situation and structure it into a memory format.",
+            f"\nQuestion: {question}",
+            f"\nContext: {context}",
+            f"\nAnswer to validate: {answer}",
+        ]
+
+        # Add special instructions for no-information cases
         if answer == "No answer provided" and context == "No context available":
-            prompt = f"""Validate the following situation and structure it into a memory format.
-
-Question: {question}
-
-Context: {context}
-
-Answer to validate: {answer}
-
-This appears to be a case where no information was found for the question. Please validate this as a legitimate "no information available" response and structure it appropriately.
-
-IMPORTANT: You MUST respond with the exact JSON format specified below. Do not use any other format.
-
-For cases where no information is available, you should:
-1. Mark as valid=true (since "no information available" is a valid response)
-2. Set confidence to 0.1 (low but not zero)
-3. Create a memory object that captures the fact that no information was found
-
-{self._get_structure_instructions(store_structure)}
-
-Return your response in the following JSON format:
-{{
-    "valid": true/false,
-    "reason": "explanation of validation decision",
-    "memory_object": {{
-        // structured memory object if valid, null if invalid
-    }}
-}}"""
+            parts.extend(
+                [
+                    "\nThis appears to be a case where no information was found for the question. "
+                    'Please validate this as a legitimate "no information available" response '
+                    "and structure it appropriately.",
+                    "\nIMPORTANT: You MUST respond with the exact JSON format specified below. "
+                    "Do not use any other format.",
+                    "\nFor cases where no information is available, you should:",
+                    '1. Mark as valid=true (since "no information available" is a valid response)',
+                    "2. Set confidence to 0.1 (low but not zero)",
+                    "3. Create a memory object that captures the fact that no information was found",
+                ]
+            )
         else:
-            prompt = f"""Validate the following answer and structure it into a memory format.
+            parts.extend(
+                [
+                    "\nPlease validate if the answer is correct and contextually coherent. "
+                    "Then structure the information into a memory object.",
+                    "\nIMPORTANT: You MUST respond with the exact JSON format specified below. "
+                    "Do not use any other format.",
+                ]
+            )
 
-Question: {question}
+        # Add structure instructions
+        parts.append(self._get_structure_instructions(store_structure))
 
-Context: {context}
+        # Add response format
+        parts.extend(
+            [
+                "\nReturn your response in the following JSON format:",
+                "{",
+                '    "valid": true/false,',
+                '    "reason": "explanation of validation decision",',
+                '    "memory_object": {',
+                "        // structured memory object if valid, null if invalid",
+                "    }",
+                "}",
+            ]
+        )
 
-Answer to validate: {answer}
-
-Please validate if the answer is correct and contextually coherent. Then structure the information into a memory object.
-
-IMPORTANT: You MUST respond with the exact JSON format specified below. Do not use any other format.
-
-{self._get_structure_instructions(store_structure)}
-
-Return your response in the following JSON format:
-{{
-    "valid": true/false,
-    "reason": "explanation of validation decision",
-    "memory_object": {{
-        // structured memory object if valid, null if invalid
-    }}
-}}"""
-
-        return prompt
+        # Combine all parts
+        return "\n".join(parts)
 
     def _get_structure_instructions(self, store_structure: Optional[str] = None) -> str:
         """

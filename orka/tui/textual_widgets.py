@@ -3,17 +3,22 @@ Custom Textual widgets for OrKa memory monitoring.
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from textual.containers import Container
 from textual.message import Message
 from textual.widgets import DataTable, Static
 
 
+def _ensure_dict(data: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """Helper function to ensure we always have a dict."""
+    return data if data is not None else {}
+
+
 class StatsWidget(Static):
     """Widget for displaying memory statistics."""
 
-    def __init__(self, data_manager, **kwargs):
+    def __init__(self, data_manager: Any, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.data_manager = data_manager
 
@@ -57,16 +62,17 @@ class MemoryTableWidget(DataTable):
     class MemorySelected(Message):
         """Message sent when a memory row is selected."""
 
-        def __init__(self, memory_data: Dict[str, Any], row_index: int) -> None:
-            self.memory_data = memory_data
+        def __init__(self, memory_data: Optional[Dict[str, Any]], row_index: int) -> None:
+            super().__init__()  # Initialize Message first
+            # Initialize with empty dict if None
+            self.memory_data: Dict[str, Any] = memory_data if memory_data is not None else {}
             self.row_index = row_index
-            super().__init__()
 
-    def __init__(self, data_manager, memory_type="all", **kwargs):
+    def __init__(self, data_manager: Any, memory_type: str = "all", **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.data_manager = data_manager
         self.memory_type = memory_type
-        self.current_memories = []  # Store current memory data
+        self.current_memories: List[Dict[str, Any]] = []  # Store current memory data
         self.selected_memory_key: Optional[str] = None  # Track selected memory key across refreshes
 
         # Enable row selection
@@ -96,15 +102,16 @@ class MemoryTableWidget(DataTable):
                 # Toggle selection
                 if self.selected_memory_key == memory_key:
                     self.selected_memory_key = None
-                    selected_memory = None
+                    selected_memory_data: Optional[Dict[str, Any]] = None
                 else:
                     self.selected_memory_key = memory_key
+                    selected_memory_data = selected_memory
 
                 # Refresh table to update checkboxes
                 self.update_data(self.memory_type)
 
                 # Send message to parent screen
-                self.post_message(self.MemorySelected(selected_memory, row_index))
+                self.post_message(self.MemorySelected(selected_memory_data, row_index))
 
         except Exception as e:
             if hasattr(self, "app"):
@@ -123,28 +130,30 @@ class MemoryTableWidget(DataTable):
                 # Toggle selection
                 if self.selected_memory_key == memory_key:
                     self.selected_memory_key = None
-                    selected_memory = None
+                    selected_memory_data: Optional[Dict[str, Any]] = None
                     row_index = -1
                 else:
                     self.selected_memory_key = memory_key
+                    selected_memory_data = selected_memory
 
                 # Refresh table to update checkboxes
                 self.update_data(self.memory_type)
 
                 # Send message to parent screen
-                self.post_message(self.MemorySelected(selected_memory, row_index))
+                self.post_message(self.MemorySelected(selected_memory_data, row_index))
 
         except Exception as e:
             if hasattr(self, "app"):
                 self.app.notify(f"Selection error: {e!s}", severity="error")
 
-    def update_data(self, memory_type="all"):
-        """Update the table with filtered data while preserving selection."""
+    def update_data(self, memory_type: str = "all") -> None:
         self.clear()
 
         # Get filtered memories
         memories = self.data_manager.get_filtered_memories(memory_type)
-        self.current_memories = memories[:25]  # Store the memories we're actually displaying
+        self.current_memories = cast(
+            List[Dict[str, Any]], memories[:25]
+        )  # Store the memories we're actually displaying
 
         # Handle empty states
         if not memories and memory_type in ["short", "long"]:
@@ -229,7 +238,7 @@ class MemoryTableWidget(DataTable):
         if not selected_row_found:
             self.selected_memory_key = None
 
-    def _format_enhanced_timestamp(self, timestamp) -> str:
+    def _format_enhanced_timestamp(self, timestamp: Any) -> str:
         """Enhanced timestamp formatting with relative time info."""
         try:
             if timestamp > 1000000000000:  # milliseconds
@@ -253,10 +262,10 @@ class MemoryTableWidget(DataTable):
             else:  # More than 1 day
                 days = int(diff.total_seconds() / 86400)
                 return f"[red]{dt.strftime('%m/%d')}[/red] [dim](-{days}d)[/dim]"
-        except:
+        except Exception:
             return "[dim]Unknown[/dim]"
 
-    def _format_enhanced_ttl(self, ttl_formatted) -> str:
+    def _format_enhanced_ttl(self, ttl_formatted: Any) -> str:
         """Enhanced TTL formatting with urgency indicators."""
         if ttl_formatted == "Never" or ttl_formatted == "∞" or not ttl_formatted:
             return "[blue]♾️ Never[/blue]"
@@ -279,7 +288,7 @@ class MemoryTableWidget(DataTable):
         else:
             return f"[cyan]{ttl_formatted}[/cyan]"
 
-    def _format_memory_key(self, memory_key) -> str:
+    def _format_memory_key(self, memory_key: Any) -> str:
         """Format memory key with intelligent truncation."""
         if not memory_key:
             return "[dim]<no-key>[/dim]"
@@ -297,7 +306,7 @@ class MemoryTableWidget(DataTable):
                 f"[bright_blue]{start}[/bright_blue][dim]...[/dim][bright_blue]{end}[/bright_blue]"
             )
 
-    def _format_memory_type(self, memory_type, node_id) -> str:
+    def _format_memory_type(self, memory_type: Any, node_id: Any) -> str:
         """Format memory type with icons and node info."""
         # Decode if bytes
         if isinstance(memory_type, bytes):
@@ -321,7 +330,7 @@ class MemoryTableWidget(DataTable):
         node_short = str(node_id)[:8] if node_id else "?"
         return f"[{color}]{icon} {memory_type}[/{color}] [dim]({node_short})[/dim]"
 
-    def _format_content_preview(self, content) -> str:
+    def _format_content_preview(self, content: Any) -> str:
         """Smart content preview with better truncation."""
         if not content:
             return "[dim]<empty>[/dim]"
@@ -345,7 +354,7 @@ class MemoryTableWidget(DataTable):
                         if data.get(key):
                             content_str = str(data[key])
                             break
-            except:
+            except Exception:
                 pass
 
         # Intelligent truncation
@@ -360,11 +369,12 @@ class MemoryTableWidget(DataTable):
                     break
             return f"[white]{truncated}[/white][dim]...[/dim]"
 
-    def _get_filtered_memories(self) -> List[Dict]:
+    def _get_filtered_memories(self) -> List[Dict[str, Any]]:
         """Get memories filtered by type."""
-        return self.data_manager.get_filtered_memories(self.memory_type)
+        memories = self.data_manager.get_filtered_memories(self.memory_type)
+        return cast(List[Dict[str, Any]], memories)
 
-    def _is_short_term(self, memory: Dict) -> bool:
+    def _is_short_term(self, memory: Dict[str, Any]) -> bool:
         """Check if memory is short-term based on TTL."""
         ttl = (
             memory.get("ttl_seconds")
@@ -389,7 +399,7 @@ class MemoryTableWidget(DataTable):
         except (ValueError, TypeError):
             return False
 
-    def _format_timestamp(self, timestamp) -> str:
+    def _format_timestamp(self, timestamp: Any) -> str:
         """Format timestamp for display."""
         if not timestamp:
             return "N/A"
@@ -399,7 +409,7 @@ class MemoryTableWidget(DataTable):
             else:
                 dt = datetime.fromisoformat(str(timestamp))
             return dt.strftime("%H:%M:%S")
-        except:
+        except Exception:
             return str(timestamp)[:8]
 
     def _format_type(self, log_type: str) -> str:
@@ -411,7 +421,7 @@ class MemoryTableWidget(DataTable):
         }
         return type_colors.get(log_type, log_type.upper()[:3])
 
-    def _format_ttl(self, ttl) -> str:
+    def _format_ttl(self, ttl: Any) -> str:
         """Format TTL for display."""
         if ttl is None or ttl == "" or ttl == -1:
             return "∞"
@@ -437,7 +447,7 @@ class MemoryTableWidget(DataTable):
         except (ValueError, TypeError):
             return str(ttl) if ttl else "∞"
 
-    def _format_size(self, size) -> str:
+    def _format_size(self, size: Any) -> str:
         """Format size for display."""
         if not size:
             return "0B"
@@ -463,14 +473,15 @@ class MemoryTableWidget(DataTable):
 class HealthWidget(Container):
     """Widget for displaying system health metrics."""
 
-    def __init__(self, data_manager, **kwargs):
+    def __init__(self, data_manager: Any, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.data_manager = data_manager
+        self._health_content = Static("", id="health-content")
 
-    def compose(self):
+    def compose(self) -> Any:
         """Compose the health widget."""
         yield Static("🏥 System Health", classes="container")
-        yield Static("", id="health-content")
+        yield self._health_content
 
     def update_health(self):
         """Update health display with unified health calculations."""
@@ -515,13 +526,13 @@ class HealthWidget(Container):
 [metric-label]Decay Status:[/metric-label] {"✅ Active" if backend["decay_enabled"] else "❌ Inactive"}
 """
 
-        self.update(health_content)
+        self._health_content.update(health_content)
 
 
 class LogsWidget(DataTable):
     """Enhanced widget for displaying memory logs with orchestration priority."""
 
-    def __init__(self, data_manager, **kwargs):
+    def __init__(self, data_manager: Any, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.data_manager = data_manager
         self.add_columns("Time", "Node", "Type", "Content", "Details")
@@ -586,7 +597,7 @@ class LogsWidget(DataTable):
                     else:  # seconds
                         dt = datetime.fromtimestamp(timestamp)
                     time_display = dt.strftime("%H:%M:%S")
-                except:
+                except Exception:
                     time_display = "Unknown"
 
                 # Format content for overview (shorter)
@@ -628,7 +639,7 @@ class LogsWidget(DataTable):
                     else:  # seconds
                         dt = datetime.fromtimestamp(timestamp)
                     time_display = dt.strftime("%H:%M:%S")
-                except:
+                except Exception:
                     time_display = "Unknown"
 
                 content_overview = content[:35] + "..." if len(content) > 35 else content
@@ -652,7 +663,7 @@ class LogsWidget(DataTable):
                 "[dim]Run workflows to generate logs[/dim]",
             )
 
-    def _extract_log_details(self, log):
+    def _extract_log_details(self, log: Dict[str, Any]) -> str:
         """Extract key details from log entry for overview."""
         # Try to get trace_id, importance, or other key details
         trace_id = self.data_manager._get_safe_field(log, "trace_id", "trace", default="")

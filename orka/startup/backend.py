@@ -69,13 +69,13 @@ def terminate_backend_process(backend_proc: subprocess.Popen) -> None:
         backend_proc: The backend process to terminate
     """
     if backend_proc and backend_proc.poll() is None:  # Process is still running
-        print("🛑 Stopping backend process...")
+        logger.info("🛑 Stopping backend process...")
         backend_proc.terminate()
         try:
             backend_proc.wait(timeout=5)
-            print("✅ Backend stopped gracefully")
+            logger.info("✅ Backend stopped gracefully")
         except subprocess.TimeoutExpired:
-            print("⚠️ Force killing backend process...")
+            logger.warning("⚠️ Force killing backend process...")
             backend_proc.kill()
             backend_proc.wait()
 
@@ -90,4 +90,4 @@ def is_backend_running(backend_proc: subprocess.Popen) -> bool:
     Returns:
         bool: True if the process is running, False otherwise
     """
-    return backend_proc and backend_proc.poll() is None
+    return bool(backend_proc and backend_proc.poll() is None)

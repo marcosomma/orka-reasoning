@@ -1,0 +1,380 @@
+# OrKa API Reference
+
+Complete API documentation for OrKa's core components, including classes, methods, and configuration options.
+
+## Table of Contents
+
+1. [Core Components](#core-components)
+   - [Orchestrator](#orchestrator)
+   - [Memory System](#memory-system)
+   - [Nodes](#nodes)
+   - [Agents](#agents)
+2. [Configuration](#configuration)
+   - [YAML Schema](#yaml-schema)
+   - [Environment Variables](#environment-variables)
+3. [Memory Backend](#memory-backend)
+   - [RedisStack](#redisstack)
+   - [Kafka](#kafka)
+4. [CLI Reference](#cli-reference)
+
+## Core Components
+
+### Orchestrator
+
+The orchestrator is the central component that manages workflow execution, agent coordination, and memory operations.
+
+#### OrchestratorBase
+
+Base class providing core infrastructure and configuration management.
+
+```python
+class OrchestratorBase:
+    """
+    Base orchestrator class that handles initialization and configuration.
+
+    Attributes:
+        loader (YAMLLoader): Configuration file loader and validator
+        orchestrator_cfg (dict): Orchestrator-specific configuration
+        agent_cfgs (list): List of agent configuration objects
+        memory: Memory backend instance
+        fork_manager: Fork group manager for parallel execution
+        queue (list): Current agent execution queue
+        run_id (str): Unique identifier for this run
+        step_index (int): Current step counter
+        error_telemetry (dict): Error tracking and metrics
+    """
+
+    def __init__(self, config_path: str) -> None:
+        """Initialize with YAML config file."""
+
+    def enqueue_fork(self, agent_ids: list[str], fork_group_id: str) -> None:
+        """Enqueue a fork group for parallel execution."""
+```
+
+### Memory System
+
+OrKa's memory system provides intelligent storage and retrieval with 100x faster vector search.
+
+#### RedisStackMemoryLogger
+
+Enterprise-grade memory management with HNSW indexing.
+
+```python
+class RedisStackMemoryLogger(BaseMemoryLogger):
+    """
+    Enhanced memory logger using RedisStack with HNSW indexing.
+
+    Features:
+        - 100x faster vector search with HNSW
+        - Intelligent memory classification
+        - Automatic index optimization
+        - Comprehensive metadata management
+    """
+
+    def write(
+        self,
+        namespace: str,
+        content: str,
+        vector: bool = True,
+        metadata: dict = None
+    ) -> str:
+        """
+        Store information with vector embeddings.
+
+        Args:
+            namespace: Memory namespace
+            content: Content to store
+            vector: Enable vector embeddings
+            metadata: Additional metadata
+
+        Returns:
+            str: Memory entry ID
+        """
+
+    def search(
+        self,
+        namespace: str,
+        query: str,
+        limit: int = 5,
+        similarity_threshold: float = 0.8
+    ) -> list[dict]:
+        """
+        Perform semantic search with HNSW indexing.
+
+        Args:
+            namespace: Memory namespace to search
+            query: Search query
+            limit: Maximum results
+            similarity_threshold: Minimum similarity
+
+        Returns:
+            list[dict]: Matching memories with scores
+        """
+```
+
+### Nodes
+
+Specialized components for workflow operations.
+
+#### LoopNode
+
+Enables iterative improvement workflows.
+
+```python
+class LoopNode(BaseNode):
+    """
+    Executes an internal workflow repeatedly until conditions are met.
+
+    Features:
+        - Iterative execution with thresholds
+        - Cognitive insight extraction
+        - Learning from past iterations
+        - Automatic termination
+    """
+
+    def run(self, input_data: dict) -> dict:
+        """
+        Execute the loop workflow.
+
+        Args:
+            input_data: Input for the workflow
+
+        Returns:
+            dict: Final results with learning insights
+        """
+```
+
+#### MemoryWriterNode
+
+Stores information with intelligent classification.
+
+```python
+class MemoryWriterNode(BaseNode):
+    """
+    Stores information in OrKa's memory system.
+
+    Features:
+        - Automatic memory classification
+        - Vector embeddings for search
+        - Configurable metadata
+        - Intelligent decay
+    """
+
+    def run(self, input_data: dict) -> dict:
+        """
+        Store information in memory.
+
+        Args:
+            input_data: Content and metadata to store
+
+        Returns:
+            dict: Storage results and metadata
+        """
+```
+
+#### MemoryReaderNode
+
+Retrieves information using semantic search.
+
+```python
+class MemoryReaderNode(BaseNode):
+    """
+    Retrieves information using semantic search.
+
+    Features:
+        - 100x faster semantic search
+        - Context-aware retrieval
+        - Temporal ranking
+        - Configurable thresholds
+    """
+
+    def run(self, input_data: dict) -> dict:
+        """
+        Search memory with vector similarity.
+
+        Args:
+            input_data: Search query and parameters
+
+        Returns:
+            dict: Search results with metadata
+        """
+```
+
+### Agents
+
+AI agents that perform specific tasks in workflows.
+
+#### OpenAIAgent
+
+Interacts with OpenAI's API for various tasks.
+
+```python
+class OpenAIAgent(BaseAgent):
+    """
+    OpenAI-powered agent for various tasks.
+
+    Features:
+        - Multiple task types (classification, Q&A, etc.)
+        - Context management
+        - Error handling
+        - Rate limiting
+    """
+
+    def run(self, input_data: dict) -> dict:
+        """
+        Execute the agent's task.
+
+        Args:
+            input_data: Task input and parameters
+
+        Returns:
+            dict: Task results
+        """
+```
+
+## Configuration
+
+### YAML Schema
+
+OrKa workflows are defined in YAML with the following structure:
+
+```yaml
+meta:
+  version: "1.0"
+  description: "Workflow description"
+
+orchestrator:
+  id: workflow-name
+  strategy: sequential
+  memory_config:
+    decay:
+      enabled: true
+      default_short_term_hours: 2
+      default_long_term_hours: 168
+
+agents:
+  - id: agent-name
+    type: agent-type
+    params:
+      key: value
+    prompt: "Agent prompt template"
+```
+
+### Environment Variables
+
+Key environment variables for configuration:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| OPENAI_API_KEY | OpenAI API key | Required |
+| REDIS_URL | Redis connection URL | redis://localhost:6379/0 |
+| ORKA_MEMORY_BACKEND | Memory backend type | redisstack |
+| ORKA_MEMORY_DECAY_ENABLED | Enable memory decay | false |
+| ORKA_MEMORY_DECAY_SHORT_TERM_HOURS | Short-term retention | 2 |
+| ORKA_MEMORY_DECAY_LONG_TERM_HOURS | Long-term retention | 168 |
+| ORKA_MAX_CONCURRENT_REQUESTS | Max concurrent operations | 100 |
+| ORKA_TIMEOUT_SECONDS | Operation timeout | 300 |
+
+## Memory Backend
+
+### RedisStack
+
+Primary memory backend with HNSW vector search.
+
+Configuration:
+```yaml
+memory_config:
+  backend: redisstack
+  redis_url: redis://localhost:6379/0
+  enable_hnsw: true
+  vector_params:
+    M: 16
+    ef_construction: 200
+    ef_runtime: 10
+```
+
+Performance:
+- Vector Search: 0.5-5ms
+- Memory Usage: 40% of basic Redis
+- Concurrent Searches: 1000+
+- Index Updates: Automatic
+
+### Kafka
+
+Optional streaming backend for production deployments.
+
+Configuration:
+```yaml
+memory_config:
+  backend: kafka
+  bootstrap_servers: localhost:9092
+  schema_registry_url: http://localhost:8081
+  topic_prefix: orka-memory
+```
+
+Features:
+- Streaming memory operations
+- Schema validation
+- High availability
+- Scalable throughput
+
+## CLI Reference
+
+### Core Commands
+
+```bash
+# Run a workflow
+orka run workflow.yml "input text"
+
+# Monitor memory performance
+orka memory watch
+orka memory stats
+
+# Clean up expired memories
+orka memory cleanup
+
+# Start OrKa services
+orka-start      # Development (Redis)
+orka-kafka      # Production (Kafka)
+
+# Check system health
+orka system status
+```
+
+### Memory Management
+
+```bash
+# View memory configuration
+orka memory configure
+
+# Search memories
+orka memory search "query"
+
+# Export memories
+orka memory export namespace
+
+# Import memories
+orka memory import namespace file.json
+```
+
+### Workflow Management
+
+```bash
+# Validate workflow
+orka validate workflow.yml
+
+# List running workflows
+orka list workflows
+
+# Stop workflow
+orka stop workflow-id
+
+# Show workflow status
+orka status workflow-id
+```
+
+For more detailed information about specific components or features, check the following guides:
+- [Memory System Guide](./MEMORY_SYSTEM_GUIDE.md)
+- [Agent Development Guide](./agents.md)
+- [Production Deployment Guide](./runtime-modes.md)
+- [Security Guide](./security.md)

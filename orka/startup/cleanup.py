@@ -28,7 +28,7 @@ from .infrastructure.redis import terminate_redis_process
 logger = logging.getLogger(__name__)
 
 
-def cleanup_services(backend: str, processes: Dict[str, subprocess.Popen] = None) -> None:
+def cleanup_services(backend: str, processes: Dict[str, subprocess.Popen] = {}) -> None:
     """
     Clean up and stop services for the specified backend.
 
@@ -44,13 +44,13 @@ def cleanup_services(backend: str, processes: Dict[str, subprocess.Popen] = None
                     terminate_redis_process(proc)
                 # Generic process termination
                 elif proc and proc.poll() is None:  # Process is still running
-                    print(f"🛑 Stopping {name} process...")
+                    logger.info(f"🛑 Stopping {name} process...")
                     proc.terminate()
                     try:
                         proc.wait(timeout=5)
-                        print(f"✅ {name} stopped gracefully")
+                        logger.info(f"✅ {name} stopped gracefully")
                     except subprocess.TimeoutExpired:
-                        print(f"⚠️ Force killing {name} process...")
+                        logger.warning(f"⚠️ Force killing {name} process...")
                         proc.kill()
                         proc.wait()
 
@@ -73,16 +73,16 @@ def terminate_all_processes(processes: Dict[str, subprocess.Popen]) -> None:
     for name, proc in processes.items():
         if proc and proc.poll() is None:  # Process is still running
             try:
-                print(f"🛑 Stopping {name} process...")
+                logger.info(f"🛑 Stopping {name} process...")
                 proc.terminate()
                 proc.wait(timeout=5)
-                print(f"✅ {name} stopped gracefully")
+                logger.info(f"✅ {name} stopped gracefully")
             except subprocess.TimeoutExpired:
-                print(f"⚠️ Force killing {name} process...")
+                logger.warning(f"⚠️ Force killing {name} process...")
                 proc.kill()
                 proc.wait()
             except Exception as e:
-                print(f"⚠️ Error stopping {name}: {e}")
+                logger.warning(f"⚠️ Error stopping {name}: {e}")
 
 
 def force_kill_processes(processes: Dict[str, subprocess.Popen]) -> None:
@@ -95,11 +95,11 @@ def force_kill_processes(processes: Dict[str, subprocess.Popen]) -> None:
     for name, proc in processes.items():
         if proc and proc.poll() is None:  # Process is still running
             try:
-                print(f"⚠️ Force killing {name} process...")
+                logger.warning(f"⚠️ Force killing {name} process...")
                 proc.kill()
                 proc.wait()
             except Exception as e:
-                print(f"⚠️ Error force killing {name}: {e}")
+                logger.warning(f"⚠️ Error force killing {name}: {e}")
 
 
 def cleanup_specific_backend(backend: str) -> None:
