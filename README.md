@@ -12,9 +12,7 @@
 
 [![codecov](https://codecov.io/gh/marcosomma/orka-reasoning/branch/master/graph/badge.svg?token=V91X4WGBBZ)](https://codecov.io/gh/marcosomma/orka-reasoning) [![orka-reasoning](https://snyk.io/advisor/python/orka-reasoning/badge.svg)](https://snyk.io/advisor/python/orka-reasoning)
 
-[![PyPi](https://img.shields.io/badge/pypi-%23ececec.svg?style=for-the-badge&logo=pypi&logoColor=1f73b7)](https://pypi.org/project/orka-reasoning/) [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://hub.docker.com/r/marcosomma/orka-ui) [![Static Badge](https://img.shields.io/badge/Docs-blue?style=for-the-badge&logo=googledocs&logoColor=%23fff&link=https%3A%2F%2Forkacore.com%2Fdocs%2Findex.html)](https://orkacore.com/docs/index.html)
-
-![PyPI - Downloads](https://img.shields.io/pypi/dd/orka-reasoning?style=for-the-badge&color=blue&link=https%3A%2F%2Fpypistats.org%2Fpackages%2Forka-reasoning)![PyPI - Downloads](https://img.shields.io/pypi/dw/orka-reasoning?style=for-the-badge&label=%3E&color=blue&link=https%3A%2F%2Fpypistats.org%2Fpackages%2Forka-reasoning)![PyPI - Downloads](https://img.shields.io/pypi/dm/orka-reasoning?style=for-the-badge&label=%3E&color=blue&link=https%3A%2F%2Fpypistats.org%2Fpackages%2Forka-reasoning)![Pepy Total Downloads](https://img.shields.io/pepy/dt/orka-reasoning?style=for-the-badge&label=>&color=blue&link=https%3A%2F%2Fpiptrends.com%2Fpackage%2Forka-reasoning)
+[![PyPi](https://img.shields.io/badge/pypi-%23ececec.svg?style=for-the-badge&logo=pypi&logoColor=1f73b7)](https://pypi.org/project/orka-reasoning/) [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://hub.docker.com/r/marcosomma/orka-ui) [![Static Badge](https://img.shields.io/badge/Docs-blue?style=for-the-badge&logo=googledocs&logoColor=%23fff&link=https%3A%2F%2Forkacore.com%2Fdocs%2Findex.html)](https://orkacore.com/docs/index.html)![Pepy Total Downloads](https://img.shields.io/pepy/dt/orka-reasoning?style=for-the-badge&label=Downloads%20from%20April%202025&color=blue&link=https%3A%2F%2Fpiptrends.com%2Fpackage%2Forka-reasoning)
 
 </div>
 
@@ -22,13 +20,15 @@
 
 ---
 
-## 🚀 What's New in V0.7.5
+## 🚀 What's New in V0.8.x
 
 - **🔄 Advanced Loop Node** - Intelligent iterative workflows with cognitive insight extraction
 - **🧠 Cognitive Society Framework** - Multi-agent deliberation and consensus building
 - **🎯 Threshold-Based Execution** - Continue until quality meets requirements
 - **📊 Past Loops Memory** - Learn from previous attempts and iteratively improve
 - **🎓 Cognitive Insight Extraction** - Automatically identify insights, improvements, and mistakes
+- **🐛 Bug Fixes** - Integration test stability and agent type compatibility improvements
+- **🚀 Performance Optimizations** - Enhanced memory management and workflow execution
 
 ## 🚀 What's New in V0.7.x
 
