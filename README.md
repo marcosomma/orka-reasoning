@@ -31,6 +31,7 @@
 - **🎓 Cognitive Insight Extraction** - Automatically identify insights, improvements, and mistakes
 - **🐛 Bug Fixes** - Integration test stability and agent type compatibility improvements
 - **🚀 Performance Optimizations** - Enhanced memory management and workflow execution
+- **🗂️ Curated Example Suite** - See [`examples/README.md`](./examples/README.md) for the updated, categorized templates and quickstarts
 
 ## 🚀 What's New in V0.7.x
 

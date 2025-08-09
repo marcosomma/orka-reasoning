@@ -12,7 +12,8 @@ agents:
   - id: initial_classify
     type: openai-classification
     queue: orka:domain
-    prompt: Classify this input "{{ get_input() }}" into science, history, or nonsense.
+    prompt: >
+      Classify this input "{{ get_input() }}" into one of: tech, science, history, nonsense.
     options:
       - tech
       - science

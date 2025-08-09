@@ -7,6 +7,7 @@ orchestrator:
     - join_1
     - openai-binary_6
     - router_7
+    - answer-final
 agents:
   - id: fork_2
     type: fork
@@ -22,7 +23,7 @@ agents:
     type: openai-classification
     queue: orka:openai-classification_5
     prompt: |-
-      Classify the sentence in the the following category.
+      Classify the sentence into one of the categories.
       SENTENCE: {{ get_input() }}
     options:
       - tech
@@ -36,9 +37,9 @@ agents:
     type: openai-binary
     queue: orka:openai-binary_6
     prompt: |-
-      Are the sentence or the extra data relate to a person?
+      Do the sentence or the extra data relate to a person?
       SENTENCE: {{ get_input() }}
-      EXTRA DATA: {{ previous_outputs }}
+      EXTRA DATA: {{ joined_results() }}
   - id: router_7
     type: router
     params:
@@ -49,7 +50,7 @@ agents:
           - duckduckgo_8
           - openai-answer_9
         "false":
-          - failover_10
+          - openai-answer_11
   - id: openai-answer_10
     type: openai-answer
     queue: orka:openai-answer_10
@@ -57,36 +58,32 @@ agents:
       Return me ONLY name and surname of the person pointed in this sentence or extra data.
 
       SENTENCE: {{ get_input() }}
-      EXTRA DATA: {{ previous_outputs }}
-  - id: failover_10
-    type: failover
-    input: router_7
-    children:
-      - id: openai-answer_11
-        type: openai-answer
-        queue: orka:openai-answer_11
-        prompt: |-
-          Based on the sentence. Return me a compelling answer or a deeper overview. based also on the extra data
-
-          SENTENCE: {{ get_input() }}
-          EXTRA DATA: {{ previous_outputs }}
-      - id: openai-answer_12
-        type: openai-answer
-        queue: orka:openai-answer_12
-        prompt: |-
-          Based on the sentence. Return me a compelling answer or a deeper overview. based also on the extra data
-
-          SENTENCE: {{ get_input() }}
-          EXTRA DATA: {{ previous_outputs }}
+      EXTRA DATA: {{ joined_results() }}
   - id: duckduckgo_8
     type: duckduckgo
     queue: orka:duckduckgo_8
-    prompt: '{{ previous_outputs["openai-answer_10"] }}'
+    prompt: '{{ get_agent_response("openai-answer_10") }}'
   - id: openai-answer_9
     type: openai-answer
     queue: orka:openai-answer_9
     prompt: |-
-      Based on the sentence. Return me a compelling answer or a deeper overview. based also on the extra data
+      Based on the sentence, return a compelling answer or a deeper overview, also using the extra data.
 
       SENTENCE: {{ get_input() }}
-      EXTRA DATA: {{ previous_outputs }}
+      EXTRA DATA: {{ joined_results() }}
+  - id: openai-answer_11
+    type: openai-answer
+    queue: orka:openai-answer_11
+    prompt: |-
+      Based on the sentence, return a compelling answer or a deeper overview, also using the extra data.
+
+      SENTENCE: {{ get_input() }}
+      EXTRA DATA: {{ joined_results() }}
+  - id: answer-final
+    type: openai-answer
+    queue: orka:answer-final
+    prompt: |-
+      Based on the sentence, return a compelling answer or a deeper overview, also using the extra data.
+
+      SENTENCE: {{ get_input() }}
+      EXTRA DATA: {{ joined_results() }}

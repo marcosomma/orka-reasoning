@@ -17,11 +17,16 @@ class TestAdvancedWorkflows:
     @pytest.fixture(autouse=True)
     def setup_advanced_mocks(self):
         """Set up comprehensive mocks for advanced testing."""
-        with patch("redis.from_url") as mock_redis, patch(
-            "orka.agents.llm_agents.client",
-        ) as mock_openai, patch("orka.tools.search_tools.DDGS") as mock_ddg, patch(
-            "orka.memory.redisstack_logger.redis.Redis",
-        ) as mock_redis_stack:
+        with (
+            patch("redis.from_url") as mock_redis,
+            patch(
+                "orka.agents.llm_agents.client",
+            ) as mock_openai,
+            patch("orka.tools.search_tools.DDGS") as mock_ddg,
+            patch(
+                "orka.memory.redisstack_logger.redis.Redis",
+            ) as mock_redis_stack,
+        ):
             # Mock Redis with hash operations
             redis_instance = MagicMock()
             redis_instance.hget.return_value = None
@@ -64,10 +69,10 @@ class TestAdvancedWorkflows:
             }
 
     def test_fork_join_workflow(self, setup_advanced_mocks):
-        """Test fork_join.yaml workflow for parallel processing."""
-        fork_join_path = Path("examples/fork_join.yaml")
+        """Test conditional_search_fork_join.yaml workflow for parallel processing."""
+        fork_join_path = Path("examples/conditional_search_fork_join.yaml")
         if not fork_join_path.exists():
-            pytest.skip("fork_join.yaml not found")
+            pytest.skip("conditional_search_fork_join.yaml not found")
 
         orchestrator = Orchestrator(str(fork_join_path))
 
@@ -95,7 +100,7 @@ class TestAdvancedWorkflows:
 
     def test_memory_operations_workflow(self, setup_advanced_mocks):
         """Test memory read/write operations in workflows."""
-        memory_path = Path("examples/basic_memory.yml")
+        memory_path = Path("examples/memory_read_fork_join_router.yml")
         orchestrator = Orchestrator(str(memory_path))
 
         # Find memory nodes
@@ -112,9 +117,9 @@ class TestAdvancedWorkflows:
 
     def test_enhanced_memory_validation_workflow(self, setup_advanced_mocks):
         """Test enhanced memory validation example."""
-        enhanced_path = Path("examples/enhanced_memory_validation_example.yml")
+        enhanced_path = Path("examples/memory_validation_routing_and_write.yml")
         if not enhanced_path.exists():
-            pytest.skip("enhanced_memory_validation_example.yml not found")
+            pytest.skip("memory_validation_routing_and_write.yml not found")
 
         orchestrator = Orchestrator(str(enhanced_path))
 
@@ -130,9 +135,9 @@ class TestAdvancedWorkflows:
 
     def test_routing_memory_writers_workflow(self, setup_advanced_mocks):
         """Test routing memory writers example."""
-        routing_path = Path("examples/routing_memory_writers.yml")
+        routing_path = Path("examples/routed_binary_memory_writer.yml")
         if not routing_path.exists():
-            pytest.skip("routing_memory_writers.yml not found")
+            pytest.skip("routed_binary_memory_writer.yml not found")
 
         orchestrator = Orchestrator(str(routing_path))
 
@@ -155,9 +160,9 @@ class TestAdvancedWorkflows:
 
     def test_local_llm_workflow_structure(self, setup_advanced_mocks):
         """Test local LLM workflow structure."""
-        local_llm_path = Path("examples/local_llm.yml")
+        local_llm_path = Path("examples/multi_model_local_llm_evaluation.yml")
         if not local_llm_path.exists():
-            pytest.skip("local_llm.yml not found")
+            pytest.skip("multi_model_local_llm_evaluation.yml not found")
 
         # This test just verifies the structure loads without errors
         orchestrator = Orchestrator(str(local_llm_path))
@@ -186,9 +191,9 @@ class TestAdvancedWorkflows:
 
     def test_validation_structuring_workflow(self, setup_advanced_mocks):
         """Test validation and structuring orchestrator workflow."""
-        validation_path = Path("examples/validation_and_structuring_orchestrator.yml")
+        validation_path = Path("examples/validation_structuring_memory_pipeline.yml")
         if not validation_path.exists():
-            pytest.skip("validation_and_structuring_orchestrator.yml not found")
+            pytest.skip("validation_structuring_memory_pipeline.yml not found")
 
         orchestrator = Orchestrator(str(validation_path))
 
@@ -205,9 +210,9 @@ class TestAdvancedWorkflows:
     def test_workflow_agent_connectivity(self, setup_advanced_mocks):
         """Test that agents in workflows are properly connected."""
         example_files = [
-            "examples/example.yml",
-            "examples/complex_flow.yml",
-            "examples/basic_memory.yml",
+            "examples/person_routing_with_search.yml",
+            "examples/temporal_change_search_synthesis.yml",
+            "examples/memory_read_fork_join_router.yml",
         ]
 
         for example_file in example_files:
@@ -231,7 +236,7 @@ class TestAdvancedWorkflows:
 
     def test_workflow_error_handling(self, setup_advanced_mocks):
         """Test error handling in workflows with failover nodes."""
-        failover_path = Path("examples/failover.yml")
+        failover_path = Path("examples/failover_search_and_validate.yml")
         orchestrator = Orchestrator(str(failover_path))
 
         # Should have failover nodes
@@ -265,10 +270,10 @@ class TestAdvancedWorkflows:
     def test_workflow_configuration_completeness(self, setup_advanced_mocks):
         """Test that all workflow configurations are complete."""
         example_files = [
-            "examples/example.yml",
-            "examples/complex_flow.yml",
-            "examples/basic_memory.yml",
-            "examples/failover.yml",
+            "examples/person_routing_with_search.yml",
+            "examples/temporal_change_search_synthesis.yml",
+            "examples/memory_read_fork_join_router.yml",
+            "examples/failover_search_and_validate.yml",
         ]
 
         for example_file in example_files:
@@ -285,13 +290,13 @@ class TestAdvancedWorkflows:
 
                 # All agents in the list should exist
                 for agent_id in orchestrator.orchestrator_cfg["agents"]:
-                    assert agent_id in orchestrator.agents, (
-                        f"Agent {agent_id} listed but not found in {example_file}"
-                    )
+                    assert (
+                        agent_id in orchestrator.agents
+                    ), f"Agent {agent_id} listed but not found in {example_file}"
 
     def test_complex_agent_interactions(self, setup_advanced_mocks):
         """Test complex agent interaction patterns."""
-        complex_path = Path("examples/complex_flow.yml")
+        complex_path = Path("examples/temporal_change_search_synthesis.yml")
         orchestrator = Orchestrator(str(complex_path))
 
         # Should have different types of agents working together

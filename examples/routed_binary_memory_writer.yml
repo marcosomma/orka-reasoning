@@ -79,7 +79,7 @@ agents:
 
   - id: binary_result_returner
     type: openai-answer
-    prompt: "The classification result is: {{ previous_outputs.binary_classifier.response }}"
+    prompt: "The classification result is: {{ get_agent_response('binary_classifier') }}"
     depends_on:
       - binary_classifier
 

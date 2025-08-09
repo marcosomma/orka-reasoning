@@ -14,6 +14,7 @@
 import asyncio
 import logging
 import os
+import pathlib
 import subprocess
 import sys
 import time
@@ -29,7 +30,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 # Environment detection
 IS_CI = os.environ.get("CI", "").lower() in ("true", "1", "yes")
-IS_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS", "").lower() == "true"
+IS_GITHUB_ACTIONS = "false"
 PYTEST_RUNNING = os.environ.get("PYTEST_RUNNING", "").lower() == "true"
 USE_REAL_REDIS = os.environ.get("USE_REAL_REDIS", "false").lower() == "true"
 
@@ -41,6 +42,30 @@ KAFKA_BOOTSTRAP_SERVERS = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "localhost:9
 # Set environment variables
 os.environ["PYTEST_RUNNING"] = "true"
 os.environ["SKIP_LLM_TESTS"] = str(SKIP_LLM_TESTS).lower()
+
+
+# Load .env early so real keys are available for integration tests (non-CI)
+def _load_env_file(env_path: pathlib.Path) -> None:
+    try:
+        for line in env_path.read_text(encoding="utf-8").splitlines():
+            if not line or line.lstrip().startswith("#") or "=" not in line:
+                continue
+            key, val = line.split("=", 1)
+            key = key.strip()
+            val = val.strip().strip('"').strip("'")
+            # Do not override already-set environment vars
+            if key and key not in os.environ:
+                os.environ[key] = val
+    except Exception:
+        pass
+
+
+_root = pathlib.Path(__file__).resolve().parent.parent
+_env = _root / ".env"
+if _env.exists():
+    _load_env_file(_env)
+
+# Ensure OPENAI_API_KEY always present to avoid crashes; tests can still mock LLMs
 os.environ["OPENAI_API_KEY"] = os.environ.get("OPENAI_API_KEY", "dummy_key_for_testing")
 
 # Configure logging for CI

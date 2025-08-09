@@ -15,11 +15,11 @@ agents:
       operation: read
       memory_category_filter: stored
     namespace: landmarks
-    prompt: Retrieve any stored memories about {{ get_input() }}.Return "NONE" if nothing matches.
+    prompt: Retrieve any stored memories about {{ get_input() }}. Return "NONE" if nothing matches.
   - id: memory-check
     type: openai-binary
     queue: orka:memory-check
-    prompt: 'Check if the following memory data is relevant to the question and has high confidence:Question: {{ get_input() }}Memory: {{ get_agent_response(''memory-reader'') }}Return true if:1. The memory contains relevant information about the question2. The memory has a confidence score higher than 0.893. The memory is not "NONE"Return false otherwise.'
+    prompt: 'Check if the following memory data is relevant to the question and has high confidence. Question: {{ get_input() }} Memory: {{ get_agent_response(''memory-reader'') }} Return true if: 1) The memory contains relevant information about the question; 2) The memory has a confidence score higher than 0.89; 3) The memory is not "NONE". Return false otherwise.'
   - id: router
     type: router
     params:
@@ -50,13 +50,13 @@ agents:
   - id: answer-builder
     type: openai-answer
     queue: orka:answer-builder
-    prompt: " Using the context: {{ get_agent_response('context-collector') }}Provide a detailed answer to: {{ get_input() }}. If the context indicates no information is available, provide a clear explanation of what is known and what would need to be researched. Do not return just 'NONE' - provide a meaningful response."
+    prompt: "Using the context: {{ get_agent_response('context-collector') }} Provide a detailed answer to: {{ get_input() }}. If the context indicates no information is available, explain what is known and what would need to be researched. Do not return just 'NONE'."
     depends_on:
       - context-collector
   - id: validation-guard
     type: validate_and_structure
     queue: orka:validation-guard
-    prompt: "Validate the answer and structure it into a memory format.Question: {{ get_input() }}Answer to validate: {{ get_agent_response('answer-builder') }}"
+    prompt: "Validate the answer and structure it into a memory format. Question: {{ get_input() }} Answer to validate: {{ get_agent_response('answer-builder') }}"
     depends_on:
       - answer-builder
       - context-collector

@@ -2,6 +2,22 @@
 *(derived from the public-repo commit history as of **2025-01-31**)*  
 
 ---
+## [0.8.1] · 2025-08-09 🔧
+### Fixed
+* **Hotfix – Template/Prompt Handling**
+  * Resolved minor regression in prompt rendering and payload propagation affecting some nested/parallel example workflows (unresolved Jinja2 variables in traces eliminated)
+  * Improved Windows path handling for trace/log file generation during tests
+
+### Changed
+* **Curated Example Suite**
+  * Reorganized and renamed examples for clarity and consistency
+  * Added `examples/README.md` with descriptions and quickstart commands
+  * Added new example: `examples/temporal_change_search_synthesis.yml`
+  * Updated documentation and integration tests to reference the new example names
+
+> No breaking changes. All existing workflows continue to run unchanged.
+
+---
 ## [0.8.0] · 2025-08-07 🚀
 ### Major Release - Test Suite Overhaul & Memory System Enhancements
 

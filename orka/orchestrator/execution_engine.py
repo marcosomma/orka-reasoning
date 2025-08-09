@@ -921,20 +921,30 @@ class ExecutionEngine(
                     self.memory.hset(join_state_key, agent_id, json.dumps(result))
 
                     # Create log entry
-                    payload_data = {"result": result}
                     agent = self.agents[agent_id]
 
-                    # Preserve formatted_prompt from agent result if present
-                    if isinstance(result, dict) and "formatted_prompt" in result:
-                        # Agent already includes correctly rendered formatted_prompt
-                        payload_data["formatted_prompt"] = result["formatted_prompt"]
-                        payload_data["prompt"] = getattr(agent, "prompt", "")
+                    # Safely flatten result structure:
+                    # - If the agent returned a dict, use it directly to avoid double nesting
+                    # - Otherwise, wrap non-dict results under "result" for consistency
+                    if isinstance(result, dict):
+                        payload_data = result.copy()
                     else:
-                        # Fallback: use _add_prompt_to_payload for agents that don't include it
+                        payload_data = {"result": result}
+
+                    # Ensure a formatted_prompt exists; if missing, render via fallback
+                    if "formatted_prompt" not in payload_data:
                         payload_context = {
                             "input": input_data,
                             "previous_outputs": updated_previous_outputs,
                         }
+                        # Add loop context when available to keep templates consistent
+                        if isinstance(input_data, dict):
+                            if "loop_number" in input_data:
+                                payload_context["loop_number"] = input_data["loop_number"]
+                            if "past_loops_metadata" in input_data:
+                                payload_context["past_loops_metadata"] = input_data[
+                                    "past_loops_metadata"
+                                ]
                         self._add_prompt_to_payload(agent, payload_data, payload_context)
 
                     log_data = {
@@ -1077,7 +1087,6 @@ class ExecutionEngine(
         # Agent types that are explicitly designed to provide a final answer
         final_response_agent_types = {
             "OpenAIAnswerBuilder",
-            "OpenAIBinaryAgent",  # Include binary agents if they are the last in the chain
             "LocalLLMAgent",
         }
 
@@ -1088,12 +1097,23 @@ class ExecutionEngine(
             if _event_type == "MetaReport":
                 continue  # Skip meta reports
 
+            # Prefer nested payload.result.response if present
+            payload = log_entry.get("payload", {})
+            nested_result = payload.get("result")
+            if isinstance(nested_result, dict) and "response" in nested_result:
+                return nested_result["response"]
+            # Handle one extra nesting level: payload.result.result.response
+            if isinstance(nested_result, dict):
+                deeper_result = nested_result.get("result")
+                if isinstance(deeper_result, dict) and "response" in deeper_result:
+                    return deeper_result["response"]
+
             # Prioritize agents explicitly designed to provide a final answer
             if _event_type in final_response_agent_types:
                 # If no specific final response agent is found, consider the last non-excluded agent
                 payload = log_entry.get("payload", {})
                 final_response_log_entry = log_entry
-                if payload and "result" in payload:
+                if payload and ("result" in payload or "response" in payload):
                     final_response_log_entry = log_entry
                     break
 

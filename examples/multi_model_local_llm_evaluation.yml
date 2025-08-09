@@ -1,0 +1,184 @@
+orchestrator:
+  id: orka-ui
+  strategy: parallel
+  queue: orka:generated
+  agents:
+    - fork_0
+    - join_3
+    - eval_4
+    - fork_5
+    - join_8
+    - eval_9
+    - fork_10
+    - join_13
+    - eval_14
+    - answer_21
+agents:
+  - id: fork_0
+    type: fork
+    targets:
+      - - local_llm_1
+      - - gpt4o_2
+      - - local_llm_19
+  - id: local_llm_1
+    type: local_llm
+    queue: orka:local_llm_1
+    prompt: "Clean and structure this research document for analysis. Remove formatting artifacts, standardize section headers, and return a clear markdown version: {{ get_input() }}"
+    model: deepseek-r1:8b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    depends_on:
+      - fork_0
+  - id: gpt4o_2
+    type: openai-answer
+    queue: orka:gpt4o_2
+    prompt: "Clean and structure this research document for analysis. Remove formatting artifacts, standardize section headers, and return a clear markdown version: {{ get_input() }}"
+    model: gpt-4o-mini
+    temperature: 0.7
+    depends_on:
+      - fork_0
+  - id: local_llm_19
+    type: local_llm
+    queue: orka:local_llm_19
+    prompt: "Clean and structure this research document for analysis. Remove formatting artifacts, standardize section headers, and return a clear markdown version: {{ get_input() }}"
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    depends_on:
+      - fork_0
+  - id: join_3
+    type: join
+    group: fork_0
+  - id: eval_4
+    type: openai-classification
+    queue: orka:eval_4
+    prompt: "Three agents processed the same research document. Evaluate which output is better in terms of clarity, formatting, and readiness for analysis. Respond based on which version you prefer. Use this structure: --- deepseek-r1:8b_output: {{ get_agent_response('local_llm_1') }} gpt-4o-mini_output: {{ get_agent_response('gpt4o_2') }} gpt-oss:20b_output: {{ get_agent_response('local_llm_19') }} ---"
+    options:
+      - deepseek-r1:8b
+      - gpt-4o-mini
+      - gpt-oss:20b
+    model: gpt-3.5-turbo
+    depends_on:
+      - join_3
+  - id: fork_5
+    type: fork
+    targets:
+      - - local_llm_6
+      - - gpt4o_7
+      - - local_llm_20
+    depends_on:
+      - eval_4
+  - id: local_llm_6
+    type: local_llm
+    queue: orka:local_llm_6
+    prompt: "Provide a comprehensive 3-paragraph summary of this research paper, focusing on objectives, methods, and conclusions: {{ get_input() }}"
+    model: deepseek-r1:8b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    depends_on:
+      - fork_5
+  - id: gpt4o_7
+    type: openai-answer
+    queue: orka:gpt4o_7
+    prompt: "Provide a comprehensive 3-paragraph summary of this research paper, focusing on objectives, methods, and conclusions: {{ get_input() }}"
+    model: gpt-4o-mini
+    temperature: 0.7
+    depends_on:
+      - fork_5
+  - id: local_llm_20
+    type: local_llm
+    queue: orka:local_llm_20
+    prompt: "Provide a comprehensive 3-paragraph summary of this research paper, focusing on objectives, methods, and conclusions: {{ get_input() }}"
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    depends_on:
+      - fork_5
+  - id: join_8
+    type: join
+    group: fork_5
+  - id: eval_9
+    type: openai-classification
+    queue: orka:eval_9
+    prompt: "Compare three summaries of a research paper. Which one is clearer, more informative, and better structured? --- deepseek-r1:8b_summary: {{ get_agent_response('local_llm_6') }} gpt-4o-mini_summary: {{ get_agent_response('gpt4o_7') }} gpt-oss:20b_summary: {{ get_agent_response('local_llm_20') }} ---"
+    options:
+      - gpt-oss:20b
+      - gpt-4o-mini
+      - deepseek-r1:8b
+    model: gpt-3.5-turbo
+    depends_on:
+      - join_8
+  - id: fork_10
+    type: fork
+    targets:
+      - - local_llm_11
+      - - gpt4o_12
+      - - local_llm_21
+    depends_on:
+      - eval_9
+  - id: local_llm_11
+    type: local_llm
+    queue: orka:local_llm_11
+    prompt: "Generate constructive feedback for the author of this research document, focusing on clarity, scientific rigor, and formatting: {{ get_input() }}"
+    model: deepseek-r1:8b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    depends_on:
+      - fork_10
+  - id: gpt4o_12
+    type: openai-answer
+    queue: orka:gpt4o_12
+    prompt: "Generate constructive feedback for the author of this research document, focusing on clarity, scientific rigor, and formatting: {{ get_input() }}"
+    model: gpt-4o-mini
+    temperature: 0.7
+    depends_on:
+      - fork_10
+  - id: local_llm_21
+    type: local_llm
+    queue: orka:local_llm_21
+    prompt: "Generate constructive feedback for the author of this research document, focusing on clarity, scientific rigor, and formatting: {{ get_input() }}"
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    depends_on:
+      - fork_10
+  - id: join_13
+    type: join
+    group: fork_10
+  - id: eval_14
+    type: openai-classification
+    queue: orka:eval_14
+    prompt: "Which feedback among the three is more useful, specific, and actionable for improving the research paper? --- deepseek-r1:8b_feedback: {{ get_agent_response('local_llm_11') }} gpt-4o-mini_feedback: {{ get_agent_response('gpt4o_12') }} gpt-oss:20b_feedback: {{ get_agent_response('local_llm_21') }} ---"
+    options:
+      - deepseek-r1:8b
+      - gpt-4o-mini
+      - gpt-oss:20b
+    model: gpt-3.5-turbo
+    depends_on:
+      - join_13
+  - id: answer_21
+    type: openai-answer
+    queue: orka:answer_21
+    prompt: >
+      # TASK: 
+      Explain what model performed best and why
+      
+      # Model evaluation
+      ## Evaluation Model Winners per task: 
+      - Clean and structure: {{ get_fork_responses('eval_4') }}
+      - 3-paragraph summary: {{ get_fork_responses('eval_9') }}
+      - Feedback: {{ get_fork_responses('eval_14') }}
+
+      ## Detaile Answers per task per model:
+      - Clean and structure: {{ get_agent_response('join_3') }}
+      - 3-paragraph summary: {{ get_agent_response('join_8') }}
+      - Feedback: {{ get_agent_response('join_13') }}
+    model: gpt-3.5-turbo
+    depends_on:
+      - eval_14

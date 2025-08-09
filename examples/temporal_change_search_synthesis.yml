@@ -1,0 +1,68 @@
+orchestrator:
+  id: orka-ui
+  strategy: sequential
+  queue: orka:generated
+  agents:
+    - fork_detect
+    - join_detect
+    - fork_temporal
+    - join_paths
+    - synthesize_timeline_answer
+agents:
+  - id: fork_detect
+    type: fork
+    targets:
+      - - detect_change
+  - id: detect_change
+    type: openai-answer
+    queue: orka:detect_change
+    prompt: "Given the user query, identify if any important change in classification/understanding/definition (or any adjective associated to the query) occurred in history. If so, return the date when this change occurred. Format strictly: DD/MM/YYYY. QUERY: {{ get_input() }} Constraints: Only return a date in the format DD/MM/YYYY."
+    depends_on:
+      - fork_detect
+  - id: join_detect
+    type: join
+    group: fork_detect
+  - id: fork_temporal
+    type: fork
+    targets:
+      - - generate_before_query
+        - search_before
+      - - generate_after_query
+        - search_after
+    depends_on:
+      - join_detect
+  - id: generate_before_query
+    type: openai-answer
+    queue: orka:generate_before_query
+    prompt: > 
+      Based on the user\'s question and the detected pivot year, write a search query to find how the subject was classified or understood before that year. Use phrasing like: "how was [subject] classified before [year]?" SUBJECT: {{ get_input() }} YEAR: {{ get_agent_response("detect_change") }} Constraints: Only return the search sentence.
+    depends_on:
+      - fork_temporal
+  - id: generate_after_query
+    type: openai-answer
+    queue: orka:generate_after_query
+    prompt: >
+      Based on the user\'s question and the detected pivot year, write a search query to find how the subject was classified or understood after that year. Use phrasing like: "how was [subject] classified after [year]?" SUBJECT: {{ get_input() }} YEAR: {{ get_agent_response("detect_change") }} Constraints: Only return the search sentence.
+    depends_on:
+      - fork_temporal
+  - id: search_before
+    type: duckduckgo
+    queue: orka:search_before
+    prompt: "{{ get_agent_response('generate_before_query') }}"
+    depends_on:
+      - generate_before_query
+  - id: search_after
+    type: duckduckgo
+    queue: orka:search_after
+    prompt: "{{ get_agent_response('generate_after_query') }}"
+    depends_on:
+      - generate_after_query
+  - id: join_paths
+    type: join
+    group: fork_temporal
+  - id: synthesize_timeline_answer
+    type: openai-answer
+    queue: orka:synthesize_timeline_answer
+    prompt: "Based on the query, the year, and data from both the before and after searches, write a summary explaining: - What the subject was classified/understood/defined as before the change - What it became after the change - The context and significance of this shift QUERY: {{ get_input() }} YEAR: {{ get_agent_response('detect_change') }} EXTRA DATA: {{ get_agent_response('search_before') }} | {{ get_agent_response('search_after') }}"
+    depends_on:
+      - join_paths

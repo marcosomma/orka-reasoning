@@ -58,7 +58,7 @@ agents:
       enable_temporal_ranking: true
       context_window_size: 5
       temporal_decay_hours: 24
-    prompt: "{{ input }}"
+    prompt: "{{ get_input() }}"
 
   # Step 2: Validate memory quality using OpenAI
   - id: memory_validator
@@ -67,8 +67,8 @@ agents:
     prompt: |
       You are a memory quality validator. Analyze the retrieved memories and determine if they provide valuable, accurate, and relevant information to answer the user's query.
 
-      User Query: {{ input }}
-      Retrieved Memories: {{ previous_outputs['memory_reader'].memories }}
+      User Query: {{ get_input() }}
+      Retrieved Memories: {{ safe_get(previous_outputs.get('memory_reader', {}), 'memories') }}
 
       Evaluation Criteria:
       1. Relevance: Do the memories directly relate to the user's query?
@@ -104,8 +104,8 @@ agents:
     prompt: |
       Based on the validated memories, provide a comprehensive answer to the user's query.
 
-      User Query: {{ input }}
-      Validated Memories: {{ previous_outputs['memory_reader'].memories }}
+      User Query: {{ get_input() }}
+      Validated Memories: {{ safe_get(previous_outputs.get('memory_reader', {}), 'memories') }}
       Memory Validation: VALUABLE
 
       Instructions:
@@ -122,7 +122,7 @@ agents:
   - id: search_fallback
     type: duckduckgo
     queue: orka:search_fallback
-    prompt: "{{ input }}"
+    prompt: "{{ get_input() }}"
     depends_on:
       - answer_router
 
@@ -133,8 +133,8 @@ agents:
     prompt: |
       Based on the search results, provide a comprehensive answer to the user's query.
 
-      User Query: {{ input }}
-      Search Results: {{ previous_outputs['search_fallback'].result }}
+      User Query: {{ get_input() }}
+      Search Results: {{ safe_get(previous_outputs.get('search_fallback', {}), 'result') }}
       Memory Validation: INSUFFICIENT
 
       Instructions:
@@ -155,22 +155,22 @@ agents:
       operation: write
       namespace: short_term_answers
       vector: true
-      key_template: "answer_{{ session_id }}_{{ timestamp }}"
+      key_template: "answer_{{ run_id }}_{{ step_index }}"
       default_long_term: false # Force short-term classification
     prompt: |
-      Query: {{ input }}
+      Query: {{ get_input() }}
 
-      Answer: {{ previous_outputs['answer_builder'].result.response if previous_outputs.get('answer_builder') else previous_outputs['search_answer_builder'].result.response }}
+      Answer: {{ safe_get(previous_outputs.get('answer_builder', {}), 'response') or safe_get(previous_outputs.get('search_answer_builder', {}), 'response') }}
 
       Source: {{ 'Retrieved from validated memories' if previous_outputs.get('answer_builder') else 'Generated from internet search' }}
 
       Validation Details: {{ 'VALUABLE - Memories were sufficient' if previous_outputs.get('answer_builder') else 'INSUFFICIENT - Required internet search' }}
     metadata:
       source: memory_validation_workflow
-      query: "{{ input }}"
+      query: "{{ get_input() }}"
       memory_was_valuable: "{{ 'true' if previous_outputs.get('answer_builder') else 'false' }}"
       answer_source: "{{ 'memory' if previous_outputs.get('answer_builder') else 'search' }}"
-      expires_at: "{{ timestamp + 60 }}"
+      expires_at: "{{ current_time }}"
       confidence: 0.9
       category: stored
     depends_on:

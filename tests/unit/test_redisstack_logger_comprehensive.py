@@ -469,10 +469,10 @@ class TestRedisStackMemoryLogger:
 
         memories = self.logger.get_all_memories()
 
-        # Should return the memories since we're using the correct pattern
+        # Should return the memories since we're using the correct pattern (order independent)
         assert len(memories) == 2
-        assert memories[0]["content"] == "Memory 1"
-        assert memories[1]["content"] == "Memory 2"
+        contents = {m.get("content") for m in memories}
+        assert contents == {"Memory 1", "Memory 2"}
 
     def test_get_all_memories_with_trace_filter(self):
         """Test retrieving memories with trace ID filter."""
