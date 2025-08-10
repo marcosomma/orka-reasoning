@@ -4,32 +4,20 @@ on:
   push:
     branches: [ master ]
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
-  upload-coverage:
+  codecov:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 2 }
 
-      - name: Verify coverage file exists
-        run: |
-          echo "HEAD SHA: $GITHUB_SHA"
-          echo "Branch: ${GITHUB_REF##*/}"
-          ls -la
-          if [ ! -f coverage.xml ]; then
-            echo "coverage.xml not found."
-            exit 1
-          fi
-          echo "coverage.xml found."
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - uses: codecov/codecov-action@v4
         with:
-          use_oidc: true                  # or token: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
           override_commit: ${{ github.sha }}
           override_branch: ${{ github.ref_name }}
