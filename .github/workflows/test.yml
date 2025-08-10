@@ -10,9 +10,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Verify coverage file exists
         run: |
+          echo "HEAD SHA: $GITHUB_SHA"
+          echo "Branch: ${GITHUB_REF##*/}"
+          ls -la
           if [ ! -f coverage.xml ]; then
             echo "coverage.xml not found."
             exit 1
@@ -25,5 +30,8 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           files: ./coverage.xml
+          commit_sha: ${{ github.sha }}
+          branch: ${{ github.ref_name }}
+          slug: ${{ github.repository }}
           fail_ci_if_error: false
           verbose: true
