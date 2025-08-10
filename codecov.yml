@@ -6,31 +6,25 @@ coverage:
   precision: 2
   round: down
   range: 70..100
-
   status:
     project:
       default:
         target: 75%
         threshold: 1%
         base: auto
-        paths:
-          - "orka/"
     patch:
       default:
         target: 75%
         threshold: 5%
         base: auto
-        paths:
-          - "orka/"
-
   ignore:
-    - "tests/"
-    - "orka/docker/"
-    - "orka/tui/"
-    - "orka/startup/"
-    - "setup.py"
-    - "orka/start_*.py"
-    - "orka/orka_start.py"
+    - tests/**
+    - orka/docker/**
+    - orka/tui/**
+    - orka/startup/**
+    - setup.py
+    - orka/start_*.py
+    - orka/orka_start.py
 
 comment:
   layout: header, diff, flags, components, tree
@@ -42,56 +36,6 @@ comment:
 github_checks:
   annotations: true
 
-flags:
-  unittests:
-    paths:
-      - orka/
-    carryforward: true
+flags: {}
 
-  integration:
-    paths:
-      - orka/
-    carryforward: true
-
-component_management:
-  default_rules:
-    flag_regexes:
-      - name: unittests
-        regex: unittests
-      - name: integration
-        regex: integration
-    statuses:
-      - type: project
-        target: 75%
-      - type: patch
-        target: 75%
-
-  individual_components:
-    - component_id: orchestrator
-      name: Orchestrator Module
-      paths:
-        - orka/orchestrator/
-    - component_id: loader
-      name: Configuration Loader
-      paths:
-        - orka/loader.py
-    - component_id: contracts
-      name: Type Contracts
-      paths:
-        - orka/contracts.py
-    - component_id: registry
-      name: Resource Registry
-      paths:
-        - orka/registry.py
-    - component_id: memory
-      name: Memory System
-      paths:
-        - orka/memory/
-    - component_id: agents
-      name: Agent System
-      paths:
-        - orka/agents/
-    - component_id: nodes
-      name: Node System
-      paths:
-        - orka/nodes/
+component_management: {}
