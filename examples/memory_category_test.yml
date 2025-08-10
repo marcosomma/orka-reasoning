@@ -1,0 +1,27 @@
+orchestrator:
+  id: memory-category-demo
+  strategy: sequential
+  agents:
+    - memory-write_event
+    - memory-read_stored
+
+agents:
+  - id: memory-write_event
+    type: memory
+    config:
+      operation: write
+    namespace: category_demo
+    prompt: |
+      Save this as a stored memory for '{{ get_input() }}'.
+    metadata:
+      category: stored
+      log_type: memory
+
+  - id: memory-read_stored
+    type: memory
+    config:
+      operation: read
+      memory_category_filter: stored
+    namespace: category_demo
+    prompt: Retrieve stored memories related to '{{ get_input() }}'.
+

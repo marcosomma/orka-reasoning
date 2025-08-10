@@ -188,7 +188,7 @@ class TestServerEndpoints:
         mock_file.assert_called_with("/tmp/test.yml", "w", encoding="utf-8")
         # Since mock_open creates a complex mock, we just check the orchestrator was called correctly
         mock_orchestrator_class.assert_called_once_with("/tmp/test.yml")
-        mock_orchestrator.run.assert_called_once_with("test input")
+        mock_orchestrator.run.assert_called_once_with("test input", return_logs=True)
         mock_remove.assert_called_once_with("/tmp/test.yml")
 
     def test_api_run_file_cleanup_exception(self):

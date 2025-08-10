@@ -1,4 +1,4 @@
-[📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
+[📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧩 Ontology](./ONTOLOGY.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
 
 # OrKa Documentation
 
@@ -138,6 +138,7 @@ docker run -it -p 80:80 --name orka-ui marcosomma/orka-ui:latest
 ### 🔧 Core Concepts
 - **[🤖 Agent Types](./agents.md)** - All available agent types and their capabilities
 - **[🔍 Architecture](./architecture.md)** - System design and architectural principles
+- **[🧩 Ontology](./ONTOLOGY.md)** - Entities, identifiers, and relationships across OrKa
 - **[⚙ Runtime Modes](./runtime-modes.md)** - Different execution strategies
 
 ### 🛠️ Advanced Topics

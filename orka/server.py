@@ -252,6 +252,17 @@ app = FastAPI(
 )
 logger = logging.getLogger(__name__)
 
+# Ensure server logs are visible when launched via orka-start or as a module
+try:
+    # Configure logging only if nothing has configured it yet
+    if not logging.root.handlers:
+        from orka.cli.utils import setup_logging as _orka_setup_logging
+
+        _orka_setup_logging()
+except Exception:
+    # Never fail server startup due to logging configuration issues
+    pass
+
 # CORS (optional, but useful if UI and API are on different ports during dev)
 app.add_middleware(
     CORSMiddleware,
@@ -339,7 +350,7 @@ async def run_execution(request: Request):
     logger.info(f"Orchestrator: {orchestrator}")
 
     logger.info("\n========== [DEBUG] Running Orchestrator ==========")
-    result = await orchestrator.run(input_text)
+    result = await orchestrator.run(input_text, return_logs=True)
 
     # Clean up the temporary file
     try:
