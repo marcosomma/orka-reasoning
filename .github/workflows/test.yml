@@ -2,29 +2,28 @@ name: Coverage Upload
 
 on:
   push:
-    branches: [master]
+    branches: [ master ]
 
 jobs:
   upload-coverage:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: 📥 Checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v4
-        
-      - name: ✅ Verify coverage file exists
+
+      - name: Verify coverage file exists
         run: |
           if [ ! -f coverage.xml ]; then
-            echo "❌ Error: coverage.xml not found!"
-            echo "Please run tests locally with: pytest --cov=orka --cov-report=xml:coverage.xml"
+            echo "coverage.xml not found."
             exit 1
           fi
-          echo "✅ Coverage file found"
-          
-      - name: 📤 Upload coverage to Codecov
+          echo "coverage.xml found."
+
+      - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.xml
+          files: ./coverage.xml
           fail_ci_if_error: false
           verbose: true
