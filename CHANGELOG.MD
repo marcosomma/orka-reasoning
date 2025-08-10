@@ -1,5 +1,22 @@
-# OrKa-Reasoning – Un-official CHANGELOG  
-*(derived from the public-repo commit history as of **2025-01-31**)*  
+# OrKa-Reasoning – Un-official CHANGELOG
+
+*(derived from the public-repo commit history as of **2025-01-31**)*
+
+---
+## [0.8.2] · 2025-08-10 🧩
+
+### Fixed
+
+- OrKa UI / Server response logs
+  - Fixed API response from server to include full execution logs when requested by OrKa UI
+  - Ensured `return_logs=True` propagation in server orchestrator run to allow UI to render complete run logs
+  - Updated unit tests to reflect expected server behavior
+
+### Changed
+
+- Docs: added comprehensive ontology (TTL and memory handling) and linked from docs index
+
+> Backward compatible. Improves UI experience and server response consistency.
 
 ---
 ## [0.8.1] · 2025-08-09 🔧
