@@ -29,9 +29,10 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
+          use_oidc: true                  # or token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
-          commit_sha: ${{ github.sha }}
-          branch: ${{ github.ref_name }}
-          slug: ${{ github.repository }}
-          fail_ci_if_error: false
+          override_commit: ${{ github.sha }}
+          override_branch: ${{ github.ref_name }}
+          commit_parent: true
+          slug: marcosomma/orka-reasoning
           verbose: true
