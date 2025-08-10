@@ -3,7 +3,7 @@
 
 <div align="center">
 
-<img src="https://orkacore.com/assets/ORKA_logo.png" alt="OrKa Logo" width="256" height="256"/>
+<img src="assets/logo_new.png" alt="OrKa Logo" width="256" height="256"/>
 
 [![orkacore](https://img.shields.io/badge/orkacore-.com-green?labelColor=blue&style=for-the-badge&link=https://orkacore.com/)](https://orkacore.com/)
 
