@@ -1126,7 +1126,7 @@ class ExecutionEngine(
         response = payload.get("response", {})
 
         logger.info(
-            f"[ORKA-FINAL] Returning response from final agent: {final_response_log_entry.get('agent_id')} \n \"{response}\"",
+            f"[ORKA-FINAL] Returning response from final agent: {final_response_log_entry.get('agent_id')}",
         )
 
         # Try to extract a clean response from the result

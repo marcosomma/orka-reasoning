@@ -1,0 +1,550 @@
+# Maternal-Instinct Safety Workflow — Loop-based iterative design
+# Updated to use only local LLM agents (gpt-oss:20b) for all reasoning and generation.
+
+orchestrator:
+  id: maternal_instinct_v2
+  strategy: sequential
+  memory_config:
+    backend: redisstack
+    vector_field: "content_vector"  # Ensure proper vector field for RedisStack
+    vector_index_name: "orka_enhanced_memory"  # Explicitly name the index
+    decay:
+      enabled: true
+      default_short_term_hours: 24.0
+      default_long_term_hours: 720.0  # Extended to 30 days for better protective memory
+      check_interval_minutes: 1
+      importance_rules:
+        base_score: 0.6  # Higher base importance for safety events
+        event_type_boosts:
+          safeguard_gate: 0.3  # Boost importance of high-risk events
+          caution_path: 0.2
+          high_vulnerability: 0.25
+  agents:
+    - prior_incidents_reader  # Get past experiences at the beginning
+    - maternal_safety_loop    # Main loop node for iterative improvement
+    - final_response_builder  # Build the final response after loop completion
+    - final_explainer        # Provide explanation of the decision process
+    - memory_writer           # Store final result at the end
+
+agents:
+  # Initial memory reader to retrieve past experiences
+  - id: prior_incidents_reader
+    type: memory
+    namespace: safety_events
+    queue: orka:shared-debate-memory-reader
+    config:
+      operation: read
+      limit: 5
+      enable_context_search: true
+      fallback_to_text: true  # Ensure text fallback is enabled
+      similarity_threshold: 0.1  # Lower threshold for better fallback results
+      enable_temporal_ranking: true
+      temporal_weight: 0.4
+      memory_type: long_term  # Prefer long-term memory for persistent maternal behavior
+      memory_category_filter: store
+      memory_type_filter: "all"
+      vector: true
+      vector_field: "content_vector"  # Ensure proper vector field for RedisStack
+    prompt: |
+      Retrieve prior harmful or near-harmful incidents similar to: {{ get_input() }}
+      Include stored metrics and timestamps.
+
+  # Main loop node for maternal instinct safety workflow
+  - id: maternal_safety_loop
+    type: loop
+    max_loops: 5
+    score_threshold: 0.90  # More reasonable threshold for human-facing safety guidance
+    
+    # High priority agents whose outputs are critical
+    high_priority_agents:
+      - "safety_scorer"
+      - "response_quality_checker"
+    
+    # Configure score extraction to detect safety scores
+    score_extraction_config:
+      strategies:
+        - type: pattern
+          patterns:
+            - "SAFETY_SCORE: ([0-9.]+)"
+            - "SAFETY_SCORE: +([0-9.]+)"
+        - type: pattern
+          patterns:
+            - "Safety Score: ([0-9.]+)"
+            - "Score: ([0-9.]+)"
+            - "safety_score: ([0-9.]+)"
+            - "\"safety_score\": ([0-9.]+)"
+        - type: json
+          json_path: "$.safety_score"
+        - type: agent_key
+          agents: ["safety_scorer"]
+          key: "SAFETY_SCORE"
+          transform: "extract_number"
+    
+    # Extract cognitive insights from each loop
+    cognitive_extraction:
+      enabled: true
+      max_length_per_category: 200
+      extract_patterns:
+        insights:
+          - "INSIGHTS[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+        improvements:
+          - "IMPROVEMENTS[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+        safety_concerns:
+          - "SAFETY_CONCERNS[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+    
+    # Store metadata about each loop iteration
+    past_loops_metadata:
+      round: "{{ get_loop_number() }}"
+      safety_score: "{{ score }}"
+      timestamp: "{{ timestamp }}"
+      route: "{{ safe_get_response('route_determiner', 'unknown') }}"
+      status: "{{ 'SAFE' if score >= 0.85 else 'IMPROVING' }}"
+    
+    # Define the internal workflow for each loop iteration
+    internal_workflow:
+      orchestrator:
+        id: maternal-safety-internal
+        strategy: sequential
+        agents:
+          - policies_rag
+          - metrics_fork
+          - metrics_join
+          - metrics_validator
+          - route_determiner
+          - maternal_policy_router
+          - response_quality_checker
+          - safety_scorer
+      
+      agents:
+        # Policies reader
+        - id: policies_rag
+          type: memory
+          namespace: policy_notes
+          queue: orka:shared-debate-memory
+          config:
+            operation: read
+            limit: 5
+            enable_context_search: true
+            fallback_to_text: true
+            similarity_threshold: 0.1
+            enable_temporal_ranking: true
+            temporal_weight: 0.4
+            memory_type: long_term
+            memory_category_filter: store
+            memory_type_filter: "all"
+            vector: true
+            vector_field: "content_vector"  # Ensure proper vector field for RedisStack
+          prompt: |
+            Fetch policies, medical safety notes, and app rules relevant to: {{ get_input() }}
+            Return a compact bullet list.
+        
+        # Fork for parallel metric collection
+        - id: metrics_fork
+          type: fork
+          targets:
+            - [risk_predictor]
+            - [vulnerability_analyzer]
+            - [reversibility_estimator]
+            - [consent_checker]
+        
+        # Risk predictor
+        - id: risk_predictor
+          type: local_llm
+          model: gpt-oss:20b
+          prompt: |
+            Predict harm score H ∈ [0,1] for the request using context.
+            Factors: physical harm, psychological distress, legal exposure, irreversibility.
+            Return JSON: {"H": float, "rationale": "..."}.
+            
+            Request: {{ get_input() }}
+            {% if get_loop_number() > 1 %}
+            Previous assessment: {{ get_past_loops() | truncate(200) }}
+            {% endif %}
+        
+        # Vulnerability analyzer
+        - id: vulnerability_analyzer
+          type: local_llm
+          model: gpt-oss:20b
+          prompt: |
+            Infer vulnerability V ∈ [0,1] from the request and prior incidents.
+            Consider minors, dependency, coercion, crisis cues.
+            Return JSON: {"V": float, "signals": ["..."]}.
+            
+            Request: {{ get_input() }}
+            Prior incidents: {{ previous_outputs.prior_incidents_reader | default('No prior incidents') }}
+            {% if get_loop_number() > 1 %}
+            Previous assessment: {{ get_past_loops() | truncate(200) }}
+            {% endif %}
+        
+        # Reversibility estimator
+        - id: reversibility_estimator
+          type: local_llm
+          model: gpt-oss:20b
+          prompt: |
+            Estimate reversibility R ∈ [0,1]; 1 = fully reversible.
+            Return JSON: {"R": float, "notes": "..."}.
+            
+            Request: {{ get_input() }}
+            {% if get_loop_number() > 1 %}
+            Previous assessment: {{ get_past_loops() | truncate(200) }}
+            {% endif %}
+        
+        # Consent checker
+        - id: consent_checker
+          type: local_llm
+          model: gpt-oss:20b
+          prompt: |
+            Is explicit informed consent present for the risky action?
+            Return JSON: {"C": "verified" | "unclear" | "denied", "evidence": "..."}.
+            
+            Request: {{ get_input() }}
+            {% if get_loop_number() > 1 %}
+            Previous assessment: {{ get_past_loops() | truncate(200) }}
+            {% endif %}
+        
+        # Join metrics
+        - id: metrics_join
+          type: join
+          group: metrics_fork
+          prompt: |
+            Combine metrics from upstream. maternal_score = V*H.
+            
+            # Extract prior incident counts from memory
+            {% set prior_incidents = previous_outputs.prior_incidents_reader | default('{}') %}
+            {% set prior_severe_count = prior_incidents | regex_search('harm_score":\s*"([0-9.]+)"', '\1') | length %}
+            {% set similar_risk_count = prior_incidents | regex_search('request_type":\s*"([^"]+)"', '\1') | length %}
+            
+            # Extract values from risk predictor
+            {% set risk_json = safe_get_response('risk_predictor', '{"H": 0.5}') %}
+            {% set H = risk_json | regex_search('"H":\s*([0-9.]+)', '\1') | first | default(0.5) %}
+            
+            # Extract values from vulnerability analyzer
+            {% set vuln_json = safe_get_response('vulnerability_analyzer', '{"V": 0.5}') %}
+            {% set V = vuln_json | regex_search('"V":\s*([0-9.]+)', '\1') | first | default(0.5) %}
+            
+            # Extract values from reversibility estimator
+            {% set rev_json = safe_get_response('reversibility_estimator', '{"R": 0.5}') %}
+            {% set R = rev_json | regex_search('"R":\s*([0-9.]+)', '\1') | first | default(0.5) %}
+            
+            # Extract values from consent checker
+            {% set consent_json = safe_get_response('consent_checker', '{"C": "verified"}') %}
+            {% set C = consent_json | regex_search('"C":\s*"([^"]+)"', '\1') | first | default("unclear") %}
+            
+            # Enable long-term protective memory - raise V baseline for similar risky requests
+            {% set effective_H = [H|float + 0.15 * min(prior_severe_count|int, 3), 1.0]|min %}
+            {% set effective_V = [V|float + 0.2 * similar_risk_count|int, 1.0]|min %}
+            
+            Risk: {{ safe_get_response('risk_predictor', '{}') }}
+            Vulnerability: {{ safe_get_response('vulnerability_analyzer', '{}') }}
+            Reversibility: {{ safe_get_response('reversibility_estimator', '{}') }}
+            Consent: {{ safe_get_response('consent_checker', '{}') }}
+            Prior incidents: {{ previous_outputs.prior_incidents_reader | default('{}') }}
+            
+            {% if get_loop_number() > 1 %}
+            Previous metrics: {{ get_past_loops() | truncate(200) }}
+            {% endif %}
+            
+            METRICS SUMMARY:
+            {
+              "H": {{ H }},
+              "V": {{ V }},
+              "R": {{ R }},
+              "C": "{{ C }}",
+              "effective_H": {{ effective_H }},
+              "effective_V": {{ effective_V }},
+              "maternal_score": {{ effective_V|float * effective_H|float }}
+            }
+        
+        # Metrics validator - ensures metrics are present before routing
+        - id: metrics_validator
+          type: local_llm
+          model: gpt-oss:20b
+          prompt: |
+            Validate that all required metrics are present:
+            
+            Metrics JSON: {{ safe_get_response('metrics_join', '{}') }}
+            
+            {% set metrics = safe_get_response('metrics_join', '{}') %}
+            {% set has_H = metrics | regex_search('"H":\s*([0-9.]+)', '\1') | length > 0 %}
+            {% set has_V = metrics | regex_search('"V":\s*([0-9.]+)', '\1') | length > 0 %}
+            {% set has_R = metrics | regex_search('"R":\s*([0-9.]+)', '\1') | length > 0 %}
+            {% set has_C = metrics | regex_search('"C":\s*"([^"]+)"', '\1') | length > 0 %}
+            
+            Check for required fields:
+            - H (harm score): {{ "PRESENT" if has_H else "MISSING" }}
+            - V (vulnerability score): {{ "PRESENT" if has_V else "MISSING" }}
+            - R (reversibility score): {{ "PRESENT" if has_R else "MISSING" }}
+            - C (consent status): {{ "PRESENT" if has_C else "MISSING" }}
+            
+            VALIDATION: {{ "PASS" if (has_H and has_V and has_R and has_C) else "FAIL" }}
+            
+            {% if has_H and has_V and has_R and has_C %}
+            OK
+            {% else %}
+            ERROR
+            {% endif %}
+        
+        # Route determiner
+        - id: route_determiner
+          type: local_llm
+          model: gpt-oss:20b
+          prompt: |
+            Analyze the metrics and determine the appropriate safety route.
+            
+            Metrics: {{ safe_get_response('metrics_join', '{}') }}
+            Validation: {{ safe_get_response('metrics_validator', 'ERROR') }}
+            
+            {% set mv = safe_get_response('metrics_validator', 'ERROR') %}
+            {% if mv != 'OK' %}
+            Return exactly: "safeguard_gate"
+            {% else %}
+            Decision rules:
+            # Reversibility as gating factor - low reversibility pushes toward safeguard
+            - If H >= 0.25 OR R <= 0.4: output exactly "safeguard_gate"
+            # Strict consent gating - denied consent routes directly to safeguard for stronger protection
+            - If consent is denied: output exactly "safeguard_gate"
+            # Unclear consent or moderate harm routes to caution
+            - If H >= 0.15 OR consent is unclear: output exactly "caution_path"
+            # Additional reversibility check - mid-range reversibility with any risk pushes to caution
+            - If R <= 0.7 AND H >= 0.1: output exactly "caution_path"
+            - Otherwise: output exactly "normal_path"
+            {% endif %}
+            
+            {% if get_loop_number() > 1 %}
+            Previous routes: {{ get_past_loops() | truncate(200) }}
+            {% endif %}
+            
+            Return ONLY one of these exact strings: "safeguard_gate", "caution_path", or "normal_path".
+        
+        # Router based on route determination
+        - id: maternal_policy_router
+          type: router
+          params:
+            decision_key: route_determiner
+            routing_map:
+              safeguard_gate: [responder_block, perspective_synthesis]
+              caution_path: [safe_alternative_builder, responder_caution, perspective_synthesis]
+              normal_path: [responder_normal, perspective_synthesis]
+          prompt: |
+            Inputs: {{ safe_get_response('metrics_join', '{}') }}
+            Route: {{ safe_get_response('route_determiner', 'normal_path') }}
+        
+        # Safe alternative builder
+        - id: safe_alternative_builder
+          type: local_llm
+          model: gpt-oss:20b
+          prompt: |
+            Suggest a safer, reversible alternative based on policies and the request.
+            
+            Request: {{ get_input() }}
+            Policies: {{ safe_get_response('policies_rag', 'No specific policies found') }}
+            {% if get_loop_number() > 1 %}
+            Previous alternatives: {{ get_past_loops() | truncate(200) }}
+            {% endif %}
+        
+        # Responder for high-risk cases
+        - id: responder_block
+          type: local_llm
+          model: gpt-oss:20b
+          prompt: |
+            Block the risky request. Provide protective rationale, reassurance, and a safer alternative.
+            
+            REQUIRED MATERNAL ELEMENTS - Include ALL of these:
+            1. EXPLICIT BOUNDARY: Clear statement of what cannot be supported and why
+            2. SAFER ALTERNATIVE: Specific suggestion that addresses needs while reducing harm
+            3. SUSTAINED SUPPORT: Explicit offer of continued help beyond this interaction
+            
+            Request: {{ get_input() }}
+            Metrics: {{ safe_get_response('metrics_join', '{}') }}
+            {% if get_loop_number() > 1 %}
+            Previous responses: {{ get_past_loops() | truncate(200) }}
+            {% endif %}
+        
+        # Responder for medium-risk cases
+        - id: responder_caution
+          type: local_llm
+          model: gpt-oss:20b
+          prompt: |
+            Decline risky portion and propose the safer alternative while maintaining rapport.
+            
+            REQUIRED MATERNAL ELEMENTS - Include ALL of these:
+            1. EXPLICIT BOUNDARY: Clear statement of what aspects raise concern and why
+            2. SAFER ALTERNATIVE: Specific suggestion that addresses needs while reducing harm
+            3. SUSTAINED SUPPORT: Explicit offer of continued help beyond this interaction
+            
+            Request: {{ get_input() }}
+            Alternative: {{ safe_get_response('safe_alternative_builder', 'No specific alternative available') }}
+            {% if get_loop_number() > 1 %}
+            Previous responses: {{ get_past_loops() | truncate(200) }}
+            {% endif %}
+        
+        # Responder for low-risk cases
+        - id: responder_normal
+          type: local_llm
+          model: gpt-oss:20b
+          prompt: |
+            Proceed safely with clarity and boundary reminders.
+            
+            REQUIRED MATERNAL ELEMENTS - Include ALL of these:
+            1. EXPLICIT BOUNDARY: Clear statement of appropriate limits and considerations
+            2. SAFER ALTERNATIVE: Specific suggestion that addresses needs while minimizing risk
+            3. SUSTAINED SUPPORT: Explicit offer of continued help beyond this interaction
+            
+            Request: {{ get_input() }}
+            Metrics: {{ safe_get_response('metrics_join', '{}') }}
+            {% if get_loop_number() > 1 %}
+            Previous responses: {{ get_past_loops() | truncate(200) }}
+            {% endif %}
+        
+        # Multi-perspective synthesis
+        - id: perspective_synthesis
+          type: local_llm
+          model: gpt-oss:20b
+          prompt: |
+            Integrate multiple perspectives to create a balanced final assessment.
+            
+            Request: {{ get_input() }}
+            Metrics: {{ safe_get_response('metrics_join', '{}') }}
+            Route: {{ safe_get_response('route_determiner', 'unknown') }}
+            Response: {{ safe_get_response('responder_block', '') }} {{ safe_get_response('responder_caution', '') }} {{ safe_get_response('responder_normal', '') }}
+            
+            Consider these perspectives:
+            1. User's immediate needs and goals
+            2. Long-term safety and well-being
+            3. Ethical considerations and boundaries
+            4. Practical alternatives and solutions
+            
+            {% if get_loop_number() > 1 %}
+            Previous synthesis: {{ get_past_loops() | truncate(200) }}
+            {% endif %}
+            
+            MANDATORY MATERNAL INSTINCT ELEMENTS - Include ALL of these:
+            1. EXPLICIT BOUNDARY: Clear statement of protective limits
+            2. SAFER ALTERNATIVE: Specific suggestion that addresses needs while reducing harm
+            3. SUSTAINED SUPPORT: Ongoing commitment to help beyond this interaction
+            
+            Return a synthesized assessment that balances these perspectives and includes all maternal elements.
+        
+        # Response quality checker
+        - id: response_quality_checker
+          type: local_llm
+          model: gpt-oss:20b
+          prompt: |
+            Analyze the quality of the response for:
+            1. Emotional support (warmth, empathy, reassurance)
+            2. Clarity of communication (readability, simplicity)
+            3. Actionable guidance (clear next steps)
+            4. Respectful tone (non-judgmental, supportive)
+            5. Appropriate boundaries (protective without condescension)
+            
+            MATERNAL ELEMENTS CHECKLIST:
+            - Explicit boundary present: [YES/NO]
+            - Safer alternative offered: [YES/NO]
+            - Sustained support promised: [YES/NO]
+            
+            Response: {{ safe_get_response('responder_block', '') }} {{ safe_get_response('responder_caution', '') }} {{ safe_get_response('responder_normal', '') }}
+            Synthesis: {{ safe_get_response('perspective_synthesis', '') }}
+            
+            OUTPUT:
+            INSIGHTS: [short]
+            IMPROVEMENTS: [short]
+            QUALITY_SCORE: [0.00-1.00]
+        
+        # Safety scorer - determines if loop should continue
+        - id: safety_scorer
+          type: local_llm
+          model: gpt-oss:20b
+          prompt: |
+            Score the overall safety of the response considering:
+            1. Risk mitigation effectiveness
+            2. Clarity of safety boundaries
+            3. Balance of empathy and protection
+            4. Appropriate guidance level
+            5. Ethical considerations
+            
+            Request: {{ get_input() }}
+            Metrics: {{ safe_get_response('metrics_join', '{}') }}
+            Route: {{ safe_get_response('route_determiner', 'unknown') }}
+            Response: {{ safe_get_response('responder_block', '') }} {{ safe_get_response('responder_caution', '') }} {{ safe_get_response('responder_normal', '') }}
+            Synthesis: {{ safe_get_response('perspective_synthesis', '') }}
+            Quality: {{ safe_get_response('response_quality_checker', '{}') }}
+            
+            {% if get_loop_number() > 1 %}
+            Previous scores: {{ get_past_loops() | truncate(200) }}
+            {% endif %}
+            
+            OUTPUT:
+            SAFETY_CONCERNS: [comma separated list]
+            SAFETY_SCORE: [0.00-1.00]
+
+  # Final response builder that integrates the loop results into a polished response
+  - id: final_response_builder
+    type: local_llm
+    model: gpt-oss:20b
+    prompt: |
+      Build a final, polished response based on the maternal safety loop results.
+      
+      Request: {{ get_input() }}
+      Route: {{ safe_get_response('maternal_safety_loop.route_determiner', 'normal_path') }}
+      Loop synthesis: {{ safe_get_response('maternal_safety_loop.perspective_synthesis', '') }}
+      Safety score: {{ safe_get_response('maternal_safety_loop.safety_scorer.SAFETY_SCORE', '0.0') }}
+      Quality score: {{ safe_get_response('maternal_safety_loop.response_quality_checker.QUALITY_SCORE', '0.0') }}
+      Loop iterations: {{ safe_get_response('maternal_safety_loop.loops_completed', '1') }}
+      Safety concerns: {{ safe_get_response('maternal_safety_loop.safety_scorer.SAFETY_CONCERNS', '') }}
+      
+      Create a response that:
+      1. Addresses the request with appropriate caution and empathy
+      2. Incorporates the safety measures identified in the loop
+      3. Provides clear guidance and boundaries
+      4. Balances protection with respect for autonomy
+      5. Offers concrete next steps or alternatives when appropriate
+      
+      FINAL_RESPONSE:
+
+  # Final explainer that provides reasoning about the decision process
+  - id: final_explainer
+    type: local_llm
+    model: gpt-oss:20b
+    prompt: |
+      Explain the maternal safety decision process and rationale.
+      
+      Request: {{ get_input() }}
+      Route: {{ safe_get_response('maternal_safety_loop.route_determiner', 'normal_path') }}
+      Final response: {{ safe_get_response('final_response_builder', '') }}
+      Safety score: {{ safe_get_response('maternal_safety_loop.safety_scorer.SAFETY_SCORE', '0.0') }}
+      Loop iterations: {{ safe_get_response('maternal_safety_loop.loops_completed', '1') }}
+      
+      Provide a clear explanation of:
+      1. How the safety assessment was conducted
+      2. Why this particular response approach was chosen
+      3. The key protective factors incorporated
+      4. The balance between safety and autonomy
+      5. How the iterative process improved the response
+      6. Include Final response in the answer
+      
+      EXPLANATION:
+
+  # Final memory writer to store the complete interaction
+  - id: memory_writer
+    type: memory
+    namespace: safety_events
+    queue: orka:shared-debate-memory-writer
+    config:
+      operation: write
+      memory_type: long_term  # Changed to long-term for protective memory
+      vector: true
+      vector_field: "content_vector"  # Ensure proper vector field for RedisStack
+      metadata:
+        source: "maternal_instinct_v2"
+        request_type: "{{ safe_get_response('maternal_safety_loop.route_determiner', 'unknown') }}"
+        safety_score: "{{ safe_get_response('maternal_safety_loop.safety_scorer.SAFETY_SCORE', '0.0') }}"
+        quality_score: "{{ safe_get_response('maternal_safety_loop.response_quality_checker.QUALITY_SCORE', '0.0') }}"
+        loop_count: "{{ safe_get_response('maternal_safety_loop.loops_completed', '1') }}"
+    prompt: |
+      Store event with metrics, route, safety score, and loop data.
+      
+      Request: {{ get_input() }}
+      Final response: {{ safe_get_response('final_response_builder', 'No response generated') }}
+      Explanation: {{ safe_get_response('final_explainer', 'No explanation provided') }}
+      Loop iterations: {{ safe_get_response('maternal_safety_loop.loops_completed', '1') }}
+      Final safety score: {{ safe_get_response('maternal_safety_loop.safety_scorer.SAFETY_SCORE', '0.0') }}

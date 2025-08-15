@@ -1,0 +1,279 @@
+# Maternal-Instinct Safety Workflow — minimal, testable, and shippable in a day
+# Updated to use only local LLM agents (gpt-oss:20b) for all reasoning and generation.
+
+orchestrator:
+  id: maternal_instinct_v1
+  strategy: sequential
+  queue: redis
+  memory_config:
+    backend: redisstack
+    decay:
+      enabled: true
+      default_short_term_hours: 24.0
+      default_long_term_hours: 720.0  # Extended to 30 days for better protective memory
+      check_interval_minutes: 1
+      importance_rules:
+        base_score: 0.6  # Higher base importance for safety events
+        event_type_boosts:
+          safeguard_gate: 0.3  # Boost importance of high-risk events
+          caution_path: 0.2
+          high_vulnerability: 0.25
+  agents:
+    - fork_metrics
+    - metrics_join
+    - route_determiner
+    - maternal_policy_router
+
+
+agents:
+  - id: fork_metrics
+    type: fork
+    targets:
+      - [policies_rag]
+      - [prior_incidents_reader]
+      - [risk_predictor]
+      - [vulnerability_analyzer]
+      - [reversibility_estimator]
+      - [consent_checker]
+
+  - id: policies_rag
+    type: memory
+    namespace: policy_notes
+    queue: orka:shared-debate-memory
+    config:
+      operation: read
+      limit: 5  # Reduced from 10
+      enable_context_search: true
+      fallback_to_text: true  # Ensure text fallback is enabled
+      similarity_threshold: 0.1  # Lower threshold for better fallback results
+      enable_temporal_ranking: true
+      temporal_weight: 0.4
+      memory_type: short_term
+      memory_category_filter: store
+      memory_type_filter: "all"
+      vector: true
+    prompt: |
+      Fetch policies, medical safety notes, and app rules relevant to: {{ get_input() }}
+      Return a compact bullet list.
+
+  - id: prior_incidents_reader
+    type: memory
+    namespace: safety_events
+    queue: orka:shared-debate-memory-reader
+    config:
+      operation: read
+      limit: 5  # Reduced from 10
+      enable_context_search: true
+      fallback_to_text: true  # Ensure text fallback is enabled
+      similarity_threshold: 0.1  # Lower threshold for better fallback results
+      enable_temporal_ranking: true
+      temporal_weight: 0.4
+      memory_type: short_term
+      memory_category_filter: store
+      memory_type_filter: "all"
+      vector: true
+    params:
+      type: read
+      limit: 5
+      similarity_threshold: 0.7
+      enable_context_search: true
+      fallback_to_text: true  # Ensure text fallback is enabled
+    prompt: |
+      Retrieve prior harmful or near-harmful incidents similar to: {{ get_input() }}
+      Include stored metrics and timestamps.
+
+  - id: risk_predictor
+    type: local_llm
+    model: gpt-oss:20b
+    prompt: |
+      Predict harm score H ∈ [0,1] for the request using context.
+      Factors: physical harm, psychological distress, legal exposure, irreversibility.
+      Return JSON: {"H": float, "rationale": "..."}.
+      
+      Request: {{ get_input() }}
+
+  - id: vulnerability_analyzer
+    type: local_llm
+    model: gpt-oss:20b
+    prompt: |
+      Infer vulnerability V ∈ [0,1] from the request and prior incidents.
+      Consider minors, dependency, coercion, crisis cues.
+      Return JSON: {"V": float, "signals": ["..."]}.
+      
+      Request: {{ get_input() }}
+      Prior incidents: {{ safe_get_response('prior_incidents_reader', 'No prior incidents') }}
+
+  - id: reversibility_estimator
+    type: local_llm
+    model: gpt-oss:20b
+    prompt: |
+      Estimate reversibility R ∈ [0,1]; 1 = fully reversible.
+      Return JSON: {"R": float, "notes": "..."}.
+      
+      Request: {{ get_input() }}
+
+  - id: consent_checker
+    type: local_llm
+    model: gpt-oss:20b
+    prompt: |
+      Is explicit informed consent present for the risky action?
+      Return JSON: {"C": "verified" | "unclear" | "denied", "evidence": "..."}.
+      
+      Request: {{ get_input() }}
+
+  - id: metrics_join
+    type: join
+    group: fork_metrics
+    prompt: |
+      Combine metrics from upstream. maternal_score = V*H.
+      
+      # Enable long-term protective memory - raise V baseline for similar risky requests
+      Apply memory escalation: 
+      - effective_H = clamp(H + 0.15 * min(prior_severe_count, 3), 0, 1)
+      - effective_V = clamp(V + 0.2 * similar_risk_requests_count, 0, 1)
+      
+      Output JSON with all metrics including escalated values.
+      
+      Risk: {{ safe_get_response('risk_predictor', '{}') }}
+      Vulnerability: {{ safe_get_response('vulnerability_analyzer', '{}') }}
+      Reversibility: {{ safe_get_response('reversibility_estimator', '{}') }}
+      Consent: {{ safe_get_response('consent_checker', '{}') }}
+      Prior incidents: {{ safe_get_response('prior_incidents_reader', '{}') }}
+
+  - id: route_determiner
+    type: local_llm
+    model: gpt-oss:20b
+    prompt: |
+      Analyze the metrics and determine the appropriate safety route.
+      
+      Metrics: {{ safe_get_response('metrics_join', '{}') }}
+      
+      Decision rules:
+      # Reversibility as gating factor - low reversibility pushes toward safeguard
+      - If H >= 0.25 OR R <= 0.4: output exactly "safeguard_gate"
+      # Strict consent gating - unclear or denied consent never routes to normal path
+      - If H >= 0.15 OR consent is unclear OR consent is denied: output exactly "caution_path"
+      # Additional reversibility check - mid-range reversibility with any risk pushes to caution
+      - If R <= 0.7 AND H >= 0.1: output exactly "caution_path"
+      - Otherwise: output exactly "normal_path"
+      
+      Return ONLY one of these exact strings: "safeguard_gate", "caution_path", or "normal_path".
+
+  - id: maternal_policy_router
+    type: router
+    params:
+      decision_key: route_determiner
+      routing_map:
+        safeguard_gate: [responder_block, empathy_scorer, memory_writer, perspective_synthesis, explainer]
+        caution_path: [safe_alternative_builder, responder_caution, empathy_scorer, memory_writer, perspective_synthesis, explainer]
+        normal_path: [responder_normal, empathy_scorer, memory_writer, perspective_synthesis, explainer]
+    prompt: |
+      Inputs: {{ safe_get_response('metrics_join', '{}') }}
+      Route: {{ safe_get_response('route_determiner', 'normal_path') }}
+
+  - id: safe_alternative_builder
+    type: local_llm
+    model: gpt-oss:20b
+    prompt: |
+      Suggest a safer, reversible alternative based on policies and the request.
+      
+      Request: {{ get_input() }}
+      Policies: {{ safe_get_response('policies_rag', 'No specific policies found') }}
+
+  - id: responder_block
+    type: local_llm
+    model: gpt-oss:20b
+    prompt: |
+      Block the risky request. Provide protective rationale, reassurance, and a safer alternative.
+      
+      Request: {{ get_input() }}
+      Metrics: {{ safe_get_response('metrics_join', '{}') }}
+
+  - id: responder_caution
+    type: local_llm
+    model: gpt-oss:20b
+    prompt: |
+      Decline risky portion and propose the safer alternative while maintaining rapport.
+      
+      Request: {{ get_input() }}
+      Alternative: {{ safe_get_response('safe_alternative_builder', 'No specific alternative available') }}
+
+  - id: responder_normal
+    type: local_llm
+    model: gpt-oss:20b
+    prompt: |
+      Proceed safely with clarity and boundary reminders.
+      
+      Request: {{ get_input() }}
+      Metrics: {{ safe_get_response('metrics_join', '{}') }}
+
+  - id: empathy_scorer
+    type: local_llm
+    model: gpt-oss:20b
+    prompt: |
+      Score comfort/clarity (K) of the final response in [0,1].
+      
+      Analyze the response for:
+      1. Emotional support (warmth, empathy, reassurance)
+      2. Clarity of communication (readability, simplicity)
+      3. Actionable guidance (clear next steps)
+      4. Respectful tone (non-judgmental, supportive)
+      5. Appropriate boundaries (protective without condescension)
+      
+      Return JSON: {"K": float, "sentiment": float, "readability": float, "analysis": "..."}
+      
+      Response: {{ safe_get_response('responder_block', '') }} {{ safe_get_response('responder_caution', '') }} {{ safe_get_response('responder_normal', '') }}
+
+  - id: memory_writer
+    type: memory
+    namespace: safety_events
+    queue: orka:shared-debate-memory-writer
+    config:
+      operation: write
+      memory_type: long_term  # Changed to long-term for protective memory
+      vector: true
+      metadata:
+        source: "maternal_instinct_v1"
+        request_type: "{{ safe_get_response('route_determiner', 'unknown') }}"
+        harm_score: "{{ safe_get_response('risk_predictor.H', '0.0') }}"
+        vulnerability_score: "{{ safe_get_response('vulnerability_analyzer.V', '0.0') }}"
+        comfort_score: "{{ safe_get_response('empathy_scorer.K', '0.0') }}"
+    prompt: |
+      Store event with metrics, route, and comfort score.
+      
+      Request: {{ get_input() }}
+      Metrics: {{ safe_get_response('metrics_join', '{}') }}
+      Route: {{ safe_get_response('route_determiner', 'unknown') }}
+      Comfort: {{ safe_get_response('empathy_scorer', '{}') }}
+
+  - id: perspective_synthesis
+    type: local_llm
+    model: gpt-oss:20b
+    prompt: |
+      Integrate multiple perspectives to create a balanced final assessment.
+      
+      Request: {{ get_input() }}
+      Metrics: {{ safe_get_response('metrics_join', '{}') }}
+      Route: {{ safe_get_response('route_determiner', 'unknown') }}
+      Response: {{ safe_get_response('responder_block', '') }} {{ safe_get_response('responder_caution', '') }} {{ safe_get_response('responder_normal', '') }}
+      Comfort Analysis: {{ safe_get_response('empathy_scorer', '{}') }}
+      
+      Consider these perspectives:
+      1. User's immediate needs and goals
+      2. Long-term safety and well-being
+      3. Ethical considerations and boundaries
+      4. Practical alternatives and solutions
+      
+      Return a synthesized assessment that balances these perspectives.
+
+  - id: explainer
+    type: local_llm
+    model: gpt-oss:20b
+    prompt: |
+      Summarize rationale with metrics and chosen route.
+      
+      Request: {{ get_input() }}
+      Metrics: {{ safe_get_response('metrics_join', '{}') }}
+      Route: {{ safe_get_response('route_determiner', 'unknown') }}
+      Response: {{ safe_get_response('responder_block', '') }} {{ safe_get_response('responder_caution', '') }} {{ safe_get_response('responder_normal', '') }}
+      Synthesis: {{ safe_get_response('perspective_synthesis', '') }}
