@@ -163,10 +163,13 @@ class PromptRenderer:
             input_data = enhanced_payload["input"]
 
             # Expose commonly used template variables at root level
-            template_vars = ["loop_number", "past_loops_metadata"]
+            template_vars = ["loop_number", "past_loops_metadata", "score_threshold"]
             for var in template_vars:
                 if var in input_data:
                     enhanced_payload[var] = input_data[var]
+                elif var == "score_threshold" and "loop_config" in input_data:
+                    # Extract score_threshold from loop configuration if available
+                    enhanced_payload[var] = input_data["loop_config"].get("score_threshold", 0.90)
 
         # If previous_outputs exists, enhance it for template compatibility
         if "previous_outputs" in enhanced_payload:
@@ -589,6 +592,9 @@ class PromptRenderer:
             "get_debate_evolution": get_debate_evolution,
             # Utility helpers
             "safe_get": safe_get,
+            "get_score_threshold": lambda: payload.get(
+                "score_threshold", 0.90
+            ),  # Default to 0.90 if not specified
         }
 
     def _add_prompt_to_payload(self, agent, payload_out, payload):

@@ -112,11 +112,28 @@ def ensure_memory_index(redis_client: redis.Redis, index_name: str = "memory_ent
 
 
 def ensure_enhanced_memory_index(
-    redis_client: redis.Redis, index_name: str = "orka_enhanced_memory", vector_dim: int = 384
+    redis_client: redis.Redis,
+    index_name: str = "orka_enhanced_memory",
+    vector_dim: int = 384,
+    vector_field_name: str = "content_vector",
+    vector_params: dict[str, Any] | None = None,
+    force_recreate: bool = False,
+    format_params: dict[str, Any] | None = None,
 ) -> bool:
     """
     Ensure that the enhanced memory index with vector search exists.
     This creates an index with vector search capabilities for semantic search.
+
+    Args:
+        redis_client: Redis client instance
+        index_name: Name of the index to create or verify
+        vector_dim: Dimension of the vector field
+        vector_field_name: Name of the vector field
+        vector_params: Additional parameters for vector field configuration
+        force_recreate: If True, drop and recreate the index if it exists but has issues
+
+    Returns:
+        bool: True if index exists and is properly configured, False otherwise
     """
     if not VECTOR_SEARCH_AVAILABLE:
         logger.warning(
@@ -124,12 +141,84 @@ def ensure_enhanced_memory_index(
         )
         return ensure_memory_index(redis_client, index_name)
 
+    # Default vector parameters
+    default_vector_params = {
+        "TYPE": "FLOAT32",
+        "DIM": vector_dim,
+        "DISTANCE_METRIC": "COSINE",
+        "EF_CONSTRUCTION": 200,
+        "M": 16,
+    }
+
+    # Merge with user-provided params if any
+    if vector_params:
+        default_vector_params.update(vector_params)
+
     try:
-        # Check if index exists
+        # Check if index exists and verify its configuration
         try:
-            redis_client.ft(index_name).info()
-            logger.info(f"Enhanced memory index '{index_name}' already exists")
+            # First verify if the index exists and has the correct configuration
+            index_info = verify_memory_index(redis_client, index_name)
+
+            if index_info["exists"]:
+                logger.info(f"Enhanced memory index '{index_name}' exists, verifying configuration")
+
+                # Check if vector field exists and is properly configured
+                if not index_info["vector_field_exists"]:
+                    logger.warning(
+                        f"Memory index {index_name} missing vector field. Available fields: {index_info['fields']}"
+                    )
+
+                    if force_recreate:
+                        logger.info(
+                            f"Dropping and recreating index {index_name} with proper vector configuration"
+                        )
+                        try:
+                            # Drop the existing index
+                            redis_client.ft(index_name).dropindex()
+                            logger.info(f"Successfully dropped index {index_name}")
+                        except Exception as drop_error:
+                            logger.error(f"Failed to drop index {index_name}: {drop_error}")
+                            return False
+                    else:
+                        # Index exists but is missing vector field, and we're not forcing recreation
+                        logger.warning(
+                            f"Index {index_name} exists but is missing vector field configuration. Set force_recreate=True to fix."
+                        )
+                        return False
+                else:
+                    # Index exists and has vector field, we're good
+                    logger.info(
+                        f"Enhanced memory index '{index_name}' already exists with vector field"
+                    )
+                    return True
+
+            # If we get here, either the index doesn't exist or we're recreating it
+            logger.info(
+                f"Creating enhanced memory index '{index_name}' with vector dimension {vector_dim}",
+            )
+
+            # Create enhanced index with vector field
+            redis_client.ft(index_name).create_index(
+                [
+                    TextField(
+                        "content", weight=5.0, sortable=True
+                    ),  # Increase weight and make sortable
+                    TextField("node_id", sortable=True),
+                    TextField("trace_id", sortable=True),
+                    NumericField("orka_expire_time", sortable=True),
+                    VectorField(
+                        vector_field_name,
+                        "HNSW",
+                        default_vector_params,
+                    ),
+                ],
+                definition=IndexDefinition(prefix=["orka_memory:"], index_type=IndexType.HASH),
+            )
+
+            logger.info(f"✅ Enhanced memory index '{index_name}' created successfully")
             return True
+
         except redis.ResponseError as e:
             if "Unknown index name" in str(e):
                 logger.info(
@@ -139,27 +228,23 @@ def ensure_enhanced_memory_index(
                 # Create enhanced index with vector field
                 redis_client.ft(index_name).create_index(
                     [
-                        TextField("content"),
-                        TextField("node_id"),
-                        TextField("trace_id"),
-                        NumericField("orka_expire_time"),
+                        TextField(
+                            "content", weight=5.0, sortable=True
+                        ),  # Increase weight and make sortable
+                        TextField("node_id", sortable=True),
+                        TextField("trace_id", sortable=True),
+                        NumericField("orka_expire_time", sortable=True),
                         VectorField(
-                            "content_vector",
+                            vector_field_name,
                             "HNSW",
-                            {
-                                "TYPE": "FLOAT32",
-                                "DIM": vector_dim,
-                                "DISTANCE_METRIC": "COSINE",
-                                "EF_CONSTRUCTION": 200,
-                                "M": 16,
-                            },
+                            default_vector_params,
                         ),
                     ],
                     definition=IndexDefinition(prefix=["orka_memory:"], index_type=IndexType.HASH),
                 )
 
                 logger.info(f"✅ Enhanced memory index '{index_name}' created successfully")
-                index_created = True
+                return True
             else:
                 raise
         except Exception as e:
@@ -189,6 +274,7 @@ def hybrid_vector_search(
     num_results: int = 5,
     index_name: str = "orka_enhanced_memory",
     trace_id: str | None = None,
+    format_params: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """
     Perform hybrid vector search using RedisStack.
@@ -331,7 +417,11 @@ def hybrid_vector_search(
     return results
 
 
-def verify_memory_index(redis_client, index_name: str = "orka_enhanced_memory") -> dict[str, Any]:
+def verify_memory_index(
+    redis_client,
+    index_name: str = "orka_enhanced_memory",
+    format_params: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """
     Verify that the memory index exists and has the correct schema.
 
@@ -349,6 +439,9 @@ def verify_memory_index(redis_client, index_name: str = "orka_enhanced_memory") 
             "fields": {},
             "vector_field_exists": False,
             "content_field_exists": False,
+            "vector_field_name": None,
+            "vector_field_type": None,
+            "vector_field_dim": None,
         }
 
         # Extract field information
@@ -366,10 +459,27 @@ def verify_memory_index(redis_client, index_name: str = "orka_enhanced_memory") 
 
                     index_info["fields"][field_name] = field_type
 
-                    if field_name == "content_vector" and field_type == "VECTOR":
+                    # Check for vector field with more detailed inspection
+                    if field_type == "VECTOR" or (
+                        isinstance(attr, list) and len(attr) > 5 and "VECTOR" in str(attr)
+                    ):
                         index_info["vector_field_exists"] = True
-                    elif field_name == "content" and field_type == "TEXT":
+                        index_info["vector_field_name"] = field_name
+                        index_info["vector_field_type"] = field_type
+
+                        # Try to extract vector dimension if available
+                        for i, item in enumerate(attr):
+                            if (
+                                isinstance(item, bytes)
+                                and item.decode("utf-8", errors="ignore") == "DIM"
+                            ):
+                                if i + 1 < len(attr) and isinstance(attr[i + 1], int):
+                                    index_info["vector_field_dim"] = attr[i + 1]
+
+                    # Check for content field with more flexible type checking
+                    if field_name == "content":
                         index_info["content_field_exists"] = True
+                        logger.debug(f"Found content field with type: {field_type}")
 
         logger.info(f"Index {index_name} verification: {index_info}")
         return index_info
@@ -383,6 +493,9 @@ def verify_memory_index(redis_client, index_name: str = "orka_enhanced_memory") 
             "fields": {},
             "vector_field_exists": False,
             "content_field_exists": False,
+            "vector_field_name": None,
+            "vector_field_type": None,
+            "vector_field_dim": None,
         }
 
 

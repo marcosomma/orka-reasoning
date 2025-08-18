@@ -35,6 +35,17 @@ orchestrator:
         agent_type_boosts:
           memory: 0.2
           openai-answer: 0.15
+    vector_search:
+      enabled: true
+      index_name: "orka_enhanced_memory"
+      vector_dim: 384
+      enable_hnsw: true
+      force_recreate_index: false
+      vector_params:
+        type: "FLOAT32"
+        distance_metric: "COSINE"
+        ef_construction: 200
+        m: 16
   agents:
     - memory_reader
     - memory_validator
@@ -58,6 +69,12 @@ agents:
       enable_temporal_ranking: true
       context_window_size: 5
       temporal_decay_hours: 24
+      # Vector search configuration
+      enable_vector_search: true
+      vector_weight: 0.7
+      text_weight: 0.3
+      enable_hybrid_search: true
+      ef_runtime: 10
     prompt: "{{ get_input() }}"
 
   # Step 2: Validate memory quality using OpenAI

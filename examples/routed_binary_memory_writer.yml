@@ -11,6 +11,18 @@ orchestrator:
       use_schema_registry: true
       topic_prefix: orka-memory
       redis_url: redis://localhost:6380/0  # Redis is still needed for memory operations
+    # Vector search configuration
+    vector_search:
+      enabled: true
+      index_name: "orka_enhanced_memory"
+      vector_dim: 384
+      enable_hnsw: true
+      force_recreate_index: false
+      vector_params:
+        type: "FLOAT32"
+        distance_metric: "COSINE"
+        ef_construction: 200
+        m: 16
   agents:
     - memory_reader
     - binary_answer_classifier
@@ -29,6 +41,12 @@ agents:
       enable_temporal_ranking: true
       temporal_weight: 0.1
       similarity_threshold: 0.1
+      # Vector search configuration
+      enable_vector_search: true
+      vector_weight: 0.7
+      text_weight: 0.3
+      enable_hybrid_search: true
+      ef_runtime: 10
     namespace: processed_numbers
     prompt: "Number: {{ get_input() }}"
 
@@ -183,6 +201,14 @@ agents:
       memory_type: short_term
       vector: true # Enable semantic search
       category: stored
+      # Enhanced vector configuration
+      vector_field_name: "content_vector"
+      force_recreate_index: false
+      vector_params:
+        type: "FLOAT32"
+        distance_metric: "COSINE"
+        ef_construction: 200
+        m: 16
     namespace: processed_numbers
     # Agent-level decay configuration overrides global settings
     decay:
@@ -226,6 +252,14 @@ agents:
       operation: write
       memory_type: short_term
       vector: true # Enable semantic search
+      # Enhanced vector configuration
+      vector_field_name: "content_vector"
+      force_recreate_index: false
+      vector_params:
+        type: "FLOAT32"
+        distance_metric: "COSINE"
+        ef_construction: 200
+        m: 16
     namespace: processed_numbers
     # Agent-level decay configuration overrides global settings
     decay:

@@ -178,6 +178,10 @@ def create_memory_logger(
     decay_config: dict[str, Any] | None = None,
     enable_hnsw: bool = True,
     vector_params: dict[str, Any] | None = None,
+    format_params: dict[str, Any] | None = None,
+    index_name: str = "orka_enhanced_memory",
+    vector_dim: int = 384,
+    force_recreate_index: bool = False,
     **kwargs,
 ) -> BaseMemoryLogger:
     """
@@ -196,6 +200,10 @@ def create_memory_logger(
         decay_config: Memory decay configuration
         enable_hnsw: Enable HNSW vector indexing (RedisStack only)
         vector_params: HNSW configuration parameters
+        format_params: Content formatting parameters (e.g., newline handling, custom filters)
+        index_name: Name of the RedisStack index for vector search
+        vector_dim: Dimension of vector embeddings
+        force_recreate_index: Whether to force recreate index if it exists but is misconfigured
         **kwargs: Additional parameters for backward compatibility
 
     Returns:
@@ -204,6 +212,10 @@ def create_memory_logger(
     Raises:
         ImportError: If required dependencies are not available
         ConnectionError: If backend connection fails
+
+    Notes:
+        All parameters can be configured through YAML configuration.
+        Vector parameters can be specified in detail through the vector_params dictionary.
     """
     # Normalize backend name
     backend = backend.lower()
@@ -251,14 +263,27 @@ def create_memory_logger(
                 logger.warning(f"⚠️ Could not initialize embedder: {e}")
                 logger.warning("Vector search will not be available")
 
+            # Prepare vector params with additional configuration
+            effective_vector_params = vector_params or {}
+
+            # Add force_recreate to vector params if specified
+            if force_recreate_index:
+                effective_vector_params["force_recreate"] = True
+
+            # Add vector dimension if not already in vector_params
+            if "dim" not in effective_vector_params and vector_dim:
+                effective_vector_params["dim"] = vector_dim
+
             logger_instance = RedisStackMemoryLogger(
                 redis_url=redis_url or "redis://localhost:6379/0",
-                embedder=embedder,  # 🎯 NEW: Pass embedder for vector search
+                index_name=index_name,  # Use configurable index name
+                embedder=embedder,  # Pass embedder for vector search
                 stream_key=stream_key,
                 debug_keep_previous_outputs=debug_keep_previous_outputs,
                 decay_config=decay_config,
                 enable_hnsw=enable_hnsw,
-                vector_params=vector_params,
+                vector_params=effective_vector_params,
+                format_params=format_params,  # Pass format parameters
             )
 
             # Test RedisStack capabilities

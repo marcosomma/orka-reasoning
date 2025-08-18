@@ -7,6 +7,21 @@ orchestrator:
   id: cognitive-society-collaborative-enhanced-local
   strategy: sequential
   memory_config:
+    backend: redisstack
+    vector_field: "content_vector"  # Ensure proper vector field for RedisStack
+    vector_index_name: "orka_enhanced_memory"  # Explicitly name the index
+    # Enhanced vector search configuration
+    vector_search:
+      enabled: true
+      index_name: "orka_enhanced_memory"
+      vector_dim: 384
+      enable_hnsw: true
+      force_recreate_index: false
+      vector_params:
+        type: "FLOAT32"
+        distance_metric: "COSINE"
+        ef_construction: 200
+        m: 16
     decay:
       enabled: true
       default_short_term_hours: 2.0   # 2 hours for active debate memories
@@ -31,7 +46,7 @@ agents:
   - id: cognitive_debate_loop
     type: loop
     max_loops: 3  # 🔧 RESTORED: Back to reasonable complexity
-    score_threshold: 0.75  # 🔧 LOWERED: More achievable for local models
+    score_threshold: 0.95  # Aligned with other society workflows
     
     # 🔧 NEW: High-priority agents for score extraction (checked first)
     high_priority_agents:
@@ -86,7 +101,7 @@ agents:
     past_loops_metadata:
       round: "{{ get_loop_number() }}"
       agreement_score: "{{ score }}"
-      convergence_target: "0.65"
+      convergence_target: "{{ get_score_threshold() }}"
       convergence_progress: "{{ 'ON_TRACK' if score >= (0.4 + (get_loop_number() - 1) * 0.08) else 'NEEDS_IMPROVEMENT' }}"
       collaboration_phase: "{{ 'INITIAL' if get_loop_number() == 1 else 'BRIDGE_BUILDING' if get_loop_number() <= 3 else 'CONSENSUS_BUILDING' }}"
       timestamp: "{{ timestamp }}"
@@ -130,6 +145,20 @@ agents:
             memory_category_filter: store
             memory_type_filter: "all"
             vector: true
+            vector_field: "embedded_vector"  # Use dedicated vector field for embedded content
+            # Enhanced vector search configuration
+            enable_vector_search: true
+            vector_weight: 0.7
+            text_weight: 0.3
+            enable_hybrid_search: true
+            ef_runtime: 10
+            # Format handling
+            format_response: true
+            preserve_newlines: false
+            format_filters:
+              - type: "replace"
+                pattern: "\n"
+                replacement: " "
           namespace: society_memory
           decay:
             enabled: true
@@ -574,7 +603,7 @@ agents:
           temperature: 0.1  # Ultra-low for scoring consistency
           prompt: |
             TOPIC: {{ get_input() }} - Round {{ get_loop_number() }}
-            TARGET: 0.65+ agreement to stop debate
+            TARGET: {{ get_score_threshold() }}+ agreement to stop debate
             
             AGENTS:
             Progressive: {{ safe_get_response('radical_progressive', 'No progressive response') }}
@@ -589,7 +618,7 @@ agents:
             FORMAT:
             AGREEMENT_SCORE: [your score 0.0-1.0]
             ANALYSIS: [Why this score]
-            CONTINUE: [YES if below 0.65, NO if 0.65+]
+            CONTINUE: [YES if below {{ get_score_threshold() }}, NO if {{ get_score_threshold() }}+]
 
         # Single shared memory writer - captures final debate state
         - id: shared_memory_writer
@@ -599,17 +628,32 @@ agents:
             operation: write
             memory_type: short_term
             vector: true
+            vector_field: "content_vector"  # Ensure proper vector field for RedisStack
+            # Enhanced vector configuration
+            force_recreate_index: false
+            vector_params:
+              type: "FLOAT32"
+              distance_metric: "COSINE"
+              ef_construction: 200
+              m: 16
           namespace: society_memory
           decay:
             enabled: true
             short_term_hours: 2.0
             long_term_hours: 24.0
+          # Configure what content gets embedded - with proper formatting
+          embed_content: |
+            {{ safe_get_response('agreement_finder', '') | truncate(200) | replace('\n', ' ') }}
+            {{ safe_get_response('synthesis_attempt', '') | truncate(200) | replace('\n', ' ') }}
+            {{ safe_get_response('quality_moderator', '') | truncate(200) | replace('\n', ' ') }}
+          
+          # Full memory content with proper formatting
           prompt: |
-            Q: {{ get_input() }} - Round {{ get_loop_number() }}
-            Agreement: {{ safe_get_response('agreement_finder', 'No agreement found') }}
-            Synthesis: {{ safe_get_response('synthesis_attempt', 'No synthesis available') }}
-            Quality: {{ safe_get_response('quality_moderator', 'No quality assessment') }}
-            Score: {{ safe_get_response('agreement_moderator', 'No score available') }}
+            Q: {{ get_input() | replace('\n', ' ') }} - Round {{ get_loop_number() }}
+            Agreement: {{ safe_get_response('agreement_finder', 'No agreement found') | truncate(100) | replace('\n', ' ') }}
+            Synthesis: {{ safe_get_response('synthesis_attempt', 'No synthesis available') | truncate(100) | replace('\n', ' ') }}
+            Quality: {{ safe_get_response('quality_moderator', 'No quality assessment') | truncate(100) | replace('\n', ' ') }}
+            Score: {{ safe_get_response('agreement_moderator', 'No score available') | truncate(50) | replace('\n', ' ') }}
           metadata:
             debate_round: "{{ loop_number }}"
             original_input: "{{ get_input() }}"

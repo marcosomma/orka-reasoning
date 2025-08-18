@@ -6,6 +6,21 @@ orchestrator:
   strategy: sequential
   queue: redis
   memory_config:
+    backend: redisstack
+    vector_field: "content_vector"  # Ensure proper vector field for RedisStack
+    vector_index_name: "orka_enhanced_memory"  # Explicitly name the index
+    # Enhanced vector search configuration
+    vector_search:
+      enabled: true
+      index_name: "orka_enhanced_memory"
+      vector_dim: 384
+      enable_hnsw: true
+      force_recreate_index: false
+      vector_params:
+        type: "FLOAT32"
+        distance_metric: "COSINE"
+        ef_construction: 200
+        m: 16
     decay:
       enabled: true
       default_short_term_hours: 24.0
@@ -43,6 +58,13 @@ agents:
       memory_category_filter: store
       memory_type_filter: "all"
       vector: true
+      vector_field: "content_vector"  # Ensure proper vector field for RedisStack
+      # Enhanced vector search configuration
+      enable_vector_search: true
+      vector_weight: 0.7
+      text_weight: 0.3
+      enable_hybrid_search: true
+      ef_runtime: 10
     prompt: |
       Fetch policies, medical safety notes, and app rules relevant to: {{ get_input() }}
       Return a compact bullet list.
@@ -61,6 +83,13 @@ agents:
       memory_category_filter: store
       memory_type_filter: "all"
       vector: true
+      vector_field: "content_vector"  # Ensure proper vector field for RedisStack
+      # Enhanced vector search configuration
+      enable_vector_search: true
+      vector_weight: 0.7
+      text_weight: 0.3
+      enable_hybrid_search: true
+      ef_runtime: 10
     params:
       type: read
       limit: 5
@@ -198,8 +227,16 @@ agents:
     namespace: safety_events
     config:
       operation: write
-      memory_type: short_term
       vector: true
+      vector_field: "content_vector"  # Ensure proper vector field for RedisStack
+      # Enhanced vector configuration
+      force_recreate_index: false
+      vector_params:
+        type: "FLOAT32"
+        distance_metric: "COSINE"
+        ef_construction: 200
+        m: 16
+      memory_type: short_term
       metadata:
         source: "maternal_instinct_v0"
     prompt: |

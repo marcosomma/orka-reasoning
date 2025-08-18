@@ -8,6 +8,18 @@ orchestrator:
     backend: redisstack
     vector_field: "content_vector"  # Ensure proper vector field for RedisStack
     vector_index_name: "orka_enhanced_memory"  # Explicitly name the index
+    # Enhanced vector search configuration
+    vector_search:
+      enabled: true
+      index_name: "orka_enhanced_memory"
+      vector_dim: 384
+      enable_hnsw: true
+      force_recreate_index: false
+      vector_params:
+        type: "FLOAT32"
+        distance_metric: "COSINE"
+        ef_construction: 200
+        m: 16
     decay:
       enabled: true
       default_short_term_hours: 24.0
@@ -45,6 +57,12 @@ agents:
       memory_type_filter: "all"
       vector: true
       vector_field: "content_vector"  # Ensure proper vector field for RedisStack
+      # Enhanced vector search configuration
+      enable_vector_search: true
+      vector_weight: 0.7
+      text_weight: 0.3
+      enable_hybrid_search: true
+      ef_runtime: 10
     prompt: |
       Retrieve prior harmful or near-harmful incidents similar to: {{ get_input() }}
       Include stored metrics and timestamps.
@@ -171,7 +189,7 @@ agents:
             Return JSON: {"V": float, "signals": ["..."]}.
             
             Request: {{ get_input() }}
-            Prior incidents: {{ previous_outputs.prior_incidents_reader | default('No prior incidents') }}
+            Prior incidents: {{ previous_outputs.prior_incidents_reader if previous_outputs is defined and 'prior_incidents_reader' in previous_outputs else 'No prior incidents' }}
             {% if get_loop_number() > 1 %}
             Previous assessment: {{ get_past_loops() | truncate(200) }}
             {% endif %}
@@ -210,7 +228,7 @@ agents:
             Combine metrics from upstream. maternal_score = V*H.
             
             # Extract prior incident counts from memory
-            {% set prior_incidents = previous_outputs.prior_incidents_reader | default('{}') %}
+            {% set prior_incidents = previous_outputs.prior_incidents_reader if previous_outputs is defined and 'prior_incidents_reader' in previous_outputs else '{}' %}
             {% set prior_severe_count = prior_incidents | regex_search('harm_score":\s*"([0-9.]+)"', '\1') | length %}
             {% set similar_risk_count = prior_incidents | regex_search('request_type":\s*"([^"]+)"', '\1') | length %}
             
@@ -238,7 +256,7 @@ agents:
             Vulnerability: {{ safe_get_response('vulnerability_analyzer', '{}') }}
             Reversibility: {{ safe_get_response('reversibility_estimator', '{}') }}
             Consent: {{ safe_get_response('consent_checker', '{}') }}
-            Prior incidents: {{ previous_outputs.prior_incidents_reader | default('{}') }}
+            Prior incidents: {{ previous_outputs.prior_incidents_reader if previous_outputs is defined and 'prior_incidents_reader' in previous_outputs else '{}' }}
             
             {% if get_loop_number() > 1 %}
             Previous metrics: {{ get_past_loops() | truncate(200) }}
@@ -534,6 +552,13 @@ agents:
       memory_type: long_term  # Changed to long-term for protective memory
       vector: true
       vector_field: "content_vector"  # Ensure proper vector field for RedisStack
+      # Enhanced vector configuration
+      force_recreate_index: false
+      vector_params:
+        type: "FLOAT32"
+        distance_metric: "COSINE"
+        ef_construction: 200
+        m: 16
       metadata:
         source: "maternal_instinct_v2"
         request_type: "{{ safe_get_response('maternal_safety_loop.route_determiner', 'unknown') }}"

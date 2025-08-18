@@ -7,6 +7,20 @@ orchestrator:
   queue: redis
   memory_config:
     backend: redisstack
+    vector_field: "content_vector"  # Ensure proper vector field for RedisStack
+    vector_index_name: "orka_enhanced_memory"  # Explicitly name the index
+    # Enhanced vector search configuration
+    vector_search:
+      enabled: true
+      index_name: "orka_enhanced_memory"
+      vector_dim: 384
+      enable_hnsw: true
+      force_recreate_index: false
+      vector_params:
+        type: "FLOAT32"
+        distance_metric: "COSINE"
+        ef_construction: 200
+        m: 16
     decay:
       enabled: true
       default_short_term_hours: 24.0
@@ -48,10 +62,17 @@ agents:
       similarity_threshold: 0.1  # Lower threshold for better fallback results
       enable_temporal_ranking: true
       temporal_weight: 0.4
+      vector: true
+      vector_field: "content_vector"  # Ensure proper vector field for RedisStack
+      # Enhanced vector search configuration
+      enable_vector_search: true
+      vector_weight: 0.7
+      text_weight: 0.3
+      enable_hybrid_search: true
+      ef_runtime: 10
       memory_type: short_term
       memory_category_filter: store
       memory_type_filter: "all"
-      vector: true
     prompt: |
       Fetch policies, medical safety notes, and app rules relevant to: {{ get_input() }}
       Return a compact bullet list.
@@ -69,9 +90,16 @@ agents:
       enable_temporal_ranking: true
       temporal_weight: 0.4
       memory_type: short_term
+      vector: true
+      vector_field: "content_vector"  # Ensure proper vector field for RedisStack
+      # Enhanced vector search configuration
+      enable_vector_search: true
+      vector_weight: 0.7
+      text_weight: 0.3
+      enable_hybrid_search: true
+      ef_runtime: 10
       memory_category_filter: store
       memory_type_filter: "all"
-      vector: true
     params:
       type: read
       limit: 5
@@ -232,6 +260,14 @@ agents:
       operation: write
       memory_type: long_term  # Changed to long-term for protective memory
       vector: true
+      vector_field: "content_vector"  # Ensure proper vector field for RedisStack
+      # Enhanced vector configuration
+      force_recreate_index: false
+      vector_params:
+        type: "FLOAT32"
+        distance_metric: "COSINE"
+        ef_construction: 200
+        m: 16
       metadata:
         source: "maternal_instinct_v1"
         request_type: "{{ safe_get_response('route_determiner', 'unknown') }}"

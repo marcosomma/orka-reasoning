@@ -10,6 +10,10 @@ agents:
     type: memory
     config:
       operation: write
+      # Vector configuration for memory writing
+      vector: true
+      vector_field_name: "content_vector"
+      force_recreate_index: false
     namespace: category_demo
     prompt: |
       Save this as a stored memory for '{{ get_input() }}'.
@@ -22,6 +26,13 @@ agents:
     config:
       operation: read
       memory_category_filter: stored
+      # Vector search configuration
+      enable_vector_search: true
+      vector_weight: 0.7
+      text_weight: 0.3
+      enable_hybrid_search: true
+      similarity_threshold: 0.75
+      ef_runtime: 10
     namespace: category_demo
     prompt: Retrieve stored memories related to '{{ get_input() }}'.
 

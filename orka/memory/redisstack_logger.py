@@ -218,6 +218,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         decay_config: dict[str, Any] | None = None,
         enable_hnsw: bool = True,
         vector_params: dict[str, Any] | None = None,
+        format_params: dict[str, Any] | None = None,
         **kwargs,
     ):
         """
@@ -249,6 +250,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         self.embedder = embedder
         self.enable_hnsw = enable_hnsw
         self.vector_params = vector_params or {}
+        self.format_params = format_params or {}
         self.stream_key = stream_key
         self.debug_keep_previous_outputs = debug_keep_previous_outputs
 
@@ -302,28 +304,135 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         """Backward compatibility property for redis client access."""
         return self.redis_client
 
+    def _format_content(self, content: str) -> str:
+        """Format content according to format parameters."""
+        if not self.format_params:
+            return content
+
+        try:
+            # Apply format filters
+            formatted_content = content
+            if self.format_params.get("format_response", True):
+                # Replace newlines if configured
+                if not self.format_params.get("preserve_newlines", False):
+                    formatted_content = formatted_content.replace("\n", " ")
+
+                # Apply custom filters
+                filters = self.format_params.get("format_filters", [])
+                for filter_config in filters:
+                    if filter_config.get("type") == "replace":
+                        pattern = filter_config.get("pattern", "")
+                        replacement = filter_config.get("replacement", "")
+                        if pattern and replacement is not None:
+                            formatted_content = formatted_content.replace(pattern, replacement)
+
+            return formatted_content
+        except Exception as e:
+            logger.warning(f"Error formatting content: {e}")
+            return content
+
     def _ensure_index(self):
         """Ensure the enhanced memory index exists with vector search capabilities."""
         try:
-            from orka.utils.bootstrap_memory_index import ensure_enhanced_memory_index
+            from orka.utils.bootstrap_memory_index import (
+                ensure_enhanced_memory_index,
+                verify_memory_index,
+            )
 
             # Get vector dimension from embedder if available
             vector_dim = 384  # Default dimension
             if self.embedder and hasattr(self.embedder, "embedding_dim"):
                 vector_dim = self.embedder.embedding_dim
 
-            success = ensure_enhanced_memory_index(
-                redis_client=self.redis_client,
-                index_name=self.index_name,
-                vector_dim=vector_dim,
-            )
+            # Check if we should force recreate the index if it exists but is misconfigured
+            force_recreate = self.vector_params.get("force_recreate", False)
+            vector_field_name = self.vector_params.get("vector_field_name", "content_vector")
+
+            # Extract vector parameters for HNSW configuration
+            hnsw_params = {
+                "TYPE": self.vector_params.get("type", "FLOAT32"),
+                "DIM": vector_dim,
+                "DISTANCE_METRIC": self.vector_params.get("distance_metric", "COSINE"),
+                "EF_CONSTRUCTION": self.vector_params.get("ef_construction", 200),
+                "M": self.vector_params.get("m", 16),
+            }
+
+            # First verify the index to log detailed diagnostics
+            if self.enable_hnsw:
+                index_info = verify_memory_index(
+                    redis_client=self.redis_client,
+                    index_name=self.index_name,
+                )
+
+                if index_info["exists"] and not index_info["vector_field_exists"]:
+                    logger.warning(
+                        f"Memory index {self.index_name} missing vector field. "
+                        f"Available fields: {index_info['fields']}. "
+                        f"Will attempt to fix based on configuration."
+                    )
+                    # If vector field is missing but index exists, force recreate
+                    force_recreate = True
+                    logger.info(f"Setting force_recreate=True to fix missing vector field")
+
+                if index_info["exists"] and not index_info["content_field_exists"]:
+                    logger.warning(
+                        f"Memory index {self.index_name} missing content field. "
+                        f"Available fields: {index_info['fields']}. "
+                        f"Will attempt to fix based on configuration."
+                    )
+                    # If content field is missing but index exists, force recreate
+                    force_recreate = True
+                    logger.info(f"Setting force_recreate=True to fix missing content field")
+
+            # Try multiple times with increasing force_recreate if needed
+            max_attempts = 2
+            for attempt in range(max_attempts):
+                success = ensure_enhanced_memory_index(
+                    redis_client=self.redis_client,
+                    index_name=self.index_name,
+                    vector_dim=vector_dim,
+                    vector_field_name=vector_field_name,
+                    vector_params=hnsw_params,
+                    force_recreate=(force_recreate or attempt > 0),
+                )
+
+                if success:
+                    # Verify the index was created correctly
+                    index_info = verify_memory_index(
+                        redis_client=self.redis_client,
+                        index_name=self.index_name,
+                    )
+
+                    if (
+                        index_info["exists"]
+                        and index_info["vector_field_exists"]
+                        and index_info["content_field_exists"]
+                    ):
+                        logger.info(f"Index verification successful after attempt {attempt+1}")
+                        break
+                    elif attempt < max_attempts - 1:
+                        logger.warning(
+                            f"Index verification failed after attempt {attempt+1}, retrying with force_recreate=True"
+                        )
+                        force_recreate = True
+                    else:
+                        logger.error(f"Index verification failed after all attempts")
+                else:
+                    if attempt < max_attempts - 1:
+                        logger.warning(
+                            f"Index creation failed on attempt {attempt+1}, retrying with force_recreate=True"
+                        )
+                        force_recreate = True
+                    else:
+                        logger.error(f"Index creation failed after all attempts")
 
             if success:
-                logger.info("Enhanced HNSW memory index ready")
+                logger.info(f"Enhanced HNSW memory index ready with dimension {vector_dim}")
                 return
             else:
                 logger.warning(
-                    "Enhanced memory index creation failed, some features may be limited",
+                    f"Enhanced memory index creation failed for {self.index_name}, "
+                    f"some features may be limited. Set force_recreate=True in vector_params to fix."
                 )
 
         except Exception as e:
@@ -380,9 +489,12 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 content = str(content)  # Ensure content is string
                 logger.warning("Using safe fallback metadata due to serialization error")
 
+            # Format content according to parameters
+            formatted_content = self._format_content(content)
+
             # Store memory data
             memory_data: dict[str, Any] = {
-                "content": content,
+                "content": formatted_content,
                 "node_id": node_id,
                 "trace_id": trace_id,
                 "timestamp": str(current_time_ms),  # Store as string for Redis
@@ -509,31 +621,90 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                         logger.error(
                             f"Memory index {self.index_name} does not exist: {index_status.get('error', 'Unknown error')}"
                         )
-                        return self._fallback_text_search(
-                            query,
-                            num_results,
-                            trace_id,
-                            node_id,
-                            memory_type,
-                            min_importance,
-                            log_type,
-                            namespace,
-                        )
+                        # Try to recreate the index before falling back
+                        try:
+                            logger.info(f"Attempting to recreate missing index {self.index_name}")
+                            self._ensure_index()
+                            # Verify again after recreation attempt
+                            index_status = verify_memory_index(client, self.index_name)
+                            if (
+                                not index_status["exists"]
+                                or not index_status["vector_field_exists"]
+                            ):
+                                logger.error(
+                                    f"Index recreation failed, falling back to text search"
+                                )
+                                return self._fallback_text_search(
+                                    query,
+                                    num_results,
+                                    trace_id,
+                                    node_id,
+                                    memory_type,
+                                    min_importance,
+                                    log_type,
+                                    namespace,
+                                )
+                        except Exception as recreate_error:
+                            logger.error(f"Failed to recreate index: {recreate_error}")
+                            return self._fallback_text_search(
+                                query,
+                                num_results,
+                                trace_id,
+                                node_id,
+                                memory_type,
+                                min_importance,
+                                log_type,
+                                namespace,
+                            )
 
                     if not index_status["vector_field_exists"]:
                         logger.error(
                             f"Memory index {self.index_name} missing vector field. Available fields: {index_status['fields']}"
                         )
-                        return self._fallback_text_search(
-                            query,
-                            num_results,
-                            trace_id,
-                            node_id,
-                            memory_type,
-                            min_importance,
-                            log_type,
-                            namespace,
-                        )
+                        # Try to recreate the index with force_recreate before falling back
+                        try:
+                            logger.info(
+                                f"Attempting to fix index {self.index_name} by recreating with vector field"
+                            )
+                            # Set force_recreate temporarily to true
+                            original_force_recreate = self.vector_params.get(
+                                "force_recreate", False
+                            )
+                            self.vector_params["force_recreate"] = True
+                            self._ensure_index()
+                            # Restore original setting
+                            self.vector_params["force_recreate"] = original_force_recreate
+
+                            # Verify again after recreation attempt
+                            index_status = verify_memory_index(client, self.index_name)
+                            if not index_status["vector_field_exists"]:
+                                logger.error(
+                                    f"Index vector field fix failed, falling back to text search"
+                                )
+                                return self._fallback_text_search(
+                                    query,
+                                    num_results,
+                                    trace_id,
+                                    node_id,
+                                    memory_type,
+                                    min_importance,
+                                    log_type,
+                                    namespace,
+                                )
+                        except Exception as recreate_error:
+                            logger.error(
+                                f"Failed to recreate index with vector field: {recreate_error}"
+                            )
+                            return self._fallback_text_search(
+                                query,
+                                num_results,
+                                trace_id,
+                                node_id,
+                                memory_type,
+                                min_importance,
+                                log_type,
+                                namespace,
+                            )
 
                     logger.debug(
                         f"Index verification passed: {index_status['num_docs']} docs, vector field exists"
@@ -745,6 +916,62 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 return default
         return value
 
+    def _escape_redis_search_query(self, query: str, include_underscores: bool = False) -> str:
+        """
+        Escape special characters in Redis search query to prevent syntax errors.
+
+        Args:
+            query: The query string to escape
+            include_underscores: Whether to also escape underscores (needed for IDs)
+
+        Returns:
+            Escaped query string safe for Redis FT.SEARCH
+        """
+        if not query:
+            return ""
+
+        # Define special characters that need escaping in Redis search
+        # Comprehensive list of special characters for RedisSearch
+        special_chars = [
+            "\\",
+            ":",
+            '"',
+            "'",
+            "(",
+            ")",
+            "[",
+            "]",
+            "{",
+            "}",
+            "|",
+            "@",
+            "~",
+            "-",
+            "&",
+            "!",
+            "*",
+            ",",
+            ".",
+            "?",
+            "^",
+            "+",
+            "/",
+            "<",
+            ">",
+            "=",
+        ]
+
+        # Add underscore to special chars if needed (for IDs)
+        if include_underscores:
+            special_chars.append("_")
+
+        # Escape each special character
+        escaped_query = query
+        for char in special_chars:
+            escaped_query = escaped_query.replace(char, f"\\{char}")
+
+        return escaped_query
+
     def _validate_similarity_score(self, score) -> float:
         """Validate and sanitize similarity scores to prevent NaN values."""
         try:
@@ -780,7 +1007,8 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             # Build search query - handle empty queries properly
             if query.strip():
                 # Escape special characters in the query for RedisStack FT.SEARCH
-                escaped_query = query.replace(":", "\\:").replace("(", "\\(").replace(")", "\\)")
+                escaped_query = self._escape_redis_search_query(query)
+
                 # Quote the query to handle spaces and special characters properly
                 search_query = f'@content:"{escaped_query}"'
             else:
@@ -791,16 +1019,17 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             filters = []
             if trace_id and trace_id.strip():
                 # Escape special characters in trace_id
-                escaped_trace_id = (
-                    trace_id.replace(":", "\\:").replace("-", "\\-").replace("_", "\\_")
+                escaped_trace_id = self._escape_redis_search_query(
+                    trace_id, include_underscores=True
                 )
+
                 if escaped_trace_id:  # Only add if not empty after escaping
                     filters.append(f"@trace_id:{escaped_trace_id}")
+
             if node_id and node_id.strip():
                 # Escape special characters in node_id
-                escaped_node_id = (
-                    node_id.replace(":", "\\:").replace("-", "\\-").replace("_", "\\_")
-                )
+                escaped_node_id = self._escape_redis_search_query(node_id, include_underscores=True)
+
                 if escaped_node_id:  # Only add if not empty after escaping
                     filters.append(f"@node_id:{escaped_node_id}")
 
