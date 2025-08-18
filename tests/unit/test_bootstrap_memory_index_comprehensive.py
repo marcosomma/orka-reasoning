@@ -119,7 +119,26 @@ class TestEnsureEnhancedMemoryIndex:
 
     def test_ensure_enhanced_memory_index_already_exists(self):
         """Test when enhanced memory index already exists."""
-        self.mock_ft.info.return_value = {"index_name": "orka_enhanced_memory"}
+        # Mock info to return a properly configured index
+        self.mock_ft.info.return_value = {
+            "num_docs": 0,
+            "attributes": [
+                ["identifier", b"content", "attribute", b"TEXT", "WEIGHT", "1"],
+                ["identifier", b"node_id", "attribute", b"TEXT", "WEIGHT", "1"],
+                ["identifier", b"trace_id", "attribute", b"TEXT", "WEIGHT", "1"],
+                ["identifier", b"orka_expire_time", "attribute", b"NUMERIC"],
+                [
+                    "identifier",
+                    b"content_vector",
+                    "attribute",
+                    b"VECTOR",
+                    "TYPE",
+                    "FLOAT32",
+                    "DIM",
+                    384,
+                ],
+            ],
+        }
 
         result = ensure_enhanced_memory_index(self.mock_client)
 
@@ -179,6 +198,7 @@ class TestEnsureEnhancedMemoryIndex:
     def test_ensure_enhanced_memory_index_redisearch_not_available(self):
         """Test handling when RediSearch is not available."""
         self.mock_ft.info.side_effect = Exception("unknown command FT.INFO")
+        self.mock_ft.create_index.side_effect = Exception("unknown command FT.CREATE")
 
         with patch("orka.utils.bootstrap_memory_index.logger") as mock_logger:
             result = ensure_enhanced_memory_index(self.mock_client)
@@ -189,6 +209,7 @@ class TestEnsureEnhancedMemoryIndex:
     def test_ensure_enhanced_memory_index_other_redis_error(self):
         """Test handling of other Redis errors."""
         self.mock_ft.info.side_effect = redis.ResponseError("Some other error")
+        self.mock_ft.create_index.side_effect = redis.ResponseError("Some other error")
 
         with patch("orka.utils.bootstrap_memory_index.logger") as mock_logger:
             result = ensure_enhanced_memory_index(self.mock_client)
@@ -199,6 +220,7 @@ class TestEnsureEnhancedMemoryIndex:
     def test_ensure_enhanced_memory_index_generic_exception(self):
         """Test handling of generic exceptions during index checking."""
         self.mock_ft.info.side_effect = Exception("Generic error")
+        self.mock_ft.create_index.side_effect = Exception("Generic error")
 
         with patch("orka.utils.bootstrap_memory_index.logger") as mock_logger:
             result = ensure_enhanced_memory_index(self.mock_client)

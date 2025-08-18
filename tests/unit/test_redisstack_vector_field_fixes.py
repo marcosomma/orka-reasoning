@@ -8,6 +8,7 @@ from unittest.mock import Mock, patch
 import numpy as np
 import pytest
 import redis
+from redis.commands.search.field import VectorField
 
 from orka.memory.redisstack_logger import RedisStackMemoryLogger
 from orka.utils.bootstrap_memory_index import (
@@ -165,7 +166,11 @@ class TestRedisStackVectorFieldFixes:
         # Verify results
         assert result is True
         self.mock_redis.ft().dropindex.assert_called_once()
-        self.mock_redis.ft().create_index.assert_called_once()
+        # The create_index is called multiple times due to retries, so we check the last call
+        assert self.mock_redis.ft().create_index.call_count >= 1
+        last_call = self.mock_redis.ft().create_index.call_args_list[-1]
+        assert len(last_call[0][0]) == 5  # Check number of fields
+        assert isinstance(last_call[0][0][-1], VectorField)  # Check last field is VectorField
 
     def test_query_escaping_for_special_characters(self):
         """Test the query escaping functionality for special characters."""
@@ -174,16 +179,15 @@ class TestRedisStackVectorFieldFixes:
         escaped_query = self.logger._escape_redis_search_query(special_query)
 
         # Verify all special characters are escaped
-        assert ":" not in escaped_query
-        assert "(" not in escaped_query
-        assert ")" not in escaped_query
-        assert "&" not in escaped_query
-        assert "!" not in escaped_query
-        assert "\\:" in escaped_query
-        assert "\\(" in escaped_query
+        # First check that the escaped sequences are present
+        assert "\\:" in escaped_query  # Check that colon is escaped
+        assert "\\(" in escaped_query  # Check that parentheses are escaped
         assert "\\)" in escaped_query
-        assert "\\&" in escaped_query
-        assert "\\!" in escaped_query
+        assert "\\&" in escaped_query  # Check that ampersand is escaped
+        assert "\\!" in escaped_query  # Check that exclamation mark is escaped
+
+        # Then check that the original string is properly escaped
+        assert escaped_query == "test\\:query with \\(special\\) characters \\& symbols\\!"
 
     def test_search_memories_with_vector_field_missing(self):
         """Test search_memories handles missing vector field gracefully."""
@@ -229,7 +233,9 @@ class TestRedisStackVectorFieldFixes:
             "vector_field_name": "custom_vector_field",
         }
 
-        with patch("orka.memory.redisstack_logger._ensure_index") as mock_ensure_index:
+        with patch(
+            "orka.utils.bootstrap_memory_index.ensure_enhanced_memory_index"
+        ) as mock_ensure_index:
             logger = RedisStackMemoryLogger(
                 redis_url="redis://localhost:6379/0",
                 index_name="custom_index",

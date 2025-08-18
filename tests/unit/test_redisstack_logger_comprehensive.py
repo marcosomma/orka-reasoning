@@ -147,33 +147,89 @@ class TestRedisStackMemoryLogger:
 
     def test_ensure_index_success(self):
         """Test successful index creation."""
-        with patch(
-            "orka.utils.bootstrap_memory_index.ensure_enhanced_memory_index",
-            return_value=True,
-        ) as mock_ensure:
+        with (
+            patch(
+                "orka.utils.bootstrap_memory_index.ensure_enhanced_memory_index",
+                return_value=True,
+            ) as mock_ensure,
+            patch("orka.utils.bootstrap_memory_index.verify_memory_index") as mock_verify,
+        ):
+            mock_verify.return_value = {
+                "exists": True,
+                "num_docs": 0,
+                "fields": {
+                    "content": "TEXT",
+                    "node_id": "TEXT",
+                    "trace_id": "TEXT",
+                    "orka_expire_time": "NUMERIC",
+                    "content_vector": "VECTOR",
+                },
+                "vector_field_exists": True,
+                "content_field_exists": True,
+                "vector_field_name": "content_vector",
+                "vector_field_type": "VECTOR",
+                "vector_field_dim": 384,
+            }
             self.logger._ensure_index()
 
-        mock_ensure.assert_called_once_with(
-            redis_client=self.logger.redis_client,
-            index_name=self.logger.index_name,
-            vector_dim=384,
-        )
+            mock_ensure.assert_called_once_with(
+                redis_client=self.logger.redis_client,
+                index_name=self.logger.index_name,
+                vector_dim=384,
+                vector_field_name="content_vector",
+                vector_params={
+                    "TYPE": "FLOAT32",
+                    "DIM": 384,
+                    "DISTANCE_METRIC": "COSINE",
+                    "EF_CONSTRUCTION": 200,
+                    "M": 16,
+                },
+                force_recreate=False,
+            )
 
     def test_ensure_index_no_embedder(self):
         """Test index creation without embedder."""
         self.logger.embedder = None
 
-        with patch(
-            "orka.utils.bootstrap_memory_index.ensure_enhanced_memory_index",
-            return_value=True,
-        ) as mock_ensure:
+        with (
+            patch(
+                "orka.utils.bootstrap_memory_index.ensure_enhanced_memory_index",
+                return_value=True,
+            ) as mock_ensure,
+            patch("orka.utils.bootstrap_memory_index.verify_memory_index") as mock_verify,
+        ):
+            mock_verify.return_value = {
+                "exists": True,
+                "num_docs": 0,
+                "fields": {
+                    "content": "TEXT",
+                    "node_id": "TEXT",
+                    "trace_id": "TEXT",
+                    "orka_expire_time": "NUMERIC",
+                    "content_vector": "VECTOR",
+                },
+                "vector_field_exists": True,
+                "content_field_exists": True,
+                "vector_field_name": "content_vector",
+                "vector_field_type": "VECTOR",
+                "vector_field_dim": 384,
+            }
             self.logger._ensure_index()
 
-        mock_ensure.assert_called_once_with(
-            redis_client=self.logger.redis_client,
-            index_name=self.logger.index_name,
-            vector_dim=384,  # Default dimension
-        )
+            mock_ensure.assert_called_once_with(
+                redis_client=self.logger.redis_client,
+                index_name=self.logger.index_name,
+                vector_dim=384,  # Default dimension
+                vector_field_name="content_vector",
+                vector_params={
+                    "TYPE": "FLOAT32",
+                    "DIM": 384,
+                    "DISTANCE_METRIC": "COSINE",
+                    "EF_CONSTRUCTION": 200,
+                    "M": 16,
+                },
+                force_recreate=False,
+            )
 
     def test_ensure_index_failure(self):
         """Test index creation failure."""

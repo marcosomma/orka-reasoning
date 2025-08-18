@@ -3,6 +3,56 @@
 *(derived from the public-repo commit history as of **2025-01-31**)*
 
 ---
+## [0.8.3] · 2025-08-18 🔧
+### Enhanced
+* **🧠 Memory System Improvements**
+  * **Enhanced Content Formatting**
+    * Added format_params configuration for memory content handling
+    * Improved newline handling and custom filter support
+    * Better content preservation across memory operations
+    * Configurable formatting rules via YAML
+  * **Score Threshold Management**
+    * Added get_score_threshold() helper for consistent threshold handling
+    * Improved threshold configuration via YAML
+    * Enhanced score validation across society workflows
+  * **Vector Search Optimization**
+    * Enhanced vector field configuration and validation
+    * Improved content field handling in RedisStack index
+    * Better error handling and self-healing capabilities
+    * Optimized embedded content storage and retrieval
+
+### Fixed
+* **🔍 RedisStack Integration**
+  * Fixed FT.SEARCH issues with missing vector field configuration
+  * Enhanced index verification and recreation logic
+  * Improved query escaping for special characters
+  * Added self-healing capabilities for misconfigured indexes
+* **📝 Template Handling**
+  * Fixed template reference issues in vulnerability_analyzer agent
+  * Enhanced template variable resolution and fallback handling
+  * Improved error reporting for unresolved variables
+* **🔄 Memory Operations**
+  * Fixed formatting issues in subsequent memory retrievals
+  * Enhanced content preservation across read/write operations
+  * Improved handling of formatted content in memory search
+
+### Technical Details
+* **Memory System Architecture**
+  * Added format_params to RedisStackMemoryLogger for content handling
+  * Enhanced bootstrap_memory_index.py with better field configuration
+  * Improved memory_logger.py factory function with format parameter support
+* **Performance Optimization**
+  * Enhanced content field indexing for better search performance
+  * Improved vector field configuration for optimal similarity search
+  * Better memory formatting efficiency with cached operations
+* **Error Handling**
+  * Enhanced error detection for misconfigured indexes
+  * Improved self-healing capabilities with automatic index recreation
+  * Better error reporting for template and formatting issues
+
+> No breaking changes. All existing workflows continue to function unchanged.
+
+---
 ## [0.8.2] · 2025-08-10 🧩
 
 ### Fixed

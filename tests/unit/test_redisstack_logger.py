@@ -23,15 +23,34 @@ class TestRedisStackLoggerInitialization:
         mock_ensure_index.return_value = True
         mock_create_connection.return_value = Mock()
 
-        logger = RedisStackMemoryLogger()
+        # Mock verify_memory_index to return a properly configured index
+        with patch("orka.utils.bootstrap_memory_index.verify_memory_index") as mock_verify:
+            mock_verify.return_value = {
+                "exists": True,
+                "num_docs": 0,
+                "fields": {
+                    "content": "TEXT",
+                    "node_id": "TEXT",
+                    "trace_id": "TEXT",
+                    "orka_expire_time": "NUMERIC",
+                    "content_vector": "VECTOR",
+                },
+                "vector_field_exists": True,
+                "content_field_exists": True,
+                "vector_field_name": "content_vector",
+                "vector_field_type": "VECTOR",
+                "vector_field_dim": 384,
+            }
 
-        assert logger.redis_url == "redis://localhost:6379/0"  # Updated to use port 6379
-        assert logger.index_name == "orka_enhanced_memory"
-        assert logger.embedder is None
-        assert logger.memory_decay_config is None
+            logger = RedisStackMemoryLogger()
 
-        # Check that the external ensure function was called with correct parameters
-        mock_ensure_index.assert_called_once()
+            assert logger.redis_url == "redis://localhost:6379/0"  # Updated to use port 6379
+            assert logger.index_name == "orka_enhanced_memory"
+            assert logger.embedder is None
+            assert logger.memory_decay_config is None
+
+            # Check that the external ensure function was called with correct parameters
+            mock_ensure_index.assert_called_once()
         call_args = mock_ensure_index.call_args
         assert call_args[1]["vector_dim"] == 384  # Default dimension
         assert call_args[1]["index_name"] == "orka_enhanced_memory"
@@ -102,9 +121,28 @@ class TestRedisStackLoggerInitialization:
         mock_embedder = Mock()
         mock_embedder.embedding_dim = 512
 
-        logger = RedisStackMemoryLogger(embedder=mock_embedder)
+        # Mock verify_memory_index to return a properly configured index
+        with patch("orka.utils.bootstrap_memory_index.verify_memory_index") as mock_verify:
+            mock_verify.return_value = {
+                "exists": True,
+                "num_docs": 0,
+                "fields": {
+                    "content": "TEXT",
+                    "node_id": "TEXT",
+                    "trace_id": "TEXT",
+                    "orka_expire_time": "NUMERIC",
+                    "content_vector": "VECTOR",
+                },
+                "vector_field_exists": True,
+                "content_field_exists": True,
+                "vector_field_name": "content_vector",
+                "vector_field_type": "VECTOR",
+                "vector_field_dim": 512,
+            }
 
-        mock_ensure.assert_called_once()
+            logger = RedisStackMemoryLogger(embedder=mock_embedder)
+
+            mock_ensure.assert_called_once()
         call_args = mock_ensure.call_args
         assert call_args[1]["vector_dim"] == 512
 
@@ -779,8 +817,27 @@ class TestRedisStackLoggerAdvanced:
 
     def test_index_creation_wrapper(self):
         """Test index creation wrapper method."""
-        with patch("orka.utils.bootstrap_memory_index.ensure_enhanced_memory_index") as mock_ensure:
+        with (
+            patch("orka.utils.bootstrap_memory_index.ensure_enhanced_memory_index") as mock_ensure,
+            patch("orka.utils.bootstrap_memory_index.verify_memory_index") as mock_verify,
+        ):
             mock_ensure.return_value = True
+            mock_verify.return_value = {
+                "exists": True,
+                "num_docs": 0,
+                "fields": {
+                    "content": "TEXT",
+                    "node_id": "TEXT",
+                    "trace_id": "TEXT",
+                    "orka_expire_time": "NUMERIC",
+                    "content_vector": "VECTOR",
+                },
+                "vector_field_exists": True,
+                "content_field_exists": True,
+                "vector_field_name": "content_vector",
+                "vector_field_type": "VECTOR",
+                "vector_field_dim": 384,
+            }
 
             result = self.logger.ensure_index()
 
