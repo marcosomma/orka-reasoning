@@ -121,7 +121,7 @@ class FakeRedisClient:
 
     def getaddrinfo(self, *args, **kwargs):
         # Return a plausible value for socket.getaddrinfo
-        return [(2, 1, 6, "", ("127.0.0.1", 6379))]
+        return [(2, 1, 6, "", ("127.0.0.1", 6380))]
 
     def lrange(self, key, start, end):
         """Get list range - return decoded strings"""

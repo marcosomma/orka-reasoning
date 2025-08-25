@@ -78,7 +78,8 @@ class TestBasicPerformance:
         # Create a large config with many agents
         agents = []
         for i in range(100):
-            agents.append(f"""
+            agents.append(
+                f"""
   - id: agent_{i}
     type: openai-answer
     queue: orka:agent_{i}
@@ -86,7 +87,8 @@ class TestBasicPerformance:
     config:
       model: "gpt-4"
       temperature: 0.{i % 10}
-""")
+"""
+            )
 
         config_content = f"""
 orchestrator:
@@ -100,7 +102,7 @@ agents:{" ".join(agents)}
 
 memory:
   backend: redis
-  url: redis://localhost:6379
+  url: redis://localhost:6380
 
 nodes:
   - type: memory-writer

@@ -79,13 +79,13 @@ class TestMemoryReaderNodeInitialization:
             node_id="test_node",
             prompt="test_prompt",
             queue=[],
-            redis_url="redis://custom:6379/1",
+            redis_url="redis://custom:6380/1",
             embedding_model="custom_model",
         )
 
         mock_create_logger.assert_called_once_with(
             backend="redisstack",
-            redis_url="redis://custom:6379/1",
+            redis_url="redis://custom:6380/1",
             embedder=None,  # Embedder fails during initialization
         )
         mock_get_embedder.assert_called_once_with("custom_model")

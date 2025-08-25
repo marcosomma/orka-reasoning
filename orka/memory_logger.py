@@ -93,7 +93,7 @@ Usage Examples
     from orka.memory_logger import create_memory_logger
 
     # Redis backend (default)
-    redis_memory = create_memory_logger("redis", redis_url="redis://localhost:6379")
+    redis_memory = create_memory_logger("redis", redis_url="redis://localhost:6380")
 
     # Kafka backend
     kafka_memory = create_memory_logger("kafka", bootstrap_servers="localhost:9092")
@@ -106,7 +106,7 @@ Usage Examples
     from orka.memory.kafka_logger import KafkaMemoryLogger
 
     # Redis logger
-    redis_logger = RedisMemoryLogger(redis_url="redis://localhost:6379")
+    redis_logger = RedisMemoryLogger(redis_url="redis://localhost:6380")
 
     # Kafka logger
     kafka_logger = KafkaMemoryLogger(bootstrap_servers="localhost:9092")
@@ -275,7 +275,7 @@ def create_memory_logger(
                 effective_vector_params["dim"] = vector_dim
 
             logger_instance = RedisStackMemoryLogger(
-                redis_url=redis_url or "redis://localhost:6379/0",
+                redis_url=redis_url or "redis://localhost:6380/0",
                 index_name=index_name,  # Use configurable index name
                 embedder=embedder,  # Pass embedder for vector search
                 stream_key=stream_key,

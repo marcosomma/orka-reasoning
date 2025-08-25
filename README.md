@@ -1,53 +1,58 @@
 # OrKa-Reasoning
 
+<p align="center\"><img src="https://orkacore.com/assets/ORKA_logo.png" alt="OrKa Logo" style="border-radius: 25px; width: 400px; height:400px" /></p>
 
-<div align="center">
+## Project Status
+[![orkacore](https://img.shields.io/badge/orkacore-.com-green?labelColor=blue&amp;style=for-the-badge&amp;link=https://orkacore.com/)](https://orkacore.com/)
+[![GitHub Tag](https://img.shields.io/github/v/tag/marcosomma/orka-reasoning?color=blue)](https://github.com/marcosomma/orka-reasoning/tags)
+[![PyPI - License](https://img.shields.io/pypi/l/orka-reasoning?color=blue)](https://pypi.org/project/orka-reasoning/)
 
-<img src="assets/logo_new.png" alt="OrKa Logo" width="256" height="256"/>
+## Quality and Security
+[![codecov](https://img.shields.io/badge/codecov-76.19%25-yellow?&amp;logo=codecov)](https://codecov.io/gh/marcosomma/orka-reasoning)
+[![orka-reasoning](https://snyk.io/advisor/python/orka-reasoning/badge.svg)](https://snyk.io/advisor/python/orka-reasoning)
 
-[![orkacore](https://img.shields.io/badge/orkacore-.com-green?labelColor=blue&style=for-the-badge&link=https://orkacore.com/)](https://orkacore.com/)
+## Package and Documentation
+[![PyPi](https://img.shields.io/badge/pypi-%23ececec.svg?style=for-the-badge&amp;logo=pypi&amp;logoColor=1f73b7)](https://pypi.org/project/orka-reasoning/)
+[![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&amp;logo=docker&amp;logoColor=white)](https://hub.docker.com/r/marcosomma/orka-ui)
+[![Documentation](https://img.shields.io/badge/Docs-blue?style=for-the-badge&amp;logo=googledocs&amp;logoColor=%23fff&amp;link=https%3A%2F%2Forkacore.com%2Fdocs%2Findex.html)](https://orkacore.com/docs/index.html)
 
-![GitHub Tag](https://img.shields.io/github/v/tag/marcosomma/orka-reasoning?color=blue)
-![PyPI - License](https://img.shields.io/pypi/l/orka-reasoning?color=blue)
-
-[![codecov](https://img.shields.io/badge/codecov-76.19%25-yellow?&logo=codecov)](https://codecov.io/gh/marcosomma/orka-reasoning) [![orka-reasoning](https://snyk.io/advisor/python/orka-reasoning/badge.svg)](https://snyk.io/advisor/python/orka-reasoning)
-
-[![PyPi](https://img.shields.io/badge/pypi-%23ececec.svg?style=for-the-badge&logo=pypi&logoColor=1f73b7)](https://pypi.org/project/orka-reasoning/) [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://hub.docker.com/r/marcosomma/orka-ui) [![Static Badge](https://img.shields.io/badge/Docs-blue?style=for-the-badge&logo=googledocs&logoColor=%23fff&link=https%3A%2F%2Forkacore.com%2Fdocs%2Findex.html)](https://orkacore.com/docs/index.html)
-
-[![Pepy Total Downloads](https://img.shields.io/pepy/dt/orka-reasoning?style=for-the-badge&label=Downloads%20from%20April%202025&color=blue&link=https%3A%2F%2Fpiptrends.com%2Fpackage%2Forka-reasoning)](https://clickpy.clickhouse.com/dashboard/orka-reasoning)
-
-</div>
+## Downloads
+[![Pepy Total Downloads](https://img.shields.io/pepy/dt/orka-reasoning?style=for-the-badge&amp;label=Downloads%20from%20April%202025&amp;color=blue&amp;link=https%3A%2F%2Fpiptrends.com%2Fpackage%2Forka-reasoning)](https://clickpy.clickhouse.com/dashboard/orka-reasoning)
 
 **AI Orchestration with 100x Faster Vector Search** - OrKa transforms your AI workflows with YAML-driven agent orchestration, intelligent memory management, and lightning-fast semantic search powered by RedisStack HNSW indexing.
 
 ---
 
-## 🚀 What's New in V0.8.x
+## Latest Features
 
-- **🔄 Advanced Loop Node** - Intelligent iterative workflows with cognitive insight extraction
-- **🧠 Cognitive Society Framework** - Multi-agent deliberation and consensus building
-- **🎯 Threshold-Based Execution** - Continue until quality meets requirements
-- **📊 Past Loops Memory** - Learn from previous attempts and iteratively improve
-- **🎓 Cognitive Insight Extraction** - Automatically identify insights, improvements, and mistakes
-- **🐛 Bug Fixes** - Integration test stability and agent type compatibility improvements
-- **🚀 Performance Optimizations** - Enhanced memory management and workflow execution
-- **🗂️ Curated Example Suite** - See [`examples/README.md`](./examples/README.md) for the updated, categorized templates and quickstarts
+### Version 0.8.x
+| Feature | Description |
+|---------|-------------|
+| Advanced Loop Node | Intelligent iterative workflows with cognitive insight extraction |
+| Cognitive Society Framework | Multi-agent deliberation and consensus building |
+| Threshold-Based Execution | Continue until quality meets requirements |
+| Past Loops Memory | Learn from previous attempts and iteratively improve |
+| Cognitive Insight Extraction | Automatically identify insights, improvements, and mistakes |
+| Bug Fixes | Integration test stability and agent type compatibility improvements |
+| Performance Optimizations | Enhanced memory management and workflow execution |
+| Curated Example Suite | See [`examples/README.md`](./examples/README.md) for templates |
 
-## 🚀 What's New in V0.7.x
-
-- **🚀 100x Faster Vector Search** - RedisStack HNSW indexing now default across all components
-- **⚡ Sub-millisecond Search Latency** - O(log n) complexity for massive datasets
-- **🏗️ Unified Architecture** - All components now use RedisStack with intelligent fallback
-- **🖥️ Professional CLI Dashboard** - Real-time performance monitoring and metrics
-- **🔧 Zero-Breaking Migration** - Complete backward compatibility maintained
+### Version 0.7.x
+| Feature | Description |
+|---------|-------------|
+| Vector Search | RedisStack HNSW indexing with 100x faster performance |
+| Search Latency | Sub-millisecond O(log n) complexity for massive datasets |
+| Architecture | Unified components with RedisStack intelligent fallback |
+| CLI Dashboard | Real-time performance monitoring and metrics |
+| Migration | Zero-breaking changes with full backward compatibility |
 
 ---
 
-## ⚡ 2-Minute Quickstart
+## Quick Installation
+
+> **Prerequisites**: Docker must be installed and running on your system.
 
 Get OrKa running with enterprise-grade performance in 2 minutes:
-
-**Prerequisites:** Ensure Docker is installed and running on your system.
 
 ```bash
 # 1. Install OrKa with all dependencies
@@ -138,18 +143,20 @@ This creates an intelligent Q&A system that:
 
 ---
 
-### Performance Comparison
+## Performance Comparison
 
-| Setup | Vector Search | Typical Use Case | Performance |
-|-------|---------------|------------------|-------------|
-| **RedisStack** | ✅ HNSW Indexing | Production AI, semantic search | **100x faster** |
-| **Basic Redis** | ❌ Text only | Development, simple workflows | Standard |
+| Setup | Features | Use Case | Performance Gain |
+|-------|----------|----------|-----------------|
+| **RedisStack** | HNSW Indexing ✅ | Production AI and Semantic Search | **100x Faster** |
+| **Basic Redis** | Text Search Only | Development and Simple Flows | Baseline |
+
+> **Note**: Performance metrics based on production workloads with 1M+ vector entries
 
 ---
 
-## 🧠 Hands-On: Build Your First AI Memory System
+## Building Your First AI Memory System
 
-Let's build a conversational AI that remembers and learns from interactions:
+> Let's create a conversational AI that remembers and learns from interactions. This example demonstrates core OrKa features in action.
 
 ### Step 1: Create the Workflow
 
@@ -660,7 +667,7 @@ agents:
     Generate a detailed answer.
 ```
 
-### Routing & Control Flow
+### Routing and Control Flow
 
 ```yaml
 # Dynamic routing
@@ -761,7 +768,7 @@ services:
   redis-stack:
     image: redis/redis-stack:latest
     ports:
-      - "6379:6379"
+      - "6380:6380"
     volumes:
       - redis_data:/data
     environment:
@@ -772,7 +779,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - REDIS_URL=redis://redis-stack:6379/0
+      - REDIS_URL=redis://redis-stack:6380/0
       - ORKA_MEMORY_BACKEND=redisstack
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:
@@ -788,7 +795,7 @@ volumes:
 # Core settings
 export OPENAI_API_KEY=your-key-here
 export ORKA_MEMORY_BACKEND=redisstack
-export REDIS_URL=redis://localhost:6379/0
+export REDIS_URL=redis://localhost:6380/0
 
 # Performance tuning
 export ORKA_MAX_CONCURRENT_REQUESTS=100
@@ -814,7 +821,7 @@ python scripts/migrate_to_redisstack.py --dry-run
 redis-cli BGSAVE
 
 # 3. Start RedisStack
-docker run -d -p 6379:6379 --name orka-redis redis/redis-stack:latest
+docker run -d -p 6380:6380 --name orka-redis redis/redis-stack:latest
 
 # 4. Migrate your memories
 python scripts/migrate_to_redisstack.py --migrate
@@ -830,11 +837,11 @@ export ORKA_MEMORY_BACKEND=redisstack
 
 ## 🐛 Troubleshooting
 
-### Common Issues & Quick Fixes
+### Common Issues and Quick Fixes
 
 | Issue | Quick Fix |
 |-------|-----------|
-| `"unknown command 'FT.CREATE'"` | You're using basic Redis. Install RedisStack: `docker run -d -p 6379:6379 redis/redis-stack:latest` |
+| `"unknown command 'FT.CREATE'"` | You're using basic Redis. Install RedisStack: `docker run -d -p 6380:6380 redis/redis-stack:latest` |
 | `"Cannot connect to Redis"` | Check Redis is running: `redis-cli ping` |
 | Memory search returns no results | Check vector indexing: `redis-cli FT._LIST` and see [Debugging Guide](./docs/DEBUGGING.md) |
 | Slow performance | Verify RedisStack HNSW: `orka memory configure` |
@@ -868,37 +875,39 @@ redis-cli INFO memory
 
 ---
 
-## 📚 Learn More
+## Documentation and Resources
 
-- 📖 **[Configuration Guide](./docs/CONFIGURATION.md)** - Detailed TTL, RedisStack, and component configuration
-- 🐛 **[Debugging Guide](./docs/DEBUGGING.md)** - Troubleshooting procedures and diagnostic tools
-- 🧩 **[Core Components](./docs/COMPONENTS.md)** - Agreement Finder, LoopNode, Memory Reader documentation
-- 🧠 **[Memory System Guide](./docs/MEMORY_SYSTEM_GUIDE.md)** - Complete memory architecture and patterns
-- 🎥 **[Video Tutorial](https://www.youtube.com/watch?v=hvVc8lSoADI)** - 5-minute OrKa overview
-- 📚 **[Full Documentation](https://orkacore.web.app/docs)** - Complete API reference
-- 💬 **[Community Discord](https://discord.gg/orka)** - Get help and share workflows
-- 🐛 **[GitHub Issues](https://github.com/marcosomma/orka-reasoning/issues)** - Report bugs and request features
+| Resource | Description |
+|----------|-------------|
+| [Configuration Guide](./docs/CONFIGURATION.md) | TTL, RedisStack, and component configuration |
+| [Debugging Guide](./docs/DEBUGGING.md) | Troubleshooting procedures and tools |
+| [Core Components](./docs/COMPONENTS.md) | Agreement Finder, LoopNode, Memory Reader docs |
+| [Memory System Guide](./docs/MEMORY_SYSTEM_GUIDE.md) | Memory architecture and patterns |
+| [Video Tutorial](https://www.youtube.com/watch?v=hvVc8lSoADI) | 5-minute OrKa overview |
+| [Full Documentation](https://orkacore.web.app/docs) | Complete API reference |
+| [Community Discord](https://discord.gg/orka) | Get help and share workflows |
+| [GitHub Issues](https://github.com/marcosomma/orka-reasoning/issues) | Report bugs and request features |
 
----
-
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
-## 📜 License
+## License
 
 Apache 2.0 License. See [LICENSE](./LICENSE) for details.
 
 ---
 
-<div align="center">
+## Getting Started
 
-**Ready to supercharge your AI workflows?**
+> Ready to supercharge your AI workflows?
 
 ```bash
-pip install orka-reasoning && docker run -d -p 6379:6379 redis/redis-stack:latest
+# Install OrKa
+pip install orka-reasoning
+
+# Start Redis Stack
+docker run -d -p 6380:6380 redis/redis-stack:latest
 ```
 
 [Get Started Now →](https://github.com/marcosomma/orka-reasoning/blob/master/docs/getting-started.md)
-
-</div>

@@ -114,7 +114,7 @@ def start_native_redis(port: int = 6380) -> Optional[subprocess.Popen]:
         raise RuntimeError(f"Redis startup failed: {e}")
 
 
-def start_redis_docker(port: int = 6379) -> Optional[subprocess.Popen]:
+def start_redis_docker(port: int = 6380) -> Optional[subprocess.Popen]:
     """
     Start Redis Stack using Docker as a fallback.
 

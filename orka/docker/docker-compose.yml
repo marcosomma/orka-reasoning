@@ -21,7 +21,7 @@ services:
   redis:
     image: redis/redis-stack-server:7.2.0-v6
     ports:
-      - "6380:6379"  # Use port 6380 externally to avoid conflicts with local Redis
+      - "6380:6379"  # Map external 6380 to internal 6379 (Redis default)
     volumes:
       - redis_data:/data
     command: >
@@ -142,7 +142,7 @@ services:
       - "8000:8000"
     environment:
       - ORKA_MEMORY_BACKEND=redisstack
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6380/0
       - ORKA_PORT=8000
     depends_on:
       redis:
@@ -166,7 +166,7 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - KAFKA_TOPIC_PREFIX=orka-memory
       - KAFKA_SCHEMA_REGISTRY_URL=http://schema-registry:8081
-      - REDIS_URL=redis://redis:6379/0  # Redis for memory operations
+      - REDIS_URL=redis://redis:6380/0  # Redis for memory operations
       - ORKA_PORT=8000
     depends_on:
       kafka:
@@ -197,7 +197,7 @@ services:
       - "8002:8000"
     environment:
       - ORKA_MEMORY_BACKEND=redisstack  # Default to RedisStack
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6380/0
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - KAFKA_TOPIC_PREFIX=orka-memory
       - KAFKA_SCHEMA_REGISTRY_URL=http://schema-registry:8081

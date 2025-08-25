@@ -463,7 +463,7 @@ class TestMemoryConfigure:
 
         mock_memory = MagicMock()
         mock_memory.decay_config = {"enabled": True}
-        mock_memory.redis_url = "redis://localhost:6379/0"
+        mock_memory.redis_url = "redis://localhost:6380/0"
         mock_memory.main_topic = "orka_memory_topic"
         mock_memory.get_memory_stats.return_value = {"total_entries": 75}
 
@@ -475,7 +475,7 @@ class TestMemoryConfigure:
             assert "📡 Kafka-Specific Tests:" in output
             assert "✅ Hybrid Backend: Kafka + Redis" in output
             assert "Kafka topic: orka_memory_topic" in output
-            assert "Redis URL: redis://localhost:6379/0" in output
+            assert "Redis URL: redis://localhost:6380/0" in output
             assert "Total entries: 75" in output
             assert "✅ Hybrid Backend: Kafka + Redis" in output
             assert "Kafka topic: orka_memory_topic" in output

@@ -36,7 +36,7 @@ USE_REAL_REDIS = os.environ.get("USE_REAL_REDIS", "false").lower() == "true"
 
 # Test execution configuration
 SKIP_LLM_TESTS = os.environ.get("SKIP_LLM_TESTS", "true" if IS_CI else "false").lower() == "true"
-REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6380/0")
 KAFKA_BOOTSTRAP_SERVERS = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 
 # Set environment variables

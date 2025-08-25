@@ -84,7 +84,7 @@ redis-server
 
 # Configure OrKa
 export ORKA_MEMORY_BACKEND=redis
-export REDIS_URL=redis://localhost:6379/0
+export REDIS_URL=redis://localhost:6380/0
 
 # Optional: Memory-specific settings
 export ORKA_MEMORY_DECAY_ENABLED=true

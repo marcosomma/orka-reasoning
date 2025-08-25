@@ -208,7 +208,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
 
     def __init__(
         self,
-        redis_url: str = "redis://localhost:6379/0",  # Use port 6379 by default
+        redis_url: str = "redis://localhost:6380/0",  # Use port 6380 by default
         index_name: str = "orka_enhanced_memory",
         embedder=None,
         memory_decay_config: dict[str, Any] | None = None,
@@ -225,7 +225,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         Initialize the RedisStack memory logger.
 
         Args:
-            redis_url: Redis connection URL. Defaults to redis://localhost:6379/0.
+            redis_url: Redis connection URL. Defaults to redis://localhost:6380/0.
             index_name: Name of the RedisStack index for vector search.
             embedder: Optional embedder for vector search.
             memory_decay_config: Configuration for memory decay functionality.

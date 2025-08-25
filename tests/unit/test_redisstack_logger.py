@@ -44,7 +44,7 @@ class TestRedisStackLoggerInitialization:
 
             logger = RedisStackMemoryLogger()
 
-            assert logger.redis_url == "redis://localhost:6379/0"  # Updated to use port 6379
+            assert logger.redis_url == "redis://localhost:6380/0"  # Updated to use port 6380
             assert logger.index_name == "orka_enhanced_memory"
             assert logger.embedder is None
             assert logger.memory_decay_config is None
@@ -65,12 +65,12 @@ class TestRedisStackLoggerInitialization:
         custom_config = {"short_term": 1.0, "long_term": 24.0}
 
         logger = RedisStackMemoryLogger(
-            redis_url="redis://custom:6379/1",
+            redis_url="redis://custom:6380/1",
             index_name="custom_index",
             memory_decay_config=custom_config,
         )
 
-        assert logger.redis_url == "redis://custom:6379/1"
+        assert logger.redis_url == "redis://custom:6380/1"
         assert logger.index_name == "custom_index"
         assert logger.memory_decay_config == custom_config
         mock_ensure.assert_called_once()

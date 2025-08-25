@@ -26,11 +26,11 @@ class TestRedisMemoryLoggerInitialization:
         with patch.dict("os.environ", {}, clear=True):
             logger = RedisMemoryLogger()
 
-        assert logger.redis_url == "redis://localhost:6379/0"
+        assert logger.redis_url == "redis://localhost:6380/0"
         assert logger.stream_key == "orka:memory"
         assert logger.debug_keep_previous_outputs is False
         assert logger.client == mock_client
-        mock_redis.assert_called_once_with("redis://localhost:6379/0")
+        mock_redis.assert_called_once_with("redis://localhost:6380/0")
 
     @patch("orka.memory.redis_logger.redis.from_url")
     def test_initialization_custom_params(self, mock_redis):
@@ -39,20 +39,20 @@ class TestRedisMemoryLoggerInitialization:
         mock_redis.return_value = mock_client
 
         logger = RedisMemoryLogger(
-            redis_url="redis://custom:6379/1",
+            redis_url="redis://custom:6380/1",
             stream_key="custom:stream",
             debug_keep_previous_outputs=True,
             decay_config={"enabled": True},
         )
 
-        assert logger.redis_url == "redis://custom:6379/1"
+        assert logger.redis_url == "redis://custom:6380/1"
         assert logger.stream_key == "custom:stream"
         assert logger.debug_keep_previous_outputs is True
         # Decay config gets merged with defaults, so just check enabled flag
         assert logger.decay_config["enabled"] is True
-        mock_redis.assert_called_once_with("redis://custom:6379/1")
+        mock_redis.assert_called_once_with("redis://custom:6380/1")
 
-    @patch.dict(os.environ, {"REDIS_URL": "redis://env:6379/2"})
+    @patch.dict(os.environ, {"REDIS_URL": "redis://env:6380/2"})
     @patch("orka.memory.redis_logger.redis.from_url")
     def test_initialization_from_env(self, mock_redis):
         """Test initialization with environment variable."""
@@ -61,8 +61,8 @@ class TestRedisMemoryLoggerInitialization:
 
         logger = RedisMemoryLogger()
 
-        assert logger.redis_url == "redis://env:6379/2"
-        mock_redis.assert_called_once_with("redis://env:6379/2")
+        assert logger.redis_url == "redis://env:6380/2"
+        mock_redis.assert_called_once_with("redis://env:6380/2")
 
     @patch("orka.memory.redis_logger.redis.from_url")
     def test_redis_property(self, mock_redis):

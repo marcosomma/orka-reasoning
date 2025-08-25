@@ -52,21 +52,21 @@ orka\docker\start-kafka.bat
 
 ### RedisStack Backend (Default)
 - **Orka API**: http://localhost:8000
-- **RedisStack**: localhost:6379 (Redis + vector search modules)
+- **RedisStack**: localhost:6380 (Redis + vector search modules)
 
 ### Basic Redis Backend (Legacy)
 - **Orka API**: http://localhost:8000
-- **Redis**: localhost:6379 (basic Redis only)
+- **Redis**: localhost:6380 (basic Redis only)
 
 ### Kafka Backend (Hybrid with RedisStack)
 - **Orka API**: http://localhost:8001
 - **Kafka (Events)**: localhost:9092
-- **RedisStack (Memory)**: localhost:6379  
+- **RedisStack (Memory)**: localhost:6380  
 - **Zookeeper**: localhost:2181
 
 ### Dual Backend
 - **Orka API**: http://localhost:8002
-- **Redis**: localhost:6379
+- **Redis**: localhost:6380
 - **Kafka**: localhost:9092
 - **Zookeeper**: localhost:2181
 
@@ -77,7 +77,7 @@ orka\docker\start-kafka.bat
 - `ORKA_FORCE_BASIC_REDIS`: Force basic Redis mode (`true`/`false`)
 
 ### RedisStack/Redis-Specific
-- `REDIS_URL`: Redis connection URL (default: `redis://localhost:6379/0`)
+- `REDIS_URL`: Redis connection URL (default: `redis://localhost:6380/0`)
 
 ### Kafka-Specific
 - `KAFKA_BOOTSTRAP_SERVERS`: Kafka brokers (default: `localhost:9092`)
@@ -136,7 +136,7 @@ When using dual backend, you can switch between Redis and Kafka at runtime by ch
 docker --version
 
 # Check for port conflicts
-netstat -an | grep 6379  # Redis
+netstat -an | grep 6380  # Redis
 netstat -an | grep 9092  # Kafka
 ```
 
@@ -212,13 +212,13 @@ orchestrator = Orchestrator("config.yml")
 from orka.memory_logger import create_memory_logger
 
 # RedisStack (default - recommended)
-memory = create_memory_logger("redisstack", redis_url="redis://localhost:6379")
+memory = create_memory_logger("redisstack", redis_url="redis://localhost:6380")
 
 # Basic Redis (legacy)
 import os
 os.environ["ORKA_FORCE_BASIC_REDIS"] = "true"
-memory = create_memory_logger("redis", redis_url="redis://localhost:6379")
+memory = create_memory_logger("redis", redis_url="redis://localhost:6380")
 
 # Kafka (hybrid with RedisStack)
-memory = create_memory_logger("kafka", bootstrap_servers="localhost:9092", redis_url="redis://localhost:6379")
+memory = create_memory_logger("kafka", bootstrap_servers="localhost:9092", redis_url="redis://localhost:6380")
 ``` 

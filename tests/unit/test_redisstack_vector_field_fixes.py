@@ -48,7 +48,7 @@ class TestRedisStackVectorFieldFixes:
 
         # Create logger instance with mocks
         self.logger = RedisStackMemoryLogger(
-            redis_url="redis://localhost:6379/0",
+            redis_url="redis://localhost:6380/0",
             index_name="test_index",
             embedder=self.mock_embedder,
             enable_hnsw=True,
@@ -237,7 +237,7 @@ class TestRedisStackVectorFieldFixes:
             "orka.utils.bootstrap_memory_index.ensure_enhanced_memory_index"
         ) as mock_ensure_index:
             logger = RedisStackMemoryLogger(
-                redis_url="redis://localhost:6379/0",
+                redis_url="redis://localhost:6380/0",
                 index_name="custom_index",
                 embedder=self.mock_embedder,
                 enable_hnsw=True,

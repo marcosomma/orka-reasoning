@@ -28,7 +28,7 @@ export ORKA_MEMORY_DECAY_CHECK_INTERVAL_MINUTES=30  # Default: 30 minutes
 
 # Memory backend configuration
 export ORKA_MEMORY_BACKEND=redisstack             # Default: redisstack
-export REDIS_URL=redis://localhost:6379/0         # RedisStack connection URL
+export REDIS_URL=redis://localhost:6380/0         # RedisStack connection URL
 ```
 
 **⚠️ Important TTL Discrepancy Resolution:**
@@ -119,11 +119,11 @@ FT.CREATE orka_enhanced_memory
 **Basic RedisStack Setup:**
 ```bash
 # Start RedisStack with Docker
-docker run -d -p 6379:6379 --name orka-redis redis/redis-stack:latest
+docker run -d -p 6380:6380 --name orka-redis redis/redis-stack:latest
 
 # Configure OrKa to use RedisStack
 export ORKA_MEMORY_BACKEND=redisstack
-export REDIS_URL=redis://localhost:6379/0
+export REDIS_URL=redis://localhost:6380/0
 ```
 
 **Production RedisStack Configuration:**
@@ -134,7 +134,7 @@ services:
   redis-stack:
     image: redis/redis-stack:latest
     ports:
-      - "6379:6379"
+      - "6380:6380"
       - "8001:8001"  # RedisInsight UI
     volumes:
       - redis_data:/data
@@ -150,10 +150,10 @@ volumes:
 **Advanced Connection Settings:**
 ```bash
 # Authentication and SSL
-export REDIS_URL=redis://:password@localhost:6379/0
+export REDIS_URL=redis://:password@localhost:6380/0
 
 # Redis Cluster (multiple nodes)
-export REDIS_URL=redis://node1:6379,node2:6379,node3:6379/0
+export REDIS_URL=redis://node1:6380,node2:6380,node3:6380/0
 
 # Connection pooling and timeouts
 export REDIS_POOL_MAX_CONNECTIONS=20
@@ -313,12 +313,12 @@ agents:
 pip install orka-reasoning
 
 # 2. Start RedisStack
-docker run -d -p 6379:6379 --name orka-redis redis/redis-stack:latest
+docker run -d -p 6380:6380 --name orka-redis redis/redis-stack:latest
 
 # 3. Configure environment
 export OPENAI_API_KEY=your-api-key-here
 export ORKA_MEMORY_BACKEND=redisstack
-export REDIS_URL=redis://localhost:6379/0
+export REDIS_URL=redis://localhost:6380/0
 export ORKA_MEMORY_DECAY_ENABLED=true
 export ORKA_MEMORY_DECAY_SHORT_TERM_HOURS=2
 export ORKA_MEMORY_DECAY_LONG_TERM_HOURS=168
@@ -336,7 +336,7 @@ orka memory stats
 
 # 2. Environment configuration
 export ORKA_MEMORY_BACKEND=redisstack
-export REDIS_URL=redis://:password@redis-cluster:6379/0
+export REDIS_URL=redis://:password@redis-cluster:6380/0
 export ORKA_MEMORY_DECAY_ENABLED=true
 export ORKA_MEMORY_DECAY_SHORT_TERM_HOURS=8      # 8 hours for logs
 export ORKA_MEMORY_DECAY_LONG_TERM_HOURS=168     # 1 week for knowledge
@@ -367,7 +367,7 @@ orka memory configure
 # Short-term Hours: 2.0
 # Long-term Hours: 168.0
 # Check Interval: 30 minutes
-# Redis URL: redis://localhost:6379/0
+# Redis URL: redis://localhost:6380/0
 # Vector Index: orka_enhanced_memory
 # Embedding Model: all-MiniLM-L6-v2
 ```

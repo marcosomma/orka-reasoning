@@ -523,7 +523,7 @@ orka run intelligent-qa.yml "Explain quantum entanglement" \
 # Core settings for Intelligent Q&A Flow
 export OPENAI_API_KEY=your-key-here
 export ORKA_MEMORY_BACKEND=redisstack
-export REDIS_URL=redis://localhost:6379/0
+export REDIS_URL=redis://localhost:6380/0
 
 # Performance optimization
 export ORKA_MEMORY_DECAY_ENABLED=true

@@ -36,7 +36,7 @@ echo ✅ Orka Redis Backend is now running!
 echo.
 echo 📍 Service Endpoints:
 echo    • Orka API: http://localhost:8000
-echo    • Redis:    localhost:6379
+echo    • Redis:    localhost:6380
 echo.
 echo 🛠️  Management Commands:
 echo    • View logs:     docker-compose --profile redis logs -f
@@ -45,5 +45,5 @@ echo    • Redis CLI:     docker-compose exec redis redis-cli
 echo.
 echo 🔧 Environment Variables:
 echo    • ORKA_MEMORY_BACKEND=redis
-echo    • REDIS_URL=redis://redis:6379/0
+echo    • REDIS_URL=redis://redis:6380/0
 echo. 

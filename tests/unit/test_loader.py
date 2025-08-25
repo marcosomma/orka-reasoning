@@ -194,7 +194,7 @@ agents:
 
 memory:
   backend: redis
-  url: redis://localhost:6379
+  url: redis://localhost:6380
   
 nodes:
   - type: memory-writer

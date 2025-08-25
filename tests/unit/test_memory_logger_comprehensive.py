@@ -308,7 +308,7 @@ class TestMemoryLoggerParameterHandling:
         mock_redisstack.return_value = mock_instance
 
         custom_params = {
-            "redis_url": "redis://custom:6379",
+            "redis_url": "redis://custom:6380",
             "stream_key": "custom:stream",
             "debug_keep_previous_outputs": True,
             "enable_hnsw": False,

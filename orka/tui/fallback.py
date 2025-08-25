@@ -36,7 +36,7 @@ class FallbackInterface:
             if backend == "redisstack":
                 redis_url = os.getenv("REDIS_URL", "redis://localhost:6380/0")
             else:
-                redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+                redis_url = os.getenv("REDIS_URL", "redis://localhost:6380/0")
 
             memory = create_memory_logger(backend=backend, redis_url=redis_url)
 

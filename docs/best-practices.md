@@ -259,7 +259,7 @@ services:
   orka:
     image: marcosomma/orka:latest
     environment:
-      - REDIS_URL=redis://redis-stack:6379/0
+      - REDIS_URL=redis://redis-stack:6380/0
       - ORKA_MEMORY_BACKEND=redisstack
       - ORKA_MAX_CONCURRENT_REQUESTS=100
     deploy:

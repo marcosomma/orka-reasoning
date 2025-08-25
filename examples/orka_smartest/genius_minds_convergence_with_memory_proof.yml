@@ -1,0 +1,420 @@
+# Genius Minds Convergence Workflow with Memory Proof — Multi-perspective analysis with historical geniuses
+# Uses local LLM agents (gpt-oss:20b) for all reasoning and generation.
+
+orchestrator:
+  id: genius_minds_convergence_with_memory
+  strategy: sequential
+  memory_config:
+    backend: redisstack
+    vector_field: "content_vector"
+    vector_index_name: "orka_enhanced_memory"
+    vector_search:
+      enabled: true
+      index_name: "orka_enhanced_memory"
+      vector_dim: 384
+      enable_hnsw: true
+      force_recreate_index: false  # Only create index if it doesn't exist
+      vector_params:
+        type: "FLOAT32"
+        distance_metric: "COSINE"
+        ef_construction: 200
+        m: 16
+    decay:
+      enabled: true
+      default_short_term_hours: 168.0  # 1 week
+      default_long_term_hours: 2160.0  # 90 days
+      check_interval_minutes: 60  # Check every hour
+      importance_rules:
+        base_score: 0.8
+        event_type_boosts:
+          breakthrough: 0.5
+          innovation: 0.4
+          synthesis: 0.45
+  agents:
+    - memory_verifier  # New agent to verify memory persistence
+    - prior_insights_reader
+    - genius_minds_loop
+    - final_synthesis_builder
+    - convergence_evaluator
+    - memory_writer
+
+agents:
+  # Memory verification agent
+  - id: memory_verifier
+    type: memory
+    namespace: genius_insights
+    queue: orka:memory-verification
+    config:
+      operation: read
+      limit: 10
+      enable_context_search: true
+      fallback_to_text: true
+      similarity_threshold: 0.6  # Higher threshold for better matches
+      enable_temporal_ranking: true
+      temporal_weight: 0.4
+      memory_type: long_term
+      memory_type_filter: "all"
+      vector: true
+      vector_field: "content_vector"
+      enable_vector_search: true
+      vector_weight: 0.7
+      text_weight: 0.3
+      enable_hybrid_search: true
+      search_params:
+        escape_special_chars: true
+        use_prefix_matching: true
+    prompt: |
+      Verify previous memories related to: {{ get_input() }}
+      Return a summary of found memories to prove persistence.
+
+  # Initial memory reader to retrieve past insights
+  - id: prior_insights_reader
+    type: memory
+    namespace: genius_insights
+    queue: orka:shared-debate-memory-reader
+    config:
+      operation: read
+      limit: 5
+      enable_context_search: true
+      fallback_to_text: true
+      similarity_threshold: 0.6
+      enable_temporal_ranking: true
+      temporal_weight: 0.4
+      memory_type: long_term
+      memory_category_filter: store
+      memory_type_filter: "all"
+      vector: true
+      vector_field: "content_vector"
+      enable_vector_search: true
+      vector_weight: 0.7
+      text_weight: 0.3
+      enable_hybrid_search: true
+    prompt: |
+      {{ get_input() }}
+
+  # Main loop node for genius minds discussion
+  - id: genius_minds_loop
+    type: loop
+    max_loops: 3
+    score_threshold: 0.90  # Higher threshold for better convergence
+    
+    high_priority_agents:
+      - "convergence_scorer"
+      - "insight_quality_checker"
+      - "memory_tracker"  # New agent to track memory across loops
+    
+    score_extraction_config:
+      strategies:
+        - type: pattern
+          patterns:
+            - "CONVERGENCE_SCORE: ([0-9.]+)"
+            - "Score: ([0-9.]+)"
+        - type: json
+          json_path: "$.convergence_score"
+    
+    cognitive_extraction:
+      enabled: true
+      max_length_per_category: 300  # Increased for more detailed extraction
+      extract_patterns:
+        insights:
+          - "INSIGHTS[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+        innovations:
+          - "INNOVATIONS[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+        synthesis:
+          - "SYNTHESIS[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+        individual_perspectives:  # New pattern for tracking individual perspectives
+          - "PERSPECTIVE_([A-Z_]+)[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
+    
+    past_loops_metadata:
+      round: "{{ get_loop_number() }}"
+      convergence_score: "{{ score }}"
+      timestamp: "{{ timestamp }}"
+      breakthrough: "{{ safe_get_response('breakthrough_detector', 'none') }}"
+      previous_perspectives: "{{ safe_get_response('memory_tracker', '{}') }}"
+    
+    internal_workflow:
+      orchestrator:
+        id: genius-minds-internal
+        strategy: sequential
+        agents:
+          - historical_context
+          - memory_tracker  # New agent to track memory across loops
+          - genius_fork
+          - genius_join
+          - insight_synthesizer
+          - breakthrough_detector
+          - insight_quality_checker
+          - convergence_scorer
+      
+      agents:
+        # Memory tracker for loop persistence
+        - id: memory_tracker
+          type: memory
+          namespace: genius_insights
+          queue: orka:memory-tracking
+          config:
+            operation: read
+            limit: 3
+            enable_context_search: true
+            vector: true
+            vector_field: "content_vector"
+          prompt: |
+            Track and summarize genius perspectives across loops:
+            Current loop: {{ get_loop_number() }}
+            Previous memories: {{ get_past_loops() }}
+
+        # Historical context provider
+        - id: historical_context
+          type: memory
+          namespace: historical_knowledge
+          queue: orka:shared-debate-memory
+          config:
+            operation: read
+            limit: 3
+            enable_context_search: true
+            vector: true
+            vector_field: "content_vector"
+          prompt: |
+            Retrieve historical context and knowledge relevant to: {{ get_input() }}
+
+        # Genius perspective agents
+        - id: genius_fork
+          type: fork
+          group: genius_perspectives
+          targets:
+            - [da_vinci_perspective]
+            - [einstein_perspective]
+            - [pythagoras_perspective]
+            - [newton_perspective]
+            - [tesla_perspective]
+
+        # Da Vinci's perspective
+        - id: da_vinci_perspective
+          type: local_llm
+          model: gpt-oss:20b
+          prompt: |
+            Channel Leonardo da Vinci's polymathic genius. Analyze through:
+            1. Visual-spatial reasoning
+            2. Artistic-scientific synthesis
+            3. Nature-inspired innovation
+            4. Practical engineering
+            5. Anatomical/structural understanding
+            
+            Topic: {{ get_input() }}
+            Historical context: {{ safe_get_response('historical_context', 'No specific context found') }}
+            Previous insights: {{ safe_get_response('memory_tracker', '{}') }}
+            
+            Return in da Vinci's voice, including sketches described in words.
+            End with:
+            PERSPECTIVE_DA_VINCI: [summary]
+            INNOVATION_SCORE: [0.0-1.0]
+
+        # Einstein's perspective
+        - id: einstein_perspective
+          type: local_llm
+          model: gpt-oss:20b
+          prompt: |
+            Channel Albert Einstein's revolutionary thinking. Analyze through:
+            1. Thought experiments
+            2. Fundamental principles
+            3. Space-time considerations
+            4. Quantum implications
+            5. Unified theory approach
+            
+            Topic: {{ get_input() }}
+            Historical context: {{ safe_get_response('historical_context', 'No specific context found') }}
+            Previous insights: {{ safe_get_response('memory_tracker', '{}') }}
+            
+            Return in Einstein's voice, with his characteristic metaphors.
+            End with:
+            PERSPECTIVE_EINSTEIN: [summary]
+            INNOVATION_SCORE: [0.0-1.0]
+
+        # Pythagoras's perspective
+        - id: pythagoras_perspective
+          type: local_llm
+          model: gpt-oss:20b
+          prompt: |
+            Channel Pythagoras's mathematical wisdom. Analyze through:
+            1. Mathematical harmony
+            2. Geometric patterns
+            3. Numerical relationships
+            4. Musical ratios
+            5. Universal order
+            
+            Topic: {{ get_input() }}
+            Historical context: {{ safe_get_response('historical_context', 'No specific context found') }}
+            Previous insights: {{ safe_get_response('memory_tracker', '{}') }}
+            
+            Return in Pythagoras's voice, emphasizing mathematical harmony.
+            End with:
+            PERSPECTIVE_PYTHAGORAS: [summary]
+            INNOVATION_SCORE: [0.0-1.0]
+
+        # Newton's perspective
+        - id: newton_perspective
+          type: local_llm
+          model: gpt-oss:20b
+          prompt: |
+            Channel Isaac Newton's systematic genius. Analyze through:
+            1. Physical laws
+            2. Mathematical models
+            3. Experimental evidence
+            4. Universal principles
+            5. Mechanical relationships
+            
+            Topic: {{ get_input() }}
+            Historical context: {{ safe_get_response('historical_context', 'No specific context found') }}
+            Previous insights: {{ safe_get_response('memory_tracker', '{}') }}
+            
+            Return in Newton's voice, with mathematical precision.
+            End with:
+            PERSPECTIVE_NEWTON: [summary]
+            INNOVATION_SCORE: [0.0-1.0]
+
+        # Tesla's perspective
+        - id: tesla_perspective
+          type: local_llm
+          model: gpt-oss:20b
+          prompt: |
+            Channel Nikola Tesla's visionary mind. Analyze through:
+            1. Electromagnetic theory
+            2. Energy systems
+            3. Innovative applications
+            4. Future implications
+            5. System interconnections
+            
+            Topic: {{ get_input() }}
+            Historical context: {{ safe_get_response('historical_context', 'No specific context found') }}
+            Previous insights: {{ safe_get_response('memory_tracker', '{}') }}
+            
+            Return in Tesla's voice, with futuristic vision.
+            End with:
+            PERSPECTIVE_TESLA: [summary]
+            INNOVATION_SCORE: [0.0-1.0]
+
+        # Join genius perspectives with enhanced memory tracking
+        - id: genius_join
+          type: join
+          group: genius_perspectives
+          prompt: |
+            Combine insights from all historical geniuses, ensuring each perspective is preserved.
+            
+            Previous loop insights: {{ safe_get_response('memory_tracker', '{}') }}
+            
+            Current perspectives:
+            Da Vinci: {{ safe_get_response('da_vinci_perspective', '{}') }}
+            Einstein: {{ safe_get_response('einstein_perspective', '{}') }}
+            Pythagoras: {{ safe_get_response('pythagoras_perspective', '{}') }}
+            Newton: {{ safe_get_response('newton_perspective', '{}') }}
+            Tesla: {{ safe_get_response('tesla_perspective', '{}') }}
+            
+            {% if get_loop_number() > 1 %}
+            Previous insights: {{ get_past_loops() }}
+            {% endif %}
+            
+            For each genius, provide:
+            PERSPECTIVE_DA_VINCI: [summary]
+            PERSPECTIVE_EINSTEIN: [summary]
+            PERSPECTIVE_PYTHAGORAS: [summary]
+            PERSPECTIVE_NEWTON: [summary]
+            PERSPECTIVE_TESLA: [summary]
+            
+            Then synthesize the perspectives, noting:
+            1. Individual unique contributions
+            2. Areas of agreement
+            3. Evolution of thoughts across loops
+            4. Memory-based improvements
+
+  # Final synthesis builder with enhanced perspective tracking
+  - id: final_synthesis_builder
+    type: local_llm
+    model: gpt-oss:20b
+    prompt: |
+      Create final synthesis of genius minds discussion with proof of memory persistence.
+      
+      Topic: {{ get_input() }}
+      Memory verification: {{ safe_get_response('memory_verifier', '') }}
+      Previous loop memories: {{ safe_get_response('memory_tracker', '') }}
+      
+      For each genius, summarize their perspective evolution across all loops:
+      
+      DA VINCI'S JOURNEY:
+      Loop 1: {{ safe_get_response('genius_minds_loop.genius_join.PERSPECTIVE_DA_VINCI', 'No data') }}
+      {% if get_loop_number() > 1 %}
+      Later loops: {{ get_past_loops() | extract_perspective('DA_VINCI') }}
+      {% endif %}
+      
+      EINSTEIN'S JOURNEY:
+      Loop 1: {{ safe_get_response('genius_minds_loop.genius_join.PERSPECTIVE_EINSTEIN', 'No data') }}
+      {% if get_loop_number() > 1 %}
+      Later loops: {{ get_past_loops() | extract_perspective('EINSTEIN') }}
+      {% endif %}
+      
+      PYTHAGORAS'S JOURNEY:
+      Loop 1: {{ safe_get_response('genius_minds_loop.genius_join.PERSPECTIVE_PYTHAGORAS', 'No data') }}
+      {% if get_loop_number() > 1 %}
+      Later loops: {{ get_past_loops() | extract_perspective('PYTHAGORAS') }}
+      {% endif %}
+      
+      NEWTON'S JOURNEY:
+      Loop 1: {{ safe_get_response('genius_minds_loop.genius_join.PERSPECTIVE_NEWTON', 'No data') }}
+      {% if get_loop_number() > 1 %}
+      Later loops: {{ get_past_loops() | extract_perspective('NEWTON') }}
+      {% endif %}
+      
+      TESLA'S JOURNEY:
+      Loop 1: {{ safe_get_response('genius_minds_loop.genius_join.PERSPECTIVE_TESLA', 'No data') }}
+      {% if get_loop_number() > 1 %}
+      Later loops: {{ get_past_loops() | extract_perspective('TESLA') }}
+      {% endif %}
+      
+      Analyze:
+      1. How each genius's perspective evolved
+      2. Impact of memory on their insights
+      3. Cross-pollination of ideas
+      4. Convergence of thought
+      5. Memory persistence proof
+      
+      MEMORY_PROOF: [Demonstrate how memories influenced the discussion]
+      INDIVIDUAL_JOURNEYS: [Summary of each genius's evolution]
+      FINAL_SYNTHESIS: [Complete synthesis]
+
+  # Memory writer with enhanced metadata
+  - id: memory_writer
+    type: memory
+    namespace: genius_insights
+    queue: orka:shared-debate-memory-writer
+    config:
+      operation: write
+      memory_type: long_term
+      vector: true
+      vector_field: "content_vector"
+      force_recreate_index: false
+      vector_params:
+        type: "FLOAT32"
+        distance_metric: "COSINE"
+        ef_construction: 200
+        m: 16
+      metadata:
+        source: "genius_minds_convergence"
+        convergence_score: "{{ safe_get_response('genius_minds_loop.convergence_scorer.CONVERGENCE_SCORE', '0.0') }}"
+        quality_score: "{{ safe_get_response('genius_minds_loop.insight_quality_checker.QUALITY_SCORE', '0.0') }}"
+        breakthrough_potential: "{{ safe_get_response('genius_minds_loop.breakthrough_detector.BREAKTHROUGH_POTENTIAL', '0.0') }}"
+        loop_count: "{{ safe_get_response('genius_minds_loop.loops_completed', '1') }}"
+        memory_verified: "{{ safe_get_response('memory_verifier', 'false') }}"
+      search_params:
+        escape_special_chars: true
+        use_prefix_matching: true
+      store_params:
+        ensure_unique: true
+        update_existing: true
+    prompt: |
+      Store complete discussion with metrics, insights, and memory proof.
+      
+      Topic: {{ get_input() }}
+      Memory verification: {{ safe_get_response('memory_verifier', '') }}
+      Final synthesis: {{ safe_get_response('final_synthesis_builder', '') }}
+      Evaluation: {{ safe_get_response('convergence_evaluator', '') }}
+      Iterations: {{ safe_get_response('genius_minds_loop.loops_completed', '1') }}
+      Individual perspectives: {{ safe_get_response('genius_minds_loop.genius_join', '') }}

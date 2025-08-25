@@ -178,7 +178,7 @@ class PastLoopMetadata(TypedDict, total=False):
 
 def __init__(
     self,
-    redis_url: str = "redis://localhost:6379/0",
+    redis_url: str = "redis://localhost:6380/0",
     index_name: str = "orka_enhanced_memory",
     embedder=None,
     memory_decay_config: Optional[Dict[str, Any]] = None,

@@ -826,11 +826,11 @@ class TestMemoryLoggerFactory:
 
         # Force basic redis mode to avoid RedisStack fallback
         with patch.dict(os.environ, {"ORKA_FORCE_BASIC_REDIS": "true"}):
-            logger = create_memory_logger(backend="redis", redis_url="redis://localhost:6379")
+            logger = create_memory_logger(backend="redis", redis_url="redis://localhost:6380")
 
         mock_redis.assert_called_once()
         call_kwargs = mock_redis.call_args[1]
-        assert call_kwargs["redis_url"] == "redis://localhost:6379"
+        assert call_kwargs["redis_url"] == "redis://localhost:6380"
 
     @patch("orka.memory.kafka_logger.KafkaMemoryLogger")
     def test_create_memory_logger_kafka(self, mock_kafka):

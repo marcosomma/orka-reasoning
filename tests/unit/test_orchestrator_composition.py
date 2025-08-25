@@ -21,7 +21,7 @@ class TestOrchestratorComposition:
         config = {
             "orchestrator": {
                 "memory_backend": "redis",
-                "redis_url": "redis://localhost:6379",
+                "redis_url": "redis://localhost:6380",
                 "log_level": "INFO",
                 "agents": ["test_agent"],
             },

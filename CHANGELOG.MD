@@ -1,7 +1,52 @@
 # OrKa-Reasoning – Un-official CHANGELOG
 
 *(derived from the public-repo commit history as of **2025-01-31**)*
+---
+## [0.8.4] · 2025-08-25 🔧
+### Fixed
+* 🧠 Memory System & Redis Integration
+ * Memory Persistence Issues
+ * Fixed RedisStack index recreation causing memory loss by disabling force_recreate_index
+ * Enhanced memory decay configuration to prevent premature expiration
+ * Improved memory type handling for long-term vs short-term memories
+ * Better TTL management with configurable check intervals
+ * Redis Configuration
+ * Standardized Redis port usage (6380 → 6379) for better compatibility
+ * Enhanced Redis startup scripts with proper port configuration
+ * Improved error handling for Redis connection issues
+ * Added graceful fallback for Redis startup failures
+ * Loop State Management
+ * Added loop_state_manager for proper loop data persistence
+ * Enhanced genius perspective tracking across iterations
+ * Improved memory verification with structured loop data
+ * Better template handling for past loop insights
 
+### Enhanced
+* 🔄 Loop & Memory Architecture
+ * Loop Data Structure
+ * Enhanced loop state tracking with proper Jinja2 templating
+ * Improved past loop data access in genius perspectives
+ * Better convergence tracking across iterations
+ * Structured memory format for loop insights
+ * Memory Configuration
+ * Configurable memory decay with longer retention periods
+ * Enhanced importance scoring for better memory persistence
+ * Improved hybrid search configuration
+ * Better vector field handling in RedisStack
+
+### Technical Details
+* Memory System Architecture
+ * Standardized Redis port configuration (6379) across all components
+ * Enhanced memory decay settings (short_term=168h, long_term=2160h)
+ * Improved loop state persistence with structured data format
+ * Better template handling for past loop insights
+* Performance Optimization
+ * Reduced memory loss from index recreation
+ * Improved memory retrieval with better search parameters
+ * Enhanced loop data persistence and retrieval
+ * Better resource management for long-running processes
+
+> No breaking changes. All existing workflows continue to function unchanged.
 ---
 ## [0.8.3] · 2025-08-18 🔧
 ### Enhanced

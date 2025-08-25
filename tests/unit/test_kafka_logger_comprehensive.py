@@ -40,20 +40,20 @@ class TestKafkaMemoryLoggerInitialization:
 
             logger = KafkaMemoryLogger(
                 bootstrap_servers="kafka:9093",
-                redis_url="redis://custom:6379/1",
+                redis_url="redis://custom:6380/1",
                 stream_key="custom:stream",
                 debug_keep_previous_outputs=True,
                 decay_config={"enabled": True},
             )
 
             assert logger.bootstrap_servers == "kafka:9093"
-            assert logger.redis_url == "redis://custom:6379/1"
+            assert logger.redis_url == "redis://custom:6380/1"
             assert logger.stream_key == "custom:stream"
             assert logger.debug_keep_previous_outputs is True
             assert logger.decay_config["enabled"] is True
             mock_producer.assert_called_once()
 
-    @patch.dict(os.environ, {"REDIS_URL": "redis://env:6379/2"})
+    @patch.dict(os.environ, {"REDIS_URL": "redis://env:6380/2"})
     @patch("orka.memory.kafka_logger.redis.from_url")
     @patch("confluent_kafka.Producer")
     def test_initialization_from_env(self, mock_producer, mock_redis):
@@ -66,7 +66,7 @@ class TestKafkaMemoryLoggerInitialization:
 
             logger = KafkaMemoryLogger()
 
-            assert logger.redis_url == "redis://env:6379/2"
+            assert logger.redis_url == "redis://env:6380/2"
             mock_producer.assert_called_once()
 
     @patch("orka.memory.kafka_logger.redis.from_url")

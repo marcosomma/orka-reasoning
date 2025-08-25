@@ -77,11 +77,11 @@ Usage Patterns
     from orka.memory import RedisMemoryLogger, RedisStackMemoryLogger, KafkaMemoryLogger
 
     # Standard Redis backend
-    redis_logger = RedisMemoryLogger(redis_url="redis://localhost:6379")
+    redis_logger = RedisMemoryLogger(redis_url="redis://localhost:6380")
 
     # High-performance RedisStack backend with HNSW
     redisstack_logger = RedisStackMemoryLogger(
-        redis_url="redis://localhost:6379",
+        redis_url="redis://localhost:6380",
         enable_hnsw=True,
         vector_params={"M": 16, "ef_construction": 200}
     )

@@ -122,7 +122,7 @@ class TestMemoryWatch:
         with (
             patch("orka.cli.memory.watch.create_memory_logger") as mock_create,
             patch("orka.cli.memory.watch._memory_watch_display") as mock_display,
-            patch.dict(os.environ, {"REDIS_URL": "redis://localhost:6379/0"}),
+            patch.dict(os.environ, {"REDIS_URL": "redis://localhost:6380/0"}),
         ):
             mock_memory = MagicMock()
             mock_create.return_value = mock_memory
@@ -133,7 +133,7 @@ class TestMemoryWatch:
             assert result == 0
             mock_create.assert_called_once_with(
                 backend="redis",
-                redis_url="redis://localhost:6379/0",
+                redis_url="redis://localhost:6380/0",
             )
             mock_display.assert_called_once_with(mock_memory, "redis", args)
             output = setup_logging.get_output()
@@ -157,7 +157,7 @@ class TestMemoryWatch:
             assert result == 0
             mock_create.assert_called_once_with(
                 backend="redisstack",
-                redis_url="redis://localhost:6379/0",  # All backends use the same port now
+                redis_url="redis://localhost:6380/0",  # All backends use the same port now
             )
             output = setup_logging.get_output()
             assert "Using Redisstack backend" in output
@@ -180,7 +180,7 @@ class TestMemoryWatch:
             assert result == 0
             mock_create.assert_called_once_with(
                 backend="kafka",
-                redis_url="redis://localhost:6379/0",
+                redis_url="redis://localhost:6380/0",
             )
             output = setup_logging.get_output()
             assert "Using Kafka backend" in output

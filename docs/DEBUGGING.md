@@ -64,7 +64,7 @@ orka run your-workflow.yml "test input" --verbose
    
    # If empty, you're running basic Redis, not RedisStack
    docker stop orka-redis
-   docker run -d -p 6379:6379 --name orka-redis redis/redis-stack:latest
+   docker run -d -p 6380:6380 --name orka-redis redis/redis-stack:latest
    ```
 
 2. **Verify Index Creation:**
@@ -644,7 +644,7 @@ from orka.memory.redisstack_logger import RedisStackMemoryLogger
 
 async def test_memory_operations():
     """Test basic memory operations"""
-    logger = RedisStackMemoryLogger(redis_url="redis://localhost:6379/0")
+    logger = RedisStackMemoryLogger(redis_url="redis://localhost:6380/0")
     
     # Test 1: Store memory
     test_data = {

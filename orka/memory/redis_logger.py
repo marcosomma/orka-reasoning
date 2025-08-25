@@ -112,7 +112,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
         self.redis_url = (
             redis_url
             if redis_url is not None
-            else os.getenv("REDIS_URL", "redis://localhost:6379/0")
+            else os.getenv("REDIS_URL", "redis://localhost:6380/0")
         )
         self.client = redis.from_url(self.redis_url)
 

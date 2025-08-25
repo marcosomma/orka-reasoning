@@ -39,7 +39,7 @@ class TestRedisStackMemoryLogger:
                 return_value=True,
             ):
                 self.logger = RedisStackMemoryLogger(
-                    redis_url="redis://localhost:6379/0",  # Updated to use port 6379
+                    redis_url="redis://localhost:6380/0",  # Updated to use port 6380
                     index_name="test_index",
                     embedder=self.mock_embedder,
                     memory_decay_config={"enabled": True, "default_ttl_hours": 24},
@@ -57,7 +57,7 @@ class TestRedisStackMemoryLogger:
             ):
                 logger = RedisStackMemoryLogger()
 
-        assert logger.redis_url == "redis://localhost:6379/0"  # Updated to use port 6379
+        assert logger.redis_url == "redis://localhost:6380/0"  # Updated to use port 6380
         assert logger.index_name == "orka_enhanced_memory"
         assert logger.enable_hnsw is True
         assert logger.vector_params == {}
@@ -73,7 +73,7 @@ class TestRedisStackMemoryLogger:
                 return_value=True,
             ):
                 logger = RedisStackMemoryLogger(
-                    redis_url="redis://localhost:6379/1",
+                    redis_url="redis://localhost:6380/1",
                     index_name="custom_index",
                     memory_decay_config=custom_decay_config,
                     enable_hnsw=False,
@@ -82,7 +82,7 @@ class TestRedisStackMemoryLogger:
                     debug_keep_previous_outputs=True,
                 )
 
-        assert logger.redis_url == "redis://localhost:6379/1"
+        assert logger.redis_url == "redis://localhost:6380/1"
         assert logger.index_name == "custom_index"
         assert logger.enable_hnsw is False
         assert logger.vector_params == custom_vector_params

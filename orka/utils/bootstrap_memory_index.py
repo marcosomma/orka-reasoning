@@ -40,7 +40,7 @@ import redis.asyncio as redis
 from orka.utils.bootstrap_memory_index import ensure_memory_index, ensure_enhanced_memory_index
 
 async def initialize_memory():
-    client = redis.from_url("redis://localhost:6379")
+    client = redis.from_url("redis://localhost:6380")
 
     # Legacy FLAT indexing
     await ensure_memory_index(client)

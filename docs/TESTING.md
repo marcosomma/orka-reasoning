@@ -32,7 +32,7 @@ export ORKA_MEMORY_DECAY_LONG_TERM_HOURS=0.033   # 2 minutes
 export ORKA_MEMORY_DECAY_CHECK_INTERVAL_MINUTES=0.5  # 30 seconds
 
 # Start test environment
-docker run -d -p 6379:6379 --name orka-redis-test redis/redis-stack:latest
+docker run -d -p 6380:6380 --name orka-redis-test redis/redis-stack:latest
 ```
 
 *Test Script (`test_memory_decay.py`):*
@@ -48,7 +48,7 @@ from orka.memory.redisstack_logger import RedisStackMemoryLogger
 
 async def test_memory_decay():
     """Test memory expiration and cleanup"""
-    logger = RedisStackMemoryLogger(redis_url="redis://localhost:6379/0")
+    logger = RedisStackMemoryLogger(redis_url="redis://localhost:6380/0")
     
     print("=== Memory Decay Test ===")
     print(f"Test started at: {datetime.now()}")
@@ -151,7 +151,7 @@ def test_ttl_configuration_precedence():
     os.environ["ORKA_MEMORY_DECAY_SHORT_TERM_HOURS"] = "4"
     os.environ["ORKA_MEMORY_DECAY_LONG_TERM_HOURS"] = "48"
     
-    logger = RedisStackMemoryLogger(redis_url="redis://localhost:6379/0")
+    logger = RedisStackMemoryLogger(redis_url="redis://localhost:6380/0")
     config = logger.memory_decay_config
     
     assert config.get('short_term_hours') == 4.0, f"Short-term should be 4h, got {config.get('short_term_hours')}"
@@ -163,7 +163,7 @@ def test_ttl_configuration_precedence():
     os.environ["ORKA_MEMORY_DECAY_SHORT_TERM_HOURS"] = "0.1"
     os.environ["ORKA_MEMORY_DECAY_LONG_TERM_HOURS"] = "0.2"
     
-    logger2 = RedisStackMemoryLogger(redis_url="redis://localhost:6379/0")
+    logger2 = RedisStackMemoryLogger(redis_url="redis://localhost:6380/0")
     config2 = logger2.memory_decay_config
     
     print(f"Fast TTL config (for testing): short={config2.get('short_term_hours')}h, long={config2.get('long_term_hours')}h")
@@ -201,8 +201,8 @@ async def test_ft_search_functionality():
     print("=== FT.SEARCH Functionality Test ===")
     
     # Setup
-    redis_client = redis.Redis(host='localhost', port=6379, db=0)
-    logger = RedisStackMemoryLogger(redis_url="redis://localhost:6379/0")
+    redis_client = redis.Redis(host='localhost', port=6380, db=0)
+    logger = RedisStackMemoryLogger(redis_url="redis://localhost:6380/0")
     
     # Test 1: Verify RedisStack modules
     modules = redis_client.execute_command("MODULE", "LIST")

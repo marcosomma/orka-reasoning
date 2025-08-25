@@ -18,7 +18,7 @@ class TestOrchestratorQuick:
             "orchestrator": {
                 "name": "test_orchestrator",
                 "backend": "redis",
-                "redis_url": "redis://localhost:6379",
+                "redis_url": "redis://localhost:6380",
                 "agents": ["test_agent"],
             },
             "agents": [

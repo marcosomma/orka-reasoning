@@ -267,7 +267,7 @@ Key environment variables for configuration:
 | Variable | Description | Default |
 |----------|-------------|---------|
 | OPENAI_API_KEY | OpenAI API key | Required |
-| REDIS_URL | Redis connection URL | redis://localhost:6379/0 |
+| REDIS_URL | Redis connection URL | redis://localhost:6380/0 |
 | ORKA_MEMORY_BACKEND | Memory backend type | redisstack |
 | ORKA_MEMORY_DECAY_ENABLED | Enable memory decay | false |
 | ORKA_MEMORY_DECAY_SHORT_TERM_HOURS | Short-term retention | 2 |
@@ -285,7 +285,7 @@ Configuration:
 ```yaml
 memory_config:
   backend: redisstack
-  redis_url: redis://localhost:6379/0
+  redis_url: redis://localhost:6380/0
   enable_hnsw: true
   vector_params:
     M: 16

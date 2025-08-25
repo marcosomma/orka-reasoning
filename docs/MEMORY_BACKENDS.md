@@ -34,7 +34,7 @@ Set the memory backend using environment variables:
 ```bash
 # For Redis (default)
 export ORKA_MEMORY_BACKEND=redis
-export REDIS_URL=redis://localhost:6379/0
+export REDIS_URL=redis://localhost:6380/0
 
 # For Kafka
 export ORKA_MEMORY_BACKEND=kafka
@@ -47,13 +47,13 @@ export KAFKA_TOPIC_PREFIX=orka-memory
 ```bash
 # Basic Redis setup
 export ORKA_MEMORY_BACKEND=redis
-export REDIS_URL=redis://localhost:6379/0
+export REDIS_URL=redis://localhost:6380/0
 
 # Redis with authentication
-export REDIS_URL=redis://:password@localhost:6379/0
+export REDIS_URL=redis://:password@localhost:6380/0
 
 # Redis Cluster
-export REDIS_URL=redis://node1:6379,node2:6379,node3:6379/0
+export REDIS_URL=redis://node1:6380,node2:6380,node3:6380/0
 ```
 
 ### Kafka Configuration
@@ -82,7 +82,7 @@ orchestrator:
   strategy: "parallel"
   memory:
     store_type: "redis"
-    url: "redis://localhost:6379/0"
+    url: "redis://localhost:6380/0"
   agents:
     - "agent1"
     - "agent2"
@@ -137,7 +137,7 @@ services:
   redis:
     image: redis:7.2-alpine
     ports:
-      - "6379:6379"
+      - "6380:6380"
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
@@ -146,7 +146,7 @@ services:
     build: .
     environment:
       - ORKA_MEMORY_BACKEND=redis
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6380/0
     depends_on:
       - redis
 
@@ -195,7 +195,7 @@ from orka.memory_logger import create_memory_logger
 # Redis backend
 redis_memory = create_memory_logger(
     backend="redis",
-    redis_url="redis://localhost:6379/0"
+    redis_url="redis://localhost:6380/0"
 )
 
 # Kafka backend

@@ -66,7 +66,7 @@ echo.
 echo 📍 Service Endpoints:
 echo    • Orka API:         http://localhost:8001
 echo    • Kafka (Events):   localhost:9092
-echo    • Redis (Memory):   localhost:6379
+echo    • Redis (Memory):   localhost:6380
 echo    • Zookeeper:        localhost:2181
 echo.
 echo 🛠️  Management Commands:
@@ -80,5 +80,5 @@ echo 🔧 Environment Variables:
 echo    • ORKA_MEMORY_BACKEND=kafka
 echo    • KAFKA_BOOTSTRAP_SERVERS=kafka:29092
 echo    • KAFKA_TOPIC_PREFIX=orka-memory
-echo    • REDIS_URL=redis://redis:6379/0
+echo    • REDIS_URL=redis://redis:6380/0
 echo. 

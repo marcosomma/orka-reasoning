@@ -52,7 +52,7 @@ docker-compose --profile dual up --build -d
 
 **Endpoints:**
 - OrKa API: `http://localhost:8000`
-- RedisStack: `localhost:6380` (external), `redis:6379` (internal)
+- RedisStack: `localhost:6380` (external), `redis:6380` (internal)
 
 **Performance:**
 - Vector Search: Sub-millisecond HNSW indexing
@@ -77,7 +77,7 @@ docker-compose --profile dual up --build -d
 
 **Endpoints:**
 - Orka API: `http://localhost:8002`
-- Redis: `localhost:6379`
+- Redis: `localhost:6380`
 - Kafka: `localhost:9092`
 
 ## 🛠️ Management Commands
@@ -135,7 +135,7 @@ docker-compose exec kafka kafka-console-consumer --bootstrap-server localhost:29
 ### RedisStack Backend (V0.7.0 Default)
 ```bash
 ORKA_MEMORY_BACKEND=redisstack  # Default in V0.7.0
-REDIS_URL=redis://redis:6379/0
+REDIS_URL=redis://redis:6380/0
 # Automatic HNSW indexing with optimized parameters:
 # - M=16 (connectivity)
 # - ef_construction=200 (build accuracy)
@@ -147,14 +147,14 @@ ORKA_MEMORY_BACKEND=kafka
 KAFKA_BOOTSTRAP_SERVERS=kafka:29092
 KAFKA_TOPIC_PREFIX=orka-memory
 KAFKA_SCHEMA_REGISTRY_URL=http://schema-registry:8081
-REDIS_URL=redis://redis:6379/0  # RedisStack for memory operations
+REDIS_URL=redis://redis:6380/0  # RedisStack for memory operations
 ```
 
 ### Legacy Redis Backend (Basic - Not Recommended)
 ```bash
 ORKA_FORCE_BASIC_REDIS=true     # Force basic Redis mode
 ORKA_MEMORY_BACKEND=redis       # Legacy mode
-REDIS_URL=redis://redis:6379/0
+REDIS_URL=redis://redis:6380/0
 ```
 
 ### Runtime Override
@@ -216,7 +216,7 @@ This setup uses Docker Compose profiles to manage different backend configuratio
 - Test connection: `docker-compose exec redis redis-cli ping`
 
 **Port conflicts:**
-- Redis: Check if port 6379 is available
+- Redis: Check if port 6380 is available
 - Kafka: Check if port 9092 is available
 - Orka APIs: Ports 8000, 8001, 8002
 

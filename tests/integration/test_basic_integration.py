@@ -34,7 +34,7 @@ class TestBasicIntegration:
         config = {
             "test_redis": {
                 "type": "redis",
-                "config": {"url": "redis://localhost:6379"},
+                "config": {"url": "redis://localhost:6380"},
             },
         }
 
@@ -70,7 +70,7 @@ agents:
 
 memory:
   backend: redis
-  url: redis://localhost:6379
+  url: redis://localhost:6380
 
 nodes:
   - type: memory-writer
@@ -157,7 +157,7 @@ nodes:
 
         resource_config = {
             "type": "redis",
-            "config": {"url": "redis://localhost:6379"},
+            "config": {"url": "redis://localhost:6380"},
         }
 
         # All should work as regular dictionaries
@@ -172,7 +172,7 @@ nodes:
         config = {
             "test_resource": {
                 "type": "redis",
-                "config": {"url": "redis://localhost:6379"},
+                "config": {"url": "redis://localhost:6380"},
             },
         }
 
@@ -239,7 +239,7 @@ agents:
 
 memory:
   backend: redis
-  url: redis://localhost:6379
+  url: redis://localhost:6380
   namespace: complete_test
 
 nodes:
@@ -303,7 +303,7 @@ nodes:
 
         config: ResourceConfig = {
             "type": "redis",
-            "config": {"url": "redis://localhost:6379"},
+            "config": {"url": "redis://localhost:6380"},
         }
 
         # Should work without type errors
@@ -314,11 +314,13 @@ nodes:
         """Test that errors propagate correctly between components."""
         # Create config with validation error
         bad_config = tmp_path / "bad.yml"
-        bad_config.write_text("""
+        bad_config.write_text(
+            """
 orchestrator:
   id: test
 # Missing agents section
-""")
+"""
+        )
 
         loader = YAMLLoader(str(bad_config))
 

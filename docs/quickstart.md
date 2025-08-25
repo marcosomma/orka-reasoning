@@ -126,7 +126,7 @@ services:
   redis-stack:
     image: redis/redis-stack:latest
     ports:
-      - "6379:6379"
+      - "6380:6380"
     volumes:
       - redis_data:/data
     environment:
@@ -137,7 +137,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - REDIS_URL=redis://redis-stack:6379/0
+      - REDIS_URL=redis://redis-stack:6380/0
       - ORKA_MEMORY_BACKEND=redisstack
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:

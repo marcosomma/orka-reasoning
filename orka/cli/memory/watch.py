@@ -66,7 +66,7 @@ def _memory_watch_fallback(args: Any) -> int:
         # Ensure backend is a string
         backend = str(raw_backend)
         redis_url = os.getenv(
-            "REDIS_URL", "redis://localhost:6379/0"
+            "REDIS_URL", "redis://localhost:6380/0"
         )  # Use same URL for all backends
 
         memory = create_memory_logger(backend=backend, redis_url=redis_url)

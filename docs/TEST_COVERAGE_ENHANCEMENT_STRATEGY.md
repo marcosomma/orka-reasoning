@@ -516,7 +516,7 @@ jobs:
         
     - name: Start Redis
       run: |
-        docker run -d -p 6379:6379 redis/redis-stack:latest
+        docker run -d -p 6380:6380 redis/redis-stack:latest
         
     - name: Run tests
       run: |

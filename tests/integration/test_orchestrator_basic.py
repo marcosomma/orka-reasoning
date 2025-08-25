@@ -33,7 +33,7 @@ agents:
 
 memory:
   backend: redis
-  url: redis://localhost:6379
+  url: redis://localhost:6380
   namespace: basic_test
 """
         config_file = tmp_path / "basic.yml"
@@ -100,7 +100,7 @@ agents:
 
 memory:
   backend: redis
-  url: redis://localhost:6379
+  url: redis://localhost:6380
   namespace: openai_test
 """
         config_file = tmp_path / "openai.yml"
@@ -151,7 +151,7 @@ agents:
 
 memory:
   backend: redis
-  url: redis://localhost:6379
+  url: redis://localhost:6380
   namespace: multi_test
 """
         config_file = tmp_path / "multi.yml"
@@ -196,11 +196,13 @@ memory:
         """Test error handling for invalid configurations."""
         # Missing agents section
         bad_config = tmp_path / "bad.yml"
-        bad_config.write_text("""
+        bad_config.write_text(
+            """
 orchestrator:
   id: bad_test
   strategy: sequential
-""")
+"""
+        )
 
         with patch("redis.from_url") as mock_redis:
             mock_redis.return_value = MagicMock()
@@ -212,7 +214,8 @@ orchestrator:
     def test_error_handling_unknown_agent_type(self, tmp_path):
         """Test error handling for unknown agent types."""
         bad_config = tmp_path / "unknown_agent.yml"
-        bad_config.write_text("""
+        bad_config.write_text(
+            """
 orchestrator:
   id: unknown_test
   strategy: sequential
@@ -228,8 +231,9 @@ agents:
 
 memory:
   backend: redis
-  url: redis://localhost:6379
-""")
+  url: redis://localhost:6380
+"""
+        )
 
         with patch("redis.from_url") as mock_redis:
             mock_redis.return_value = MagicMock()

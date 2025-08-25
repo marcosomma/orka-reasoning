@@ -591,12 +591,12 @@ agents:
 ```bash
 # 1. Ensure proper environment setup
 export ORKA_MEMORY_BACKEND=redisstack
-export REDIS_URL=redis://localhost:6379/0
+export REDIS_URL=redis://localhost:6380/0
 export ORKA_MEMORY_DECAY_SHORT_TERM_HOURS=2
 export ORKA_MEMORY_DECAY_LONG_TERM_HOURS=168
 
 # 2. Start RedisStack
-docker run -d -p 6379:6379 --name orka-redis redis/redis-stack:latest
+docker run -d -p 6380:6380 --name orka-redis redis/redis-stack:latest
 
 # 3. Run the enhanced workflow
 orka run cognitive-society-collaborative-enhanced-local.yml \
@@ -1094,7 +1094,7 @@ services:
   redis-stack:
     image: redis/redis-stack:latest
     ports:
-      - "6379:6379"
+      - "6380:6380"
       - "8001:8001"  # RedisInsight UI
     volumes:
       - redis_data:/data
@@ -1117,7 +1117,7 @@ services:
     environment:
       # Memory Configuration
       - ORKA_MEMORY_BACKEND=redisstack
-      - REDIS_URL=redis://redis-stack:6379/0
+      - REDIS_URL=redis://redis-stack:6380/0
       - ORKA_MEMORY_DECAY_ENABLED=true
       - ORKA_MEMORY_DECAY_SHORT_TERM_HOURS=8
       - ORKA_MEMORY_DECAY_LONG_TERM_HOURS=168
@@ -1189,7 +1189,7 @@ volumes:
 ```conf
 # Redis Configuration for OrKa Production
 bind 0.0.0.0
-port 6379
+port 6380
 
 # Memory Management
 maxmemory 4gb
@@ -1226,7 +1226,7 @@ scrape_configs:
     
   - job_name: 'redis-stack'
     static_configs:
-      - targets: ['redis-stack:6379']
+      - targets: ['redis-stack:6380']
     metrics_path: /metrics
 ```
 
@@ -1236,7 +1236,7 @@ scrape_configs:
 ```bash
 # Development Environment Configuration
 ORKA_MEMORY_BACKEND=redisstack
-REDIS_URL=redis://localhost:6379/0
+REDIS_URL=redis://localhost:6380/0
 
 # Development TTL Settings (faster for testing)
 ORKA_MEMORY_DECAY_ENABLED=true
@@ -1258,7 +1258,7 @@ ORKA_TIMEOUT_SECONDS=120
 ```bash
 # Production Environment Configuration
 ORKA_MEMORY_BACKEND=redisstack
-REDIS_URL=redis://:${REDIS_PASSWORD}@redis-cluster:6379/0
+REDIS_URL=redis://:${REDIS_PASSWORD}@redis-cluster:6380/0
 
 # Production TTL Settings (matches README)
 ORKA_MEMORY_DECAY_ENABLED=true
@@ -1297,7 +1297,7 @@ from datetime import datetime
 async def check_redis_health():
     """Check RedisStack connectivity and modules"""
     try:
-        client = redis.Redis(host='localhost', port=6379, db=0)
+        client = redis.Redis(host='localhost', port=6380, db=0)
         
         # Basic connectivity
         pong = client.ping()

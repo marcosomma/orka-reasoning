@@ -99,12 +99,12 @@ redis-cli FT._LIST
 
 2. Start RedisStack properly:
 ```bash
-docker run -d -p 6379:6379 redis/redis-stack:latest
+docker run -d -p 6380:6380 redis/redis-stack:latest
 ```
 
 3. Check connection URL:
 ```bash
-export REDIS_URL=redis://localhost:6379/0
+export REDIS_URL=redis://localhost:6380/0
 orka memory configure
 ```
 
