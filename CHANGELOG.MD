@@ -2,6 +2,37 @@
 
 *(derived from the public-repo commit history as of **2025-01-31**)*
 ---
+## [0.8.5] · 2025-08-31 🔧
+### Fixed
+* **🔧 Environment Variables & TUI Package Distribution**
+  * **Environment Variables Setup**
+    * Added clear documentation for required environment variables (OPENAI_API_KEY, ORKA_LOG_LEVEL)
+    * Enhanced environment variable setup instructions in README and quickstart guide
+    * Added .env file template with all necessary configuration options
+    * Improved error messages for missing environment variables
+    * Added Windows PowerShell and Linux/Mac environment loading commands
+  * **TUI Package Distribution**
+    * Fixed missing textual_styles.tcss file in package distribution
+    * Enhanced package_data configuration in pyproject.toml to include TUI assets
+    * Improved MANIFEST.in configuration for proper file inclusion
+    * Fixed StylesheetError when running orka memory watch
+    * Ensured proper distribution of all required TUI files
+
+### Technical Details
+* **Environment Configuration**
+  * Added comprehensive environment variable documentation
+  * Enhanced error handling for missing environment variables
+  * Added .env file template with production-ready defaults
+  * Improved cross-platform environment loading support
+* **Package Distribution**
+  * Fixed package_data configuration to include *.tcss files
+  * Enhanced MANIFEST.in with proper recursive file inclusion
+  * Improved file distribution verification
+  * Fixed TUI asset packaging for pip installations
+
+> No breaking changes. All existing workflows continue to function unchanged.
+
+---
 ## [0.8.4] · 2025-08-25 🔧
 ### Fixed
 * 🧠 Memory System & Redis Integration

@@ -15,6 +15,7 @@ wget -qO- https://orkacore.com/quickstart.sh | bash
 ```
 
 This script will:
+
 1. Install Docker if not present
 2. Pull required images (RedisStack, OrKa)
 3. Set up environment variables
@@ -30,8 +31,30 @@ If you prefer to set things up manually:
 # Install Python packages
 pip install orka-reasoning[all]
 
-# Set OpenAI API key
-export OPENAI_API_KEY=your-key-here
+# Create and configure .env file
+cat > .env << EOF
+# Required environment variables
+OPENAI_API_KEY=your-api-key-here
+ORKA_LOG_LEVEL=INFO
+
+# Memory configuration (recommended)
+ORKA_MEMORY_BACKEND=redisstack
+REDIS_URL=redis://localhost:6380/0
+ORKA_MEMORY_DECAY_ENABLED=true
+ORKA_MEMORY_DECAY_SHORT_TERM_HOURS=2
+ORKA_MEMORY_DECAY_LONG_TERM_HOURS=168
+ORKA_MEMORY_DECAY_CHECK_INTERVAL_MINUTES=30
+
+# Performance tuning (optional)
+ORKA_MAX_CONCURRENT_REQUESTS=100
+ORKA_TIMEOUT_SECONDS=300
+EOF
+
+# Load environment variables
+# For Windows PowerShell:
+Get-Content .env | ForEach-Object { if ($_ -match '^[^#]') { $env:$($_.Split('=')[0])=$($_.Split('=')[1]) } }
+# For Linux/Mac:
+source .env
 ```
 
 ### 2. Start OrKa
@@ -137,9 +160,21 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - REDIS_URL=redis://redis-stack:6380/0
-      - ORKA_MEMORY_BACKEND=redisstack
+      # Required environment variables
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ORKA_LOG_LEVEL=INFO
+      
+      # Memory configuration
+      - ORKA_MEMORY_BACKEND=redisstack
+      - REDIS_URL=redis://redis-stack:6380/0
+      - ORKA_MEMORY_DECAY_ENABLED=true
+      - ORKA_MEMORY_DECAY_SHORT_TERM_HOURS=2
+      - ORKA_MEMORY_DECAY_LONG_TERM_HOURS=168
+      - ORKA_MEMORY_DECAY_CHECK_INTERVAL_MINUTES=30
+      
+      # Performance tuning
+      - ORKA_MAX_CONCURRENT_REQUESTS=100
+      - ORKA_TIMEOUT_SECONDS=300
     depends_on:
       - redis-stack
 
@@ -170,16 +205,29 @@ docker-compose up -d
 
 Common issues and solutions:
 
-1. **"FT.CREATE unknown command"**
-   - Cause: Using basic Redis instead of RedisStack
-   - Solution: Ensure Docker is running
+1. **Environment Variable Errors**
+   - `OPENAI_API_KEY environment variable is required`:
+     - Create a .env file with your OpenAI API key
+     - Load it using the appropriate command for your shell
+   - `KeyError: 'ORKA_LOG_LEVEL'`:
+     - Add `ORKA_LOG_LEVEL=INFO` to your .env file
+     - Reload environment variables
+   - Environment variables not persisting:
+     - For Windows: Add them to System Environment Variables
+     - For Linux/Mac: Add them to ~/.bashrc or ~/.zshrc
 
-2. **Slow performance**
+2. **"FT.CREATE unknown command"**
+   - Cause: Using basic Redis instead of RedisStack
+   - Solution: Ensure Docker is running and using redis-stack image
+
+3. **Slow performance**
    - Check Docker status: `docker ps`
    - Verify RedisStack: `redis-cli FT._LIST`
+   - Check environment variables: `orka memory configure`
 
-3. **Memory not persisting**
+4. **Memory not persisting**
    - Check RedisStack logs: `docker logs orka-redis`
+   - Verify REDIS_URL in .env matches your setup
 
 ## Getting Help
 

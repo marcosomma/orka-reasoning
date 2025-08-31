@@ -3,22 +3,27 @@
 <p align="center"><img src="https://orkacore.com/assets/ORKA_logo.png" alt="OrKa Logo" style="border-radius: 25px; width: 400px; height:400px" /></p>
 
 ## Project Status
+
 [![GitHub Tag](https://img.shields.io/github/v/tag/marcosomma/orka-reasoning?color=blue)](https://github.com/marcosomma/orka-reasoning/tags)
 [![PyPI - License](https://img.shields.io/pypi/l/orka-reasoning?color=blue)](https://pypi.org/project/orka-reasoning/)
 
 ## Quality and Security
+
 [![codecov](https://img.shields.io/badge/codecov-76.19%25-yellow?&amp;logo=codecov)](https://codecov.io/gh/marcosomma/orka-reasoning)
 [![orka-reasoning](https://snyk.io/advisor/python/orka-reasoning/badge.svg)](https://snyk.io/advisor/python/orka-reasoning)
 
 ## Package and Documentation
+
 [![PyPi](https://img.shields.io/badge/pypi-%23ececec.svg?style=for-the-badge&amp;logo=pypi&amp;logoColor=1f73b7)](https://pypi.org/project/orka-reasoning/)
 [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&amp;logo=docker&amp;logoColor=white)](https://hub.docker.com/r/marcosomma/orka-ui)
 [![Documentation](https://img.shields.io/badge/Docs-blue?style=for-the-badge&amp;logo=googledocs&amp;logoColor=%23fff&amp;link=https%3A%2F%2Forkacore.com%2Fdocs%2Findex.html)](https://orkacore.com/docs/index.html)
 
 ## Web
+
 [![orkacore](https://img.shields.io/badge/orkacore-.com-green?labelColor=blue&amp;style=for-the-badge&amp;link=https://orkacore.com/)](https://orkacore.com/)
 
 ## Downloads
+
 [![Pepy Total Downloads](https://img.shields.io/pepy/dt/orka-reasoning?style=for-the-badge&amp;label=Downloads%20from%20April%202025&amp;color=blue&amp;link=https%3A%2F%2Fpiptrends.com%2Fpackage%2Forka-reasoning)](https://clickpy.clickhouse.com/dashboard/orka-reasoning)
 
 **AI Orchestration with 100x Faster Vector Search** - OrKa transforms your AI workflows with YAML-driven agent orchestration, intelligent memory management, and lightning-fast semantic search powered by RedisStack HNSW indexing.
@@ -28,6 +33,7 @@
 ## Latest Features
 
 ### Version 0.8.x
+
 | Feature | Description |
 |---------|-------------|
 | Advanced Loop Node | Intelligent iterative workflows with cognitive insight extraction |
@@ -38,6 +44,7 @@
 | Bug Fixes | Integration test stability and agent type compatibility improvements |
 | Performance Optimizations | Enhanced memory management and workflow execution |
 | Curated Example Suite | See [`examples/README.md`](./examples/README.md) for templates |
+
 
 ### Version 0.7.x
 | Feature | Description |
@@ -63,10 +70,32 @@ pip install orka-reasoning fastapi uvicorn kafka-python
 # Optional: Install schema management features (Avro/Protobuf support)
 pip install orka-reasoning[schema]
 
-# 2. Set your OpenAI key
-export OPENAI_API_KEY=your-key-here
+# 2. Create a .env file in your project directory
+cat > .env << EOF
+# Required environment variables
+OPENAI_API_KEY=your-api-key-here
+ORKA_LOG_LEVEL=INFO
 
-# 3. Start OrKa (automatically includes RedisStack + 100x faster vector search)
+# Memory configuration (recommended)
+ORKA_MEMORY_BACKEND=redisstack
+REDIS_URL=redis://localhost:6380/0
+ORKA_MEMORY_DECAY_ENABLED=true
+ORKA_MEMORY_DECAY_SHORT_TERM_HOURS=2
+ORKA_MEMORY_DECAY_LONG_TERM_HOURS=168
+ORKA_MEMORY_DECAY_CHECK_INTERVAL_MINUTES=30
+
+# Performance tuning (optional)
+ORKA_MAX_CONCURRENT_REQUESTS=100
+ORKA_TIMEOUT_SECONDS=300
+EOF
+
+# 3. Load environment variables
+# For Windows PowerShell:
+Get-Content .env | ForEach-Object { if ($_ -match '^[^#]') { $env:$($_.Split('=')[0])=$($_.Split('=')[1]) } }
+# For Linux/Mac:
+source .env
+
+# 4. Start OrKa (automatically includes RedisStack + 100x faster vector search)
 # For LOCAL development:
 orka-start
 
@@ -245,7 +274,7 @@ python -m orka.orka_cli memory watch
 ```
 
 You'll see a professional dashboard like this:
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │ OrKa Memory Dashboard - 14:23:45 | Backend: redisstack     │
 ├─────────────────────────────────────────────────────────────┤
