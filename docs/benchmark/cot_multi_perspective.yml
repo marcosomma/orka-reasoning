@@ -1,0 +1,198 @@
+orchestrator:
+  id: cot-multi-perspective
+  strategy: sequential
+  agents:
+    - conversation_loop
+    - final_answer_builder
+
+agents:
+  - id: conversation_loop
+    type: loop
+    max_loops: 3  # Each perspective gets one loop
+    score_threshold: 0.85
+    
+    score_extraction_config:
+      strategies:
+        - type: pattern
+          patterns:
+            - "SCORE:\\s*([0-9.]+)"
+            - "Score:\\s*([0-9.]+)"
+            - "Quality Score:\\s*([0-9.]+)"
+            - "QUALITY_SCORE:\\s*([0-9.]+)"
+        - type: pattern
+          patterns:
+            - "(0\\.[6-9][0-9]?)"  # Matches scores between 0.60 and 0.99
+            - "([0-9])\\.[0-9]+"   # Matches any decimal number
+        - type: agent_key
+          agents: ["quality_scorer"]
+          key: "response"
+          transform: "extract_score"
+    
+    past_loops_metadata:
+      loop_number: "{{ get_loop_number() }}"
+      perspective: "{% set perspectives = ['Analytical', 'Empathetic', 'Creative'] %}{{ perspectives[get_loop_number() - 1] }}"
+      reasoning: "{{ get_agent_response('perspective_handler')['response'] if get_agent_response('perspective_handler') else '' }}"
+      synthesis: "{{ get_agent_response('synthesizer')['response'] if get_agent_response('synthesizer') else '' }}"
+      quality_score: "{{ get_agent_response('quality_scorer')['response'] if get_agent_response('quality_scorer') else '' }}"
+      timestamp: "{{ timestamp }}"
+    
+    internal_workflow:
+      orchestrator:
+        id: perspective-analysis
+        strategy: sequential
+        agents: [perspective_handler, synthesizer, quality_scorer]
+      
+      agents:
+        - id: perspective_handler
+          type: local_llm
+          model: gpt-oss:20b
+          prompt: |
+            {% set perspectives = ['Analytical', 'Empathetic', 'Creative'] %}
+            {% set current_perspective = perspectives[get_loop_number() - 1] %}
+            
+            Query: {{ get_input() }}
+            
+            You are now taking the {{ current_perspective }} perspective.
+            
+            {% if current_perspective == 'Analytical' %}
+            Analyze the query logically and objectively.
+            Focus on:
+            - Facts and data
+            - Logical reasoning
+            - Systematic analysis
+            - Step-by-step problem solving
+            - Potential implications
+            
+            {% elif current_perspective == 'Empathetic' %}
+            Consider the emotional and human aspects.
+            Focus on:
+            - Emotional understanding
+            - Personal impact
+            - Human relationships
+            - Social dynamics
+            - Real-world context
+            
+            {% else %}  {# Creative perspective #}
+            Think creatively and innovatively.
+            Focus on:
+            - Novel approaches
+            - Alternative viewpoints
+            - Unique solutions
+            - Future possibilities
+            - Out-of-the-box thinking
+            {% endif %}
+            
+            {% if has_past_loops() %}
+            Previous perspectives analyzed:
+            {% for past_loop in get_past_loops() %}
+            
+            {{ past_loop.perspective }} Perspective:
+            - Reasoning: {{ past_loop.reasoning }}
+            - Synthesis: {{ past_loop.synthesis }}
+            - Quality: {{ past_loop.quality_score }}
+            {% endfor %}
+            
+            Build upon these previous perspectives while avoiding repetition.
+            {% endif %}
+            
+            Provide your perspective while building upon previous insights.
+            Format your response as:
+            REASONING: [Step-by-step thought process]
+            CONCLUSION: [Final perspective-based answer]
+
+        - id: synthesizer
+          type: local_llm
+          model: gpt-oss:20b
+          prompt: |
+            Current perspective's analysis:
+            {{ get_agent_response('perspective_handler') }}
+            
+            {% if has_past_loops() %}
+            Previous perspectives for context:
+            {% for past_loop in get_past_loops() %}
+            {{ past_loop.perspective }}: {{ past_loop.synthesis }}
+            {% endfor %}
+            {% endif %}
+            
+            Synthesize the current perspective by:
+            1. Extracting key insights unique to this viewpoint
+            2. Identifying how this complements previous perspectives (if any)
+            3. Highlighting new understanding gained
+            4. Avoiding repetition of previous insights
+            
+            Format as:
+            INSIGHTS: [3-5 concise bullet points of unique insights]
+            RESPONSE: [clear, synthesized response that builds on previous work]
+
+        - id: quality_scorer
+          type: local_llm
+          model: gpt-oss:20b
+          prompt: |
+            Evaluate the quality of this perspective's contribution:
+            {{ get_agent_response('synthesizer') }}
+            
+            {% if has_past_loops() %}
+            Comparison with previous perspectives:
+            {% for past_loop in get_past_loops() %}
+            {{ past_loop.perspective }}: {{ past_loop.quality_score }}
+            {% endfor %}
+            {% endif %}
+            
+            Score this perspective based on:
+            - Uniqueness of insights (avoid duplication with previous perspectives)
+            - Depth and thoroughness of analysis
+            - Clear reasoning and logical flow
+            - Value added to understanding the query
+            - Quality of synthesis and conclusions
+            
+            Provide a score between 0.0 and 1.0 where:
+            - 0.9-1.0: Exceptional insight and analysis
+            - 0.8-0.89: High quality with clear value
+            - 0.7-0.79: Good quality, meets threshold
+            - Below 0.7: Needs improvement
+            
+            Format: SCORE: X.XX
+            Then explain your reasoning in 2-3 sentences.
+
+  - id: final_answer_builder
+    type: local_llm
+    model: gpt-oss:20b
+    prompt: |
+      Original query: {{ get_input() }}
+      
+      Multi-perspective Analysis Complete:
+      {% set loop_results = get_agent_response('conversation_loop') %}
+      {% if loop_results and loop_results.past_loops %}
+        {% for perspective_data in loop_results.past_loops %}
+          
+          === {{ perspective_data.perspective }} PERSPECTIVE ===
+          Reasoning: {{ perspective_data.reasoning }}
+          
+          Key Insights: {{ perspective_data.synthesis }}
+          
+          Quality Assessment: {{ perspective_data.quality_score }}
+          
+        {% endfor %}
+      {% else %}
+        No multi-perspective analysis available. Using single perspective.
+        {% set direct_result = safe_get(loop_results, 'result', {}) %}
+        {% if direct_result %}
+          Reasoning: {{ safe_get(safe_get(direct_result, 'perspective_handler', {}), 'response', 'No response available') }}
+          Synthesis: {{ safe_get(safe_get(direct_result, 'synthesizer', {}), 'response', 'No synthesis available') }}
+        {% endif %}
+      {% endif %}
+
+      Now create a comprehensive final answer that:
+      1. Directly and completely addresses the original query
+      2. Synthesizes insights from all analyzed perspectives
+      3. Presents clear, step-by-step reasoning
+      4. Provides a balanced, well-reasoned response
+      5. Shows how different perspectives contribute to a fuller understanding
+
+      Format your response as:
+      
+      SUMMARY: [One clear sentence summarizing your answer]
+      
+      DETAILED_RESPONSE: [Complete answer with step-by-step reasoning that addresses the query thoroughly]
+      
+      PERSPECTIVE_INTEGRATION: [How each perspective (Analytical, Empathetic, Creative) contributed unique value to the solution]

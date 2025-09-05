@@ -1,0 +1,35 @@
+orchestrator:
+  id: benchmark-evaluator
+  strategy: sequential
+  agents:
+    - answer_evaluator
+
+agents:
+  - id: answer_evaluator
+    type: local_llm
+    model: gpt-oss:20b
+    prompt: |
+      Compare and evaluate the following answers:
+
+      QUESTION: {{ input.question }}
+
+      ORKA'S ANSWER: {{ input.orka_answer }}
+
+      REFERENCE ANSWER: {{ input.reference_answer }}
+
+      {% if input.orka_answer and input.reference_answer %}
+      Evaluate the answers based on:
+      1. Factual Accuracy (Are the calculations and facts correct?)
+      2. Completeness (Are all parts of the question addressed?)
+      3. Clarity (Is the answer clear and well-structured?)
+      4. Step-by-step Reasoning (Is the solution process clear?)
+      5. Final Answer Correctness (Is the final answer correct?)
+
+      Format your response as:
+      SIMILARITY_SCORE: [0.0-1.0]
+      PRECISION: [0.0-1.0] (based on the accuracy of Orka's answer)
+      EXPLAINABILITY: [0.0-1.0] (based on the explanation provided from Orka's answer)
+      STRENGTHS: [List key strengths of Orka's answer]
+      WEAKNESSES: [List areas where Orka's answer could improve]
+      ANALYSIS: [Brief explanation of the comparison]
+      {% endif %}
