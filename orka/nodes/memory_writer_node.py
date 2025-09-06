@@ -32,7 +32,9 @@ class MemoryWriterNode(BaseNode):
         importance_score (float): Override for automatic importance scoring
 
     Example:
-        ```yaml
+    
+    .. code-block:: yaml
+    
         - id: memory_store
           type: memory-writer
           namespace: knowledge_base
@@ -49,7 +51,6 @@ class MemoryWriterNode(BaseNode):
             With metadata:
             Category: {{ previous_outputs.classifier }}
             Confidence: {{ previous_outputs.validator.confidence }}
-        ```
 
     The node automatically:
         1. Classifies memory as short_term or long_term based on importance

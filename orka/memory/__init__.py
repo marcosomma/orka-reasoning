@@ -66,7 +66,7 @@ Architecture Benefits
     Specialized components allow for targeted optimizations including HNSW indexing
 
 Usage Patterns
---------------
+==============
 
 **Direct Usage**
 
@@ -118,7 +118,7 @@ Modular Components
 * ``compressor`` - Data compression utilities
 
 Performance Characteristics
---------------------------
+===========================
 
 **RedisStack vs Redis Logger:**
 

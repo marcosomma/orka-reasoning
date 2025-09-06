@@ -20,14 +20,14 @@ structured workflows, intelligent memory management, and production-ready
 infrastructure for building sophisticated AI applications.
 
 Architecture Overview
---------------------
+=====================
 
 OrKa features a modular architecture with specialized components designed for
 maintainability, testability, and extensibility while preserving complete
 backward compatibility.
 
 Core Components
---------------
+===============
 
 **Orchestrator System**
     Modular orchestration engine with specialized components:
@@ -72,7 +72,7 @@ Core Components
     * **Development Tools**: Interactive testing and debugging
 
 Key Features
------------
+============
 
 **Production-Ready Infrastructure**
 - Thread-safe execution with concurrency control
@@ -99,7 +99,7 @@ Key Features
 - Optimized data structures and algorithms
 
 Usage Patterns
---------------
+==============
 
 **Basic Workflow Execution**
 
@@ -155,7 +155,7 @@ Usage Patterns
     orka memory watch --run-id <run_id>
 
 Backward Compatibility
----------------------
+======================
 
 OrKa maintains 100% backward compatibility with existing code:
 
@@ -168,7 +168,7 @@ This ensures smooth migration paths and protects existing investments
 while providing access to new features and performance improvements.
 
 For More Information
--------------------
+====================
 
 * **Documentation**: https://github.com/marcosomma/orka-reasoning
 * **Issues**: https://github.com/marcosomma/orka-reasoning/issues

@@ -97,7 +97,9 @@ class LoopNode(BaseNode):
         internal_workflow (dict): The workflow to execute in each iteration
 
     Example:
-        ```yaml
+
+    .. code-block:: yaml
+
         - id: improvement_loop
           type: loop
           max_loops: 5
@@ -116,7 +118,6 @@ class LoopNode(BaseNode):
             orchestrator:
               id: improvement-cycle
               agents: [analyzer, scorer]
-        ```
     """
 
     def __init__(

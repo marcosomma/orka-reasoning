@@ -105,15 +105,16 @@ class LocalLLMAgent(BaseAgent):
 
     Configuration Example:
     --------------------
-    ```yaml
-    - id: my_local_agent
-      type: local_llm
-      prompt: "Summarize this: {{ input }}"
-      model: "mistral"
-      model_url: "http://localhost:11434/api/generate"
-      provider: "ollama"
-      temperature: 0.7
-    ```
+
+    .. code-block:: yaml
+
+        - id: my_local_agent
+          type: local_llm
+          prompt: "Summarize this: {{ input }}"
+          model: "mistral"
+          model_url: "http://localhost:11434/api/generate"
+          provider: "ollama"
+          temperature: 0.7
     """
 
     async def run(self, input_data: Union[Context, Any]) -> Dict[str, Any]:

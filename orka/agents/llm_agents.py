@@ -426,18 +426,19 @@ class OpenAIAnswerBuilder(BaseAgent):
     - Detailed explanations combining technical and user-friendly language
 
     **Example Use Cases:**
-    ```yaml
-    # Comprehensive Q&A system
-    - id: answer_builder
-      type: openai-answer
-      prompt: |
-        Create a comprehensive answer using:
-        - Search results: {{ previous_outputs.web_search }}
-        - User context: {{ previous_outputs.user_profile }}
-        - Classification: {{ previous_outputs.intent_classifier }}
 
-        Provide a helpful, accurate response that addresses the user's specific needs.
-    ```
+    .. code-block:: yaml
+
+        # Comprehensive Q&A system
+        - id: answer_builder
+          type: openai-answer
+          prompt: |
+            Create a comprehensive answer using:
+            - Search results: {{ previous_outputs.web_search }}
+            - User context: {{ previous_outputs.user_profile }}
+            - Classification: {{ previous_outputs.intent_classifier }}
+
+            Provide a helpful, accurate response that addresses the user's specific needs.
 
     **Advanced Features:**
     - Automatic reasoning extraction from <think> blocks
@@ -638,22 +639,23 @@ class OpenAIBinaryAgent(OpenAIAnswerBuilder):
     - User intent validation (question/statement, urgent/routine)
 
     **Real-world scenarios:**
-    ```yaml
-    # Content safety check
-    - id: safety_check
-      type: openai-binary
-      prompt: "Is this content safe for all audiences? {{ input }}"
 
-    # Search requirement detection
-    - id: needs_search
-      type: openai-binary
-      prompt: "Does this question require current information? {{ input }}"
+    .. code-block:: yaml
 
-    # Priority classification
-    - id: is_urgent
-      type: openai-binary
-      prompt: "Is this request urgent based on content and context? {{ input }}"
-    ```
+        # Content safety check
+        - id: safety_check
+          type: openai-binary
+          prompt: "Is this content safe for all audiences? {{ input }}"
+
+        # Search requirement detection
+        - id: needs_search
+          type: openai-binary
+          prompt: "Does this question require current information? {{ input }}"
+
+        # Priority classification
+        - id: is_urgent
+          type: openai-binary
+          prompt: "Is this request urgent based on content and context? {{ input }}"
 
     **Decision Quality:**
     - Leverages full GPT reasoning capabilities
@@ -746,22 +748,24 @@ class OpenAIClassificationAgent(OpenAIAnswerBuilder):
     - Domain-specific classification tasks
 
     **Classification patterns:**
-    ```yaml
-    # Customer service routing
-    - id: intent_classifier
-      type: openai-classification
-      options: [question, complaint, compliment, request, technical_issue]
-      prompt: "Classify customer intent: {{ input }}"
 
-    # Content categorization
-    - id: topic_classifier
-      type: openai-classification
-      options: [technology, science, business, entertainment, sports]
-      prompt: "What topic does this article discuss? {{ input }}"
+    .. code-block:: yaml
 
-    # Urgency assessment
-    - id: priority_classifier
-      type: openai-classification
+        # Customer service routing
+        - id: intent_classifier
+          type: openai-classification
+          options: [question, complaint, compliment, request, technical_issue]
+          prompt: "Classify customer intent: {{ input }}"
+
+        # Content categorization
+        - id: topic_classifier
+          type: openai-classification
+          options: [technology, science, business, entertainment, sports]
+          prompt: "What topic does this article discuss? {{ input }}"
+
+        # Urgency assessment
+        - id: priority_classifier
+          type: openai-classification
       options: [low, medium, high, critical]
       prompt: "Assess priority level based on content and context: {{ input }}"
     ```

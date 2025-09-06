@@ -50,7 +50,7 @@ Key Features
     High-performance RedisStack backend with HNSW vector indexing for semantic search
 
 Core Use Cases
---------------
+==============
 
 The Memory Logger is essential for:
 
@@ -84,7 +84,7 @@ The memory system is composed of specialized modules:
     Data compression utilities for efficient storage
 
 Usage Examples
---------------
+==============
 
 **Factory Function (Recommended)**
 

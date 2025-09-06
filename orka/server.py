@@ -71,13 +71,14 @@ Implementation Details
 ---------------------
 
 **FastAPI Configuration**
-```python
-app = FastAPI(
-    title="OrKa AI Orchestration API",
-    description="High-performance API gateway for AI workflow orchestration",
-    version="1.0.0"
-)
-```
+
+.. code-block:: python
+
+    app = FastAPI(
+        title="OrKa AI Orchestration API",
+        description="High-performance API gateway for AI workflow orchestration",
+        version="1.0.0"
+    )
 
 **CORS Configuration**
 - Permissive CORS for development environments
@@ -129,22 +130,25 @@ Data Sanitization Examples
 --------------------------
 
 **Bytes Handling:**
-```python
-# Input: b"binary data"
-# Output: {"__type": "bytes", "data": "YmluYXJ5IGRhdGE="}
-```
+
+.. code-block:: python
+
+    # Input: b"binary data"
+    # Output: {"__type": "bytes", "data": "YmluYXJ5IGRhdGE="}
 
 **DateTime Handling:**
-```python
-# Input: datetime(2024, 1, 1, 12, 0, 0)
-# Output: "2024-01-01T12:00:00"
-```
+
+.. code-block:: python
+
+    # Input: datetime(2024, 1, 1, 12, 0, 0)
+    # Output: "2024-01-01T12:00:00"
 
 **Custom Object Handling:**
-```python
-# Input: CustomClass(attr="value")
-# Output: {"__type": "CustomClass", "data": {"attr": "value"}}
-```
+
+.. code-block:: python
+
+    # Input: CustomClass(attr="value")
+    # Output: {"__type": "CustomClass", "data": {"attr": "value"}}
 
 Deployment Configuration
 -----------------------
@@ -154,9 +158,11 @@ Deployment Configuration
 - Standard FastAPI/Uvicorn environment variables
 
 **Production Deployment**
-```bash
-# Direct execution
-python -m orka.server
+
+.. code-block:: bash
+
+    # Direct execution
+    python -m orka.server
 
 # With custom port
 ORKA_PORT=8080 python -m orka.server
@@ -179,35 +185,37 @@ Integration Examples
 -------------------
 
 **Client Integration**
-```python
-import httpx
 
-async def call_orka_api(input_text: str, workflow_config: str):
-    async with httpx.AsyncClient() as client:
-        response = await client.post("http://localhost:8001/api/run", json={
-            "input": input_text,
-            "yaml_config": workflow_config
-        })
-        return response.json()
-```
+.. code-block:: python
+
+    import httpx
+
+    async def call_orka_api(input_text: str, workflow_config: str):
+        async with httpx.AsyncClient() as client:
+            response = await client.post("http://localhost:8001/api/run", json={
+                "input": input_text,
+                "yaml_config": workflow_config
+            })
+            return response.json()
 
 **Microservice Integration**
-```python
-from fastapi import FastAPI
-import httpx
 
-app = FastAPI()
+.. code-block:: python
 
-@app.post("/process")
-async def process_request(request: dict):
-    # Forward to OrKa server
-    async with httpx.AsyncClient() as client:
-        orka_response = await client.post("http://orka-server:8001/api/run", json={
-            "input": request["text"],
-            "yaml_config": request["workflow"]
-        })
-        return orka_response.json()
-```
+    from fastapi import FastAPI
+    import httpx
+
+    app = FastAPI()
+
+    @app.post("/process")
+    async def process_request(request: dict):
+        # Forward to OrKa server
+        async with httpx.AsyncClient() as client:
+            orka_response = await client.post("http://orka-server:8001/api/run", json={
+                "input": request["text"],
+                "yaml_config": request["workflow"]
+            })
+            return orka_response.json()
 
 Performance Considerations
 -------------------------

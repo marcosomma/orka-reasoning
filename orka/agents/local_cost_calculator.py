@@ -15,7 +15,10 @@ import os
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
-import GPUtil
+try:
+    import GPUtil
+except ImportError:
+    GPUtil = None
 import psutil
 
 logger = logging.getLogger(__name__)
@@ -182,7 +185,8 @@ class LocalCostCalculator:
 
         # Estimate based on detected GPU
         try:
-            import GPUtil
+            if GPUtil is None:
+                raise ImportError("GPUtil not available")
 
             gpus = GPUtil.getGPUs()
             if gpus:
@@ -227,7 +231,8 @@ class LocalCostCalculator:
 
         # Try to detect GPU and estimate TDP
         try:
-            import GPUtil
+            if GPUtil is None:
+                raise ImportError("GPUtil not available")
 
             gpus = GPUtil.getGPUs()
             if gpus:

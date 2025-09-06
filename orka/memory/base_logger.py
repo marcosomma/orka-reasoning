@@ -113,23 +113,24 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
     --------------------
 
     **Decay Configuration**
-    ```python
-    decay_config = {
-        "enabled": True,
-        "default_short_term_hours": 1.0,
-        "default_long_term_hours": 24.0,
-        "check_interval_minutes": 30,
-        "memory_type_rules": {
-            "long_term_events": ["success", "completion", "write", "result"],
-            "short_term_events": ["debug", "processing", "start", "progress"]
-        },
-        "importance_rules": {
-            "base_score": 0.5,
-            "event_type_boosts": {"write": 0.3, "success": 0.2},
-            "agent_type_boosts": {"memory": 0.2, "openai-answer": 0.1}
+
+    .. code-block:: python
+
+        decay_config = {
+            "enabled": True,
+            "default_short_term_hours": 1.0,
+            "default_long_term_hours": 24.0,
+            "check_interval_minutes": 30,
+            "memory_type_rules": {
+                "long_term_events": ["success", "completion", "write", "result"],
+                "short_term_events": ["debug", "processing", "start", "progress"]
+            },
+            "importance_rules": {
+                "base_score": 0.5,
+                "event_type_boosts": {"write": 0.3, "success": 0.2},
+                "agent_type_boosts": {"memory": 0.2, "openai-answer": 0.1}
+            }
         }
-    }
-    ```
 
     **Blob Deduplication**
     - `_blob_threshold`: Minimum size for deduplication (default: 200 chars)
@@ -140,24 +141,25 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
     --------------
 
     **Implementing a Custom Backend**
-    ```python
-    from orka.memory.base_logger import BaseMemoryLogger
 
-    class CustomMemoryLogger(BaseMemoryLogger):
-        def __init__(self, **kwargs):
-            super().__init__(**kwargs)
-            self._storage = {}  # Your storage implementation
+    .. code-block:: python
 
-        def log(self, agent_id, event_type, payload, **kwargs):
-            # Implement storage logic
-            pass
+        from orka.memory.base_logger import BaseMemoryLogger
 
-        def cleanup_expired_memories(self, dry_run=False):
-            # Implement cleanup logic
-            pass
+        class CustomMemoryLogger(BaseMemoryLogger):
+            def __init__(self, **kwargs):
+                super().__init__(**kwargs)
+                self._storage = {}  # Your storage implementation
 
-        # ... implement other abstract methods
-    ```
+            def log(self, agent_id, event_type, payload, **kwargs):
+                # Implement storage logic
+                pass
+
+            def cleanup_expired_memories(self, dry_run=False):
+                # Implement cleanup logic
+                pass
+
+            # ... implement other abstract methods
 
     **Memory Classification Logic**
     - Orchestration logs are always classified as short-term

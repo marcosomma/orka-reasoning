@@ -48,9 +48,11 @@ async def run_cli_entrypoint(
     **Integration Patterns:**
 
     **1. Simple Q&A Integration:**
-    ```python
-    result = await run_cli_entrypoint(
-        "configs/qa_workflow.yml",
+
+    .. code-block:: python
+
+        result = await run_cli_entrypoint(
+            "configs/qa_workflow.yml",
         "What is machine learning?",
         log_to_file=False
     )
@@ -61,23 +63,23 @@ async def run_cli_entrypoint(
     ```python
     result = await run_cli_entrypoint(
         "configs/content_moderation.yml",
-        user_generated_content,
-        log_to_file=True  # Debug complex workflows
-    )
-    # Returns: {"safety_check": True, "sentiment": "positive", "topics": ["tech"]}
-    ```
+            user_generated_content,
+            log_to_file=True  # Debug complex workflows
+        )
+        # Returns: {"safety_check": True, "sentiment": "positive", "topics": ["tech"]}
 
     **3. Batch Processing Integration:**
-    ```python
-    results = []
-    for item in dataset:
-        result = await run_cli_entrypoint(
-            "configs/classifier.yml",
-            item["text"],
-            log_to_file=False
-        )
-        results.append(result)
-    ```
+
+    .. code-block:: python
+
+        results = []
+        for item in dataset:
+            result = await run_cli_entrypoint(
+                "configs/classifier.yml",
+                item["text"],
+                log_to_file=False
+            )
+            results.append(result)
 
     **Return Value Intelligence:**
     - **Dict**: Agent outputs mapped by agent ID (most common)

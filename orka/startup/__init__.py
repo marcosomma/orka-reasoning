@@ -20,7 +20,7 @@ It handles infrastructure services (Redis), backend server management,
 and orchestrates the complete service lifecycle.
 
 Key Components:
---------------
+===============
 - Configuration management and path discovery
 - Redis infrastructure (native & Docker)
 - Backend server management

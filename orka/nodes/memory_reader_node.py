@@ -35,7 +35,9 @@ class MemoryReaderNode(BaseNode):
         enable_temporal_ranking (bool): Whether to boost recent memories
 
     Example:
-        ```yaml
+    
+    .. code-block:: yaml
+    
         - id: memory_search
           type: memory-reader
           namespace: knowledge_base
@@ -54,7 +56,6 @@ class MemoryReaderNode(BaseNode):
             - Similar topics
             - Recent interactions
             - Related context
-        ```
 
     The node automatically:
         1. Converts input to vector embeddings

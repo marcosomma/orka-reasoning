@@ -77,81 +77,87 @@ class RAGNode(BaseNode):
     --------------
 
     **Basic Configuration:**
-    ```yaml
-    agents:
-      - id: rag_assistant
-        type: rag
-        top_k: 5
-        score_threshold: 0.7
-        timeout: 30.0
-    ```
+    
+    .. code-block:: yaml
+    
+        agents:
+          - id: rag_assistant
+            type: rag
+            top_k: 5
+            score_threshold: 0.7
+            timeout: 30.0
 
     **Advanced Configuration:**
-    ```yaml
-    agents:
-      - id: specialized_rag
-        type: rag
-        top_k: 10
-        score_threshold: 0.8
-        max_concurrency: 5
-        llm_config:
-          model: "gpt-4"
-          temperature: 0.1
-          max_tokens: 500
-    ```
+    
+    .. code-block:: yaml
+    
+        agents:
+          - id: specialized_rag
+            type: rag
+            top_k: 10
+            score_threshold: 0.8
+            max_concurrency: 5
+            llm_config:
+              model: "gpt-4"
+              temperature: 0.1
+              max_tokens: 500
 
     **Integration with Memory:**
-    ```python
-    # The node automatically integrates with the memory system
-    # Memory backend provides semantic search capabilities
-    # Embedder service generates query vectors
-    # LLM service generates final responses
-    ```
+    
+    .. code-block:: python
+    
+        # The node automatically integrates with the memory system
+        # Memory backend provides semantic search capabilities
+        # Embedder service generates query vectors
+        # LLM service generates final responses
 
     Response Format
     --------------
 
     **Successful Response:**
-    ```json
-    {
-      "result": {
-        "answer": "Generated response based on retrieved context",
-        "sources": [
-          {
-            "content": "Source document content",
-            "score": 0.85,
-            "metadata": {...}
-          }
-        ]
-      },
-      "status": "success",
-      "error": null,
-      "metadata": {"node_id": "rag_assistant"}
-    }
-    ```
+    
+    .. code-block:: json
+    
+        {
+          "result": {
+            "answer": "Generated response based on retrieved context",
+            "sources": [
+              {
+                "content": "Source document content",
+                "score": 0.85,
+                "metadata": {...}
+              }
+            ]
+          },
+          "status": "success",
+          "error": null,
+          "metadata": {"node_id": "rag_assistant"}
+        }
 
     **Error Response:**
-    ```json
-    {
-      "result": null,
-      "status": "error",
-      "error": "Query is required for RAG operation",
-      "metadata": {"node_id": "rag_assistant"}
-    }
-    ```
+    
+    .. code-block:: json
+    
+        {
+          "result": null,
+          "status": "error",
+          "error": "Query is required for RAG operation",
+          "metadata": {"node_id": "rag_assistant"}
+        }
 
     **No Results Response:**
-    ```json
-    {
-      "result": {
-        "answer": "I couldn't find any relevant information to answer your question.",
-        "sources": []
-      },
-      "status": "success",
-      "error": null,
-      "metadata": {"node_id": "rag_assistant"}
-    }
-    ```
+    
+    .. code-block:: json
+    
+        {
+          "result": {
+            "answer": "I couldn't find any relevant information to answer your question.",
+            "sources": []
+          },
+          "status": "success",
+          "error": null,
+          "metadata": {"node_id": "rag_assistant"}
+        }
 
     Performance Considerations
     -------------------------

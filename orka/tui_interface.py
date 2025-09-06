@@ -80,7 +80,7 @@ When Textual is not available:
 - `r` - Force refresh
 
 Usage Patterns
---------------
+==============
 
 **Basic Usage**
 ```python

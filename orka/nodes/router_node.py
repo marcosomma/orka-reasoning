@@ -47,41 +47,44 @@ class RouterNode(BaseNode):
     **Routing Patterns:**
 
     **1. Binary Routing** (most common):
-    ```yaml
-    - id: content_router
-      type: router
-      params:
-        decision_key: safety_check
-        routing_map:
-          "true": [content_processor, quality_checker]
-          "false": [content_moderator, human_review]
-    ```
+    
+    .. code-block:: yaml
+    
+        - id: content_router
+          type: router
+          params:
+            decision_key: safety_check
+            routing_map:
+              "true": [content_processor, quality_checker]
+              "false": [content_moderator, human_review]
 
     **2. Multi-way Classification Routing**:
-    ```yaml
-    - id: intent_router
-      type: router
-      params:
-        decision_key: intent_classifier
-        routing_map:
-          "question": [search_agent, answer_builder]
-          "complaint": [escalation_agent, sentiment_analyzer]
-          "compliment": [thank_you_generator]
-          "request": [request_processor, validation_agent]
-    ```
+    
+    .. code-block:: yaml
+    
+        - id: intent_router
+          type: router
+          params:
+            decision_key: intent_classifier
+            routing_map:
+              "question": [search_agent, answer_builder]
+              "complaint": [escalation_agent, sentiment_analyzer]
+              "compliment": [thank_you_generator]
+              "request": [request_processor, validation_agent]
 
     **3. Priority-based Routing**:
-    ```yaml
-    - id: priority_router
-      type: router
-      params:
-        decision_key: urgency_classifier
-        routing_map:
-          "critical": [immediate_response, alert_manager]
-          "high": [priority_queue, escalation_check]
-          "medium": [standard_processor]
-          "low": [batch_processor]
-    ```
+    
+    .. code-block:: yaml
+    
+        - id: priority_router
+          type: router
+          params:
+            decision_key: urgency_classifier
+            routing_map:
+              "critical": [immediate_response, alert_manager]
+              "high": [priority_queue, escalation_check]
+              "medium": [standard_processor]
+              "low": [batch_processor]
 
     **Advanced Features:**
     - **Intelligent Type Conversion**: Automatically handles "true"/"false" strings vs boolean values

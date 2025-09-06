@@ -65,7 +65,7 @@ Architecture Details
 - Dry-run support for testing cleanup operations
 
 Usage Examples
---------------
+==============
 
 **Basic Usage:**
 ```python

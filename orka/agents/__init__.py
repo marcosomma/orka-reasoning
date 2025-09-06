@@ -71,7 +71,7 @@ Available Agent Types
     Validates answers and structures them into memory objects
 
 Agent Registry
--------------
+==============
 
 The package maintains a central registry mapping agent type identifiers
 to their implementation classes:
@@ -89,7 +89,7 @@ to their implementation classes:
     }
 
 Usage Examples
---------------
+==============
 
 **Creating Custom Agents**
 
@@ -114,7 +114,7 @@ Usage Examples
     agent = OpenAIAnswerBuilder(agent_id="my_agent")
 
 Agent Configuration
-------------------
+===================
 
 Agents are typically configured through YAML workflow definitions:
 
@@ -129,7 +129,7 @@ Agents are typically configured through YAML workflow definitions:
         max_concurrency: 5
 
 Module Components
-----------------
+=================
 
 **Available Modules:**
 
