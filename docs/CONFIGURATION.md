@@ -46,7 +46,7 @@ orchestrator:
   strategy: sequential
   memory_config:
     # Backend selection
-    backend: redisstack                    # Options: redis, redisstack, kafka
+    backend: redisstack                    # Options: redis, redisstack
     
     # Memory decay configuration
     decay:

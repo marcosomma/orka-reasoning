@@ -30,8 +30,6 @@ fi
 
 # Stop all profile-based services
 stop_profile "redis" "Redis"
-stop_profile "kafka" "Kafka" 
-stop_profile "dual" "Dual Backend"
 
 # Stop any remaining containers
 echo "🛑 Stopping any remaining Orka containers..."
@@ -66,7 +64,7 @@ if [[ "$CLEAN_VOLUMES" == false ]]; then
 fi
 
 echo "📋 Current Docker status:"
-echo "   • Running containers: $(docker ps --format 'table {{.Names}}\t{{.Status}}' | grep -E '(orka|redis|kafka|zookeeper)' | wc -l || echo '0')"
+echo "   • Running containers: $(docker ps --format 'table {{.Names}}\t{{.Status}}' | grep -E '(orka|redis)' | wc -l || echo '0')"
 echo "   • Orka volumes:       $(docker volume ls --format 'table {{.Name}}' | grep -E '(orka|redis)' | wc -l || echo '0')"
-echo "   • Orka networks:      $(docker network ls --format 'table {{.Name}}' | grep -E '(orka|redis|kafka)' | wc -l || echo '0')"
+echo "   • Orka networks:      $(docker network ls --format 'table {{.Name}}' | grep -E '(orka|redis)' | wc -l || echo '0')"
 echo "" 

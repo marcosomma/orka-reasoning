@@ -169,7 +169,7 @@ class TestMemoryWatch:
         with (
             patch("orka.cli.memory.watch.create_memory_logger") as mock_create,
             patch("orka.cli.memory.watch._memory_watch_display") as mock_display,
-            patch.dict(os.environ, {"ORKA_MEMORY_BACKEND": "kafka"}, clear=True),
+            patch.dict(os.environ, {"ORKA_MEMORY_BACKEND": "redisstack"}, clear=True),
         ):
             mock_memory = MagicMock()
             mock_create.return_value = mock_memory
@@ -179,11 +179,11 @@ class TestMemoryWatch:
 
             assert result == 0
             mock_create.assert_called_once_with(
-                backend="kafka",
+                backend="redisstack",
                 redis_url="redis://localhost:6380/0",
             )
             output = setup_logging.get_output()
-            assert "Using Kafka backend" in output
+            assert "Using Redisstack backend" in output
 
     def test_memory_watch_fallback_json_mode(self, setup_logging):
         """Test _memory_watch_fallback with JSON mode."""

@@ -123,9 +123,6 @@ class TestSetupSubcommands:
         args = parser.parse_args(["memory", "stats", "--backend", "redisstack"])
         assert args.backend == "redisstack"
 
-        args = parser.parse_args(["memory", "stats", "--backend", "kafka"])
-        assert args.backend == "kafka"
-
     def test_memory_stats_invalid_backend(self):
         """Test memory stats with invalid backend."""
         parser = create_parser()
@@ -157,8 +154,8 @@ class TestSetupSubcommands:
         assert args.dry_run is True
 
         # Test cleanup with both options
-        args = parser.parse_args(["memory", "cleanup", "--backend", "kafka", "--dry-run"])
-        assert args.backend == "kafka"
+        args = parser.parse_args(["memory", "cleanup", "--backend", "redisstack", "--dry-run"])
+        assert args.backend == "redisstack"
         assert args.dry_run is True
 
     def test_memory_cleanup_invalid_backend(self):
@@ -218,7 +215,7 @@ class TestSetupSubcommands:
         setup_subcommands(parser)
 
         # Test each backend
-        for backend in ["redis", "redisstack", "kafka"]:
+        for backend in ["redis", "redisstack"]:
             args = parser.parse_args(["memory", "watch", "--backend", backend])
             assert args.backend == backend
 

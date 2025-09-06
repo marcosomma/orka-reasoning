@@ -4,13 +4,9 @@ orchestrator:
   queue: orka:test-routing-memory
   memory:
     enabled: true
-    backend: kafka
+    backend: redisstack
     config:
-      bootstrap_servers: localhost:9092
-      schema_registry_url: http://localhost:8081
-      use_schema_registry: true
-      topic_prefix: orka-memory
-      redis_url: redis://localhost:6380/0  # Redis is still needed for memory operations
+      redis_url: redis://localhost:6380/0
     # Vector search configuration
     vector_search:
       enabled: true

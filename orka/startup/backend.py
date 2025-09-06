@@ -36,7 +36,7 @@ def start_backend(backend: str) -> subprocess.Popen:
     this parent process.
 
     Args:
-        backend: The backend type ('redis', 'kafka', or 'dual')
+        backend: The backend type ('redis' or 'redisstack')
 
     Returns:
         subprocess.Popen: The process object representing the running backend

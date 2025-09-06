@@ -36,7 +36,6 @@ from .infrastructure.health import (
     monitor_backend_process,
     wait_for_services,
 )
-from .infrastructure.kafka import start_kafka_docker
 from .infrastructure.redis import start_native_redis
 
 logger = logging.getLogger(__name__)
@@ -47,32 +46,26 @@ def start_infrastructure(backend: str) -> dict[str, subprocess.Popen]:
     Start the infrastructure services natively.
 
     Redis will be started as a native process on port 6380.
-    Kafka services will still use Docker when needed.
 
     Args:
-        backend: The backend type ('redis', 'redisstack', 'kafka', or 'dual')
+        backend: The backend type ('redis' or 'redisstack')
 
     Returns:
         Dict[str, subprocess.Popen]: Dictionary of started processes
 
     Raises:
         RuntimeError: If Redis Stack is not available or fails to start
-        subprocess.CalledProcessError: If Kafka Docker services fail to start
     """
     processes = {}
 
     logger.info(f"Starting {backend.upper()} backend...")
 
     # Always start Redis natively for all backends (except when explicitly using Docker)
-    if backend in ["redis", "redisstack", "kafka", "dual"]:
+    if backend in ["redis", "redisstack"]:
         redis_proc = start_native_redis(6380)
         if redis_proc is not None:
             processes["redis"] = redis_proc
         # If redis_proc is None, Redis is running via Docker and managed by Docker daemon
-
-    # Start Kafka services via Docker only when needed
-    if backend in ["kafka", "dual"]:
-        start_kafka_docker()
 
     return processes
 
@@ -82,8 +75,8 @@ async def main() -> None:
     Main entry point for starting and managing OrKa services.
 
     This asynchronous function:
-    1. Determines which backend to use (Redis, Kafka, or dual)
-    2. Starts the appropriate infrastructure services (Redis natively, Kafka via Docker)
+    1. Determines which backend to use (Redis or RedisStack)
+    2. Starts the appropriate infrastructure services (Redis natively)
     3. Waits for services to be ready
     4. Launches the OrKa backend server
     5. Monitors the backend process to ensure it's running

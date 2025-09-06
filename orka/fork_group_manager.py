@@ -193,11 +193,11 @@ class ForkGroupManager:
 
 class SimpleForkGroupManager:
     """
-    A simple in-memory fork group manager for use with non-Redis backends like Kafka.
+    A simple in-memory fork group manager for use with non-Redis backends.
     Provides the same interface as ForkGroupManager but stores data in memory.
 
     Note: This implementation is not distributed and will not work across multiple
-    orchestrator instances. Use only for single-instance deployments with Kafka.
+    orchestrator instances. Use only for single-instance deployments.
     """
 
     def __init__(self) -> None:

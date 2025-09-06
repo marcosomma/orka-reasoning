@@ -4,12 +4,8 @@ orchestrator:
   queue: orka:qa
   memory:
     enabled: true
-    backend: kafka
+    backend: redisstack
     config:
-      bootstrap_servers: localhost:9092
-      schema_registry_url: http://localhost:8081
-      use_schema_registry: true
-      topic_prefix: orka-reasoning-memory
       redis_url: redis://localhost:6380/0
   agents:
     - qa_agent

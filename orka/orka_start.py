@@ -4,18 +4,17 @@ OrKa Service Runner
 ====================
 
 Main entry point for starting the OrKa service stack.
-By default, uses Kafka backend for event streaming and Redis for memory operations.
+By default, uses RedisStack backend for high-performance memory operations with HNSW vector indexing.
 
-This provides the best of both worlds:
-- Kafka for persistent event streaming and audit trails
-- Redis for fast memory operations and fork/join coordination
+This provides optimal performance with simplified infrastructure:
+- RedisStack for ultra-fast memory operations and vector search
+- HNSW indexing for 100x faster semantic search
+- Simplified architecture with single backend
 
 Environment Variables:
 --------------------
-ORKA_MEMORY_BACKEND: Backend type ('kafka', 'redis', 'redisstack', or 'dual')
+ORKA_MEMORY_BACKEND: Backend type ('redisstack' or 'redis')
 REDIS_URL: Redis connection URL (default: redis://localhost:6380/0)
-KAFKA_BOOTSTRAP_SERVERS: Kafka broker list (default: localhost:9092)
-KAFKA_TOPIC_PREFIX: Prefix for Kafka topics (default: orka-memory)
 """
 import os
 import sys
@@ -25,24 +24,16 @@ from orka.utils.logging_utils import setup_logging
 
 setup_logging()
 
-# Set default backend to Kafka (hybrid with Redis for memory)
+# Set default backend to RedisStack for optimal performance
 if "ORKA_MEMORY_BACKEND" not in os.environ:
-    os.environ["ORKA_MEMORY_BACKEND"] = "kafka"
+    os.environ["ORKA_MEMORY_BACKEND"] = "redisstack"
 
 # Ensure Redis is configured for memory operations
 if "REDIS_URL" not in os.environ:
     os.environ["REDIS_URL"] = "redis://localhost:6380/0"
 
-# Set default Kafka configuration if not already set
-if "KAFKA_BOOTSTRAP_SERVERS" not in os.environ:
-    os.environ["KAFKA_BOOTSTRAP_SERVERS"] = "localhost:9092"
-
-if "KAFKA_TOPIC_PREFIX" not in os.environ:
-    os.environ["KAFKA_TOPIC_PREFIX"] = "orka-memory"
-
 # Import all functions from the modular startup package to maintain backward compatibility
 from orka.startup import (  # Main orchestration functions
-    initialize_schema_registry,
     main,
     run_startup,
     wait_for_redis,
@@ -52,25 +43,19 @@ from orka.startup import (  # Main orchestration functions
 # Provide backward compatibility alias
 _wait_for_redis = wait_for_redis
 
-# The _initialize_schema_registry function is now initialize_schema_registry (removed underscore)
-# Provide backward compatibility alias
-_initialize_schema_registry = initialize_schema_registry
 
 # Public API for backward compatibility
 __all__ = [
-    "_initialize_schema_registry",
     "_wait_for_redis",
-    "initialize_schema_registry",
     "main",
     "run_startup",
     "wait_for_redis",
 ]
 
-print("🚀 Starting OrKa with Kafka + Redis Hybrid Backend...")
+backend = os.environ["ORKA_MEMORY_BACKEND"]
+print(f"🚀 Starting OrKa with {backend.upper()} Backend...")
 print("📋 Configuration:")
-print(f"   • Memory Backend: {os.environ['ORKA_MEMORY_BACKEND']}")
-print(f"   • Kafka Servers: {os.environ['KAFKA_BOOTSTRAP_SERVERS']}")
-print(f"   • Kafka Topic Prefix: {os.environ['KAFKA_TOPIC_PREFIX']}")
+print(f"   • Memory Backend: {backend}")
 print(f"   • Redis URL: {os.environ['REDIS_URL']}")
 print(f"   • LOG_LEVEL: {os.getenv('ORKA_LOG_LEVEL', 'INFO')}")
 

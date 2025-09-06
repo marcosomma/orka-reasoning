@@ -246,20 +246,6 @@ def memory_configure(args: Any) -> int:
                 except Exception as e:
                     logger.error(f"❌ Decay Cleanup: Error - {e}")
 
-            elif backend == "kafka":
-                logger.info("\n📡 Kafka-Specific Tests:")
-
-                # Test hybrid backend
-                try:
-                    if hasattr(memory, "redis_url"):
-                        logger.info("✅ Hybrid Backend: Kafka + Redis")
-                        logger.info(f"   Kafka topic: {getattr(memory, 'main_topic', 'N/A')}")
-                        logger.info(f"   Redis URL: {memory.redis_url}")
-                    else:
-                        logger.info("⚠️  Hybrid Backend: Configuration unclear")
-                except Exception as e:
-                    logger.error(f"❌ Hybrid Backend: Error - {e}")
-
             # Test memory stats retrieval
             try:
                 stats = memory.get_memory_stats()

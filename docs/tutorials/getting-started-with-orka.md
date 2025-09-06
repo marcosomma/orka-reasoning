@@ -30,8 +30,8 @@ OrKa V0.7.0+ includes automatic RedisStack setup for 100x faster vector search:
 # Start OrKa with RedisStack (for development)
 orka-start
 
-# Or for production with Kafka streaming:
-orka-kafka
+# For production (same command):
+orka-start
 ```
 
 ## Step 3: Create Your First Workflow

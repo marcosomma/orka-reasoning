@@ -14,7 +14,6 @@ Complete API documentation for OrKa's core components, including classes, method
    - [Environment Variables](#environment-variables)
 3. [Memory Backend](#memory-backend)
    - [RedisStack](#redisstack)
-   - [Kafka](#kafka)
 4. [CLI Reference](#cli-reference)
 
 ## Core Components
@@ -299,17 +298,6 @@ Performance:
 - Concurrent Searches: 1000+
 - Index Updates: Automatic
 
-### Kafka
-
-Optional streaming backend for production deployments.
-
-Configuration:
-```yaml
-memory_config:
-  backend: kafka
-  bootstrap_servers: localhost:9092
-  schema_registry_url: http://localhost:8081
-  topic_prefix: orka-memory
 ```
 
 Features:
@@ -335,7 +323,7 @@ orka memory cleanup
 
 # Start OrKa services
 orka-start      # Development (Redis)
-orka-kafka      # Production (Kafka)
+orka-start      # Production (RedisStack)
 
 # Check system health
 orka system status

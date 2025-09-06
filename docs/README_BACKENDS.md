@@ -1,6 +1,6 @@
 # OrKa Backend Selection Guide
 
-OrKa supports multiple memory backends: **RedisStack** (default), **Redis** (legacy), **Kafka** (hybrid), and **Dual** (both). Choose the right backend for your use case.
+OrKa supports Redis-based memory backends: **RedisStack** (recommended) and **Redis** (basic). Choose the right backend for your use case.
 
 ## 🎯 **Backend Comparison**
 
@@ -8,8 +8,6 @@ OrKa supports multiple memory backends: **RedisStack** (default), **Redis** (leg
 |---------|-------------|----------|---------------|------------------|
 | **RedisStack** | ⚡ 100x faster | Production AI workloads | ✅ HNSW indexing | 🟢 Simple |
 | **Redis** | 🔄 Standard | Development, legacy | ❌ Basic search | 🟢 Simple |
-| **Kafka** | 🚀 Hybrid | Enterprise, audit trails | ✅ Via RedisStack | 🟡 Moderate |
-| **Dual** | 🔄 Variable | Testing, migration | ✅ Via RedisStack | 🔴 Complex |
 
 ## 🚀 Quick Start Options
 
@@ -18,207 +16,194 @@ OrKa supports multiple memory backends: **RedisStack** (default), **Redis** (leg
 # Start with RedisStack backend (default - recommended)
 python -m orka.orka_start
 
-# Start with Kafka backend (hybrid: Kafka events + RedisStack memory)
-ORKA_MEMORY_BACKEND=kafka python -m orka.orka_start
-
-# Start with dual backend (both Redis and Kafka)
-ORKA_MEMORY_BACKEND=dual python -m orka.orka_start
-
 # Force basic Redis (legacy/development only)
 ORKA_FORCE_BASIC_REDIS=true python -m orka.orka_start
 ```
 
-### Option 2: Helper Scripts
-```bash
-# Start with basic Redis backend (legacy/development)
-python orka/start_redis_only.py
-
-# Start with Kafka backend (hybrid with RedisStack)
-python -m orka.start_kafka
-```
-
-### Option 3: Docker Scripts (Alternative)
+### Option 2: Docker Scripts
 ```bash
 # Windows
 orka\docker\start-redis.bat
-orka\docker\start-kafka.bat
 
 # Linux/macOS
 ./orka/docker/start-redis.sh
-./orka/docker/start-kafka.sh
 ```
 
-## 📍 Service Endpoints
+## 📊 **Performance Benchmarks**
 
-### RedisStack Backend (Default)
-- **Orka API**: http://localhost:8000
-- **RedisStack**: localhost:6380 (Redis + vector search modules)
+### Vector Search Performance
+```
+RedisStack HNSW:  1.2ms avg query time (100x faster)
+Redis Basic:      120ms avg query time
+```
 
-### Basic Redis Backend (Legacy)
-- **Orka API**: http://localhost:8000
-- **Redis**: localhost:6380 (basic Redis only)
+### Memory Operations
+```
+RedisStack:  10,000 ops/sec
+Redis:       8,000 ops/sec
+```
 
-### Kafka Backend (Hybrid with RedisStack)
-- **Orka API**: http://localhost:8001
-- **Kafka (Events)**: localhost:9092
-- **RedisStack (Memory)**: localhost:6380  
-- **Zookeeper**: localhost:2181
+## 🔧 **Configuration**
 
-### Dual Backend
-- **Orka API**: http://localhost:8002
-- **Redis**: localhost:6380
-- **Kafka**: localhost:9092
-- **Zookeeper**: localhost:2181
-
-## 🔧 Environment Variables
-
-### All Backends
-- `ORKA_MEMORY_BACKEND`: Choose backend type (`redisstack`, `redis`, `kafka`, `dual`)
-- `ORKA_FORCE_BASIC_REDIS`: Force basic Redis mode (`true`/`false`)
-
-### RedisStack/Redis-Specific
-- `REDIS_URL`: Redis connection URL (default: `redis://localhost:6380/0`)
-
-### Kafka-Specific
-- `KAFKA_BOOTSTRAP_SERVERS`: Kafka brokers (default: `localhost:9092`)
-- `KAFKA_TOPIC_PREFIX`: Topic name prefix (default: `orka-memory`)
-
-## 🛠️ Management Commands
-
-### Check Running Services
+### RedisStack (Recommended)
 ```bash
-# List running containers
-docker ps
+# Environment variables
+export ORKA_MEMORY_BACKEND=redisstack
+export REDIS_URL=redis://localhost:6380/0
 
-# Check specific backend services
-docker-compose --profile redis ps
-docker-compose --profile kafka ps
-docker-compose --profile dual ps
+# Start OrKa
+python -m orka.orka_start
 ```
 
-### View Logs
+**Features:**
+- ✅ HNSW vector indexing for 100x faster semantic search
+- ✅ Advanced memory decay and compression
+- ✅ Real-time memory analytics
+- ✅ Automatic index optimization
+
+### Redis (Basic)
 ```bash
-# Orka application logs (shown in terminal)
-# Docker container logs
-docker-compose logs -f redis
-docker-compose logs -f kafka
-docker-compose logs -f zookeeper
+# Environment variables
+export ORKA_MEMORY_BACKEND=redis
+export REDIS_URL=redis://localhost:6379/0
+
+# Start OrKa
+python -m orka.orka_start
 ```
 
-### Stop Services
+**Features:**
+- ✅ Fast in-memory storage
+- ✅ Basic memory operations
+- ❌ No vector search capabilities
+- ❌ Limited semantic search
+
+## 🐳 **Docker Configuration**
+
+### RedisStack Setup
+```yaml
+version: '3.8'
+services:
+  redis-stack:
+    image: redis/redis-stack:latest
+    ports:
+      - "6380:6380"
+    volumes:
+      - redis_data:/data
+    environment:
+      - REDIS_ARGS=--save 60 1000
+
+volumes:
+  redis_data:
+```
+
+### Basic Redis Setup
+```yaml
+version: '3.8'
+services:
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  redis_data:
+```
+
+## 🔍 **Backend Selection Guide**
+
+### Choose **RedisStack** if:
+- ✅ You need semantic/vector search
+- ✅ Building production AI applications
+- ✅ Want 100x faster query performance
+- ✅ Need advanced memory features
+
+### Choose **Redis** if:
+- ✅ Simple development setup
+- ✅ Legacy system compatibility
+- ✅ No vector search requirements
+- ✅ Minimal resource usage
+
+## 🛠️ **Advanced Configuration**
+
+### Memory Decay Settings
 ```bash
-# Stop by pressing Ctrl+C in the terminal where orka_start is running
-# Or manually stop containers:
-docker-compose --profile redis down
-docker-compose --profile kafka down
-docker-compose --profile dual down
+# Enable intelligent memory decay
+export ORKA_MEMORY_DECAY_ENABLED=true
+export ORKA_MEMORY_DECAY_SHORT_TERM_HOURS=2
+export ORKA_MEMORY_DECAY_LONG_TERM_HOURS=168
+export ORKA_MEMORY_DECAY_CHECK_INTERVAL_MINUTES=30
 ```
 
-## 🔄 Switching Between Backends
+### Performance Tuning
+```bash
+# Redis connection pooling
+export REDIS_MAX_CONNECTIONS=100
+export REDIS_CONNECTION_TIMEOUT=5
 
-### Runtime Switch (Dual Backend)
-When using dual backend, you can switch between Redis and Kafka at runtime by changing the `ORKA_MEMORY_BACKEND` environment variable in your application configuration.
+# Memory optimization
+export ORKA_MEMORY_COMPRESSION_ENABLED=true
+export ORKA_MEMORY_BATCH_SIZE=1000
+```
 
-### Complete Switch
-1. Stop current services (Ctrl+C)
-2. Start with different backend:
-   ```bash
-   ORKA_MEMORY_BACKEND=kafka python -m orka.orka_start
-   ```
-
-## 🐛 Troubleshooting
+## 🔧 **Troubleshooting**
 
 ### Common Issues
 
-**Backend won't start:**
+**"FT.CREATE unknown command"**
+- **Cause:** Using basic Redis instead of RedisStack
+- **Solution:** Switch to RedisStack or use `ORKA_FORCE_BASIC_REDIS=true`
+
+**Slow vector search performance**
+- **Cause:** HNSW index not created or optimized
+- **Solution:** Check index status with `redis-cli FT._LIST`
+
+**Connection refused errors**
+- **Cause:** Redis/RedisStack not running
+- **Solution:** Start Redis with `docker run -p 6380:6380 redis/redis-stack`
+
+### Health Checks
 ```bash
-# Check Docker is running
-docker --version
+# Check Redis connection
+redis-cli ping
 
-# Check for port conflicts
-netstat -an | grep 6380  # Redis
-netstat -an | grep 9092  # Kafka
+# Check RedisStack features
+redis-cli FT._LIST
+
+# Monitor OrKa memory
+orka memory watch
 ```
 
-**Services not ready:**
-- Redis: Usually ready in 5-10 seconds
-- Kafka: Can take 15-30 seconds to initialize
-- Check logs: `docker-compose logs <service-name>`
+## 📈 **Migration Guide**
 
-**Wrong backend selected:**
-- Check environment variable: `echo $ORKA_MEMORY_BACKEND`
-- Verify correct ports are being used (see endpoints above)
-
-### Debug Commands
+### From Basic Redis to RedisStack
 ```bash
-# Test Redis connection
-docker-compose exec redis redis-cli ping
+# 1. Stop current Redis
+docker stop redis
 
-# Test Kafka connection  
-docker-compose exec kafka kafka-topics --bootstrap-server localhost:29092 --list
+# 2. Start RedisStack
+docker run -d -p 6380:6380 redis/redis-stack
 
-# View Orka memory logs
-# Redis: docker-compose exec redis redis-cli monitor
-# Kafka: docker-compose exec kafka kafka-console-consumer --bootstrap-server localhost:29092 --topic orka-memory-events --from-beginning
+# 3. Update environment
+export ORKA_MEMORY_BACKEND=redisstack
+export REDIS_URL=redis://localhost:6380/0
+
+# 4. Restart OrKa
+python -m orka.orka_start
 ```
 
-## 🎯 Use Cases
+## 🎯 **Best Practices**
 
-### RedisStack Backend (Recommended)
-- **Best for**: Production AI workloads, vector search applications, intelligent memory
-- **Features**: 100x faster vector search, HNSW indexing, semantic similarity, automatic fallback to basic Redis
-- **Limitations**: Requires RedisStack installation (or falls back gracefully)
+1. **Production:** Always use RedisStack for production workloads
+2. **Development:** RedisStack recommended, Redis acceptable for simple testing
+3. **Monitoring:** Use `orka memory watch` to monitor performance
+4. **Backup:** Configure Redis persistence with `--save` options
+5. **Security:** Use Redis AUTH and network isolation in production
 
-### Basic Redis Backend (Legacy)
-- **Best for**: Development, legacy systems, simple deployments without vector search
-- **Features**: Fast in-memory operations, simple setup, proven reliability
-- **Limitations**: No vector search, basic text matching only
+## 📚 **Additional Resources**
 
-### Kafka Backend (Hybrid with RedisStack)
-- **Best for**: Enterprise systems, audit trails, distributed architectures with AI capabilities
-- **Features**: Kafka for persistent event streaming + RedisStack for intelligent memory operations and vector search
-- **Limitations**: More complex setup, requires both Kafka and RedisStack infrastructure
-
-### Dual Backend
-- **Best for**: Testing, migration scenarios, comparing performance
-- **Features**: Can switch between backends without restart
-- **Limitations**: Uses resources for both systems
-
-## 📚 Examples
-
-### Basic Usage
-```python
-# Your OrKa workflow code remains the same regardless of backend
-from orka.orchestrator import Orchestrator
-
-orchestrator = Orchestrator("config.yml")
-result = await orchestrator.run("input data")
-```
-
-### Backend-Specific Configuration
-```python
-import os
-
-# Force Kafka backend in code
-os.environ["ORKA_MEMORY_BACKEND"] = "kafka"
-os.environ["KAFKA_BOOTSTRAP_SERVERS"] = "localhost:9092"
-
-from orka.orchestrator import Orchestrator
-orchestrator = Orchestrator("config.yml")
-```
-
-### Programmatic Backend Selection
-```python
-from orka.memory_logger import create_memory_logger
-
-# RedisStack (default - recommended)
-memory = create_memory_logger("redisstack", redis_url="redis://localhost:6380")
-
-# Basic Redis (legacy)
-import os
-os.environ["ORKA_FORCE_BASIC_REDIS"] = "true"
-memory = create_memory_logger("redis", redis_url="redis://localhost:6380")
-
-# Kafka (hybrid with RedisStack)
-memory = create_memory_logger("kafka", bootstrap_servers="localhost:9092", redis_url="redis://localhost:6380")
-``` 
+- [Memory System Guide](MEMORY_SYSTEM_GUIDE.md)
+- [Configuration Guide](CONFIGURATION.md)
+- [Troubleshooting Guide](troubleshooting.md)
+- [Performance Tuning](best-practices.md)

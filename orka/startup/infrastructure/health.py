@@ -23,8 +23,6 @@ import logging
 import subprocess
 from typing import Dict
 
-from .kafka import initialize_schema_registry, wait_for_kafka_services
-
 logger = logging.getLogger(__name__)
 
 
@@ -33,17 +31,11 @@ def wait_for_services(backend: str) -> None:
     Wait for infrastructure services to be ready.
 
     Args:
-        backend: The backend type ('redis', 'redisstack', 'kafka', or 'dual')
+        backend: The backend type ('redis' or 'redisstack')
     """
     # Redis is already checked during native startup in start_native_redis()
     # No additional waiting needed for Redis
-
-    if backend in ["kafka", "dual"]:
-        wait_for_kafka_services()
-
-        # Initialize Schema Registry schemas at startup
-        if backend in ["kafka", "dual"]:
-            initialize_schema_registry()
+    pass
 
 
 async def monitor_backend_process(backend_proc: subprocess.Popen) -> None:
@@ -73,31 +65,14 @@ def display_service_endpoints(backend: str) -> None:
     Display service endpoints for the configured backend.
 
     Args:
-        backend: The backend type ('redis', 'redisstack', 'kafka', or 'dual')
+        backend: The backend type ('redis' or 'redisstack')
     """
     logger.info(f"🚀 Starting OrKa with {backend.upper()} backend...")
     logger.info("=" * 80)
 
-    if backend in ["redis", "redisstack"]:
-        logger.info("📍 Service Endpoints:")
-        logger.info("   • Orka API: http://localhost:8000")
-        logger.info("   • Redis:    localhost:6380 (native)")
-    elif backend == "kafka":
-        logger.info("📍 Service Endpoints (Hybrid Kafka + Redis):")
-        logger.info("   • Orka API:         http://localhost:8001")
-        logger.info("   • Kafka (Events):   localhost:9092")
-        logger.info("   • Redis (Memory):   localhost:6380 (native)")
-        logger.info("   • Zookeeper:        localhost:2181")
-        logger.info("   • Schema Registry:  http://localhost:8081")
-        logger.info("   • Schema UI:        http://localhost:8082")
-    elif backend == "dual":
-        logger.info("📍 Service Endpoints:")
-        logger.info(" Orka API (Dual):  http://localhost:8002")
-        logger.info(" Redis:            localhost:6380 (native)")
-        logger.info(" Kafka:            localhost:9092")
-        logger.info("   • Zookeeper:        localhost:2181")
-        logger.info("   • Schema Registry:  http://localhost:8081")
-        logger.info("   • Schema UI:        http://localhost:8082")
+    logger.info("📍 Service Endpoints:")
+    logger.info("   • Orka API: http://localhost:8000")
+    logger.info("   • Redis:    localhost:6380 (native)")
 
     logger.info("=" * 80)
 

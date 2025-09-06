@@ -97,7 +97,6 @@ flowchart TB
     subgraph "External Services"
         OPENAI[OpenAI API]
         DDGO[DuckDuckGo Search]
-        KAFKA[Kafka Streams]
     end
     
     CLI --> YAML
@@ -120,7 +119,6 @@ flowchart TB
     
     LLM_A <--> OPENAI
     SEARCH <--> DDGO
-    REDIS <--> KAFKA
     
     style REDIS fill:#f9f,stroke:#333,stroke-width:3px
     style ORCH fill:#bbf,stroke:#333,stroke-width:2px

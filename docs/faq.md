@@ -39,7 +39,7 @@ It logs the error. You can define `failover:` agents to take over. No silent fai
 Yes. Via LiteLLM proxy, run with Ollama, LM Studio, Claude, OpenRouter. V0.7.0 includes enhanced local LLM support with better error handling.
 
 ### What about security?
-Redis/Kafka can be encrypted. PII filters recommended. OrKa UI supports authentication, and all memory operations can be configured with encryption at rest.
+Redis/RedisStack can be encrypted. PII filters recommended. OrKa UI supports authentication, and all memory operations can be configured with encryption at rest.
 
 ### Should I use sync or async agents?
 Use the modern async pattern for new development. The legacy sync pattern is provided for backward compatibility with existing code. The async pattern offers better concurrency control, timeout handling, and resource management.

@@ -457,29 +457,6 @@ class TestMemoryConfigure:
             assert "Documents: 150" in output
             assert "Indexing: Yes" in output
 
-    def test_memory_configure_kafka_detailed(self, setup_logging):
-        """Test memory_configure with Kafka backend detailed tests."""
-        args = Namespace(backend="kafka")
-
-        mock_memory = MagicMock()
-        mock_memory.decay_config = {"enabled": True}
-        mock_memory.redis_url = "redis://localhost:6380/0"
-        mock_memory.main_topic = "orka_memory_topic"
-        mock_memory.get_memory_stats.return_value = {"total_entries": 75}
-
-        with patch("orka.cli.memory.commands.create_memory_logger", return_value=mock_memory):
-            result = memory_configure(args)
-
-            assert result == 0
-            output = setup_logging.get_output()
-            assert "📡 Kafka-Specific Tests:" in output
-            assert "✅ Hybrid Backend: Kafka + Redis" in output
-            assert "Kafka topic: orka_memory_topic" in output
-            assert "Redis URL: redis://localhost:6380/0" in output
-            assert "Total entries: 75" in output
-            assert "✅ Hybrid Backend: Kafka + Redis" in output
-            assert "Kafka topic: orka_memory_topic" in output
-
     def test_memory_configure_no_decay_config(self, setup_logging):
         """Test memory_configure with no decay config."""
         args = Namespace(backend="redis")

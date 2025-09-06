@@ -25,7 +25,7 @@ Core Features
 - View stored memories and orchestration logs
 - Monitor active and expired entries
 - Track memory usage patterns
-- Backend-specific statistics (Redis, Kafka, RedisStack)
+- Backend-specific statistics (Redis, RedisStack)
 
 **Interactive Interface**
 - Keyboard navigation and shortcuts

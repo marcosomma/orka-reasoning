@@ -43,16 +43,8 @@ case $PROFILE in
     echo "Starting Redis profile..."
     docker-compose --profile redis up -d --remove-orphans
     ;;
-  kafka)
-    echo "Starting Kafka profile..."
-    docker-compose --profile kafka up -d --remove-orphans
-    ;;
-  dual)
-    echo "Starting dual backend profile..."
-    docker-compose --profile dual up -d --remove-orphans
-    ;;
   *)
-    echo "Usage: $0 [redis|kafka|dual]"
+    echo "Usage: $0 [redis]"
     echo "Defaulting to redis profile..."
     docker-compose --profile redis up -d --remove-orphans
     ;;

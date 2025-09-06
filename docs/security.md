@@ -3,7 +3,7 @@
 
 # OrKa Security & Privacy Considerations
 
-## Redis/Kafka
+## Redis/RedisStack
 - Use TLS for Redis if deployed publicly
 - Enable ACLs (requirepass + role enforcement)
 

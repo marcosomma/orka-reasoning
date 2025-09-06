@@ -84,7 +84,7 @@ def _should_skip_due_to_llm(stdout: str, stderr: str) -> bool:
         ("examples/multi_model_local_llm_evaluation.yml", {"answer_21"}),
         ("examples/cognitive_society_minimal_loop.yml", {"final_answer"}),
         ("examples/cognitive_loop_scoring_example.yml", {"final_processor"}),
-        ("examples/orka_framework_qa.yml", {"qa_agent"}),  # uses Kafka memory backend
+        ("examples/orka_framework_qa.yml", {"qa_agent"}),  # uses RedisStack memory backend
     ],
 )
 def test_example_final_agent_cli(example_path: str, expected_final: Set[str]) -> None:

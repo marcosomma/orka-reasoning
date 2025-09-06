@@ -58,25 +58,25 @@ class TestFileOperationsMixinSaveToFile:
 
     @patch("builtins.open", new_callable=mock_open)
     @patch("json.dump")
-    def test_save_to_file_with_kafka_producer(self, mock_json_dump, mock_file):
-        """Test save to file with Kafka producer flush."""
-        mock_producer = Mock()
-        self.mixin.producer = mock_producer
+    def test_save_to_file_with_redis_client(self, mock_json_dump, mock_file):
+        """Test save to file with Redis client ping."""
+        mock_redis_client = Mock()
+        self.mixin.redis_client = mock_redis_client
         self.mixin.memory = [{"test": "data"}]
 
         self.mixin.save_to_file("test.json")
 
-        # Should flush Kafka producer
-        mock_producer.flush.assert_called_once_with(timeout=3)
+        # Should ping Redis client
+        mock_redis_client.ping.assert_called_once()
         mock_file.assert_called_once()
 
     @patch("builtins.open", new_callable=mock_open)
     @patch("json.dump")
-    def test_save_to_file_kafka_flush_exception(self, mock_json_dump, mock_file):
-        """Test save to file when Kafka flush fails."""
-        mock_producer = Mock()
-        mock_producer.flush.side_effect = Exception("Kafka flush error")
-        self.mixin.producer = mock_producer
+    def test_save_to_file_redis_ping_exception(self, mock_json_dump, mock_file):
+        """Test save to file when Redis ping fails."""
+        mock_redis_client = Mock()
+        mock_redis_client.ping.side_effect = Exception("Redis ping error")
+        self.mixin.redis_client = mock_redis_client
         self.mixin.memory = [{"test": "data"}]
 
         with patch("logging.Logger.warning") as mock_warning:

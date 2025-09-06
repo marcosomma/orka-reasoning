@@ -50,10 +50,10 @@ Every decision is traceable and auditable:
 ### 1. Install OrKa with Dependencies
 ```bash
 # Install OrKa with all required dependencies
-pip install orka-reasoning fastapi uvicorn kafka-python
+pip install orka-reasoning fastapi uvicorn
 
-# Optional: Install schema management features (Avro/Protobuf support)
-pip install orka-reasoning[schema]
+# Optional: Install extra features
+pip install orka-reasoning[extra]
 ```
 
 ### 2. Start OrKa (Automatic RedisStack Setup)
@@ -67,8 +67,8 @@ export OPENAI_API_KEY=your-key-here
 # For LOCAL development:
 python -m orka.orka_start
 
-# For PRODUCTION with Kafka streaming:
-python -m orka.start_kafka
+# For PRODUCTION with RedisStack:
+python -m orka.orka_start
 ```
 
 ### 3. Create Your First Memory-Enabled Agent

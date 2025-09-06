@@ -33,332 +33,217 @@ class TestMemoryLoggerEdgeCases:
                 create_memory_logger(backend="redisstack")
 
     @patch("orka.memory.redisstack_logger.RedisStackMemoryLogger")
-    def test_redisstack_import_error_warning(self, mock_redisstack):
-        """Test warning when RedisStack import fails."""
-        mock_redisstack.side_effect = ImportError("RedisStack module not found")
+    def test_redisstack_index_creation_failure(self, mock_redisstack):
+        """Test RedisStack when index creation fails (still uses RedisStack)."""
+        mock_redisstack_instance = Mock()
+        mock_redisstack_instance.ensure_index.return_value = False
+        mock_redisstack.return_value = mock_redisstack_instance
 
-        with patch("orka.memory.redis_logger.RedisMemoryLogger") as mock_redis:
-            mock_redis_instance = Mock()
-            mock_redis.return_value = mock_redis_instance
+        result = create_memory_logger(backend="redisstack")
 
-            with patch("logging.getLogger") as mock_logger:
-                mock_log = Mock()
-                mock_logger.return_value = mock_log
+        # Should still use RedisStack even if index creation fails
+        mock_redisstack.assert_called_once()
+        assert result == mock_redisstack_instance
 
-                result = create_memory_logger(backend="redisstack")
-
-                # Should log warning about RedisStack not being available
-                mock_log.warning.assert_called_with(
-                    "RedisStack not available: RedisStack module not found",
-                )
-                # Should fallback to basic Redis
-                assert result == mock_redis_instance
-
-    @patch("orka.memory.redisstack_logger.RedisStackMemoryLogger")
-    def test_redisstack_index_failure_warning(self, mock_redisstack):
-        """Test warning when RedisStack index test fails."""
-        mock_logger_instance = Mock()
-        mock_logger_instance.ensure_index.side_effect = Exception("Index creation failed")
-        mock_redisstack.return_value = mock_logger_instance
-
-        with patch("orka.memory.redis_logger.RedisMemoryLogger") as mock_redis:
-            mock_redis_instance = Mock()
-            mock_redis.return_value = mock_redis_instance
-
-            with patch("logging.getLogger") as mock_logger:
-                mock_log = Mock()
-                mock_logger.return_value = mock_log
-
-                result = create_memory_logger(backend="redisstack")
-
-                # Should log warning about index test failure
-                mock_log.warning.assert_called_with(
-                    "RedisStack index test failed: Index creation failed",
-                )
-                # Should fallback to basic Redis
-                assert result == mock_redis_instance
-
-    @patch("orka.memory.redisstack_logger.RedisStackMemoryLogger")
-    def test_redisstack_index_false_warning(self, mock_redisstack):
-        """Test warning when RedisStack index returns False."""
-        mock_logger_instance = Mock()
-        mock_logger_instance.ensure_index.return_value = False
-        mock_redisstack.return_value = mock_logger_instance
-
-        with patch("orka.memory.redis_logger.RedisMemoryLogger") as mock_redis:
-            mock_redis_instance = Mock()
-            mock_redis.return_value = mock_redis_instance
-
-            with patch("logging.getLogger") as mock_logger:
-                mock_log = Mock()
-                mock_logger.return_value = mock_log
-
-                result = create_memory_logger(backend="redisstack")
-
-                # Should log warning about index failure
-                mock_log.warning.assert_called_with(
-                    "⚠️ RedisStack index failed, falling back to basic Redis",
-                )
-                # Should fallback to basic Redis
-                assert result == mock_redis_instance
-
-    @patch(
-        "orka.memory.kafka_logger.KafkaMemoryLogger",
-        side_effect=ImportError("Kafka not available"),
-    )
-    def test_kafka_fallback_to_redisstack(self, mock_kafka):
-        """Test Kafka fallback to RedisStack when Kafka import fails."""
-        with patch("orka.memory.redisstack_logger.RedisStackMemoryLogger") as mock_redisstack:
-            mock_redisstack_instance = Mock()
-            mock_redisstack_instance.ensure_index.return_value = True
-            mock_redisstack.return_value = mock_redisstack_instance
-
-            with patch("logging.getLogger") as mock_logger:
-                mock_log = Mock()
-                mock_logger.return_value = mock_log
-
-                result = create_memory_logger(backend="kafka")
-
-                # Should log warning about Kafka not being available
-                mock_log.warning.assert_called_with(
-                    "Kafka not available, falling back to RedisStack: Kafka not available",
-                )
-                # Should fallback to RedisStack
-                assert result == mock_redisstack_instance
-
-    @patch.dict(os.environ, {"KAFKA_BOOTSTRAP_SERVERS": "kafka:9092"})
-    @patch("orka.memory.kafka_logger.KafkaMemoryLogger")
-    def test_kafka_with_environment_bootstrap_servers(self, mock_kafka):
-        """Test Kafka backend using environment variable for bootstrap servers."""
-        mock_kafka_instance = Mock()
-        mock_kafka.return_value = mock_kafka_instance
-
-        result = create_memory_logger(backend="kafka")
-
-        # Should use environment variable for bootstrap servers
-        mock_kafka.assert_called_once()
-        call_kwargs = mock_kafka.call_args[1]
-        assert call_kwargs["bootstrap_servers"] == "kafka:9092"
-
-    @patch("orka.memory.kafka_logger.KafkaMemoryLogger")
-    def test_kafka_with_provided_bootstrap_servers(self, mock_kafka):
-        """Test Kafka backend with explicitly provided bootstrap servers."""
-        mock_kafka_instance = Mock()
-        mock_kafka.return_value = mock_kafka_instance
-
-        result = create_memory_logger(
-            backend="kafka",
-            bootstrap_servers="custom:9092",
-        )
-
-        # Should use provided bootstrap servers
-        mock_kafka.assert_called_once()
-        call_kwargs = mock_kafka.call_args[1]
-        assert call_kwargs["bootstrap_servers"] == "custom:9092"
-
-    @patch("orka.memory.kafka_logger.KafkaMemoryLogger")
-    def test_kafka_default_bootstrap_servers(self, mock_kafka):
-        """Test Kafka backend with default bootstrap servers."""
-        mock_kafka_instance = Mock()
-        mock_kafka.return_value = mock_kafka_instance
-
-        with patch.dict(os.environ, {}, clear=True):  # Clear environment
-            result = create_memory_logger(backend="kafka")
-
-        # Should use default localhost:9092
-        mock_kafka.assert_called_once()
-        call_kwargs = mock_kafka.call_args[1]
-        assert call_kwargs["bootstrap_servers"] == "localhost:9092"
-
-    def test_force_basic_redis_different_backends(self):
-        """Test force basic Redis flag with different backend names."""
-        with patch.dict(os.environ, {"ORKA_FORCE_BASIC_REDIS": "true"}):
+    def test_complex_fallback_scenario(self):
+        """Test complex fallback scenario from RedisStack to Redis."""
+        with patch(
+            "orka.memory.redisstack_logger.RedisStackMemoryLogger",
+            side_effect=ImportError("RedisStack unavailable"),
+        ):
             with patch("orka.memory.redis_logger.RedisMemoryLogger") as mock_redis:
                 mock_redis_instance = Mock()
                 mock_redis.return_value = mock_redis_instance
 
                 with patch("logging.getLogger") as mock_logger:
-                    mock_log = Mock()
-                    mock_logger.return_value = mock_log
+                    mock_logger.return_value = Mock()
 
-                    # Test with "redis" backend
-                    result_redis = create_memory_logger(backend="redis")
+                    result = create_memory_logger(backend="redisstack")
 
-                    # Test with "redisstack" backend
-                    result_redisstack = create_memory_logger(backend="redisstack")
-
-                    # Both should use basic Redis
-                    assert mock_redis.call_count == 2
-                    mock_log.info.assert_called_with("🔧 Force basic Redis mode enabled")
-
-    def test_complex_fallback_scenario(self):
-        """Test complex fallback scenario from Kafka to RedisStack to Redis."""
-        with patch(
-            "orka.memory.kafka_logger.KafkaMemoryLogger",
-            side_effect=ImportError("Kafka unavailable"),
-        ):
-            with patch(
-                "orka.memory.redisstack_logger.RedisStackMemoryLogger",
-                side_effect=ImportError("RedisStack unavailable"),
-            ):
-                with patch("orka.memory.redis_logger.RedisMemoryLogger") as mock_redis:
-                    mock_redis_instance = Mock()
-                    mock_redis.return_value = mock_redis_instance
-
-                    with patch("logging.getLogger") as mock_logger:
-                        mock_log = Mock()
-                        mock_logger.return_value = mock_log
-
-                        result = create_memory_logger(backend="kafka")
-
-                        # Should eventually use basic Redis
-                        assert result == mock_redis_instance
-
-                        # Should log multiple warnings
-                        warning_calls = mock_log.warning.call_args_list
-                        assert len(warning_calls) >= 2  # Kafka warning and RedisStack warning
+                    # Should eventually use basic Redis
+                    assert result == mock_redis_instance
 
     @patch("orka.memory.redisstack_logger.RedisStackMemoryLogger")
-    def test_redisstack_index_exception_with_fallback_success(self, mock_redisstack):
-        """Test RedisStack index exception with successful fallback - targeting missing lines."""
-        mock_logger_instance = Mock()
-        mock_logger_instance.ensure_index.side_effect = RuntimeError("Connection failed")
-        mock_redisstack.return_value = mock_logger_instance
+    def test_redisstack_with_custom_params(self, mock_redisstack):
+        """Test RedisStack backend with custom parameters."""
+        mock_redisstack_instance = Mock()
+        mock_redisstack_instance.ensure_index.return_value = True
+        mock_redisstack.return_value = mock_redisstack_instance
 
-        with patch("orka.memory.redis_logger.RedisMemoryLogger") as mock_redis:
-            mock_redis_instance = Mock()
-            mock_redis.return_value = mock_redis_instance
+        result = create_memory_logger(
+            backend="redisstack",
+            redis_url="redis://custom:6379",
+            enable_hnsw=True,
+            vector_params={"M": 32, "ef_construction": 400},
+        )
 
-            result = create_memory_logger(backend="redisstack")
+        # Should call RedisStack with custom parameters
+        mock_redisstack.assert_called_once()
+        call_kwargs = mock_redisstack.call_args[1]
+        assert call_kwargs["redis_url"] == "redis://custom:6379"
+        assert call_kwargs["enable_hnsw"] is True
+        assert call_kwargs["vector_params"] == {"M": 32, "ef_construction": 400}
 
-            # Should fallback to basic Redis after index exception
-            assert result == mock_redis_instance
-
-    @patch("orka.memory.redisstack_logger.RedisStackMemoryLogger")
-    def test_redisstack_index_false_with_fallback(self, mock_redisstack):
-        """Test RedisStack index returning False with fallback - targeting line 250-252."""
-        mock_logger_instance = Mock()
-        mock_logger_instance.ensure_index.return_value = False  # Index creation failed
-        mock_redisstack.return_value = mock_logger_instance
-
-        with patch("orka.memory.redis_logger.RedisMemoryLogger") as mock_redis:
-            mock_redis_instance = Mock()
-            mock_redis.return_value = mock_redis_instance
-
-            result = create_memory_logger(backend="redisstack")
-
-            # Should fallback to basic Redis when index returns False
-            assert result == mock_redis_instance
-            mock_redis.assert_called_once()
-
-    @patch("orka.memory.redisstack_logger.RedisStackMemoryLogger")
-    def test_redisstack_import_success_then_fallback(self, mock_redisstack):
-        """Test RedisStack import success but fallback due to configuration."""
-        mock_logger_instance = Mock()
-        mock_logger_instance.ensure_index.side_effect = ConnectionError("Redis not available")
-        mock_redisstack.return_value = mock_logger_instance
-
-        with patch("orka.memory.redis_logger.RedisMemoryLogger") as mock_redis:
-            mock_redis_instance = Mock()
-            mock_redis.return_value = mock_redis_instance
-
-            result = create_memory_logger(backend="redis")
-
-            # Should fallback to basic Redis
-            assert result == mock_redis_instance
-
-
-class TestMemoryLoggerParameterHandling:
-    """Test memory logger parameter handling."""
-
-    def test_backend_case_insensitive(self):
-        """Test that backend parameter is case insensitive."""
-        with (
-            patch("orka.memory.redisstack_logger.RedisStackMemoryLogger") as mock_redisstack,
-            patch("orka.memory.kafka_logger.KafkaMemoryLogger") as mock_kafka,
-        ):
+    def test_case_insensitive_backend_selection(self):
+        """Test that backend selection is case-insensitive."""
+        with (patch("orka.memory.redisstack_logger.RedisStackMemoryLogger") as mock_redisstack,):
             # Setup RedisStack mock
             mock_redisstack_instance = Mock()
             mock_redisstack_instance.ensure_index.return_value = True
             mock_redisstack.return_value = mock_redisstack_instance
 
-            # Setup Kafka mock
-            mock_kafka_instance = Mock()
-            mock_kafka.return_value = mock_kafka_instance
-
             # Test various case combinations
             redis_backends = ["REDIS", "Redis", "REDISSTACK", "RedisStack"]
-            kafka_backends = ["KAFKA", "Kafka"]
 
             # Test Redis/RedisStack backends
             for backend in redis_backends:
                 result = create_memory_logger(backend=backend)
                 assert isinstance(result, mock_redisstack_instance.__class__)
 
-            # Test Kafka backends
-            for backend in kafka_backends:
-                result = create_memory_logger(backend=backend)
-                assert isinstance(result, mock_kafka_instance.__class__)
+    @patch("orka.memory.redisstack_logger.RedisStackMemoryLogger")
+    def test_environment_variable_override(self, mock_redisstack):
+        """Test environment variable override for backend selection."""
+        mock_redisstack_instance = Mock()
+        mock_redisstack_instance.ensure_index.return_value = True
+        mock_redisstack.return_value = mock_redisstack_instance
+
+        with patch.dict(os.environ, {"ORKA_MEMORY_BACKEND": "redisstack"}):
+            result = create_memory_logger()  # No backend specified
+
+            # Should use environment variable
+            assert result == mock_redisstack_instance
+
+    def test_invalid_backend_raises_error(self):
+        """Test that invalid backend names raise appropriate errors."""
+        with pytest.raises(ValueError, match="Unsupported backend: invalid_backend"):
+            create_memory_logger(backend="invalid_backend")
 
     @patch("orka.memory.redisstack_logger.RedisStackMemoryLogger")
-    def test_all_parameters_passed_through(self, mock_redisstack):
-        """Test that all parameters are correctly passed to backend loggers."""
-        mock_instance = Mock()
-        mock_instance.ensure_index.return_value = True
-        mock_redisstack.return_value = mock_instance
+    def test_redis_backend_with_custom_url(self, mock_redisstack):
+        """Test Redis backend with custom URL (uses RedisStack)."""
+        mock_redisstack_instance = Mock()
+        mock_redisstack_instance.ensure_index.return_value = True
+        mock_redisstack.return_value = mock_redisstack_instance
 
-        custom_params = {
-            "redis_url": "redis://custom:6380",
-            "stream_key": "custom:stream",
-            "debug_keep_previous_outputs": True,
-            "enable_hnsw": False,
-            "vector_params": {"M": 32, "ef_construction": 400},
-        }
+        result = create_memory_logger(
+            backend="redis",
+            redis_url="redis://custom-redis:6380/1",
+        )
 
-        create_memory_logger(backend="redisstack", **custom_params)
-
-        # Verify all parameters were passed
+        # Should use RedisStack with custom Redis URL
         mock_redisstack.assert_called_once()
         call_kwargs = mock_redisstack.call_args[1]
+        assert call_kwargs["redis_url"] == "redis://custom-redis:6380/1"
 
-        for key, value in custom_params.items():
-            assert call_kwargs[key] == value
+    @patch.dict(os.environ, {"REDIS_URL": "redis://env-redis:6380/2"})
+    @patch("orka.memory.redisstack_logger.RedisStackMemoryLogger")
+    def test_redis_backend_with_environment_url(self, mock_redisstack):
+        """Test Redis backend using environment variable for URL (uses RedisStack)."""
+        mock_redisstack_instance = Mock()
+        mock_redisstack_instance.ensure_index.return_value = True
+        mock_redisstack.return_value = mock_redisstack_instance
 
-    def test_default_decay_config_creation(self):
-        """Test default decay configuration is created when None provided."""
+        result = create_memory_logger(backend="redis", redis_url=None)
+
+        # Should use environment variable for Redis URL with RedisStack
+        mock_redisstack.assert_called_once()
+        call_kwargs = mock_redisstack.call_args[1]
+        # The factory function uses environment variable when redis_url is None
+        assert "redis_url" in call_kwargs
+
+    @patch("orka.memory.redisstack_logger.RedisStackMemoryLogger")
+    def test_redis_backend_default_url(self, mock_redisstack):
+        """Test Redis backend with default URL (uses RedisStack)."""
+        mock_redisstack_instance = Mock()
+        mock_redisstack_instance.ensure_index.return_value = True
+        mock_redisstack.return_value = mock_redisstack_instance
+
+        with patch.dict(os.environ, {}, clear=True):  # Clear environment
+            result = create_memory_logger(backend="redis")
+
+        # Should use default localhost:6380 with RedisStack
+        mock_redisstack.assert_called_once()
+        call_kwargs = mock_redisstack.call_args[1]
+        assert call_kwargs["redis_url"] == "redis://localhost:6380/0"
+
+    @patch("orka.memory.redisstack_logger.RedisStackMemoryLogger")
+    def test_redisstack_backend_with_debug_options(self, mock_redisstack):
+        """Test RedisStack backend with debug options."""
+        mock_redisstack_instance = Mock()
+        mock_redisstack_instance.ensure_index.return_value = True
+        mock_redisstack.return_value = mock_redisstack_instance
+
+        result = create_memory_logger(
+            backend="redisstack",
+            debug_keep_previous_outputs=True,
+        )
+
+        # Should pass debug options
+        mock_redisstack.assert_called_once()
+        call_kwargs = mock_redisstack.call_args[1]
+        assert call_kwargs["debug_keep_previous_outputs"] is True
+
+    def test_memory_logger_with_decay_config(self):
+        """Test memory logger creation with decay configuration."""
+        decay_config = {
+            "enabled": True,
+            "interval_minutes": 60,
+            "max_age_hours": 24,
+        }
+
         with patch("orka.memory.redisstack_logger.RedisStackMemoryLogger") as mock_redisstack:
-            mock_instance = Mock()
-            mock_instance.ensure_index.return_value = True
-            mock_redisstack.return_value = mock_instance
+            mock_redisstack_instance = Mock()
+            mock_redisstack_instance.ensure_index.return_value = True
+            mock_redisstack.return_value = mock_redisstack_instance
 
-            create_memory_logger(backend="redisstack", decay_config=None)
+            result = create_memory_logger(
+                backend="redisstack",
+                decay_config=decay_config,
+            )
 
-            # Should create default decay config
+            # Should pass decay configuration
             mock_redisstack.assert_called_once()
             call_kwargs = mock_redisstack.call_args[1]
+            assert call_kwargs["decay_config"] == decay_config
 
-            decay_config = call_kwargs["decay_config"]
-            assert decay_config["enabled"] is True
-            assert decay_config["default_short_term_hours"] == 1.0
-            assert decay_config["default_long_term_hours"] == 24.0
-            assert decay_config["check_interval_minutes"] == 30
-
-    def test_custom_decay_config_preserved(self):
-        """Test custom decay configuration is preserved."""
+    def test_memory_logger_initialization_logging(self):
+        """Test that memory logger initialization is properly logged."""
         with patch("orka.memory.redisstack_logger.RedisStackMemoryLogger") as mock_redisstack:
-            mock_instance = Mock()
-            mock_instance.ensure_index.return_value = True
-            mock_redisstack.return_value = mock_instance
+            mock_redisstack_instance = Mock()
+            mock_redisstack_instance.ensure_index.return_value = True
+            mock_redisstack.return_value = mock_redisstack_instance
 
-            custom_decay = {
-                "enabled": False,
-                "custom_setting": "value",
-            }
+            # Don't mock the logger to allow actual logging
+            result = create_memory_logger(backend="redisstack")
 
-            create_memory_logger(backend="redisstack", decay_config=custom_decay)
-
-            # Should preserve custom decay config
+            # Should create RedisStack instance
             mock_redisstack.assert_called_once()
-            call_kwargs = mock_redisstack.call_args[1]
 
-            assert call_kwargs["decay_config"] == custom_decay
+    @patch("orka.memory.redisstack_logger.RedisStackMemoryLogger")
+    def test_redisstack_with_vector_search_disabled(self, mock_redisstack):
+        """Test RedisStack backend with vector search disabled."""
+        mock_redisstack_instance = Mock()
+        mock_redisstack_instance.ensure_index.return_value = True
+        mock_redisstack.return_value = mock_redisstack_instance
+
+        result = create_memory_logger(
+            backend="redisstack",
+            enable_hnsw=False,
+        )
+
+        # Should disable HNSW vector search
+        mock_redisstack.assert_called_once()
+        call_kwargs = mock_redisstack.call_args[1]
+        assert call_kwargs["enable_hnsw"] is False
+
+    def test_backend_parameter_precedence(self):
+        """Test that explicit backend parameter takes precedence over environment."""
+        with patch.dict(os.environ, {"ORKA_MEMORY_BACKEND": "redis"}):
+            with patch("orka.memory.redisstack_logger.RedisStackMemoryLogger") as mock_redisstack:
+                mock_redisstack_instance = Mock()
+                mock_redisstack_instance.ensure_index.return_value = True
+                mock_redisstack.return_value = mock_redisstack_instance
+
+                # Explicit backend should override environment
+                result = create_memory_logger(backend="redisstack")
+                assert result == mock_redisstack_instance

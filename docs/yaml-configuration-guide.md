@@ -49,7 +49,7 @@ orchestrator:
   memory_config:
     # Memory backend configuration (RedisStack is now default)
     # backend: redisstack  # Default in V0.7.0 - automatic HNSW indexing
-    # backend: kafka       # Uses RedisStack for memory operations
+    # backend: redisstack  # Recommended for production
     # backend: redis       # Legacy mode (not recommended)
     
     # Decay configuration - inspired by human memory
@@ -1251,8 +1251,8 @@ This comprehensive guide covers all the major agent types, configuration pattern
 # Start OrKa with RedisStack (development)
 orka-start
 
-# Start OrKa with Kafka (production)
-orka-kafka
+# Start OrKa with RedisStack (production)
+orka-start
 
 # Run your workflow
 orka run ./my-workflow.yml "Your input here"

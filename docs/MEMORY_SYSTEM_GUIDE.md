@@ -31,7 +31,7 @@ OrKa's memory system is inspired by human cognitive science and provides sophist
 │   Memory        │    │   Memory        │    │   Memory        │
 │   Writers       │    │   Storage       │    │   Readers       │
 │                 │    │                 │    │                 │
-│ • Classification│    │ • Redis/Kafka   │    │ • Context Search│
+│ • Classification│    │ • Redis/RedisStack │    │ • Context Search│
 │ • Vectorization │────│ • Namespaces    │────│ • Similarity    │
 │ • Metadata      │    │ • Decay System  │    │ • Temporal Rank │
 │ • Compression   │    │ • Indexing      │    │ • Filtering     │
@@ -93,36 +93,30 @@ export ORKA_MEMORY_DECAY_LONG_TERM_HOURS=168
 export ORKA_MEMORY_DECAY_CHECK_INTERVAL_MINUTES=30
 ```
 
-**Kafka Backend (Production)**
+**RedisStack Backend (Production)**
 ```bash
 # Using Docker Compose
 cat > docker-compose.yml << EOF
 version: '3.8'
 services:
-  zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-
-  kafka:
-    image: confluentinc/cp-kafka:latest
-    depends_on:
-      - zookeeper
+  redis-stack:
+    image: redis/redis-stack:latest
     ports:
-      - "9092:9092"
+      - "6380:6380"
+    volumes:
+      - redis_data:/data
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      - REDIS_ARGS=--save 60 1000
+
+volumes:
+  redis_data:
 EOF
 
 docker-compose up -d
 
 # Configure OrKa
-export ORKA_MEMORY_BACKEND=kafka
-export KAFKA_BOOTSTRAP_SERVERS=localhost:9092
-export KAFKA_TOPIC_PREFIX=orka-memory
+export ORKA_MEMORY_BACKEND=redisstack
+export REDIS_URL=redis://localhost:6380/0
 ```
 
 ### YAML Configuration
@@ -134,7 +128,7 @@ orchestrator:
   strategy: sequential
   memory_config:
     # Backend configuration
-    backend: redis  # or "kafka"
+    backend: redis  # or "redisstack"
     
     # Intelligent decay system
     decay:
@@ -1298,8 +1292,8 @@ orka memory cleanup
 # Redis
 redis-cli ping  # Should return PONG
 
-# Kafka
-kafka-topics.sh --list --bootstrap-server localhost:9092
+# RedisStack
+redis-cli FT._LIST  # Should show HNSW indexes
 ```
 
 ### Debug Mode

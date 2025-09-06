@@ -35,8 +35,6 @@ This package contains specialized components for different aspects of memory man
 :class:`~orka.memory.redisstack_logger.RedisStackMemoryLogger`
     High-performance RedisStack backend with HNSW vector indexing for semantic search
 
-:class:`~orka.memory.kafka_logger.KafkaMemoryLogger`
-    Kafka-based event streaming implementation (optional dependency)
 
 **Utility Mixins**
 
@@ -61,8 +59,8 @@ Architecture Benefits
 **Backend Flexibility**
     Easy to add new storage backends including RedisStack
 
-**Optional Dependencies**
-    Kafka support is optional and gracefully handled if unavailable
+**Modular Design**
+    Components can be mixed and matched as needed for different use cases
 
 **Performance Optimization**
     Specialized components allow for targeted optimizations including HNSW indexing
@@ -74,7 +72,7 @@ Usage Patterns
 
 .. code-block:: python
 
-    from orka.memory import RedisMemoryLogger, RedisStackMemoryLogger, KafkaMemoryLogger
+    from orka.memory import RedisMemoryLogger, RedisStackMemoryLogger
 
     # Standard Redis backend
     redis_logger = RedisMemoryLogger(redis_url="redis://localhost:6380")
@@ -86,9 +84,6 @@ Usage Patterns
         vector_params={"M": 16, "ef_construction": 200}
     )
 
-    # Kafka backend (if available)
-    if KafkaMemoryLogger:
-        kafka_logger = KafkaMemoryLogger(bootstrap_servers="localhost:9092")
 
 **Through Factory Function (Recommended)**
 
@@ -118,11 +113,9 @@ Modular Components
 * ``base_logger`` - Abstract base class and common functionality
 * ``redis_logger`` - Redis backend implementation
 * ``redisstack_logger`` - RedisStack backend with HNSW vector indexing
-* ``kafka_logger`` - Kafka backend implementation (optional)
 * ``serialization`` - JSON sanitization and processing utilities
 * ``file_operations`` - File I/O and export functionality
 * ``compressor`` - Data compression utilities
-* ``schema_manager`` - Schema validation and management
 
 Performance Characteristics
 --------------------------
@@ -213,73 +206,9 @@ except ImportError:
     RedisStackMemoryLogger = _DummyRedisStackMemoryLogger  # type: ignore
 
 
-# Import KafkaMemoryLogger if available (optional dependency)
-try:
-    from .kafka_logger import KafkaMemoryLogger
-except ImportError:
-    # Define a dummy class if Kafka dependencies are not available
-    class _DummyKafkaMemoryLogger(BaseMemoryLogger):
-        def __init__(self, *args: Any, **kwargs: Any):
-            super().__init__(*args, **kwargs)
-            raise ImportError("Kafka dependencies not available")
-
-        def cleanup_expired_memories(self, dry_run: bool = False) -> dict[str, Any]:
-            raise NotImplementedError
-
-        def get_memory_stats(self) -> dict[str, Any]:
-            raise NotImplementedError
-
-        def log(self, *args: Any, **kwargs: Any) -> None:
-            raise NotImplementedError
-
-        def tail(self, count: int = 10) -> list[dict[str, Any]]:
-            raise NotImplementedError
-
-        def hset(self, name: str, key: str, value: str | bytes | int | float) -> int:
-            raise NotImplementedError
-
-        def hget(self, name: str, key: str) -> str | None:
-            raise NotImplementedError
-
-        def hkeys(self, name: str) -> list[str]:
-            raise NotImplementedError
-
-        def hdel(self, name: str, *keys: str) -> int:
-            raise NotImplementedError
-
-        def smembers(self, name: str) -> list[str]:
-            raise NotImplementedError
-
-        def sadd(self, name: str, *values: str) -> int:
-            raise NotImplementedError
-
-        def srem(self, name: str, *values: str) -> int:
-            raise NotImplementedError
-
-        def get(self, key: str) -> str | None:
-            raise NotImplementedError
-
-        def set(self, key: str, value: str | bytes | int | float) -> bool:
-            raise NotImplementedError
-
-        def delete(self, *keys: str) -> int:
-            raise NotImplementedError
-
-        def ensure_index(self) -> bool:
-            raise NotImplementedError
-
-        def log_memory(self, *args: Any, **kwargs: Any) -> str:
-            raise NotImplementedError
-
-        def search_memories(self, *args: Any, **kwargs: Any) -> list[dict[str, Any]]:
-            raise NotImplementedError
-
-    KafkaMemoryLogger = _DummyKafkaMemoryLogger  # type: ignore
-
 __all__ = [
     "BaseMemoryLogger",
     "FileOperationsMixin",
-    "KafkaMemoryLogger",
     "RedisMemoryLogger",
     "RedisStackMemoryLogger",
     "SerializationMixin",

@@ -46,7 +46,7 @@ pip install --upgrade pip
 
 4. Install with explicit dependencies:
 ```bash
-pip install orka-reasoning fastapi uvicorn kafka-python
+pip install orka-reasoning fastapi uvicorn
 ```
 
 ### Import errors after installation
@@ -340,34 +340,36 @@ orchestrator:
 
 ## Production Deployment
 
-### Kafka Integration
+### RedisStack Integration
 
 **Symptoms:**
-- Message loss
-- Partition errors
-- Consumer lag
+- Vector search not working
+- Index creation failures
+- Connection timeouts
 
 **Solutions:**
 
-1. Check Kafka status:
+1. Check RedisStack status:
 ```bash
-orka-kafka status
+redis-cli ping
+redis-cli FT._LIST
 ```
 
-2. Monitor topics:
+2. Monitor performance:
 ```bash
-kafka-topics.sh --bootstrap-server localhost:9092 --list
-kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe
+orka memory watch
 ```
 
 3. Optimize settings:
 ```yaml
-# kafka-config.yml
+# redis-config.yml
 memory_config:
-  kafka:
-    num_partitions: 12
-    replication_factor: 3
-    retention_ms: 604800000  # 1 week
+  redis:
+    max_connections: 100
+    connection_timeout: 5
+    vector_index_params:
+      m: 16
+      ef_construction: 200
 ```
 
 ### Monitoring and Alerts

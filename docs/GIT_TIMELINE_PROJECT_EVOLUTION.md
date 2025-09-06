@@ -157,7 +157,7 @@ timeline
 - ✅ **RedisStack HNSW**: 100x performance improvement
 - ✅ **Memory Decay**: Intelligent memory management
 - ✅ **Production Tools**: CLI dashboard and monitoring
-- ✅ **Enterprise Features**: Kafka integration, clustering
+- ✅ **Enterprise Features**: RedisStack clustering, enterprise scaling
 
 **Evidence in Codebase:**
 ```python
@@ -436,7 +436,7 @@ journey
 ### Community & Ecosystem Growth
 
 **Adoption Indicators:**
-- 🏢 **Enterprise Features**: Kafka integration, monitoring dashboards
+- 🏢 **Enterprise Features**: RedisStack clustering, monitoring dashboards
 - 📚 **Documentation Quality**: 25+ comprehensive guides
 - 🔧 **Developer Experience**: CLI tools, examples, debugging guides
 - 🎯 **Use Case Diversity**: Q&A, content analysis, knowledge management

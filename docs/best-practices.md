@@ -26,7 +26,7 @@ graph TD
     C1 --> D[RedisStack Cluster]
     C2 --> D
     C3 --> D
-    C1 --> E[Kafka Cluster]
+    C1 --> E[RedisStack Cluster]
     C2 --> E
     C3 --> E
     D --> F[Monitoring]
@@ -44,7 +44,7 @@ graph TD
 2. **Scalability**
    - Horizontal scaling for API servers
    - RedisStack cluster for memory
-   - Kafka for event streaming
+   - RedisStack for memory and vector search
    - Separate compute and storage
 
 3. **Reliability**

@@ -61,7 +61,6 @@ Core Components
 
     * :class:`~orka.memory.redisstack_logger.RedisStackMemoryLogger` - HNSW vector indexing
     * :class:`~orka.memory.redis_logger.RedisMemoryLogger` - Redis-based storage
-    * :class:`~orka.memory.kafka_logger.KafkaMemoryLogger` - Event streaming
     * **Modular Components**: Serialization, compression, file operations
 
 **Command Line Interface**
@@ -126,8 +125,8 @@ Usage Patterns
     # Standard Redis backend
     memory = create_memory_logger("redis")
 
-    # Kafka backend for event streaming
-    memory = create_memory_logger("kafka")
+    # RedisStack backend for high-performance vector search
+    memory = create_memory_logger("redisstack")
 
 **Custom Agent Development**
 

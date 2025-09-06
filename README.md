@@ -65,9 +65,9 @@ Get OrKa running with enterprise-grade performance in 2 minutes:
 
 ```bash
 # 1. Install OrKa with all dependencies
-pip install orka-reasoning fastapi uvicorn kafka-python
+pip install orka-reasoning fastapi uvicorn
 
-# Optional: Install schema management features (Avro/Protobuf support)
+# Optional: Install additional features
 pip install orka-reasoning[schema]
 
 # 2. Create a .env file in your project directory
@@ -98,9 +98,6 @@ source .env
 # 4. Start OrKa with your preferred backend
 # For RedisStack (default, includes vector search):
 orka-start
-
-# For Kafka streaming:
-ORKA_MEMORY_BACKEND=kafka orka-start
 
 # For basic Redis (no vector search):
 ORKA_MEMORY_BACKEND=redis ORKA_FORCE_BASIC_REDIS=true orka-start
@@ -782,11 +779,8 @@ orka run ./my-workflow.yml "Your input here"
 # Check system health
 orka system status
 
-# Start OrKa with Redis only (for development)
+# Start OrKa with RedisStack (recommended)
 orka-redis
-
-# Start OrKa with Kafka (for production)
-orka-kafka
 ```
 
 ---

@@ -22,7 +22,6 @@ classifiers = [
 
 dependencies = [
   # Core Dependencies
-  "confluent-kafka>=2.11.0",
   "redis[async,search]<=4.5.5",
   "redis-om>=0.3.5",
   "redis-py-cluster>=1.3.5",
@@ -84,15 +83,9 @@ dev = [
   "sphinx-rtd-theme>=1.0.0"
 ]
 
-# Schema Registry and Kafka Support
-schema = [
-  "confluent-kafka[avro,protobuf,schema-registry]>=2.3.0",
-  "avro-python3>=1.10.2",
-  "fastavro>=1.9.0",
-  "protobuf>=4.25.0",
-  "jsonschema>=4.20.0",
-  "kafka-python>=2.0.2",
-  "confluent_kafka>=2.11.0"
+# Additional optional dependencies
+extra = [
+  "jsonschema>=4.20.0"
 ]
 
 # Production Dependencies
@@ -187,7 +180,6 @@ omit = [
     "*/site-packages/*",
     "*/tests/*",
     "setup.py",
-    "orka/start_kafka.py",
     "orka/start_redis_only.py",
     "orka/orka_start.py",
     "orka/docker/*",

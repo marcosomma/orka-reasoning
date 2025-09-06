@@ -832,21 +832,6 @@ class TestMemoryLoggerFactory:
         call_kwargs = mock_redis.call_args[1]
         assert call_kwargs["redis_url"] == "redis://localhost:6380"
 
-    @patch("orka.memory.kafka_logger.KafkaMemoryLogger")
-    def test_create_memory_logger_kafka(self, mock_kafka):
-        """Test creating Kafka memory logger."""
-        mock_instance = Mock()
-        mock_kafka.return_value = mock_instance
-
-        logger = create_memory_logger(
-            backend="kafka",
-            bootstrap_servers="localhost:9092",
-        )
-
-        mock_kafka.assert_called_once()
-        call_kwargs = mock_kafka.call_args[1]
-        assert call_kwargs["bootstrap_servers"] == "localhost:9092"
-
     def test_create_memory_logger_unsupported(self):
         """Test creating memory logger with unsupported backend."""
         with pytest.raises(ValueError, match="Unsupported backend"):
@@ -878,23 +863,6 @@ class TestMemoryLoggerFactory:
 
         # Should fallback to Redis
         mock_redis.assert_called_once()
-
-    @patch(
-        "orka.memory.kafka_logger.KafkaMemoryLogger",
-        side_effect=ImportError("Kafka not available"),
-    )
-    def test_create_memory_logger_missing_kafka(self, mock_kafka):
-        """Test creating Kafka logger when unavailable."""
-        # Should fallback to RedisStack instead of raising error
-        with patch("orka.memory.redisstack_logger.RedisStackMemoryLogger") as mock_redisstack:
-            mock_instance = Mock()
-            mock_instance.ensure_index.return_value = True
-            mock_redisstack.return_value = mock_instance
-
-            logger = create_memory_logger(backend="kafka")
-
-            # Should fallback to RedisStack
-            mock_redisstack.assert_called_once()
 
 
 class TestMemoryDecaySystem:

@@ -62,7 +62,7 @@ def get_docker_dir() -> str:
 def get_memory_backend() -> str:
     """Get the configured memory backend, defaulting to RedisStack."""
     backend = os.getenv("ORKA_MEMORY_BACKEND", "redisstack").lower()
-    if backend not in ["redis", "redisstack", "kafka", "dual"]:
+    if backend not in ["redis", "redisstack"]:
         logger.warning(f"Unknown backend '{backend}', defaulting to RedisStack")
         return "redisstack"
     return backend
@@ -73,7 +73,7 @@ def get_service_endpoints(backend: str) -> dict:
     Get service endpoint configuration for the specified backend.
 
     Args:
-        backend: The backend type ('redis', 'redisstack', 'kafka', or 'dual')
+        backend: The backend type ('redis' or 'redisstack')
 
     Returns:
         dict: Dictionary containing service endpoint information
@@ -90,28 +90,6 @@ def get_service_endpoints(backend: str) -> dict:
                 "redis": "localhost:6380 (native)",
             },
         )
-    elif backend == "kafka":
-        endpoints.update(
-            {
-                "orka_api": "http://localhost:8001",
-                "kafka": "localhost:9092",
-                "redis": "localhost:6380 (native)",
-                "zookeeper": "localhost:2181",
-                "schema_registry": "http://localhost:8081",
-                "schema_ui": "http://localhost:8082",
-            },
-        )
-    elif backend == "dual":
-        endpoints.update(
-            {
-                "orka_api": "http://localhost:8002",
-                "redis": "localhost:6380 (native)",
-                "kafka": "localhost:9092",
-                "zookeeper": "localhost:2181",
-                "schema_registry": "http://localhost:8081",
-                "schema_ui": "http://localhost:8082",
-            },
-        )
 
     return endpoints
 
@@ -121,7 +99,7 @@ def configure_backend_environment(backend: str) -> dict:
     Configure environment variables for backend process.
 
     Args:
-        backend: The backend type ('redis', 'kafka', or 'dual')
+        backend: The backend type ('redis' or 'redisstack')
 
     Returns:
         dict: Environment variables dictionary
@@ -131,16 +109,8 @@ def configure_backend_environment(backend: str) -> dict:
     # Set backend-specific environment variables
     env["ORKA_MEMORY_BACKEND"] = backend
 
-    if backend in ["kafka", "dual"]:
-        # Configure Kafka with Schema Registry
-        env["KAFKA_BOOTSTRAP_SERVERS"] = "localhost:9092"
-        env["KAFKA_SCHEMA_REGISTRY_URL"] = "http://localhost:8081"
-        env["KAFKA_USE_SCHEMA_REGISTRY"] = "true"
-        env["KAFKA_TOPIC_PREFIX"] = "orka-memory"
-        logger.info("🔧 Schema Registry enabled for Kafka backend")
-
-    if backend in ["redis", "kafka", "dual"]:
-        # Configure Redis (now required for all backends including Kafka for memory operations)
+    if backend in ["redis", "redisstack"]:
+        # Configure Redis
         env["REDIS_URL"] = "redis://localhost:6380/0"
 
     return env

@@ -31,10 +31,10 @@ Welcome to OrKa! This guide will help you get up and running with OrKa's powerfu
 
 ```bash
 # Install OrKa with all dependencies (includes automatic RedisStack setup)
-pip install orka-reasoning fastapi uvicorn kafka-python
+pip install orka-reasoning fastapi uvicorn
 
-# Optional: Install schema management features (Avro/Protobuf support)
-pip install orka-reasoning[schema]
+# Optional: Install extra features
+pip install orka-reasoning[extra]
 ```
 
 **That's it!** OrKa V0.7.0 automatically handles RedisStack setup through Docker.
@@ -55,8 +55,8 @@ export OPENAI_API_KEY=your-openai-api-key-here
 # For LOCAL development (automatically includes RedisStack + 100x faster vector search):
 orka-start
 
-# For PRODUCTION with Kafka streaming:
-orka-kafka
+# For PRODUCTION with RedisStack:
+orka-start
 
 # Optional: Run OrKa UI for visual monitoring
 docker pull marcosomma/orka-ui:latest
@@ -381,8 +381,8 @@ Check out our comprehensive guides:
 
 ### 3. Production Deployment
 ```bash
-# Use Kafka for enterprise streaming + RedisStack for memory
-orka-kafka
+# Use RedisStack for enterprise memory and vector search
+orka-start
 
 # Monitor with professional UI
 docker run -it -p 80:80 marcosomma/orka-ui:latest

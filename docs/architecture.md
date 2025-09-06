@@ -2,7 +2,7 @@
 
 # OrKa Architecture V0.7.0 ***(Patent Pending)***
 
-OrKa (Orchestrator Kit for Agentic Reasoning) is built on a revolutionary architecture: modular AI agents orchestrated through a declarative YAML interface, with **100x faster vector search** powered by RedisStack HNSW indexing and enterprise streaming via Kafka.
+OrKa (Orchestrator Kit for Agentic Reasoning) is built on a revolutionary architecture: modular AI agents orchestrated through a declarative YAML interface, with **100x faster vector search** powered by RedisStack HNSW indexing.
 
 This document breaks down the key architectural components and how they work together in the V0.7.0 unified architecture.
 
@@ -20,7 +20,7 @@ This document breaks down the key architectural components and how they work tog
 - **Agents:** Pluggable units of reasoning (e.g., classifier, validator, search agent).
 - **Orchestrator:** Controls the flow of data between agents with RedisStack memory.
 - **RedisStack HNSW:** Ultra-fast vector indexing for semantic memory search.
-- **Kafka Streams:** Enterprise event streaming with RedisStack memory operations.
+- **Redis Streams:** High-performance event streaming and memory operations.
 - **YAML Config:** Describes the orchestration graph with memory configuration.
 
 ---
@@ -148,10 +148,10 @@ registry.register_agent("my_custom_agent", MyCustomAgent)
 - **Performance**: Sub-millisecond search latency, 50x write throughput improvement
 - **Features**: Automatic index creation, graceful fallback to basic Redis
 
-### Kafka + RedisStack (Enterprise)
-- **Event Streaming**: Kafka handles message queuing and event replay
-- **Memory Layer**: RedisStack HNSW for all memory operations (not basic Redis streams)
-- **Hybrid Performance**: Best of both worlds for enterprise deployments
+### RedisStack (Enterprise)
+- **Event Streaming**: Redis Streams handle message queuing and event replay
+- **Memory Layer**: RedisStack HNSW for all memory operations with vector indexing
+- **High Performance**: Optimized for enterprise AI workloads
 
 ### Basic Redis (Legacy)
 - **Compatibility Mode**: Available via `ORKA_FORCE_BASIC_REDIS=true`
@@ -165,7 +165,7 @@ registry.register_agent("my_custom_agent", MyCustomAgent)
 OrKa V0.7.0 is fully driven by `orka.yaml`, which defines:
 - Agent IDs and types with RedisStack memory loggers
 - Memory configuration with decay rules and HNSW settings
-- Backend selection (redisstack/kafka/redis)
+- Backend selection (redisstack/redis)
 - Performance monitoring and observability settings
 
 This allows reproducible reasoning pipelines with enterprise-grade memory.
@@ -210,7 +210,7 @@ All agent outputs are logged with HNSW-optimized metadata:
 ## ✅ V0.7.0 Completed Features
 
 - ✅ **RedisStack HNSW Integration** - 100x faster vector search across all components  
-- ✅ **Kafka Backend** - Enterprise streaming with RedisStack memory operations
+- ✅ **RedisStack Backend** - Enterprise-grade memory operations with HNSW indexing
 - ✅ **Professional CLI Dashboard** - Real-time HNSW performance monitoring
 - ✅ **Zero-Breaking Migration** - Complete backward compatibility maintained
 - ✅ **Unified Architecture** - All components use RedisStack with intelligent fallback

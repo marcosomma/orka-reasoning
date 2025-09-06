@@ -23,7 +23,6 @@ import subprocess
 from typing import Dict
 
 from .config import get_docker_dir
-from .infrastructure.kafka import cleanup_kafka_docker
 from .infrastructure.redis import cleanup_redis_docker, terminate_redis_process
 
 logger = logging.getLogger(__name__)
@@ -34,7 +33,7 @@ def cleanup_services(backend: str, processes: Dict[str, subprocess.Popen] = {}) 
     Clean up and stop services for the specified backend.
 
     Args:
-        backend: The backend type ('redis', 'redisstack', 'kafka', or 'dual')
+        backend: The backend type ('redis' or 'redisstack')
         processes: Dictionary of running processes to terminate
     """
     try:
@@ -58,11 +57,8 @@ def cleanup_services(backend: str, processes: Dict[str, subprocess.Popen] = {}) 
                         proc.wait()
 
         # Enhanced Docker cleanup for better reliability
-        if backend in ["kafka", "dual"]:
-            cleanup_kafka_docker()
-
         # Always try to cleanup Redis Docker containers (in case they're running)
-        if backend in ["redis", "redisstack", "kafka", "dual"]:
+        if backend in ["redis", "redisstack"]:
             cleanup_redis_docker_enhanced()
 
         logger.info("✅ All services stopped.")
@@ -119,11 +115,8 @@ def cleanup_specific_backend(backend: str) -> None:
     Clean up services specific to a backend type.
 
     Args:
-        backend: The backend type ('redis', 'redisstack', 'kafka', or 'dual')
+        backend: The backend type ('redis' or 'redisstack')
     """
-    if backend in ["kafka", "dual"]:
-        cleanup_kafka_docker()
-
     # Redis cleanup is handled by process termination
     # since it's managed as a native process
 
@@ -189,7 +182,7 @@ def emergency_cleanup() -> None:
                     )
 
         # Remove OrKa networks
-        networks = ["docker_orka-redis-network", "docker_orka-kafka-network"]
+        networks = ["docker_orka-redis-network"]
         for network in networks:
             subprocess.run(["docker", "network", "rm", network], check=False, capture_output=True)
 

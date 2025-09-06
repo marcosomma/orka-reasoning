@@ -27,14 +27,12 @@ Purpose: a precise, implementation-aligned vocabulary of entities, identifiers, 
   - Example: `DuckDuckGoTool` in `orka/tools/search_tools.py`
 
 - Memory Logger: persistent storage and search for memories and orchestration logs
-  - Implementations: `RedisStackMemoryLogger`, `RedisMemoryLogger`, `KafkaMemoryLogger`
+  - Implementations: `RedisStackMemoryLogger`, `RedisMemoryLogger`
   - Concerns: serialization, decay, vector search, namespaces, categories
 
 - Registry: runtime resource registry (LLM, embedder, memory, tools)
   - Type: `Registry` (see `orka/contracts.py`)
 
-- Schema Manager: serialization/deserialization schemas for Kafka/Avro/Protobuf
-  - Implements: `orka/memory/schema_manager.py`
 
 ## Data Contracts (authoritative types)
 
@@ -76,7 +74,6 @@ Defined in `orka/contracts.py`.
 - ExecutionEngine constructs Context for each Agent using `input` and `previous_outputs`
 - Agent produces Output; Orchestrator updates `previous_outputs` and decides next steps
 - Memory Logger records events and stored knowledge as MemoryEntry
-- Schema Manager defines serialization for external topics (e.g., Kafka)
 - Tools are invoked by Agents within their implementation
 
 ## Lifecycle and Event Flow
@@ -198,8 +195,7 @@ graph LR
 
   subgraph Infrastructure
     REG[Registry]
-    MEM[Memory Logger\nRedisStack/Redis/Kafka]
-    SCH[SchemaManager]
+    MEM[Memory Logger\nRedisStack/Redis]
     TOOL[Tool\nDuckDuckGo]
   end
 
@@ -212,7 +208,6 @@ graph LR
   A -- may use --> TOOL
   O -- provides --> REG
   REG -- provides --> MEM
-  MEM -- serializes --> SCH
   N1 -. control flow .- N2
   N2 -. parallel .- N3
   N4 -. iterate .- A
@@ -230,7 +225,6 @@ graph LR
 
 ## Validation and Schemas
 
-- Use `SchemaManager` for Avro/Protobuf when integrating with Kafka
 - For RedisStack, ensure serialized `metadata` contains self-describing fields (e.g., `log_type`, `category`, `namespace`)
 
 ## Practical Cross-References
@@ -240,4 +234,3 @@ graph LR
 - Memory (RedisStack): `orka/memory/redisstack_logger.py`
 - Memory (Redis): `orka/memory/redis_logger.py`
 - Tools: `orka/tools/search_tools.py`
-- Schema: `orka/memory/schema_manager.py`

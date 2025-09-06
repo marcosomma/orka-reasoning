@@ -31,7 +31,7 @@ Core Responsibilities
     * Handles environment variable overrides
 
 **Infrastructure Setup**
-    * Initializes memory backend (Redis or Kafka)
+    * Initializes memory backend (Redis or RedisStack)
     * Configures fork group management for parallel execution
     * Sets up error tracking and telemetry systems
 
@@ -71,7 +71,7 @@ class OrchestratorBase:
         loader (:class:`~orka.loader.YAMLLoader`): Configuration file loader and validator
         orchestrator_cfg (dict): Orchestrator-specific configuration settings
         agent_cfgs (list): List of agent configuration objects
-        memory: Memory backend instance (Redis or Kafka)
+        memory: Memory backend instance (Redis or RedisStack)
         fork_manager: Fork group manager for parallel execution
         queue (list): Current agent execution queue
         run_id (str): Unique identifier for this orchestration run
@@ -90,10 +90,8 @@ class OrchestratorBase:
             config_path (str): Path to the YAML configuration file
 
         Environment Variables:
-            ORKA_MEMORY_BACKEND: Memory backend type ('redis' or 'kafka', default: 'redis')
+            ORKA_MEMORY_BACKEND: Memory backend type ('redis' or 'redisstack', default: 'redisstack')
             ORKA_DEBUG_KEEP_PREVIOUS_OUTPUTS: Keep previous outputs for debugging ('true'/'false')
-            KAFKA_BOOTSTRAP_SERVERS: Kafka broker addresses (for Kafka backend)
-            KAFKA_TOPIC_PREFIX: Topic prefix for Kafka topics (default: 'orka-memory')
             REDIS_URL: Redis connection URL (default: 'redis://localhost:6380/0')
         """
         self.loader = YAMLLoader(config_path)
@@ -121,53 +119,25 @@ class OrchestratorBase:
         # Get memory configuration from YAML
         memory_config = self.orchestrator_cfg.get("memory", {}).get("config", {})
 
-        if memory_backend == "kafka":
-            self.memory = create_memory_logger(
-                backend="kafka",
-                bootstrap_servers=memory_config.get("bootstrap_servers")
-                or os.getenv(
-                    "KAFKA_BOOTSTRAP_SERVERS",
-                    "localhost:9092",
-                ),
-                schema_registry_url=memory_config.get("schema_registry_url"),
-                use_schema_registry=memory_config.get("use_schema_registry", True),
-                topic_prefix=memory_config.get("topic_prefix")
-                or os.getenv("KAFKA_TOPIC_PREFIX", "orka-memory"),
-                debug_keep_previous_outputs=debug_keep_previous_outputs,
-                decay_config=decay_config,
-                redis_url=memory_config.get("redis_url")
-                or os.getenv("REDIS_URL", "redis://localhost:6380/0"),
-                enable_hnsw=True,
-                vector_params={
-                    "M": 16,
-                    "ef_construction": 200,
-                    "ef_runtime": 10,
-                },
-            )
-            # For Kafka backend, now use Redis-based fork manager since we have Redis for memory
-            self.memory = cast(
-                RedisStackMemoryLogger, self.memory
-            )  # Cast to RedisStackMemoryLogger for type checking
-            self.fork_manager = ForkGroupManager(self.memory.redis)
-        else:
-            self.memory = create_memory_logger(
-                backend="redisstack",
-                redis_url=memory_config.get("redis_url")
-                or os.getenv("REDIS_URL", "redis://localhost:6380/0"),
-                debug_keep_previous_outputs=debug_keep_previous_outputs,
-                decay_config=decay_config,
-                enable_hnsw=True,
-                vector_params={
-                    "M": 16,
-                    "ef_construction": 200,
-                    "ef_runtime": 10,
-                },
-            )
-            # For Redis, use the existing Redis-based fork manager
-            self.memory = cast(
-                RedisStackMemoryLogger, self.memory
-            )  # Cast to RedisStackMemoryLogger for type checking
-            self.fork_manager = ForkGroupManager(self.memory.redis)
+        # Always use RedisStack backend
+        self.memory = create_memory_logger(
+            backend="redisstack",
+            redis_url=memory_config.get("redis_url")
+            or os.getenv("REDIS_URL", "redis://localhost:6380/0"),
+            debug_keep_previous_outputs=debug_keep_previous_outputs,
+            decay_config=decay_config,
+            enable_hnsw=True,
+            vector_params={
+                "M": 16,
+                "ef_construction": 200,
+                "ef_runtime": 10,
+            },
+        )
+        # For Redis, use the existing Redis-based fork manager
+        self.memory = cast(
+            RedisStackMemoryLogger, self.memory
+        )  # Cast to RedisStackMemoryLogger for type checking
+        self.fork_manager = ForkGroupManager(self.memory.redis)
 
         self.queue = self.orchestrator_cfg["agents"][:]  # Initial agent execution queue
         self.run_id = str(uuid4())  # Unique run/session ID

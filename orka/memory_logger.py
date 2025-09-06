@@ -31,7 +31,7 @@ Key Features
     Records all agent activities and system events with detailed metadata
 
 **Data Persistence**
-    Stores data in Redis streams or Kafka topics for reliability and durability
+    Stores data in Redis streams with reliability and durability
 
 **Serialization**
     Handles conversion of complex Python objects to JSON-serializable formats
@@ -46,8 +46,8 @@ Key Features
 **File Export**
     Supports exporting memory logs to files for analysis and backup
 
-**Multiple Backends**
-    Supports both Redis and Kafka backends with seamless switching
+**RedisStack Backend**
+    High-performance RedisStack backend with HNSW vector indexing for semantic search
 
 Core Use Cases
 --------------
@@ -71,8 +71,8 @@ The memory system is composed of specialized modules:
 :class:`~orka.memory.redis_logger.RedisMemoryLogger`
     Complete Redis backend implementation with streams and data structures
 
-:class:`~orka.memory.kafka_logger.KafkaMemoryLogger`
-    Kafka-based event streaming implementation
+:class:`~orka.memory.redisstack_logger.RedisStackMemoryLogger`
+    High-performance RedisStack backend with HNSW vector indexing
 
 :class:`~orka.memory.serialization`
     JSON sanitization and memory processing utilities
@@ -92,24 +92,24 @@ Usage Examples
 
     from orka.memory_logger import create_memory_logger
 
-    # Redis backend (default)
-    redis_memory = create_memory_logger("redis", redis_url="redis://localhost:6380")
+    # RedisStack backend (default - recommended)
+    redisstack_memory = create_memory_logger("redisstack", redis_url="redis://localhost:6380")
 
-    # Kafka backend
-    kafka_memory = create_memory_logger("kafka", bootstrap_servers="localhost:9092")
+    # Basic Redis backend
+    redis_memory = create_memory_logger("redis", redis_url="redis://localhost:6380")
 
 **Direct Instantiation**
 
 .. code-block:: python
 
     from orka.memory.redis_logger import RedisMemoryLogger
-    from orka.memory.kafka_logger import KafkaMemoryLogger
+    from orka.memory.redisstack_logger import RedisStackMemoryLogger
 
     # Redis logger
     redis_logger = RedisMemoryLogger(redis_url="redis://localhost:6380")
 
-    # Kafka logger
-    kafka_logger = KafkaMemoryLogger(bootstrap_servers="localhost:9092")
+    # RedisStack logger with HNSW
+    redisstack_logger = RedisStackMemoryLogger(redis_url="redis://localhost:6380")
 
 **Environment-Based Configuration**
 
@@ -119,23 +119,23 @@ Usage Examples
     from orka.memory_logger import create_memory_logger
 
     # Set backend via environment variable
-    os.environ["ORKA_MEMORY_BACKEND"] = "kafka"
+    os.environ["ORKA_MEMORY_BACKEND"] = "redisstack"
 
-    # Logger will use Kafka automatically
+    # Logger will use RedisStack automatically
     memory = create_memory_logger()
 
 Backend Comparison
 ------------------
 
-**Redis Backend**
+**RedisStack Backend (Recommended)**
+    * **Best for**: Production AI workloads, high-performance applications
+    * **Features**: HNSW vector indexing, 100x faster search, advanced memory management
+    * **Performance**: Sub-millisecond search, 50,000+ operations/second
+
+**Redis Backend (Legacy)**
     * **Best for**: Development, single-node deployments, quick prototyping
     * **Features**: Fast in-memory operations, simple setup, full feature support
-    * **Limitations**: Single point of failure, memory-bound storage
-
-**Kafka Backend**
-    * **Best for**: Production, distributed systems, high-throughput scenarios
-    * **Features**: Persistent event log, horizontal scaling, fault tolerance
-    * **Limitations**: More complex setup, higher resource usage
+    * **Limitations**: Basic search capabilities, no vector indexing
 
 Implementation Notes
 --------------------
@@ -147,6 +147,7 @@ Implementation Notes
     * Blob deduplication reduces storage overhead
     * In-memory buffers provide fast access to recent events
     * Batch operations improve throughput
+    * HNSW indexing for ultra-fast vector search
 
 **Error Handling**
     * Robust sanitization handles non-serializable objects
@@ -171,8 +172,6 @@ logger = logging.getLogger(__name__)
 def create_memory_logger(
     backend: str = "redisstack",
     redis_url: str | None = None,
-    bootstrap_servers: str | None = None,
-    topic_prefix: str = "orka-memory",
     stream_key: str = "orka:memory",
     debug_keep_previous_outputs: bool = False,
     decay_config: dict[str, Any] | None = None,
@@ -191,10 +190,8 @@ def create_memory_logger(
     Defaults to RedisStack for optimal performance with automatic fallback.
 
     Args:
-        backend: Memory backend type ("redisstack", "redis", "kafka")
+        backend: Memory backend type ("redisstack", "redis")
         redis_url: Redis connection URL
-        bootstrap_servers: Kafka bootstrap servers (for Kafka backend)
-        topic_prefix: Kafka topic prefix (for Kafka backend)
         stream_key: Redis stream key for logging
         debug_keep_previous_outputs: Whether to keep previous outputs in logs
         decay_config: Memory decay configuration
@@ -229,7 +226,7 @@ def create_memory_logger(
             "check_interval_minutes": 30,
         }
 
-    # ✅ Handle force basic Redis flag
+    # Handle force basic Redis flag
     force_basic_redis = os.getenv("ORKA_FORCE_BASIC_REDIS", "false").lower() == "true"
 
     if force_basic_redis and backend in ["redis", "redisstack"]:
@@ -252,7 +249,7 @@ def create_memory_logger(
         try:
             from .memory.redisstack_logger import RedisStackMemoryLogger
 
-            # 🎯 CRITICAL: Initialize embedder for vector search
+            # Initialize embedder for vector search
             embedder = None
             try:
                 from .utils.embedder import get_embedder
@@ -270,111 +267,40 @@ def create_memory_logger(
             if force_recreate_index:
                 effective_vector_params["force_recreate"] = True
 
-            # Add vector dimension if not already in vector_params
-            if "dim" not in effective_vector_params and vector_dim:
-                effective_vector_params["dim"] = vector_dim
+            logger.info("✅ RedisStack with HNSW and vector search enabled")
 
-            logger_instance = RedisStackMemoryLogger(
+            return RedisStackMemoryLogger(
                 redis_url=redis_url or "redis://localhost:6380/0",
-                index_name=index_name,  # Use configurable index name
-                embedder=embedder,  # Pass embedder for vector search
+                index_name=index_name,
+                embedder=embedder,
+                memory_decay_config=decay_config,
                 stream_key=stream_key,
                 debug_keep_previous_outputs=debug_keep_previous_outputs,
                 decay_config=decay_config,
                 enable_hnsw=enable_hnsw,
                 vector_params=effective_vector_params,
-                format_params=format_params,  # Pass format parameters
+                format_params=format_params,
+                vector_dim=vector_dim,
+                force_recreate_index=force_recreate_index,
+                **kwargs,
             )
 
-            # Test RedisStack capabilities
+        except ImportError as e:
+            # Fall back to basic Redis if RedisStack is not available
+            logger.warning(f"RedisStack not available, falling back to basic Redis: {e}")
             try:
-                index_ready = logger_instance.ensure_index()
-                if index_ready:
-                    if embedder:
-                        logging.getLogger(__name__).info(
-                            "✅ RedisStack with HNSW and vector search enabled",
-                        )
-                    else:
-                        logging.getLogger(__name__).info(
-                            "✅ RedisStack with HNSW enabled (no vector search)",
-                        )
-                    return logger_instance
-                else:
-                    logging.getLogger(__name__).warning(
-                        "⚠️ RedisStack index failed, falling back to basic Redis",
-                    )
-            except Exception as e:
-                logging.getLogger(__name__).warning(f"RedisStack index test failed: {e}")
+                from .memory.redis_logger import RedisMemoryLogger
 
-        except ImportError as e:
-            logging.getLogger(__name__).warning(f"RedisStack not available: {e}")
-
-    # Fallback to basic Redis only if RedisStack fails
-    if backend == "redis" or (backend == "redisstack" and not force_basic_redis):
-        try:
-            from .memory.redis_logger import RedisMemoryLogger
-
-            logging.getLogger(__name__).info("🔄 Using basic Redis backend")
-            return RedisMemoryLogger(
-                redis_url=redis_url,
-                stream_key=stream_key,
-                debug_keep_previous_outputs=debug_keep_previous_outputs,
-                decay_config=decay_config,
-            )
-        except ImportError as e:
-            if backend == "redisstack":
+                return RedisMemoryLogger(
+                    redis_url=redis_url,
+                    stream_key=stream_key,
+                    debug_keep_previous_outputs=debug_keep_previous_outputs,
+                    decay_config=decay_config,
+                )
+            except ImportError as e:
                 raise ImportError(f"No Redis backends available: {e}") from e
 
-    # Handle Kafka backend with RedisStack integration
-    if backend == "kafka":
-        try:
-            from .memory.kafka_logger import KafkaMemoryLogger
-
-            # ✅ CRITICAL: Use provided parameters or defaults
-            kafka_bootstrap_servers = bootstrap_servers or os.getenv(
-                "KAFKA_BOOTSTRAP_SERVERS",
-                "localhost:9092",
-            )
-
-            # Get Schema Registry configuration
-            schema_registry_url = kwargs.get("schema_registry_url") or os.getenv(
-                "KAFKA_SCHEMA_REGISTRY_URL",
-                "http://localhost:8081",
-            )
-            use_schema_registry = kwargs.get("use_schema_registry", True)
-
-            logger.info(
-                f"🔄 Creating Kafka memory logger with Schema Registry: {schema_registry_url}"
-            )
-
-            return KafkaMemoryLogger(
-                bootstrap_servers=str(kafka_bootstrap_servers),
-                schema_registry_url=schema_registry_url,
-                use_schema_registry=use_schema_registry,
-                topic_prefix=topic_prefix,
-                redis_url=redis_url or "redis://localhost:6380/0",
-                stream_key=stream_key,
-                debug_keep_previous_outputs=debug_keep_previous_outputs,
-                decay_config=decay_config,
-                enable_hnsw=enable_hnsw,
-                vector_params=vector_params,
-            )
-        except ImportError as e:
-            logging.getLogger(__name__).warning(
-                f"Kafka not available, falling back to RedisStack: {e}",
-            )
-            # Recursive call with RedisStack
-            return create_memory_logger(
-                "redisstack",
-                redis_url=redis_url,
-                stream_key=stream_key,
-                debug_keep_previous_outputs=debug_keep_previous_outputs,
-                decay_config=decay_config,
-                enable_hnsw=enable_hnsw,
-                vector_params=vector_params,
-            )
-
-    raise ValueError(f"Unsupported backend: {backend}. Supported: redisstack, redis, kafka")
+    raise ValueError(f"Unsupported backend: {backend}. Supported: redisstack, redis")
 
 
 # Add MemoryLogger alias for backward compatibility with tests

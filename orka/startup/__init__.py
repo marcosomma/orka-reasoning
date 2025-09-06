@@ -16,14 +16,13 @@ OrKa Startup Package
 ===================
 
 This package provides modular startup and service management for OrKa.
-It handles infrastructure services (Redis, Kafka), backend server management,
+It handles infrastructure services (Redis), backend server management,
 and orchestrates the complete service lifecycle.
 
 Key Components:
 --------------
 - Configuration management and path discovery
 - Redis infrastructure (native & Docker)
-- Kafka infrastructure (Docker-based)
 - Backend server management
 - Health monitoring and service readiness
 - Cleanup and shutdown coordination
@@ -54,27 +53,19 @@ from .config import (
 )
 
 # Infrastructure services (exposed for advanced usage)
-from .infrastructure import (
+from .infrastructure import (  # Redis; Health & monitoring
     check_process_health,
-    cleanup_kafka_docker,
     cleanup_redis_docker,
     display_error,
     display_service_endpoints,
     display_shutdown_complete,
     display_shutdown_message,
     display_startup_success,
-    get_kafka_services,
-    initialize_schema_registry,
     monitor_backend_process,
-    # Kafka
-    start_kafka_docker,
-    # Redis
     start_native_redis,
     start_redis_docker,
     terminate_redis_process,
-    wait_for_kafka_services,
     wait_for_redis,
-    # Health & monitoring
     wait_for_services,
 )
 from .orchestrator import main, run_startup, start_infrastructure
@@ -97,9 +88,6 @@ __all__ = [
     "start_native_redis",
     "start_redis_docker",
     "wait_for_redis",
-    "start_kafka_docker",
-    "wait_for_kafka_services",
-    "initialize_schema_registry",
     "wait_for_services",
     # Configuration
     "configure_backend_environment",
@@ -120,6 +108,4 @@ __all__ = [
     # Service-specific cleanup
     "terminate_redis_process",
     "cleanup_redis_docker",
-    "cleanup_kafka_docker",
-    "get_kafka_services",
 ]

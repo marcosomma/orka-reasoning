@@ -82,24 +82,22 @@ class TestOrchestratorBase:
             assert "errors" in base.error_telemetry
             assert base.error_telemetry["execution_status"] == "running"
 
-    def test_orchestrator_base_initialization_kafka(self, mock_dependencies):
-        """Test OrchestratorBase initialization with Kafka backend."""
+    def test_orchestrator_base_initialization_redisstack(self, mock_dependencies):
+        """Test OrchestratorBase initialization with RedisStack backend."""
         with patch.dict(
             os.environ,
             {
-                "ORKA_MEMORY_BACKEND": "kafka",
-                "KAFKA_BOOTSTRAP_SERVERS": "localhost:9092",
-                "KAFKA_TOPIC_PREFIX": "test-orka",
+                "ORKA_MEMORY_BACKEND": "redisstack",
+                "REDIS_URL": "redis://localhost:6380/0",
             },
         ):
             base = OrchestratorBase("test_config.yml")
 
-            # Verify Kafka-specific memory logger configuration
+            # Verify RedisStack-specific memory logger configuration
             mock_dependencies["memory"].assert_called_once()
             call_args = mock_dependencies["memory"].call_args
-            assert call_args[1]["backend"] == "kafka"
-            assert call_args[1]["bootstrap_servers"] == "localhost:9092"
-            assert call_args[1]["topic_prefix"] == "test-orka"
+            assert call_args[1]["backend"] == "redisstack"
+            assert call_args[1]["redis_url"] == "redis://localhost:6380/0"
 
     def test_orchestrator_base_environment_overrides(self, mock_dependencies):
         """Test environment variable overrides."""

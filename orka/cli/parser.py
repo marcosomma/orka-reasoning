@@ -60,7 +60,7 @@ def setup_subcommands(parser):
     stats_parser = memory_subparsers.add_parser("stats", help="Display memory statistics")
     stats_parser.add_argument(
         "--backend",
-        choices=["redis", "redisstack", "kafka"],
+        choices=["redis", "redisstack"],
         help="Memory backend to use",
     )
     stats_parser.set_defaults(func=memory_stats)
@@ -69,7 +69,7 @@ def setup_subcommands(parser):
     cleanup_parser = memory_subparsers.add_parser("cleanup", help="Clean up expired memory entries")
     cleanup_parser.add_argument(
         "--backend",
-        choices=["redis", "redisstack", "kafka"],
+        choices=["redis", "redisstack"],
         help="Memory backend to use",
     )
     cleanup_parser.add_argument(
@@ -83,7 +83,7 @@ def setup_subcommands(parser):
     config_parser = memory_subparsers.add_parser("configure", help="Display memory configuration")
     config_parser.add_argument(
         "--backend",
-        choices=["redis", "redisstack", "kafka"],
+        choices=["redis", "redisstack"],
         help="Memory backend to use",
     )
     config_parser.set_defaults(func=memory_configure)
@@ -95,7 +95,7 @@ def setup_subcommands(parser):
     )
     watch_parser.add_argument(
         "--backend",
-        choices=["redis", "redisstack", "kafka"],
+        choices=["redis", "redisstack"],
         help="Memory backend to use",
     )
     watch_parser.add_argument(

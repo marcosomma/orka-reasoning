@@ -65,8 +65,8 @@ Choose your deployment mode:
 # Development (RedisStack only)
 orka-start
 
-# Production (RedisStack + Kafka)
-orka-kafka
+# Production (RedisStack)
+orka-start
 
 # Optional: Start UI
 docker run -d -p 80:80 marcosomma/orka-ui:latest

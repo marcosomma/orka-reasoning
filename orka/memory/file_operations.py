@@ -59,18 +59,14 @@ class FileOperationsMixin:
             file_path: Path to the output JSON file.
         """
         try:
-            # For Kafka backend, ensure all messages are sent before saving
-            if hasattr(self, "producer"):
+            # Ensure all pending operations are completed before saving
+            if hasattr(self, "redis_client"):
                 try:
-                    # Flush pending messages with a reasonable timeout
-                    self.producer.flush(timeout=3)
-                    logger.debug(
-                        "[KafkaMemoryLogger] Flushed pending messages before save",
-                    )
-                except Exception as flush_e:
-                    logger.warning(
-                        f"Warning: Failed to flush Kafka messages before save: {flush_e!s}",
-                    )
+                    # For Redis backends, ensure connection is stable
+                    self.redis_client.ping()
+                    logger.debug("Redis connection verified before save")
+                except Exception as ping_e:
+                    logger.warning(f"Warning: Redis connection issue before save: {ping_e!s}")
 
             # Process memory entries to optimize storage (remove repeated previous_outputs)
             processed_memory = self._process_memory_for_saving(self.memory)

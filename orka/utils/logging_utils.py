@@ -59,7 +59,5 @@ def setup_logging(verbose: bool = False):
     logging.root.setLevel(level)
 
     # Set specific loggers to DEBUG level
-    logging.getLogger("orka.memory.kafka_logger").setLevel(logging.DEBUG)
     logging.getLogger("orka.memory.redisstack_logger").setLevel(logging.DEBUG)
     logging.getLogger("orka.memory_logger").setLevel(logging.DEBUG)
-

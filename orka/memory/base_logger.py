@@ -107,7 +107,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
     - Vector search capabilities for semantic similarity
     - Advanced filtering and querying options
     - Performance optimizations for specific use cases
-    - Integration with external systems (Redis, Kafka, etc.)
+    - Integration with external systems (Redis, etc.)
 
     Configuration Options
     --------------------

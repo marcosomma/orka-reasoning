@@ -16,7 +16,7 @@ Infrastructure Management Package
 =================================
 
 This package provides infrastructure service management for OrKa including
-Redis, Kafka, and health monitoring capabilities.
+Redis and health monitoring capabilities.
 """
 
 from .health import (
@@ -28,13 +28,6 @@ from .health import (
     display_startup_success,
     monitor_backend_process,
     wait_for_services,
-)
-from .kafka import (
-    cleanup_kafka_docker,
-    get_kafka_services,
-    initialize_schema_registry,
-    start_kafka_docker,
-    wait_for_kafka_services,
 )
 from .redis import (
     cleanup_redis_docker,
@@ -54,12 +47,6 @@ __all__ = [
     "display_startup_success",
     "monitor_backend_process",
     "wait_for_services",
-    # Kafka management
-    "cleanup_kafka_docker",
-    "get_kafka_services",
-    "initialize_schema_registry",
-    "start_kafka_docker",
-    "wait_for_kafka_services",
     # Redis management
     "cleanup_redis_docker",
     "start_native_redis",

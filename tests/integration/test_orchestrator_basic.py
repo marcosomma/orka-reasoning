@@ -179,18 +179,20 @@ memory:
 
     def test_memory_backend_initialization(self, minimal_config):
         """Test that memory backend is properly initialized."""
-        with patch("redis.from_url") as mock_redis:
-            mock_redis_client = MagicMock()
-            mock_redis.return_value = mock_redis_client
+        with patch("orka.memory.redisstack_logger.redis.ConnectionPool") as mock_pool:
+            with patch("orka.memory.redisstack_logger.redis.Redis") as mock_redis:
+                mock_redis_client = MagicMock()
+                mock_redis.return_value = mock_redis_client
+                mock_redis_client.ping.return_value = True
 
-            orchestrator = Orchestrator(minimal_config)
+                orchestrator = Orchestrator(minimal_config)
 
-            # Verify memory was initialized
-            assert hasattr(orchestrator, "memory")
-            assert orchestrator.memory is not None
+                # Verify memory was initialized
+                assert hasattr(orchestrator, "memory")
+                assert orchestrator.memory is not None
 
-            # Verify Redis was called for memory setup
-            mock_redis.assert_called()
+                # Verify Redis connection pool was created for memory setup
+                assert mock_pool.called or mock_redis.called
 
     def test_error_handling_invalid_config(self, tmp_path):
         """Test error handling for invalid configurations."""
