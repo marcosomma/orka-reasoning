@@ -381,13 +381,28 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
             return  # Already running
 
         def decay_scheduler() -> None:
-            interval_seconds = self.decay_config.get("check_interval_minutes", 30) * 60
+            interval_seconds = self.decay_config.get("check_interval_minutes", 1) * 60
+            consecutive_failures = 0
+            max_consecutive_failures = 3
 
             while not self._decay_stop_event.wait(interval_seconds):
                 try:
                     self.cleanup_expired_memories()
+                    consecutive_failures = 0  # Reset on success
                 except Exception as e:
-                    logger.error(f"Error during automatic memory decay: {e}")
+                    consecutive_failures += 1
+                    logger.error(
+                        f"Error during automatic memory decay (failure {consecutive_failures}): {e}"
+                    )
+
+                    # If we have too many consecutive failures, increase the interval to prevent spam
+                    if consecutive_failures >= max_consecutive_failures:
+                        logger.warning(
+                            f"Memory decay has failed {consecutive_failures} times consecutively. "
+                            f"Increasing interval to {interval_seconds * 2} seconds to prevent resource exhaustion."
+                        )
+                        interval_seconds = min(interval_seconds * 2, 3600)  # Cap at 1 hour
+                        consecutive_failures = 0  # Reset counter after backing off
 
         self._decay_thread = threading.Thread(target=decay_scheduler, daemon=True)
         self._decay_thread.start()

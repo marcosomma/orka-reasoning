@@ -184,6 +184,44 @@ def wait_for_redis(port: int, max_attempts: int = 30) -> None:
     """
     logger.info(f"⏳ Waiting for Redis to be ready on port {port}...")
 
+    # First, check if we're using Docker and use Docker health check
+    try:
+        result = subprocess.run(
+            ["docker", "ps", "--filter", "name=docker-redis-1", "--format", "{{.Status}}"],
+            capture_output=True, text=True, check=False
+        )
+        
+        if result.returncode == 0 and result.stdout.strip():
+            logger.info(f"📦 Redis container status: {result.stdout.strip()}")
+            
+            # Use Docker health check for more reliable detection
+            for attempt in range(max_attempts):
+                try:
+                    health_result = subprocess.run(
+                        ["docker", "exec", "docker-redis-1", "redis-cli", "ping"],
+                        capture_output=True, text=True, check=False, timeout=5
+                    )
+                    
+                    if health_result.returncode == 0 and "PONG" in health_result.stdout:
+                        logger.info(f"✅ Redis is ready on port {port}! (verified via Docker)")
+                        return
+                        
+                except subprocess.TimeoutExpired:
+                    pass
+                except Exception:
+                    pass
+                
+                if attempt < max_attempts - 1:
+                    logger.info(f"Redis not ready yet, waiting... (attempt {attempt + 1}/{max_attempts})")
+                    time.sleep(2)
+                else:
+                    # Fall back to host connection test
+                    logger.warning("Docker health check failed, trying host connection...")
+                    break
+    except Exception:
+        pass  # Fall back to host connection test
+
+    # Fallback to host connection test (for native Redis or if Docker check fails)
     for attempt in range(max_attempts):
         try:
             # Try to connect using redis-cli first (if available)
@@ -202,32 +240,42 @@ def wait_for_redis(port: int, max_attempts: int = 30) -> None:
             except (FileNotFoundError, subprocess.TimeoutExpired):
                 pass  # redis-cli not available, try alternative
 
-            # Fallback to socket + Redis library check
+            # Fallback to socket + Redis library check with longer timeout
             import socket
 
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(2)
+            sock.settimeout(5)  # Increased timeout for Windows Docker
             socket_result = sock.connect_ex(("localhost", port))
             sock.close()
 
-            if socket_result == 0:  # Changed from result to socket_result
-                # Additional check with Redis ping
+            if socket_result == 0:
+                # Additional check with Redis ping (with retries for Windows Docker)
                 try:
                     import redis
 
-                    client = redis.Redis(host="localhost", port=port, decode_responses=True)
+                    client = redis.Redis(
+                        host="localhost", 
+                        port=port, 
+                        decode_responses=True,
+                        socket_connect_timeout=10,
+                        socket_timeout=10,
+                        retry_on_timeout=True,
+                        retry_on_error=[redis.ConnectionError, redis.TimeoutError]
+                    )
                     if client.ping():
                         logger.info(f"✅ Redis is ready on port {port}!")
                         return
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Redis ping failed: {e}")
                     pass  # Continue trying
 
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Connection attempt failed: {e}")
             pass
 
         if attempt < max_attempts - 1:
             logger.info(f"Redis not ready yet, waiting... (attempt {attempt + 1}/{max_attempts})")
-            time.sleep(2)
+            time.sleep(3)  # Slightly longer wait for Windows Docker
         else:
             raise RuntimeError(
                 f"Redis failed to start on port {port} after {max_attempts} attempts",

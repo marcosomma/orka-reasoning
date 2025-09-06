@@ -20,6 +20,11 @@ KAFKA_TOPIC_PREFIX: Prefix for Kafka topics (default: orka-memory)
 import os
 import sys
 
+# Initialize logging first
+from orka.utils.logging_utils import setup_logging
+
+setup_logging()
+
 # Set default backend to Kafka (hybrid with Redis for memory)
 if "ORKA_MEMORY_BACKEND" not in os.environ:
     os.environ["ORKA_MEMORY_BACKEND"] = "kafka"
@@ -67,7 +72,7 @@ print(f"   • Memory Backend: {os.environ['ORKA_MEMORY_BACKEND']}")
 print(f"   • Kafka Servers: {os.environ['KAFKA_BOOTSTRAP_SERVERS']}")
 print(f"   • Kafka Topic Prefix: {os.environ['KAFKA_TOPIC_PREFIX']}")
 print(f"   • Redis URL: {os.environ['REDIS_URL']}")
-print(f"   • LOG_LEVEL: {os.environ['ORKA_LOG_LEVEL']}")
+print(f"   • LOG_LEVEL: {os.getenv('ORKA_LOG_LEVEL', 'INFO')}")
 
 
 def cli_main():

@@ -2,11 +2,129 @@
 
 *(derived from the public-repo commit history as of **2025-01-31**)*
 ---
+## [0.8.6] · 2025-09-06 🔧
+### Added
+* **🧪 Comprehensive Benchmark System**
+  * **Benchmark Runner Framework** - New `benchmark/run_benchmark.py` for systematic workflow evaluation
+  * **Evaluator Workflow** - `benchmark/benchmark_evaluator.yml` for automated answer quality assessment
+  * **Multi-Metric Evaluation** - Similarity scoring, precision analysis, and explainability metrics
+  * **Chunked Processing** - Handles large test datasets with configurable chunk sizes (50 tests per chunk)
+  * **Comprehensive Reporting** - CSV reports with detailed analysis and JSON summaries with statistics
+  * **Test Dataset Support** - JSONL format support for question-answer pairs with reference data
+  * **Performance Analytics** - Success/failure tracking, average scores, and detailed error reporting
+
+* **🛠️ Emergency Cleanup System**
+  * **OrKa Cleanup Tool** - New `orka_cleanup.py` for comprehensive service cleanup when normal shutdown fails
+  * **Docker Container Management** - Automatic cleanup of Redis, Kafka, Zookeeper, and Schema Registry containers
+  * **Process Management** - Intelligent detection and termination of OrKa processes across platforms
+  * **Port Conflict Resolution** - Automatic detection and resolution of port usage conflicts (6379, 6380, 9092, 2181)
+  * **Force Cleanup Mode** - Complete removal of volumes, networks, and persistent data when needed
+  * **Service-Specific Cleanup** - Targeted cleanup options (--redis-only, --kafka-only) for selective service management
+
+* **🎯 Advanced Example Workflows**
+  * **Multi-Perspective Chatbot** - `examples/multi_perspective_chatbot.yml` with memory integration and web search
+  * **Chain-of-Thought Multi-Perspective** - `examples/cot_multi_perspective.yml` for systematic perspective analysis
+  * **Loop-Based Reasoning** - Advanced loop nodes with perspective switching (Analytical, Empathetic, Creative)
+  * **Memory-Enhanced Conversations** - Context-aware responses with conversation history and metadata
+  * **Quality Scoring Integration** - Automatic quality assessment and threshold-based loop continuation
+
+* **📊 Enhanced Logging Infrastructure**
+  * **Centralized Logging Utilities** - New `orka/utils/logging_utils.py` with standardized logging configuration
+  * **Safe UTF-8 Encoding** - `SafeFormatter` class handling encoding errors and special characters
+  * **Environment-Based Configuration** - `ORKA_LOG_LEVEL` environment variable support with intelligent defaults
+  * **Timestamped Debug Logs** - Automatic file logging with timestamps for debugging and audit trails
+  * **Multi-Handler Setup** - Console and file logging with different levels for development and production
+
+### Breaking Changes
+* **🔄 Startup Script Consolidation**
+  * **Deprecated Commands Removed**
+    * Removed `orka-redis` command (use `orka-start` with ORKA_MEMORY_BACKEND=redis)
+    * Removed `orka-kafka` command (use `orka-start` with ORKA_MEMORY_BACKEND=kafka)
+    * Consolidated all startup functionality into `orka-start`
+    * Improved environment variable handling for backend selection
+    * Enhanced documentation for startup configuration
+
+### Changed
+* **🔄 Environment Variables Simplified**
+  * **OPENAI_API_KEY Now Optional**
+    * Made OPENAI_API_KEY environment variable optional
+    * OpenAI-based agents gracefully handle missing API key
+    * Clear warning message when OpenAI features are unavailable
+    * Better focus on local LLM capabilities
+    * Improved error messages suggesting local LLM alternatives
+  * **ORKA_LOG_LEVEL Now Optional**
+    * Made ORKA_LOG_LEVEL environment variable optional
+    * Default log level set to "INFO" if not specified
+    * Graceful handling of missing log level configuration
+    * Improved logging setup with better defaults
+
+* **🏗️ Startup Infrastructure Modernization**
+  * **Modular Startup System** - Enhanced startup package with better separation of concerns
+  * **Backward Compatibility Layer** - Maintained compatibility for deprecated function names
+  * **Enhanced Configuration Display** - Improved startup messages with comprehensive configuration overview
+  * **Hybrid Backend Defaults** - Kafka + Redis hybrid backend as default for optimal performance
+
+### Fixed
+* **🔧 Service Management & Reliability**
+  * **Docker Container Lifecycle** - Improved container startup, shutdown, and cleanup procedures
+  * **Port Management** - Better handling of port conflicts and service coordination
+  * **Process Isolation** - Enhanced process management preventing orphaned services
+  * **Error Recovery** - Comprehensive error handling and recovery mechanisms for service failures
+
+### Technical Details
+* **Benchmark Architecture**
+  * Pandas and NumPy integration for data processing and analysis
+  * Custom JSON encoder for numpy types and complex data structures
+  * Configurable evaluation metrics with extensible scoring framework
+  * Memory-efficient chunked processing for large-scale evaluations
+
+* **Cleanup System Architecture**
+  * Cross-platform process detection and termination (Windows, Linux, macOS)
+  * Docker Compose integration with profile-specific service management
+  * Network and volume cleanup with selective retention options
+  * Comprehensive error handling and recovery reporting
+
+* **Logging Infrastructure**
+  * UTF-8 safe formatting with encoding error handling
+  * Multi-level logging configuration (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  * Automatic log directory creation and file rotation
+  * Memory logger integration with debug-level capture
+
+* **Environment Configuration**
+  * Enhanced environment variable handling with proper defaults
+  * Improved error messages and warnings for missing configurations
+  * Better support for local development without OpenAI integration
+  * Standardized logging configuration across all components
+
+### Migration Notes
+* **For Existing Users** - No breaking changes; all existing workflows continue to function unchanged
+* **Benchmark Integration** - New benchmark system available for workflow evaluation and quality assessment
+* **Cleanup Tools** - Emergency cleanup utilities available for service management and troubleshooting
+* **Enhanced Examples** - New sophisticated examples demonstrate advanced multi-perspective reasoning patterns
+* **Logging Improvements** - Better debugging capabilities with enhanced logging infrastructure
+
+> No breaking changes to core functionality. All existing workflows continue to function unchanged.
+
+---
 ## [0.8.5] · 2025-08-31 🔧
+### Changed
+* **🔄 Environment Variables Simplified**
+  * **OPENAI_API_KEY Now Optional**
+    * Made OPENAI_API_KEY environment variable optional
+    * OpenAI-based agents gracefully handle missing API key
+    * Clear warning message when OpenAI features are unavailable
+    * Better focus on local LLM capabilities
+    * Improved error messages suggesting local LLM alternatives
+  * **ORKA_LOG_LEVEL Now Optional**
+    * Made ORKA_LOG_LEVEL environment variable optional
+    * Default log level set to "INFO" if not specified
+    * Graceful handling of missing log level configuration
+    * Improved logging setup with better defaults
+
 ### Fixed
 * **🔧 Environment Variables & TUI Package Distribution**
   * **Environment Variables Setup**
-    * Added clear documentation for required environment variables (OPENAI_API_KEY, ORKA_LOG_LEVEL)
+    * Added clear documentation for environment variables
     * Enhanced environment variable setup instructions in README and quickstart guide
     * Added .env file template with all necessary configuration options
     * Improved error messages for missing environment variables

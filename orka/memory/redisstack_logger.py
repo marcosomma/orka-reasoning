@@ -137,12 +137,14 @@ import logging
 import threading
 import time
 import uuid
+import weakref
 from threading import Lock
 from typing import Any, cast
 
 import numpy as np
 import redis
-from redis import Redis
+from redis import ConnectionError, Redis, TimeoutError
+from redis.connection import ConnectionPool
 
 from .base_logger import BaseMemoryLogger
 
@@ -259,50 +261,164 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         # Thread safety for parallel operations
         self._connection_lock = Lock()
         self._embedding_lock = Lock()  # Separate lock for embedding operations
-        self._local = threading.local()  # Thread-local storage for connections
 
-        # Primary Redis connection (main thread)
-        self.redis_client = self._create_redis_connection()
+        # Track active connections for cleanup (using weak references to avoid memory leaks)
+        self._active_connections: weakref.WeakSet[Redis] = weakref.WeakSet()
 
-        # Ensure the enhanced memory index exists
+        # Connection pool for efficient connection management
+        self._connection_pool = self._create_connection_pool()
+
+        # Lazy initialization - don't test connection during init to avoid timeouts
+        self.redis_client: redis.Redis | None = None
+        self._client_initialized = False
+
+        # Ensure the enhanced memory index exists (will initialize client if needed)
         self._ensure_index()
 
         logger.info(f"RedisStack memory logger initialized with index: {self.index_name}")
 
-    def _create_redis_connection(self) -> redis.Redis:
-        """Create a new Redis connection with proper configuration."""
+    def _create_connection_pool(self) -> ConnectionPool:
+        """Create a Redis connection pool for efficient connection management."""
         try:
-            client = redis.from_url(
+            # Parse Redis URL to get connection parameters with more generous timeouts
+            pool = ConnectionPool.from_url(
                 self.redis_url,
                 decode_responses=False,
                 socket_keepalive=True,
                 socket_keepalive_options={},
                 retry_on_timeout=True,
-                health_check_interval=30,
+                health_check_interval=60,  # Less frequent health checks to reduce load
+                max_connections=15,  # Reduced max connections to prevent saturation
+                socket_connect_timeout=10,  # Longer timeout for connection establishment
+                socket_timeout=30,  # Longer timeout for operations
+                retry_on_error=[ConnectionError, TimeoutError],  # Retry on these errors
             )
-            # Test connection
-            client.ping()
+            logger.debug(
+                f"Created Redis connection pool with max_connections=15, socket_timeout=30s"
+            )
+            return pool
+        except Exception as e:
+            logger.error(f"Failed to create Redis connection pool: {e}")
+            raise
+
+    def _create_redis_connection(self, test_connection: bool = True) -> redis.Redis:
+        """Create a new Redis connection using the connection pool."""
+        try:
+            client = redis.Redis(connection_pool=self._connection_pool)
+
+            # Only test connection if requested (avoid timeouts during init)
+            if test_connection:
+                # Try to ping with a short timeout to avoid blocking
+                try:
+                    client.ping()
+                except (redis.TimeoutError, redis.ConnectionError) as e:
+                    logger.warning(f"Redis connection test failed (but client created): {e}")
+                    # Don't raise - let the client be used anyway, it might work for actual operations
+
+            # Track the connection for potential cleanup
+            self._active_connections.add(client)
             return client
         except Exception as e:
             logger.error(f"Failed to create Redis connection: {e}")
             raise
 
-    def _get_thread_safe_client(self) -> redis.Redis:
-        """Get a thread-safe Redis client for the current thread."""
-        if not hasattr(self._local, "redis_client"):
+    def _get_redis_client(self) -> redis.Redis:
+        """Get the main Redis client with lazy initialization."""
+        if not self._client_initialized or self.redis_client is None:
             with self._connection_lock:
-                if not hasattr(self._local, "redis_client"):
-                    self._local.redis_client = self._create_redis_connection()
-                    logger.debug(
-                        f"Created Redis connection for thread {threading.current_thread().ident}",
-                    )
-        _safe_client: Redis[Any] = self._local.redis_client
-        return _safe_client
+                if not self._client_initialized or self.redis_client is None:
+                    try:
+                        self.redis_client = self._create_redis_connection(test_connection=False)
+                        self._client_initialized = True
+                        logger.debug("Lazy initialized main Redis client")
+                    except Exception as e:
+                        logger.error(f"Failed to initialize Redis client: {e}")
+                        raise
+        return self.redis_client
+
+    def _get_thread_safe_client(self) -> redis.Redis:
+        """Get a thread-safe Redis client using the connection pool."""
+        try:
+            # Use the connection pool to get a connection - this is automatically thread-safe
+            # and reuses connections efficiently without creating per-thread connections
+            client = redis.Redis(connection_pool=self._connection_pool)
+
+            # Track active connections for monitoring (weak reference, won't prevent GC)
+            self._active_connections.add(client)
+
+            return client
+        except Exception as e:
+            logger.error(f"Failed to get thread-safe Redis client: {e}")
+            # Fallback to main client if pool connection fails
+            return self._get_redis_client()
 
     @property
     def redis(self):
         """Backward compatibility property for redis client access."""
-        return self.redis_client
+        return self._get_redis_client()
+
+    def get_connection_stats(self) -> dict[str, Any]:
+        """Get connection pool statistics for monitoring."""
+        try:
+            pool = self._connection_pool
+            stats = {
+                "active_tracked_connections": len(self._active_connections),
+                "max_connections": getattr(pool, "max_connections", "unknown"),
+            }
+
+            # Try to get pool-specific stats if available (different Redis versions have different attributes)
+            try:
+                if hasattr(pool, "_created_connections"):
+                    stats["pool_created_connections"] = pool._created_connections
+                if hasattr(pool, "_available_connections"):
+                    stats["pool_available_connections"] = len(pool._available_connections)
+                if hasattr(pool, "_in_use_connections"):
+                    stats["pool_in_use_connections"] = len(pool._in_use_connections)
+            except AttributeError:
+                # Some Redis versions don't expose these attributes
+                stats["pool_stats"] = "not_available"
+
+            return stats
+        except Exception as e:
+            logger.warning(f"Failed to get connection stats: {e}")
+            return {"error": str(e)}
+
+    def cleanup_connections(self) -> dict[str, Any]:
+        """Clean up connection resources."""
+        try:
+            stats_before = self.get_connection_stats()
+
+            # Clear tracked connections (weak references will be cleaned up automatically)
+            initial_count = len(self._active_connections)
+            self._active_connections.clear()
+
+            # Disconnect the connection pool
+            if hasattr(self._connection_pool, "disconnect"):
+                self._connection_pool.disconnect()
+
+            stats_after = self.get_connection_stats()
+
+            logger.info(
+                f"Connection cleanup completed: cleared {initial_count} tracked connections"
+            )
+
+            return {
+                "status": "success",
+                "cleared_tracked_connections": initial_count,
+                "stats_before": stats_before,
+                "stats_after": stats_after,
+            }
+        except Exception as e:
+            logger.error(f"Error during connection cleanup: {e}")
+            return {"status": "error", "error": str(e)}
+
+    def __del__(self):
+        """Cleanup when the logger is destroyed."""
+        try:
+            self.cleanup_connections()
+        except Exception:
+            # Ignore errors during cleanup in destructor
+            pass
 
     def _format_content(self, content: str) -> str:
         """Format content according to format parameters."""
@@ -334,6 +450,39 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
     def _ensure_index(self):
         """Ensure the enhanced memory index exists with vector search capabilities."""
         try:
+            # Skip index creation if Redis is not available (will be retried on first use)
+            try:
+                # Use a quick connection test to prevent blocking during initialization
+                import queue
+                import threading
+
+                result_queue: queue.Queue[tuple[str, Any]] = queue.Queue()
+
+                def try_redis_connection():
+                    try:
+                        redis_client = self._get_redis_client()
+                        result_queue.put(("success", redis_client))
+                    except Exception as e:
+                        result_queue.put(("error", e))
+
+                # Start connection attempt in a separate thread
+                connection_thread = threading.Thread(target=try_redis_connection, daemon=True)
+                connection_thread.start()
+
+                # Wait for result with timeout
+                try:
+                    result_type, result_value = result_queue.get(timeout=5)  # 5-second timeout
+                    if result_type == "error":
+                        raise result_value
+                    redis_client = result_value
+                except queue.Empty:
+                    logger.warning("Redis connection timeout during init, skipping index setup")
+                    return
+
+            except Exception as e:
+                logger.warning(f"Redis not available during init, skipping index setup: {e}")
+                return
+
             from orka.utils.bootstrap_memory_index import (
                 ensure_enhanced_memory_index,
                 verify_memory_index,
@@ -360,7 +509,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             # First verify the index to log detailed diagnostics
             if self.enable_hnsw:
                 index_info = verify_memory_index(
-                    redis_client=self.redis_client,
+                    redis_client=redis_client,
                     index_name=self.index_name,
                 )
 
@@ -388,7 +537,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             max_attempts = 2
             for attempt in range(max_attempts):
                 success = ensure_enhanced_memory_index(
-                    redis_client=self.redis_client,
+                    redis_client=redis_client,
                     index_name=self.index_name,
                     vector_dim=vector_dim,
                     vector_field_name=vector_field_name,
@@ -399,7 +548,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 if success:
                     # Verify the index was created correctly
                     index_info = verify_memory_index(
-                        redis_client=self.redis_client,
+                        redis_client=redis_client,
                         index_name=self.index_name,
                     )
 
@@ -735,7 +884,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                     for result in results:
                         try:
                             # Get full memory data
-                            memory_data = self.redis_client.hgetall(result["key"])
+                            memory_data = self._get_thread_safe_client().hgetall(result["key"])
                             if not memory_data:
                                 continue
 
@@ -1057,7 +1206,8 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
 
             # Execute search - try RedisStack first, fallback to basic Redis
             try:
-                search_results = self.redis_client.ft(self.index_name).search(
+                client = self._get_thread_safe_client()
+                search_results = client.ft(self.index_name).search(
                     Query(search_query).paging(0, num_results),
                 )
             except Exception as ft_error:
@@ -1076,7 +1226,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             results: list[dict[str, Any]] = []
             for doc in search_results.docs:
                 try:
-                    memory_data = self.redis_client.hgetall(doc.id)
+                    memory_data = client.hgetall(doc.id)
                     if not memory_data:
                         continue
 
@@ -1303,12 +1453,12 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         """Get all memories, optionally filtered by trace_id."""
         try:
             pattern = "orka_memory:*"
-            keys = self.redis_client.keys(pattern)
+            keys = self._get_thread_safe_client().keys(pattern)
 
             memories = []
             for key in keys:
                 try:
-                    memory_data = self.redis_client.hgetall(key)
+                    memory_data = self._get_thread_safe_client().hgetall(key)
                     if not memory_data:
                         continue
 
@@ -1357,9 +1507,9 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
     def delete_memory(self, key: str) -> bool:
         """Delete a specific memory entry."""
         try:
-            result = self.redis_client.delete(key)
+            result = self._get_thread_safe_client().delete(key)
             logger.debug(f"- Deleted memory key: {key}")
-            return result > 0
+            return bool(result > 0)
         except Exception as e:
             logger.error(f"Failed to delete memory {key}: {e}")
             return False
@@ -1367,7 +1517,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
     def close(self):
         """Clean up resources."""
         try:
-            if hasattr(self, "redis_client"):
+            if hasattr(self, "redis_client") and self.redis_client is not None:
                 self.redis_client.close()
             # Also close thread-local connections
             if hasattr(self, "_local"):
@@ -1386,9 +1536,9 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         """Clear all memories from the RedisStack storage."""
         try:
             pattern = "orka_memory:*"
-            keys = self.redis_client.keys(pattern)
+            keys = self._get_thread_safe_client().keys(pattern)
             if keys:
-                deleted = self.redis_client.delete(*keys)
+                deleted = self._get_thread_safe_client().delete(*keys)
                 logger.info(f"Cleared {deleted} memories from RedisStack")
             else:
                 logger.info("No memories to clear")
@@ -1679,20 +1829,46 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             return []
 
     def cleanup_expired_memories(self, dry_run: bool = False) -> dict[str, Any]:
-        """Clean up expired memories."""
+        """Clean up expired memories using connection pool."""
         cleaned = 0
         total_checked = 0
         errors = []
 
         try:
+            # Check if connection pool is initialized (prevent race condition during startup)
+            if not hasattr(self, "_connection_pool") or self._connection_pool is None:
+                logger.debug("RedisStack connection pool not yet initialized, skipping cleanup")
+                return {
+                    "cleaned": 0,
+                    "total_checked": 0,
+                    "expired_found": 0,
+                    "dry_run": dry_run,
+                    "cleanup_type": "redisstack_not_ready",
+                    "errors": ["Connection pool not yet initialized"],
+                }
+
+            # Get a client from the pool for cleanup operations
+            try:
+                client = self._get_thread_safe_client()
+            except Exception as e:
+                logger.error(f"Failed to get Redis client for cleanup: {e}")
+                return {
+                    "cleaned": 0,
+                    "total_checked": 0,
+                    "expired_found": 0,
+                    "dry_run": dry_run,
+                    "cleanup_type": "redisstack_connection_failed",
+                    "errors": [f"Connection failed: {e}"],
+                }
+
             pattern = "orka_memory:*"
-            keys = self.redis_client.keys(pattern)
+            keys = client.keys(pattern)
             total_checked = len(keys)
 
             expired_keys = []
             for key in keys:
                 try:
-                    memory_data = self.redis_client.hgetall(key)
+                    memory_data = client.hgetall(key)
                     if self._is_expired(memory_data):
                         expired_keys.append(key)
                 except Exception as e:
@@ -1704,7 +1880,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 for i in range(0, len(expired_keys), batch_size):
                     batch = expired_keys[i : i + batch_size]
                     try:
-                        deleted_count = self.redis_client.delete(*batch)
+                        deleted_count = client.delete(*batch)
                         cleaned += deleted_count
                         logger.debug(f"- Deleted batch of {deleted_count} expired memories")
                     except Exception as e:

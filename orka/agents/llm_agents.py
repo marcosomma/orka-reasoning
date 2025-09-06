@@ -57,6 +57,11 @@ from typing import Any, Optional
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
+# Initialize logging first
+from orka.utils.logging_utils import setup_logging
+
+setup_logging()
+
 logger = logging.getLogger(__name__)
 
 from .base_agent import LegacyBaseAgent as BaseAgent
@@ -71,12 +76,16 @@ OPENAI_MODEL = os.getenv("BASE_OPENAI_MODEL", "gpt-3.5-turbo")
 # Check if we're running in test mode
 PYTEST_RUNNING = os.getenv("PYTEST_RUNNING", "").lower() in ("true", "1", "yes")
 
-# Validate OpenAI API key, except in test environments
-if not PYTEST_RUNNING and not OPENAI_API_KEY:
-    raise OSError("OPENAI_API_KEY environment variable is required")
-
-# Initialize OpenAI client
-client = AsyncOpenAI(api_key=OPENAI_API_KEY or "dummy_key_for_testing")
+# Initialize OpenAI client with optional API key
+client = None
+if OPENAI_API_KEY:
+    client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+elif PYTEST_RUNNING:
+    client = AsyncOpenAI(api_key="dummy_key_for_testing")
+else:
+    logger.info(
+        "[WARNING] - OPENAI_API_KEY environment variable is not set. OpenAI-based agents will not be available. Use local LLM agents instead. Or add OPENAI_API_KEY to a .env in the current path."
+    )
 
 
 def _extract_reasoning(text: str) -> tuple[str, str]:
@@ -485,6 +494,11 @@ class OpenAIAnswerBuilder(BaseAgent):
         status_code = 200  # Default success
 
         try:
+            if client is None:
+                raise RuntimeError(
+                    "OpenAI client is not available. Please set OPENAI_API_KEY environment variable or use local LLM agents."
+                )
+
             response = await client.chat.completions.create(
                 model=model,
                 messages=[{"role": "user", "content": full_prompt}],

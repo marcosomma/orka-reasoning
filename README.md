@@ -95,12 +95,15 @@ Get-Content .env | ForEach-Object { if ($_ -match '^[^#]') { $env:$($_.Split('='
 # For Linux/Mac:
 source .env
 
-# 4. Start OrKa (automatically includes RedisStack + 100x faster vector search)
-# For LOCAL development:
+# 4. Start OrKa with your preferred backend
+# For RedisStack (default, includes vector search):
 orka-start
 
-# For PRODUCTION to ensure Kafka streaming:
-orka-kafka
+# For Kafka streaming:
+ORKA_MEMORY_BACKEND=kafka orka-start
+
+# For basic Redis (no vector search):
+ORKA_MEMORY_BACKEND=redis ORKA_FORCE_BASIC_REDIS=true orka-start
 
 # 4. Create a simple workflow
 cat > quickstart.yml << EOF

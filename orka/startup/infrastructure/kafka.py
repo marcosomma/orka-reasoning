@@ -179,21 +179,98 @@ def wait_for_kafka_services() -> None:
 
     # Wait for Schema Registry to be ready
     logger.info("⏳ Waiting for Schema Registry to be ready...")
-    for attempt in range(10):
-        try:
-            import requests
 
-            response = requests.get("http://localhost:8081/subjects", timeout=5)
-            if response.status_code == 200:
-                logger.info("✅ Schema Registry is ready!")
-                break
-        except Exception:
+    # Check if Schema Registry container is running
+    try:
+        result = subprocess.run(
+            [
+                "docker",
+                "ps",
+                "--filter",
+                "name=docker-schema-registry-1",
+                "--format",
+                "{{.Status}}",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        if result.returncode == 0 and result.stdout.strip():
+            logger.info(f"📦 Schema Registry container status: {result.stdout.strip()}")
+        else:
+            logger.warning("⚠️ Schema Registry container may not be running properly")
+    except Exception as e:
+        logger.debug(f"Could not check Schema Registry container status: {e}")
+
+    # Give Schema Registry more time to initialize
+    time.sleep(10)  # Initial wait for Schema Registry to start
+
+    # Try Docker health check first (more reliable on Windows)
+    docker_check_success = False
+    try:
+        for attempt in range(10):
+            try:
+                # Use curl inside the container to bypass Windows Docker networking issues
+                health_result = subprocess.run(
+                    [
+                        "docker",
+                        "exec",
+                        "docker-schema-registry-1",
+                        "curl",
+                        "-s",
+                        "http://localhost:8081/subjects",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    timeout=10,
+                )
+
+                if health_result.returncode == 0:
+                    logger.info("✅ Schema Registry is ready! (verified via Docker)")
+                    docker_check_success = True
+                    break
+
+            except subprocess.TimeoutExpired:
+                pass
+            except Exception:
+                pass
+
             if attempt < 9:
-                logger.info(f"Schema Registry not ready yet, waiting... (attempt {attempt + 1}/10)")
-                time.sleep(2)
+                logger.info(
+                    f"Schema Registry not ready yet, waiting... (Docker check attempt {attempt + 1}/10)"
+                )
+                time.sleep(3)
             else:
-                logger.warning("Schema Registry may not be fully ready, but continuing...")
+                logger.warning("Docker health check failed, trying host connection...")
                 break
+    except Exception:
+        pass
+
+    # Fallback to host connection test if Docker check failed
+    if not docker_check_success:
+        for attempt in range(15):  # Increased attempts from 10 to 15
+            try:
+                import requests
+
+                response = requests.get(
+                    "http://localhost:8081/subjects", timeout=10
+                )  # Increased timeout
+                if response.status_code == 200:
+                    logger.info("✅ Schema Registry is ready!")
+                    break
+            except Exception as e:
+                if attempt < 14:
+                    wait_time = 3 if attempt < 5 else 5  # Progressive backoff
+                    logger.info(
+                        f"Schema Registry not ready yet, waiting... (host check attempt {attempt + 1}/15)"
+                    )
+                    time.sleep(wait_time)
+                else:
+                    logger.warning("Schema Registry may not be fully ready, but continuing...")
+                    logger.debug(f"Last Schema Registry error: {e}")
+                    break
 
 
 def initialize_schema_registry() -> None:
@@ -232,24 +309,52 @@ def initialize_schema_registry() -> None:
 
 
 def cleanup_kafka_docker() -> None:
-    """Clean up Kafka Docker services."""
+    """Clean up Kafka Docker services with enhanced reliability."""
     try:
         docker_dir: str = get_docker_dir()
         compose_file = os.path.join(docker_dir, "docker-compose.yml")
 
-        logger.info("Stopping Kafka Docker services...")
+        logger.info("🛑 Stopping Kafka Docker services...")
+
+        # Stop services individually for better control
+        kafka_services = ["schema-registry-ui", "schema-registry", "kafka", "zookeeper"]
+
+        for service in kafka_services:
+            logger.info(f"🛑 Stopping {service}...")
+            subprocess.run(
+                ["docker-compose", "-f", compose_file, "stop", service],
+                check=False,
+                capture_output=True,
+                timeout=30,
+            )
+
+            subprocess.run(
+                ["docker-compose", "-f", compose_file, "rm", "-f", service],
+                check=False,
+                capture_output=True,
+            )
+
+        # Also try profile-based cleanup as fallback
         subprocess.run(
-            [
-                "docker-compose",
-                "-f",
-                compose_file,
-                "--profile",
-                "kafka",
-                "down",
-            ],
+            ["docker-compose", "-f", compose_file, "--profile", "kafka", "down"],
             check=False,
+            capture_output=True,
+            timeout=30,
         )
+
         logger.info("✅ Kafka Docker services stopped")
+    except subprocess.TimeoutExpired:
+        logger.warning("⚠️ Kafka cleanup timed out, forcing container removal...")
+        # Force kill containers if they don't stop gracefully
+        containers = [
+            "docker-schema-registry-ui-1",
+            "docker-schema-registry-1",
+            "docker-kafka-1",
+            "docker-zookeeper-1",
+        ]
+        for container in containers:
+            subprocess.run(["docker", "kill", container], check=False, capture_output=True)
+            subprocess.run(["docker", "rm", "-f", container], check=False, capture_output=True)
     except Exception as e:
         logger.warning(f"⚠️ Error stopping Kafka Docker services: {e}")
 
