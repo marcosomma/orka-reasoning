@@ -1,4 +1,4 @@
-
+![chart](https://raw.githubusercontent.com/marcosomma/orka-reasoning/refs/heads/master/docs/benchmark/GSM8K_Model_Accuracies.png)
 
 
 ## Usage
