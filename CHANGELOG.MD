@@ -1,5 +1,35 @@
 # OrKa-Reasoning – Un-official CHANGELOG
 
+---
+## [0.9.1] · 2025-09-13 🔧
+### Fixed
+* **🔧 Redis Dependency Resolution - Critical Import Error Fix**
+  * **ModuleNotFoundError Resolution** - Fixed `ModuleNotFoundError: No module named 'redis.commands.search.indexDefinition'` when using redis package version 6.4.0
+  * **Dependency Version Pinning** - Pinned redis dependency to exactly `redis[async,search]==4.5.5` for guaranteed RediSearch module availability
+  * **Incompatible Package Removal** - Removed conflicting dependencies that required incompatible redis versions:
+    * `redis-py-cluster==2.1.3` (required redis<4.0.0, not used in codebase)
+    * `redisearch==2.1.1` (redundant, search functionality included in redis 4.5.5)
+    * `rejson==0.5.6` (not used in codebase)
+  * **Maintained Compatible Dependencies** - Kept `redis-om==0.3.5` which is compatible with redis 4.5.5
+  * **Production Readiness** - All Redis/RediSearch functionality now works correctly including:
+    * RedisStack memory logger with HNSW vector indexing
+    * Bootstrap memory index creation and management
+    * Advanced search capabilities and memory operations
+
+### Technical Details
+* **Root Cause** - The redis package version 6.4.0 was not the official redis-py version and lacked required RediSearch modules
+* **Solution Strategy** - Simplified dependency tree by removing unused packages and pinning core redis to stable version 4.5.5
+* **Impact** - Resolves startup failures and import errors affecting RedisStack integration and memory operations
+* **Testing** - Comprehensive verification of Redis search modules, Orka imports, CLI functionality, and core memory components
+
+### Verification Tests Passed ✅
+* Redis search modules import successfully: `from redis.commands.search.indexDefinition import IndexDefinition`
+* Orka core functionality: `import orka` and CLI commands work without errors
+* RedisStack memory logger: All memory-dependent components import and function correctly
+* Bootstrap memory index: Redis search functions operate properly
+
+> **Production Impact**: This hotfix resolves critical startup issues preventing Orka from running with Redis/RediSearch functionality. All existing workflows continue unchanged while gaining reliable Redis integration.
+
 *(derived from the public-repo commit history as of **2025-01-31**)*
 ---
 ## [0.9.0] · 2025-09-06 🚀
