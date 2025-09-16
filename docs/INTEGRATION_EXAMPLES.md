@@ -4,7 +4,19 @@
 
 ## Overview
 
-This document provides comprehensive integration examples showing how OrKa's core components work together in real-world scenarios. It demonstrates the complete cognitive society workflows, memory management patterns, and debugging procedures that address the production deployment gaps identified.
+This document provides comprehensive integration examples showing how OrKa's core components work together in real-world scenarios. **All examples reference actual working files from the [`../examples/`](../examples/) folder** that you can copy and run immediately.
+
+## 🚀 Quick Integration Start
+
+```bash
+# View all integration examples
+ls ../examples/
+cat ../examples/README.md
+
+# Copy and run any integration example
+cp ../examples/[example-name].yml my-integration.yml
+orka run my-integration.yml "Your test input"
+```
 
 ## Table of Contents
 
@@ -15,139 +27,83 @@ This document provides comprehensive integration examples showing how OrKa's cor
 
 ## Cognitive Society Enhanced Workflow
 
-This example demonstrates a complete implementation addressing all the components mentioned in the problem statement: Agreement Finder, LoopNode, Shared Memory Reader, and Template Resolution.
+This example demonstrates a complete cognitive society implementation with Agreement Finder, LoopNode, Memory Search, and Template Resolution.
 
 ### Complete Integration Example
 
-**File: `cognitive-society-collaborative-enhanced-local.yml`**
+**Real Working Example**: [`../examples/cognitive_society_minimal_loop.yml`](../examples/cognitive_society_minimal_loop.yml)
 
+**Key Integration Features:**
+- **Multi-agent deliberation**: Logical, empathetic, skeptical, and creative perspectives
+- **Agreement scoring**: Consensus detection and convergence tracking  
+- **Loop learning**: Iterative improvement until threshold met
+- **Memory integration**: Context-aware search with 100x faster HNSW
+- **Template resolution**: Proper Jinja2 variable handling
+
+**Quick Start:**
+```bash
+# Copy the working cognitive society example
+cp ../examples/cognitive_society_minimal_loop.yml my-cognitive-society.yml
+
+# Run with your topic
+orka run my-cognitive-society.yml "Should AI systems have rights?"
+
+# Monitor the deliberation process
+orka memory watch
+```
+
+**Advanced Integration**: For local LLM deployment, see:
+- [`../examples/orka_soc/cognitive_society_with_memory_local_optimal_deepseek-8b.yml`](../examples/orka_soc/)
+- [`../examples/orka_smartest/genius_minds_convergence.yml`](../examples/orka_smartest/)
+
+**Integration Architecture:**
 ```yaml
-# Cognitive Society Collaborative Enhanced Local Workflow
-# Addresses: Agreement Finder issues, LoopNode state management, 
-#           Memory search problems, Template resolution
-
-meta:
-  version: "1.1.0"
-  author: "OrKa Framework"
-  description: "Enhanced cognitive society with memory-driven deliberation"
-
-orchestrator:
-  id: cognitive-society-collaborative-enhanced-local
-  strategy: sequential
-  
-  # Memory configuration addressing TTL inconsistencies
-  memory_config:
-    backend: redisstack                    # Use RedisStack for HNSW vector search
-    
-    # TTL settings aligned with README (fixes 0.1h/0.2h vs 2h/168h discrepancy)
-    decay:
-      enabled: true
-      default_short_term_hours: 2          # 2 hours (matches README)
-      default_long_term_hours: 168         # 1 week (matches README)
-      check_interval_minutes: 30           # Cleanup every 30 minutes
-      
-      # Importance rules for cognitive society
-      importance_rules:
-        consensus_reached: 3.0             # Keep successful consensus longer
-        high_agreement: 2.5                # Retain high-agreement discussions
-        dissenting_view: 2.0               # Preserve diverse viewpoints
-        cognitive_insight: 2.5             # Value learning moments
-        template_resolved: 1.0             # Standard retention for templates
-    
-    # RedisStack HNSW configuration (addresses FT.SEARCH issues)
-    redisstack:
-      vector_index_name: "orka_enhanced_memory"
-      vector_dimensions: 384               # all-MiniLM-L6-v2 embeddings
-      hnsw_params:
-        M: 16                             # HNSW connections per node
-        EF_CONSTRUCTION: 200              # Build-time accuracy  
-        EF_RUNTIME: 20                    # Query-time accuracy
-      embedding_model: "all-MiniLM-L6-v2"
-  
-  agents:
-    - context_memory_search
-    - cognitive_debate_loop  
-    - consensus_synthesis
-    - insight_storage
-
+# Simplified cognitive society pattern
 agents:
-  # 1. Retrieve relevant deliberation context
-  - id: context_memory_search
-    type: memory-reader
-    namespace: cognitive_deliberation
-    params:
-      limit: 10
-      similarity_threshold: 0.7           # High relevance threshold
-      enable_context_search: true         # Use conversation context
-      context_weight: 0.4                 # Context importance
-      temporal_weight: 0.3                # Boost recent memories
-      enable_temporal_ranking: true       # Recent deliberations relevant
-      
-      # RedisStack-specific parameters (addresses search failures)
-      ef_runtime: 20                      # Higher accuracy for important searches
-      enable_hybrid_search: true          # Vector + text search
-      vector_weight: 0.7                  # Prefer semantic similarity
-      
-      # Metadata filtering to avoid empty results
-      memory_type_filter: "long_term"     # Focus on retained knowledge
-      category_filter: "stored"           # Only retrievable memories
-      metadata_filters:
-        consensus_reached: "true"          # Successful deliberations
-        confidence: "> 0.7"               # High-confidence insights
-        
-    prompt: |
-      Find relevant deliberation context for: {{ input }}
-      
-      Search for:
-      - Previous discussions on similar topics
-      - Successful consensus patterns
-      - Relevant cognitive insights
-      - Diverse perspective examples
-      
-      Priority: Recent, high-consensus, insightful deliberations
+  - deliberation_loop          # Loop until consensus
+    - fork_perspectives        # Parallel reasoning agents  
+    - join_views              # Combine perspectives
+    - consensus_evaluator     # Score agreement level
+  - consensus_builder         # Final synthesis
+```
+## Memory-Driven Learning System
 
-  # 2. Main cognitive deliberation loop
-  - id: cognitive_debate_loop
-    type: loop
-    max_loops: 5                          # Allow sufficient iterations
-    score_threshold: 0.90                 # High consensus threshold
-    min_loops: 2                          # Ensure multiple perspectives
-    
-    # Score extraction configuration (addresses missing Round 2 scores)
-    score_extraction_config:
-      strategies:
-        - type: "regex_pattern"
-          pattern: "CONSENSUS_SCORE:\\s*([0-9.]+)"
-          priority: 1
-        - type: "json_key"
-          key: "consensus_score"
-          priority: 2
-        - type: "regex_fallback"
-          patterns:
-            - "(?i)agreement[\\s_]score:\\s*([0-9.]+)"
-            - "(?i)consensus[\\s_]level:\\s*([0-9.]+)"
-          priority: 3
-    
-    # Cognitive extraction for learning (addresses insight capture)
-    cognitive_extraction:
-      enabled: true
-      extract_patterns:
-        insights:
-          - "(?:insight|learning|discovery):\\s*(.+?)(?:\\n|\\.|$)"
-          - "(?:consensus emerging on|agreement reached regarding)\\s+(.+?)(?:\\n|\\.|$)"
-          - "(?:key understanding|shared perspective):\\s*(.+?)(?:\\n|\\.|$)"
-        improvements:
-          - "(?:disagreement|tension|debate)\\s+(?:remains|continues)\\s+(?:on|around|regarding)\\s+(.+?)(?:\\n|\\.|$)"
-          - "(?:needs?|requires?|could benefit from)\\s+(?:more|further|additional)\\s+(.+?)(?:\\n|\\.|$)"
-          - "(?:unclear|ambiguous|unresolved):\\s*(.+?)(?:\\n|\\.|$)"
-        mistakes:
-          - "(?:overlooked|ignored|missed|neglected)\\s+(.+?)(?:\\n|\\.|$)"
-          - "(?:insufficient|inadequate|lacking)\\s+(?:consideration|analysis)\\s+(?:of|for)\\s+(.+?)(?:\\n|\\.|$)"
-          - "(?:bias|assumption|limitation)\\s+(?:in|regarding)\\s+(.+?)(?:\\n|\\.|$)"
-    
-    # Past loops metadata structure (addresses context preservation)
-    past_loops_metadata:
-      round_number: "{{ loop_number }}"
+**Real Working Example**: [`../examples/memory_validation_routing_and_write.yml`](../examples/memory_validation_routing_and_write.yml)
+
+This integration demonstrates:
+- **Memory-first approach**: Search existing knowledge before external sources
+- **Intelligent validation**: AI determines if memories are sufficient  
+- **Automatic fallback**: Web search when memory is insufficient
+- **Decay management**: Short-term and long-term memory classification
+- **Context continuity**: Conversation-aware memory retrieval
+
+```bash
+# Copy the memory learning example
+cp ../examples/memory_validation_routing_and_write.yml my-learning-system.yml
+
+# Test memory learning
+orka run my-learning-system.yml "What is machine learning?"
+orka run my-learning-system.yml "Tell me more about neural networks" 
+orka run my-learning-system.yml "How does this relate to what we discussed?"
+```
+
+## Self-Improving Analysis Pipeline
+
+**Real Working Example**: [`../examples/cognitive_loop_scoring_example.yml`](../examples/cognitive_loop_scoring_example.yml)
+
+This integration demonstrates:
+- **Iterative improvement**: Loop until quality threshold met
+- **Cognitive extraction**: Learn from mistakes and insights
+- **Score-based continuation**: Automatic quality assessment
+- **Learning memory**: Remember insights across iterations
+
+```bash
+# Copy the self-improving example  
+cp ../examples/cognitive_loop_scoring_example.yml my-analysis-pipeline.yml
+
+# Run iterative analysis
+orka run my-analysis-pipeline.yml "Analyze the impact of remote work on productivity"
+```
       consensus_score: "{{ score }}"
       timestamp: "{{ now() }}"
       
@@ -1396,4 +1352,54 @@ if __name__ == "__main__":
     sys.exit(asyncio.run(main()))
 ```
 
-These integration examples demonstrate how OrKa's components work together to address the specific issues identified in the problem statement, providing production-ready workflows with proper configuration, monitoring, and debugging capabilities.
+## 🚀 Complete Integration Examples
+
+Instead of inline YAML (which can become outdated), **all integration examples are maintained as working files**:
+
+### Core Integration Patterns
+
+| Pattern | Example File | Description |
+|---------|-------------|-------------|
+| **Cognitive Society** | [`cognitive_society_minimal_loop.yml`](../examples/cognitive_society_minimal_loop.yml) | Multi-agent deliberation with consensus |
+| **Memory Learning** | [`memory_validation_routing_and_write.yml`](../examples/memory_validation_routing_and_write.yml) | Memory-first with intelligent fallback |
+| **Iterative Improvement** | [`cognitive_loop_scoring_example.yml`](../examples/cognitive_loop_scoring_example.yml) | Self-improving analysis loops |
+| **Parallel Processing** | [`conditional_search_fork_join.yaml`](../examples/conditional_search_fork_join.yaml) | Fork/join with result aggregation |
+| **Failover Handling** | [`failover_search_and_validate.yml`](../examples/failover_search_and_validate.yml) | Robust error handling patterns |
+| **Memory Routing** | [`memory_read_fork_join_router.yml`](../examples/memory_read_fork_join_router.yml) | Memory-driven workflow routing |
+| **Validation Pipeline** | [`validation_structuring_memory_pipeline.yml`](../examples/validation_structuring_memory_pipeline.yml) | Data validation and structuring |
+
+### Advanced Integrations
+
+| Category | Examples | Features |
+|----------|----------|-----------|
+| **Local LLM** | [`orka_soc/`](../examples/orka_soc/) | Local model deployment |
+| **Genius Minds** | [`orka_smartest/`](../examples/orka_smartest/) | Advanced cognitive patterns |
+| **Production** | [`multi_perspective_chatbot.yml`](../examples/multi_perspective_chatbot.yml) | Production-ready chatbot |
+
+### Quick Start
+
+```bash
+# View all integration examples
+ls ../examples/
+cat ../examples/README.md
+
+# Copy any integration pattern
+cp ../examples/[pattern-name].yml my-integration.yml
+
+# Run and test
+orka run my-integration.yml "Your test input"
+
+# Monitor integration
+orka memory watch
+```
+
+## 🔧 Production Deployment Examples
+
+For production deployment patterns, monitoring, and debugging:
+
+- **Docker Setup**: See [`../orka/docker/`](../orka/docker/) for container configurations
+- **Environment Configuration**: See [CONFIGURATION.md](./CONFIGURATION.md) for production settings
+- **Monitoring Setup**: See [observability.md](./observability.md) for monitoring integration
+- **Testing Patterns**: See [TESTING.md](./TESTING.md) for comprehensive testing strategies
+
+These integration examples demonstrate how OrKa's components work together to address production requirements, providing tested workflows with proper configuration, monitoring, and debugging capabilities.

@@ -6,6 +6,36 @@
 
 OrKa's memory system is inspired by human cognitive science and provides sophisticated memory management that makes AI agents truly intelligent and contextually aware. Unlike traditional stateless AI systems, OrKa agents can remember, learn, and build on previous interactions.
 
+## 🚀 Quick Memory Examples
+
+**Instead of reading about memory, see it working:**
+
+```bash
+# Memory-driven Q&A with intelligent fallback
+cp ../examples/memory_validation_routing_and_write.yml memory-demo.yml
+orka run memory-demo.yml "What is machine learning?"
+orka run memory-demo.yml "Tell me more about neural networks"  
+orka run memory-demo.yml "How does this relate to our earlier discussion?"
+
+# Memory routing and classification
+cp ../examples/routed_binary_memory_writer.yml memory-routing.yml
+orka run memory-routing.yml "Remember that coffee tastes better in the morning"
+
+# Memory-based workflow routing  
+cp ../examples/memory_read_fork_join_router.yml memory-workflow.yml
+orka run memory-workflow.yml "What did we discuss about AI?"
+
+# Monitor memory in real-time
+orka memory watch
+```
+
+**Key Memory Examples:**
+- **Memory-first workflows**: [`memory_validation_routing_and_write.yml`](../examples/memory_validation_routing_and_write.yml)
+- **Memory routing**: [`routed_binary_memory_writer.yml`](../examples/routed_binary_memory_writer.yml)
+- **Memory categories**: [`memory_category_test.yml`](../examples/memory_category_test.yml)
+- **Workflow routing**: [`memory_read_fork_join_router.yml`](../examples/memory_read_fork_join_router.yml)
+- **Structured storage**: [`validation_structuring_memory_pipeline.yml`](../examples/validation_structuring_memory_pipeline.yml)
+
 ### 🎯 Why Memory Matters for AI Agents
 
 **Traditional AI Limitations:**

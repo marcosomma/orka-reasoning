@@ -70,119 +70,41 @@ Let's create a powerful workflow that demonstrates OrKa's RedisStack-powered mem
 
 ### Create your first workflow file: `smart-assistant.yml`
 
-```yaml
-meta:
-  version: "1.0"
-  author: "Your Name"
-  description: "Smart assistant with RedisStack memory and 100x faster vector search"
+Use one of the curated examples to get started quickly:
 
-orchestrator:
-  id: smart-assistant
-  strategy: sequential
-  queue: orka:smart-assistant
-  
-  # 🧠 Memory configuration with RedisStack HNSW performance
-  memory_config:
-    decay:
-      enabled: true
-      default_short_term_hours: 2      # Conversations fade after 2 hours
-      default_long_term_hours: 168     # Important info lasts 1 week
-      check_interval_minutes: 30       # Clean up every 30 minutes
-      
-      # Importance rules - OrKa learns what matters
-      importance_rules:
-        user_correction: 3.0           # User corrections are very important
-        positive_feedback: 2.0         # Learn from positive feedback
-        successful_answer: 1.5         # Remember successful interactions
-        routine_query: 0.8             # Routine questions decay faster
+```bash
+# Copy a ready-to-use conversational AI example
+cp ../examples/memory_validation_routing_and_write.yml smart-assistant.yml
 
-  agents:
-    - conversation_memory
-    - context_classifier
-    - smart_responder
-    - memory_storage
-
-agents:
-  # 1. Retrieve relevant conversation history with 100x faster HNSW search
-  - id: conversation_memory
-    type: memory-reader
-    namespace: conversations
-    params:
-      limit: 5                         # Get up to 5 relevant memories
-      enable_context_search: true      # Use conversation context
-      context_weight: 0.4              # Context is 40% of relevance score
-      temporal_weight: 0.3             # Recent memories get 30% boost
-      similarity_threshold: 0.8        # HNSW-optimized threshold
-      enable_temporal_ranking: true    # Boost recent interactions
-    prompt: |
-      Find relevant conversation history for: {{ input }}
-      
-      Look for:
-      - Similar topics we've discussed
-      - Previous questions from this user
-      - Related context that might be helpful
-
-  # 2. Classify the type of interaction
-  - id: context_classifier
-    type: openai-classification
-    prompt: |
-      Based on the conversation history: {{ previous_outputs.conversation_memory }}
-      Current user input: {{ input }}
-      
-      Classify this interaction type:
-    options: [new_question, followup, clarification, correction, feedback, greeting, casual_chat]
-
-  # 3. Generate intelligent response using RedisStack memory
-  - id: smart_responder
-    type: openai-answer
-    prompt: |
-      You are a helpful AI assistant with RedisStack-powered memory of past conversations.
-      
-      **Conversation History (Retrieved with 100x faster search):**
-      {{ previous_outputs.conversation_memory }}
-      
-      **Interaction Type:** {{ previous_outputs.context_classifier }}
-      **Current Input:** {{ input }}
-      
-      Generate a response that:
-      1. Acknowledges relevant conversation history when appropriate
-      2. Directly addresses the current input
-      3. Shows understanding of context and continuity
-      4. Is helpful, accurate, and engaging
-      
-      {% if previous_outputs.context_classifier == "correction" %}
-      Pay special attention - the user is correcting something. Learn from this!
-      {% elif previous_outputs.context_classifier == "followup" %}
-      This is a follow-up question. Build on the previous context.
-      {% elif previous_outputs.context_classifier == "feedback" %}
-      The user is providing feedback. Acknowledge and learn from it.
-      {% endif %}
-
-  # 4. Store the interaction in RedisStack for future reference
-  - id: memory_storage
-    type: memory-writer
-    namespace: conversations
-    params:
-      # memory_type automatically classified as short-term or long-term
-      vector: true                     # Enable semantic search with HNSW
-      metadata:
-        interaction_type: "{{ previous_outputs.context_classifier }}"
-        has_context: "{{ previous_outputs.conversation_memory | length > 0 }}"
-        search_performance: "hnsw_optimized"
-        timestamp: "{{ now() }}"
-    prompt: |
-      Conversation Record:
-      
-      User: {{ input }}
-      Type: {{ previous_outputs.context_classifier }}
-      Context Found: {{ previous_outputs.conversation_memory | length }} previous interactions
-      Assistant: {{ previous_outputs.smart_responder }}
-      
-      Memory Metadata:
-      - Interaction type: {{ previous_outputs.context_classifier }}
-      - Had relevant history: {{ previous_outputs.conversation_memory | length > 0 }}
-      - Response quality: To be evaluated by user feedback
+# Or start with a simple Q&A workflow
+cp ../examples/orka_framework_qa.yml smart-assistant.yml
 ```
+
+This gives you a production-ready workflow with:
+- **RedisStack HNSW memory** for 100x faster vector search
+- **Intelligent memory decay** that learns what's important
+- **Context-aware conversations** that remember previous interactions
+- **Automatic fallback** to web search when memory is insufficient
+
+> **See all available examples**: [`../examples/README.md`](../examples/README.md)
+**Key Features in the Example:**
+- **Memory-first approach**: Searches existing knowledge before web search
+- **Intelligent routing**: Decides between memory-based answers or search fallback  
+- **Context-aware search**: Uses conversation history for better relevance
+- **Automatic decay**: Short-term and long-term memory classification
+- **Vector search**: 100x faster semantic search with RedisStack HNSW
+
+**Example workflow structure:**
+```yaml
+agents:
+  - memory_reader      # Search existing knowledge (100x faster)
+  - memory_validator   # Validate if memories are sufficient
+  - answer_router      # Route to memory answer OR search fallback
+  - search_fallback    # Web search if memories insufficient
+  - memory_writer      # Store new knowledge with metadata
+```
+
+> **View the complete workflow**: [`../examples/memory_validation_routing_and_write.yml`](../examples/memory_validation_routing_and_write.yml)
 
 ### Test Your Smart Assistant with RedisStack Performance
 

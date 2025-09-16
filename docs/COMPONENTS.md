@@ -4,7 +4,36 @@
 
 ## Overview
 
-This guide provides detailed documentation for OrKa's core components, focusing on the key areas where debugging and development challenges commonly occur. It covers the behavior, implementation, and troubleshooting of critical components like Agreement Finder, LoopNode, Shared Memory Reader, and Template Resolution.
+This guide provides detailed documentation for OrKa's core components, focusing on the key areas where debugging and development challenges commonly occur. **All examples reference working files from [`../examples/`](../examples/) that you can copy and test immediately**.
+
+## 🚀 Quick Component Examples
+
+Instead of complex code examples, **see these components in action**:
+
+```bash
+# Agreement Finder in cognitive society
+cp ../examples/cognitive_society_minimal_loop.yml test-agreement.yml
+orka run test-agreement.yml "Should AI have consciousness?"
+
+# LoopNode with learning
+cp ../examples/cognitive_loop_scoring_example.yml test-loops.yml  
+orka run test-loops.yml "Analyze climate change solutions"
+
+# Memory Reader with context
+cp ../examples/memory_validation_routing_and_write.yml test-memory.yml
+orka run test-memory.yml "What is quantum computing?"
+
+# Template Resolution in action
+cp ../examples/person_routing_with_search.yml test-templates.yml
+orka run test-templates.yml "Tell me about Einstein"
+```
+
+**Key Working Examples by Component:**
+- **Agreement Finder**: [`cognitive_society_minimal_loop.yml`](../examples/cognitive_society_minimal_loop.yml)
+- **LoopNode**: [`cognitive_loop_scoring_example.yml`](../examples/cognitive_loop_scoring_example.yml)
+- **Memory Reader**: [`memory_validation_routing_and_write.yml`](../examples/memory_validation_routing_and_write.yml)
+- **Template System**: [`person_routing_with_search.yml`](../examples/person_routing_with_search.yml)
+- **Fork/Join**: [`conditional_search_fork_join.yaml`](../examples/conditional_search_fork_join.yaml)
 
 ## Table of Contents
 
@@ -20,29 +49,28 @@ This guide provides detailed documentation for OrKa's core components, focusing 
 
 The Agreement Finder component computes consensus scores between multiple agent responses using semantic similarity analysis. It's a critical component in cognitive society workflows and multi-agent deliberation systems.
 
-### Algorithm Implementation
+### Working Examples
 
-**Core Algorithm:**
-```python
-def compute_agreement(responses: List[str]) -> Dict[str, Any]:
-    """
-    Compute agreement score using cosine similarity on embeddings.
-    
-    Algorithm:
-    1. Generate embeddings for each response using all-MiniLM-L6-v2
-    2. Calculate pairwise cosine similarities
-    3. Compute mean similarity score across all pairs
-    4. Apply threshold logic for consensus determination
-    """
-    from sentence_transformers import SentenceTransformer
-    from sklearn.metrics.pairwise import cosine_similarity
-    
-    # Generate embeddings (384 dimensions)
-    model = SentenceTransformer('all-MiniLM-L6-v2')
-    embeddings = model.encode(responses)
-    
-    # Calculate pairwise similarities
-    similarities = cosine_similarity(embeddings)
+**See Agreement Finder in action:**
+
+- **Basic Cognitive Society**: [`../examples/cognitive_society_minimal_loop.yml`](../examples/cognitive_society_minimal_loop.yml)
+- **Advanced Consensus**: [`../examples/orka_smartest/genius_minds_convergence.yml`](../examples/orka_smartest/genius_minds_convergence.yml)
+
+```bash
+# Test agreement finder with different topics
+cp ../examples/cognitive_society_minimal_loop.yml test-agreement.yml
+
+# Run with controversial topic (shows disagreement handling)
+orka run test-agreement.yml "Should AI systems replace human jobs?"
+
+# Run with factual topic (shows quick consensus)  
+orka run test-agreement.yml "What is 2 + 2?"
+
+# Monitor consensus scoring in real-time
+orka memory watch
+```
+
+### Core Algorithm
     
     # Extract upper triangular matrix (avoid duplicate pairs and diagonal)
     upper_triangular = similarities[np.triu_indices_from(similarities, k=1)]

@@ -2,6 +2,34 @@
 
 > **🎯 Flow A: The Heart of OrKa's Reasoning** - A comprehensive deep-dive into OrKa's flagship workflow demonstrating YAML-driven orchestration, RedisStack HNSW memory, and intelligent agent coordination.
 
+## 🚀 Quick Start with Working Examples
+
+**Instead of building from theory, start with working Q&A flows:**
+
+```bash
+# Basic Q&A workflow
+cp ../examples/orka_framework_qa.yml basic-qa.yml
+orka run basic-qa.yml "What is OrKa Reasoning?"
+
+# Memory-driven Q&A with fallback
+cp ../examples/memory_validation_routing_and_write.yml smart-qa.yml  
+orka run smart-qa.yml "Explain machine learning"
+orka run smart-qa.yml "How does this relate to AI?"
+
+# Q&A with web search integration
+cp ../examples/person_routing_with_search.yml search-qa.yml
+orka run search-qa.yml "Who is Elon Musk?"
+
+# Monitor the memory-driven intelligence
+orka memory watch
+```
+
+**Study These Intelligent Q&A Patterns:**
+- **Basic Q&A**: [`orka_framework_qa.yml`](../examples/orka_framework_qa.yml) - Foundation pattern
+- **Memory Q&A**: [`memory_validation_routing_and_write.yml`](../examples/memory_validation_routing_and_write.yml) - Memory-first approach
+- **Search Q&A**: [`person_routing_with_search.yml`](../examples/person_routing_with_search.yml) - Web search integration
+- **Structured Q&A**: [`validation_structuring_memory_pipeline.yml`](../examples/validation_structuring_memory_pipeline.yml) - Structured outputs
+
 ## 🏗️ System Architecture Overview
 
 The Intelligent Q&A with Memory flow represents OrKa's core value proposition: **turning stateless AI interactions into stateful, learning conversations**. This flow demonstrates the three pillars of OrKa's architecture working in harmony.

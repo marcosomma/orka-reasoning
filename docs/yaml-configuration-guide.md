@@ -4,6 +4,32 @@
 
 This guide provides detailed examples and patterns for configuring different types of agents, nodes, and tools in your OrKa YAML configuration.
 
+## 🚀 Quick Start with Examples
+
+Instead of building workflows from scratch, **start with working examples**:
+
+```bash
+# View all available examples
+ls ../examples/
+
+# Copy and modify any example
+cp ../examples/[workflow-name].yml my-workflow.yml
+
+# See descriptions of all examples
+cat ../examples/README.md
+```
+
+**Popular starting points:**
+- **Simple Q&A**: [`../examples/orka_framework_qa.yml`](../examples/orka_framework_qa.yml)
+- **Memory + Search**: [`../examples/memory_validation_routing_and_write.yml`](../examples/memory_validation_routing_and_write.yml)
+- **Parallel Processing**: [`../examples/conditional_search_fork_join.yaml`](../examples/conditional_search_fork_join.yaml)
+- **Loop Learning**: [`../examples/cognitive_loop_scoring_example.yml`](../examples/cognitive_loop_scoring_example.yml)
+- **Cognitive Society**: [`../examples/cognitive_society_minimal_loop.yml`](../examples/cognitive_society_minimal_loop.yml)
+
+## 📋 Configuration Patterns Reference
+
+The sections below show configuration patterns and brief examples. **For complete working workflows, see the example files above.**
+
 ## Basic Structure
 
 Every OrKa YAML file has the same basic structure:
@@ -40,147 +66,66 @@ OrKa's memory system is its most powerful feature. Here's how to configure it pr
 
 ### Global Memory Configuration with RedisStack HNSW
 
-Configure memory settings at the orchestrator level with **100x faster vector search**:
+For complete memory configuration examples with **100x faster vector search**, see:
+
+- **Memory-focused workflows**: [`../examples/memory_validation_routing_and_write.yml`](../examples/memory_validation_routing_and_write.yml)
+- **Memory decay demo**: [`../examples/memory_category_test.yml`](../examples/memory_category_test.yml)  
+- **Memory routing patterns**: [`../examples/routed_binary_memory_writer.yml`](../examples/routed_binary_memory_writer.yml)
+
+**Key memory configuration patterns:**
 
 ```yaml
 orchestrator:
-  id: intelligent-assistant
-  strategy: sequential
   memory_config:
-    # Memory backend configuration (RedisStack is now default)
-    # backend: redisstack  # Default in V0.7.0 - automatic HNSW indexing
-    # backend: redisstack  # Recommended for production
-    # backend: redis       # Legacy mode (not recommended)
-    
-    # Decay configuration - inspired by human memory
     decay:
       enabled: true
-      default_short_term_hours: 2      # Working memory duration
-      default_long_term_hours: 168     # Long-term knowledge (1 week)
+      default_short_term_hours: 2      # Working memory
+      default_long_term_hours: 168     # Long-term knowledge
       check_interval_minutes: 30       # Cleanup frequency
-      
-      # Importance-based retention rules
-      importance_rules:
-        critical_info: 2.0             # Critical info lasts 2x longer
-        user_feedback: 1.8             # User corrections are valuable
-        successful_pattern: 1.5        # Learn from successes
-        routine_query: 0.8             # Routine queries decay faster
-        error_event: 0.6               # Errors decay quickly
-        
-    # Vector embeddings with HNSW performance (automatic in RedisStack)
-    embeddings:
-      enabled: true
-      model: "text-embedding-ada-002"  # OpenAI embedding model
-      dimension: 1536
-      hnsw_config:                     # Advanced HNSW tuning (optional)
-        m: 16                          # Connectivity parameter
-        ef_construction: 200           # Build accuracy
-        
-    # Memory organization
-    namespaces:
-      default_namespace: "general"
-      auto_create: true
-      
-  agents:
-    - memory_reader
-    - processor
-    - memory_writer
 ```
+
+> **See complete memory configurations**: [`../examples/README.md`](../examples/README.md) - Memory Operations section
 
 ### Memory Agent Types
 
 #### Memory Reader - Intelligent Retrieval
 
+**Examples with context-aware search:**
+- **Basic memory reading**: [`../examples/memory_read_fork_join_router.yml`](../examples/memory_read_fork_join_router.yml)
+- **Advanced memory validation**: [`../examples/memory_validation_routing_and_write.yml`](../examples/memory_validation_routing_and_write.yml)
+
+**Key memory reader parameters:**
 ```yaml
-- id: context_aware_search
+- id: memory_search
   type: memory-reader
-  namespace: knowledge_base  # Memory namespace to search
+  namespace: knowledge_base
   params:
-    # Basic retrieval settings
     limit: 10                          # Max memories to return
-    similarity_threshold: 0.7          # Minimum relevance score (0.0-1.0)
-    
-    # Context-aware search (game-changer for conversations)
+    similarity_threshold: 0.7          # Minimum relevance score
     enable_context_search: true        # Use conversation history
-    context_weight: 0.4                # Context importance (40%)
-    context_window_size: 5             # Look at last 5 agent outputs
-    
-    # Temporal relevance (recent memories matter more)
     enable_temporal_ranking: true      # Boost recent memories
-    temporal_weight: 0.3               # Recency importance (30%)
-    temporal_decay_hours: 24           # How fast memories lose recency boost
-    
-    # Advanced filtering
-    memory_type_filter: "all"          # "short_term", "long_term", or "all"
-    memory_category_filter: "stored"   # Only retrievable memories
-    
-    # Performance tuning
-    max_search_time_seconds: 5         # Search timeout
-    enable_caching: true               # Cache frequent searches
-    
-  prompt: |
-    Find information relevant to: {{ input }}
-    
-    Consider the conversation context:
-    {% for output in previous_outputs %}
-    - {{ output }}
-    {% endfor %}
-    
-  timeout: 20
 ```
 
 #### Memory Writer - Intelligent Storage
 
+**Examples with metadata and decay:**
+- **Smart memory writing**: [`../examples/routed_binary_memory_writer.yml`](../examples/routed_binary_memory_writer.yml)
+- **Structured memory storage**: [`../examples/validation_structuring_memory_pipeline.yml`](../examples/validation_structuring_memory_pipeline.yml)
+
+**Key memory writer patterns:**
 ```yaml
-- id: intelligent_storage
+- id: memory_store
   type: memory-writer
-  namespace: user_interactions
-      params:
-      # Memory classification (ONLY "short_term" and "long_term" are valid)
-      # If not specified, OrKa automatically classifies based on:
-      # - Event type (success/completion → long_term, debug/processing → short_term)
-      # - Importance score (≥0.7 → long_term, <0.7 → short_term) 
-      # - Memory category ("stored" memories can be long_term, "log" entries are always short_term)
-      memory_type: short_term          # Optional: "short_term" or "long_term" only
-      
-      # Vector embeddings for semantic search
+  namespace: conversations
+  params:
     vector: true                       # Enable semantic search
-    
-    # Memory organization
-    key_template: "interaction_{timestamp}_{user_id}"
-    
-    # Metadata for rich memory context
     metadata:
       source: "user_input"
-      agent_chain: "{{ agent_sequence }}"
-      confidence: "{{ previous_outputs.confidence_scorer }}"
-      topic: "{{ previous_outputs.topic_classifier }}"
-      
-    # Storage optimization
-    compress: true                     # Compress large memories
-    deduplicate: true                  # Avoid storing duplicates
-    
-  # Agent-specific decay overrides
-  decay_config:
-    enabled: true
-    default_long_term: false           # Don't force long-term
-    default_short_term_hours: 4        # Override global setting
-    default_long_term_hours: 336       # 2 weeks for this agent
-    
-    # Custom importance rules for this agent
-    importance_rules:
-      user_correction: 3.0             # User corrections are critical
-      positive_feedback: 2.0           # Learn from positive feedback
-      
-  prompt: |
-    Store this interaction with context:
-    
-    User Input: {{ input }}
-    Processing Chain: {{ previous_outputs | keys | join(' → ') }}
-    Final Result: {{ previous_outputs.final_processor }}
-    
-    Context Classification: {{ previous_outputs.context_classifier }}
-    Confidence Score: {{ previous_outputs.confidence_scorer }}
+      confidence: "{{ confidence_score }}"
+      topic: "{{ topic_classification }}"
+```
+
+> **See complete memory writer configurations**: View the example files above for full implementations
     
   timeout: 15
 ```
