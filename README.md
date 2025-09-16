@@ -113,55 +113,7 @@ orka-start
 ORKA_MEMORY_BACKEND=redis ORKA_FORCE_BASIC_REDIS=true orka-start
 
 # 4. Create a simple workflow
-cat > quickstart.yml << EOF
-orchestrator:
-  id: intelligent-qa
-  strategy: sequential
-  agents: [classifier, memory_search, web_search, answer_builder, memory_store]
-
-agents:
-  - id: classifier
-    type: openai-classification
-    prompt: "Classify this query type"
-    options: [factual_question, how_to_guide, current_events, opinion]
-
-  - id: memory_search
-    type: memory-reader
-    namespace: knowledge_base
-    params:
-      limit: 5
-      enable_context_search: true
-      similarity_threshold: 0.8
-    prompt: "Find relevant information about: {{ input }}"
-
-  - id: web_search
-    type: duckduckgo
-    prompt: "{{ input }}"
-
-  - id: answer_builder
-    type: openai-answer
-    prompt: |
-      Query: {{ input }}
-      Type: {{ previous_outputs.classifier }}
-      Memory: {{ previous_outputs.memory_search }}
-      Web Results: {{ previous_outputs.web_search }}
-      
-      Build a comprehensive answer combining memory and web results.
-
-  - id: memory_store
-    type: memory-writer
-    namespace: knowledge_base
-    params:
-      vector: true
-      metadata:
-        query_type: "{{ previous_outputs.classifier }}"
-        has_web_results: "{{ previous_outputs.web_search | length > 0 }}"
-        confidence: "high"
-    prompt: |
-      Query: {{ input }}
-      Answer: {{ previous_outputs.answer_builder }}
-      Sources: Web + Memory
-EOF
+cp examples/orka_framework_qa.yml quickstart.yml
 
 # 5. Run your intelligent AI workflow
 orka run ./quickstart.yml "What are the latest developments in quantum computing?"
@@ -201,86 +153,31 @@ This creates an intelligent Q&A system that:
 
 ### Step 1: Create the Workflow
 
-```yaml
-# conversational-ai.yml
-orchestrator:
-  id: conversational-ai
-  strategy: sequential
-  memory_config:
-    decay:
-      enabled: true
-      default_short_term_hours: 2    # Conversations fade after 2 hours
-      default_long_term_hours: 168   # Important info lasts 1 week
-      check_interval_minutes: 30     # Memory cleanup frequency
-  agents:
-    - conversation_context
-    - interaction_classifier  
-    - response_generator
-    - memory_storage
+For conversational AI with memory, use the enhanced memory validation example:
 
-agents:
-  # Retrieve relevant conversation history
-  - id: conversation_context
-    type: memory-reader
-    namespace: user_conversations
-    params:
-      limit: 5
-      enable_context_search: true
-      context_weight: 0.4
-      temporal_weight: 0.3
-      enable_temporal_ranking: true
-    prompt: "Find relevant conversation history for: {{ input }}"
-
-  # Understand the interaction type
-  - id: interaction_classifier
-    type: openai-classification
-    prompt: |
-      Based on history: {{ previous_outputs.conversation_context }}
-      Current input: {{ input }}
-      
-      Classify this interaction:
-    options: [question, followup, correction, new_topic, feedback]
-
-  # Generate contextually aware response
-  - id: response_generator
-    type: openai-answer
-    prompt: |
-      Conversation history: {{ previous_outputs.conversation_context }}
-      Interaction type: {{ previous_outputs.interaction_classifier }}
-      Current input: {{ input }}
-      
-      Generate a response that acknowledges the conversation history
-      and maintains continuity.
-
-  # Store the interaction with intelligent classification
-  - id: memory_storage
-    type: memory-writer
-    namespace: user_conversations
-    params:
-      vector: true  # Enable semantic search
-      metadata:
-        interaction_type: "{{ previous_outputs.interaction_classifier }}"
-        has_history: "{{ previous_outputs.conversation_context | length > 0 }}"
-        response_quality: "pending_feedback"
-        timestamp: "{{ now() }}"
-    # memory_type automatically classified based on importance
-    prompt: |
-      User: {{ input }}
-      Type: {{ previous_outputs.interaction_classifier }}
-      Assistant: {{ previous_outputs.response_generator }}
+```bash
+cp examples/memory_validation_routing_and_write.yml conversational-ai.yml
 ```
+
+This example demonstrates:
+- Memory-first approach with intelligent fallback
+- Context-aware memory search with conversation continuity
+- Automatic memory decay and lifecycle management
+- Vector search with HNSW indexing for 100x performance
+
+> **See the full workflow**: [`examples/memory_validation_routing_and_write.yml`](examples/memory_validation_routing_and_write.yml)
 
 ### Step 2: Run and Monitor
 
 ```bash
 # Start the conversation
-python -m orka.orka_cli ./conversational-ai.yml "Hello, I'm working on a machine learning project"
+orka run ./conversational-ai.yml "Hello, I'm working on a machine learning project"
 
 # Continue the conversation (it will remember context)
-python -m orka.orka_cli ./conversational-ai.yml "What algorithms would you recommend for image classification?"
+orka run ./conversational-ai.yml "What algorithms would you recommend for image classification?"
 
 # Monitor memory performance in real-time
-python -m orka.orka_cli memory watch
+orka memory watch
 ```
 
 You'll see a professional dashboard like this:
@@ -299,359 +196,60 @@ You'll see a professional dashboard like this:
 
 ```bash
 # Check what the AI remembers about you
-python -m orka.orka_cli memory stats
+orka memory stats
 
 # Search specific memories
-redis-cli FT.SEARCH orka:mem:idx "@namespace:user_conversations machine learning" LIMIT 0 5
+redis-cli FT.SEARCH orka:mem:idx "@namespace:user_queries machine learning" LIMIT 0 5
 ```
 
 ---
 
 ## 📚 Ready-to-Use Workflow Templates
 
+OrKa includes 15+ curated workflow examples demonstrating different patterns. Here are the key categories:
+
 ### 1. Intelligent Q&A with Web Search
-
-```yaml
-# intelligent-qa.yml
-orchestrator:
-  id: smart-qa
-  strategy: sequential
-  agents: [search_needed, router, web_search, answer_with_sources]
-
-agents:
-  - id: search_needed
-    type: openai-binary
-    prompt: "Does this question require recent information? {{ input }}"
-
-  - id: router
-    type: router
-    params:
-      decision_key: search_needed
-      routing_map:
-        "true": [web_search, answer_with_sources]
-        "false": [answer_with_sources]
-
-  - id: web_search
-    type: duckduckgo
-    prompt: "{{ input }}"
-
-  - id: answer_with_sources
-    type: openai-answer
-    prompt: |
-      Question: {{ input }}
-      {% if previous_outputs.web_search %}
-      Web Results: {{ previous_outputs.web_search }}
-      {% endif %}
-      
-      Provide a comprehensive answer with sources.
-```
+- **File**: [`examples/person_routing_with_search.yml`](examples/person_routing_with_search.yml)
+- **Pattern**: Binary decision → conditional search → answer synthesis
+- **Features**: Intelligent routing, web search integration, context-aware responses
 
 ### 2. Content Analysis Pipeline
+- **File**: [`examples/conditional_search_fork_join.yaml`](examples/conditional_search_fork_join.yaml)
+- **Pattern**: Fork → parallel processing → join → synthesis
+- **Features**: Parallel sentiment/topic/toxicity analysis, result aggregation
 
-```yaml
-# content-analyzer.yml
-orchestrator:
-  id: content-analysis
-  strategy: parallel
-  agents: [fork_analysis, join_results]
-
-agents:
-  - id: fork_analysis
-    type: fork
-    targets:
-      - [sentiment_analysis]
-      - [topic_classification]
-      - [toxicity_check]
-
-  - id: sentiment_analysis
-    type: openai-classification
-    options: [positive, negative, neutral]
-    prompt: "Analyze sentiment: {{ input }}"
-
-  - id: topic_classification
-    type: openai-classification
-    options: [tech, business, science, politics, sports]
-    prompt: "Classify topic: {{ input }}"
-
-  - id: toxicity_check
-    type: openai-binary
-    prompt: "Is this content toxic or inappropriate? {{ input }}"
-
-  - id: join_results
-    type: join
-    prompt: |
-      Combine analysis results:
-      Sentiment: {{ previous_outputs.sentiment_analysis }}
-      Topic: {{ previous_outputs.topic_classification }}
-      Safe: {{ previous_outputs.toxicity_check }}
-```
-
-### 3. Knowledge Base Builder
-
-```yaml
-# knowledge-builder.yml
-orchestrator:
-  id: knowledge-builder
-  strategy: sequential
-  memory_config:
-    decay:
-      enabled: true
-      default_long_term_hours: 720  # Keep knowledge for 30 days
-  agents: [fact_checker, knowledge_storer, knowledge_retriever]
-
-agents:
-  - id: fact_checker
-    type: openai-answer
-    prompt: |
-      Verify this information and rate confidence (1-10):
-      {{ input }}
-
-  - id: knowledge_storer
-    type: memory-writer
-    namespace: knowledge_base
-    params:
-      memory_type: long_term
-      vector: true
-      metadata:
-        confidence: "{{ previous_outputs.fact_checker.confidence | default('unknown') }}"
-        verified: "{{ previous_outputs.fact_checker.verified | default(false) }}"
-        domain: "{{ previous_outputs.fact_checker.domain | default('general') }}"
-    prompt: |
-      Fact: {{ input }}
-      Verification: {{ previous_outputs.fact_checker }}
-
-  - id: knowledge_retriever
-    type: memory-reader
-    namespace: knowledge_base
-    params:
-      limit: 10
-      similarity_threshold: 0.8
-    prompt: "Find related knowledge: {{ input }}"
-```
+### 3. Memory-First Knowledge Base
+- **File**: [`examples/memory_validation_routing_and_write.yml`](examples/memory_validation_routing_and_write.yml)
+- **Pattern**: Memory read → validation → router → (memory answer | search fallback) → memory write
+- **Features**: Context-aware memory search, intelligent fallback, automatic decay
 
 ### 4. Iterative Improvement Loop
-
-```yaml
-# iterative-improver.yml
-orchestrator:
-  id: iterative-improver
-  strategy: sequential
-  agents: [improvement_loop, final_processor]
-
-agents:
-  - id: improvement_loop
-    type: loop
-    max_loops: 8
-    score_threshold: 0.85
-    score_extraction_pattern: "QUALITY_SCORE:\\s*([0-9.]+)"
-    
-    # Cognitive extraction to learn from each iteration
-    cognitive_extraction:
-      enabled: true
-      extract_patterns:
-        insights:
-          - "(?:provides?|identifies?|shows?)\\s+(.+?)(?:\\n|$)"
-          - "(?:comprehensive|thorough|detailed)\\s+(.+?)(?:\\n|$)"
-        improvements:
-          - "(?:lacks?|needs?|requires?|should)\\s+(.+?)(?:\\n|$)"
-          - "(?:would improve|could benefit)\\s+(.+?)(?:\\n|$)"
-        mistakes:
-          - "(?:overlooked|missed|inadequate)\\s+(.+?)(?:\\n|$)"
-          - "(?:weakness|gap|limitation)\\s+(.+?)(?:\\n|$)"
-    
-    # Track learning across iterations
-    past_loops_metadata:
-      iteration: "{{ loop_number }}"
-      quality_score: "{{ score }}"
-      key_insights: "{{ insights }}"
-      areas_to_improve: "{{ improvements }}"
-      mistakes_found: "{{ mistakes }}"
-    
-    # Internal workflow that gets repeated
-    internal_workflow:
-      orchestrator:
-        id: improvement-cycle
-        strategy: sequential
-        agents: [analyzer, quality_scorer]
-      
-      agents:
-        - id: analyzer
-          type: openai-answer
-          prompt: |
-            Analyze this request: {{ input }}
-            
-            {% if previous_outputs.past_loops %}
-            Previous analysis attempts ({{ previous_outputs.past_loops | length }}):
-            {% for loop in previous_outputs.past_loops %}
-            
-            Iteration {{ loop.iteration }} (Score: {{ loop.quality_score }}):
-            - Key insights: {{ loop.key_insights }}
-            - Areas to improve: {{ loop.areas_to_improve }}
-            - Mistakes found: {{ loop.mistakes_found }}
-            {% endfor %}
-            
-            Build upon these insights and address the identified gaps.
-            {% endif %}
-            
-            Provide a comprehensive, high-quality analysis.
-        
-        - id: quality_scorer
-          type: openai-answer
-          prompt: |
-            Rate the quality of this analysis (0.0 to 1.0):
-            {{ previous_outputs.analyzer.result }}
-            
-            Consider:
-            - Depth and comprehensiveness
-            - Accuracy and relevance
-            - Clarity and structure
-            - Addressing of key points
-            
-            Format: QUALITY_SCORE: X.XX
-            
-            If score is below 0.85, identify specific areas for improvement.
-
-  - id: final_processor
-    type: openai-answer
-    prompt: |
-      Process the final result from the improvement loop:
-      
-      Iterations completed: {{ previous_outputs.improvement_loop.loops_completed }}
-      Final quality score: {{ previous_outputs.improvement_loop.final_score }}
-      Threshold met: {{ previous_outputs.improvement_loop.threshold_met }}
-      
-      Learning Journey:
-      {% for loop in previous_outputs.improvement_loop.past_loops %}
-      **Iteration {{ loop.iteration }}** (Score: {{ loop.quality_score }}):
-      - Insights: {{ loop.key_insights }}
-      - Improvements: {{ loop.areas_to_improve }}
-      - Mistakes: {{ loop.mistakes_found }}
-      {% endfor %}
-      
-      Final Analysis: {{ previous_outputs.improvement_loop.result }}
-      
-      Provide a meta-analysis of the learning process and final insights.
-```
+- **File**: [`examples/cognitive_loop_scoring_example.yml`](examples/cognitive_loop_scoring_example.yml)
+- **Pattern**: Loop → analyze → score → learn → repeat until threshold
+- **Features**: Cognitive extraction, iterative learning, quality scoring
 
 ### 5. Cognitive Society Deliberation
+- **File**: [`examples/cognitive_society_minimal_loop.yml`](examples/cognitive_society_minimal_loop.yml)
+- **Pattern**: Multi-agent deliberation → consensus building → unified perspective
+- **Features**: Multiple reasoning perspectives, agreement scoring, convergence tracking
 
-```yaml
-# cognitive-society.yml
-orchestrator:
-  id: cognitive-society
-  strategy: sequential
-  agents: [deliberation_loop, consensus_builder]
+### All Available Examples
 
-agents:
-  - id: deliberation_loop
-    type: loop
-    max_loops: 5
-    score_threshold: 0.90
-    score_extraction_pattern: "CONSENSUS_SCORE:\\s*([0-9.]+)"
-    
-    internal_workflow:
-      orchestrator:
-        id: multi-agent-deliberation
-        strategy: sequential
-        agents: [fork_perspectives, join_views, consensus_evaluator]
-      
-      agents:
-        - id: fork_perspectives
-          type: fork
-          targets:
-            - [logical_reasoner]
-            - [empathetic_reasoner]
-            - [skeptical_reasoner]
-            - [creative_reasoner]
-        
-        - id: logical_reasoner
-          type: openai-answer
-          prompt: |
-            Provide logical, evidence-based reasoning for: {{ input }}
-            
-            {% if previous_outputs.past_loops %}
-            Previous logical insights:
-            {% for loop in previous_outputs.past_loops %}
-            - Round {{ loop.round }}: {{ loop.logical_insights }}
-            {% endfor %}
-            
-            Build upon and refine these logical perspectives.
-            {% endif %}
-        
-        - id: empathetic_reasoner
-          type: openai-answer
-          prompt: |
-            Provide empathetic, human-centered reasoning for: {{ input }}
-            
-            {% if previous_outputs.past_loops %}
-            Previous empathetic insights:
-            {% for loop in previous_outputs.past_loops %}
-            - Round {{ loop.round }}: {{ loop.empathetic_insights }}
-            {% endfor %}
-            
-            Deepen and expand these empathetic perspectives.
-            {% endif %}
-        
-        - id: skeptical_reasoner
-          type: openai-answer
-          prompt: |
-            Provide critical, skeptical analysis of: {{ input }}
-            
-            {% if previous_outputs.past_loops %}
-            Previous critical insights:
-            {% for loop in previous_outputs.past_loops %}
-            - Round {{ loop.round }}: {{ loop.critical_insights }}
-            {% endfor %}
-            
-            Strengthen and refine these critical perspectives.
-            {% endif %}
-        
-        - id: creative_reasoner
-          type: openai-answer
-          prompt: |
-            Provide creative, innovative thinking for: {{ input }}
-            
-            {% if previous_outputs.past_loops %}
-            Previous creative insights:
-            {% for loop in previous_outputs.past_loops %}
-            - Round {{ loop.round }}: {{ loop.creative_insights }}
-            {% endfor %}
-            
-            Expand and develop these creative perspectives.
-            {% endif %}
-        
-        - id: join_views
-          type: join
-          group: fork_perspectives
-        
-        - id: consensus_evaluator
-          type: openai-answer
-          prompt: |
-            Evaluate consensus among these perspectives on: {{ input }}
-            
-            Logical: {{ previous_outputs.logical_reasoner.response }}
-            Empathetic: {{ previous_outputs.empathetic_reasoner.response }}
-            Skeptical: {{ previous_outputs.skeptical_reasoner.response }}
-            Creative: {{ previous_outputs.creative_reasoner.response }}
-            
-            Rate the consensus level (0.0-1.0):
-            CONSENSUS_SCORE: [score]
-            
-            Explain areas of agreement and remaining disagreements.
+```bash
+# View all examples with descriptions
+cat examples/README.md
 
-  - id: consensus_builder
-    type: openai-answer
-    prompt: |
-      Build final consensus from the deliberation:
-      
-      Original question: {{ input }}
-      Deliberation rounds: {{ previous_outputs.deliberation_loop.loops_completed }}
-      Final consensus score: {{ previous_outputs.deliberation_loop.final_score }}
-      
-      Final result: {{ previous_outputs.deliberation_loop.result }}
-      
-      Provide a unified perspective that incorporates all viewpoints.
+# Copy and run any example
+cp examples/[example-name].yml my-workflow.yml
+orka run my-workflow.yml "Your input here"
 ```
+
+**Example Categories:**
+- **Basic Workflows**: `orka_framework_qa.yml`, `temporal_change_search_synthesis.yml`
+- **Memory Operations**: `memory_read_fork_join_router.yml`, `routed_binary_memory_writer.yml`
+- **Advanced Patterns**: `failover_search_and_validate.yml`, `validation_structuring_memory_pipeline.yml`
+- **Cognitive AI**: `cognitive_society_minimal_loop.yml`, `multi_perspective_chatbot.yml`
+- **Local LLM**: `multi_model_local_llm_evaluation.yml`
 
 ---
 
