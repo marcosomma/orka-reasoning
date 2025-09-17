@@ -1,23 +1,27 @@
 [📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
 
-# Getting Started with OrKa V0.7.5
+# Getting Started with OrKa V0.9.2
 
-Welcome to OrKa! This guide will help you get up and running with OrKa's powerful agent orchestration system, **100x faster vector search**, and the new **iterative workflows** in just a few minutes.
+Welcome to OrKa! This guide will help you get up and running with OrKa's revolutionary **memory preset system**, **90% configuration complexity reduction**, and **local LLM integration** in just a few minutes.
 
-## 🚀 What's New in V0.7.5
+## 🚀 What's New in V0.9.2 - Memory Presets Revolution
 
+- **🧠 Memory Presets System** - **90% configuration complexity reduction** with Minsky-inspired cognitive memory types
+- **🎯 Operation-Aware Intelligence** - Automatic read/write optimization eliminating manual parameter tuning
+- **🔧 Unified Memory Agents** - Single `type: memory` replacing separate reader/writer types  
+- **🤖 Local LLM First** - Complete Ollama integration with privacy-focused design
+- **📚 Simplified Examples** - **80% fewer lines** in configuration files with cognitive defaults
+
+## 🚀 Previous Major Features
+
+### V0.7.5 - Cognitive Loop System
 - **🔄 Advanced Loop Node** - Intelligent iterative workflows with cognitive insight extraction
 - **🧠 Cognitive Society Framework** - Multi-agent deliberation and consensus building
-- **🎯 Threshold-Based Execution** - Continue until quality meets requirements
-- **📊 Past Loops Memory** - Learn from previous attempts and iteratively improve
-- **🎓 Cognitive Insight Extraction** - Automatically identify insights, improvements, and mistakes
 
-## 🚀 What's New in V0.7.0
-
+### V0.7.0 - RedisStack Performance Revolution
 - **🚀 100x Faster Vector Search** - RedisStack HNSW indexing now default
 - **⚡ Automatic Setup** - No manual Redis configuration needed
 - **🏗️ Unified Architecture** - All components use RedisStack with intelligent fallback
-- **🖥️ Professional CLI Dashboard** - Real-time HNSW performance monitoring
 
 ## 🚀 Quick Setup
 
@@ -25,7 +29,7 @@ Welcome to OrKa! This guide will help you get up and running with OrKa's powerfu
 
 - Python 3.8 or higher
 - Docker (installed and running)
-- OpenAI API key
+- **Optional**: Local LLM (Ollama recommended) or OpenAI API key
 
 ### Installation
 
@@ -37,12 +41,15 @@ pip install orka-reasoning fastapi uvicorn
 pip install orka-reasoning[extra]
 ```
 
-**That's it!** OrKa V0.7.0 automatically handles RedisStack setup through Docker.
+**That's it!** OrKa V0.9.2 automatically handles RedisStack setup through Docker and supports both local and cloud LLMs.
 
 ### Environment Configuration
 
 ```bash
-# Only one environment variable needed:
+# For Local LLM (Recommended - Privacy & Cost Efficient):
+# No environment variables needed! OrKa examples now use local models by default.
+
+# For OpenAI (Optional):
 export OPENAI_API_KEY=your-openai-api-key-here
 
 # Optional: Force basic Redis mode (not recommended)
@@ -64,47 +71,59 @@ docker run -it -p 80:80 --name orka-ui marcosomma/orka-ui:latest
 # Then open http://localhost in your browser
 ```
 
-## 🎯 Your First OrKa Workflow with 100x Performance
+## 🎯 Your First OrKa Workflow with Memory Presets
 
-Let's create a powerful workflow that demonstrates OrKa's RedisStack-powered memory capabilities:
+Let's create a powerful workflow using OrKa's revolutionary memory preset system:
 
 ### Create your first workflow file: `smart-assistant.yml`
 
-Use one of the curated examples to get started quickly:
+Use one of the simplified examples to get started quickly:
 
 ```bash
-# Copy a ready-to-use conversational AI example
-cp ../examples/memory_validation_routing_and_write.yml smart-assistant.yml
+# Copy a memory preset demonstration (90% simpler configuration!)
+cp ../examples/simple_memory_preset_demo.yml smart-assistant.yml
 
-# Or start with a simple Q&A workflow
-cp ../examples/orka_framework_qa.yml smart-assistant.yml
+# Or try the comprehensive preset showcase
+cp ../examples/memory_presets_showcase.yml smart-assistant.yml
 ```
 
-This gives you a production-ready workflow with:
-- **RedisStack HNSW memory** for 100x faster vector search
-- **Intelligent memory decay** that learns what's important
-- **Context-aware conversations** that remember previous interactions
-- **Automatic fallback** to web search when memory is insufficient
+This gives you a production-ready workflow with **90% configuration reduction**:
+- **🧠 Cognitive Memory Presets** - Single parameter replaces 15+ configuration lines
+- **🎯 Operation-Aware Intelligence** - Automatic read/write optimization
+- **🤖 Local LLM Integration** - Privacy-focused with Ollama support
+- **⚡ Zero Manual Tuning** - Scientifically-optimized defaults
 
 > **See all available examples**: [`../examples/README.md`](../examples/README.md)
-**Key Features in the Example:**
-- **Memory-first approach**: Searches existing knowledge before web search
-- **Intelligent routing**: Decides between memory-based answers or search fallback  
-- **Context-aware search**: Uses conversation history for better relevance
-- **Automatic decay**: Short-term and long-term memory classification
-- **Vector search**: 100x faster semantic search with RedisStack HNSW
 
-**Example workflow structure:**
+**Key Features with Memory Presets:**
+- **Simplified Configuration**: `memory_preset: "episodic"` instead of complex decay rules
+- **Cognitive Intelligence**: Memory types based on cognitive science (sensory, working, episodic, semantic, procedural, meta)
+- **Operation-Aware**: Automatic optimization for read vs write operations
+- **Local LLM First**: Complete privacy with local model integration
+
+**Example workflow structure with presets:**
 ```yaml
 agents:
-  - memory_reader      # Search existing knowledge (100x faster)
-  - memory_validator   # Validate if memories are sufficient
-  - answer_router      # Route to memory answer OR search fallback
-  - search_fallback    # Web search if memories insufficient
-  - memory_writer      # Store new knowledge with metadata
+  - id: memory_reader
+    type: memory
+    memory_preset: "episodic"    # Personal experiences (7 days)
+    config:
+      operation: read
+    # That's it! No complex configuration needed
+  
+  - id: answer_builder  
+    type: local_llm              # Privacy-focused local model
+    model: gpt-oss:20b
+    provider: ollama
+    
+  - id: memory_writer
+    type: memory  
+    memory_preset: "semantic"    # Facts and knowledge (30 days)
+    config:
+      operation: write
 ```
 
-> **View the complete workflow**: [`../examples/memory_validation_routing_and_write.yml`](../examples/memory_validation_routing_and_write.yml)
+> **View the complete workflow**: [`../examples/simple_memory_preset_demo.yml`](../examples/simple_memory_preset_demo.yml)
 
 ### Test Your Smart Assistant with RedisStack Performance
 

@@ -4,33 +4,39 @@
 
 Welcome to OrKa - the **Orchestrator Kit for Agentic Reasoning**! OrKa transforms Large Language Models into intelligent, memory-enabled agents that can learn, remember, and reason through complex workflows.
 
-## 🚀 What's New in V0.7.5
+## 🚀 What's New in V0.9.2 - Memory Presets Revolution
 
+- **🧠 Memory Presets System** - **90% configuration complexity reduction** with Minsky-inspired cognitive memory types
+- **🎯 Operation-Aware Intelligence** - Automatic read/write optimization eliminating manual parameter tuning  
+- **🔧 Unified Memory Agents** - Single `type: memory` replacing separate reader/writer types
+- **🤖 Local LLM First** - Complete Ollama integration with privacy-focused design
+- **📚 Documentation Modernization** - Modular example system with dramatically simplified configurations
+
+## 🚀 Previous Major Features
+
+### V0.7.5 - Cognitive Loop System
 - **🔄 Advanced Loop Node** - Intelligent iterative workflows with cognitive insight extraction
 - **🧠 Cognitive Society Framework** - Multi-agent deliberation and consensus building
 - **🎯 Threshold-Based Execution** - Continue until quality meets requirements
-- **📊 Past Loops Memory** - Learn from previous attempts and iteratively improve
-- **🎓 Cognitive Insight Extraction** - Automatically identify insights, improvements, and mistakes
 
-## 🚀 What's New in V0.7.0
-
+### V0.7.0 - RedisStack Performance Revolution  
 - **🚀 100x Faster Vector Search** - RedisStack HNSW indexing now default across all components
 - **⚡ Sub-millisecond Search Latency** - O(log n) complexity for massive datasets
 - **🏗️ Unified Architecture** - All components now use RedisStack with intelligent fallback
-- **🖥️ Professional CLI Dashboard** - Real-time performance monitoring and metrics
-- **🔧 Zero-Breaking Migration** - Complete backward compatibility maintained
 
 ## 🧠 What Makes OrKa Special?
 
-### Revolutionary Memory System with 100x Performance
-OrKa's crown jewel is its **RedisStack-powered memory system** with enterprise-grade vector search:
+### Revolutionary Memory System with Cognitive Presets
+OrKa's crown jewel is its **scientifically-grounded memory system** with Minsky-inspired cognitive architecture:
 
+- **🧠 Cognitive Memory Presets**: 6 memory types based on cognitive science (sensory, working, episodic, semantic, procedural, meta)
+- **🎯 90% Configuration Reduction**: Single `memory_preset` parameter replaces 15+ lines of complex configuration
+- **⚡ Operation-Aware Intelligence**: Automatic read/write optimization with zero manual tuning required
 - **🚀 100x Faster Vector Search**: RedisStack HNSW indexing delivers sub-millisecond semantic search
 - **🔄 Intelligent Decay**: Automatic memory lifecycle management with importance-based retention
-- **🎯 Context-Aware Search**: Multi-factor relevance scoring using semantic similarity, temporal ranking, and conversation context  
-- **📊 Auto-Classification**: Smart categorization of memories into short-term and long-term storage
+- **📊 Smart Classification**: Cognitive memory type classification with scientifically-optimized defaults
 - **🔍 Semantic Understanding**: Advanced vector embeddings enable meaning-based memory retrieval
-- **⚡ Real-time Monitoring**: Professional CLI dashboard with HNSW performance metrics
+- **🖥️ Real-time Monitoring**: Professional CLI dashboard with HNSW performance metrics
 
 ### YAML-Driven Orchestration
 Build complex AI workflows using intuitive YAML configuration:

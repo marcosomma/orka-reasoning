@@ -1,47 +1,184 @@
-# OrKa Core Components Guide
+# OrKa V0.9.2 Core Components Guide - Memory Presets Architecture
 
-[📘 Getting Started](./getting-started.md) | [⚙️ Configuration](./CONFIGURATION.md) | [🐛 Debugging](./DEBUGGING.md) | [🧠 Memory System](./MEMORY_SYSTEM_GUIDE.md)
+[📘 Getting Started](./getting-started.md) | [⚙️ Configuration](./CONFIGURATION.md) | [🧠 Memory Presets](./memory-presets.md) | [🧠 Memory Agents](./memory-agents-guide.md) | [🐛 Debugging](./DEBUGGING.md) | [🧠 Memory System](./MEMORY_SYSTEM_GUIDE.md)
 
 ## Overview
 
-This guide provides detailed documentation for OrKa's core components, focusing on the key areas where debugging and development challenges commonly occur. **All examples reference working files from [`../examples/`](../examples/) that you can copy and test immediately**.
+**NEW in V0.9.2**: This guide documents OrKa's core components with focus on the revolutionary **Memory Presets System** and **Unified Memory Agent Architecture**. All examples showcase **90% configuration complexity reduction** and **operation-aware intelligence**.
 
-## 🚀 Quick Component Examples
+## 🚀 Quick Component Examples - Memory Presets in Action
 
-Instead of complex code examples, **see these components in action**:
+**NEW in V0.9.2**: See the power of simplified configuration with cognitive memory presets:
 
 ```bash
-# Agreement Finder in cognitive society
-cp ../examples/cognitive_society_minimal_loop.yml test-agreement.yml
-orka run test-agreement.yml "Should AI have consciousness?"
+# Memory Presets Demo (90% simpler configuration!)
+cp ../examples/simple_memory_preset_demo.yml test-presets.yml
+orka run test-presets.yml "What is artificial intelligence?"
 
-# LoopNode with learning
-cp ../examples/cognitive_loop_scoring_example.yml test-loops.yml  
-orka run test-loops.yml "Analyze climate change solutions"
+# All 6 Cognitive Memory Types  
+cp ../examples/memory_presets_showcase.yml test-cognitive.yml
+orka run test-cognitive.yml "Analyze neural networks"
 
-# Memory Reader with context
-cp ../examples/memory_validation_routing_and_write.yml test-memory.yml
-orka run test-memory.yml "What is quantum computing?"
+# Operation-Aware Memory Intelligence
+cp ../examples/enhanced_memory_presets_demo.yml test-operations.yml
+orka run test-operations.yml "Explain machine learning"
 
-# Template Resolution in action
-cp ../examples/person_routing_with_search.yml test-templates.yml
-orka run test-templates.yml "Tell me about Einstein"
+# Legacy Examples (for comparison)
+cp ../examples/memory_validation_routing_and_write.yml test-legacy.yml
+orka run test-legacy.yml "What is quantum computing?"
 ```
 
 **Key Working Examples by Component:**
-- **Agreement Finder**: [`cognitive_society_minimal_loop.yml`](../examples/cognitive_society_minimal_loop.yml)
-- **LoopNode**: [`cognitive_loop_scoring_example.yml`](../examples/cognitive_loop_scoring_example.yml)
-- **Memory Reader**: [`memory_validation_routing_and_write.yml`](../examples/memory_validation_routing_and_write.yml)
-- **Template System**: [`person_routing_with_search.yml`](../examples/person_routing_with_search.yml)
-- **Fork/Join**: [`conditional_search_fork_join.yaml`](../examples/conditional_search_fork_join.yaml)
+- **🧠 Memory Presets**: [`simple_memory_preset_demo.yml`](../examples/simple_memory_preset_demo.yml) - **90% config reduction**
+- **🎯 Operation-Aware**: [`enhanced_memory_presets_demo.yml`](../examples/enhanced_memory_presets_demo.yml) - Auto-optimization
+- **🔧 Unified Memory Agents**: [`memory_presets_showcase.yml`](../examples/memory_presets_showcase.yml) - All 6 cognitive types
+- **🤖 Local LLM Integration**: All examples now use `local_llm` agents for privacy
+- **Agreement Finder**: [`cognitive_society_minimal_loop.yml`](../examples/cognitive_society_minimal_loop.yml) - With memory presets
+- **LoopNode**: [`cognitive_loop_scoring_example.yml`](../examples/cognitive_loop_scoring_example.yml) - Iterative learning
+- **Fork/Join**: [`conditional_search_fork_join.yaml`](../examples/conditional_search_fork_join.yaml) - Parallel processing
 
 ## Table of Contents
 
+- [🧠 Memory Presets System (NEW)](#memory-presets-system)
+- [🔧 Unified Memory Agents (NEW)](#unified-memory-agents)
+- [🎯 Operation-Aware Intelligence (NEW)](#operation-aware-intelligence)
 - [Agreement Finder](#agreement-finder)
 - [LoopNode](#loopnode)
-- [Shared Memory Reader](#shared-memory-reader)
+- [Shared Memory Reader (Legacy)](#shared-memory-reader)
 - [Template Resolution](#template-resolution)
 - [Component Interaction Patterns](#component-interaction-patterns)
+
+## 🧠 Memory Presets System
+
+### Overview
+
+**NEW in V0.9.2**: The Memory Presets System represents a **90% configuration complexity reduction** by replacing verbose memory configuration with cognitive science-based presets inspired by Marvin Minsky's memory theory.
+
+### Working Example
+
+See [`simple_memory_preset_demo.yml`](../examples/simple_memory_preset_demo.yml):
+
+**Before (V0.9.1 - 15+ lines of configuration):**
+```yaml
+agents:
+  - id: memory_reader
+    type: memory-reader
+    namespace: conversations
+    decay_config:
+      enabled: true
+      short_term_hours: 4
+      long_term_hours: 168
+      importance_rules:
+        default_long_term: false
+        event_types:
+          user_query: 0.8
+          agent_response: 0.6
+        agent_types:
+          memory_agent: 0.7
+      memory_type_rules:
+        long_term_events:
+          - important_fact
+          - user_preference
+    params:
+      limit: 5
+      enable_hybrid_search: true
+      similarity_threshold: 0.8
+      enable_temporal_ranking: true
+      temporal_weight: 0.4
+      vector_weight: 0.6
+```
+
+**After (V0.9.2 - Single parameter):**
+```yaml
+agents:
+  - id: memory_reader
+    type: memory
+    memory_preset: "episodic"     # Personal experiences (7 days)
+    config:
+      operation: read
+    namespace: conversations
+    prompt: "{{ get_input() }}"
+```
+
+### Key Features
+
+- **🧠 Cognitive Memory Types**: 6 scientifically-grounded memory presets
+- **🎯 Operation-Aware Intelligence**: Automatic read/write optimization
+- **⚡ Zero Configuration**: Intelligent defaults for all memory parameters
+- **🔧 Override Capable**: Custom configuration still possible when needed
+
+## 🔧 Unified Memory Agents
+
+### Overview
+
+**NEW in V0.9.2**: Unified Memory Agents replace separate `memory-reader` and `memory-writer` types with a single `type: memory` that dynamically creates the appropriate node based on the `operation` parameter.
+
+### Configuration
+
+```yaml
+# Reading from memory
+- id: knowledge_reader
+  type: memory                    # Unified type
+  memory_preset: "semantic"       # Facts and knowledge
+  config:
+    operation: read               # Creates MemoryReaderNode
+  namespace: knowledge_base
+
+# Writing to memory  
+- id: knowledge_writer
+  type: memory                    # Same unified type
+  memory_preset: "semantic"       # Same cognitive type
+  config:
+    operation: write              # Creates MemoryWriterNode
+  namespace: knowledge_base
+```
+
+### Benefits
+
+- **🔧 Simplified Type System**: One memory type instead of two
+- **🎯 Consistent Configuration**: Same parameters for read and write
+- **⚡ Agent Factory Integration**: Intelligent node creation
+- **🔄 Backward Compatibility**: Legacy types still supported
+
+## 🎯 Operation-Aware Intelligence
+
+### Overview
+
+**NEW in V0.9.2**: Operation-Aware Intelligence automatically optimizes memory configuration based on whether the operation is `read` or `write`, eliminating the need for manual parameter tuning.
+
+### Automatic Optimizations
+
+**For Read Operations:**
+- Lower `similarity_threshold` for broader search
+- Higher `limit` for comprehensive results
+- Optimized `temporal_weight` for relevance
+- Enhanced `vector_weight` for semantic matching
+
+**For Write Operations:**
+- Optimized indexing parameters
+- Efficient storage configurations
+- Metadata handling for retrieval
+- Deduplication settings
+
+### Working Example
+
+See [`enhanced_memory_presets_demo.yml`](../examples/enhanced_memory_presets_demo.yml):
+
+```yaml
+- id: context_reader
+  type: memory
+  memory_preset: "working"        # Automatically applies read-optimized defaults
+  config:
+    operation: read
+  # No manual parameters needed - all optimized automatically!
+
+- id: context_writer  
+  type: memory
+  memory_preset: "working"        # Automatically applies write-optimized defaults
+  config:
+    operation: write
+  # Storage parameters automatically optimized!
+```
 
 ## Agreement Finder
 

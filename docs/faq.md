@@ -1,11 +1,38 @@
 [📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
 
-# OrKa FAQ
+# OrKa V0.9.2 FAQ
 
-## 🚀 V0.7.0 RedisStack Questions
+## 🧠 V0.9.2 Memory Presets Questions
 
-### What's new in V0.7.0?
-V0.7.0 introduces **100x faster vector search** with RedisStack HNSW indexing, unified architecture across all components, and professional CLI monitoring. All components now use RedisStack by default with intelligent fallback to basic Redis.
+### What's new in V0.9.2?
+V0.9.2 introduces the **Memory Presets System** with **90% configuration complexity reduction**. Based on Marvin Minsky's cognitive science, it replaces verbose memory configuration with intelligent cognitive defaults. Also includes unified memory agents, operation-aware intelligence, and local LLM first architecture.
+
+### How much simpler is the new configuration?
+**Dramatically simpler**: What used to require 15+ lines of complex decay rules, TTL settings, and parameter tuning now requires just `memory_preset: "episodic"`. That's a **90% reduction** in configuration complexity while providing scientifically-optimized defaults.
+
+### What are the 6 memory preset types?
+- **`sensory`** - Real-time data processing (15 min retention)
+- **`working`** - Active problem-solving context (4 hours)  
+- **`episodic`** - Personal experiences and conversations (7 days)
+- **`semantic`** - Facts and knowledge base (30 days)
+- **`procedural`** - Skills and process patterns (90 days)
+- **`meta`** - System performance and learning (365 days)
+
+### Do I still need to configure memory decay manually?
+No! Memory presets handle all decay configuration automatically based on cognitive science principles. Each preset includes optimized retention periods, importance scoring, and memory type classification. You can still override defaults if needed, but it's rarely necessary.
+
+### What is operation-aware intelligence?
+**NEW**: Memory agents automatically optimize their configuration based on whether the operation is `read` or `write`. Read operations get broader search parameters, while write operations get optimized storage settings. No manual tuning required!
+
+### Do I need OpenAI API keys anymore?
+No! V0.9.2 is **Local LLM First**. All new examples use local models with Ollama integration for complete privacy and cost efficiency. OpenAI support is still available as an option.
+
+### What about my existing workflows with OpenAI agents?
+They continue to work unchanged! V0.9.2 maintains 100% backward compatibility. You can gradually migrate to local LLMs when ready, or continue using cloud models.
+
+---
+
+## 🚀 RedisStack & Performance Questions
 
 ### Do I need to install RedisStack manually?
 No! OrKa V0.7.0 automatically handles RedisStack setup through Docker. Just ensure Docker is running and OrKa will configure everything for you.

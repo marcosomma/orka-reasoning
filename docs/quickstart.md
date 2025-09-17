@@ -1,6 +1,6 @@
-# OrKa Quickstart Guide
+# OrKa V0.9.2 Quickstart Guide
 
-Get OrKa up and running in minutes with our one-click Docker setup. This guide will help you start building powerful AI workflows with 100x faster vector search.
+Get OrKa up and running in minutes with our revolutionary **memory preset system** and **90% configuration complexity reduction**. Build powerful AI workflows with cognitive memory intelligence and local LLM support.
 
 ## One-Click Setup
 
@@ -31,19 +31,20 @@ If you prefer to set things up manually:
 # Install Python packages
 pip install orka-reasoning[all]
 
-# Create and configure .env file
+# Create and configure .env file (SIMPLIFIED in V0.9.2!)
 cat > .env << EOF
-# Required environment variables
-OPENAI_API_KEY=your-api-key-here
-ORKA_LOG_LEVEL=INFO
+# Optional: Local LLM (Recommended - No API keys needed!)
+# No environment variables required for local LLM setup
 
-# Memory configuration (recommended)
+# Optional: OpenAI API (if using cloud models)
+# OPENAI_API_KEY=your-api-key-here
+
+# OrKa Configuration (with smart defaults)
+ORKA_LOG_LEVEL=INFO
 ORKA_MEMORY_BACKEND=redisstack
-REDIS_URL=redis://localhost:6380/0
-ORKA_MEMORY_DECAY_ENABLED=true
-ORKA_MEMORY_DECAY_SHORT_TERM_HOURS=2
-ORKA_MEMORY_DECAY_LONG_TERM_HOURS=168
-ORKA_MEMORY_DECAY_CHECK_INTERVAL_MINUTES=30
+
+# Memory presets handle all decay configuration automatically!
+# No more complex memory decay rules needed - handled by cognitive presets
 
 # Performance tuning (optional)
 ORKA_MAX_CONCURRENT_REQUESTS=100
@@ -92,20 +93,56 @@ orka memory watch
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Your First Workflow
+## Your First Workflow - Memory Presets Demo
 
-Create `quickstart.yml`:
+Create `quickstart.yml` with **90% simpler configuration**:
 
 ```yaml
 orchestrator:
-  id: quickstart
+  id: quickstart-memory-presets
   strategy: sequential
   agents: [memory_search, answer_builder, memory_store]
 
 agents:
   - id: memory_search
-    type: memory-reader
+    type: memory                    # Unified memory agent (NEW in V0.9.2)
+    memory_preset: "semantic"       # Facts and knowledge (30 days) 
+    config:
+      operation: read               # Operation-aware optimization
     namespace: knowledge
+    prompt: "Search for: {{ get_input() }}"
+    
+  - id: answer_builder
+    type: local_llm                 # Local LLM first (privacy-focused)
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    prompt: |
+      Based on the memory search results: {{ get_agent_response('memory_search') }}
+      
+      Question: {{ get_input() }}
+      
+      Provide a comprehensive answer.
+    depends_on: [memory_search]
+    
+  - id: memory_store
+    type: memory                    # Same unified type for writing
+    memory_preset: "semantic"       # Same cognitive type  
+    config:
+      operation: write              # Auto-optimized for storage
+    namespace: knowledge
+    prompt: |
+      Question: {{ get_input() }}
+      Answer: {{ get_agent_response('answer_builder') }}
+    depends_on: [answer_builder]
+```
+
+**Key Improvements in V0.9.2:**
+- **90% Configuration Reduction**: `memory_preset: "semantic"` replaces 15+ lines
+- **Operation-Aware**: Automatic read/write optimization
+- **Local LLM First**: Privacy-focused with Ollama integration
+- **Unified Memory Type**: Single `type: memory` for all memory operations
     params:
       limit: 5
       enable_context_search: true

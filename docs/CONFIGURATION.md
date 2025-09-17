@@ -1,41 +1,57 @@
-# OrKa Configuration Guide
+# OrKa V0.9.2 Configuration Guide - Simplified with Memory Presets
 
-[📘 Getting Started](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Memory System](./MEMORY_SYSTEM_GUIDE.md) | [🐛 Debugging](./DEBUGGING.md)
+[📘 Getting Started](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Memory System](./MEMORY_SYSTEM_GUIDE.md) | [🧠 Memory Presets](./memory-presets.md) | [🐛 Debugging](./DEBUGGING.md)
 
 ## Overview
 
-This guide provides detailed configuration information for OrKa's core components, addressing the specific configuration gaps identified in production deployments. It covers memory decay settings, RedisStack setup, environment configuration, and component-specific parameters.
+**NEW in V0.9.2**: OrKa introduces **Memory Presets** that achieve **90% configuration complexity reduction**. This guide covers the revolutionary memory preset system alongside traditional configuration options for fine-grained control when needed.
 
-## Memory Decay Configuration
+## 🧠 Memory Presets Configuration - 90% Complexity Reduction
 
-### TTL Settings and Resolution
+### Simplified Memory Configuration (Recommended)
 
-**Configuration Hierarchy** (highest to lowest priority):
-1. Agent-specific `decay_config` in YAML
-2. Orchestrator-level `memory_config` in YAML  
-3. Environment variables
-4. Default values
+**NEW in V0.9.2**: Use cognitive memory presets to eliminate complex configuration:
 
-### Environment Variables
+```yaml
+# Simple preset configuration (replaces 15+ lines of decay rules)
+agents:
+  - id: my_memory_agent
+    type: memory
+    memory_preset: "episodic"     # Cognitive memory type
+    config:
+      operation: read             # or "write" 
+    namespace: conversations
+```
 
-**Primary Memory Decay Settings:**
+**Available Memory Presets:**
+- `sensory` - Real-time data (15 min retention) 
+- `working` - Active context (4 hours retention)
+- `episodic` - Personal experiences (7 days retention)
+- `semantic` - Facts and knowledge (30 days retention) 
+- `procedural` - Skills and processes (90 days retention)
+- `meta` - System performance (365 days retention)
+
+> **See Complete Guide**: [Memory Presets Documentation](./memory-presets.md)
+
+### Environment Variables (Simplified)
+
+**Minimal Configuration for V0.9.2:**
 ```bash
-# Core memory decay configuration
-export ORKA_MEMORY_DECAY_ENABLED=true
+# Memory presets handle all decay configuration automatically!
+export ORKA_MEMORY_BACKEND=redisstack             # Default: redisstack  
+export REDIS_URL=redis://localhost:6380/0         # RedisStack connection URL
+
+# Optional: Override preset defaults (rarely needed)
+# export ORKA_MEMORY_DECAY_ENABLED=true           # Handled by presets
+```
+
+**Legacy Configuration (for fine-grained control):**
+```bash
+# Only use if you need to override preset defaults
 export ORKA_MEMORY_DECAY_SHORT_TERM_HOURS=2      # Default: 2 hours
 export ORKA_MEMORY_DECAY_LONG_TERM_HOURS=168     # Default: 168 hours (1 week)
 export ORKA_MEMORY_DECAY_CHECK_INTERVAL_MINUTES=30  # Default: 30 minutes
-
-# Memory backend configuration
-export ORKA_MEMORY_BACKEND=redisstack             # Default: redisstack
-export REDIS_URL=redis://localhost:6380/0         # RedisStack connection URL
 ```
-
-**⚠️ Important TTL Discrepancy Resolution:**
-If you see logs showing TTL values like `0.1h` (6 minutes) or `0.2h` (12 minutes), this indicates:
-- Environment variables are overriding YAML configuration
-- Check your environment for conflicting values
-- Use `orka memory configure` to verify active settings
 
 ### YAML Configuration
 
