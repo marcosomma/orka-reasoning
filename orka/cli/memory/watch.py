@@ -69,7 +69,7 @@ def _memory_watch_fallback(args: Any) -> int:
             "REDIS_URL", "redis://localhost:6380/0"
         )  # Use same URL for all backends
 
-        memory = create_memory_logger(backend=backend, redis_url=redis_url)
+        memory = create_memory_logger(backend=backend, redis_url=redis_url, memory_preset=None)
 
         # Log the backend being used
         logger.info(f"Using {backend.title()} backend")

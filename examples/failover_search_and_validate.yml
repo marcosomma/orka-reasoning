@@ -9,10 +9,14 @@ orchestrator:
     - router_answer
 agents:
   - id: answer_9
-    type: openai-answer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.5
     queue: orka:answer_9
     prompt: >
-      Rephrase this input in a more understandable way: "{{ get_input() }}"
+      Rephrase this input in a more understandable way: "{{ get_input() }}". Make it clearer and more concise.
   - id: test_failover
     type: failover
     input: answer_9
@@ -29,9 +33,13 @@ agents:
       - actual_working_agent
       - answer_9
   - id: need_answer
-    type: openai-binary
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.1
     queue: orka:is_fact
-    prompt: "Does '{{ get_input() }}' ask a question that requires an answer, or is it an assertion that requires fact validation? Return true if it is a question, false if it is an assertion."
+    prompt: "Does '{{ get_input() }}' ask a question that requires an answer, or is it an assertion that requires fact validation? Return true if it is a question, false if it is an assertion. Answer with exactly 'true' or 'false' only."
     depends_on:
       - test_failover
   - id: router_answer
@@ -53,16 +61,24 @@ agents:
         type: failing
         queue: orka:failing_test_agent2
       - id: build_answer
-        type: openai-answer
+        type: local_llm
+        model: gpt-oss:20b
+        model_url: http://localhost:11434/api/generate
+        provider: ollama
+        temperature: 0.7
         queue: orka:validation_queue
-        prompt: Given this question "{{ get_input() }}", and the search results "{{ get_agent_response('test_failover') }}", return a compelling answer.
+        prompt: Given this question "{{ get_input() }}", and the search results "{{ get_agent_response('test_failover') }}", return a compelling answer. Be comprehensive and helpful.
     depends_on:
       - router_answer
       - failing_test_agent2
       - build_answer
   - id: validate_fact
-    type: openai-answer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
     queue: orka:validation_queue
-    prompt: "Validate the following assertion based on the search results. Assertion: {{ get_input() }}. Search results: {{ get_agent_response('test_failover') }}, return a compelling answer."
+    prompt: "Validate the following assertion based on the search results. Assertion: {{ get_input() }}. Search results: {{ get_agent_response('test_failover') }}. Return a thorough fact-checking analysis."
     depends_on:
       - router_answer

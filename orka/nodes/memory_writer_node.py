@@ -32,9 +32,9 @@ class MemoryWriterNode(BaseNode):
         importance_score (float): Override for automatic importance scoring
 
     Example:
-    
+
     .. code-block:: yaml
-    
+
         - id: memory_store
           type: memory-writer
           namespace: knowledge_base
@@ -78,12 +78,23 @@ class MemoryWriterNode(BaseNode):
                     },
                 ),
                 decay_config=kwargs.get("decay_config", {}),
+                memory_preset=kwargs.get("memory_preset"),
+                operation="write",  # NEW: Specify this is a write operation
             )
 
-        # Configuration
-        self.namespace = kwargs.get("namespace", "default")
-        self.session_id = kwargs.get("session_id", "default")
-        self.decay_config = kwargs.get("decay_config", {})
+        # Apply operation-aware preset defaults to configuration
+        config_with_preset_defaults = kwargs.copy()
+        if kwargs.get("memory_preset"):
+            from ..memory_logger import apply_memory_preset_to_config
+
+            config_with_preset_defaults = apply_memory_preset_to_config(
+                kwargs, memory_preset=kwargs.get("memory_preset"), operation="write"
+            )
+
+        # Configuration with preset-aware defaults
+        self.namespace = config_with_preset_defaults.get("namespace", "default")
+        self.session_id = config_with_preset_defaults.get("session_id", "default")
+        self.decay_config = config_with_preset_defaults.get("decay_config", {})
 
         # Always store metadata structure defined in YAML
         self.yaml_metadata = kwargs.get("metadata", {})

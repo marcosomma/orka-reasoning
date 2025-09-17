@@ -13,22 +13,24 @@ orchestrator:
 agents:
   - id: memory-read_0
     type: memory
+    memory_preset: "semantic"  # Facts and knowledge base (30 days)
     queue: orka:memory-read_0
     config:
       operation: read
+      # 🎯 Preset provides: limit=10, similarity_threshold=0.65, vector_weight=0.7,
+      # text_weight=0.3, enable_hybrid_search=true, ef_runtime=15, etc.
       memory_category_filter: stored
-      enable_vector_search: true
-      vector_weight: 0.7
-      text_weight: 0.3
-      enable_hybrid_search: true
-      similarity_threshold: 0.75
-      ef_runtime: 10
+      similarity_threshold: 0.75  # Override preset default of 0.65
     namespace: fact_validator
     prompt: Retrieve any stored memories about how the subject '{{ get_input() }}' was classified or understood in the past. Return "NONE" if nothing matches.
   - id: openai-answer_2
-    type: openai-answer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
     queue: orka:openai-answer_2
-    prompt: Given previous context {{ get_agent_response('memory-read_0') }}, provide an initial detailed answer to {{ get_input() }}.
+    prompt: Given previous context {{ get_agent_response('memory-read_0') }}, provide an initial detailed answer to {{ get_input() }}. Be comprehensive and informative.
   - id: fork_3
     type: fork
     targets:
@@ -40,28 +42,34 @@ agents:
     depends_on:
       - openai-answer_2
   - id: openai-binary_4
-    type: openai-binary
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.1
     queue: orka:openai-binary_4
-    prompt: Does the question {{ get_input() }} require factual validation?
+    prompt: Does the question {{ get_input() }} require factual validation? Answer with exactly 'true' or 'false' only.
     depends_on:
       - fork_3
   - id: openai-answer_7
-    type: openai-answer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.5
     queue: orka:openai-answer_7
-    prompt: Provide a concise summary for the question {{ get_input() }}.
+    prompt: Provide a concise summary for the question {{ get_input() }}. Be clear and to the point.
     depends_on:
       - fork_3
   - id: openai-classification_5
-    type: openai-classification
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.2
     queue: orka:openai-classification_5
-    prompt: Classify the domain of the question {{ get_input() }}
-    options:
-      - science
-      - history
-      - technology
-      - geography
-      - culture
-      - general
+    prompt: | 
+      Classify the domain of the question {{ get_input() }}. Choose exactly one from: science, history, technology, geography, culture, general. Answer with only the domain name.
     depends_on:
       - openai-binary_4
   - id: failover_11
@@ -81,18 +89,26 @@ agents:
       - duckduckgo_12
       - duckduckgo_13
   - id: openai-answer_6
-    type: openai-answer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.8
     queue: orka:openai-answer_6
-    prompt: "Provide an alternative perspective or deeper insight into the question {{ get_input() }} considering domain: {{ get_agent_response('openai-classification_5') }}."
+    prompt: "Provide an alternative perspective or deeper insight into the question {{ get_input() }} considering domain: {{ get_agent_response('openai-classification_5') }}. Be creative and thoughtful."
     depends_on:
       - openai-classification_5
   - id: join_9
     type: join
     group: fork_3
   - id: openai-binary_10
-    type: openai-binary
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.1
     queue: orka:openai-binary_10
-    prompt: "Is the provided information coherent and complete based on outputs: {{ get_agent_response('join_9') }}?"
+    prompt: "Is the provided information coherent and complete based on outputs: {{ get_agent_response('join_9') }}? Answer with exactly 'true' or 'false' only."
     depends_on:
       - join_9
   - id: router_11
@@ -109,19 +125,28 @@ agents:
     depends_on:
       - openai-binary_10
   - id: openai-answer_14
-    type: openai-answer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.6
     queue: orka:openai-answer_14
-    prompt: Given confirmed coherent inputs {{ get_agent_response('join_9') }}, provide a polished final response to {{ get_input() }}.
+    prompt: Given confirmed coherent inputs {{ get_agent_response('join_9') }}, provide a polished final response to {{ get_input() }}. Be professional and comprehensive.
     depends_on:
       - router_11
   - id: openai-answer_15
-    type: openai-answer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
     queue: orka:openai-answer_15
-    prompt: "      Given identified gaps in coherence or completeness in  {{ get_agent_response('join_9') }}, clarify or complete the information to fully answer {{ get_input() }}."
+    prompt: "Given identified gaps in coherence or completeness in {{ get_agent_response('join_9') }}, clarify or complete the information to fully answer {{ get_input() }}. Fill in the missing pieces."
     depends_on:
       - router_11
   - id: memory-write_final
     type: memory
+    memory_preset: "semantic"  # Facts and knowledge base (30 days)
     queue: orka:memory-write_final
     config:
       operation: write

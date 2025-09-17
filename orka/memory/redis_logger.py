@@ -98,6 +98,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
         stream_key: str = "orka:memory",
         debug_keep_previous_outputs: bool = False,
         decay_config: dict[str, Any] | None = None,
+        memory_preset: str | None = None,
     ) -> None:
         """
         Initialize the Redis memory logger.
@@ -107,8 +108,9 @@ class RedisMemoryLogger(BaseMemoryLogger):
             stream_key: Key for the Redis stream. Defaults to "orka:memory".
             debug_keep_previous_outputs: If True, keeps previous_outputs in log files for debugging.
             decay_config: Configuration for memory decay functionality.
+            memory_preset: Name of memory preset (sensory, working, episodic, semantic, procedural, meta).
         """
-        super().__init__(stream_key, debug_keep_previous_outputs, decay_config)
+        super().__init__(stream_key, debug_keep_previous_outputs, decay_config, memory_preset)
         self.redis_url = (
             redis_url
             if redis_url is not None

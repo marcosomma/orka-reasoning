@@ -10,6 +10,7 @@ orchestrator:
 agents:
   - id: memory-reader
     type: memory
+    memory_preset: "semantic"  # Facts and knowledge base (30 days)
     queue: orka:memory-reader
     config:
       operation: read
@@ -17,9 +18,14 @@ agents:
     namespace: landmarks
     prompt: Retrieve any stored memories about {{ get_input() }}. Return "NONE" if nothing matches.
   - id: memory-check
-    type: openai-binary
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.1
     queue: orka:memory-check
-    prompt: 'Check if the following memory data is relevant to the question and has high confidence. Question: {{ get_input() }} Memory: {{ get_agent_response(''memory-reader'') }} Return true if: 1) The memory contains relevant information about the question; 2) The memory has a confidence score higher than 0.89; 3) The memory is not "NONE". Return false otherwise.'
+    prompt: |
+      'Check if the following memory data is relevant to the question and has high confidence. Question: {{ get_input() }} Memory: {{ get_agent_response(''memory-reader'') }} Return true if: 1) The memory contains relevant information about the question; 2) The memory has a confidence score higher than 0.89; 3) The memory is not "NONE". Return false otherwise. Answer with exactly ''true'' or ''false'' only.'
   - id: router
     type: router
     params:
@@ -36,21 +42,33 @@ agents:
     depends_on:
       - memory-check
   - id: memory-path
-    type: openai-answer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
     queue: orka:memory-path
-    prompt: Format the stored memory information about the {{ get_input() }} into a clear answer:{{ get_agent_response('memory-reader') if get_agent_response('memory-reader') else 'NONE' }}
+    prompt: Format the stored memory information about the {{ get_input() }} into a clear answer:{{ get_agent_response('memory-reader') if get_agent_response('memory-reader') else 'NONE' }}. Provide a well-structured response.
     depends_on:
       - router
   - id: context-collector
-    type: openai-answer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.5
     queue: orka:context-collector
     prompt: Based on the question "{{ get_input() }}", collect relevant context and background information. Focus on gathering factual information that will help validate the answer. If no specific information is available, explain what type of information would be needed and suggest research directions. Do not return just "NONE" - provide a meaningful response about the information availability.
     depends_on:
       - router
   - id: answer-builder
-    type: openai-answer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
     queue: orka:answer-builder
-    prompt: "Using the context: {{ get_agent_response('context-collector') }} Provide a detailed answer to: {{ get_input() }}. If the context indicates no information is available, explain what is known and what would need to be researched. Do not return just 'NONE'."
+    prompt: "Using the context: {{ get_agent_response('context-collector') }} Provide a detailed answer to: {{ get_input() }}. If the context indicates no information is available, explain what is known and what would need to be researched. Do not return just 'NONE'. Be comprehensive and helpful."
     depends_on:
       - context-collector
   - id: validation-guard
@@ -63,6 +81,7 @@ agents:
     store_structure: '{  "fact": "string",  "reason": "string",  "confidence": "number",  "source": "string"}'
   - id: memory-writer
     type: memory
+    memory_preset: "semantic"  # Facts and knowledge base (30 days)
     queue: orka:memory-writer
     config:
       operation: write

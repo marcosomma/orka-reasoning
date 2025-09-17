@@ -1,0 +1,107 @@
+# Memory Presets Showcase
+# Demonstrates all 6 Minsky-inspired memory types in a single workflow
+
+meta:
+  version: "1.0"
+  author: "OrKa Framework"  
+  description: "Showcase of all 6 cognitive memory presets inspired by Minsky's theories"
+
+orchestrator:
+  id: memory-presets-showcase
+  strategy: sequential
+  
+  # Use semantic memory as the main orchestrator memory (knowledge-focused)
+  memory_preset: "semantic"
+  
+  agents:
+    - sensor_input
+    - working_processor  
+    - knowledge_lookup
+    - process_optimizer
+    - experience_logger
+    - meta_analyzer
+
+agents:
+  # 1. Sensory Memory - Immediate input processing
+  - id: sensor_input
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.1  # Low temperature for consistent processing
+    memory_preset: "sensory"  # Very short-term, high-throughput
+    prompt: "Process this raw input: {{ input }}"
+
+  # 2. Working Memory - Active processing
+  - id: working_processor
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3  # Moderate temperature for reasoning
+    memory_preset: "working"  # Temporary calculations and context
+    prompt: |
+      Input: {{ input }}
+      Processed: {{ previous_outputs.sensor_input }}
+      
+      Perform working memory processing and context building.
+
+  # 3. Semantic Memory - Knowledge and facts
+  - id: knowledge_lookup
+    type: memory
+    memory_preset: "semantic"  # Long-term knowledge storage
+    config:
+      operation: read  # Search knowledge base
+    namespace: knowledge_base
+    params:
+      limit: 3
+      similarity_threshold: 0.7
+    prompt: "Find relevant knowledge about: {{ input }}"
+
+  # 4. Procedural Memory - Skills and processes  
+  - id: process_optimizer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.2  # Low temperature for consistent procedures
+    memory_preset: "procedural"  # Process knowledge and patterns
+    prompt: |
+      Working context: {{ previous_outputs.working_processor }}
+      Knowledge: {{ previous_outputs.knowledge_lookup }}
+      
+      Apply procedural knowledge and optimize the process.
+
+  # 5. Episodic Memory - Experience storage
+  - id: experience_logger
+    type: memory
+    memory_preset: "episodic"  # Personal narrative and interactions
+    config:
+      operation: write  # Store experiences
+    namespace: experiences
+    params:
+      vector: true
+    prompt: |
+      Experience Summary:
+      Input: {{ input }}
+      Processing: {{ previous_outputs.working_processor }}
+      Knowledge Used: {{ previous_outputs.knowledge_lookup }}
+      Process Applied: {{ previous_outputs.process_optimizer }}
+
+  # 6. Meta Memory - System self-reflection
+  - id: meta_analyzer
+    type: memory
+    memory_preset: "meta"  # System knowledge and self-awareness
+    config:
+      operation: write  # Store system insights
+    namespace: meta_insights
+    params:
+      vector: true
+    prompt: |
+      Meta-Analysis:
+      - Workflow efficiency: How well did this process work?
+      - Memory utilization: Which memory types were most effective?
+      - System insights: What can we learn about our cognitive process?
+      
+      Input: {{ input }}
+      All outputs: {{ previous_outputs | tojson }}

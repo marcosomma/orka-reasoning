@@ -134,6 +134,7 @@ class TestMemoryWatch:
             mock_create.assert_called_once_with(
                 backend="redis",
                 redis_url="redis://localhost:6380/0",
+                memory_preset=None,
             )
             mock_display.assert_called_once_with(mock_memory, "redis", args)
             output = setup_logging.get_output()
@@ -158,6 +159,7 @@ class TestMemoryWatch:
             mock_create.assert_called_once_with(
                 backend="redisstack",
                 redis_url="redis://localhost:6380/0",  # All backends use the same port now
+                memory_preset=None,
             )
             output = setup_logging.get_output()
             assert "Using Redisstack backend" in output
@@ -181,6 +183,7 @@ class TestMemoryWatch:
             mock_create.assert_called_once_with(
                 backend="redisstack",
                 redis_url="redis://localhost:6380/0",
+                memory_preset=None,
             )
             output = setup_logging.get_output()
             assert "Using Redisstack backend" in output

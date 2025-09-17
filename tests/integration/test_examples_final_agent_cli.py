@@ -77,7 +77,11 @@ def _should_skip_due_to_llm(stdout: str, stderr: str) -> bool:
         # ("examples/failover_search_and_validate.yml", {"build_answer", "validate_fact"}),
         (
             "examples/conditional_search_fork_join.yaml",
-            {"final_builder_true", "final_builder_false"},
+            {
+                "final_builder_true",
+                "final_builder_false",
+                "info_completed",
+            },  # info_completed when no search needed
         ),
         # Optional examples (uncomment locally if environment supports them):
         ("examples/validation_structuring_memory_pipeline.yml", {"memory-path", "answer-builder"}),

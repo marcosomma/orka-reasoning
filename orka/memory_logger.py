@@ -169,12 +169,63 @@ from .memory.redis_logger import RedisMemoryLogger
 logger = logging.getLogger(__name__)
 
 
+def apply_memory_preset_to_config(
+    config: dict[str, Any], memory_preset: str | None = None, operation: str | None = None
+) -> dict[str, Any]:
+    """
+    Apply memory preset operation-specific defaults to a configuration dictionary.
+
+    This function intelligently merges memory preset defaults based on the operation type
+    (read/write) with the provided configuration, allowing users to specify just a preset
+    and have appropriate defaults applied automatically.
+
+    Args:
+        config: Base configuration dictionary
+        memory_preset: Name of the memory preset (sensory, working, episodic, semantic, procedural, meta)
+        operation: Memory operation type ('read' or 'write')
+
+    Returns:
+        Enhanced configuration with preset defaults applied
+
+    Example:
+        >>> config = {"operation": "read", "namespace": "test"}
+        >>> enhanced = apply_memory_preset_to_config(config, "episodic", "read")
+        >>> # Returns config with episodic read defaults like similarity_threshold, vector_weight, etc.
+    """
+    if not memory_preset or not operation:
+        return config
+
+    try:
+        from .memory.presets import get_operation_defaults
+
+        # Get operation-specific defaults for the preset
+        operation_defaults = get_operation_defaults(memory_preset, operation)
+
+        # Apply defaults for any missing keys in config
+        enhanced_config = config.copy()
+        for key, default_value in operation_defaults.items():
+            if key not in enhanced_config:
+                enhanced_config[key] = default_value
+
+        logger.debug(f"Applied {memory_preset}_{operation} preset defaults to config")
+        return enhanced_config
+
+    except ImportError:
+        logger.warning("Memory presets not available, using config as-is")
+        return config
+    except Exception as e:
+        logger.error(f"Failed to apply preset '{memory_preset}' for operation '{operation}': {e}")
+        return config
+
+
 def create_memory_logger(
     backend: str = "redisstack",
     redis_url: str | None = None,
     stream_key: str = "orka:memory",
     debug_keep_previous_outputs: bool = False,
     decay_config: dict[str, Any] | None = None,
+    memory_preset: str | None = None,
+    operation: str | None = None,  # NEW: Support for operation-aware presets
     enable_hnsw: bool = True,
     vector_params: dict[str, Any] | None = None,
     format_params: dict[str, Any] | None = None,
@@ -195,6 +246,7 @@ def create_memory_logger(
         stream_key: Redis stream key for logging
         debug_keep_previous_outputs: Whether to keep previous outputs in logs
         decay_config: Memory decay configuration
+        memory_preset: Memory preset name (sensory, working, episodic, semantic, procedural, meta)
         enable_hnsw: Enable HNSW vector indexing (RedisStack only)
         vector_params: HNSW configuration parameters
         format_params: Content formatting parameters (e.g., newline handling, custom filters)
@@ -240,6 +292,7 @@ def create_memory_logger(
                 stream_key=stream_key,
                 debug_keep_previous_outputs=debug_keep_previous_outputs,
                 decay_config=decay_config,
+                memory_preset=memory_preset,
             )
         except ImportError as e:
             raise ImportError(f"Basic Redis backend not available: {e}") from e
@@ -277,6 +330,7 @@ def create_memory_logger(
                 stream_key=stream_key,
                 debug_keep_previous_outputs=debug_keep_previous_outputs,
                 decay_config=decay_config,
+                memory_preset=memory_preset,
                 enable_hnsw=enable_hnsw,
                 vector_params=effective_vector_params,
                 format_params=format_params,
@@ -296,6 +350,7 @@ def create_memory_logger(
                     stream_key=stream_key,
                     debug_keep_previous_outputs=debug_keep_previous_outputs,
                     decay_config=decay_config,
+                    memory_preset=memory_preset,
                 )
             except ImportError as e:
                 raise ImportError(f"No Redis backends available: {e}") from e

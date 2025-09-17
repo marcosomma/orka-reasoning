@@ -55,31 +55,24 @@ agents:
   # Step 1: Read memories using enhanced context-aware search
   - id: memory_reader
     type: memory
+    memory_preset: "episodic"  # Personal experiences and conversations (7 days)
     queue: orka:memory_reader
     config:
       operation: read
       namespace: user_queries
-      limit: 5
-      similarity_threshold: 0.6
+      # Custom overrides (preset provides intelligent defaults for limit=8, similarity_threshold=0.6, 
+      # vector_weight=0.7, text_weight=0.3, enable_hybrid_search=true, ef_runtime=10, etc.)
+      limit: 5  # Override preset default of 8
       memory_category_filter: stored
-      # Enhanced search configuration
-      context_weight: 0.3
-      temporal_weight: 0.2
-      enable_context_search: true
-      enable_temporal_ranking: true
-      context_window_size: 5
-      temporal_decay_hours: 24
-      # Vector search configuration
-      enable_vector_search: true
-      vector_weight: 0.7
-      text_weight: 0.3
-      enable_hybrid_search: true
-      ef_runtime: 10
     prompt: "{{ get_input() }}"
 
   # Step 2: Validate memory quality using OpenAI
   - id: memory_validator
-    type: openai-binary
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.2
     queue: orka:memory_validator
     prompt: |
       You are a memory quality validator. Analyze the retrieved memories and determine if they provide valuable, accurate, and relevant information to answer the user's query.
@@ -95,6 +88,7 @@ agents:
 
       Return 'true' if the memories are VALUABLE and sufficient to answer the query.
       Return 'false' if the memories are INSUFFICIENT or not valuable enough.
+      Answer with exactly 'true' or 'false' only.
     depends_on:
       - memory_reader
 
@@ -116,7 +110,11 @@ agents:
 
   # Step 3a: Build answer from valuable memories
   - id: answer_builder
-    type: openai-answer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
     queue: orka:answer_builder
     prompt: |
       Based on the validated memories, provide a comprehensive answer to the user's query.
@@ -145,13 +143,19 @@ agents:
 
   # Step 4: Build answer from search results
   - id: search_answer_builder
-    type: openai-answer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
     queue: orka:search_answer_builder
     prompt: |
       Based on the search results, provide a comprehensive answer to the user's query.
 
       User Query: {{ get_input() }}
       Search Results: {{ safe_get(previous_outputs.get('search_fallback', {}), 'result') }}
+      
+      Provide a detailed, informative response based on the search data.
       Memory Validation: INSUFFICIENT
 
       Instructions:
@@ -167,13 +171,13 @@ agents:
   # Step 5: Store the answer in short-term memory (1 minute expiration)
   - id: memory_writer
     type: memory
+    memory_preset: "episodic"  # Personal experiences and conversations (7 days)
     queue: orka:memory_writer
     config:
       operation: write
       namespace: short_term_answers
       vector: true
       key_template: "answer_{{ run_id }}_{{ step_index }}"
-      default_long_term: false # Force short-term classification
     prompt: |
       Query: {{ get_input() }}
 

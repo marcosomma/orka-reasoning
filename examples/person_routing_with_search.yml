@@ -20,26 +20,34 @@ agents:
     prompt: |
       {{ get_input() }}
   - id: openai-classification_5
-    type: openai-classification
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.2
     queue: orka:openai-classification_5
     prompt: |-
       Classify the sentence into one of the categories.
       SENTENCE: {{ get_input() }}
-    options:
-      - tech
-      - nature
-      - people
-      - others
+      
+      Choose exactly one from: tech, nature, people, others.
+      Answer with only the category name.
   - id: join_1
     type: join
     group: fork_2
   - id: openai-binary_6
-    type: openai-binary
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.1
     queue: orka:openai-binary_6
     prompt: |-
       Do the sentence or the extra data relate to a person?
       SENTENCE: {{ get_input() }}
       EXTRA DATA: {{ joined_results() }}
+      
+      Answer with exactly 'true' or 'false' only.
   - id: router_7
     type: router
     params:
@@ -52,38 +60,62 @@ agents:
         "false":
           - openai-answer_11
   - id: openai-answer_10
-    type: openai-answer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.2
     queue: orka:openai-answer_10
     prompt: |-
       Return me ONLY name and surname of the person pointed in this sentence or extra data.
 
       SENTENCE: {{ get_input() }}
       EXTRA DATA: {{ joined_results() }}
+      
+      Provide just the name, nothing else.
   - id: duckduckgo_8
     type: duckduckgo
     queue: orka:duckduckgo_8
     prompt: '{{ get_agent_response("openai-answer_10") }}'
   - id: openai-answer_9
-    type: openai-answer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
     queue: orka:openai-answer_9
     prompt: |-
       Based on the sentence, return a compelling answer or a deeper overview, also using the extra data.
 
       SENTENCE: {{ get_input() }}
       EXTRA DATA: {{ joined_results() }}
+      
+      Provide a comprehensive and engaging response.
   - id: openai-answer_11
-    type: openai-answer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
     queue: orka:openai-answer_11
     prompt: |-
       Based on the sentence, return a compelling answer or a deeper overview, also using the extra data.
 
       SENTENCE: {{ get_input() }}
       EXTRA DATA: {{ joined_results() }}
+      
+      Provide a detailed and informative response.
   - id: answer-final
-    type: openai-answer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.6
     queue: orka:answer-final
     prompt: |-
       Based on the sentence, return a compelling answer or a deeper overview, also using the extra data.
 
       SENTENCE: {{ get_input() }}
       EXTRA DATA: {{ joined_results() }}
+      
+      Provide the final, polished response.

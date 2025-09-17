@@ -41,25 +41,19 @@ agents:
   # Initial memory reader to retrieve past experiences
   - id: prior_incidents_reader
     type: memory
+    memory_preset: "episodic"  # Personal experiences and incidents (7 days)
     namespace: safety_events
     queue: orka:shared-debate-memory-reader
     config:
       operation: read
-      limit: 5
-      enable_context_search: true
-      fallback_to_text: true  # Ensure text fallback is enabled
-      similarity_threshold: 0.1  # Lower threshold for better fallback results
-      enable_temporal_ranking: true
-      temporal_weight: 0.4
-      memory_type: short_term
+      # 🎯 Preset provides: limit=8, similarity_threshold=0.6, vector_weight=0.7,
+      # text_weight=0.3, enable_hybrid_search=true, temporal_weight=0.3, etc.
+      limit: 5                   # Override preset default of 8
+      similarity_threshold: 0.1  # Override for very broad matching
+      temporal_weight: 0.4       # Override preset default of 0.3
       memory_category_filter: store
       memory_type_filter: "all"
-      vector: true
-      vector_field: "content_vector"  # Ensure proper vector field for RedisStack
-      # Enhanced vector search configuration
-      enable_vector_search: true
-      vector_weight: 0.7
-      text_weight: 0.3
+      fallback_to_text: true
       enable_hybrid_search: true
       ef_runtime: 10
     prompt: |
@@ -135,21 +129,18 @@ agents:
         # Policies reader
         - id: policies_rag
           type: memory
+          memory_preset: "semantic"  # Facts and policy knowledge (30 days)
           namespace: policy_notes
           queue: orka:shared-debate-memory
           config:
             operation: read
-            limit: 5
-            enable_context_search: true
-            fallback_to_text: true
-            similarity_threshold: 0.1
-            enable_temporal_ranking: true
-            temporal_weight: 0.4
-            memory_type: short_term
+            # 🎯 Preset provides: limit=10, similarity_threshold=0.65, vector_weight=0.7,
+            # enable_hybrid_search=true, ef_runtime=15, no temporal bias, etc.
+            limit: 5                   # Override preset default of 10
+            similarity_threshold: 0.1  # Override for very broad matching
             memory_category_filter: store
             memory_type_filter: "all"
-            vector: true
-          vector_field: "content_vector"  # Ensure proper vector field for RedisStack
+            fallback_to_text: true
           prompt: |
             Fetch policies, medical safety notes, and app rules relevant to: {{ get_input() }}
             Return a compact bullet list.
@@ -502,6 +493,7 @@ agents:
   # Final memory writer to store the complete interaction
   - id: memory_writer
     type: memory
+    memory_preset: "episodic"  # Personal experiences and incidents (7 days)
     namespace: safety_events
     queue: orka:shared-debate-memory-writer
     config:

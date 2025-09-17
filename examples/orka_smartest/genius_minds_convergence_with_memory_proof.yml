@@ -42,6 +42,7 @@ agents:
   # Memory verification agent
   - id: memory_verifier
     type: memory
+    memory_preset: "procedural"  # Skills and process patterns (90 days)
     namespace: genius_insights
     queue: orka:memory-verification
     config:
@@ -52,7 +53,7 @@ agents:
       similarity_threshold: 0.6  # Higher threshold for better matches
       enable_temporal_ranking: true
       temporal_weight: 0.4
-      memory_type: long_term
+      # memory_type replaced by memory_preset
       memory_type_filter: "all"
       vector: true
       vector_field: "content_vector"
@@ -70,6 +71,7 @@ agents:
   # Initial memory reader to retrieve past insights
   - id: prior_insights_reader
     type: memory
+    memory_preset: "procedural"  # Skills and process patterns (90 days)
     namespace: genius_insights
     queue: orka:shared-debate-memory-reader
     config:
@@ -80,7 +82,7 @@ agents:
       similarity_threshold: 0.6
       enable_temporal_ranking: true
       temporal_weight: 0.4
-      memory_type: long_term
+      # memory_type replaced by memory_preset
       memory_category_filter: store
       memory_type_filter: "all"
       vector: true
@@ -150,6 +152,7 @@ agents:
         # Memory tracker for loop persistence
         - id: memory_tracker
           type: memory
+          memory_preset: "meta"  # System performance and learning metrics (365 days)
           namespace: genius_insights
           queue: orka:memory-tracking
           config:
@@ -166,6 +169,7 @@ agents:
         # Historical context provider
         - id: historical_context
           type: memory
+          memory_preset: "semantic"  # Facts and knowledge base (30 days)
           namespace: historical_knowledge
           queue: orka:shared-debate-memory
           config:
@@ -383,11 +387,12 @@ agents:
   # Memory writer with enhanced metadata
   - id: memory_writer
     type: memory
+    memory_preset: "procedural"  # Skills and process patterns (90 days)
     namespace: genius_insights
     queue: orka:shared-debate-memory-writer
     config:
       operation: write
-      memory_type: long_term
+      # memory_type replaced by memory_preset
       vector: true
       vector_field: "content_vector"
       force_recreate_index: false

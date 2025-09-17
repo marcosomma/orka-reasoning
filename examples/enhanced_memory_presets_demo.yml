@@ -1,0 +1,152 @@
+orchestrator:
+  id: enhanced-memory-presets-demo
+  strategy: sequential
+  queue: orka:preset-demo
+  memory:
+    enabled: true
+    backend: redisstack
+    config:
+      redis_url: redis://localhost:6380/0
+  agents:
+    - episodic_reader
+    - episodic_writer
+    - semantic_reader
+    - semantic_writer
+    - working_reader
+    - working_writer
+
+agents:
+  # EPISODIC MEMORY (Conversations & Personal Experiences)
+  # 7-day retention, optimized for conversational context
+  
+  - id: episodic_reader
+    type: memory
+    memory_preset: "episodic"  # 🎯 Automatically applies episodic READ defaults!
+    config:
+      operation: read
+      namespace: conversations
+      # Preset provides: limit=8, similarity_threshold=0.6, vector_weight=0.7, 
+      # text_weight=0.3, enable_hybrid_search=true, temporal_weight=0.3, etc.
+    prompt: "Find previous conversations about: {{ get_input() }}"
+
+  - id: episodic_writer
+    type: memory
+    memory_preset: "episodic"  # 🎯 Automatically applies episodic WRITE defaults!
+    config:
+      operation: write
+      namespace: conversations
+      # Preset provides: vector=true, vector_field_name="content_vector", 
+      # vector_params with COSINE distance, ef_construction=200, etc.
+    prompt: "Conversation: {{ get_input() }}"
+    metadata:
+      type: conversation
+      category: interaction
+
+  # SEMANTIC MEMORY (Facts & Knowledge Base)
+  # 30-day retention, optimized for knowledge retrieval
+  
+  - id: semantic_reader
+    type: memory
+    memory_preset: "semantic"  # 🎯 Automatically applies semantic READ defaults!
+    config:
+      operation: read
+      namespace: knowledge_base
+      # Preset provides: limit=10, similarity_threshold=0.65, vector_weight=0.7,
+      # enable_temporal_ranking=false (knowledge is timeless), ef_runtime=15, etc.
+    prompt: "Retrieve knowledge about: {{ get_input() }}"
+
+  - id: semantic_writer
+    type: memory
+    memory_preset: "semantic"  # 🎯 Automatically applies semantic WRITE defaults!
+    config:
+      operation: write
+      namespace: knowledge_base
+      # Preset provides: vector=true, optimized for long-term knowledge storage
+    prompt: "Knowledge fact: {{ get_input() }}"
+    metadata:
+      type: knowledge
+      category: stored
+
+  # WORKING MEMORY (Active Problem-Solving Cache)
+  # 4-hour retention, optimized for session context
+  
+  - id: working_reader
+    type: memory
+    memory_preset: "working"  # 🎯 Automatically applies working READ defaults!
+    config:
+      operation: read
+      namespace: session_cache
+      # Preset provides: limit=5, similarity_threshold=0.7, temporal_weight=0.4,
+      # enable_context_search=true, context_weight=0.5, etc.
+    prompt: "Retrieve session context for: {{ get_input() }}"
+
+  - id: working_writer
+    type: memory
+    memory_preset: "working"  # 🎯 Automatically applies working WRITE defaults!
+    config:
+      operation: write
+      namespace: session_cache
+      # Preset provides: vector=true, optimized for temporary storage
+    prompt: "Session context: {{ get_input() }}"
+    metadata:
+      type: working
+      category: temporary
+
+# ============================================================================
+# 🎉 PRESET MAGIC COMPARISON
+# ============================================================================
+#
+# BEFORE (Complex Manual Configuration):
+# =====================================
+# 
+# - id: memory_reader
+#   type: memory
+#   config:
+#     operation: read
+#     limit: 8
+#     similarity_threshold: 0.6
+#     enable_vector_search: true
+#     enable_temporal_ranking: true
+#     temporal_weight: 0.3
+#     text_weight: 0.3
+#     vector_weight: 0.7
+#     enable_hybrid_search: true
+#     ef_runtime: 10
+#     enable_context_search: true
+#     context_weight: 0.4
+#     temporal_decay_hours: 24
+#     context_window_size: 5
+#     fallback_to_text: true
+#     memory_category_filter: stored
+#     # ... 20+ more parameters!
+#
+# AFTER (Smart Preset Configuration):
+# ===================================
+#
+# - id: memory_reader
+#   type: memory
+#   memory_preset: "episodic"  # 🎯 ALL defaults applied automatically!
+#   config:
+#     operation: read
+#     namespace: conversations
+#     # Only specify custom overrides if needed
+#     limit: 10  # Override preset default of 8
+#
+# ============================================================================
+# 🧠 COGNITIVE MEMORY TYPES AVAILABLE:
+# ============================================================================
+#
+# 📡 SENSORY (15 minutes)  - Real-time data streams, sensor input
+# 🧠 WORKING (4 hours)     - Active problem-solving, session context  
+# 💭 EPISODIC (7 days)     - Personal experiences, conversations
+# 📚 SEMANTIC (30 days)    - Facts, knowledge base, documentation
+# 🔧 PROCEDURAL (90 days)  - Skills, patterns, learned processes
+# 📈 META (365 days)       - System performance, meta-learning
+#
+# Each preset automatically provides:
+# ✅ Read-optimized defaults (similarity thresholds, vector weights, etc.)
+# ✅ Write-optimized defaults (vector configs, indexing params, etc.)
+# ✅ Retention policies (decay rules, importance scoring)
+# ✅ Performance tuning (ef_runtime, context weights, etc.)
+#
+# ============================================================================

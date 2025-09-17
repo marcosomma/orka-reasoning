@@ -181,34 +181,32 @@ Orka provides various specialized nodes for workflow control and data management
          error_message: "Quality check failed"
    ```
 
-### Memory Management Nodes
+### Memory Management Nodes (Operation-Aware)
 
-1. **Memory Reader Node**
+**NEW in v0.9.2**: Memory agents now use operation-aware presets that automatically provide optimized defaults.
+
+1. **Memory Reader Agent** (Enhanced with Smart Defaults)
    ```yaml
-   nodes:
+   agents:
      - id: "context_loader"
-       type: "memory_reader"
-       params:
-         query_type: "semantic"  # or "exact", "temporal"
-         filters:
-           memory_type: "long_term"
-           time_window: "24h"
-         top_k: 5
-         similarity_threshold: 0.8
+       type: "memory"
+       memory_preset: "episodic"  # 🎯 Auto-applies READ defaults!
+       config:
+         operation: read           # (limit=8, similarity_threshold=0.6, etc.)
+         namespace: conversations
+       # Most parameters now provided automatically by preset
    ```
 
-2. **Memory Writer Node**
+2. **Memory Writer Agent** (Enhanced with Smart Defaults)
    ```yaml
-   nodes:
+   agents:
      - id: "memory_saver"
-       type: "memory_writer"
-       params:
-         memory_type: "short_term"
-         ttl: "1h"
-         index_fields: ["title", "content"]
-         deduplication:
-           enabled: true
-           similarity_threshold: 0.95
+       type: "memory"
+       memory_preset: "working"   # 🎯 Auto-applies WRITE defaults!
+       config:
+         operation: write          # (vector=true, optimized indexing, etc.)
+         namespace: session_data
+       # Indexing and storage parameters provided by preset
    ```
 
 3. **RAG Node**
@@ -244,23 +242,31 @@ Orka provides various tools that can be used within workflows. Here are the avai
          fallback_enabled: true
    ```
 
-## Memory Configurations
+## Memory Configurations (Operation-Aware Presets)
 
-### Minsky Memory Level Presets
+**NEW in v0.9.2**: Simplified memory configuration with operation-aware presets!
 
-Marvin Minsky's six levels of memory provide a framework for organizing different types of memory in AI systems. Here are the corresponding configurations for each level:
+### Modern Memory Presets (Minsky-Inspired)
 
-1. **Instinctive Memory (Level 1)**
+Instead of complex manual configurations, use cognitive memory presets that automatically adapt to read vs write operations:
+
+1. **Sensory Memory** (Real-time Processing)
    ```yaml
-   memory:
-     type: "redisstack"
+   # ❌ OLD WAY: Complex configuration (30+ lines)
+   # memory:
+   #   type: "redisstack"
+   #   config:
+   #     memory_type: "sensory"
+   #     decay_config: { ... 20+ lines ... }
+   #     vector_params: { ... 10+ lines ... }
+   
+   # ✅ NEW WAY: Simple preset (1 line!)
+   - id: sensor_memory
+     type: memory
+     memory_preset: "sensory"  # 🎯 Auto-optimized for real-time data!
      config:
-       memory_type: "instinctive"
-       decay_config:
-         enabled: false  # No decay for instinctive memories
-         importance_threshold: 1.0  # Always retain
-       vector_params:
-         M: 16  # HNSW graph connections
+       operation: write
+     namespace: sensor_data
          ef_construction: 100  # Build-time accuracy
        retrieval:
          strategy: "exact"  # No fuzzy matching
@@ -268,17 +274,22 @@ Marvin Minsky's six levels of memory provide a framework for organizing differen
          similarity_threshold: 0.95  # Very strict matching
    ```
 
-2. **Learned Responses (Level 2)**
+2. **Working Memory** (Session Context)
    ```yaml
-   memory:
-     type: "redisstack"
+   # ❌ OLD WAY: Complex configuration
+   # memory:
+   #   type: "redisstack"
+   #   config:
+   #     memory_type: "learned"
+   #     decay_config: { ... 15+ lines ... }
+   
+   # ✅ NEW WAY: Simple preset
+   - id: session_memory
+     type: memory
+     memory_preset: "working"  # 🎯 Auto-optimized for session context!
      config:
-       memory_type: "learned"
-       decay_config:
-         enabled: true
-         short_term_hours: 24
-         long_term_hours: 720  # 30 days
-         importance_threshold: 0.7
+       operation: read          # (limit=5, context_weight=0.5, etc.)
+     namespace: user_session
        vector_params:
          M: 16
          ef_construction: 150
@@ -288,17 +299,22 @@ Marvin Minsky's six levels of memory provide a framework for organizing differen
          similarity_threshold: 0.8
    ```
 
-3. **Reflective Memory (Level 3)**
+3. **Episodic Memory** (Conversations)
    ```yaml
-   memory:
-     type: "redisstack"
+   # ❌ OLD WAY: Complex configuration
+   # memory:
+   #   type: "redisstack"
+   #   config:
+   #     memory_type: "reflective"
+   #     decay_config: { ... 20+ lines ... }
+   
+   # ✅ NEW WAY: Simple preset
+   - id: conversation_memory
+     type: memory
+     memory_preset: "episodic"  # 🎯 Auto-optimized for conversations!
      config:
-       memory_type: "reflective"
-       decay_config:
-         enabled: true
-         short_term_hours: 48
-         long_term_hours: 2160  # 90 days
-         importance_threshold: 0.6
+       operation: write         # (vector=true, conversation indexing, etc.)
+     namespace: conversations
        vector_params:
          M: 24
          ef_construction: 200
@@ -309,17 +325,22 @@ Marvin Minsky's six levels of memory provide a framework for organizing differen
          reranking: true
    ```
 
-4. **Self-Reflective Memory (Level 4)**
+4. **Semantic Memory** (Knowledge Base)
    ```yaml
-   memory:
-     type: "redisstack"
+   # ❌ OLD WAY: Complex configuration
+   # memory:
+   #   type: "redisstack"
+   #   config:
+   #     memory_type: "self_reflective"
+   #     decay_config: { ... 25+ lines ... }
+   
+   # ✅ NEW WAY: Simple preset
+   - id: knowledge_memory
+     type: memory
+     memory_preset: "semantic"  # 🎯 Auto-optimized for knowledge!
      config:
-       memory_type: "self_reflective"
-       decay_config:
-         enabled: true
-         short_term_hours: 168  # 1 week
-         long_term_hours: 4320  # 180 days
-         importance_threshold: 0.5
+       operation: read          # (limit=10, no temporal bias, etc.)
+     namespace: knowledge_base
        vector_params:
          M: 32
          ef_construction: 250
@@ -330,17 +351,22 @@ Marvin Minsky's six levels of memory provide a framework for organizing differen
          context_window: 5
    ```
 
-5. **Self-Conscious Memory (Level 5)**
+5. **Procedural Memory** (Workflows)
    ```yaml
-   memory:
-     type: "redisstack"
+   # ❌ OLD WAY: Complex configuration
+   # memory:
+   #   type: "redisstack"
+   #   config:
+   #     memory_type: "self_conscious"
+   #     decay_config: { ... 30+ lines ... }
+   
+   # ✅ NEW WAY: Simple preset
+   - id: workflow_memory
+     type: memory
+     memory_preset: "procedural"  # 🎯 Auto-optimized for processes!
      config:
-       memory_type: "self_conscious"
-       decay_config:
-         enabled: true
-         short_term_hours: 336  # 2 weeks
-         long_term_hours: 8760  # 1 year
-         importance_threshold: 0.4
+       operation: write           # (pattern-optimized storage, etc.)
+     namespace: workflows
        vector_params:
          M: 48
          ef_construction: 300
@@ -352,17 +378,22 @@ Marvin Minsky's six levels of memory provide a framework for organizing differen
          context_window: 10
    ```
 
-6. **Self-Ideal Memory (Level 6)**
+6. **Meta Memory** (System Insights)
    ```yaml
-   memory:
-     type: "redisstack"
+   # ❌ OLD WAY: Complex configuration
+   # memory:
+   #   type: "redisstack"
+   #   config:
+   #     memory_type: "self_ideal"
+   #     decay_config: { ... 35+ lines ... }
+   
+   # ✅ NEW WAY: Simple preset
+   - id: system_memory
+     type: memory
+     memory_preset: "meta"        # 🎯 Auto-optimized for system data!
      config:
-       memory_type: "self_ideal"
-       decay_config:
-         enabled: true
-         short_term_hours: 720  # 30 days
-         long_term_hours: 17520  # 2 years
-         importance_threshold: 0.3
+       operation: write           # (high-quality indexing, etc.)
+     namespace: system_metrics
        vector_params:
          M: 64
          ef_construction: 400
@@ -375,43 +406,39 @@ Marvin Minsky's six levels of memory provide a framework for organizing differen
          reranking: true
    ```
 
-### Memory Level Characteristics
+### Operation-Aware Preset Characteristics
 
-1. **Instinctive Memory (Level 1)**
-   - Fastest retrieval with exact matching
-   - No decay (permanent storage)
-   - Very strict similarity requirements
-   - Used for core system behaviors and critical patterns
+**Each preset automatically provides different optimized defaults for READ vs WRITE operations:**
 
-2. **Learned Responses (Level 2)**
-   - Quick retrieval with some flexibility
-   - Moderate decay for short-term memories
-   - Balanced similarity matching
-   - Used for learned patterns and responses
+1. **Sensory Memory** (15 minutes)
+   - **Read**: Fast retrieval (limit=3, similarity_threshold=0.95, no vector search)
+   - **Write**: Minimal indexing (vector=false, speed-optimized storage)
+   - **Use**: Real-time data, sensor input, immediate processing
 
-3. **Reflective Memory (Level 3)**
-   - Enhanced semantic search capabilities
-   - Longer retention of important memories
-   - More flexible similarity matching
-   - Used for pattern recognition and analysis
+2. **Working Memory** (2-8 hours)
+   - **Read**: Context-aware search (limit=5, context_weight=0.5, temporal_weight=0.4)
+   - **Write**: Session optimization (vector=true, temporary storage tuning)
+   - **Use**: Session context, active workflows, temporary calculations
 
-4. **Self-Reflective Memory (Level 4)**
-   - Comprehensive context consideration
-   - Extended memory retention
-   - Broader similarity matching
-   - Used for complex pattern analysis and learning
+3. **Episodic Memory** (1 day - 1 week)
+   - **Read**: Conversational context (limit=8, similarity_threshold=0.6, temporal_weight=0.3)
+   - **Write**: Rich metadata storage (vector=true, conversation-optimized indexing)
+   - **Use**: Conversations, personal experiences, interaction history
 
-5. **Self-Conscious Memory (Level 5)**
-   - Advanced temporal context awareness
-   - Long-term memory storage
-   - Flexible similarity matching
-   - Used for high-level pattern recognition
+4. **Semantic Memory** (3 days - 90 days)
+   - **Read**: Knowledge matching (limit=10, similarity_threshold=0.65, no temporal bias)
+   - **Write**: Knowledge optimization (vector=true, long-term indexing)
+   - **Use**: Facts, knowledge base, learned information
 
-6. **Self-Ideal Memory (Level 6)**
-   - Most sophisticated retrieval system
-   - Very long-term storage
-   - Highly flexible matching
-   - Used for abstract patterns and concepts
+5. **Procedural Memory** (1 week - 6 months)
+   - **Read**: Pattern recognition (limit=6, similarity_threshold=0.7, minimal temporal bias)
+   - **Write**: Process indexing (vector=true, pattern-optimized storage)
+   - **Use**: Skills, workflows, patterns, process optimization
+
+6. **Meta Memory** (2 days - 1 year)
+   - **Read**: System analysis (limit=4, similarity_threshold=0.8, high precision)
+   - **Write**: Performance optimization (vector=true, high-quality indexing)
+   - **Use**: System insights, performance metrics, meta-learning
 
 ## Prompt Rendering
 

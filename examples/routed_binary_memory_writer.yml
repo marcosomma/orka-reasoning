@@ -27,27 +27,24 @@ orchestrator:
 agents:
   - id: memory_reader
     type: memory
+    memory_preset: "working"  # Active problem-solving cache (4 hours)
     queue: orka:memory-reader
     config:
       operation: read
-      memory_type: short_term
+      # 🎯 Preset provides: limit=5, similarity_threshold=0.7, vector_weight=0.6,
+      # text_weight=0.4, enable_hybrid_search=true, context_weight=0.5, etc.
       memory_category_filter: stored
-      limit: 5
-      enable_context_search: true
-      enable_temporal_ranking: true
-      temporal_weight: 0.1
-      similarity_threshold: 0.1
-      # Vector search configuration
-      enable_vector_search: true
-      vector_weight: 0.7
-      text_weight: 0.3
-      enable_hybrid_search: true
-      ef_runtime: 10
+      similarity_threshold: 0.1  # Override for very broad matching
+      temporal_weight: 0.1        # Override preset default
     namespace: processed_numbers
     prompt: "Number: {{ get_input() }}"
 
   - id: binary_answer_classifier
-    type: openai-binary
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.1  # Low temperature for consistent binary decisions
     prompt: |
       Can the previous memory provide a complete answer to this question?
 
@@ -60,6 +57,8 @@ agents:
 
       IMPORTANT: If you found actual memory entries (not "NONE"), that means we have a cached result and you should return TRUE.
       Only return FALSE if the memory is "NONE" or empty.
+      
+      Answer with exactly "true" or "false" only.
     queue: orka:classify
 
   - id: memory_check_router
@@ -71,16 +70,24 @@ agents:
         "true": [binary_result_returner] # Memory found, return stored answer
 
   - id: answer_returner
-    type: openai-answer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
     prompt: |
       Based on previously stored analysis:
       {{ previous_outputs.memory_reader.memories }}
 
-      Return the cached result for input "{{ get_input() }}" without reprocessing.
+      Return the cached result for input "{{ get_input() }}" without reprocessing. Provide a clear, concise answer.
 
   - id: binary_classifier
-    type: openai-binary
-    prompt: "Is the number in this input greater than 5? Return true or false: {{ get_input() }}"
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.0  # Zero temperature for deterministic mathematical comparison
+    prompt: "Is the number in this input greater than 5? Return true or false: {{ get_input() }}. Answer with exactly 'true' or 'false' only."
     queue: orka:classify
 
   - id: classification_router
@@ -92,8 +99,12 @@ agents:
         "false": [false_validation_guardian, false_memory_writer, binary_result_returner]
 
   - id: binary_result_returner
-    type: openai-answer
-    prompt: "The classification result is: {{ get_agent_response('binary_classifier') }}"
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.2
+    prompt: "The classification result is: {{ get_agent_response('binary_classifier') }}. Provide a clear final answer."
     depends_on:
       - binary_classifier
 
@@ -191,10 +202,10 @@ agents:
 
   - id: true_memory_writer
     type: memory
+    memory_preset: "working"  # Active problem-solving cache (4 hours)
     queue: orka:memory-writer-short
     config:
       operation: write
-      memory_type: short_term
       vector: true # Enable semantic search
       category: stored
       # Enhanced vector configuration
@@ -206,17 +217,6 @@ agents:
         ef_construction: 200
         m: 16
     namespace: processed_numbers
-    # Agent-level decay configuration overrides global settings
-    decay:
-      enabled: true
-      default_long_term: false # Store for future retrieval
-      short_term_hours: 2.0 # 2 hours retention for debugging
-      long_term_hours: 24.0 # 24 hours max retention
-      check_interval_minutes: 30 # Check every 30 minutes
-      importance_rules:
-        base_score: 0.8 # Higher base score for caching
-        event_type_boosts:
-          write: 0.3
     prompt: |
       Number {{ get_input() }} Analysis Result: {{ get_input() }} > 5 (TRUE - greater than 5)
 
@@ -243,10 +243,10 @@ agents:
 
   - id: false_memory_writer
     type: memory
+    memory_preset: "working"  # Active problem-solving cache (4 hours)
     queue: orka:memory-writer-short
     config:
       operation: write
-      memory_type: short_term
       vector: true # Enable semantic search
       # Enhanced vector configuration
       vector_field_name: "content_vector"
@@ -257,17 +257,6 @@ agents:
         ef_construction: 200
         m: 16
     namespace: processed_numbers
-    # Agent-level decay configuration overrides global settings
-    decay:
-      enabled: true
-      default_long_term: false # Store for future retrieval
-      short_term_hours: 2.0 # 2 hours retention for debugging
-      long_term_hours: 24.0 # 24 hours max retention
-      check_interval_minutes: 30 # Check every 30 minutes
-      importance_rules:
-        base_score: 0.8 # Higher base score for caching
-        event_type_boosts:
-          write: 0.3
     prompt: |
       Number {{ get_input() }} Analysis Result: {{ get_input() }} ≤ 5 (FALSE - not greater than 5)
 

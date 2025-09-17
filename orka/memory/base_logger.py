@@ -179,6 +179,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         stream_key: str = "orka:memory",
         debug_keep_previous_outputs: bool = False,
         decay_config: dict[str, Any] | None = None,
+        memory_preset: str | None = None,
     ) -> None:
         """
         Initialize the memory logger.
@@ -187,13 +188,20 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
             stream_key: Key for the memory stream. Defaults to "orka:memory".
             debug_keep_previous_outputs: If True, keeps previous_outputs in log files for debugging.
             decay_config: Configuration for memory decay functionality.
+            memory_preset: Name of memory preset to use (sensory, working, episodic, semantic, procedural, meta).
+                          If provided, preset config is used as base and merged with decay_config.
         """
         self.stream_key = stream_key
         self.memory: list[dict[str, Any]] = []  # Local memory buffer
         self.debug_keep_previous_outputs = debug_keep_previous_outputs
 
+        # Handle memory preset configuration
+        effective_decay_config = self._resolve_memory_preset(
+            memory_preset, decay_config or {}, operation=None
+        )
+
         # Initialize decay configuration
-        self.decay_config = self._init_decay_config(decay_config or {})
+        self.decay_config = self._init_decay_config(effective_decay_config)
 
         # Decay state management
         self._decay_thread: threading.Thread | None = None
@@ -210,6 +218,35 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         self._blob_usage: dict[str, int] = {}
         # Minimum size threshold for blob deduplication (in chars)
         self._blob_threshold = 200
+
+    def _resolve_memory_preset(
+        self, memory_preset: str | None, decay_config: dict[str, Any], operation: str | None = None
+    ) -> dict[str, Any]:
+        """
+        Resolve memory preset configuration and merge with custom config.
+
+        Args:
+            memory_preset: Name of the memory preset to use
+            decay_config: Custom decay configuration to override preset values
+            operation: Memory operation type ('read' or 'write') for operation-specific defaults
+
+        Returns:
+            Merged configuration dictionary with operation-specific defaults applied
+        """
+        if not memory_preset:
+            return decay_config
+
+        try:
+            from .presets import merge_preset_with_config
+
+            return merge_preset_with_config(memory_preset, decay_config, operation)
+        except ImportError:
+            logger.warning(f"Memory presets not available, using custom config only")
+            return decay_config
+        except Exception as e:
+            logger.error(f"Failed to load memory preset '{memory_preset}': {e}")
+            logger.warning("Falling back to custom decay config")
+            return decay_config
 
     def _init_decay_config(self, decay_config: dict[str, Any]) -> dict[str, Any]:
         """

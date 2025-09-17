@@ -74,6 +74,7 @@ agents:
   # Initial memory reader to retrieve past insights
   - id: prior_insights_reader
     type: memory
+    memory_preset: "procedural"  # Skills and process patterns (90 days)
     namespace: genius_insights
     queue: orka:shared-debate-memory-reader
     config:
@@ -84,7 +85,7 @@ agents:
       similarity_threshold: 0.1
       enable_temporal_ranking: true
       temporal_weight: 0.4
-      memory_type: long_term
+      # memory_type replaced by memory_preset
       memory_category_filter: store
       memory_type_filter: "all"
       vector: true
@@ -162,6 +163,7 @@ agents:
         # Historical context provider
         - id: historical_context
           type: memory
+          memory_preset: "semantic"  # Facts and knowledge base (30 days)
           namespace: historical_knowledge
           queue: orka:shared-debate-memory
           config:
@@ -450,11 +452,12 @@ agents:
   # Memory writer
   - id: memory_writer
     type: memory
+    memory_preset: "procedural"  # Skills and process patterns (90 days)
     namespace: genius_insights
     queue: orka:shared-debate-memory-writer
     config:
       operation: write
-      memory_type: long_term
+      # memory_type replaced by memory_preset
       vector: true
       vector_field: "content_vector"
       force_recreate_index: false  # Only create index if it doesn't exist

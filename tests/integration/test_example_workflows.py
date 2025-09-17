@@ -81,7 +81,7 @@ class TestExampleWorkflows:
         assert orchestrator.agents["duckduckgo_4"].__class__.__name__ == "DuckDuckGoTool"
         assert (
             orchestrator.agents["openai-classification_5"].__class__.__name__
-            == "OpenAIClassificationAgent"
+            == "LocalLLMAgent"  # Updated: converted from OpenAI to Local LLM
         )
 
     def test_complex_flow_workflow_structure(self, setup_mocks):
@@ -197,9 +197,11 @@ class TestExampleWorkflows:
         example_path = Path("examples/person_routing_with_search.yml")
         orchestrator = Orchestrator(str(example_path))
 
-        # Check classification agent
+        # Check classification agent (updated for Local LLM)
         classifier = orchestrator.agents["openai-classification_5"]
-        assert classifier.__class__.__name__ == "OpenAIClassificationAgent"
+        assert (
+            classifier.__class__.__name__ == "LocalLLMAgent"
+        )  # Updated: converted from OpenAI to Local LLM
 
         # Verify it has params configured (where options are stored)
         assert hasattr(classifier, "params")
@@ -257,6 +259,10 @@ class TestExampleWorkflows:
         # Should have multiple different agent types
         assert len(agent_types) >= 3, f"Expected multiple agent types, got: {agent_types}"
 
-        # Should include both OpenAI and search agents
-        assert any("OpenAI" in agent_type for agent_type in agent_types)
-        assert any("DuckDuckGo" in agent_type for agent_type in agent_types)
+        # Should include both LLM and search agents (updated for Local LLM)
+        assert any(
+            "LocalLLMAgent" in agent_type for agent_type in agent_types
+        ), f"No LocalLLMAgent found in: {agent_types}"
+        assert any(
+            "DuckDuckGo" in agent_type for agent_type in agent_types
+        ), f"No DuckDuckGo found in: {agent_types}"

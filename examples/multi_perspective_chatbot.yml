@@ -12,16 +12,16 @@ orchestrator:
 agents:
   - id: memory_retriever
     type: memory
+    memory_preset: "episodic"  # Personal experiences and conversations (7 days)
     config:
       operation: read
+      # 🎯 Preset provides: limit=8, similarity_threshold=0.6, vector_weight=0.7,
+      # text_weight=0.3, enable_hybrid_search=true, temporal_weight=0.3, etc.
       memory_category_filter: conversation
-      enable_vector_search: true
-      vector_weight: 0.8
-      text_weight: 0.2
-      enable_hybrid_search: true
-      similarity_threshold: 0.65
-      max_results: 5
-      include_metadata: true
+      vector_weight: 0.8          # Override for stronger semantic matching
+      text_weight: 0.2            # Override for less text matching
+      similarity_threshold: 0.65  # Override preset default of 0.6
+      limit: 5                    # Override preset default of 8
     prompt: |
       Query: {{ get_input() }}
       
@@ -219,6 +219,7 @@ agents:
 
   - id: memory_writer
     type: memory
+    memory_preset: "episodic"  # Personal experiences and conversations (7 days)
     config:
       operation: write
       vector: true

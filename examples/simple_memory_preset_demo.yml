@@ -1,0 +1,69 @@
+# Simple Memory Preset Demo
+# Demonstrates the new Minsky-inspired memory presets for simplified configuration
+
+meta:
+  version: "1.0"
+  author: "OrKa Framework"
+  description: "Demo of simplified memory configuration using cognitive presets"
+
+orchestrator:
+  id: memory-preset-demo
+  strategy: sequential
+  
+  # 🧠 SIMPLIFIED: Just specify a memory preset instead of complex config!
+  memory_preset: "episodic"  # Uses Minsky-inspired episodic memory settings
+  
+  agents:
+    - question_processor
+    - memory_search
+    - answer_generator
+    - memory_store
+
+agents:
+  # Simple question processing
+  - id: question_processor
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: "Classify this question type: {{ input }}"
+
+  # Memory search with episodic preset (conversation history)
+  - id: memory_search
+    type: memory
+    memory_preset: "episodic"  # Agent-level preset override
+    config:
+      operation: read  # Search/retrieve from memory
+    namespace: conversations
+    params:
+      limit: 5
+      similarity_threshold: 0.8
+    prompt: "Find relevant conversation history for: {{ input }}"
+
+  # Generate answer
+  - id: answer_generator
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    prompt: |
+      Question: {{ input }}
+      Previous conversations: {{ previous_outputs.memory_search }}
+      
+      Provide a helpful answer that builds on our conversation history.
+
+  # Store the interaction with episodic memory settings
+  - id: memory_store
+    type: memory
+    memory_preset: "episodic"  # Perfect for storing conversations
+    config:
+      operation: write  # Store to memory
+    namespace: conversations
+    params:
+      vector: true  # Enable semantic search
+    prompt: |
+      Question: {{ input }}
+      Answer: {{ previous_outputs.answer_generator }}
+      Classification: {{ previous_outputs.question_processor }}

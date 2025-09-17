@@ -87,9 +87,11 @@ agents:
             - - conservative_agent
         
         - id: progressive_agent
-          type: openai-answer
+          type: local_llm
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
           temperature: 0.7
-          model: gpt-4o-mini
           prompt: |
             You are a PROGRESSIVE agent analyzing: {{ get_input() }}
             
@@ -115,9 +117,11 @@ agents:
             COMPROMISE: [What you can accept from conservative view - 1 sentence]
         
         - id: conservative_agent
-          type: openai-answer
+          type: local_llm
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
           temperature: 0.7
-          model: gpt-4o-mini
           prompt: |
             You are a CONSERVATIVE agent analyzing: {{ get_input() }}
             
@@ -144,9 +148,11 @@ agents:
 
         # Simple agreement checker
         - id: agreement_check
-          type: openai-answer
+          type: local_llm
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
           temperature: 0.2
-          model: gpt-4o-mini
           prompt: |
             Evaluate agreement between these positions:
             
@@ -177,19 +183,15 @@ agents:
         # Simple memory writer
         - id: memory_writer
           type: memory
+          memory_preset: "working"  # Active debate context (4 hours)
           queue: orka:simple-memory-writer
           config:
             operation: write
-            memory_type: short_term
             vector: true
             # Vector configuration for memory writing
             vector_field_name: "content_vector"
             force_recreate_index: false
           namespace: simple_debate_memory
-          decay:
-            enabled: true
-            short_term_hours: 1.0
-            long_term_hours: 1.0
           prompt: |
             Debate round {{ get_loop_number() }} summary:
             Progressive: {{ get_agent_response('progressive_agent') }}
@@ -207,9 +209,11 @@ agents:
 
   # Final answer processor
   - id: final_answer
-    type: openai-answer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
     temperature: 0.3
-    model: gpt-4o-mini
     prompt: |
       USER ASKED: {{ get_input() }}
       

@@ -14,7 +14,11 @@ agents:
     targets:
       - - detect_change
   - id: detect_change
-    type: openai-answer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
     queue: orka:detect_change
     prompt: "Given the user query, identify if any important change in classification/understanding/definition (or any adjective associated to the query) occurred in history. If so, return the date when this change occurred. Format strictly: DD/MM/YYYY. QUERY: {{ get_input() }} Constraints: Only return a date in the format DD/MM/YYYY."
     depends_on:
@@ -32,14 +36,22 @@ agents:
     depends_on:
       - join_detect
   - id: generate_before_query
-    type: openai-answer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.4
     queue: orka:generate_before_query
     prompt: > 
       Based on the user\'s question and the detected pivot year, write a search query to find how the subject was classified or understood before that year. Use phrasing like: "how was [subject] classified before [year]?" SUBJECT: {{ get_input() }} YEAR: {{ get_agent_response("detect_change") }} Constraints: Only return the search sentence.
     depends_on:
       - fork_temporal
   - id: generate_after_query
-    type: openai-answer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.4
     queue: orka:generate_after_query
     prompt: >
       Based on the user\'s question and the detected pivot year, write a search query to find how the subject was classified or understood after that year. Use phrasing like: "how was [subject] classified after [year]?" SUBJECT: {{ get_input() }} YEAR: {{ get_agent_response("detect_change") }} Constraints: Only return the search sentence.
@@ -61,8 +73,12 @@ agents:
     type: join
     group: fork_temporal
   - id: synthesize_timeline_answer
-    type: openai-answer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
     queue: orka:synthesize_timeline_answer
-    prompt: "Based on the query, the year, and data from both the before and after searches, write a summary explaining: - What the subject was classified/understood/defined as before the change - What it became after the change - The context and significance of this shift QUERY: {{ get_input() }} YEAR: {{ get_agent_response('detect_change') }} EXTRA DATA: {{ get_agent_response('search_before') }} | {{ get_agent_response('search_after') }}"
+    prompt: "Based on the query, the year, and data from both the before and after searches, write a comprehensive summary explaining: - What the subject was classified/understood/defined as before the change - What it became after the change - The context and significance of this shift QUERY: {{ get_input() }} YEAR: {{ get_agent_response('detect_change') }} EXTRA DATA: {{ get_agent_response('search_before') }} | {{ get_agent_response('search_after') }}"
     depends_on:
       - join_paths

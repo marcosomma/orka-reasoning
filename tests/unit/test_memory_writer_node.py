@@ -28,6 +28,8 @@ class TestMemoryWriterNodeInitialization:
             enable_hnsw=True,
             vector_params={"M": 16, "ef_construction": 200},
             decay_config={},
+            memory_preset=None,
+            operation="write",  # Added for operation-aware presets
         )
 
     @patch("orka.nodes.memory_writer_node.create_memory_logger")
@@ -59,6 +61,8 @@ class TestMemoryWriterNodeInitialization:
             enable_hnsw=False,
             vector_params=custom_vector_params,
             decay_config=custom_decay_config,
+            memory_preset=None,
+            operation="write",  # Added for operation-aware presets
         )
 
     def test_initialization_with_custom_memory_logger(self):

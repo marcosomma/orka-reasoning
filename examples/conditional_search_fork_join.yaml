@@ -10,19 +10,24 @@ orchestrator:
     - router_search_path
 agents:
   - id: initial_classify
-    type: openai-classification
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.2
     queue: orka:domain
     prompt: >
       Classify this input "{{ get_input() }}" into one of: tech, science, history, nonsense.
-    options:
-      - tech
-      - science
-      - history
-      - nonsense
+      Choose exactly one from: tech, science, history, nonsense.
+      Answer with only the category name.
   - id: search_required
-    type: openai-binary
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.1
     queue: orka:need_search
-    prompt: Is "{{ get_input() }}" a question that requires deep internet research?
+    prompt: Is "{{ get_input() }}" a question that requires deep internet research? Answer with exactly 'true' or 'false' only.
     depends_on:
       - initial_classify
   - id: fork_parallel_checks
@@ -33,19 +38,23 @@ agents:
     depends_on:
       - search_required
   - id: topic_validity_check
-    type: openai-binary
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.1
     queue: orka:topic_check
-    prompt: Is "{{ get_input() }}" a valid, meaningful topic to investigate?
+    prompt: Is "{{ get_input() }}" a valid, meaningful topic to investigate? Answer with exactly 'true' or 'false' only.
     depends_on:
       - fork_parallel_checks
   - id: summary_category_check
-    type: openai-classification
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.2
     queue: orka:summary_check
-    prompt: 'Classify the input "{{ get_input() }}" into one of: [summary, detailed, none].'
-    options:
-      - summary
-      - detailed
-      - none
+    prompt: 'Classify the input "{{ get_input() }}" into one of: [summary, detailed, none]. Choose exactly one from: summary, detailed, none. Answer with only the classification.'
     depends_on:
       - fork_parallel_checks
   - id: join_parallel_checks
@@ -81,9 +90,13 @@ agents:
       - broken_search
       - backup_duck_search
   - id: info_completed
-    type: openai-binary
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.1
     queue: orka:info_completed
-    prompt: Did we retrieve extra data for this input "{{ get_input() }}"? {{ get_fork_responses() }}
+    prompt: Did we retrieve extra data for this input "{{ get_input() }}"? {{ get_fork_responses() }} Answer with exactly 'true' or 'false' only.
     depends_on:
       - router_search_path
   - id: final_router
@@ -98,14 +111,22 @@ agents:
     depends_on:
       - failover_search
   - id: final_builder_true
-    type: openai-answer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
     queue: orka:final_output
-    prompt: "Build a detailed answer combining:- Classification result: {{ get_agent_response('initial_classify') }}- Search result: {{ get_agent_response('failover_search') }}"
+    prompt: "Build a detailed answer combining:- Classification result: {{ get_agent_response('initial_classify') }}- Search result: {{ get_agent_response('failover_search') }}. Provide a comprehensive and informative response."
     depends_on:
       - final_router
   - id: final_builder_false
-    type: openai-answer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.6
     queue: orka:final_output
-    prompt: "Build a detailed answer based on the classification result:- Classification result: {{ get_agent_response('initial_classify') }}"
+    prompt: "Build a detailed answer based on the classification result:- Classification result: {{ get_agent_response('initial_classify') }}. Provide the best possible response given the available information."
     depends_on:
       - final_router

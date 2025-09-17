@@ -35,9 +35,9 @@ class MemoryReaderNode(BaseNode):
         enable_temporal_ranking (bool): Whether to boost recent memories
 
     Example:
-    
+
     .. code-block:: yaml
-    
+
         - id: memory_search
           type: memory-reader
           namespace: knowledge_base
@@ -77,13 +77,24 @@ class MemoryReaderNode(BaseNode):
                 backend="redisstack",
                 redis_url=kwargs.get("redis_url", "redis://localhost:6380/0"),
                 embedder=kwargs.get("embedder"),
+                memory_preset=kwargs.get("memory_preset"),
+                operation="read",  # NEW: Specify this is a read operation
             )
 
-        # Configuration
-        self.namespace = kwargs.get("namespace", "default")
-        self.limit = kwargs.get("limit", 5)
-        self.similarity_threshold = kwargs.get("similarity_threshold", 0.7)
-        self.ef_runtime = kwargs.get("ef_runtime", 10)
+        # Apply operation-aware preset defaults to configuration
+        config_with_preset_defaults = kwargs.copy()
+        if kwargs.get("memory_preset"):
+            from ..memory_logger import apply_memory_preset_to_config
+
+            config_with_preset_defaults = apply_memory_preset_to_config(
+                kwargs, memory_preset=kwargs.get("memory_preset"), operation="read"
+            )
+
+        # Configuration with preset-aware defaults
+        self.namespace = config_with_preset_defaults.get("namespace", "default")
+        self.limit = config_with_preset_defaults.get("limit", 5)
+        self.similarity_threshold = config_with_preset_defaults.get("similarity_threshold", 0.7)
+        self.ef_runtime = config_with_preset_defaults.get("ef_runtime", 10)
 
         # Initialize embedder for query encoding
         self.embedder: Optional[AsyncEmbedder] = None

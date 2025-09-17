@@ -128,9 +128,9 @@ class TestAdvancedWorkflows:
         for agent in orchestrator.agents.values():
             agent_types.add(agent.__class__.__name__)
 
-        # Should include various agent types for validation
-        expected_types = ["OpenAIAnswerBuilder", "OpenAIBinaryAgent", "OpenAIClassificationAgent"]
-        found_types = [t for t in expected_types if any(expected in t for expected in agent_types)]
+        # Should include various agent types for validation (updated for Local LLM agents)
+        expected_types = ["LocalLLMAgent", "MemoryReaderNode", "MemoryWriterNode", "RouterNode"]
+        found_types = [t for t in expected_types if t in agent_types]
         assert len(found_types) > 0, f"Expected validation agents, got types: {agent_types}"
 
     def test_routing_memory_writers_workflow(self, setup_advanced_mocks):
@@ -308,10 +308,10 @@ class TestAdvancedWorkflows:
         # Should have at least 3 different types of agents
         assert len(agent_types) >= 3, f"Expected diverse agent types, got: {agent_types}"
 
-        # Should include both LLM and tool agents
-        has_llm = any("OpenAI" in agent_type for agent_type in agent_types)
+        # Should include both LLM and tool agents (updated for Local LLM agents)
+        has_llm = any("LocalLLMAgent" in agent_type for agent_type in agent_types)
         has_tools = any("Tool" in agent_type for agent_type in agent_types)
         has_nodes = any("Node" in agent_type for agent_type in agent_types)
 
-        assert has_llm, "No LLM agents found"
-        assert has_tools or has_nodes, "No tool/node agents found"
+        assert has_llm, f"No LLM agents found, got types: {agent_types}"
+        assert has_tools or has_nodes, f"No tool/node agents found, got types: {agent_types}"

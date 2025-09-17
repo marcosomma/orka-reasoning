@@ -21,7 +21,16 @@ Purpose: a precise, implementation-aligned vocabulary of entities, identifiers, 
 - Agent: a processing unit that reads Context and emits Output
   - Base: `orka/agents/base_agent.py`
   - Examples: `BinaryAgent`, `ClassificationAgent`, `ValidationAndStructuringAgent`, `LocalLLMAgent`, OpenAI-based agents
-  - Special Node-Agents (control flow): `ForkNode`, `JoinNode`, `RouterNode`, `LoopNode`, `FailoverNode`, `FailingNode`, `RAGNode`, `MemoryReaderNode`, `MemoryWriterNode`
+  - Special Node-Agents (control flow): `ForkNode`, `JoinNode`, `RouterNode`, `LoopNode`, `FailoverNode`, `FailingNode`, `RAGNode`
+  - Memory Agents: special `type: memory` agents that handle memory operations based on configuration
+
+- Memory Agent: intelligent agent (`type: memory`) for memory operations
+  - Implementation: Dynamically creates `MemoryReaderNode` or `MemoryWriterNode` based on `config.operation`
+  - Operations: 
+    - `operation: read` → Creates `MemoryReaderNode` for semantic search and retrieval
+    - `operation: write` → Creates `MemoryWriterNode` for storage with vector embeddings
+  - Features: Vector search, automatic memory classification, decay management, namespace organization
+  - Configuration: Supports operation-aware memory presets with automatic read/write optimization (sensory, working, episodic, semantic, procedural, meta)
 
 - Tool: helper capability used by Agents (e.g., web search)
   - Example: `DuckDuckGoTool` in `orka/tools/search_tools.py`
@@ -67,6 +76,8 @@ Defined in `orka/contracts.py`.
 - Memory types: `short_term`, `long_term` (classification done by memory logger)
 - Categories: `stored` (knowledge) vs `log` (orchestration events)
 - Log types (metadata.log_type): `memory` (stored knowledge) or `log` (events)
+- Memory operations: `read` (search/retrieval), `write` (storage/persistence)
+- Memory presets: `sensory`, `working`, `episodic`, `semantic`, `procedural`, `meta` (Minsky-inspired cognitive types with operation-specific defaults)
 
 ## Relationships
 

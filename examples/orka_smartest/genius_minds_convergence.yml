@@ -41,26 +41,19 @@ agents:
   # Initial memory reader to retrieve past insights
   - id: prior_insights_reader
     type: memory
+    memory_preset: "procedural"  # Skills and process patterns (90 days)
     namespace: genius_insights
     queue: orka:shared-debate-memory-reader
     config:
       operation: read
-      limit: 5
-      enable_context_search: true
-      fallback_to_text: true
-      similarity_threshold: 0.1
-      enable_temporal_ranking: true
-      temporal_weight: 0.4
-      memory_type: long_term
+      # 🎯 Preset provides: limit=6, similarity_threshold=0.7, vector_weight=0.6,
+      # text_weight=0.4, enable_hybrid_search=true, ef_runtime=12, etc.
+      limit: 5                    # Override preset default of 6
+      similarity_threshold: 0.1   # Override for very broad matching
+      temporal_weight: 0.4        # Override preset minimal temporal bias
       memory_category_filter: store
       memory_type_filter: "all"
-      vector: true
-      vector_field: "content_vector"
-      enable_vector_search: true
-      vector_weight: 0.7
-      text_weight: 0.3
-      enable_hybrid_search: true
-      ef_runtime: 10
+      fallback_to_text: true
     prompt: |
       {{ get_input() }}
 
@@ -121,14 +114,14 @@ agents:
         # Historical context provider
         - id: historical_context
           type: memory
+          memory_preset: "semantic"  # Facts and knowledge base (30 days)
           namespace: historical_knowledge
           queue: orka:shared-debate-memory
           config:
             operation: read
-            limit: 3
-            enable_context_search: true
-            vector: true
-            vector_field: "content_vector"
+            # 🎯 Preset provides: limit=10, similarity_threshold=0.65, vector_weight=0.7,
+            # enable_hybrid_search=true, ef_runtime=15, no temporal bias, etc.
+            limit: 3                # Override preset default of 10
           prompt: |
             Retrieve historical context and knowledge relevant to: {{ get_input() }}
 
@@ -400,11 +393,11 @@ agents:
   # Memory writer
   - id: memory_writer
     type: memory
+    memory_preset: "procedural"  # Skills and process patterns (90 days)
     namespace: genius_insights
     queue: orka:shared-debate-memory-writer
     config:
       operation: write
-      memory_type: long_term
       vector: true
       vector_field: "content_vector"
       force_recreate_index: false  # Only create index if it doesn't exist

@@ -110,24 +110,20 @@ agents:
         # 🔧 OPTIMIZED: Reduced memory context
         - id: shared_memory_reader
           type: memory
+          memory_preset: "episodic"  # Personal experiences and conversations (7 days)
           queue: orka:shared-debate-memory
           config:
             operation: read
-            limit: 5  # Reduced from 10
-            enable_context_search: true
-            similarity_threshold: 0.2  # Increased threshold
-            enable_temporal_ranking: true
-            temporal_weight: 0.4
-            memory_type: short_term
+            # 🎯 Preset provides: limit=8, similarity_threshold=0.6, vector_weight=0.7,
+            # text_weight=0.3, enable_hybrid_search=true, temporal_weight=0.3, etc.
+            limit: 5                   # Override preset default of 8
+            similarity_threshold: 0.2  # Override for broader matching
+            temporal_weight: 0.4       # Override preset default of 0.3
             memory_category_filter: store
             memory_type_filter: "all"
-            vector: true
-            # Search in embedded content only
+            # Custom vector field configuration
             search_field: "embedded_content"
-            vector_field: "embedded_vector"  # Use dedicated vector field for embedded content
-            # Enhanced vector search configuration
-            enable_vector_search: true
-            vector_weight: 0.7
+            vector_field: "embedded_vector"
             text_weight: 0.3
             enable_hybrid_search: true
             ef_runtime: 10
@@ -164,7 +160,7 @@ agents:
           temperature: 0.3
           memory_config:
             operation: write
-            memory_type: short_term
+            # memory_type replaced by memory_preset
             vector: true
             namespace: society_memory
             metadata:
@@ -191,7 +187,7 @@ agents:
           temperature: 0.3
           memory_config:
             operation: write
-            memory_type: short_term
+            # memory_type replaced by memory_preset
             vector: true
             namespace: society_memory
             metadata:
@@ -218,7 +214,7 @@ agents:
           temperature: 0.2
           memory_config:
             operation: write
-            memory_type: short_term
+            # memory_type replaced by memory_preset
             vector: true
             namespace: society_memory
             metadata:
@@ -245,7 +241,7 @@ agents:
           temperature: 0.4
           memory_config:
             operation: write
-            memory_type: short_term
+            # memory_type replaced by memory_preset
             vector: true
             namespace: society_memory
             metadata:
@@ -305,7 +301,7 @@ agents:
           temperature: 0.4
           memory_config:
             operation: write
-            memory_type: short_term
+            # memory_type replaced by memory_preset
             vector: true
             namespace: society_memory
             metadata:
@@ -332,7 +328,7 @@ agents:
           temperature: 0.4
           memory_config:
             operation: write
-            memory_type: short_term
+            # memory_type replaced by memory_preset
             vector: true
             namespace: society_memory
             metadata:
@@ -359,7 +355,7 @@ agents:
           temperature: 0.3
           memory_config:
             operation: write
-            memory_type: short_term
+            # memory_type replaced by memory_preset
             vector: true
             namespace: society_memory
             metadata:
@@ -386,7 +382,7 @@ agents:
           temperature: 0.5
           memory_config:
             operation: write
-            memory_type: short_term
+            # memory_type replaced by memory_preset
             vector: true
             namespace: society_memory
             metadata:
@@ -452,10 +448,11 @@ agents:
         # 🔧 OPTIMIZED: Minimal memory writer
         - id: shared_memory_writer
           type: memory
+          memory_preset: "episodic"  # Personal experiences and conversations (7 days)
           queue: orka:shared-debate-writer
           config:
             operation: write
-            memory_type: short_term
+            # memory_type replaced by memory_preset
             vector: true
             vector_field: "embedded_vector"  # Use dedicated vector field for embedded content
             # Enhanced vector configuration

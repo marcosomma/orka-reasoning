@@ -119,6 +119,9 @@ class OrchestratorBase:
         # Get memory configuration from YAML
         memory_config = self.orchestrator_cfg.get("memory", {}).get("config", {})
 
+        # Get memory preset from orchestrator config
+        memory_preset = self.orchestrator_cfg.get("memory_preset")
+
         # Always use RedisStack backend
         self.memory = create_memory_logger(
             backend="redisstack",
@@ -126,6 +129,7 @@ class OrchestratorBase:
             or os.getenv("REDIS_URL", "redis://localhost:6380/0"),
             debug_keep_previous_outputs=debug_keep_previous_outputs,
             decay_config=decay_config,
+            memory_preset=memory_preset,
             enable_hnsw=True,
             vector_params={
                 "M": 16,

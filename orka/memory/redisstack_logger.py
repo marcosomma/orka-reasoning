@@ -218,6 +218,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         stream_key: str = "orka:memory",
         debug_keep_previous_outputs: bool = False,
         decay_config: dict[str, Any] | None = None,
+        memory_preset: str | None = None,
         enable_hnsw: bool = True,
         vector_params: dict[str, Any] | None = None,
         format_params: dict[str, Any] | None = None,
@@ -234,6 +235,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             stream_key: Key for the Redis stream.
             debug_keep_previous_outputs: If True, keeps previous_outputs in log files.
             decay_config: Legacy decay configuration (use memory_decay_config instead).
+            memory_preset: Name of memory preset (sensory, working, episodic, semantic, procedural, meta).
             enable_hnsw: Whether to enable HNSW vector indexing.
             vector_params: HNSW configuration parameters.
             **kwargs: Additional parameters for backward compatibility.
@@ -245,6 +247,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             stream_key,
             debug_keep_previous_outputs,
             effective_decay_config,
+            memory_preset,
         )
 
         self.redis_url = redis_url

@@ -133,6 +133,7 @@ agents:
         # Single memory reader at start - gets all relevant past memories
         - id: shared_memory_reader
           type: memory
+          memory_preset: "episodic"  # Personal experiences and conversations (7 days)
           queue: orka:shared-debate-memory
           config:
             operation: read
@@ -141,7 +142,7 @@ agents:
             similarity_threshold: 0.1
             enable_temporal_ranking: true
             temporal_weight: 0.4
-            memory_type: short_term
+            # memory_type replaced by memory_preset
             memory_category_filter: store
             memory_type_filter: "all"
             vector: true
@@ -185,7 +186,7 @@ agents:
           temperature: 0.3
           memory_config:
             operation: write
-            memory_type: short_term
+            # memory_type replaced by memory_preset
             vector: true
             namespace: society_memory
             metadata:
@@ -218,7 +219,7 @@ agents:
           temperature: 0.3
           memory_config:
             operation: write
-            memory_type: short_term
+            # memory_type replaced by memory_preset
             vector: true
             namespace: society_memory
             metadata:
@@ -251,7 +252,7 @@ agents:
           temperature: 0.2
           memory_config:
             operation: write
-            memory_type: short_term
+            # memory_type replaced by memory_preset
             vector: true
             namespace: society_memory
             metadata:
@@ -284,7 +285,7 @@ agents:
           temperature: 0.4
           memory_config:
             operation: write
-            memory_type: short_term
+            # memory_type replaced by memory_preset
             vector: true
             namespace: society_memory
             metadata:
@@ -375,7 +376,7 @@ agents:
           temperature: 0.4
           memory_config:
             operation: write
-            memory_type: short_term
+            # memory_type replaced by memory_preset
             vector: true
             namespace: society_memory
             metadata:
@@ -413,7 +414,7 @@ agents:
           temperature: 0.4
           memory_config:
             operation: write
-            memory_type: short_term
+            # memory_type replaced by memory_preset
             vector: true
             namespace: society_memory
             metadata:
@@ -451,7 +452,7 @@ agents:
           temperature: 0.3
           memory_config:
             operation: write
-            memory_type: short_term
+            # memory_type replaced by memory_preset
             vector: true
             namespace: society_memory
             metadata:
@@ -489,7 +490,7 @@ agents:
           temperature: 0.5
           memory_config:
             operation: write
-            memory_type: short_term
+            # memory_type replaced by memory_preset
             vector: true
             namespace: society_memory
             metadata:
@@ -623,10 +624,11 @@ agents:
         # Single shared memory writer - captures final debate state
         - id: shared_memory_writer
           type: memory
+          memory_preset: "episodic"  # Personal experiences and conversations (7 days)
           queue: orka:shared-debate-writer
           config:
             operation: write
-            memory_type: short_term
+            # memory_type replaced by memory_preset
             vector: true
             vector_field: "content_vector"  # Ensure proper vector field for RedisStack
             # Enhanced vector configuration

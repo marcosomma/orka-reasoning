@@ -36,6 +36,9 @@
 
 | Feature | Description |
 |---------|-------------|
+| **🧠 Memory Presets System** | **NEW in 0.9.2** - Minsky-inspired cognitive memory types for simplified AI memory configuration |
+| **🤖 Local LLM First** | **NEW in 0.9.2** - Privacy-focused workflows with Ollama integration and local model support |
+| **🔧 Unified Memory Agents** | **NEW in 0.9.2** - Single `type: memory` agent with operation-based configuration |
 | Enterprise Production Readiness | High availability architecture with zero-downtime deployments |
 | Advanced AI Orchestration | Dynamic agent scaling and intelligent coordination |
 | Performance Revolution | 500x throughput increase with 85% response time reduction |
@@ -112,10 +115,10 @@ orka-start
 # For basic Redis (no vector search):
 ORKA_MEMORY_BACKEND=redis ORKA_FORCE_BASIC_REDIS=true orka-start
 
-# 4. Create a simple workflow
-cp examples/orka_framework_qa.yml quickstart.yml
+# 4. Create a simple workflow (try the new memory presets!)
+cp examples/simple_memory_preset_demo.yml quickstart.yml
 
-# 5. Run your intelligent AI workflow
+# 5. Run your intelligent AI workflow with cognitive memory
 orka run ./quickstart.yml "What are the latest developments in quantum computing?"
 
 # 6. Monitor performance (in another terminal)
@@ -204,6 +207,102 @@ redis-cli FT.SEARCH orka:mem:idx "@namespace:user_queries machine learning" LIMI
 
 ---
 
+## 🧠 Memory Presets - Cognitive AI Architecture
+
+**NEW in v0.9.2**: Simplified memory configuration based on Marvin Minsky's cognitive science principles with **operation-aware smart defaults**.
+
+### Quick Memory Configuration
+
+Instead of complex memory decay rules, just specify a cognitive memory type and operation. The system **automatically applies optimized defaults** for read vs write operations:
+
+```yaml
+- id: my_memory_agent
+  type: memory
+  memory_preset: "episodic"          # Cognitive memory type
+  config:
+    operation: read                  # 🎯 Auto-applies episodic READ defaults!
+    namespace: conversations         # (similarity_threshold=0.6, vector_weight=0.7, etc.)
+  prompt: "Find: {{ input }}"
+
+- id: my_memory_writer
+  type: memory
+  memory_preset: "episodic"          # Same preset, different operation
+  config:
+    operation: write                 # 🎯 Auto-applies episodic WRITE defaults!
+    namespace: conversations         # (vector=true, optimized indexing, etc.)
+  prompt: "Store: {{ input }}"
+```
+
+### Available Memory Presets (Operation-Aware)
+
+Each preset automatically provides **different optimized defaults** for read vs write operations:
+
+| Preset | Retention | Read Defaults | Write Defaults | Use Case |
+|--------|-----------|---------------|----------------|----------|
+| **`sensory`** | 15 minutes | Fast retrieval, high precision | Minimal indexing | IoT sensors, live feeds |
+| **`working`** | 4 hours | Context-aware search | Session optimization | Current task context |
+| **`episodic`** | 7 days | Conversational context | Rich metadata | Conversations, user interactions |
+| **`semantic`** | 30 days | Knowledge matching | Knowledge optimization | Documentation, facts |
+| **`procedural`** | 90 days | Pattern recognition | Process indexing | Workflows, procedures |
+| **`meta`** | 365 days | System analysis | Performance optimization | Metrics, long-term trends |
+
+### Complete Examples
+
+```bash
+# Try the enhanced operation-aware presets
+cp examples/enhanced_memory_presets_demo.yml my-cognitive-ai.yml
+orka run my-cognitive-ai.yml "How does machine learning work?"
+
+# See all 6 cognitive memory types in action
+cp examples/memory_presets_showcase.yml showcase.yml
+orka run showcase.yml "Hello, I'm learning about AI"
+
+# Simple demo with smart defaults
+cp examples/simple_memory_preset_demo.yml quick-demo.yml
+orka run quick-demo.yml "Test cognitive memory"
+```
+
+### 🎯 Smart Defaults in Action
+
+**Before (Complex Manual Configuration):**
+```yaml
+- id: memory_reader
+  type: memory
+  config:
+    operation: read
+    limit: 8
+    similarity_threshold: 0.6
+    enable_vector_search: true
+    enable_temporal_ranking: true
+    temporal_weight: 0.3
+    text_weight: 0.3
+    vector_weight: 0.7
+    enable_hybrid_search: true
+    ef_runtime: 10
+    # ... 15+ more parameters!
+```
+
+**After (Smart Preset Configuration):**
+```yaml
+- id: memory_reader
+  type: memory
+  memory_preset: "episodic"  # 🎯 ALL defaults applied automatically!
+  config:
+    operation: read
+    namespace: conversations
+    # Only specify custom overrides if needed
+```
+
+**Benefits:**
+- ✅ **One-line configuration** - No complex decay rules
+- ✅ **Cognitive science foundation** - Based on established memory theory
+- ✅ **Optimized performance** - Each preset tuned for its use case
+- ✅ **Zero breaking changes** - Works with existing configurations
+
+> **See the complete guide**: [`docs/memory-presets.md`](docs/memory-presets.md)
+
+---
+
 ## 📚 Ready-to-Use Workflow Templates
 
 OrKa includes 15+ curated workflow examples demonstrating different patterns. Here are the key categories:
@@ -260,7 +359,9 @@ orka run my-workflow.yml "Your input here"
 ```yaml
 # Read memories with 100x faster search
 - id: memory_search
-  type: memory-reader
+  type: memory
+  config:
+    operation: read                  # Search existing memories
   namespace: my_namespace
   params:
     limit: 10                        # Max results
@@ -271,7 +372,9 @@ orka run my-workflow.yml "Your input here"
 
 # Store memories with intelligent decay
 - id: memory_store
-  type: memory-writer
+  type: memory
+  config:
+    operation: write                 # Store new memories
   namespace: my_namespace
   params:
     vector: true                     # Enable semantic search
@@ -281,6 +384,23 @@ orka run my-workflow.yml "Your input here"
       confidence: "high"
       timestamp: "{{ now() }}"
   prompt: "Store: {{ input }}"
+
+# 🧠 With Memory Presets (Minsky-inspired cognitive types)
+- id: conversation_memory
+  type: memory
+  memory_preset: "episodic"          # Perfect for conversations!
+  config:
+    operation: write
+  namespace: conversations
+  prompt: "Store conversation: {{ input }}"
+
+# Available Memory Presets:
+# - sensory: Real-time data (15 min retention)
+# - working: Problem-solving context (4 hours retention)
+# - episodic: Personal experiences (7 days retention)  
+# - semantic: Facts and knowledge (30 days retention)
+# - procedural: Skills and patterns (90 days retention)
+# - meta: System metrics (365 days retention)
 ```
 
 ### LLM Agents
@@ -299,7 +419,11 @@ orka run my-workflow.yml "Your input here"
 
 # Answer generation
 - id: answer_builder
-  type: openai-answer
+  type: local_llm
+  model: gpt-oss:20b
+  model_url: http://localhost:11434/api/generate
+  provider: ollama
+  temperature: 0.7
   prompt: |
     Context: {{ previous_outputs.context }}
     Question: {{ input }}
@@ -353,14 +477,22 @@ orka run my-workflow.yml "Your input here"
       agents: [analyzer, scorer]
     agents:
       - id: analyzer
-        type: openai-answer
+        type: local_llm
+        model: gpt-oss:20b
+        model_url: http://localhost:11434/api/generate
+        provider: ollama
+        temperature: 0.5
         prompt: |
           Analyze: {{ input }}
           {% if previous_outputs.past_loops %}
           Previous attempts: {{ previous_outputs.past_loops }}
           {% endif %}
       - id: scorer
-        type: openai-answer
+        type: local_llm
+        model: gpt-oss:20b
+        model_url: http://localhost:11434/api/generate
+        provider: ollama
+        temperature: 0.1
         prompt: "Rate quality (0.0-1.0): {{ previous_outputs.analyzer.result }}"
 ```
 
@@ -515,6 +647,8 @@ redis-cli INFO memory
 
 | Resource | Description |
 |----------|-------------|
+| [**Memory Presets Guide**](./docs/memory-presets.md) | **NEW** - Cognitive memory types and configuration |
+| [**Memory Agents Guide**](./docs/memory-agents-guide.md) | **NEW** - Complete memory agent patterns and operations |
 | [Configuration Guide](./docs/CONFIGURATION.md) | TTL, RedisStack, and component configuration |
 | [Debugging Guide](./docs/DEBUGGING.md) | Troubleshooting procedures and tools |
 | [Core Components](./docs/COMPONENTS.md) | Agreement Finder, LoopNode, Memory Reader docs |

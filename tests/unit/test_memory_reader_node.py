@@ -31,6 +31,8 @@ class TestMemoryReaderNodeInitialization:
             backend="redisstack",
             redis_url="redis://localhost:6380/0",
             embedder=None,  # Embedder fails during initialization
+            memory_preset=None,
+            operation="read",  # Added for operation-aware presets
         )
 
     @patch("orka.utils.embedder.get_embedder")
@@ -87,6 +89,8 @@ class TestMemoryReaderNodeInitialization:
             backend="redisstack",
             redis_url="redis://custom:6380/1",
             embedder=None,  # Embedder fails during initialization
+            memory_preset=None,
+            operation="read",  # Added for operation-aware presets
         )
         mock_get_embedder.assert_called_once_with("custom_model")
 

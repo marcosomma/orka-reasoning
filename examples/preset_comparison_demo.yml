@@ -1,0 +1,98 @@
+# Memory Preset Comparison Demo
+# Shows the difference between complex manual config vs simple presets
+
+meta:
+  version: "1.0"
+  author: "OrKa Framework"
+  description: "Compare complex memory config vs simple presets"
+
+orchestrator:
+  id: preset-comparison
+  strategy: sequential
+  
+  # 🎯 BEFORE: Complex memory configuration (commented out)
+  # memory_config:
+  #   decay:
+  #     enabled: true
+  #     default_short_term_hours: 24.0
+  #     default_long_term_hours: 168.0  
+  #     check_interval_minutes: 60
+  #     memory_type_rules:
+  #       long_term_events: ["success", "completion", "write", "conversation", "interaction"]
+  #       short_term_events: ["debug", "processing", "start", "temporary"]
+  #     importance_rules:
+  #       base_score: 0.5
+  #       event_type_boosts:
+  #         user_interaction: 0.4
+  #         conversation: 0.3
+  #         feedback: 0.3
+  #         correction: 0.4
+  #       agent_type_boosts:
+  #         memory-writer: 0.3
+  #         conversation: 0.2
+  #   vector_search:
+  #     enabled: true
+  #     threshold: 0.7
+  #     context_weight: 0.4
+  #     temporal_weight: 0.3
+  #   namespace_prefix: "episodic"
+  
+  # ✨ AFTER: Simple preset (90% less configuration!)
+  memory_preset: "episodic"
+  
+  agents:
+    - conversation_agent
+    - knowledge_agent
+    - system_agent
+
+agents:
+  # Conversation agent with episodic memory (perfect for interactions)
+  - id: conversation_agent
+    type: memory
+    memory_preset: "episodic"  # Replaces 30+ lines of config!
+    config:
+      operation: write  # Store conversations
+    namespace: conversations
+    params:
+      vector: true
+    prompt: "Store conversation: {{ input }}"
+
+  # Knowledge agent with semantic memory (perfect for facts)  
+  - id: knowledge_agent
+    type: memory
+    memory_preset: "semantic"  # Optimized for knowledge storage
+    config:
+      operation: write  # Store knowledge
+    namespace: knowledge
+    params:
+      vector: true
+    prompt: "Extract and store knowledge from: {{ input }}"
+
+  # System agent with meta memory (perfect for system insights)
+  - id: system_agent
+    type: memory
+    memory_preset: "meta"  # System-level insights and monitoring
+    config:
+      operation: write  # Store system insights
+    namespace: system
+    params:
+      vector: true
+    prompt: "System analysis: {{ input }}"
+
+# 📊 Configuration Complexity Comparison:
+#
+# BEFORE (Manual Config):
+# - 30+ lines of memory configuration per agent
+# - Complex nested dictionaries
+# - Easy to misconfigure 
+# - Hard to maintain across projects
+# - Requires deep understanding of memory parameters
+#
+# AFTER (Memory Presets):
+# - 1 line: memory_preset: "episodic"
+# - Cognitively meaningful names
+# - Based on proven cognitive science (Minsky)
+# - Optimized configurations out-of-the-box
+# - Easy to understand and maintain
+#
+# RESULT: 90% reduction in configuration complexity!
