@@ -1,0 +1,160 @@
+# GraphScout Dynamic Orchestrator Example
+# ========================================
+#
+# This example demonstrates GraphScout working with a DYNAMIC orchestrator
+# where agents can be routed in any order based on intelligent decisions.
+
+orchestrator:
+  id: graph_scout_dynamic_demo
+  strategy: dynamic  # Dynamic orchestrator strategy
+  queue: in_memory
+  agents:
+    - input_classifier
+    - graph_scout_router
+    - search_agent
+    - analysis_agent
+    - memory_writer
+    - response_builder
+
+agents:
+  # Input classification to understand the question type
+  - id: input_classifier
+    type: openai-classification
+    params:
+      categories:
+        - factual
+        - analytical
+        - creative
+        - technical
+      model: gpt-4o-mini
+      temperature: 0.1
+    prompt: |
+      Classify this question into one of these categories:
+      - factual: Questions asking for facts or information
+      - analytical: Questions requiring analysis or reasoning
+      - creative: Questions asking for creative content
+      - technical: Technical or programming questions
+
+      Question: {input}
+
+      Return only the category name.
+
+  # GraphScout intelligent router
+  - id: graph_scout_router
+    type: graph-scout
+    params:
+      k_beam: 3
+      max_depth: 2
+      commit_margin: 0.2
+      score_weights:
+        llm: 0.5
+        heuristics: 0.25
+        prior: 0.15
+        cost: 0.05
+        latency: 0.05
+      safety_profile: default
+      cost_budget_tokens: 1000
+      latency_budget_ms: 5000
+      max_preview_tokens: 200
+      # Two-stage LLM evaluation configuration
+      evaluation_model: "local_llm"
+      evaluation_model_name: "llama3.2:latest"
+      validation_model: "local_llm"
+      validation_model_name: "llama3.2:latest"
+      llm_evaluation_enabled: true
+      fallback_to_heuristics: true
+    prompt: |
+      You are GraphScout, an intelligent routing agent.
+
+      Analyze the question and available workflow paths:
+      Question: {input}
+      {% if previous_outputs.input_classifier %}
+      Classification: {previous_outputs.input_classifier.response}
+      {% endif %}
+
+      Consider:
+      - Question type and complexity
+      - Required capabilities
+      - Cost and latency constraints
+      - Safety requirements
+
+      Select the optimal next path based on relevance, efficiency, and safety.
+      Return your decision as JSON with reasoning.
+
+  # Web search for factual information
+  - id: search_agent
+    type: duckduckgo
+    params:
+      max_results: 5
+      timeout: 10
+    prompt: |
+      Search for information to answer this question:
+      {input}
+
+      Focus on recent, reliable sources.
+
+  # Analysis and reasoning
+  - id: analysis_agent
+    type: local_llm
+    params:
+      model: gpt-oss:20b
+      provider: ollama
+      temperature: 0.3
+      max_tokens: 800
+    prompt: |
+      Analyze the following information and provide insights:
+
+      Original Question: {{ get_input() }}
+      {% if previous_outputs.search_agent %}
+      Search Information: {{ get_agent_response('search_agent') }}
+      {% endif %}
+
+      Provide a detailed analysis with key insights and conclusions.
+
+  # Memory storage
+  - id: memory_writer
+    type: memory
+    params:
+      memory_type: long_term
+      category: factual_knowledge
+    prompt: |
+      Store this information for future reference:
+      
+      Original Question: {{ get_input() }}
+      {% if previous_outputs.analysis_agent %}
+      Analysis: {{ previous_outputs.analysis_agent.response }}
+      {% endif %}
+      {% if previous_outputs.search_agent %}
+      Search Information: {{ get_agent_response('search_agent') }}
+      {% endif %}
+
+  # Final response generation
+  - id: response_builder
+    type: local_llm
+    params:
+      model: gpt-oss:20b
+      provider: ollama
+      temperature: 0.2
+      max_tokens: 1000
+    prompt: |
+      Create a comprehensive response based on the available information:
+
+      Original Question: {{ input }}
+      {% if previous_outputs.input_classifier %}
+      Question Type: {{ previous_outputs.input_classifier.response }}
+      {% endif %}
+
+      {% if previous_outputs.search_agent %}
+      Search Information: {{ previous_outputs.search_agent }}
+      {% endif %}
+
+      {% if previous_outputs.analysis_agent %}
+      Analysis: {{ previous_outputs.analysis_agent.response }}
+      {% endif %}
+
+      {% if previous_outputs.memory_writer %}
+      Memory Context: Information has been stored for future reference.
+      {% endif %}
+
+      Provide a clear, helpful response that addresses the user's question.
+      Include sources if available and explain your reasoning.

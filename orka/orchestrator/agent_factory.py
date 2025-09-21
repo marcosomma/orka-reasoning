@@ -37,6 +37,7 @@ from ..nodes import (
     loop_node,
     router_node,
 )
+from ..nodes.graph_scout_agent import GraphScoutAgent
 from ..nodes.memory_reader_node import MemoryReaderNode
 from ..nodes.memory_writer_node import MemoryWriterNode
 from ..tools.search_tools import DuckDuckGoTool
@@ -59,6 +60,7 @@ AgentClass = Union[
     Type[join_node.JoinNode],
     Type[fork_node.ForkNode],
     Type[loop_node.LoopNode],
+    Type[GraphScoutAgent],
     Type[MemoryReaderNode],
     Type[MemoryWriterNode],
     str,  # For "special_handler"
@@ -79,6 +81,7 @@ AGENT_TYPES: Dict[str, AgentClass] = {
     "join": join_node.JoinNode,
     "fork": fork_node.ForkNode,
     "loop": loop_node.LoopNode,
+    "graph-scout": GraphScoutAgent,
     "memory": "special_handler",  # This will be handled specially in init_single_agent
 }
 
@@ -261,6 +264,17 @@ class AgentFactory:
                         decay_config=merged_decay_config,
                         memory_logger=self.memory,
                     )
+
+            # Special handling for GraphScout agent
+            if agent_type == "graph-scout":
+                prompt = cfg.get("prompt", None)
+                queue = cfg.get("queue", None)
+                return GraphScoutAgent(
+                    node_id=agent_id,
+                    prompt=prompt,
+                    queue=queue,
+                    **clean_cfg,
+                )
 
             # Special handling for search tools
             if agent_type in ("duckduckgo"):

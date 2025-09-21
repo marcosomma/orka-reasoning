@@ -22,7 +22,6 @@ class TestAdvancedWorkflows:
             patch(
                 "orka.agents.llm_agents.client",
             ) as mock_openai,
-            patch("orka.tools.search_tools.DDGS") as mock_ddg,
             patch(
                 "orka.memory.redisstack_logger.redis.Redis",
             ) as mock_redis_stack,
@@ -52,20 +51,13 @@ class TestAdvancedWorkflows:
 
             mock_openai.chat.completions.create.return_value = create_openai_response()
 
-            # Mock DuckDuckGo with multiple results
-            mock_ddg_instance = MagicMock()
-            mock_ddg_instance.text.return_value = [
-                MagicMock(title="Result 1", body="Search result 1", href="http://example1.com"),
-                MagicMock(title="Result 2", body="Search result 2", href="http://example2.com"),
-                MagicMock(title="Result 3", body="Search result 3", href="http://example3.com"),
-            ]
-            mock_ddg.return_value = mock_ddg_instance
+            # Note: Search tools are NOT mocked - they will use real implementations
+            # This allows testing of actual search functionality and error handling
 
             yield {
                 "redis": mock_redis,
                 "redis_stack": mock_redis_stack,
                 "openai": mock_openai,
-                "ddg": mock_ddg,
             }
 
     def test_fork_join_workflow(self, setup_advanced_mocks):

@@ -287,8 +287,8 @@ class ExecutionEngine(
                         "previous_outputs": self.build_previous_outputs(logs),
                     }
 
-                    # Add orchestrator to context for fork nodes
-                    if agent_type == "forknode":
+                    # Add orchestrator to context for nodes that need it
+                    if agent_type in ("forknode", "graphscoutagent"):
                         payload["orchestrator"] = self
 
                     freezed_payload = json.dumps(
@@ -368,6 +368,86 @@ class ExecutionEngine(
                             if isinstance(agent_result, list):
                                 queue = agent_result + queue
                                 continue  # Skip to the next agent in the new queue
+
+                        # Special handling for GraphScout decisions
+                        if agent_type == "graphscoutagent":
+                            if isinstance(agent_result, dict) and "decision" in agent_result:
+                                # CRITICAL: Log GraphScout result BEFORE routing to ensure it appears in traces
+                                payload_out = {
+                                    k: v for k, v in payload.items() if k != "orchestrator"
+                                }
+                                # 🔍 DEBUG: Check agent_result before logging
+                                logger.info(
+                                    f"🔍 DEBUG: agent_result before logging: {agent_result.get('target')}"
+                                )
+                                payload_out.update(
+                                    agent_result
+                                )  # Include the full GraphScout result
+                                # 🔍 DEBUG: Check payload_out after update
+                                logger.info(
+                                    f"🔍 DEBUG: payload_out target after update: {payload_out.get('target')}"
+                                )
+
+                                # Log GraphScout execution
+                                log_data = {
+                                    "agent_id": agent_id,
+                                    "event_type": "GraphScoutAgent",
+                                    "timestamp": datetime.now(UTC).isoformat(),
+                                    "payload": payload_out,
+                                    "step": self.step_index,
+                                    "run_id": self.run_id,
+                                }
+                                logs.append(log_data)
+
+                                # Log to memory backend
+                                if self.memory:
+                                    self.memory.log(
+                                        agent_id,
+                                        "GraphScoutAgent",
+                                        payload_out,
+                                        step=self.step_index,
+                                        run_id=self.run_id,
+                                    )
+
+                                # Note: Don't modify payload directly to avoid recursion issues
+                                # The result will be stored in logs and available for subsequent agents
+
+                                # Now handle routing decisions
+                                # Create a copy to avoid modifying the logged result
+                                decision_type = agent_result.get("decision")
+                                target = agent_result.get("target")
+                                # Work with a copy of the target to avoid modifying the original
+                                if isinstance(target, list):
+                                    target = target.copy()
+
+                                if decision_type == "commit_next" and target:
+                                    # Route to single next agent - REPLACE entire queue
+                                    initial_queue = [str(target)]
+                                    # ✅ STRUCTURED ENFORCEMENT: Validate terminal agent
+                                    queue = self._validate_and_enforce_terminal_agent(initial_queue)
+                                    logger.info(f"GraphScout routing to: {target}")
+                                    continue
+                                elif decision_type == "commit_path" and target:
+                                    # Route to path sequence - REPLACE entire queue
+                                    if isinstance(target, list):
+                                        # ✅ STRUCTURED ENFORCEMENT: Validate terminal agent
+                                        queue = self._validate_and_enforce_terminal_agent(target)
+                                        logger.info(f"GraphScout routing to path: {queue}")
+                                        continue
+                                elif decision_type == "shortlist":
+                                    # Apply intelligent memory agent routing and execute sequence
+                                    shortlist = agent_result.get("target", [])
+                                    if shortlist:
+                                        # Apply memory agent routing logic
+                                        agent_sequence = self._apply_memory_routing_logic(shortlist)
+
+                                        # Execute the intelligently ordered sequence
+                                        queue = agent_sequence
+                                        logger.info(
+                                            f"GraphScout executing intelligently routed sequence: {' → '.join(agent_sequence)} ({len(agent_sequence)} agents)"
+                                        )
+                                        continue
+                                    # For fallback or other decisions, continue normal execution
 
                         # Create a copy of the payload for logging (without orchestrator)
                         payload_out = {k: v for k, v in payload.items() if k != "orchestrator"}
@@ -1529,3 +1609,226 @@ class ExecutionEngine(
 
         # Default: return as-is for other structures
         return simplified
+
+    def _select_best_candidate_from_shortlist(
+        self, shortlist: List[Dict[str, Any]], question: str, context: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Select the best candidate from GraphScout's shortlist.
+
+        GraphScout has already done sophisticated evaluation including LLM assessment,
+        scoring, and ranking. We should trust its decision and use the top candidate.
+
+        Args:
+            shortlist: List of candidate agents from GraphScout (already ranked by score)
+            question: The user's question
+            context: Execution context
+
+        Returns:
+            The best candidate from the shortlist (typically the first one)
+        """
+        try:
+            if not shortlist:
+                return {}
+
+            # Trust GraphScout's intelligent ranking - use the top candidate
+            best_candidate = shortlist[0]
+            logger.info(
+                f"Selected GraphScout's top choice: {best_candidate.get('node_id')} "
+                f"(score: {best_candidate.get('score', 0.0):.3f})"
+            )
+            return best_candidate
+
+        except Exception as e:
+            logger.error(f"Candidate selection failed: {e}")
+            # Return first candidate as ultimate fallback
+            return shortlist[0] if shortlist else {}
+
+    def _validate_and_enforce_terminal_agent(self, queue: List[str]) -> List[str]:
+        """
+        Validate that the workflow queue ends with an LLM-based response builder.
+        If not, automatically append the best available response builder.
+
+        Args:
+            queue: Current agent execution queue
+
+        Returns:
+            Validated queue with guaranteed LLM terminal agent
+        """
+        if not queue:
+            return queue
+
+        # Check if the last agent is already a response builder
+        last_agent_id = queue[-1]
+        if self._is_response_builder(last_agent_id):
+            logger.info(f"✅ Terminal validation passed: {last_agent_id} is a response builder")
+            return queue
+
+        # Find the best response builder to append
+        response_builder = self._get_best_response_builder()
+        if response_builder:
+            validated_queue = queue + [response_builder]
+            logger.info(f"🔧 Terminal enforcement: Added {response_builder} to ensure LLM response")
+            logger.info(f"📋 Final validated queue: {validated_queue}")
+            return validated_queue
+        else:
+            logger.warning(
+                "⚠️ No response builder found - workflow may not provide comprehensive response"
+            )
+            return queue
+
+    def _is_response_builder(self, agent_id: str) -> bool:
+        """Check if an agent is a response builder."""
+        if agent_id not in self.agents:
+            return False
+
+        agent = self.agents[agent_id]
+        agent_type = getattr(agent, "type", "").lower()
+
+        # Response builder identification criteria
+        return (
+            any(
+                term in agent_type
+                for term in ["localllm", "local_llm", "answer", "response", "builder"]
+            )
+            and "classification" not in agent_type
+        )
+
+    def _apply_memory_routing_logic(self, shortlist: List[Dict[str, Any]]) -> List[str]:
+        """
+        Apply intelligent memory agent routing logic.
+
+        Memory agents have special positioning rules:
+        - Memory readers (read operation) should be at the beginning of the path
+        - Memory writers (write operation) should be at the end of the path
+        - Other agents maintain their relative order
+
+        Args:
+            shortlist: List of candidate agents from GraphScout
+
+        Returns:
+            Intelligently ordered list of agent IDs
+        """
+        try:
+            # Separate agents by type
+            memory_readers = []
+            memory_writers = []
+            regular_agents = []
+            response_builder_found = False
+
+            for candidate in shortlist:
+                agent_id = candidate.get("node_id")
+                if not agent_id:
+                    continue
+
+                # Check if this is a memory agent
+                if self._is_memory_agent(agent_id):
+                    operation = self._get_memory_operation(agent_id)
+                    if operation == "read":
+                        memory_readers.append(agent_id)
+                        logger.info(
+                            f"Memory reader agent detected: {agent_id} - positioning at beginning"
+                        )
+                    elif operation == "write":
+                        memory_writers.append(agent_id)
+                        logger.info(
+                            f"Memory writer agent detected: {agent_id} - positioning at end"
+                        )
+                    else:
+                        # Unknown memory operation, treat as regular agent
+                        regular_agents.append(agent_id)
+                elif self._is_response_builder(agent_id):
+                    regular_agents.append(agent_id)
+                    response_builder_found = True
+                else:
+                    regular_agents.append(agent_id)
+
+            # Build the intelligent sequence: readers → regular agents → writers → response_builder
+            agent_sequence = []
+
+            # 1. Memory readers first (for context retrieval)
+            agent_sequence.extend(memory_readers)
+
+            # 2. Regular processing agents (excluding response builders for now)
+            non_response_regular = [
+                agent for agent in regular_agents if not self._is_response_builder(agent)
+            ]
+            agent_sequence.extend(non_response_regular)
+
+            # 3. Memory writers (to store processed information)
+            agent_sequence.extend(memory_writers)
+
+            # 4. Response builder last (if not already present, add one)
+            if not response_builder_found:
+                response_builder = self._get_best_response_builder()
+                if response_builder and response_builder not in agent_sequence:
+                    agent_sequence.append(response_builder)
+            else:
+                # Add existing response builders at the end
+                response_builders = [
+                    agent for agent in regular_agents if self._is_response_builder(agent)
+                ]
+                agent_sequence.extend(response_builders)
+
+            logger.info(
+                f"Memory routing applied: readers={memory_readers}, writers={memory_writers}, regular={len(non_response_regular)}"
+            )
+            return agent_sequence
+
+        except Exception as e:
+            logger.error(f"Failed to apply memory routing logic: {e}")
+            # Fallback to original order
+            return [
+                str(candidate.get("node_id"))
+                for candidate in shortlist
+                if candidate.get("node_id") is not None
+            ]
+
+    def _is_memory_agent(self, agent_id: str) -> bool:
+        """Check if an agent is a memory agent (reader or writer)."""
+        try:
+            if hasattr(self, "orchestrator") and hasattr(self.orchestrator, "agents"):
+                agent = self.orchestrator.agents.get(agent_id)
+                if agent:
+                    agent_class_name = agent.__class__.__name__
+                    return agent_class_name in ["MemoryReaderNode", "MemoryWriterNode"]
+            return False
+        except Exception as e:
+            logger.error(f"Failed to check if {agent_id} is memory agent: {e}")
+            return False
+
+    def _get_memory_operation(self, agent_id: str) -> str:
+        """Get the operation type (read/write) for a memory agent."""
+        try:
+            if hasattr(self, "orchestrator") and hasattr(self.orchestrator, "agents"):
+                agent = self.orchestrator.agents.get(agent_id)
+                if agent:
+                    agent_class_name = agent.__class__.__name__
+                    if agent_class_name == "MemoryReaderNode":
+                        return "read"
+                    elif agent_class_name == "MemoryWriterNode":
+                        return "write"
+            return "unknown"
+        except Exception as e:
+            logger.error(f"Failed to get memory operation for {agent_id}: {e}")
+            return "unknown"
+
+    def _get_best_response_builder(self) -> str | None:
+        """Get the best available response builder from the orchestrator configuration."""
+        original_agents = self.orchestrator_cfg.get("agents", [])
+        response_builders = []
+
+        for agent_id in original_agents:
+            if self._is_response_builder(agent_id):
+                response_builders.append(agent_id)
+
+        if not response_builders:
+            return None
+
+        # Priority order: response_builder > local_llm > others
+        for builder in response_builders:
+            if "response_builder" in builder.lower():
+                return str(builder)
+
+        # Return first available response builder
+        return str(response_builders[0])

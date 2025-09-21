@@ -1,6 +1,6 @@
 """
 Integration tests using real YAML workflow examples.
-Tests actual OrKa configurations with mocked external services.
+Tests actual OrKa configurations with minimal mocking for external dependencies only.
 """
 
 from pathlib import Path
@@ -12,22 +12,19 @@ from orka.orchestrator import Orchestrator
 
 
 class TestExampleWorkflows:
-    """Test real workflow examples with proper mocking."""
+    """Test real workflow examples with minimal mocking."""
 
     @pytest.fixture(autouse=True)
-    def setup_mocks(self):
-        """Set up all necessary mocks for external services."""
+    def setup_minimal_mocks(self):
+        """Set up minimal mocks only for external dependencies that can't be tested in CI."""
         with (
             patch("redis.from_url") as mock_redis,
-            patch(
-                "orka.agents.llm_agents.client",
-            ) as mock_openai,
-            patch("orka.tools.search_tools.DDGS") as mock_ddg,
+            patch("orka.agents.llm_agents.client") as mock_openai,
         ):
-            # Mock Redis
+            # Mock Redis (external dependency)
             mock_redis.return_value = MagicMock()
 
-            # Mock OpenAI responses
+            # Mock OpenAI responses (external API with costs)
             def create_openai_response(content="Test response"):
                 response = MagicMock()
                 response.choices = [MagicMock()]
@@ -39,20 +36,15 @@ class TestExampleWorkflows:
 
             mock_openai.chat.completions.create.return_value = create_openai_response()
 
-            # Mock DuckDuckGo search
-            mock_ddg_instance = MagicMock()
-            mock_ddg_instance.text.return_value = [
-                MagicMock(title="Test Result", body="Test search result", href="http://test.com"),
-            ]
-            mock_ddg.return_value = mock_ddg_instance
+            # Note: Search tools are NOT mocked - they will use real implementations
+            # This allows testing of actual search functionality and fallbacks
 
             yield {
                 "redis": mock_redis,
                 "openai": mock_openai,
-                "ddg": mock_ddg,
             }
 
-    def test_basic_example_workflow(self, setup_mocks):
+    def test_basic_example_workflow(self, setup_minimal_mocks):
         """Test the person_routing_with_search.yml workflow - fork/join with classification."""
         example_path = Path("examples/person_routing_with_search.yml")
         assert example_path.exists(), "person_routing_with_search.yml not found"

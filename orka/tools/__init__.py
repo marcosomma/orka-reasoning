@@ -24,4 +24,4 @@ Available Tool Types:
 - Future tools can be added here as the framework evolves
 """
 
-from .search_tools import DuckDuckGoTool
+from .search_tools import DuckDuckGoTool, SimpleSearchTool, WebSearchTool
