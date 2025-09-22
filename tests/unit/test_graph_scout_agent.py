@@ -10,6 +10,7 @@ Tests for GraphScout Agent
 Comprehensive tests for the GraphScout intelligent routing agent.
 """
 
+import asyncio
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -77,7 +78,10 @@ class TestGraphScoutAgent:
     def test_graph_scout_initialization(self):
         """Test GraphScout agent initialization."""
         agent = GraphScoutAgent(
-            node_id="test_scout", params={"k_beam": 3, "max_depth": 2, "commit_margin": 0.15}
+            node_id="test_scout",
+            prompt="Test prompt",
+            queue=[],
+            params={"k_beam": 3, "max_depth": 2, "commit_margin": 0.15},
         )
 
         assert agent.node_id == "test_scout"
@@ -99,14 +103,14 @@ class TestGraphScoutAgent:
     @pytest.mark.asyncio
     async def test_component_initialization(self):
         """Test that all modular components are initialized."""
-        agent = GraphScoutAgent(node_id="test_scout")
+        agent = GraphScoutAgent(node_id="test_scout", prompt="Test prompt", queue=[])
 
         await agent.initialize()
 
         assert agent.graph_api is not None
         assert agent.introspector is not None
         assert agent.scorer is not None
-        assert agent.dry_runner is not None
+        assert agent.smart_evaluator is not None
         assert agent.safety_controller is not None
         assert agent.budget_controller is not None
         assert agent.decision_engine is not None
@@ -114,7 +118,7 @@ class TestGraphScoutAgent:
     @pytest.mark.asyncio
     async def test_missing_orchestrator_error(self):
         """Test error handling when orchestrator is missing."""
-        agent = GraphScoutAgent(node_id="test_scout")
+        agent = GraphScoutAgent(node_id="test_scout", prompt="Test prompt", queue=[])
 
         context = {"input": "test question", "previous_outputs": {}}
 
@@ -125,7 +129,7 @@ class TestGraphScoutAgent:
 
     def test_question_extraction(self):
         """Test question extraction from various context formats."""
-        agent = GraphScoutAgent(node_id="test_scout")
+        agent = GraphScoutAgent(node_id="test_scout", prompt="Test prompt", queue=[])
 
         # Test formatted_prompt
         context1 = {"formatted_prompt": "What is the answer?"}
@@ -145,7 +149,7 @@ class TestGraphScoutAgent:
     @pytest.mark.asyncio
     async def test_no_candidates_handling(self):
         """Test handling when no candidate paths are found."""
-        agent = GraphScoutAgent(node_id="test_scout")
+        agent = GraphScoutAgent(node_id="test_scout", prompt="Test prompt", queue=[])
 
         with patch.object(agent, "initialize", new_callable=AsyncMock):
             with patch.object(agent, "graph_api") as mock_graph_api:
@@ -166,7 +170,7 @@ class TestGraphScoutAgent:
 
     def test_error_handling_methods(self):
         """Test error handling helper methods."""
-        agent = GraphScoutAgent(node_id="test_scout")
+        agent = GraphScoutAgent(node_id="test_scout", prompt="Test prompt", queue=[])
         context = {}
 
         # Test no candidates
@@ -186,7 +190,7 @@ class TestGraphScoutAgent:
 
     def test_trace_building(self):
         """Test comprehensive trace building."""
-        agent = GraphScoutAgent(node_id="test_scout")
+        agent = GraphScoutAgent(node_id="test_scout", prompt="Test prompt", queue=[])
 
         question = "test question"
         candidates = [{"node_id": "agent_1", "path": ["agent_1"]}]
@@ -217,14 +221,19 @@ class TestGraphScoutIntegration:
     @pytest.mark.asyncio
     async def test_full_workflow_simulation(self):
         """Test a complete GraphScout workflow with mocked components."""
-        agent = GraphScoutAgent(node_id="test_scout", params={"k_beam": 2, "max_depth": 1})
+        agent = GraphScoutAgent(
+            node_id="test_scout",
+            prompt="Test prompt",
+            queue=[],
+            params={"k_beam": 2, "max_depth": 1},
+        )
 
         # Mock all components
         with patch.object(agent, "initialize", new_callable=AsyncMock):
             with patch.object(agent, "graph_api") as mock_graph_api:
                 with patch.object(agent, "introspector") as mock_introspector:
                     with patch.object(agent, "budget_controller") as mock_budget:
-                        with patch.object(agent, "dry_runner") as mock_dry_runner:
+                        with patch.object(agent, "smart_evaluator") as mock_smart_evaluator:
                             with patch.object(agent, "safety_controller") as mock_safety:
                                 with patch.object(agent, "scorer") as mock_scorer:
                                     with patch.object(agent, "decision_engine") as mock_decision:
@@ -243,7 +252,7 @@ class TestGraphScoutIntegration:
                                                 {"node_id": "agent_1", "path": ["agent_1"]}
                                             ]
                                         )
-                                        mock_dry_runner.simulate_candidates = AsyncMock(
+                                        mock_smart_evaluator.simulate_candidates = AsyncMock(
                                             return_value=[
                                                 {
                                                     "node_id": "agent_1",
@@ -291,8 +300,6 @@ class TestGraphScoutIntegration:
                                         assert result["decision"] == "commit_next"
                                         assert result["target"] == "agent_1"
                                         assert result["confidence"] == 0.8
-
-    asyncio.run(run_test())
 
 
 def test_smart_path_evaluator_llm_integration():
@@ -351,17 +358,11 @@ def test_smart_path_evaluator_llm_integration():
             assert "estimated_cost" in candidate
             assert "estimated_latency" in candidate
 
-            # Verify LLM evaluation structure
+            # Verify LLM evaluation structure (actual implementation format)
             llm_eval = candidate["llm_evaluation"]
-            assert "stage1" in llm_eval
-            assert "stage2" in llm_eval
-            assert "final_scores" in llm_eval
-
-            # Verify final scores
-            final_scores = llm_eval["final_scores"]
-            assert "relevance" in final_scores
-            assert "confidence" in final_scores
-            assert "efficiency" in final_scores
+            assert "confidence" in llm_eval
+            assert "expected_outcome" in llm_eval
+            assert "is_recommended" in llm_eval
 
     asyncio.run(run_test())
 

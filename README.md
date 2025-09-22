@@ -36,6 +36,7 @@
 
 | Feature | Description |
 |---------|-------------|
+| **🧭 GraphScout Agent** | **NEW in 0.9.3** - Intelligent workflow graph inspection and optimal multi-agent path execution |
 | **🧠 Memory Presets System** | **NEW in 0.9.2** - Minsky-inspired cognitive memory types for simplified AI memory configuration |
 | **🤖 Local LLM First** | **NEW in 0.9.2** - Privacy-focused workflows with Ollama integration and local model support |
 | **🔧 Unified Memory Agents** | **NEW in 0.9.2** - Single `type: memory` agent with operation-based configuration |
@@ -433,6 +434,18 @@ orka run my-workflow.yml "Your input here"
 ### Routing and Control Flow
 
 ```yaml
+# Intelligent graph-based routing (NEW in 0.9.3)
+- id: smart_router
+  type: graph_scout
+  config:
+    k_beam: 5                    # Top-k candidate paths
+    max_depth: 3                 # Maximum path depth
+    commit_margin: 0.15          # Confidence threshold
+    cost_budget_tokens: 1000     # Token budget limit
+    latency_budget_ms: 2000      # Latency budget limit
+    safety_threshold: 0.8        # Safety assessment threshold
+  prompt: "Find the best path for: {{ input }}"
+
 # Dynamic routing
 - id: content_router
   type: router

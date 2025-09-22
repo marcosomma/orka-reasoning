@@ -11,6 +11,37 @@ Note: Private sets (folders prefixed with PRIVATE_) are excluded from this catal
 
 ---
 
+## 🧭 GraphScout Agent Examples (NEW in v0.9.3)
+
+### graph_scout_basic.yml
+- **Purpose**: Demonstrate basic GraphScout intelligent routing with automatic path discovery
+- **Pattern**: GraphScout → dynamic agent selection → execution
+- **Highlights**: 
+  - Automatic path discovery and evaluation
+  - Budget and safety controls
+  - Intelligent decision making (commit_next/shortlist/no_path)
+  - Works with search_agent, analyzer, response_builder
+
+### graph_scout_memory_aware.yml  
+- **Purpose**: Advanced GraphScout with memory-aware routing and intelligent agent positioning
+- **Pattern**: GraphScout → memory readers (first) → processors → memory writers (last) → response builder
+- **Highlights**:
+  - Memory-aware routing logic (readers first, writers last)
+  - Multi-agent sequential execution
+  - Semantic memory integration with knowledge base
+  - Comprehensive analysis pipeline with memory persistence
+
+**🚀 Try GraphScout:**
+```bash
+# Basic intelligent routing
+orka run examples/graph_scout_basic.yml "What are the latest developments in quantum computing?"
+
+# Memory-aware intelligent routing  
+orka run examples/graph_scout_memory_aware.yml "Explain machine learning algorithms"
+```
+
+---
+
 ## temporal_change_search_synthesis.yml
 - Purpose: detect a pivotal date, generate before/after queries, search both, and synthesize a timeline.
 - Pattern: fork → search → join → synthesize.

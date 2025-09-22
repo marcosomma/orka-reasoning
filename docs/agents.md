@@ -12,6 +12,40 @@ The OrKa framework uses a unified agent base implementation that supports both m
 
 ## 🧱 Core Agent Types
 
+### 🧭 `graph_scout` **NEW in v0.9.3**
+
+Intelligent workflow graph inspection and optimal multi-agent path execution. GraphScout automatically discovers, evaluates, and executes the best sequence of agents for any given input.
+
+**Use case:** Dynamic routing, intelligent workflow orchestration, adaptive agent selection.
+
+**Key Features:**
+- **Intelligent Path Discovery**: Automatically finds optimal agent sequences
+- **Memory-Aware Routing**: Positions memory agents optimally (readers first, writers last)
+- **Multi-Agent Execution**: Executes ALL agents in shortlist sequentially
+- **LLM-Powered Evaluation**: Advanced reasoning for path selection
+- **Budget & Safety Control**: Respects token/latency budgets and safety thresholds
+
+**Example config:**
+```yaml
+- id: smart_router
+  type: graph_scout
+  config:
+    k_beam: 5                    # Top-k candidate paths
+    max_depth: 3                 # Maximum path depth
+    commit_margin: 0.15          # Confidence threshold
+    cost_budget_tokens: 1000     # Token budget limit
+    latency_budget_ms: 2000      # Latency budget limit
+    safety_threshold: 0.8        # Safety assessment threshold
+  prompt: "Find the best path for: {{ input }}"
+```
+
+**Decision Types:**
+- `commit_next`: High confidence single path → Execute immediately
+- `shortlist`: Multiple good options → Execute all sequentially  
+- `no_path`: No suitable path → Fallback to response builder
+
+**📖 [Complete GraphScout Documentation](./GRAPH_SCOUT_AGENT.md)**
+
 ### 🔘 `binary`
 
 Returns a boolean (`"true"` or `"false"` as strings) based on a question or statement.

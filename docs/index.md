@@ -1,10 +1,18 @@
-[📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧩 Ontology](./ONTOLOGY.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
+[📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🧭 GraphScout Agent](./GRAPH_SCOUT_AGENT.md) | [🔍 Architecture](./architecture.md) | [🧩 Ontology](./ONTOLOGY.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
 
 # OrKa Documentation
 
 Welcome to OrKa - the **Orchestrator Kit for Agentic Reasoning**! OrKa transforms Large Language Models into intelligent, memory-enabled agents that can learn, remember, and reason through complex workflows.
 
-## 🚀 What's New in V0.9.2 - Memory Presets Revolution
+## 🚀 What's New in V0.9.3 - GraphScout Intelligence Revolution
+
+- **🧭 GraphScout Agent** - **Intelligent workflow graph inspection** with automatic optimal multi-agent path execution
+- **🎯 Dynamic Path Discovery** - Real-time workflow analysis eliminating static routing configuration
+- **🧠 Memory-Aware Routing** - Intelligent memory agent positioning (readers first, writers last)
+- **⚡ Multi-Agent Execution** - Execute ALL agents in shortlist sequentially, not just the first one
+- **🔍 LLM-Powered Evaluation** - Advanced reasoning for path selection with confidence-based decisions
+
+## 🚀 Previous Major Features - V0.9.2 Memory Presets Revolution
 
 - **🧠 Memory Presets System** - **90% configuration complexity reduction** with Minsky-inspired cognitive memory types
 - **🎯 Operation-Aware Intelligence** - Automatic read/write optimization eliminating manual parameter tuning  

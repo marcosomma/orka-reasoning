@@ -1,0 +1,56 @@
+# GraphScout Basic Example - Intelligent Routing
+# This example demonstrates basic GraphScout functionality with automatic path discovery
+
+orchestrator:
+  id: basic_intelligent_routing
+  agents: [graph_scout, search_agent, analyzer, response_builder]
+
+agents:
+  - id: graph_scout
+    type: graph-scout
+    config:
+      k_beam: 3                    # Evaluate top 3 candidate paths
+      max_depth: 2                 # Maximum 2-hop paths
+      commit_margin: 0.2           # Higher margin for clearer decisions
+      cost_budget_tokens: 800      # Conservative token budget
+      latency_budget_ms: 1500      # 1.5 second latency budget
+      safety_threshold: 0.8        # High safety requirement
+    prompt: "Find the best path to handle: {{ input }}"
+    
+  - id: search_agent
+    type: duckduckgo
+    prompt: "Search for information about: {{ input }}"
+    
+  - id: analyzer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      Analyze the following information:
+      Input: {{ input }}
+      {% if previous_outputs.search_agent %}
+      Search Results: {{ previous_outputs.search_agent.result }}
+      {% endif %}
+      
+      Provide a detailed analysis with key insights.
+    
+  - id: response_builder
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    prompt: |
+      Generate a comprehensive response based on:
+      {% if previous_outputs.analyzer %}
+      Analysis: {{ previous_outputs.analyzer.result }}
+      {% endif %}
+      {% if previous_outputs.search_agent %}
+      Search Results: {{ previous_outputs.search_agent.result }}
+      {% endif %}
+      Original Question: {{ input }}
+      
+      Provide a helpful, well-structured response.
+

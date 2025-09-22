@@ -76,7 +76,7 @@ class TestExampleWorkflows:
             == "LocalLLMAgent"  # Updated: converted from OpenAI to Local LLM
         )
 
-    def test_complex_flow_workflow_structure(self, setup_mocks):
+    def test_complex_flow_workflow_structure(self):
         """Test the temporal_change_search_synthesis.yml workflow - temporal analysis with search."""
         complex_path = Path("examples/temporal_change_search_synthesis.yml")
         assert complex_path.exists(), "temporal_change_search_synthesis.yml not found"
@@ -105,7 +105,7 @@ class TestExampleWorkflows:
         fork_agent = orchestrator.agents["fork_temporal"]
         assert hasattr(fork_agent, "targets")
 
-    def test_basic_memory_workflow_structure(self, setup_mocks):
+    def test_basic_memory_workflow_structure(self):
         """Test the memory_read_fork_join_router.yml workflow - memory operations."""
         memory_path = Path("examples/memory_read_fork_join_router.yml")
         assert memory_path.exists(), "memory_read_fork_join_router.yml not found"
@@ -123,7 +123,7 @@ class TestExampleWorkflows:
         for agent_id in key_agents:
             assert agent_id in orchestrator.agents, f"Key agent {agent_id} not found"
 
-    def test_failover_workflow_structure(self, setup_mocks):
+    def test_failover_workflow_structure(self):
         """Test the failover_search_and_validate.yml workflow - error handling."""
         failover_path = Path("examples/failover_search_and_validate.yml")
         assert failover_path.exists(), "failover_search_and_validate.yml not found"
@@ -144,7 +144,7 @@ class TestExampleWorkflows:
         for agent_id in other_agents:
             assert agent_id in orchestrator.agents, f"Agent {agent_id} not found"
 
-    def test_agent_dependencies_basic_example(self, setup_mocks):
+    def test_agent_dependencies_basic_example(self):
         """Test that agent dependencies are properly configured in basic example."""
         example_path = Path("examples/person_routing_with_search.yml")
         orchestrator = Orchestrator(str(example_path))
@@ -159,7 +159,7 @@ class TestExampleWorkflows:
         # Verify router has decision key
         assert hasattr(router_agent, "decision_key") or hasattr(router_agent, "params")
 
-    def test_memory_namespace_configuration(self, setup_mocks):
+    def test_memory_namespace_configuration(self):
         """Test memory namespace configuration in memory workflow."""
         memory_path = Path("examples/memory_read_fork_join_router.yml")
         orchestrator = Orchestrator(str(memory_path))
@@ -172,7 +172,7 @@ class TestExampleWorkflows:
         assert hasattr(memory_read, "namespace") or hasattr(memory_read, "node_id")
         assert hasattr(memory_write, "namespace") or hasattr(memory_write, "node_id")
 
-    def test_search_integration_configuration(self, setup_mocks):
+    def test_search_integration_configuration(self):
         """Test DuckDuckGo search integration in complex flow."""
         complex_path = Path("examples/temporal_change_search_synthesis.yml")
         orchestrator = Orchestrator(str(complex_path))
@@ -184,7 +184,7 @@ class TestExampleWorkflows:
             assert agent.__class__.__name__ == "DuckDuckGoTool"
             assert hasattr(agent, "prompt") or hasattr(agent, "tool_id")
 
-    def test_classification_options_configuration(self, setup_mocks):
+    def test_classification_options_configuration(self):
         """Test classification agent options are properly configured."""
         example_path = Path("examples/person_routing_with_search.yml")
         orchestrator = Orchestrator(str(example_path))
@@ -198,7 +198,7 @@ class TestExampleWorkflows:
         # Verify it has params configured (where options are stored)
         assert hasattr(classifier, "params")
 
-    def test_router_mapping_configuration(self, setup_mocks):
+    def test_router_mapping_configuration(self):
         """Test router mapping configuration in basic example."""
         example_path = Path("examples/person_routing_with_search.yml")
         orchestrator = Orchestrator(str(example_path))
@@ -210,7 +210,7 @@ class TestExampleWorkflows:
         # Router should have routing configuration
         assert hasattr(router, "routing_map") or hasattr(router, "params")
 
-    def test_fork_targets_configuration(self, setup_mocks):
+    def test_fork_targets_configuration(self):
         """Test fork node targets are properly configured."""
         example_path = Path("examples/person_routing_with_search.yml")
         orchestrator = Orchestrator(str(example_path))
@@ -222,7 +222,7 @@ class TestExampleWorkflows:
         # Fork should have targets configured
         assert hasattr(fork, "targets")
 
-    def test_workflow_config_validation(self, setup_mocks):
+    def test_workflow_config_validation(self):
         """Test that all example workflows pass validation."""
         example_files = [
             "examples/person_routing_with_search.yml",
@@ -238,7 +238,7 @@ class TestExampleWorkflows:
                 assert orchestrator is not None
                 assert len(orchestrator.agents) > 0
 
-    def test_mixed_agent_types_integration(self, setup_mocks):
+    def test_mixed_agent_types_integration(self):
         """Test that mixed agent types work together in complex workflows."""
         complex_path = Path("examples/temporal_change_search_synthesis.yml")
         orchestrator = Orchestrator(str(complex_path))

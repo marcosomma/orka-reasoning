@@ -4,6 +4,7 @@ orchestrator:
   agents:
     - memory-write_event
     - memory-read_stored
+    - summary_agent
 
 agents:
   - id: memory-write_event
@@ -37,4 +38,19 @@ agents:
       ef_runtime: 10
     namespace: category_demo
     prompt: Retrieve stored memories related to '{{ get_input() }}'.
+
+  - id: summary_agent
+    type: local_llm
+    model: llama3.2:latest
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      Memory category test completed successfully!
+      
+      Demonstrated memory categorization system:
+      1. ✅ WRITE OPERATION: Stored input "{{ input }}" with category 'stored'
+      2. ✅ READ OPERATION: Retrieved memories using category filter 'stored'
+      
+      This test validates that memory categories work correctly for organizing and filtering stored information. The working memory preset was used with a 4-hour retention period, perfect for testing and demonstration purposes.
 

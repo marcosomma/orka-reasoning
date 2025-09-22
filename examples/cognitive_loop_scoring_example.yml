@@ -114,13 +114,14 @@ agents:
     prompt: |
       Process the final result from the cognitive loop:
       
-      Loops completed: {{ get_agent_response('simple_loop')['loops_completed'] if get_agent_response('simple_loop') else 'Unknown' }}
-      Final score: {{ get_agent_response('simple_loop')['final_score'] if get_agent_response('simple_loop') else 'Unknown' }}
-      Threshold met: {{ get_agent_response('simple_loop')['threshold_met'] if get_agent_response('simple_loop') else 'Unknown' }}
+      {% if previous_outputs.simple_loop %}
+      Loops completed: {{ previous_outputs.simple_loop.loops_completed | default('Unknown') }}
+      Final score: {{ previous_outputs.simple_loop.final_score | default('Unknown') }}
+      Threshold met: {{ previous_outputs.simple_loop.threshold_met | default('Unknown') }}
       
       Cognitive Evolution Summary:
-      {% if get_agent_response('simple_loop') and get_agent_response('simple_loop')['past_loops'] %}
-      {% for loop in get_agent_response('simple_loop')['past_loops'] %}
+      {% if previous_outputs.simple_loop.past_loops %}
+      {% for loop in previous_outputs.simple_loop.past_loops %}
       
       **Loop {{ loop.loop_number }}** (Score: {{ loop.score }}):
       - Key Insights: {{ loop.key_insights }}
@@ -129,6 +130,9 @@ agents:
       {% endfor %}
       {% endif %}
       
-      Final Analysis: {{ get_agent_response('simple_loop')['result'] if get_agent_response('simple_loop') else 'No result available' }}
+      Final Analysis: {{ previous_outputs.simple_loop.result | default('No result available') }}
+      {% else %}
+      The loop execution is complete. Providing a general meta-analysis of cognitive loop processing.
+      {% endif %}
       
       Provide a meta-analysis of how the thinking evolved through the loops and what the final insights reveal. 

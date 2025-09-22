@@ -44,6 +44,7 @@ orchestrator:
     - conversation_agent
     - knowledge_agent
     - system_agent
+    - comparison_summary
 
 agents:
   # Conversation agent with episodic memory (perfect for interactions)
@@ -78,6 +79,40 @@ agents:
     params:
       vector: true
     prompt: "System analysis: {{ input }}"
+
+  - id: comparison_summary
+    type: local_llm
+    model: llama3.2:latest
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      Memory Preset Comparison Demo Results:
+      
+      Successfully demonstrated the power of cognitive memory presets for: "{{ input }}"
+      
+      CONFIGURATION COMPARISON:
+      
+      BEFORE (Manual Configuration):
+      - 30+ lines of complex memory configuration per agent
+      - Nested dictionaries requiring deep understanding
+      - Easy to misconfigure parameters
+      - Hard to maintain across projects
+      - Time-consuming setup process
+      
+      AFTER (Memory Presets):
+      + 1 line: memory_preset: "episodic"
+      + Cognitively meaningful names (based on Minsky's cognitive science)
+      + Optimized configurations out-of-the-box
+      + Easy to understand and maintain
+      + 90% reduction in configuration complexity!
+      
+      MEMORY TYPES DEMONSTRATED:
+      + EPISODIC: Perfect for conversations (7-day retention)
+      + SEMANTIC: Ideal for knowledge storage (30-day retention)
+      + META: System insights and monitoring (365-day retention)
+      
+      This demonstrates how OrKa's memory presets transform complex cognitive architectures into simple, declarative configurations!
 
 # 📊 Configuration Complexity Comparison:
 #

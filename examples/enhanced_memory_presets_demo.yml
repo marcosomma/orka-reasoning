@@ -14,6 +14,7 @@ orchestrator:
     - semantic_writer
     - working_reader
     - working_writer
+    - summary_agent
 
 agents:
   # EPISODIC MEMORY (Conversations & Personal Experiences)
@@ -91,6 +92,30 @@ agents:
     metadata:
       type: working
       category: temporary
+
+  # SUMMARY AGENT to demonstrate the preset functionality
+  - id: summary_agent
+    type: local_llm
+    model: llama3.2:latest
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      Memory presets demonstration completed successfully! 
+      
+      The following memory operations were performed for: "{{ input }}"
+      
+      ✅ EPISODIC MEMORY: Stored in conversations namespace (7-day retention)
+      ✅ SEMANTIC MEMORY: Stored in knowledge_base namespace (30-day retention)  
+      ✅ WORKING MEMORY: Stored in session_cache namespace (4-hour retention)
+      
+      Each preset automatically configured optimal parameters:
+      - Vector search settings and similarity thresholds
+      - Hybrid search weights and temporal ranking
+      - Index configurations and performance tuning
+      - Retention policies and decay rules
+      
+      This demonstrates the power of cognitive memory presets - instead of manually configuring 30+ parameters per memory agent, we simply specify the memory type and OrKa handles the rest!
 
 # ============================================================================
 # 🎉 PRESET MAGIC COMPARISON

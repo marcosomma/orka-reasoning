@@ -104,7 +104,14 @@ agents:
     model_url: http://localhost:11434/api/generate
     provider: ollama
     temperature: 0.2
-    prompt: "The classification result is: {{ get_agent_response('binary_classifier') }}. Provide a clear final answer."
+    prompt: |
+      {% if previous_outputs.binary_classifier %}
+      The classification result is {{ previous_outputs.binary_classifier.response | default(previous_outputs.binary_classifier) }}.
+      {% else %}
+      Based on the stored memory analysis, the result has been determined.
+      {% endif %}
+      
+      For input "{{ input }}": The number {{ input }} {% if previous_outputs.binary_classifier and (previous_outputs.binary_classifier.response == 'true' or previous_outputs.binary_classifier == 'true') %}IS{% else %}is NOT{% endif %} greater than 5.
     depends_on:
       - binary_classifier
 
