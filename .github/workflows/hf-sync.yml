@@ -1,0 +1,17 @@
+name: Sync to Hugging Face Hub
+on:
+  push:
+    branches: [ master ]   # or your default branch
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sync to HF Hub
+        uses: nateraw/huggingface-sync-action@v0.0.5
+        with:
+          repo: ${{ secrets.HF_REPO }}
+          repo_type: ${{ secrets.HF_REPO_TYPE }}   # space | model | dataset
+          hf_token: ${{ secrets.HF_TOKEN }}
+          # For Spaces only. Remove if not a Space:
+          space_sdk: ${{ secrets.HF_SPACE_SDK }}   # gradio | streamlit | docker
