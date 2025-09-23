@@ -13,22 +13,14 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-      - name: Remove problematic binary files
+      - name: Remove all problematic binary files
         run: |
-          # Remove coverage files
-          git rm --cached .coverage* || true
-          # Remove images (png, zip) and other binary files listed by Hugging Face rejection
-          git rm --cached assets/*.png || true
-          git rm --cached docs/benchmark/*.png || true
-          git rm --cached docs/benchmark/*.zip || true
-          git rm --cached docs/expSOC01/images/*.png || true
-          git rm --cached docs/exp_local_SOC-02/Images/*.png || true
-          git rm --cached docs/experiment_society01.zip || true
-          git rm --cached docs/img/*.png || true
-          git rm --cached docs/orka_linux_stressTest_toShate.zip || true
-          git rm --cached docs/orka_self_explanation.zip || true
-          git rm --cached examples/exp01/*.zip || true
-          git rm --cached UI/public/logo.png || true
+          # Remove all .coverage* files anywhere
+          find . -type f -name '.coverage*' -exec git rm --cached {} \;
+          # Remove all .png files anywhere
+          find . -type f -name '*.png' -exec git rm --cached {} \;
+          # Remove all .zip files anywhere
+          find . -type f -name '*.zip' -exec git rm --cached {} \;
       - name: Push mirror to HF
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
