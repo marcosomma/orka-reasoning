@@ -18,7 +18,11 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           HF_URL="https://user:${HF_TOKEN}@huggingface.co/spaces/${{ secrets.HF_REPO }}"
-          git rm --cached UI/**/*.png || true
+          # Only try to remove PNGs if any exist
+          if find UI -name '*.png' | grep -q .; then
+            find UI -name '*.png' -exec git rm --cached {} \;
+          fi
+          git remote remove hf || true
           git remote add hf "$HF_URL"
           git lfs install
           git push hf HEAD:main --force
