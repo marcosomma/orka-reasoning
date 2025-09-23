@@ -1,3 +1,13 @@
+---
+title: Orka Reasoning
+emoji: 🧠
+colorFrom: indigo
+colorTo: blue
+sdk: python
+sdk_version: "3.8"
+app_file: app.py
+pinned: false
+---
 # OrKa-Reasoning
 
 <p align="center"><img src="https://orkacore.com/assets/ORKA_logo.png" alt="OrKa Logo" style="border-radius: 25px; width: 400px; height:400px" /></p>
