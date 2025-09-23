@@ -21,6 +21,12 @@ jobs:
             --path-glob '*.zip' \
             --path-glob '*.pdf' \
             --invert-paths
+      - name: Reorganize README files for HF display
+        run: |
+          # Backup original README as READ_ME.md
+          mv README.md READ_ME.md
+          # Copy paper with correct HF header as new README
+          cp docs/papers/OrKA-reasoning_23-09-2025.md README.md
       - name: Configure git
         run: |
           git config user.name "github-actions"

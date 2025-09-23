@@ -1,4 +1,13 @@
-**OrKA-Reasoning**: A Cognitive AI Framework for Transparent, Traceable Thinking
+---
+title: Orka Reasoning
+emoji: 🧠
+colorFrom: indigo
+colorTo: blue
+sdk: static
+pinned: true
+---
+
+# **OrKA-Reasoning**: A Cognitive AI Framework for Transparent, Traceable Thinking
 
 **Abstract**
 OrKa-reasoning is a cognitive AI framework that turns model calls into observable thinking. Instead of a single prompt and a single output, OrKa composes specialized agents, a six-layer memory model, and iterative Loops of Truth that let the system argue, critique, and converge. The result is reasoning that is visible, debuggable, and improvable. Inspired by Minsky’s Society of Mind, OrKa treats intelligence as coordination across roles and memories rather than a monolithic model. The framework introduces GraphScout, a beta path-discovery component in v0.9.3 that explores orchestration graphs and suggests alternative routes when flows stall. We include execution traces and early benchmarks to show how multi-agent debate, agreement finding, and memory recall produce more robust outcomes than LLM-only prompting. OrKa-reasoning is research stage and already practical for engineers who want explainability, traceability, and early signs of metacognition without heavy academic overhead. It is a step toward modular, ethical AI where decisions are auditable and alignment is part of the runtime, not an afterthought.
