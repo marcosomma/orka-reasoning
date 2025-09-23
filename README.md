@@ -4,7 +4,6 @@ emoji: 🧠
 colorFrom: indigo
 colorTo: blue
 sdk: docker
-app_file: orka/docker/Dockerfile
 pinned: false
 ---
 # OrKa-Reasoning
