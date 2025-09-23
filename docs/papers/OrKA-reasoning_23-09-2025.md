@@ -9,7 +9,7 @@ pinned: true
 
 <p align="center"><img src="https://orkacore.com/assets/ORKA_logo.png" alt="OrKa Logo" style="border-radius: 25px; width: 400px; height:400px" /></p>
 
-[![PyPi](https://img.shields.io/badge/pypi-%23ececec.svg?style=for-the-badge&amp;logo=pypi&amp;logoColor=1f73b7)](https://pypi.org/project/orka-reasoning/)
+[GET STARTED](https://huggingface.co/spaces/marcosomma79/orka-reasoning/blob/main/READ_ME.md)
 
 
 # OrKA-Reasoning 
@@ -146,6 +146,8 @@ The framework remains research-stage. Agreement scores are brittle, convergence 
 Looking ahead, OrKa-reasoning offers a path toward AI systems that are not only more capable but also more trustworthy. By combining robustness with explainability and performance with transparency, it sketches the outlines of a future where artificial cognition can be studied, guided, and trusted in ways single-model prompting cannot deliver.
 
 ---
+
+[GET STARTED](https://huggingface.co/spaces/marcosomma79/orka-reasoning/blob/main/READ_ME.md)
 
 ### APPENDIX
 
