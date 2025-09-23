@@ -1,7 +1,7 @@
 name: Sync to Hugging Face Hub
 on:
   push:
-    branches: [ master ]   # or your default branch
+    branches: [ master ]
 jobs:
   mirror:
     runs-on: ubuntu-latest
@@ -13,7 +13,7 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-      - name: Remove all problematic binary files
+      - name: Remove all problematic binary files from index
         run: |
           # Remove all .coverage* files anywhere
           find . -type f -name '.coverage*' -exec git rm --cached {} \;
@@ -21,6 +21,8 @@ jobs:
           find . -type f -name '*.png' -exec git rm --cached {} \;
           # Remove all .zip files anywhere
           find . -type f -name '*.zip' -exec git rm --cached {} \;
+          # Make a local commit with the removals (does not affect your GitHub repo)
+          git commit -am "Remove binary files for Hugging Face push" || true
       - name: Push mirror to HF
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
