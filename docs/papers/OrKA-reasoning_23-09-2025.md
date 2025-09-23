@@ -9,6 +9,9 @@ pinned: true
 
 <p align="center"><img src="https://orkacore.com/assets/ORKA_logo.png" alt="OrKa Logo" style="border-radius: 25px; width: 400px; height:400px" /></p>
 
+[![PyPi](https://img.shields.io/badge/pypi-%23ececec.svg?style=for-the-badge&amp;logo=pypi&amp;logoColor=1f73b7)](https://pypi.org/project/orka-reasoning/)
+
+
 # OrKA-Reasoning 
 | A Cognitive AI Framework for Transparent, Traceable Thinking
 
