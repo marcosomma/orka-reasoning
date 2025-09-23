@@ -3,8 +3,9 @@ title: Orka Reasoning
 emoji: 🧠
 colorFrom: indigo
 colorTo: blue
-sdk: docker
-pinned: false
+sdk: python
+pinned: true
+header: OrKa transforms your AI workflows with YAML-driven agent orchestration, intelligent memory management, and lightning-fast semantic search powered by RedisStack HNSW indexing.
 ---
 # OrKa-Reasoning
 
