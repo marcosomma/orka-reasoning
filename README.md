@@ -5,6 +5,7 @@ colorFrom: indigo
 colorTo: blue
 sdk: static
 pinned: true
+app_file: docs/papers/OrKA-reasoning_23-09-2025.md
 ---
 # OrKa-Reasoning
 
