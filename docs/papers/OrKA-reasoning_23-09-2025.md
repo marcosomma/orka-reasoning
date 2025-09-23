@@ -7,25 +7,37 @@ sdk: static
 pinned: true
 ---
 
-# **OrKA-Reasoning**: A Cognitive AI Framework for Transparent, Traceable Thinking
+<p align="center"><img src="https://orkacore.com/assets/ORKA_logo.png" alt="OrKa Logo" style="border-radius: 25px; width: 400px; height:400px" /></p>
 
-**Abstract**
+# OrKA-Reasoning 
+| A Cognitive AI Framework for Transparent, Traceable Thinking
+
+### **Abstract**
+
 OrKa-reasoning is a cognitive AI framework that turns model calls into observable thinking. Instead of a single prompt and a single output, OrKa composes specialized agents, a six-layer memory model, and iterative Loops of Truth that let the system argue, critique, and converge. The result is reasoning that is visible, debuggable, and improvable. Inspired by Minsky’s Society of Mind, OrKa treats intelligence as coordination across roles and memories rather than a monolithic model. The framework introduces GraphScout, a beta path-discovery component in v0.9.3 that explores orchestration graphs and suggests alternative routes when flows stall. We include execution traces and early benchmarks to show how multi-agent debate, agreement finding, and memory recall produce more robust outcomes than LLM-only prompting. OrKa-reasoning is research stage and already practical for engineers who want explainability, traceability, and early signs of metacognition without heavy academic overhead. It is a step toward modular, ethical AI where decisions are auditable and alignment is part of the runtime, not an afterthought.
 
-**Introduction**
+### **Introduction**
+
 Artificial intelligence in 2025 is still dominated by single-model prompting. Most systems wrap an LLM with thin layers of tooling, producing outputs that are fluent but fragile. These pipelines lack transparency, cannot explain their reasoning, and often collapse under real-world complexity. Developers are forced to treat large models as black boxes, while users are left with results they cannot audit or challenge. What is missing is a framework that treats reasoning as a process to be observed, critiqued, and improved, rather than a one-shot output to be consumed.
+
 OrKa-reasoning was created to address this gap. It is not a prompt wrapper but a cognitive framework that orchestrates multiple agents, layered memory, and iterative debate loops into transparent reasoning flows. Inspired by Marvin Minsky’s idea of a Society of Mind, OrKa treats intelligence as an emergent property of collaboration and critique among specialized roles. In recent traces, we see agents taking progressive, conservative, realist, and purist positions, debating and refining perspectives before converging on shared ground. This is reasoning that is no longer hidden inside a single model’s output. It is reasoning that can be logged, replayed, and studied.
+
 Although still in research stage, OrKa-reasoning has already been stress-tested beyond toy demos. A 1000-run benchmark with a local 1.5B parameter model completed without failures, logging over two thousand agent executions with stable latency and cost efficiency. In practice, this means OrKa can orchestrate debate loops and memory lookups reliably at scale, even on consumer hardware. Traces from version 0.8.0 show agents exploring disagreements, storing short-term and long-term memories in Redis, and calculating agreement scores across rounds. These runs demonstrate that the system is not theoretical. It is real, auditable, and already usable for engineers who want transparent reasoning instead of opaque generations.
+
 The framework continues to evolve. In version 0.9.3, OrKa introduced GraphScout, a beta feature that can explore orchestration graphs and propose new reasoning paths when existing flows stall. This marks an important step toward self-discovery: instead of executing only what the designer prescribes, OrKa can begin to adapt its strategy during runtime. Together with its multi-agent debates, memory presets, and Loops of Truth, GraphScout points toward the possibility of systems that are not only explainable but also capable of reflecting on their own reasoning structures.
 
-**Background and Philosophy**
+### **Background and Philosophy**
+
 Artificial intelligence has long cycled between waves of optimism and disappointment. Symbolic systems promised structured reasoning but struggled with scale and adaptability. Connectionist models such as neural networks offered flexibility but often hid their logic behind opaque layers. Large Language Models (LLMs) have pushed generative AI into the mainstream, yet they bring the same challenge: fluency without transparency. A prompt may yield a convincing answer, but the process that led there remains hidden.
+
 Marvin Minsky’s _Society of Mind_ argued that intelligence emerges from a collection of simple agents, each with limited scope, collaborating and competing to solve problems. This perspective contrasts with today’s monolithic LLMs, which compress reasoning into a single undifferentiated output. OrKa-reasoning draws directly from Minsky’s insight. It assumes that cognition should be modular, traceable, and explainable, not collapsed into one opaque step.
+
 The gap in the current AI ecosystem is clear. Developers rely on increasingly complex prompt engineering to coax reliable outputs from single models. Frameworks like LangChain or AutoGen extend capabilities but still center on LLM calls as the unit of intelligence. What is missing is a system that elevates the orchestration itself into the locus of intelligence. OrKa-reasoning positions the orchestration graph as the true cognitive substrate, where reasoning paths, memory recall, and agent debates define how intelligence unfolds.
+
 In this framing, OrKa-reasoning is less about controlling LLMs and more about building a runtime for cognition. It is designed not only to generate answers but also to **show its work**, producing traces that can be inspected, replayed, and refined. The result is a framework that is aligned with both engineering needs and ethical imperatives: if intelligence is modular and observable, it can also be audited, aligned, and trusted.
 
 ---
-### 1\. Defining OrKa-Reasoning 
+## 1\. Defining OrKa-Reasoning 
 
 **OrKa-reasoning** is a cognitive AI framework designed to move beyond the limitations of LLM-only prompting. Instead of relying on a single model to deliver answers, OrKa-reasoning orchestrates a society of agents, layered memory, and iterative loops into a structured reasoning process. At its core, OrKa-reasoning rests on four pillars:
 
@@ -37,12 +49,11 @@ In this framing, OrKa-reasoning is less about controlling LLMs and more about bu
     
 4.  **GraphScout for Path Discovery** Beginning with version 0.9.3, OrKa includes GraphScout as a beta feature. GraphScout explores the orchestration graph itself, probing alternative branches and suggesting new reasoning paths when existing flows fail to converge. This transforms OrKa from a static execution engine into a system that can adaptively discover its own strategies, moving closer to a self-discovering cognitive framework.
     
-
 Together, these four components establish OrKa-reasoning as a research-stage substrate for transparent and traceable cognition. It is not just an orchestration framework, but an early demonstration of explainable and metacognitive AI.
 
-------------------------------
+---
 
-### 2\. Architecture and Execution
+## 2\. Architecture and Execution
 
 OrKa-reasoning is built around declarative orchestration. Instead of wiring models through ad-hoc scripts, users define reasoning flows in YAML. Each flow specifies the orchestrator, its strategy, and the agents or service nodes involved. The orchestrator then executes these agents with fork-join semantics, routing results according to confidence distributions, agreement scores, or memory lookups.
 
@@ -50,7 +61,7 @@ At the core of OrKa-reasoning is a declarative execution engine. Instead of manu
 
 A representative workflow is the **cognitive\_society\_simple**, shown below. It demonstrates how OrKa structures a debate loop between agents, measures their agreement, and synthesizes a final answer:
 
-[This workflow](https://docs.google.com/document/d/1rC5UVXculDCtuImIfYRO92aCkxO3JnIMdfTOqmT-bQw/edit?tab=t.0#heading=h.sxvghn9l6u48) (appendix) captures several architectural principles:
+[This workflow](#appendix) (appendix) captures several architectural principles:
 
 *   **Nested orchestration.** The simple\_debate\_loop contains an internal workflow that runs progressive and conservative agents before passing their outputs to an agreement checker. This shows how OrKa treats orchestration itself as a first-class element of cognition.
     
@@ -65,9 +76,9 @@ In live traces, similar structures run with additional roles such as pragmatic r
 
 In practice, this means OrKa-reasoning executes reasoning as a process, not as a single opaque call. Each run is a cognitive sequence that can be inspected, critiqued, and improved over time.
 
------------------------------
+---
 
-### 3\. Benchmarks and Evaluation
+## 3\. Benchmarks and Evaluation
 
 Evaluation of OrKa-reasoning spans three layers: **task-level performance benchmarks**, **system-level stability benchmarks**, and **trace-based experiments**. Together, they provide a picture of both operational robustness and cognitive transparency.
 
@@ -85,7 +96,7 @@ This gain was achieved without altering the underlying model weights. Instead, t
 
 **Summary**Taken together, the benchmarks show a system that is both **robust and transformative**. The math reasoning benchmark demonstrates OrKa’s ability to boost task accuracy significantly. The stability benchmark proves it can operate at scale without performance collapse. The trace experiments illustrate how OrKa captures the reasoning process itself, even when convergence is incomplete. The combination positions OrKa-reasoning as a framework that not only performs reliably, but also measurably enhances reasoning quality.
 
---------------
+---
 
 ### 4\. Discussion
 
@@ -101,7 +112,7 @@ At the same time, the limitations must be acknowledged. Agreement scores are sti
 
 Despite these caveats, the trajectory is clear. Benchmarks show measurable gains in reasoning performance, stability tests show it can run reliably at scale, and traces show reasoning paths that can be studied and improved. Together, they establish OrKa-reasoning not only as a technical toolkit but as a **new substrate for explainable and metacognitive AI**.
 
----------------
+---
 
 ### 5\. Future Work
 
@@ -119,7 +130,7 @@ OrKa-reasoning has proven that modular orchestration can elevate model performan
 
 **Ethical and social positioning** Future development will also emphasize auditability and alignment. OrKa’s modular design makes it possible to expose every decision, log every disagreement, and explain every convergence. Building on this, the roadmap includes tools for ethical auditing, fairness checks, and policy integration, making transparency not optional but intrinsic to the runtime.
 
---------------
+---
 
 ### 6\. Conclusion
 
@@ -131,7 +142,7 @@ The framework remains research-stage. Agreement scores are brittle, convergence 
 
 Looking ahead, OrKa-reasoning offers a path toward AI systems that are not only more capable but also more trustworthy. By combining robustness with explainability and performance with transparency, it sketches the outlines of a future where artificial cognition can be studied, guided, and trusted in ways single-model prompting cannot deliver.
 
---------
+---
 
 ### APPENDIX
 
