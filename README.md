@@ -3,8 +3,8 @@ title: Orka Reasoning
 emoji: 🧠
 colorFrom: indigo
 colorTo: blue
-sdk: gradio
-app_file: orka/orka_start.py
+sdk: docker
+app_file: orka/docker/Dockerfile
 pinned: false
 ---
 # OrKa-Reasoning
