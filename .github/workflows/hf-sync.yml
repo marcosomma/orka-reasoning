@@ -3,14 +3,21 @@ on:
   push:
     branches: [ master ]   # or your default branch
 jobs:
-  sync:
+  mirror:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Sync to HF Hub
-        uses: nateraw/huggingface-sync-action@v0.0.5
         with:
-          huggingface_repo_id: ${{ secrets.HF_REPO }}
-          repo_type: ${{ secrets.HF_REPO_TYPE }}   # space | model | dataset
-          hf_token: ${{ secrets.HF_TOKEN }}
-          space_sdk: ${{ secrets.HF_SPACE_SDK }}   # gradio | streamlit | docker
+          fetch-depth: 0
+      - name: Configure git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+      - name: Push mirror to HF
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          HF_URL="https://user:${HF_TOKEN}@huggingface.co/spaces/${{ secrets.HF_REPO }}"
+          git remote add hf "$HF_URL"
+          git lfs install
+          git push --force --mirror hf
