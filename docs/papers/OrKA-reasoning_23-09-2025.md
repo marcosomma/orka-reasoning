@@ -82,7 +82,7 @@ In practice, this means OrKa-reasoning executes reasoning as a process, not as a
 
 Evaluation of OrKa-reasoning spans three layers: **task-level performance benchmarks**, **system-level stability benchmarks**, and **trace-based experiments**. Together, they provide a picture of both operational robustness and cognitive transparency.
 
-**Math reasoning benchmark: boosting GPT-oss:20b from 77% to 92%** The most recent and significant benchmark focused on mathematical reasoning with the open-source model GPT-oss:20b. As documented in [docs/benchmark](https://github.com/marcosomma/orka-reasoning/tree/master/docs/benchmark) and summarized in the article _From 77 to 92: How OrKa-reasoning Turns GPT-oss:20b into a Math Reasoning Powerhouse_, the test measured accuracy on structured math problems.
+**Math reasoning benchmark: boosting GPT-oss:20b from 77% to 92%** The most recent and significant benchmark focused on mathematical reasoning with the open-source model GPT-oss:20b. As documented in [docs/benchmark](https://huggingface.co/spaces/marcosomma79/orka-reasoning/tree/main/docs/benchmark) and summarized in the article _From 77 to 92: How OrKa-reasoning Turns GPT-oss:20b into a Math Reasoning Powerhouse_, the test measured accuracy on structured math problems.
 
 *   Baseline GPT-oss:20b performance: **77% accuracy**
 *   With OrKa-reasoning orchestration (agents + debate loop + agreement checking): **92% accuracy**
