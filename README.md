@@ -3,9 +3,8 @@ title: Orka Reasoning
 emoji: 🧠
 colorFrom: indigo
 colorTo: blue
-sdk: python
-sdk_version: "3.8"
-app_file: app.py
+sdk: gradio
+app_file: orka/orka_start.py
 pinned: false
 ---
 # OrKa-Reasoning
