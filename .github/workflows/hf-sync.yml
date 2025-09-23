@@ -14,11 +14,12 @@ jobs:
           pip install git-filter-repo
       - name: Remove all problematic files from history
         run: |
-          # Remove all .coverage*, *.png, *.zip from history
+          # Remove all .coverage*, *.png, *.zip, *.pdf from history
           git filter-repo --force \
             --path-glob '*.coverage*' \
             --path-glob '*.png' \
             --path-glob '*.zip' \
+            --path-glob '*.pdf' \
             --invert-paths
       - name: Configure git
         run: |
