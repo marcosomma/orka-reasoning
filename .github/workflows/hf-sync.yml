@@ -31,6 +31,10 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
+      - name: Commit README changes
+        run: |
+          git add README.md READ_ME.md
+          git commit -m "Auto-update README for HF display with research paper" || echo "No changes to commit"
       - name: Push mirror to HF
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
