@@ -1,25 +1,23 @@
-# OrKa V0.9.2 Quickstart Guide
+# OrKa Quickstart Guide
 
-Get OrKa up and running in minutes with our revolutionary **memory preset system** and **90% configuration complexity reduction**. Build powerful AI workflows with cognitive memory intelligence and local LLM support.
+Get OrKa running in 5 minutes and create your first AI workflow.
 
-## One-Click Setup
-
-Copy and paste this command to get started:
+## Quick Setup
 
 ```bash
-# Download and run the OrKa quickstart script
-curl -sSL https://orkacore.com/quickstart.sh | bash
+# 1. Install OrKa
+pip install orka-reasoning
 
-# Or if you prefer wget:
-wget -qO- https://orkacore.com/quickstart.sh | bash
+# 2. Start Redis (for memory)
+orka-start
+
+# 3. Optional: Set up local LLM
+# Install Ollama from https://ollama.ai
+ollama pull llama3.2
+
+# 4. Optional: Set OpenAI key (if using cloud models)
+export OPENAI_API_KEY=your-key-here
 ```
-
-This script will:
-
-1. Install Docker if not present
-2. Pull required images (RedisStack, OrKa)
-3. Set up environment variables
-4. Start OrKa with optimal configuration
 
 ## Manual Setup (Alternative)
 
@@ -66,8 +64,8 @@ Choose your deployment mode:
 # Development (RedisStack only)
 orka-start
 
-# Production (RedisStack)
-orka-start
+# Memory Watch
+orka memory watch
 
 # Optional: Start UI
 docker run -d -p 80:80 marcosomma/orka-ui:latest

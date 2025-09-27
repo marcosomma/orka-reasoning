@@ -1,69 +1,45 @@
 [📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
 
-# OrKa V0.9.2 FAQ
+# OrKa FAQ
 
-## 🧠 V0.9.2 Memory Presets Questions
+## General Questions
 
-### What's new in V0.9.2?
-V0.9.2 introduces the **Memory Presets System** with **90% configuration complexity reduction**. Based on Marvin Minsky's cognitive science, it replaces verbose memory configuration with intelligent cognitive defaults. Also includes unified memory agents, operation-aware intelligence, and local LLM first architecture.
+### What is OrKa?
+OrKa is a tool for creating AI workflows using YAML configuration files instead of writing Python code. You define agents (like memory, LLMs, web search) and how they connect, then OrKa executes the workflow.
 
-### How much simpler is the new configuration?
-**Dramatically simpler**: What used to require 15+ lines of complex decay rules, TTL settings, and parameter tuning now requires just `memory_preset: "episodic"`. That's a **90% reduction** in configuration complexity while providing scientifically-optimized defaults.
+### How is OrKa different from LangChain?
+LangChain requires writing Python code to orchestrate AI components. OrKa uses YAML files to define workflows declaratively. OrKa also includes built-in memory management and better support for local LLMs.
 
-### What are the 6 memory preset types?
-- **`sensory`** - Real-time data processing (15 min retention)
-- **`working`** - Active problem-solving context (4 hours)  
-- **`episodic`** - Personal experiences and conversations (7 days)
-- **`semantic`** - Facts and knowledge base (30 days)
-- **`procedural`** - Skills and process patterns (90 days)
-- **`meta`** - System performance and learning (365 days)
+### How do I choose between local and cloud LLMs?
+- **Local LLMs** (Ollama, LM Studio): Better for privacy, no API costs, but slower and less capable
+- **Cloud LLMs** (OpenAI, Anthropic): Faster and more capable, but require API keys and cost money
 
-### Do I still need to configure memory decay manually?
-No! Memory presets handle all decay configuration automatically based on cognitive science principles. Each preset includes optimized retention periods, importance scoring, and memory type classification. You can still override defaults if needed, but it's rarely necessary.
+### What's the memory system for?
+OrKa's memory system stores and retrieves information from previous conversations or workflows. It can search semantically (finding related content, not just exact matches) and automatically forgets old information to save space.
 
-### What is operation-aware intelligence?
-**NEW**: Memory agents automatically optimize their configuration based on whether the operation is `read` or `write`. Read operations get broader search parameters, while write operations get optimized storage settings. No manual tuning required!
+## Installation and Setup
 
-### Do I need OpenAI API keys anymore?
-No! V0.9.2 is **Local LLM First**. All new examples use local models with Ollama integration for complete privacy and cost efficiency. OpenAI support is still available as an option.
+### Do I need Docker?
+Docker is recommended for the memory system (Redis), but OrKa can work without it using basic in-memory storage.
 
-### What about my existing workflows with OpenAI agents?
-They continue to work unchanged! V0.9.2 maintains 100% backward compatibility. You can gradually migrate to local LLMs when ready, or continue using cloud models.
+### How do I set up local LLMs?
+1. Install Ollama from https://ollama.ai
+2. Pull a model: `ollama pull llama3.2`
+3. Use `provider: ollama` in your YAML configuration
 
----
+### What if I get Redis connection errors?
+Make sure Redis is running: `docker ps` should show a Redis container. If not, start it with: `docker run -d -p 6380:6380 redis/redis-stack:latest`
 
-## 🚀 RedisStack & Performance Questions
+## Configuration and Usage
 
-### Do I need to install RedisStack manually?
-No! OrKa V0.7.0 automatically handles RedisStack setup through Docker. Just ensure Docker is running and OrKa will configure everything for you.
-
-### What if I don't have Docker?
-OrKa will gracefully fallback to basic Redis mode. While you won't get the 100x performance improvement, everything will still work. Set `ORKA_FORCE_BASIC_REDIS=true` to explicitly use basic Redis.
-
-### How much faster is RedisStack really?
-Vector search latency drops from 50-200ms to 0.5-5ms (100x faster). Memory throughput increases from 1,000/sec to 50,000/sec (50x higher). These improvements are most noticeable with large memory datasets.
-
-### Will my existing workflows break?
-No! V0.7.0 maintains 100% backward compatibility. Your existing YAML files, agent configurations, and workflows continue to work unchanged while automatically benefiting from RedisStack performance.
-
-### How do I monitor RedisStack performance?
-Use `python -m orka.orka_cli memory watch` for a real-time dashboard showing HNSW metrics, search latency, and memory statistics. The dashboard automatically detects your backend and shows relevant performance data.
-
----
-
-## 🧠 General OrKa Questions
-
-### How is this different from LangChain?
-LangChain wraps LLM APIs with logic. OrKa defines cognitive structure in YAML + has full introspection with enterprise-grade memory that learns and forgets intelligently.
-
-### Why YAML?
-Declarative, composable, versionable. Think: Terraform for thought. YAML configurations are easier to understand, version control, and modify than complex Python code.
+### Why use YAML instead of Python code?
+YAML is easier to read, modify, and version control. You can change workflows without writing code, and non-programmers can understand and modify configurations.
 
 ### What happens if an agent fails?
-It logs the error. You can define `failover:` agents to take over. No silent failures. All errors are logged with full context for debugging.
+OrKa logs the error with full context. You can define fallback agents using `failover:` to handle failures gracefully.
 
-### Can I run this with local LLMs?
-Yes. Via LiteLLM proxy, run with Ollama, LM Studio, Claude, OpenRouter. V0.7.0 includes enhanced local LLM support with better error handling.
+### Can I run agents in parallel?
+Yes, use `fork` to split execution into parallel branches, then `join` to combine results.
 
 ### What about security?
 Redis/RedisStack can be encrypted. PII filters recommended. OrKa UI supports authentication, and all memory operations can be configured with encryption at rest.

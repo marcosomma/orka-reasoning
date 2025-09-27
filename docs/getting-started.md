@@ -1,79 +1,48 @@
 [📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
 
-# Getting Started with OrKa V0.9.2
+# Getting Started with OrKa
 
-Welcome to OrKa! This guide will help you get up and running with OrKa's revolutionary **memory preset system**, **90% configuration complexity reduction**, and **local LLM integration** in just a few minutes.
+This guide shows you how to set up OrKa and create your first AI workflows using YAML configuration files.
 
-## 🚀 What's New in V0.9.2 - Memory Presets Revolution
+## What You'll Learn
 
-- **🧠 Memory Presets System** - **90% configuration complexity reduction** with Minsky-inspired cognitive memory types
-- **🎯 Operation-Aware Intelligence** - Automatic read/write optimization eliminating manual parameter tuning
-- **🔧 Unified Memory Agents** - Single `type: memory` replacing separate reader/writer types  
-- **🤖 Local LLM First** - Complete Ollama integration with privacy-focused design
-- **📚 Simplified Examples** - **80% fewer lines** in configuration files with cognitive defaults
+- How to install OrKa and its dependencies
+- How to create basic AI workflows in YAML
+- How to use OrKa's memory system
+- How to work with local LLMs for privacy
 
-## 🚀 Previous Major Features
-
-### V0.7.5 - Cognitive Loop System
-- **🔄 Advanced Loop Node** - Intelligent iterative workflows with cognitive insight extraction
-- **🧠 Cognitive Society Framework** - Multi-agent deliberation and consensus building
-
-### V0.7.0 - RedisStack Performance Revolution
-- **🚀 100x Faster Vector Search** - RedisStack HNSW indexing now default
-- **⚡ Automatic Setup** - No manual Redis configuration needed
-- **🏗️ Unified Architecture** - All components use RedisStack with intelligent fallback
-
-## 🚀 Quick Setup
-
-### Prerequisites
+## Prerequisites
 
 - Python 3.8 or higher
-- Docker (installed and running)
-- **Optional**: Local LLM (Ollama recommended) or OpenAI API key
+- Docker (for Redis memory backend)
+- Optional: Local LLM like Ollama, or OpenAI API key
 
-### Installation
-
-```bash
-# Install OrKa with all dependencies (includes automatic RedisStack setup)
-pip install orka-reasoning fastapi uvicorn
-
-# Optional: Install extra features
-pip install orka-reasoning[extra]
-```
-
-**That's it!** OrKa V0.9.2 automatically handles RedisStack setup through Docker and supports both local and cloud LLMs.
-
-### Environment Configuration
+## Installation
 
 ```bash
-# For Local LLM (Recommended - Privacy & Cost Efficient):
-# No environment variables needed! OrKa examples now use local models by default.
+# Install OrKa
+pip install orka-reasoning
 
-# For OpenAI (Optional):
-export OPENAI_API_KEY=your-openai-api-key-here
-
-# Optional: Force basic Redis mode (not recommended)
-# export ORKA_FORCE_BASIC_REDIS=true
-```
-
-### Start OrKa
-
-```bash
-# For LOCAL development (automatically includes RedisStack + 100x faster vector search):
+# Start Redis for memory (runs in Docker)
 orka-start
-
-# For PRODUCTION with RedisStack:
-orka-start
-
-# Optional: Run OrKa UI for visual monitoring
-docker pull marcosomma/orka-ui:latest
-docker run -it -p 80:80 --name orka-ui marcosomma/orka-ui:latest
-# Then open http://localhost in your browser
 ```
 
-## 🎯 Your First OrKa Workflow with Memory Presets
+## Environment Setup
 
-Let's create a powerful workflow using OrKa's revolutionary memory preset system:
+```bash
+# For local LLMs (no API key needed)
+# Just install Ollama: https://ollama.ai
+
+# For OpenAI models (optional)
+export OPENAI_API_KEY=your-api-key-here
+
+# For Windows PowerShell:
+$env:OPENAI_API_KEY="your-api-key-here"
+```
+
+## Your First Workflow
+
+Let's create a simple Q&A system that remembers previous conversations:
 
 ### Create your first workflow file: `smart-assistant.yml`
 
