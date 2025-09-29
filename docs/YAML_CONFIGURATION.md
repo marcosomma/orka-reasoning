@@ -185,9 +185,9 @@ Orka provides various specialized nodes for workflow control and data management
 
 **NEW in v0.9.2**: Memory agents now use operation-aware presets that automatically provide optimized defaults.
 
-1. **Memory Reader Agent** (Enhanced with Smart Defaults)
+1. **Memory Reader Node** (Enhanced with Smart Defaults)
    ```yaml
-   agents:
+   nodes:
      - id: "context_loader"
        type: "memory"
        memory_preset: "episodic"  # 🎯 Auto-applies READ defaults!
@@ -197,9 +197,9 @@ Orka provides various specialized nodes for workflow control and data management
        # Most parameters now provided automatically by preset
    ```
 
-2. **Memory Writer Agent** (Enhanced with Smart Defaults)
+2. **Memory Writer Node** (Enhanced with Smart Defaults)
    ```yaml
-   agents:
+   nodes:
      - id: "memory_saver"
        type: "memory"
        memory_preset: "working"   # 🎯 Auto-applies WRITE defaults!
@@ -209,8 +209,9 @@ Orka provides various specialized nodes for workflow control and data management
        # Indexing and storage parameters provided by preset
    ```
 
-3. **RAG Node**
+3. **RAG Node** (Coming Soon)
    ```yaml
+   # Note: RAG node is under development and not yet available in the current release
    nodes:
      - id: "knowledge_augmenter"
        type: "rag"
@@ -224,6 +225,27 @@ Orka provides various specialized nodes for workflow control and data management
            max_tokens: 2000
    ```
 
+### Advanced Routing Nodes
+
+1. **Graph Scout Agent** (NEW in v0.9.3)
+   ```yaml
+   nodes:
+     - id: "intelligent_router"
+       type: "graph-scout"
+       params:
+         max_path_length: 3
+         budget_constraints:
+           max_tokens: 1000
+           max_latency_ms: 5000
+         safety_config:
+           risk_threshold: 0.7
+           enable_guardrails: true
+         evaluation_criteria:
+           - "relevance"
+           - "cost_efficiency"
+           - "safety"
+   ```
+
 ## Tool Configurations
 
 Orka provides various tools that can be used within workflows. Here are the available tools and their configurations:
@@ -232,15 +254,18 @@ Orka provides various tools that can be used within workflows. Here are the avai
 
 1. **DuckDuckGo Search Tool**
    ```yaml
-   tools:
+   agents:
      - id: "web_search"
        type: "duckduckgo"
+       prompt: "Search for: {{ input }}"
        params:
          max_results: 5
          search_type: "text"  # or "news"
          timeout: 30.0
          fallback_enabled: true
    ```
+
+**Note**: Tools are configured as agents in the YAML configuration. The DuckDuckGo tool supports intelligent query handling with fallback mechanisms for both text and news searches.
 
 ## Memory Configurations (Operation-Aware Presets)
 

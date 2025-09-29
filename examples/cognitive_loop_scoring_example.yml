@@ -14,6 +14,7 @@ agents:
     max_loops: 5
     score_threshold: 0.75
     score_extraction_pattern: "SCORE:\\s*([0-9.]+)"
+    persist_across_runs: true  # Enable persistence of past loops across different workflow runs
     
     # Cognitive extraction configuration
     cognitive_extraction:
@@ -65,7 +66,7 @@ agents:
           prompt: |
             Analyze this question: {{ get_input() }}
             
-            {% if get_past_loops() %}
+            {% if has_past_loops() %}
             Previous attempts ({{ get_past_loops() | length }}):
             {% for loop in get_past_loops() %}
             - Loop {{ loop.loop_number }} (Score: {{ loop.score }}):

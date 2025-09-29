@@ -302,10 +302,11 @@ class AgentFactory:
                 return agent
 
             # Default agent instantiation
-            prompt = cfg.get("prompt", None)
-            queue = cfg.get("queue", None)
             if isinstance(agent_cls, str):
                 raise ValueError(f"Invalid agent type: {agent_type}")
+
+            prompt = cfg.get("prompt", None)
+            queue = cfg.get("queue", None)
             return agent_cls(agent_id=agent_id, prompt=prompt, queue=queue, **clean_cfg)  # type: ignore [call-arg]
 
         for cfg in self.agent_cfgs:

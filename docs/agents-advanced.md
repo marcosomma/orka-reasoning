@@ -6,13 +6,26 @@
 | Type         | Input Format      | Output Format       | Description                          |
 |--------------|-------------------|----------------------|--------------------------------------|
 | binary       | string/payload    | bool (`true/false`)  | Yes/no decision                      |
-| classification | string          | string (label)       | Multi-class classifier               |
-| duckduckgo   | string            | list of strings      | Search snippets                      |
-| router       | string + context  | string (next agent)  | Branching logic control              |
-| builder      | dict              | string               | Compose structured final response    |
+| classification | string          | string (label)       | Multi-class classifier (deprecated)  |
+| local_llm    | string/dict       | string               | Local LLM integration (Ollama, etc.) |
 | openai-binary | string           | bool                 | LLM-powered yes/no decision          |
 | openai-classification | string   | string (label)       | LLM-powered multi-class classifier   |
 | openai-answer| dict/string       | string               | LLM-powered response generation      |
+| validate_and_structure | dict    | structured object    | Answer validation and structuring    |
+| duckduckgo   | string            | list of strings      | Web search snippets                  |
+
+## Node Types
+| Type         | Input Format      | Output Format       | Description                          |
+|--------------|-------------------|----------------------|--------------------------------------|
+| router       | string + context  | string (next agent)  | Branching logic control              |
+| fork         | any               | parallel execution   | Parallel processing coordination     |
+| join         | multiple inputs   | aggregated result    | Result aggregation from parallel paths |
+| loop         | any               | iterative processing | Loop control with conditions         |
+| failover     | any               | fallback result      | Error handling with fallbacks        |
+| failing      | any               | controlled failure   | Validation gate with failure conditions |
+| graph-scout  | string/dict       | path execution       | Intelligent workflow path discovery  |
+| memory       | any               | memory operation     | Memory read/write with presets       |
+| rag          | string/dict       | augmented response   | Retrieval-augmented generation (coming soon) |
 
 ---
 ## Error Handling

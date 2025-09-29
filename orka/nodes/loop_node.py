@@ -297,16 +297,29 @@ class LoopNode(BaseNode):
             },
         )
 
+        # Persistence configuration
+        self.persist_across_runs: bool = kwargs.get("persist_across_runs", True)
+
     async def run(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """Execute the loop node with threshold checking."""
         original_input = payload.get("input")
         original_previous_outputs = payload.get("previous_outputs", {})
 
+        # DEBUG: Log what we receive at the start
+        logger.debug(f"LoopNode.run() received payload keys: {list(payload.keys())}")
+        logger.debug(f"LoopNode.run() original_input: {original_input}")
+        logger.debug(f"LoopNode.run() original_input type: {type(original_input)}")
+
         # Create a working copy of previous_outputs to avoid circular references
         loop_previous_outputs = original_previous_outputs.copy()
 
-        # Initialize past_loops in our working copy
+        # Initialize past_loops - load from Redis if persistence is enabled
         past_loops: List[PastLoopMetadata] = []
+        if self.persist_across_runs:
+            past_loops = await self._load_past_loops_from_redis()
+
+        # Set past_loops in the working copy once at the beginning
+        loop_previous_outputs["past_loops"] = past_loops
 
         current_loop = 0
         loop_result: Optional[Dict[str, Any]] = None
@@ -316,9 +329,6 @@ class LoopNode(BaseNode):
             current_loop += 1
             logger.info(f"Loop {current_loop}/{self.max_loops} starting")
 
-            # Update the working copy with current past_loops for this iteration
-            loop_previous_outputs["past_loops"] = past_loops
-
             # Clear any Redis cache that might cause response duplication
             await self._clear_loop_cache(current_loop)
 
@@ -326,6 +336,7 @@ class LoopNode(BaseNode):
             loop_result = await self._execute_internal_workflow(
                 original_input,
                 loop_previous_outputs,
+                current_loop,
             )
 
             if loop_result is None:
@@ -426,7 +437,7 @@ class LoopNode(BaseNode):
         return final_result
 
     async def _execute_internal_workflow(
-        self, original_input: Any, previous_outputs: Dict[str, Any]
+        self, original_input: Any, previous_outputs: Dict[str, Any], current_loop: int
     ) -> Optional[Dict[str, Any]]:
         """Execute the internal workflow configuration."""
         from ..orchestrator import Orchestrator
@@ -477,8 +488,8 @@ class LoopNode(BaseNode):
             # BUT preserve important loop context for agents to see previous results
             safe_previous_outputs = self._create_safe_result_with_context(previous_outputs)
 
-            # Calculate current loop number from past_loops length
-            current_loop_number = len(previous_outputs.get("past_loops", [])) + 1
+            # Use the actual current loop number from the loop iteration
+            current_loop_number = current_loop
 
             # Prepare input with past_loops context AND loop_number
             # Build dynamic past_loops_metadata using user-defined fields
@@ -500,12 +511,22 @@ class LoopNode(BaseNode):
                     else:
                         dynamic_metadata[field_name] = f"No {field_name} available"
 
+            # Ensure input is passed as a simple string for template rendering
+            simple_input = original_input
+            if isinstance(original_input, dict) and "input" in original_input:
+                simple_input = original_input["input"]
+
             workflow_input = {
-                "input": original_input,
+                "input": simple_input,  # Pass simple string input for template rendering
                 "previous_outputs": safe_previous_outputs,
                 "loop_number": current_loop_number,
                 "past_loops_metadata": dynamic_metadata,
             }
+
+            # DEBUG: Log the input being passed to agents
+            logger.debug(f"LoopNode original_input: {original_input}")
+            logger.debug(f"LoopNode simple_input: {simple_input}")
+            logger.debug(f"LoopNode workflow_input keys: {list(workflow_input.keys())}")
 
             # Execute workflow with return_logs=True to get full logs for processing
             agent_sequence = [agent.get("id") for agent in self.internal_workflow.get("agents", [])]
@@ -1450,6 +1471,8 @@ class LoopNode(BaseNode):
             logger.debug(
                 f"- Added {len(helper_functions)} helper functions to LoopNode template context"
             )
+            logger.debug(f"- Helper payload input: {helper_payload.get('input', 'MISSING')}")
+            logger.debug(f"- Template context keys: {list(template_context.keys())}")
         except Exception as e:
             logger.warning(f"Failed to add helper functions to LoopNode template context: {e}")
             # Continue without helper functions - fallback gracefully
@@ -1460,7 +1483,7 @@ class LoopNode(BaseNode):
         # Render each metadata field using the user-defined templates
         for field_name, template_str in self.past_loops_metadata.items():
             try:
-
+                logger.debug(f"- Rendering field '{field_name}' with template: {template_str}")
                 template = Template(template_str)
                 rendered_value = template.render(template_context)
                 past_loop_obj[field_name] = rendered_value
@@ -1683,6 +1706,36 @@ class LoopNode(BaseNode):
             if field in loop and loop[field]:
                 values.append(str(loop[field]))
         return " | ".join(values)
+
+    async def _load_past_loops_from_redis(self) -> List[PastLoopMetadata]:
+        """Load past loops from Redis if available."""
+        past_loops: List[PastLoopMetadata] = []
+
+        if self.memory_logger is not None:
+            try:
+                past_loops_key = f"past_loops:{self.node_id}"
+
+                # Try to load past loops from Redis
+                stored_data = self.memory_logger.get(past_loops_key)
+                if stored_data:
+                    loaded_loops = json.loads(stored_data)
+                    if isinstance(loaded_loops, list):
+                        past_loops = loaded_loops
+                        logger.info(
+                            f"Loaded {len(past_loops)} past loops from Redis for node {self.node_id}"
+                        )
+                    else:
+                        logger.warning(
+                            f"Invalid past loops data format in Redis for node {self.node_id}"
+                        )
+                else:
+                    logger.debug(f"No past loops found in Redis for node {self.node_id}")
+
+            except Exception as e:
+                logger.error(f"Failed to load past loops from Redis: {e}")
+                # Continue with empty past_loops on error
+
+        return past_loops
 
     def _store_in_redis(self, key: str, value: Any) -> None:
         """Safely store a value in Redis."""
