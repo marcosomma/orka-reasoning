@@ -42,7 +42,7 @@ class FailoverNode(BaseNode):
         self.children = children or []
         self.agent_id = node_id  # Ensure agent_id is set for proper identification
 
-    async def run(self, input_data):
+    async def _run_impl(self, input_data):
         """
         Run the failover logic by trying each child node in sequence.
 

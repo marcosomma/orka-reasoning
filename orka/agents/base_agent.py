@@ -45,11 +45,13 @@ and capabilities, working together to solve complex problems. They provide:
 
 import abc
 import logging
+import time
 import uuid
 from datetime import datetime
-from typing import Any, TypeVar
+from typing import Any, TypeVar, Union
 
-from ..contracts import Context, Output, Registry
+from ..contracts import Context, OrkaResponse, Registry
+from ..response_builder import ResponseBuilder
 from ..utils.concurrency import ConcurrencyManager
 
 logger = logging.getLogger(__name__)
@@ -57,7 +59,7 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
-class BaseAgent:
+class BaseAgent(abc.ABC):
     """
     Agent Base Classes
     ==================
@@ -207,7 +209,7 @@ class BaseAgent:
             return
         self._initialized = True
 
-    async def run(self, ctx: Context | Any) -> Output | Any:
+    async def run(self, ctx: Context | Any) -> OrkaResponse:
         """
         Run the agent with the given context.
 
@@ -222,28 +224,23 @@ class BaseAgent:
                 Can be a Context object for modern agents or any input for legacy agents.
 
         Returns:
-            Output or Any: Standardized output for modern agents or direct result for legacy agents
+            OrkaResponse: Standardized response with result, status, and metadata
         """
         if not self._initialized:
             await self.initialize()
 
-        # Check if this is a legacy call pattern
-        if hasattr(self, "_is_legacy_agent") and self._is_legacy_agent():
-            # Call the legacy implementation
-            if hasattr(self, "run") and not isinstance(self.run, type(BaseAgent.run)):
-                return self.run(ctx)
-            # Default to calling _run_legacy for compatibility
-            return await self._run_legacy(ctx)
-
-        # Modern agent pattern - process the context
+        # Process the context
         if not isinstance(ctx, dict):
             ctx = {"input": ctx}
 
         # Add trace information if not present
+        trace_id = ctx.get("trace_id") or str(uuid.uuid4())
         if "trace_id" not in ctx:
-            ctx["trace_id"] = str(uuid.uuid4())
+            ctx["trace_id"] = trace_id
         if "timestamp" not in ctx:
             ctx["timestamp"] = datetime.now()
+
+        execution_start_time = time.time()
 
         try:
             # Use concurrency manager to run the agent
@@ -252,21 +249,27 @@ class BaseAgent:
                 self.timeout,
                 ctx,
             )
-            return Output(
+
+            return ResponseBuilder.create_success_response(
                 result=result,
-                status="success",
-                error=None,
-                metadata={"agent_id": self.agent_id},
+                component_id=self.agent_id,
+                component_type="agent",
+                execution_start_time=execution_start_time,
+                trace_id=trace_id,
+                metadata={"agent_type": self.__class__.__name__},
             )
         except Exception as e:
             logger.error(f"Agent {self.agent_id} failed: {e!s}")
-            return Output(
-                result=None,
-                status="error",
+            return ResponseBuilder.create_error_response(
                 error=str(e),
-                metadata={"agent_id": self.agent_id},
+                component_id=self.agent_id,
+                component_type="agent",
+                execution_start_time=execution_start_time,
+                trace_id=trace_id,
+                metadata={"agent_type": self.__class__.__name__},
             )
 
+    @abc.abstractmethod
     async def _run_impl(self, ctx: Context) -> Any:
         """
         Implementation of the agent's run logic.
@@ -283,25 +286,7 @@ class BaseAgent:
         Raises:
             NotImplementedError: If not implemented by a subclass
         """
-        raise NotImplementedError("Subclasses must implement _run_impl")
-
-    async def _run_legacy(self, input_data: Any) -> Any:
-        """
-        Legacy implementation that modern async classes should override
-        if they need to support the legacy sync interface.
-
-        Args:
-            input_data: The input data to process
-
-        Returns:
-            Any: The result of processing the input data
-
-        Raises:
-            NotImplementedError: If not implemented by a subclass that needs legacy support
-        """
-        raise NotImplementedError(
-            "Legacy agents must implement _run_legacy or override run",
-        )
+        pass
 
     async def cleanup(self) -> None:
         """
@@ -321,46 +306,3 @@ class BaseAgent:
             str: String representation showing agent class, ID, and queue.
         """
         return f"<{self.__class__.__name__} id={self.agent_id} queue={self.queue}>"
-
-
-# Legacy abstract base class for backward compatibility
-class LegacyBaseAgent(abc.ABC, BaseAgent):
-    """
-    Abstract base class for legacy agents in the OrKa framework.
-    Provides compatibility with the older synchronous agent pattern.
-
-    New agent implementations should use BaseAgent directly with async methods.
-    This class exists only for backward compatibility.
-    """
-
-    def __init__(self, agent_id, prompt, queue, **kwargs):
-        """
-        Initialize the legacy base agent.
-
-        Args:
-            agent_id (str): Unique identifier for the agent.
-            prompt (str): Prompt or instruction for the agent.
-            queue (list): Queue of agents or nodes to be processed.
-            **kwargs: Additional parameters specific to the agent type.
-        """
-        super().__init__(agent_id=agent_id, prompt=prompt, queue=queue, **kwargs)
-
-    def _is_legacy_agent(self):
-        """Identify this as a legacy agent for the unified run method"""
-        return True
-
-    @abc.abstractmethod
-    def run(self, input_data):
-        """
-        Abstract method to run the agent's reasoning process.
-        Must be implemented by all concrete agent classes.
-
-        Args:
-            input_data: Input data for the agent to process.
-
-        Returns:
-            The result of the agent's processing.
-
-        Raises:
-            NotImplementedError: If not implemented by a subclass.
-        """

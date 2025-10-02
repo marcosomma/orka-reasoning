@@ -4,32 +4,7 @@
 orchestrator:
   id: genius_minds_convergence
   strategy: sequential
-  memory_config:
-    backend: redisstack
-    vector_field: "content_vector"
-    vector_index_name: "orka_enhanced_memory"
-    vector_search:
-      enabled: true
-      index_name: "orka_enhanced_memory"
-      vector_dim: 384
-      enable_hnsw: true
-      force_recreate_index: false  # Only create index if it doesn't exist
-      vector_params:
-        type: "FLOAT32"
-        distance_metric: "COSINE"
-        ef_construction: 200
-        m: 16
-    decay:
-      enabled: true
-      default_short_term_hours: 168.0  # 1 week
-      default_long_term_hours: 2160.0  # 90 days
-      check_interval_minutes: 60  # Check every hour instead of every minute
-      importance_rules:
-        base_score: 0.8  # Higher base score
-        event_type_boosts:
-          breakthrough: 0.5  # Increased boosts for important events
-          innovation: 0.4
-          synthesis: 0.45
+  memory_preset: "procedural"  # Use procedural memory for genius insights and patterns
   agents:
     - prior_insights_reader
     - genius_minds_loop

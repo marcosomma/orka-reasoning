@@ -2,17 +2,20 @@ orchestrator:
   id: orka-ui
   strategy: sequential
   queue: orka:generated
+  memory_preset: "working"  # Use working memory for active processing
   agents:
     - fork_detect
     - join_detect
     - fork_temporal
     - join_paths
     - synthesize_timeline_answer
+    - search_before
+    - search_after
 agents:
   - id: fork_detect
     type: fork
     targets:
-      - - detect_change
+      - detect_change
   - id: detect_change
     type: local_llm
     model: gpt-oss:20b
@@ -29,10 +32,8 @@ agents:
   - id: fork_temporal
     type: fork
     targets:
-      - - generate_before_query
-        - search_before
-      - - generate_after_query
-        - search_after
+      - generate_before_query
+      - generate_after_query
     depends_on:
       - join_detect
   - id: generate_before_query

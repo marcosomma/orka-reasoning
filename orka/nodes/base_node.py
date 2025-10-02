@@ -12,6 +12,11 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 import abc
+import time
+from typing import Any
+
+from ..contracts import OrkaResponse
+from ..response_builder import ResponseBuilder
 
 
 class BaseNode(abc.ABC):
@@ -42,16 +47,54 @@ class BaseNode(abc.ABC):
         """Initialize the node and its resources."""
         pass
 
-    @abc.abstractmethod
-    async def run(self, input_data):
+    async def run(self, input_data: Any) -> OrkaResponse:
         """
-        Abstract method to run the logical node.
+        Run the node with the given input data.
+
+        This method handles the execution workflow including:
+        - Timing the execution
+        - Handling errors gracefully
+        - Returning standardized OrkaResponse format
 
         Args:
-            input_data: Input data for the node to process.
+            input_data: The input data for the node.
 
-        Raises:
-            NotImplementedError: If the method is not implemented by a subclass.
+        Returns:
+            OrkaResponse: Standardized response with result, status, and metadata
+        """
+        execution_start_time = time.time()
+
+        try:
+            result = await self._run_impl(input_data)
+            return ResponseBuilder.create_success_response(
+                result=result,
+                component_id=self.node_id,
+                component_type="node",
+                execution_start_time=execution_start_time,
+                metadata={"node_type": self.__class__.__name__},
+            )
+        except Exception as e:
+            return ResponseBuilder.create_error_response(
+                error=str(e),
+                component_id=self.node_id,
+                component_type="node",
+                execution_start_time=execution_start_time,
+                metadata={"node_type": self.__class__.__name__},
+            )
+
+    @abc.abstractmethod
+    async def _run_impl(self, input_data: Any) -> Any:
+        """
+        Implementation of the node's run logic.
+
+        Subclasses must implement this method to define their specific behavior.
+        This method receives the input data and should return the raw result.
+
+        Args:
+            input_data: The input data to process
+
+        Returns:
+            Any: The raw result of the node's processing
         """
         pass
 

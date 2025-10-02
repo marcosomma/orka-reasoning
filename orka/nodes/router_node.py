@@ -47,9 +47,9 @@ class RouterNode(BaseNode):
     **Routing Patterns:**
 
     **1. Binary Routing** (most common):
-    
+
     .. code-block:: yaml
-    
+
         - id: content_router
           type: router
           params:
@@ -59,9 +59,9 @@ class RouterNode(BaseNode):
               "false": [content_moderator, human_review]
 
     **2. Multi-way Classification Routing**:
-    
+
     .. code-block:: yaml
-    
+
         - id: intent_router
           type: router
           params:
@@ -73,9 +73,9 @@ class RouterNode(BaseNode):
               "request": [request_processor, validation_agent]
 
     **3. Priority-based Routing**:
-    
+
     .. code-block:: yaml
-    
+
         - id: priority_router
           type: router
           params:
@@ -120,7 +120,7 @@ class RouterNode(BaseNode):
             )
         self.params = params
 
-    def run(self, input_data):
+    async def _run_impl(self, input_data):
         """
         Route the workflow based on the decision value.
 
@@ -139,7 +139,7 @@ class RouterNode(BaseNode):
 
         # Handle dictionary decision values
         if isinstance(decision_value, dict):
-            decision_value = decision_value.get('response')
+            decision_value = decision_value.get("response")
 
         # Normalize decision value for flexible matching
         decision_value_str = str(decision_value).strip().lower()

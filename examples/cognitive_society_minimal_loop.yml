@@ -218,19 +218,28 @@ agents:
       USER ASKED: {{ get_input() }}
       
       Debate completed:
-      - Loops: {{ get_agent_response('simple_debate_loop')['loops_completed'] if get_agent_response('simple_debate_loop') else 'Unknown' }}
-      - Final Score: {{ get_agent_response('simple_debate_loop')['final_score'] if get_agent_response('simple_debate_loop') else 'Unknown' }}
-      - Agreement: {{ (get_agent_response('simple_debate_loop')['final_score'] >= 0.8) if get_agent_response('simple_debate_loop') and get_agent_response('simple_debate_loop')['final_score'] else False }}
+      - Loops: {{ get_loop_rounds() }}
+      - Final Score: {{ get_final_score() }}
+      - Status: {{ get_loop_status() }}
+      - Agreement: {{ 'Yes' if get_final_score() != 'Unknown' and get_final_score() >= 0.8 else 'No' }}
       
-      Final Summary:
-      {% if get_agent_response('simple_debate_loop') and get_agent_response('simple_debate_loop')['past_loops'] %}
-      {% set last_loop = get_agent_response('simple_debate_loop')['past_loops'][-1] %}
-      {{ last_loop.debate_summary }}
+      Past Debate Results:
+      {% if has_past_loops() %}
+      {% for past_loop in get_past_loops() %}
+      Round {{ past_loop.round }}: Score {{ past_loop.agreement_score }}
+      {% if past_loop.debate_summary and past_loop.debate_summary != "No response found for debate_summary" %}
+      Summary: {{ past_loop.debate_summary }}
       {% endif %}
+      {% endfor %}
+      {% else %}
+      No past loops available.
+      {% endif %}
+      
+      Loop Results: {{ get_agent_response('simple_debate_loop') }}
       
       Provide a direct answer to the user's question based on the debate results.
       
       Format:
       **Answer**: [Direct response to user's question]
-      **Consensus Reached**: [Yes/No - {{ 'Yes' if get_agent_response('simple_debate_loop') and get_agent_response('simple_debate_loop')['final_score'] >= 0.8 else 'No' }}]
+      **Consensus Reached**: {{ 'Yes' if get_final_score() != 'Unknown' and get_final_score() >= 0.8 else 'No' }}
       **Key Insights**: [2-3 main takeaways from the debate] 

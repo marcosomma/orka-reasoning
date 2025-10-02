@@ -23,6 +23,7 @@ orchestrator:
     - memory_reader
     - binary_answer_classifier
     - memory_check_router
+    - final_summary
 
 agents:
   - id: memory_reader
@@ -287,3 +288,34 @@ agents:
       structured_data: "{{ previous_outputs.false_validation_guardian.memory_object }}"
       timestamp: "{{ timestamp }}"
     key_template: "validated_number_analysis_{{ get_input() }}_lte5"
+    depends_on:
+      - binary_classifier
+  
+  - id: final_summary
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    prompt: |
+      Answer whether {{ get_input() }} is greater than 5.
+      
+      {% set memory_check = get_agent_response('memory_reader') %}
+      {% if memory_check and memory_check != "NONE" %}
+      I found this in memory: {{ memory_check }}
+      {% endif %}
+      
+      {% set classification = get_agent_response('binary_classifier') %}
+      {% set final_result = get_agent_response('binary_result_returner') %}
+      
+      {% if final_result %}
+      {{ final_result }}
+      {% elif classification %}
+      The answer is {{ classification }}.
+      {% else %}
+      Let me analyze {{ get_input() }} to determine if it's greater than 5.
+      {% endif %}
+      
+      Provide a clear, direct answer to the mathematical question.
+    depends_on:
+      - binary_result_returner

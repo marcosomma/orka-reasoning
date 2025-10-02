@@ -2,12 +2,14 @@ orchestrator:
   id: orka-ui
   strategy: parallel
   queue: orka:generated
+  memory_preset: "working"  # Use working memory for active processing
   agents:
     - initial_classify
     - search_required
     - fork_parallel_checks
     - join_parallel_checks
     - router_search_path
+    - final_summary
 agents:
   - id: initial_classify
     type: local_llm
@@ -33,8 +35,8 @@ agents:
   - id: fork_parallel_checks
     type: fork
     targets:
-      - - topic_validity_check
-      - - summary_category_check
+      - topic_validity_check
+      - summary_category_check
     depends_on:
       - search_required
   - id: topic_validity_check
@@ -130,3 +132,24 @@ agents:
     prompt: "Build a detailed answer based on the classification result:- Classification result: {{ get_agent_response('initial_classify') }}. Provide the best possible response given the available information."
     depends_on:
       - final_router
+  - id: final_summary
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    prompt: |
+      Regarding "{{ get_input() }}", here's what I found:
+      
+      {% set final_true = get_agent_response('final_builder_true') %}
+      {% set final_false = get_agent_response('final_builder_false') %}
+      
+      {% if final_true %}
+      {{ final_true }}
+      {% elif final_false %}
+      {{ final_false }}
+      {% else %}
+      Let me provide you with the most relevant information I can find about your question.
+      {% endif %}
+      
+      Give a complete and helpful response to the user's question.

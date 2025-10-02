@@ -33,7 +33,8 @@ Both agent types inherit from the BaseAgent class and implement the required run
 method with simple rule-based logic.
 """
 
-from .base_agent import LegacyBaseAgent as BaseAgent
+from ..contracts import Context
+from .base_agent import BaseAgent
 
 
 class BinaryAgent(BaseAgent):
@@ -50,12 +51,12 @@ class BinaryAgent(BaseAgent):
     decision logic.
     """
 
-    def run(self, input_data):
+    async def _run_impl(self, ctx: Context):
         """
         Make a binary decision based on text content.
 
         Args:
-            input_data (dict): Input containing text to analyze, expected to have
+            ctx (dict): Input containing text to analyze, expected to have
                 an 'input' field with the text content.
 
         Returns:
@@ -66,9 +67,8 @@ class BinaryAgent(BaseAgent):
             In production, this would typically use more sophisticated rules
             or a trained classifier.
         """
-        text = input_data.get("input", "")
-        if isinstance(text, dict):
-            text = text.get("input", "")
+        input_value = ctx.get("input", "")
+        text = str(input_value) if not isinstance(input_value, str) else input_value
 
         positive = ["yes", "true", "correct"]
         if any(p in text.lower() for p in positive):
@@ -92,7 +92,7 @@ class ClassificationAgent(BaseAgent):
         based on keyword matching using a simple rule-based approach.
     """
 
-    def run(self, input_data):
+    async def _run_impl(self, ctx: Context):
         """
         Deprecated method that returns "deprecated".
 
@@ -102,7 +102,7 @@ class ClassificationAgent(BaseAgent):
             should not be used.
 
         Args:
-            input_data: Input data (ignored)
+            ctx: Input data (ignored)
 
         Returns:
             str: Always returns "deprecated"

@@ -31,7 +31,7 @@ class FailingNode(BaseNode):
         """
         return getattr(self, "agent_id", getattr(self, "node_id", "unknown"))
 
-    def run(self, input_data):
+    async def _run_impl(self, input_data):
         """
         Simulate a failing node by raising a RuntimeError after a delay.
 

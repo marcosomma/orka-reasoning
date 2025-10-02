@@ -2,6 +2,7 @@ orchestrator:
   id: orka-ui
   strategy: parallel
   queue: orka:generated
+  memory_preset: "semantic"  # Use semantic memory for knowledge processing
   agents:
     - memory-read_0
     - openai-answer_2
@@ -10,6 +11,7 @@ orchestrator:
     - openai-binary_10
     - router_11
     - memory-write_final
+    - final_summary
 agents:
   - id: memory-read_0
     type: memory
@@ -34,11 +36,8 @@ agents:
   - id: fork_3
     type: fork
     targets:
-      - - openai-binary_4
-        - openai-classification_5
-        - openai-answer_6
-      - - openai-answer_7
-        - failover_11
+      - openai-binary_4
+      - openai-answer_7
     depends_on:
       - openai-answer_2
   - id: openai-binary_4
@@ -160,3 +159,38 @@ agents:
       result: "{{ safe_get_response('openai-answer_14', get_agent_response('openai-answer_15')) }}"
       category: stored
     key_template: "{{ get_input() }}"
+    depends_on:
+      - router_11
+  
+  - id: final_summary
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    prompt: |
+      Based on the question "{{ get_input() }}", provide a comprehensive response using the available information:
+      
+      {% set memory_info = get_agent_response('memory-read_0') %}
+      {% if memory_info %}
+      Retrieved information: {{ memory_info }}
+      {% endif %}
+      
+      {% set analysis = get_agent_response('openai-answer_2') %}
+      {% if analysis %}
+      Analysis: {{ analysis }}
+      {% endif %}
+      
+      {% set validation = get_agent_response('openai-binary_4') %}
+      {% set classification = get_agent_response('openai-classification_5') %}
+      {% set alternative = get_agent_response('openai-answer_6') %}
+      {% set coherence = get_agent_response('openai-binary_10') %}
+      {% set final_answer = get_agent_response('openai-answer_14') or get_agent_response('openai-answer_15') %}
+      
+      {% if final_answer %}
+      {{ final_answer }}
+      {% endif %}
+      
+      Synthesize all available information to provide the most accurate and helpful response to the user's question.
+    depends_on:
+      - memory-write_final

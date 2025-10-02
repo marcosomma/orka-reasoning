@@ -10,36 +10,7 @@
 orchestrator:
   id: cognitive-society-collaborative-enhanced-local-optimized-8b
   strategy: sequential
-  memory_config:
-    backend: redisstack
-    vector_field: "content_vector"  # Ensure proper vector field for RedisStack
-    vector_index_name: "orka_enhanced_memory"  # Explicitly name the index
-    # Enhanced vector search configuration
-    vector_search:
-      enabled: true
-      index_name: "orka_enhanced_memory"
-      vector_dim: 384
-      enable_hnsw: true
-      force_recreate_index: false
-      vector_params:
-        type: "FLOAT32"
-        distance_metric: "COSINE"
-        ef_construction: 200
-        m: 16
-    decay:
-      enabled: true
-      default_short_term_hours: 2.0
-      default_long_term_hours: 24.0
-      check_interval_minutes: 1
-      importance_rules:
-        base_score: 0.8
-        event_type_boosts:
-          disagreement: 0.2
-          challenge: 0.4
-          synthesis: 0.3
-        agent_type_boosts:
-          debate: 0.3
-          devil_advocate: 0.4
+  memory_preset: episodic
   agents:
     - cognitive_debate_loop
     - meta_debate_reflection
@@ -53,25 +24,12 @@ agents:
     
     high_priority_agents:
       - "agreement_moderator"
-      - "quality_moderator"
     
     score_extraction_config:
       strategies:
         - type: pattern
           patterns:
             - "AGREEMENT_SCORE: ([0-9.]+)"
-            - "Agreement Score: ([0-9.]+)"
-            - "Score: ([0-9.]+)"
-            - "AGREEMENT_SCORE\\s*([0-9.]+)"
-            - "agreement_score: ([0-9.]+)"
-        - type: pattern
-          patterns:
-            - "(0\\.[6-9][0-9]?)"
-            - "([0-9])\\.[0-9]+"
-        - type: agent_key
-          agents: ["agreement_moderator"]
-          key: "response"
-          transform: "extract_score"
     
     # 🔧 OPTIMIZED: Reduced extraction patterns and length
     cognitive_extraction:
@@ -124,7 +82,7 @@ agents:
             memory_category_filter: store
             memory_type_filter: "all"
             vector: true
-            vector_field: "embedded_vector"  # Use dedicated vector field for embedded content
+            vector_field: "content_vector"  # Use standard vector field
             # Enhanced vector search configuration
             enable_vector_search: true
             vector_weight: 0.7
@@ -150,10 +108,10 @@ agents:
         - id: opening_positions
           type: fork
           targets:
-            - - radical_progressive
-            - - traditional_conservative
-            - - pragmatic_realist
-            - - ethical_purist
+            - radical_progressive
+            - traditional_conservative
+            - pragmatic_realist
+            - ethical_purist
         
         # 🔧 OPTIMIZED: Condensed progressive agent
         - id: radical_progressive
@@ -291,10 +249,10 @@ agents:
         - id: collaborative_refinement
           type: fork
           targets:
-            - - progressive_refinement
-            - - conservative_refinement
-            - - realist_refinement
-            - - purist_refinement
+            - progressive_refinement
+            - conservative_refinement
+            - realist_refinement
+            - purist_refinement
         
         # 🔧 OPTIMIZED: Condensed progressive refinement
         - id: progressive_refinement

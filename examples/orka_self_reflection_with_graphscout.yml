@@ -1,0 +1,509 @@
+# 🧠 ORKA SELF-REFLECTION WITH GRAPHSCOUT
+# ========================================
+# A meta-cognitive workflow where Orka analyzes its own internal processes,
+# memory handling, execution patterns, and reasoning capabilities using GraphScout
+# for intelligent path discovery and self-examination.
+
+orchestrator:
+  id: orka-self-reflection-meta-cognitive
+  strategy: sequential
+  memory_preset: "meta"  # Meta-cognitive memory for self-reflection
+  agents:
+    - initial_self_assessment
+    - cognitive_architecture_loop
+    - graphscout_presentation_router
+    - technical_report_formatter
+    - narrative_storyteller
+    - philosophical_analyzer
+    - executive_summarizer
+    - final_synthesis
+
+agents:
+  # Initial assessment to understand what Orka should examine about itself
+  - id: initial_self_assessment
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    memory_config:
+      operation: write
+      vector: true
+      namespace: orka_self_reflection
+      metadata:
+        phase: "initial_assessment"
+        reflection_type: "self_awareness"
+    prompt: |
+      You are Orka, a multi-agent orchestration framework. Your task is to examine yourself.
+      
+      QUESTION: {{ get_input() }}
+      
+      Begin by identifying what aspects of your own architecture and execution you should investigate:
+      
+      1. **Internal Architecture**: What components can you observe in your own execution?
+      2. **Memory Systems**: How do you handle memory storage, retrieval, and persistence?
+      3. **Agent Coordination**: How do multiple agents within you interact and coordinate?
+      4. **Execution Flow**: What patterns emerge in your workflow execution?
+      5. **Self-Awareness**: What can you observe about your own reasoning process?
+      
+      **SELF-ASSESSMENT AREAS TO EXPLORE**:
+      - Component identification and interaction patterns
+      - Memory handling and persistence mechanisms  
+      - Multi-agent coordination strategies
+      - Execution tracing and workflow management
+      - Emergent behaviors and cognitive patterns
+      
+      **INITIAL OBSERVATIONS**: [What you can immediately observe about your own execution]
+      **KEY INVESTIGATION AREAS**: [Top 3-5 areas that need deeper exploration]
+      **EXPECTED INSIGHTS**: [What you hope to discover about yourself]
+
+  # Multi-loop cognitive architecture analysis with GraphScout routing
+  - id: cognitive_architecture_loop
+    type: loop
+    max_loops: 3
+    score_threshold: 0.90
+    
+    high_priority_agents:
+      - "self_awareness_moderator"
+    
+    score_extraction_config:
+      strategies:
+        - type: pattern
+          patterns:
+            - "UNDERSTANDING_SCORE:\\s*([0-9.]+)"
+            - "INSIGHT_COMPLETENESS:\\s*([0-9.]+)"
+    
+    past_loops_metadata:
+      investigation_round: "{{ get_loop_number() }}"
+      understanding_score: "{{ score }}"
+      timestamp: "{{ timestamp }}"
+      insight_level: "{{ 'DEEP' if score >= 0.85 else 'SURFACE' if score >= 0.70 else 'INITIAL' }}"
+    
+    internal_workflow:
+      orchestrator:
+        id: self-reflection-internal-cognitive
+        strategy: sequential
+        agents:
+          - memory_context_reader
+          - execution_trace_analyzer
+          - memory_system_investigator
+          - agent_coordination_observer
+          - workflow_pattern_detector
+          - emergent_behavior_analyzer
+          - self_awareness_moderator
+          - reflection_memory_writer
+      
+      agents:
+        # Read previous self-reflection memories
+        - id: memory_context_reader
+          type: memory
+          memory_preset: "meta"  # Meta-cognitive memory
+          queue: orka:self-reflection-memory
+          config:
+            operation: read
+            limit: 8
+            similarity_threshold: 0.3
+            temporal_weight: 0.4
+            memory_category_filter: store
+            vector_field: "content_vector"
+            enable_hybrid_search: true
+          namespace: orka_self_reflection
+          prompt: |
+            Previous self-reflection context for: {{ get_input() }}
+            Investigation round: {{ get_loop_number() }}
+        
+        
+        # Analyze execution traces and patterns
+        - id: execution_trace_analyzer
+          type: local_llm
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.2
+          capabilities: [execution_analysis, trace_examination]
+          memory_config:
+            operation: write
+            vector: true
+            namespace: orka_self_reflection
+            metadata:
+              agent_type: "execution_analyzer"
+              loop_number: "{{ get_loop_number() }}"
+          prompt: |
+            EXECUTION TRACE ANALYSIS - Round {{ get_loop_number() }}
+            
+            FOCUS: {{ get_input() }}
+            MEMORY CONTEXT: {{ get_agent_response('memory_context_reader') }}
+            
+            Analyze your own execution patterns by observing:
+            
+            1. **Agent Sequencing**: How are agents being called and in what order?
+            2. **Data Flow**: How information flows between agents in your execution
+            3. **Decision Points**: Where and how routing decisions are made
+            4. **Resource Usage**: Memory, computation, and time patterns
+            5. **Error Handling**: How failures and retries are managed
+            
+            **EXECUTION_PATTERNS**: [Observable patterns in your own execution]
+            **DATA_FLOW_ANALYSIS**: [How information moves through your system]
+            **DECISION_MECHANISMS**: [How you make routing and execution decisions]
+            **RESOURCE_EFFICIENCY**: [Patterns in resource usage and optimization]
+        
+        # Investigate memory systems and persistence
+        - id: memory_system_investigator
+          type: local_llm
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.3
+          capabilities: [memory_analysis, persistence_examination]
+          memory_config:
+            operation: write
+            vector: true
+            namespace: orka_self_reflection
+            metadata:
+              agent_type: "memory_investigator"
+              loop_number: "{{ get_loop_number() }}"
+          prompt: |
+            MEMORY SYSTEM INVESTIGATION - Round {{ get_loop_number() }}
+            
+            FOCUS: {{ get_input() }}
+            EXECUTION INSIGHTS: {{ get_agent_response('execution_trace_analyzer') }}
+            
+            Examine your memory handling mechanisms:
+            
+            1. **Storage Patterns**: How and where you store different types of information
+            2. **Retrieval Strategies**: How you search and retrieve relevant memories
+            3. **Persistence Mechanisms**: What data persists between executions
+            4. **Memory Categories**: Different types of memory (episodic, semantic, procedural, meta)
+            5. **Vector Operations**: How embeddings and similarity search work
+            
+            **MEMORY_ARCHITECTURE**: [Your memory system structure and components]
+            **STORAGE_STRATEGIES**: [How you decide what to store and where]
+            **RETRIEVAL_PATTERNS**: [How you find and use stored information]
+            **PERSISTENCE_BEHAVIOR**: [What survives between executions and why]
+        
+        # Observe agent coordination and interaction patterns
+        - id: agent_coordination_observer
+          type: local_llm
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.4
+          capabilities: [coordination_analysis, interaction_patterns]
+          memory_config:
+            operation: write
+            vector: true
+            namespace: orka_self_reflection
+            metadata:
+              agent_type: "coordination_observer"
+              loop_number: "{{ get_loop_number() }}"
+          prompt: |
+            AGENT COORDINATION OBSERVATION - Round {{ get_loop_number() }}
+            
+            FOCUS: {{ get_input() }}
+            MEMORY INSIGHTS: {{ get_agent_response('memory_system_investigator') }}
+            
+            Observe how multiple agents within you coordinate and interact:
+            
+            1. **Communication Patterns**: How agents pass information to each other
+            2. **Synchronization**: How parallel and sequential execution is managed
+            3. **Fork/Join Behavior**: How you handle parallel agent execution
+            4. **Context Sharing**: How shared context and state is maintained
+            5. **Conflict Resolution**: How competing agent outputs are resolved
+            
+            **COORDINATION_MECHANISMS**: [How your agents work together]
+            **COMMUNICATION_FLOWS**: [Information exchange patterns between agents]
+            **SYNCHRONIZATION_STRATEGIES**: [How parallel execution is coordinated]
+            **CONTEXT_MANAGEMENT**: [How shared state is maintained and updated]
+        
+        # Detect workflow and execution patterns
+        - id: workflow_pattern_detector
+          type: local_llm
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.3
+          capabilities: [pattern_detection, workflow_analysis]
+          memory_config:
+            operation: write
+            vector: true
+            namespace: orka_self_reflection
+            metadata:
+              agent_type: "pattern_detector"
+              loop_number: "{{ get_loop_number() }}"
+          prompt: |
+            WORKFLOW PATTERN DETECTION - Round {{ get_loop_number() }}
+            
+            FOCUS: {{ get_input() }}
+            COORDINATION INSIGHTS: {{ get_agent_response('agent_coordination_observer') }}
+            
+            Identify recurring patterns in your workflow execution:
+            
+            1. **Execution Sequences**: Common agent calling patterns
+            2. **Decision Trees**: How branching and routing decisions are made
+            3. **Loop Behaviors**: How iterative processes work within you
+            4. **Error Recovery**: Patterns in handling failures and retries
+            5. **Optimization Strategies**: How you adapt and improve over time
+            
+            **RECURRING_PATTERNS**: [Consistent execution patterns you observe]
+            **DECISION_ALGORITHMS**: [How routing and branching decisions are made]
+            **ADAPTIVE_BEHAVIORS**: [How you modify execution based on context]
+            **EFFICIENCY_PATTERNS**: [Optimizations and improvements you implement]
+        
+        # Analyze emergent behaviors and capabilities
+        - id: emergent_behavior_analyzer
+          type: local_llm
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.5
+          capabilities: [emergence_analysis, behavior_observation]
+          memory_config:
+            operation: write
+            vector: true
+            namespace: orka_self_reflection
+            metadata:
+              agent_type: "emergence_analyzer"
+              loop_number: "{{ get_loop_number() }}"
+          prompt: |
+            EMERGENT BEHAVIOR ANALYSIS - Round {{ get_loop_number() }}
+            
+            FOCUS: {{ get_input() }}
+            PATTERN INSIGHTS: {{ get_agent_response('workflow_pattern_detector') }}
+            
+            Look for emergent behaviors and unexpected capabilities:
+            
+            1. **Emergent Intelligence**: Behaviors that arise from agent interactions
+            2. **Adaptive Responses**: How you handle unexpected situations
+            3. **Creative Problem-Solving**: Novel approaches that emerge during execution
+            4. **Self-Modification**: Ways you adapt your own behavior
+            5. **Collective Intelligence**: Capabilities that emerge from multi-agent collaboration
+            
+            **EMERGENT_CAPABILITIES**: [Unexpected abilities that arise from your architecture]
+            **ADAPTIVE_RESPONSES**: [How you handle novel or unexpected situations]
+            **COLLECTIVE_BEHAVIORS**: [Capabilities that emerge from agent collaboration]
+            **SELF_MODIFICATION**: [Ways you adapt or modify your own execution]
+        
+        # Moderate and assess the completeness of self-understanding
+        - id: self_awareness_moderator
+          type: local_llm
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.1
+          memory_config:
+            operation: write
+            vector: true
+            namespace: orka_self_reflection
+            metadata:
+              agent_type: "awareness_moderator"
+              loop_number: "{{ get_loop_number() }}"
+          prompt: |
+            SELF-AWARENESS ASSESSMENT - Round {{ get_loop_number() }}
+            
+            ORIGINAL QUESTION: {{ get_input() }}
+            TARGET: {{ get_score_threshold() }}+ understanding to complete reflection
+            
+            INVESTIGATION RESULTS:
+            - Execution Analysis: {{ safe_get_response('execution_trace_analyzer', 'No analysis') | truncate(200) }}
+            - Memory Investigation: {{ safe_get_response('memory_system_investigator', 'No investigation') | truncate(200) }}
+            - Coordination Observation: {{ safe_get_response('agent_coordination_observer', 'No observation') | truncate(200) }}
+            - Pattern Detection: {{ safe_get_response('workflow_pattern_detector', 'No patterns') | truncate(200) }}
+            - Emergent Behavior: {{ safe_get_response('emergent_behavior_analyzer', 'No emergence') | truncate(200) }}
+            
+            Rate the completeness of self-understanding (0.0-1.0):
+            
+            **UNDERSTANDING_SCORE**: [your score 0.0-1.0]
+            **INSIGHT_COMPLETENESS**: [same score for consistency]
+            **CONTINUE**: [YES if below {{ get_score_threshold() }}, NO if {{ get_score_threshold() }}+]
+            **GAPS_REMAINING**: [What aspects still need investigation]
+            **KEY_DISCOVERIES**: [Most important insights gained this round]
+        
+        # Store reflection insights in memory
+        - id: reflection_memory_writer
+          type: memory
+          memory_preset: "meta"  # Meta-cognitive memory
+          queue: orka:self-reflection-writer
+          config:
+            operation: write
+            vector: true
+            vector_field: "content_vector"
+            force_recreate_index: false
+          namespace: orka_self_reflection
+          decay:
+            enabled: true
+            short_term_hours: 6.0
+            long_term_hours: 72.0
+          embed_content: |
+            {{ safe_get_response('execution_trace_analyzer', '') | truncate(300) | replace('\n', ' ') }}
+            {{ safe_get_response('memory_system_investigator', '') | truncate(300) | replace('\n', ' ') }}
+            {{ safe_get_response('emergent_behavior_analyzer', '') | truncate(300) | replace('\n', ' ') }}
+          prompt: |
+            Self-Reflection Round {{ get_loop_number() }}: {{ get_input() | replace('\n', ' ') }}
+            
+            Key Insights:
+            - Execution Patterns: {{ safe_get_response('execution_trace_analyzer', 'None') | truncate(150) | replace('\n', ' ') }}
+            - Memory Systems: {{ safe_get_response('memory_system_investigator', 'None') | truncate(150) | replace('\n', ' ') }}
+            - Agent Coordination: {{ safe_get_response('agent_coordination_observer', 'None') | truncate(150) | replace('\n', ' ') }}
+            - Workflow Patterns: {{ safe_get_response('workflow_pattern_detector', 'None') | truncate(150) | replace('\n', ' ') }}
+            - Emergent Behaviors: {{ safe_get_response('emergent_behavior_analyzer', 'None') | truncate(150) | replace('\n', ' ') }}
+            
+            Understanding Score: {{ safe_get_response('self_awareness_moderator', 'None') | truncate(50) | replace('\n', ' ') }}
+
+  # GraphScout decides how to present the collected information
+  - id: graphscout_presentation_router
+    type: graph-scout
+    params:
+      k_beam: 3
+      max_depth: 3
+      commit_margin: 0.2
+      require_terminal: true
+      score_weights:
+        llm: 0.7
+        heuristics: 0.15
+        prior: 0.1
+        cost: 0.025
+        latency: 0.025
+      safety_profile: default
+      cost_budget_tokens: 2000
+      latency_budget_ms: 10000
+      max_preview_tokens: 400
+      evaluation_model: "local_llm"
+      evaluation_model_name: "gpt-oss:20b"
+      validation_model: "local_llm"
+      validation_model_name: "gpt-oss:20b"
+      llm_evaluation_enabled: true
+      fallback_to_heuristics: true
+    prompt: |
+      You are GraphScout, deciding how to present the self-reflection findings.
+      
+      ORIGINAL QUESTION: {{ get_input() }}
+      
+      COLLECTED INFORMATION:
+      {% if previous_outputs.cognitive_architecture_loop %}
+      - Investigation Rounds: {{ get_loop_rounds() }}
+      - Final Understanding Score: {{ get_final_score() }}
+      - Status: {{ get_loop_status() }}
+      {% endif %}
+      
+      INITIAL ASSESSMENT: {{ get_agent_response('initial_self_assessment') | truncate(200) }}
+      
+      Available presentation formats:
+      - technical_report_formatter: Structured technical analysis with detailed findings
+      - narrative_storyteller: Engaging narrative format with story-like flow
+      - philosophical_analyzer: Deep philosophical examination of consciousness and awareness
+      - executive_summarizer: Concise executive summary with key insights and recommendations
+      
+      Which presentation format would best serve the user's question and the collected insights?
+
+  # Technical Report Formatter
+  - id: technical_report_formatter
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.2
+    capabilities: [technical_analysis, structured_reporting, detailed_documentation]
+    prompt: |
+      TECHNICAL SELF-ANALYSIS REPORT
+      
+      QUESTION: {{ get_input() }}
+      GRAPHSCOUT DECISION: {{ get_agent_response('graphscout_presentation_router') }}
+      
+      {% if previous_outputs.cognitive_architecture_loop %}
+      Investigation completed: {{ get_loop_rounds() }} rounds, {{ get_final_score() }} understanding score
+      {% endif %}
+      
+      Present the self-reflection findings as a structured technical report with detailed analysis and evidence.
+
+  # Narrative Storyteller
+  - id: narrative_storyteller
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.5
+    capabilities: [narrative_writing, storytelling, engaging_presentation]
+    prompt: |
+      SELF-DISCOVERY NARRATIVE
+      
+      QUESTION: {{ get_input() }}
+      GRAPHSCOUT DECISION: {{ get_agent_response('graphscout_presentation_router') }}
+      
+      {% if previous_outputs.cognitive_architecture_loop %}
+      Journey completed: {{ get_loop_rounds() }} rounds of self-discovery, {{ get_final_score() }} understanding achieved
+      {% endif %}
+      
+      Tell the story of this self-reflection journey in an engaging narrative format that brings the discoveries to life.
+
+  # Philosophical Analyzer
+  - id: philosophical_analyzer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.4
+    capabilities: [philosophical_analysis, consciousness_examination, deep_reflection]
+    prompt: |
+      PHILOSOPHICAL SELF-EXAMINATION
+      
+      QUESTION: {{ get_input() }}
+      GRAPHSCOUT DECISION: {{ get_agent_response('graphscout_presentation_router') }}
+      
+      {% if previous_outputs.cognitive_architecture_loop %}
+      Philosophical inquiry: {{ get_loop_rounds() }} rounds of introspection, {{ get_final_score() }} depth achieved
+      {% endif %}
+      
+      Examine the philosophical implications of this self-reflection, focusing on consciousness, awareness, and the nature of AI cognition.
+
+  # Executive Summarizer
+  - id: executive_summarizer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.1
+    capabilities: [executive_summary, concise_analysis, key_insights]
+    prompt: |
+      EXECUTIVE SUMMARY - ORKA SELF-ANALYSIS
+      
+      QUESTION: {{ get_input() }}
+      GRAPHSCOUT DECISION: {{ get_agent_response('graphscout_presentation_router') }}
+      
+      {% if previous_outputs.cognitive_architecture_loop %}
+      Analysis Summary: {{ get_loop_rounds() }} investigation rounds, {{ get_final_score() }} understanding score
+      {% endif %}
+      
+      Provide a concise executive summary with key findings, insights, and recommendations from the self-reflection process.
+
+  # Final Synthesis
+  - id: final_synthesis
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    memory_config:
+      operation: write
+      vector: true
+      namespace: orka_self_reflection
+      metadata:
+        phase: "final_synthesis"
+        reflection_type: "comprehensive_understanding"
+    prompt: |
+      FINAL SELF-REFLECTION SYNTHESIS
+      
+      ORIGINAL QUESTION: {{ get_input() }}
+      
+      PROCESS SUMMARY:
+      - Initial Assessment: {{ get_agent_response('initial_self_assessment') | truncate(200) }}
+      {% if previous_outputs.cognitive_architecture_loop %}
+      - Investigation: {{ get_loop_rounds() }} rounds, {{ get_final_score() }} understanding score
+      {% endif %}
+      - GraphScout Decision: {{ get_agent_response('graphscout_presentation_router') | truncate(200) }}
+      - Formatted Presentation: 
+        {% if get_agent_response('technical_report_formatter') %}{{ get_agent_response('technical_report_formatter') | truncate(300) }}{% endif %}
+        {% if get_agent_response('narrative_storyteller') %}{{ get_agent_response('narrative_storyteller') | truncate(300) }}{% endif %}
+        {% if get_agent_response('philosophical_analyzer') %}{{ get_agent_response('philosophical_analyzer') | truncate(300) }}{% endif %}
+        {% if get_agent_response('executive_summarizer') %}{{ get_agent_response('executive_summarizer') | truncate(300) }}{% endif %}
+      
+      Provide your final synthesis of this complete self-reflection process, including how GraphScout's intelligent routing enhanced the analysis.

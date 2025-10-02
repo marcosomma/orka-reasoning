@@ -2,6 +2,7 @@ orchestrator:
   id: orka-ui
   strategy: parallel
   queue: orka:generated
+  memory_preset: "working"  # Use working memory for active processing
   agents:
     - fork_2
     - join_1
@@ -12,8 +13,8 @@ agents:
   - id: fork_2
     type: fork
     targets:
-      - - duckduckgo_4
-      - - openai-classification_5
+      - duckduckgo_4
+      - openai-classification_5
   - id: duckduckgo_4
     type: duckduckgo
     queue: orka:duckduckgo_4

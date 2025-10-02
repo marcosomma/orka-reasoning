@@ -58,21 +58,56 @@ from typing import Any, cast
 
 import numpy as np
 import redis
-from redis.commands.search.field import NumericField, TextField
-from redis.commands.search.indexDefinition import IndexDefinition, IndexType
 
-# Optional vector search support
-VECTOR_SEARCH_AVAILABLE = False
-VectorField: Any = None
-Query: Any = None
-
+# Handle different Redis versions and search field imports
 try:
-    from redis.commands.search.field import VectorField
+    from redis.commands.search.field import NumericField, TextField, VectorField
+    from redis.commands.search.indexDefinition import IndexDefinition, IndexType
     from redis.commands.search.query import Query
 
     VECTOR_SEARCH_AVAILABLE = True
 except ImportError:
-    pass
+    try:
+        # Fallback for older Redis versions
+        from redisearch import IndexDefinition  # type: ignore[no-redef]
+        from redisearch import IndexType  # type: ignore[no-redef]
+        from redisearch import NumericField  # type: ignore[no-redef]
+        from redisearch import Query  # type: ignore[no-redef]
+        from redisearch import TextField  # type: ignore[no-redef]
+
+        VECTOR_SEARCH_AVAILABLE = False
+    except ImportError:
+        # Minimal stubs for when Redis search is not available
+        import logging
+        from typing import Any
+
+        logger = logging.getLogger(__name__)
+        logger.warning("Redis search modules not available - vector search disabled")
+
+        class NumericField:  # type: ignore[no-redef]
+            def __init__(self, *args: Any, **kwargs: Any) -> None:
+                pass
+
+        class TextField:  # type: ignore[no-redef]
+            def __init__(self, *args: Any, **kwargs: Any) -> None:
+                pass
+
+        class VectorField:  # type: ignore[no-redef]
+            def __init__(self, *args: Any, **kwargs: Any) -> None:
+                pass
+
+        class IndexDefinition:  # type: ignore[no-redef]
+            def __init__(self, *args: Any, **kwargs: Any) -> None:
+                pass
+
+        class IndexType:  # type: ignore[no-redef]
+            HASH = "HASH"
+
+        class Query:  # type: ignore[no-redef]
+            def __init__(self, *args: Any, **kwargs: Any) -> None:
+                pass
+
+        VECTOR_SEARCH_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -401,7 +436,6 @@ def hybrid_vector_search(
             except Exception as fallback_error:
                 logger.error(f"Both vector and fallback search failed: {fallback_error}")
                 logger.error(f"Fallback query was: {basic_query}")
-                pass
 
     except Exception as e:
         logger.error(f"Hybrid vector search failed: {e}")
@@ -472,9 +506,10 @@ def verify_memory_index(
                             if (
                                 isinstance(item, bytes)
                                 and item.decode("utf-8", errors="ignore") == "DIM"
+                                and i + 1 < len(attr)
+                                and isinstance(attr[i + 1], int)
                             ):
-                                if i + 1 < len(attr) and isinstance(attr[i + 1], int):
-                                    index_info["vector_field_dim"] = attr[i + 1]
+                                index_info["vector_field_dim"] = attr[i + 1]
 
                     # Check for content field with more flexible type checking
                     if field_name == "content":
@@ -539,10 +574,7 @@ def legacy_vector_search(
             query_parts.append(f"@agent:{{{agent}}}")
 
         # Combine filters
-        if query_parts:
-            base_query = " ".join(query_parts)
-        else:
-            base_query = "*"
+        base_query = " ".join(query_parts) if query_parts else "*"
 
         # Build vector search query for legacy index with correct syntax
         if base_query == "*":
@@ -552,7 +584,7 @@ def legacy_vector_search(
 
         # Execute legacy search with proper LIMIT syntax
         search_result = client.ft("memory_idx").search(
-            Query(f"{vector_query} LIMIT 0 {num_results}").dialect(2),
+            Query(f"{vector_query} LIMIT 0 {num_results}").limit_fields(2),
             query_params={"query_vector": query_vector_bytes.decode("latin-1")},
         )
 

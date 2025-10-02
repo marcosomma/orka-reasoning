@@ -2,11 +2,13 @@ orchestrator:
   id: orka-ui
   strategy: decision-tree
   queue: orka:generated
+  memory_preset: "semantic"  # Use semantic memory for knowledge processing
   agents:
     - memory-reader
     - memory-check
     - router
     - memory-writer
+    - final_summary
 agents:
   - id: memory-reader
     type: memory
@@ -86,11 +88,42 @@ agents:
     config:
       operation: write
     namespace: landmarks
-    prompt: "{{ previous_outputs['validation-guard'].result.memory_object.fact if previous_outputs.get('validation-guard') and previous_outputs['validation-guard'].result.valid else 'NONE' }}"
+    prompt: |
+      {% set validation_result = get_agent_response('validation-guard') %}
+      {% if validation_result %}
+      {{ validation_result }}
+      {% else %}
+      Store information about: {{ get_input() }}
+      {% endif %}
     metadata:
       source: validation-guard
-      confidence: "{{ previous_outputs['validation-guard'].result.memory_object.confidence if previous_outputs.get('validation-guard') and previous_outputs['validation-guard'].result.valid else 0 }}"
-      reason: "{{ previous_outputs['validation-guard'].result.reason if previous_outputs.get('validation-guard') and previous_outputs['validation-guard'].result.valid else 'unknown' }}"
-      fact: "{{ previous_outputs['validation-guard'].result.memory_object.fact if previous_outputs.get('validation-guard') and previous_outputs['validation-guard'].result.valid else 'unknown' }}"
       category: "stored"
     key_template: "{{ get_input() }}"
+    
+  - id: final_summary
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    prompt: |
+      Answer this question: "{{ get_input() }}"
+      
+      {% set memory_path_result = get_agent_response('memory-path') %}
+      {% set answer_result = get_agent_response('answer-builder') %}
+      {% set validation_result = get_agent_response('validation-guard') %}
+      
+      {% if memory_path_result %}
+      {{ memory_path_result }}
+      {% elif answer_result %}
+      {{ answer_result }}
+      {% else %}
+      Let me provide the best answer I can based on the available information.
+      {% endif %}
+      
+      {% if validation_result %}
+      
+      Additional validation: {{ validation_result }}
+      {% endif %}
+      
+      Provide a thorough, accurate response to the user's question.

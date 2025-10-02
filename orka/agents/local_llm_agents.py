@@ -31,8 +31,7 @@ import json
 import logging
 from typing import Any, Dict, Optional, Union, cast
 
-from .base_agent import Context
-from .base_agent import LegacyBaseAgent as BaseAgent
+from .base_agent import BaseAgent, Context
 
 logger = logging.getLogger(__name__)
 
@@ -117,78 +116,50 @@ class LocalLLMAgent(BaseAgent):
           temperature: 0.7
     """
 
-    async def run(self, input_data: Union[Context, Any]) -> Dict[str, Any]:
+    async def _run_impl(self, ctx: Context) -> Dict[str, Any]:
         """
         Generate an answer using a local LLM endpoint.
 
         Args:
-            input_data (Union[Context, Any]): Input data containing:
+            ctx (Context): Context containing:
                 - If dict: prompt (str), model (str), temperature (float), and other params
                 - If str: Direct input text to process
 
         Returns:
             Dict[str, Any]: Generated answer from the local model with metrics.
         """
-        # Handle both dict and string inputs for flexibility
-        if isinstance(input_data, str):
-            input_text = input_data
-            prompt = self.prompt if self.prompt is not None else "Input: {{ input }}"
-            model = str(self.params.get("model", "llama3.2:latest"))
-            # Handle temperature with proper type conversion
-            temp_val = self.params.get("temperature", 0.7)
-            try:
-                temperature = float(str(temp_val)) if temp_val is not None else 0.7
-            except (ValueError, TypeError):
-                temperature = 0.7
+        # Handle Context input (dict structure)
+        # Extract the actual input text from the dict structure
+        # Handle OrKa's orchestrator input format properly
+        # Try to get 'input' field first (OrKa standard)
+        if "input" in ctx:
+            input_text = str(ctx["input"])
         else:
-            # Extract the actual input text from the dict structure
-            # Handle OrKa's orchestrator input format properly
-            if isinstance(input_data, dict):
-                # Try to get 'input' field first (OrKa standard)
-                if "input" in input_data:
-                    input_text = str(input_data["input"])
-                else:
-                    # Fallback to converting dict to string if no 'input' field
-                    input_text = str(input_data)
+            # Fallback to converting dict to string if no 'input' field
+            input_text = str(ctx)
 
-                # Get prompt with proper type handling
-                prompt_val = input_data.get("prompt", self.prompt)
-                prompt = str(prompt_val) if prompt_val is not None else "Input: {{ input }}"
+        # Get prompt with proper type handling
+        prompt_val = ctx.get("prompt", self.prompt)
+        prompt = str(prompt_val) if prompt_val is not None else "Input: {{ input }}"
 
-                # Get model with proper type handling
-                model_val = input_data.get("model", self.params.get("model", "llama3.2:latest"))
-                model = str(model_val)
+        # Get model with proper type handling
+        model_val = ctx.get("model", self.params.get("model", "llama3.2:latest"))
+        model = str(model_val)
 
-                # Get temperature with proper type handling
-                temp_val = input_data.get("temperature", self.params.get("temperature", 0.7))
-                try:
-                    temperature = float(str(temp_val)) if temp_val is not None else 0.7
-                except (ValueError, TypeError):
-                    temperature = 0.7
-            else:
-                input_text = str(input_data)
-                prompt = self.prompt if self.prompt is not None else "Input: {{ input }}"
-                model = str(self.params.get("model", "llama3.2:latest"))
-                # Handle temperature with proper type conversion
-                temp_val = self.params.get("temperature", 0.7)
-                try:
-                    temperature = float(str(temp_val)) if temp_val is not None else 0.7
-                except (ValueError, TypeError):
-                    temperature = 0.7
+        # Get temperature with proper type handling
+        temp_val = ctx.get("temperature", self.params.get("temperature", 0.7))
+        try:
+            temperature = float(str(temp_val)) if temp_val is not None else 0.7
+        except (ValueError, TypeError):
+            temperature = 0.7
 
         # Build the full prompt using template replacement
-        # Convert input_data to dict if it's not already
-        context_dict: Dict[str, Any] = (
-            dict(input_data) if isinstance(input_data, dict) else {"input": str(input_data)}
-        )
+        # Convert ctx to dict if it's not already
+        context_dict: Dict[str, Any] = dict(ctx) if isinstance(ctx, dict) else {"input": str(ctx)}
 
         # ✅ FIX: Use already-rendered prompt from execution engine if available
-        if (
-            isinstance(input_data, dict)
-            and "formatted_prompt" in input_data
-            and input_data["formatted_prompt"]
-        ):
-            render_prompt = input_data["formatted_prompt"]
+        if isinstance(ctx, dict) and "formatted_prompt" in ctx and ctx["formatted_prompt"]:
+            render_prompt = ctx["formatted_prompt"]
             logger.debug(
                 f"Using pre-rendered prompt from execution engine (length: {len(render_prompt)})"
             )
@@ -304,13 +275,9 @@ class LocalLLMAgent(BaseAgent):
 
             # ✅ FIX: Store the actual rendered template, not the full_prompt with evaluation instructions
             # If we used pre-rendered template, store it; otherwise store the original prompt
-            if (
-                isinstance(input_data, dict)
-                and "formatted_prompt" in input_data
-                and input_data["formatted_prompt"]
-            ):
+            if isinstance(ctx, dict) and "formatted_prompt" in ctx and ctx["formatted_prompt"]:
                 # We used pre-rendered template, so it's already fully rendered
-                parsed_response["formatted_prompt"] = input_data["formatted_prompt"]
+                parsed_response["formatted_prompt"] = ctx["formatted_prompt"]
             else:
                 # We used our own rendering, store the original template for consistency
                 parsed_response["formatted_prompt"] = prompt
@@ -356,11 +323,11 @@ class LocalLLMAgent(BaseAgent):
                 },
                 "formatted_prompt": (
                     # Use same logic as success case for consistency
-                    input_data["formatted_prompt"]
+                    ctx["formatted_prompt"]
                     if (
-                        isinstance(input_data, dict)
-                        and "formatted_prompt" in input_data
-                        and input_data["formatted_prompt"]
+                        isinstance(ctx, dict)
+                        and "formatted_prompt" in ctx
+                        and ctx["formatted_prompt"]
                     )
                     else prompt if "prompt" in locals() else "Error: prompt not available"
                 ),

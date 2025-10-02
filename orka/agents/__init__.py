@@ -143,7 +143,7 @@ Module Components
 
 # Import all agent types from their respective modules
 from .agents import BinaryAgent, ClassificationAgent
-from .base_agent import BaseAgent, LegacyBaseAgent
+from .base_agent import BaseAgent
 from .llm_agents import (
     OpenAIAnswerBuilder,
     OpenAIBinaryAgent,

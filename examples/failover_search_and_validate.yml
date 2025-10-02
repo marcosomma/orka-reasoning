@@ -2,11 +2,13 @@ orchestrator:
   id: orka-ui
   strategy: decision-tree
   queue: orka:generated
+  memory_preset: "working"  # Use working memory for active processing
   agents:
     - answer_9
     - test_failover
     - need_answer
     - router_answer
+    - final_summary
 agents:
   - id: answer_9
     type: local_llm
@@ -16,7 +18,7 @@ agents:
     temperature: 0.5
     queue: orka:answer_9
     prompt: >
-      Rephrase this input in a more understandable way: "{{ input }}". Make it clearer and more concise.
+      Rephrase this input in a more understandable way: "{{ get_input() }}". Make it clearer and more concise.
   - id: test_failover
     type: failover
     input: answer_9
@@ -27,7 +29,7 @@ agents:
       - id: actual_working_agent
         type: duckduckgo
         queue: orka:actual_working_agent
-        prompt: "{{ input }}"
+        prompt: "{{ get_input() }}"
     depends_on:
       - failing_test_agent1
       - actual_working_agent
@@ -39,7 +41,7 @@ agents:
     provider: ollama
     temperature: 0.1
     queue: orka:is_fact
-    prompt: "Does '{{ input }}' ask a question that requires an answer, or is it an assertion that requires fact validation? Return true if it is a question, false if it is an assertion. Answer with exactly 'true' or 'false' only."
+    prompt: "Does '{{ get_input() }}' ask a question that requires an answer, or is it an assertion that requires fact validation? Return true if it is a question, false if it is an assertion. Answer with exactly 'true' or 'false' only."
     depends_on:
       - test_failover
   - id: router_answer
@@ -68,11 +70,12 @@ agents:
         temperature: 0.7
         queue: orka:validation_queue
         prompt: |
-          Given this question "{{ input }}", and the search results below, return a compelling answer. Be comprehensive and helpful.
+          Given this question "{{ get_input() }}", and the search results below, return a compelling answer. Be comprehensive and helpful.
           
           Search Results:
-          {% if previous_outputs.test_failover %}
-          {{ previous_outputs.test_failover | join('\n') if previous_outputs.test_failover is iterable and previous_outputs.test_failover is not string else previous_outputs.test_failover }}
+          {% set search_results = get_agent_response('test_failover') %}
+          {% if search_results %}
+          {{ search_results }}
           {% else %}
           No search results available
           {% endif %}
@@ -90,11 +93,12 @@ agents:
     prompt: |
       Validate the following assertion based on the search results. 
       
-      Assertion: {{ input }}
+      Assertion: {{ get_input() }}
       
       Search Results:
-      {% if previous_outputs.test_failover %}
-      {{ previous_outputs.test_failover | join('\n') if previous_outputs.test_failover is iterable and previous_outputs.test_failover is not string else previous_outputs.test_failover }}
+      {% set search_results = get_agent_response('test_failover') %}
+      {% if search_results %}
+      {{ search_results }}
       {% else %}
       No search results available
       {% endif %}
@@ -102,3 +106,26 @@ agents:
       Return a thorough fact-checking analysis based on the available information.
     depends_on:
       - router_answer
+      
+  - id: final_summary
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    prompt: |
+      Provide a final summary based on the workflow results:
+      
+      Original Input: {{ get_input() }}
+      
+      {% set answer_result = get_agent_response('build_answer') %}
+      {% if answer_result %}
+      Answer Result: {{ answer_result }}
+      {% endif %}
+      
+      {% set validation_result = get_agent_response('validate_fact') %}
+      {% if validation_result %}
+      Validation Result: {{ validation_result }}
+      {% endif %}
+      
+      Provide a clear, comprehensive final response that addresses the user's input appropriately.

@@ -156,12 +156,12 @@ class ValidationAndStructuringAgent(BaseAgent):
                 "memory_object": None,
             }
 
-    async def run(self, input_data: Union[Context, Any]) -> Dict[str, Any]:
+    async def _run_impl(self, ctx: Context) -> Dict[str, Any]:
         """
         Process the input data to validate and structure the answer.
 
         Args:
-            input_data: Union[Context, Any] containing:
+            ctx: Context containing:
                 - question: The original question
                 - full_context: The context used to generate the answer
                 - latest_answer: The answer to validate and structure
@@ -173,35 +173,38 @@ class ValidationAndStructuringAgent(BaseAgent):
                 - reason: Explanation of validation decision
                 - memory_object: Structured memory object if valid, None otherwise
         """
-        # Convert input_data to dict if it's not already
-        input_dict = (
-            dict(input_data) if isinstance(input_data, dict) else {"input": str(input_data)}
-        )
+        # Convert ctx to dict if it's not already
+        input_dict = dict(ctx) if isinstance(ctx, dict) else {"input": str(ctx)}
 
         question = input_dict.get("input", "")
 
         # Extract clean response text from complex agent outputs
-        context_output = input_dict.get("previous_outputs", {}).get("context-collector", {})
+        previous_outputs = input_dict.get("previous_outputs", {})
+        context_output = (
+            previous_outputs.get("context-collector", {})
+            if isinstance(previous_outputs, dict)
+            else {}
+        )
         if isinstance(context_output, dict) and "result" in context_output:
-            context = context_output["result"].get("response", "NONE")
+            result = context_output["result"]
+            context = result.get("response", "NONE") if isinstance(result, dict) else str(result)
         else:
             context = str(context_output) if context_output else "NONE"
 
-        answer_output = input_dict.get("previous_outputs", {}).get("answer-builder", {})
+        answer_output = (
+            previous_outputs.get("answer-builder", {}) if isinstance(previous_outputs, dict) else {}
+        )
         if isinstance(answer_output, dict) and "result" in answer_output:
-            answer = answer_output["result"].get("response", "NONE")
+            result = answer_output["result"]
+            answer = result.get("response", "NONE") if isinstance(result, dict) else str(result)
         else:
             answer = str(answer_output) if answer_output else "NONE"
 
         store_structure = self.params.get("store_structure")
 
         # ✅ FIX: Check for pre-rendered prompt from execution engine first
-        if (
-            isinstance(input_data, dict)
-            and "formatted_prompt" in input_data
-            and input_data["formatted_prompt"]
-        ):
-            prompt = input_data["formatted_prompt"]
+        if isinstance(ctx, dict) and "formatted_prompt" in ctx and ctx["formatted_prompt"]:
+            prompt = ctx["formatted_prompt"]
             logger.debug(f"Using pre-rendered prompt from execution engine (length: {len(prompt)})")
         # Check if we have a custom prompt that needs template rendering
         elif (
@@ -218,19 +221,15 @@ class ValidationAndStructuringAgent(BaseAgent):
                 prompt = self.llm_agent.prompt
         else:
             # Use default prompt building logic
-            prompt = self.build_prompt(question, context, answer, store_structure)
+            prompt = self.build_prompt(str(question), str(context), str(answer), store_structure)
 
         # Create LLM input with prompt but disable automatic JSON parsing
         # We'll handle JSON parsing manually since we expect a different schema
         llm_input = {"prompt": prompt, "parse_json": False}
 
         # ✅ FIX: Pass the rendered prompt to the inner LLM agent
-        if (
-            isinstance(input_data, dict)
-            and "formatted_prompt" in input_data
-            and input_data["formatted_prompt"]
-        ):
-            llm_input["formatted_prompt"] = input_data["formatted_prompt"]
+        if isinstance(ctx, dict) and "formatted_prompt" in ctx and ctx["formatted_prompt"]:
+            llm_input["formatted_prompt"] = ctx["formatted_prompt"]
         else:
             llm_input["formatted_prompt"] = prompt
 
@@ -245,15 +244,13 @@ class ValidationAndStructuringAgent(BaseAgent):
 
         # Parse the LLM output - pass the correct formatted prompt
         formatted_prompt_to_use = (
-            input_data["formatted_prompt"]
-            if (
-                isinstance(input_data, dict)
-                and "formatted_prompt" in input_data
-                and input_data["formatted_prompt"]
-            )
+            ctx["formatted_prompt"]
+            if (isinstance(ctx, dict) and "formatted_prompt" in ctx and ctx["formatted_prompt"])
             else prompt
         )
-        return self._parse_llm_output(raw_llm_output, prompt, formatted_prompt_to_use)
+        return self._parse_llm_output(
+            str(raw_llm_output), str(prompt), str(formatted_prompt_to_use)
+        )
 
     def build_prompt(
         self,

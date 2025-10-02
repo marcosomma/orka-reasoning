@@ -58,6 +58,20 @@ class Context(TypedDict, total=False):
     timestamp: datetime
     formatted_prompt: Optional[str]
 
+    # Agent-specific fields
+    prompt: Optional[str]
+    model: Optional[str]
+    temperature: Optional[float]
+    parse_json: Optional[bool]
+    error_tracker: Optional[Any]
+    agent_id: Optional[str]
+
+    # Additional context fields
+    question: Optional[str]
+    full_context: Optional[str]
+    latest_answer: Optional[str]
+    store_structure: Optional[Any]
+
 
 class Output(TypedDict):
     """
@@ -163,3 +177,55 @@ class MemoryEntry(TypedDict):
     metadata: Dict[str, Any]
     is_summary: bool
     category: Optional[str]
+
+
+class OrkaResponse(TypedDict, total=False):
+    """
+    Universal response format for all Orka components (agents, nodes, tools).
+
+    This standardized response structure ensures consistent data flow throughout
+    the OrKa framework, simplifying logging, template rendering, and debugging.
+    All components must return this format to enable seamless composition.
+
+    Core fields (required):
+        result: The primary output data from the component
+        status: Execution status - "success", "error", or "partial"
+        component_id: Unique identifier of the component that generated this response
+        component_type: Type of component - "agent", "node", or "tool"
+        timestamp: When this response was generated
+
+    Optional fields:
+        error: Error message if status is "error"
+        metadata: Additional information about the execution
+        execution_time_ms: How long the execution took in milliseconds
+        token_usage: Token consumption statistics for LLM calls
+        cost_usd: Estimated cost in USD for this execution
+        formatted_prompt: The actual prompt sent to LLMs after template rendering
+        confidence: Confidence level in the result ("high", "medium", "low")
+        internal_reasoning: Chain-of-thought or reasoning process
+        trace_id: Unique identifier for tracing execution paths
+        memory_entries: Memories created or accessed during execution
+        sources: Source documents or references used
+        metrics: Additional metrics and performance data
+    """
+
+    # Core fields (required)
+    result: Any
+    status: str  # "success" | "error" | "partial"
+    component_id: str
+    component_type: str  # "agent" | "node" | "tool"
+    timestamp: datetime
+
+    # Optional fields
+    error: Optional[str]
+    metadata: Dict[str, Any]
+    execution_time_ms: Optional[float]
+    token_usage: Optional[Dict[str, int]]
+    cost_usd: Optional[float]
+    formatted_prompt: Optional[str]
+    confidence: Optional[str]
+    internal_reasoning: Optional[str]
+    trace_id: Optional[str]
+    memory_entries: Optional[list]
+    sources: Optional[list]
+    metrics: Dict[str, Any]

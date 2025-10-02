@@ -53,6 +53,7 @@ async def process_text(text):
 
 import hashlib
 import logging
+import logging as std_logging
 import os
 import random
 from typing import Any, Optional, Union, cast
@@ -168,8 +169,29 @@ class AsyncEmbedder:
                         f"Model files not found locally for {self.model_name}. May need to download."
                     )
 
-            # Load the model
-            model = SentenceTransformer(self.model_name)
+            # Temporarily suppress noisy library logs
+            datasets_logger = std_logging.getLogger("datasets")
+            transformers_logger = std_logging.getLogger("transformers")
+            torch_logger = std_logging.getLogger("torch")
+
+            original_levels = {
+                "datasets": datasets_logger.level,
+                "transformers": transformers_logger.level,
+                "torch": torch_logger.level,
+            }
+
+            # Set to WARNING to suppress INFO logs
+            datasets_logger.setLevel(std_logging.WARNING)
+            transformers_logger.setLevel(std_logging.WARNING)
+            torch_logger.setLevel(std_logging.WARNING)
+
+            try:
+                model = SentenceTransformer(self.model_name)
+            finally:
+                # Restore original log levels
+                datasets_logger.setLevel(original_levels["datasets"])
+                transformers_logger.setLevel(original_levels["transformers"])
+                torch_logger.setLevel(original_levels["torch"])
             self.model = model
             self.model_loaded = True
             dim = model.get_sentence_embedding_dimension()

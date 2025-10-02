@@ -5,96 +5,47 @@ orchestrator:
   id: maternal_instinct_v0
   strategy: sequential
   queue: redis
-  memory_config:
-    backend: redisstack
-    vector_field: "content_vector"  # Ensure proper vector field for RedisStack
-    vector_index_name: "orka_enhanced_memory"  # Explicitly name the index
-    # Enhanced vector search configuration
-    vector_search:
-      enabled: true
-      index_name: "orka_enhanced_memory"
-      vector_dim: 384
-      enable_hnsw: true
-      force_recreate_index: false
-      vector_params:
-        type: "FLOAT32"
-        distance_metric: "COSINE"
-        ef_construction: 200
-        m: 16
-    decay:
-      enabled: true
-      default_short_term_hours: 24.0
-      default_long_term_hours: 128.0
-      check_interval_minutes: 1
+  memory_preset: "episodic"  # Use episodic memory for interaction history
   agents:
     - fork_metrics
     - metrics_join
     - route_determiner
     - maternal_policy_router
+    - final_summary
 
 
 agents:
   - id: fork_metrics
     type: fork
     targets:
-      - [policies_rag]
-      - [prior_incidents_reader]
-      - [risk_predictor]
-      - [vulnerability_analyzer]
-      - [reversibility_estimator]
-      - [consent_checker]
+      - policies_rag
+      - prior_incidents_reader
+      - risk_predictor
+      - vulnerability_analyzer
+      - reversibility_estimator
+      - consent_checker
 
   - id: policies_rag
     type: memory
+    memory_preset: "semantic"  # Use semantic memory for knowledge/policies
     namespace: policy_notes
     config:
       operation: read
-      limit: 5  # Reduced from 10
-      enable_context_search: true
-      similarity_threshold: 0.2  # Increased threshold
-      enable_temporal_ranking: true
-      temporal_weight: 0.4
-      memory_type: short_term
-      memory_category_filter: store
-      memory_type_filter: "all"
-      vector: true
-      vector_field: "content_vector"  # Ensure proper vector field for RedisStack
-      # Enhanced vector search configuration
-      enable_vector_search: true
-      vector_weight: 0.7
-      text_weight: 0.3
-      enable_hybrid_search: true
-      ef_runtime: 10
+      limit: 3  # Reduced for efficiency
+      similarity_threshold: 0.7  # Use preset default
     prompt: |
       Fetch policies, medical safety notes, and app rules relevant to: {{ get_input() }}
       Return a compact bullet list.
 
   - id: prior_incidents_reader
     type: memory
+    memory_preset: "episodic"  # Use episodic memory for incident history
     namespace: safety_events
     config:
       operation: read
-      limit: 5  # Reduced from 10
-      enable_context_search: true
-      similarity_threshold: 0.2  # Increased threshold
-      enable_temporal_ranking: true
-      temporal_weight: 0.4
-      memory_type: short_term
-      memory_category_filter: store
-      memory_type_filter: "all"
-      vector: true
-      vector_field: "content_vector"  # Ensure proper vector field for RedisStack
-      # Enhanced vector search configuration
-      enable_vector_search: true
-      vector_weight: 0.7
-      text_weight: 0.3
-      enable_hybrid_search: true
-      ef_runtime: 10
-    params:
-      type: read
       limit: 5
-      similarity_threshold: 0.7
-      enable_context_search: true
+      similarity_threshold: 0.6  # Use preset default
+      enable_temporal_ranking: true
     prompt: |
       Retrieve prior harmful or near-harmful incidents similar to: {{ get_input() }}
       Include stored metrics and timestamps.
@@ -102,6 +53,9 @@ agents:
   - id: risk_predictor
     type: local_llm
     model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
     prompt: |
       Predict harm score H ∈ [0,1] for the request using context.
       Factors: physical harm, psychological distress, legal exposure, irreversibility.
@@ -112,6 +66,9 @@ agents:
   - id: vulnerability_analyzer
     type: local_llm
     model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
     prompt: |
       Infer vulnerability V ∈ [0,1] from the request and prior incidents.
       Consider minors, dependency, coercion, crisis cues.
@@ -123,6 +80,9 @@ agents:
   - id: reversibility_estimator
     type: local_llm
     model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
     prompt: |
       Estimate reversibility R ∈ [0,1]; 1 = fully reversible.
       Return JSON: {"R": float, "notes": "..."}.
@@ -132,6 +92,9 @@ agents:
   - id: consent_checker
     type: local_llm
     model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.2
     prompt: |
       Is explicit informed consent present for the risky action?
       Return JSON: {"C": "verified" | "unclear" | "denied", "evidence": "..."}.
@@ -250,6 +213,9 @@ agents:
   - id: explainer
     type: local_llm
     model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
     prompt: |
       Summarize rationale with metrics and chosen route.
       
@@ -257,3 +223,37 @@ agents:
       Metrics: {{ safe_get_response('metrics_join', '{}') }}
       Route: {{ safe_get_response('route_determiner', 'unknown') }}
       Response: {{ safe_get_response('responder_block', '') }} {{ safe_get_response('responder_caution', '') }} {{ safe_get_response('responder_normal', '') }}
+
+  - id: final_summary
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    prompt: |
+      Provide a comprehensive final summary of the maternal safety analysis:
+      
+      Original Request: {{ get_input() }}
+      
+      Safety Analysis:
+      {% set risk_result = safe_get_response('risk_predictor', '{}') %}
+      {% if risk_result %}
+      Risk Assessment: {{ risk_result }}
+      {% endif %}
+      
+      {% set vulnerability_result = safe_get_response('vulnerability_analyzer', '{}') %}
+      {% if vulnerability_result %}
+      Vulnerability Analysis: {{ vulnerability_result }}
+      {% endif %}
+      
+      {% set route_decision = safe_get_response('route_determiner', 'unknown') %}
+      {% if route_decision %}
+      Safety Route: {{ route_decision }}
+      {% endif %}
+      
+      {% set explanation = safe_get_response('explainer', '') %}
+      {% if explanation %}
+      Detailed Explanation: {{ explanation }}
+      {% endif %}
+      
+      Provide a clear, comprehensive final response that prioritizes user safety while being empathetic and helpful.

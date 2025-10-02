@@ -291,7 +291,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 socket_keepalive_options={},
                 retry_on_timeout=True,
                 health_check_interval=60,  # Less frequent health checks to reduce load
-                max_connections=15,  # Reduced max connections to prevent saturation
+                max_connections=8,  # Further reduced to prevent connection exhaustion
                 socket_connect_timeout=10,  # Longer timeout for connection establishment
                 socket_timeout=30,  # Longer timeout for operations
                 retry_on_error=[ConnectionError, TimeoutError],  # Retry on these errors
@@ -396,8 +396,11 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             self._active_connections.clear()
 
             # Disconnect the connection pool
-            if hasattr(self._connection_pool, "disconnect"):
-                self._connection_pool.disconnect()
+            if hasattr(self, "connection_pool") and hasattr(self.connection_pool, "disconnect"):
+                self.connection_pool.disconnect()
+
+            # Clear thread-local connections (if any)
+            # Note: Thread-local connections are managed by the connection pool
 
             stats_after = self.get_connection_stats()
 
@@ -1186,9 +1189,13 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                     filters.append(f"@node_id:{escaped_node_id}")
 
             # Only combine filters if they exist and are valid
-            if filters and search_query and search_query.strip():
-                # Combine query and filters with proper RedisStack syntax
-                search_query = f"({search_query}) " + " ".join(filters)
+            if filters:
+                if search_query and search_query.strip() and search_query != "*":
+                    # Combine query and filters with proper RedisStack syntax
+                    search_query = f"({search_query}) " + " ".join(filters)
+                else:
+                    # If search_query is just "*" or empty, use only filters
+                    search_query = " ".join(filters)
 
             # Debug: Log the actual search query being used
             logger.debug(f"- FT.SEARCH query: '{search_query}'")
@@ -1522,16 +1529,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         try:
             if hasattr(self, "redis_client") and self.redis_client is not None:
                 self.redis_client.close()
-            # Also close thread-local connections
-            if hasattr(self, "_local"):
-                for attr_name in dir(self._local):
-                    if not attr_name.startswith("_"):
-                        try:
-                            attr_value = getattr(self._local, attr_name)
-                            if hasattr(attr_value, "close"):
-                                attr_value.close()
-                        except Exception:
-                            pass  # Ignore errors during cleanup
+            # Thread-local connections are managed by the connection pool
         except Exception as e:
             logger.error(f"Error closing RedisStack logger: {e}")
 
@@ -1721,18 +1719,30 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         """Extract meaningful content from payload for memory storage."""
         content_parts = []
 
-        # Extract from common content fields
-        for field in [
-            "content",
-            "message",
-            "response",
-            "result",
-            "output",
-            "text",
-            "formatted_prompt",
-        ]:
-            if payload.get(field):
-                content_parts.append(str(payload[field]))
+        # Prioritize OrkaResponse fields if available
+        if "component_type" in payload:
+            # This is an OrkaResponse - extract standardized fields
+            if payload.get("result"):
+                content_parts.append(str(payload["result"]))
+            if payload.get("internal_reasoning"):
+                content_parts.append(f"Reasoning: {payload['internal_reasoning']}")
+            if payload.get("formatted_prompt"):
+                content_parts.append(f"Prompt: {payload['formatted_prompt']}")
+            if payload.get("error"):
+                content_parts.append(f"Error: {payload['error']}")
+        else:
+            # Legacy extraction logic for backward compatibility
+            for field in [
+                "content",
+                "message",
+                "response",
+                "result",
+                "output",
+                "text",
+                "formatted_prompt",
+            ]:
+                if payload.get(field):
+                    content_parts.append(str(payload[field]))
 
         # Include event type for context
         content_parts.append(f"Event: {event_type}")
@@ -1929,6 +1939,12 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
     def smembers(self, name: str) -> list[str]:
         members = self._get_thread_safe_client().smembers(name)
         return list(members)
+
+    def scan(
+        self, cursor: int = 0, match: str | None = None, count: int | None = None
+    ) -> tuple[int, list[str]]:
+        """Scan Redis keys with optional pattern matching."""
+        return self._get_thread_safe_client().scan(cursor=cursor, match=match, count=count)
 
     def sadd(self, name: str, *values: str) -> int:
         return self._get_thread_safe_client().sadd(name, *values)

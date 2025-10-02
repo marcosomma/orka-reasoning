@@ -77,9 +77,9 @@ class RAGNode(BaseNode):
     --------------
 
     **Basic Configuration:**
-    
+
     .. code-block:: yaml
-    
+
         agents:
           - id: rag_assistant
             type: rag
@@ -88,9 +88,9 @@ class RAGNode(BaseNode):
             timeout: 30.0
 
     **Advanced Configuration:**
-    
+
     .. code-block:: yaml
-    
+
         agents:
           - id: specialized_rag
             type: rag
@@ -103,9 +103,9 @@ class RAGNode(BaseNode):
               max_tokens: 500
 
     **Integration with Memory:**
-    
+
     .. code-block:: python
-    
+
         # The node automatically integrates with the memory system
         # Memory backend provides semantic search capabilities
         # Embedder service generates query vectors
@@ -115,9 +115,9 @@ class RAGNode(BaseNode):
     --------------
 
     **Successful Response:**
-    
+
     .. code-block:: json
-    
+
         {
           "result": {
             "answer": "Generated response based on retrieved context",
@@ -135,9 +135,9 @@ class RAGNode(BaseNode):
         }
 
     **Error Response:**
-    
+
     .. code-block:: json
-    
+
         {
           "result": null,
           "status": "error",
@@ -146,9 +146,9 @@ class RAGNode(BaseNode):
         }
 
     **No Results Response:**
-    
+
     .. code-block:: json
-    
+
         {
           "result": {
             "answer": "I couldn't find any relevant information to answer your question.",
@@ -215,30 +215,11 @@ class RAGNode(BaseNode):
             self._llm = self.registry.get("llm")
             self._initialized = True
 
-    async def run(self, context: Context) -> dict[str, Any]:
-        """Run the RAG node with the given context."""
+    async def _run_impl(self, ctx: Context) -> dict[str, Any]:
+        """Implementation of RAG operations."""
         if not self._initialized:
             await self.initialize()
 
-        try:
-            result = await self._run_impl(context)
-            return {
-                "result": result,
-                "status": "success",
-                "error": None,
-                "metadata": {"node_id": self.node_id},
-            }
-        except Exception as e:
-            logger.error(f"RAGNode {self.node_id} failed: {e!s}")
-            return {
-                "result": None,
-                "status": "error",
-                "error": str(e),
-                "metadata": {"node_id": self.node_id},
-            }
-
-    async def _run_impl(self, ctx: Context) -> dict[str, Any]:
-        """Implementation of RAG operations."""
         memory = self._memory
         if memory is None:
             raise ValueError("Memory not initialized")

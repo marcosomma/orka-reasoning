@@ -37,7 +37,7 @@ Core Components
     * :class:`~orka.orchestrator.execution_engine.ExecutionEngine` - Workflow execution
     * :class:`~orka.orchestrator.metrics.MetricsCollector` - Performance monitoring
     * :class:`~orka.orchestrator.error_handling.ErrorHandler` - Error management
-    * :class:`~orka.orchestrator.prompt_rendering.PromptRenderer` - Template processing
+    * :class:`~orka.orchestrator.simplified_prompt_rendering.SimplifiedPromptRenderer` - Template processing
 
 **Agent Ecosystem**
     Comprehensive agent implementations for various AI tasks:

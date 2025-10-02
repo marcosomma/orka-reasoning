@@ -102,7 +102,7 @@ class MemoryWriterNode(BaseNode):
         # Store key_template for rendering
         self.key_template = kwargs.get("key_template")
 
-    async def run(self, context: dict[str, Any]) -> dict[str, Any]:
+    async def _run_impl(self, context: dict[str, Any]) -> dict[str, Any]:
         """Write to memory using RedisStack memory logger."""
         try:
             # Extract structured memory object from validation guardian

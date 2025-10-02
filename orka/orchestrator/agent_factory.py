@@ -40,6 +40,7 @@ from ..nodes import (
 from ..nodes.graph_scout_agent import GraphScoutAgent
 from ..nodes.memory_reader_node import MemoryReaderNode
 from ..nodes.memory_writer_node import MemoryWriterNode
+from ..nodes.rag_node import RAGNode
 from ..tools.search_tools import DuckDuckGoTool
 
 logger = logging.getLogger(__name__)
@@ -53,6 +54,7 @@ AgentClass = Union[
     Type[llm_agents.OpenAIBinaryAgent],
     Type[llm_agents.OpenAIClassificationAgent],
     Type[validation_and_structuring_agent.ValidationAndStructuringAgent],
+    Type[RAGNode],
     Type[DuckDuckGoTool],
     Type[router_node.RouterNode],
     Type[failover_node.FailoverNode],
@@ -74,6 +76,7 @@ AGENT_TYPES: Dict[str, AgentClass] = {
     "openai-binary": llm_agents.OpenAIBinaryAgent,
     "openai-classification": llm_agents.OpenAIClassificationAgent,
     "validate_and_structure": validation_and_structuring_agent.ValidationAndStructuringAgent,
+    "rag": RAGNode,
     "duckduckgo": DuckDuckGoTool,
     "router": router_node.RouterNode,
     "failover": failover_node.FailoverNode,
@@ -301,13 +304,63 @@ class AgentFactory:
                 agent = validation_and_structuring_agent.ValidationAndStructuringAgent(params)
                 return agent
 
+            # Special handling for RAG node
+            if agent_type == "rag":
+                # RAGNode requires registry, prompt, and queue as strings
+                from ..contracts import Registry
+
+                registry = Registry(
+                    {"memory": self.memory, "tools": {}, "embedder": None, "llm": None}
+                )
+                prompt = cfg.get("prompt", "")
+                queue = cfg.get("queue") or ""
+                return RAGNode(
+                    node_id=agent_id, registry=registry, prompt=prompt, queue=queue, **clean_cfg
+                )
+
             # Default agent instantiation
             if isinstance(agent_cls, str):
                 raise ValueError(f"Invalid agent type: {agent_type}")
 
-            prompt = cfg.get("prompt", None)
-            queue = cfg.get("queue", None)
-            return agent_cls(agent_id=agent_id, prompt=prompt, queue=queue, **clean_cfg)  # type: ignore [call-arg]
+            prompt = cfg.get("prompt") or ""
+            queue_param = cfg.get("queue")
+            # Handle queue parameter based on agent type
+            if "queue" in clean_cfg:
+                del clean_cfg["queue"]  # Remove to avoid conflicts
+
+            # Handle different queue parameter types based on agent class
+            if hasattr(agent_cls, "__name__"):
+                class_name = str(agent_cls.__name__)
+                if class_name == "RAGNode":
+                    # RAGNode expects str
+                    queue_str = str(queue_param or "default")
+                    return cast(Any, agent_cls)(
+                        agent_id=agent_id, prompt=prompt, queue=queue_str, **clean_cfg
+                    )
+                elif class_name in ["ForkNode", "LoopNode", "JoinNode"]:
+                    # These nodes expect list[Any] | None
+                    if isinstance(queue_param, list):
+                        queue_list = queue_param
+                    elif queue_param:
+                        queue_list = [queue_param]
+                    else:
+                        queue_list = None
+                    return agent_cls(agent_id=agent_id, prompt=prompt, queue=queue_list, **clean_cfg)  # type: ignore [call-arg , arg-type]
+                else:
+                    # Most agents expect list[str] | None
+                    if isinstance(queue_param, list):
+                        # Ensure all items are strings
+                        queue_str_list = [str(item) for item in queue_param]
+                    elif queue_param:
+                        queue_str_list = [str(queue_param)]
+                    else:
+                        queue_str_list = None
+                    return cast(Any, agent_cls)(
+                        agent_id=agent_id, prompt=prompt, queue=queue_str_list, **clean_cfg
+                    )
+            else:
+                # Fallback for unknown types
+                return agent_cls(agent_id=agent_id, prompt=prompt, **clean_cfg)  # type: ignore [call-arg]
 
         for cfg in self.agent_cfgs:
             agent = init_single_agent(cfg)

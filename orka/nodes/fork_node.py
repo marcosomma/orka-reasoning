@@ -50,7 +50,7 @@ class ForkNode(BaseNode):
         self.config = kwargs  # Store config explicitly
         self.mode = kwargs.get("mode", "sequential")  # Default to sequential execution
 
-    async def run(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _run_impl(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Execute the fork operation by creating parallel branches.
 

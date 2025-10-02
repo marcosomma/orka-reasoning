@@ -27,6 +27,11 @@ The BaseTool class provides:
 """
 
 import abc
+import time
+from typing import Any
+
+from ..contracts import OrkaResponse
+from ..response_builder import ResponseBuilder
 
 
 class BaseTool(abc.ABC):
@@ -51,20 +56,54 @@ class BaseTool(abc.ABC):
         self.params = kwargs
         self.type = self.__class__.__name__.lower()
 
-    @abc.abstractmethod
-    def run(self, input_data):
+    def run(self, input_data: Any) -> OrkaResponse:
         """
-        Abstract method to run the tool's functionality.
-        Must be implemented by all concrete tool classes.
+        Run the tool with the given input data.
+
+        This method handles the execution workflow including:
+        - Timing the execution
+        - Handling errors gracefully
+        - Returning standardized OrkaResponse format
 
         Args:
             input_data: Input data for the tool to process.
 
         Returns:
-            The result of the tool's processing.
+            OrkaResponse: Standardized response with result, status, and metadata
+        """
+        execution_start_time = time.time()
 
-        Raises:
-            NotImplementedError: If not implemented by a subclass.
+        try:
+            result = self._run_impl(input_data)
+            return ResponseBuilder.create_success_response(
+                result=result,
+                component_id=self.tool_id,
+                component_type="tool",
+                execution_start_time=execution_start_time,
+                metadata={"tool_type": self.__class__.__name__},
+            )
+        except Exception as e:
+            return ResponseBuilder.create_error_response(
+                error=str(e),
+                component_id=self.tool_id,
+                component_type="tool",
+                execution_start_time=execution_start_time,
+                metadata={"tool_type": self.__class__.__name__},
+            )
+
+    @abc.abstractmethod
+    def _run_impl(self, input_data: Any) -> Any:
+        """
+        Implementation of the tool's run logic.
+
+        Subclasses must implement this method to define their specific behavior.
+        This method receives the input data and should return the raw result.
+
+        Args:
+            input_data: The input data to process
+
+        Returns:
+            Any: The raw result of the tool's processing
         """
         pass
 

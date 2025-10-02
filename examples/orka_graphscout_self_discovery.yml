@@ -1,0 +1,170 @@
+# ORKA GRAPHSCOUT SELF-DISCOVERY
+# ===============================
+# Demonstrates GraphScout's intelligent path discovery capabilities
+# by having it analyze and route through different self-examination workflows
+
+orchestrator:
+  id: orka-graphscout-self-discovery
+  strategy: dynamic
+  memory_preset: "working"
+  agents:
+    - initial_question_analysis
+    - graphscout_path_discovery
+    - discovery_synthesis
+
+agents:
+  # Analyze what kind of self-examination is needed
+  - id: initial_question_analysis
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    capabilities: [question_analysis, self_reflection]
+    prompt: |
+      Analyze this question about the Orka multi-agent orchestration system:
+      
+      QUESTION: {{ get_input() }}
+      
+      What type of investigation would best answer this question?
+      Consider what aspects of the system need to be examined and how deep the analysis should go.
+
+  # GraphScout discovers and evaluates different analysis paths
+  - id: graphscout_path_discovery
+    type: graph-scout
+    params:
+      k_beam: 3
+      max_depth: 2
+      commit_margin: 0.2
+      require_terminal: true
+      score_weights:
+        llm: 0.7
+        heuristics: 0.15
+        prior: 0.1
+        cost: 0.025
+        latency: 0.025
+      safety_profile: default
+      cost_budget_tokens: 2000
+      latency_budget_ms: 10000
+      max_preview_tokens: 400
+      evaluation_model: "local_llm"
+      evaluation_model_name: "gpt-oss:20b"
+      validation_model: "local_llm"
+      validation_model_name: "gpt-oss:20b"
+      llm_evaluation_enabled: true
+      fallback_to_heuristics: true
+    prompt: |
+      You are GraphScout, an intelligent routing agent within Orka.
+      
+      QUESTION: {{ get_input() }}
+      INITIAL ANALYSIS: {{ get_agent_response('initial_question_analysis') }}
+      
+      Available analysis agents:
+      - architectural_deep_dive: Examines system architecture and design
+      - behavioral_observer: Studies execution patterns and behaviors
+      - cognitive_examiner: Analyzes reasoning and intelligence
+      - emergence_detector: Looks for emergent properties and complexity
+      
+      Based on the question and initial analysis, select the SINGLE most appropriate agent for this investigation.
+      
+      SELECTED_AGENT: [choose exactly one: architectural_deep_dive, behavioral_observer, cognitive_examiner, or emergence_detector]
+      REASONING: [why this agent is the best choice]
+
+  # Architectural Deep Dive Agent
+  - id: architectural_deep_dive
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    capabilities: [architectural_analysis, system_design, component_analysis]
+    prompt: |
+      You are executing within the Orka multi-agent orchestration system right now.
+      
+      QUESTION: {{ get_input() }}
+      
+      Examine the system's architecture from your perspective as an agent within it. 
+      What can you observe about how this system is built and organized?
+
+  # Behavioral Observer Agent  
+  - id: behavioral_observer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.4
+    capabilities: [behavioral_analysis, pattern_recognition, execution_tracing]
+    prompt: |
+      You are executing within the Orka multi-agent orchestration system right now.
+      
+      QUESTION: {{ get_input() }}
+      
+      Observe and analyze the behavioral patterns of this system. 
+      How does it execute, make decisions, and coordinate between agents?
+
+  # Cognitive Examiner Agent
+  - id: cognitive_examiner
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.5
+    capabilities: [cognitive_analysis, reasoning_examination, decision_analysis]
+    prompt: |
+      You are executing within the Orka multi-agent orchestration system right now.
+      
+      QUESTION: {{ get_input() }}
+      
+      Examine the cognitive and reasoning capabilities of this system.
+      What evidence do you see of intelligence, learning, or adaptive behavior?
+
+  # Emergence Detector Agent
+  - id: emergence_detector
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.6
+    capabilities: [emergence_detection, complexity_analysis, system_behavior]
+    prompt: |
+      You are executing within the Orka multi-agent orchestration system right now.
+      
+      QUESTION: {{ get_input() }}
+      
+      Look for emergent properties and unexpected behaviors in this system.
+      What capabilities arise from the interaction of multiple agents that wouldn't exist in isolation?
+
+  # Synthesize discoveries and evaluate GraphScout's performance
+  - id: discovery_synthesis
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      You have just completed a self-analysis of the Orka multi-agent orchestration system.
+      
+      ORIGINAL QUESTION: {{ get_input() }}
+      
+      ANALYSIS PROCESS:
+      - Initial Analysis: {{ get_agent_response('initial_question_analysis') }}
+      - GraphScout Routing Decision: {{ get_agent_response('graphscout_path_discovery') }}
+      - Selected Analysis Results: 
+        {% if get_agent_response('architectural_deep_dive') %}
+        **Architectural Analysis**: {{ get_agent_response('architectural_deep_dive') }}
+        {% elif get_agent_response('behavioral_observer') %}
+        **Behavioral Analysis**: {{ get_agent_response('behavioral_observer') }}
+        {% elif get_agent_response('cognitive_examiner') %}
+        **Cognitive Analysis**: {{ get_agent_response('cognitive_examiner') }}
+        {% elif get_agent_response('emergence_detector') %}
+        **Emergence Analysis**: {{ get_agent_response('emergence_detector') }}
+        {% else %}
+        **No specific analysis was executed**
+        {% endif %}
+      
+      ## FINAL ASSESSMENT
+      
+      Synthesize your findings about this multi-agent orchestration system, including:
+      1. How GraphScout intelligently selected the analysis approach
+      2. What the selected analysis revealed about Orka's capabilities
+      3. Your overall assessment of the system's architecture and effectiveness

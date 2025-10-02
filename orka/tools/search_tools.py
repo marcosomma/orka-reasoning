@@ -67,7 +67,7 @@ class DuckDuckGoTool(BaseTool):
     Returns search result snippets from the top results.
     """
 
-    def run(self, input_data: Any) -> List[str]:
+    def _run_impl(self, input_data: Any) -> List[str]:
         """
         Perform a DuckDuckGo search and return result snippets.
 
@@ -203,7 +203,7 @@ class WebSearchTool(BaseTool):
     Falls back through different search engines and methods.
     """
 
-    def run(self, input_data: Any) -> List[str]:
+    def _run_impl(self, input_data: Any) -> List[str]:
         """
         Perform web search using multiple fallback methods.
 
@@ -373,7 +373,7 @@ class SimpleSearchTool(BaseTool):
     Useful as a last resort when all other search methods fail.
     """
 
-    def run(self, input_data: Any) -> List[str]:
+    def _run_impl(self, input_data: Any) -> List[str]:
         """
         Provide basic search information without external APIs.
 

@@ -6,36 +6,7 @@
 orchestrator:
   id: cognitive-society-collaborative-enhanced-local
   strategy: sequential
-  memory_config:
-    backend: redisstack
-    vector_field: "content_vector"  # Ensure proper vector field for RedisStack
-    vector_index_name: "orka_enhanced_memory"  # Explicitly name the index
-    # Enhanced vector search configuration
-    vector_search:
-      enabled: true
-      index_name: "orka_enhanced_memory"
-      vector_dim: 384
-      enable_hnsw: true
-      force_recreate_index: false
-      vector_params:
-        type: "FLOAT32"
-        distance_metric: "COSINE"
-        ef_construction: 200
-        m: 16
-    decay:
-      enabled: true
-      default_short_term_hours: 2.0   # 2 hours for active debate memories
-      default_long_term_hours: 24.0   # 24 hours for important insights
-      check_interval_minutes: 1
-      importance_rules:
-        base_score: 0.8
-        event_type_boosts:
-          disagreement: 0.2
-          challenge: 0.4
-          synthesis: 0.3
-        agent_type_boosts:
-          debate: 0.3
-          devil_advocate: 0.4
+  memory_preset: "episodic"  # Use episodic memory for debate interactions
   agents:
     - cognitive_debate_loop
     - meta_debate_reflection

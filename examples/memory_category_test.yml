@@ -41,7 +41,7 @@ agents:
 
   - id: summary_agent
     type: local_llm
-    model: llama3.2:latest
+    model: gpt-oss:20b
     model_url: http://localhost:11434/api/generate
     provider: ollama
     temperature: 0.3
@@ -49,8 +49,15 @@ agents:
       Memory category test completed successfully!
       
       Demonstrated memory categorization system:
-      1. ✅ WRITE OPERATION: Stored input "{{ input }}" with category 'stored'
+      1. ✅ WRITE OPERATION: Stored input "{{ get_input() }}" with category 'stored'
       2. ✅ READ OPERATION: Retrieved memories using category filter 'stored'
       
+      {% set memory_results = get_agent_response('memory-read_stored') %}
+      {% if memory_results %}
+      Retrieved memories: {{ memory_results }}
+      {% endif %}
+      
       This test validates that memory categories work correctly for organizing and filtering stored information. The working memory preset was used with a 4-hour retention period, perfect for testing and demonstration purposes.
+      
+      **Test Summary**: Memory categorization system is functioning correctly with proper read/write operations and category filtering.
 

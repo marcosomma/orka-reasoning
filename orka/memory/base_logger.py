@@ -28,6 +28,15 @@ from datetime import UTC, datetime
 from typing import Any, Dict, List, Set
 
 from .file_operations import FileOperationsMixin
+
+
+def json_serializer(obj):
+    """JSON serializer for objects not serializable by default json code"""
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
+
 from .serialization import SerializationMixin
 
 logger = logging.getLogger(__name__)
@@ -550,7 +559,9 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         """
         try:
             # Convert to canonical JSON string for consistent hashing
-            json_str = json.dumps(obj, sort_keys=True, separators=(",", ":"))
+            json_str = json.dumps(
+                obj, sort_keys=True, separators=(",", ":"), default=json_serializer
+            )
             return hashlib.sha256(json_str.encode("utf-8")).hexdigest()
         except Exception:
             # If object can't be serialized, return hash of string representation
@@ -572,7 +583,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
                 return False
 
             # Check size threshold
-            json_str = json.dumps(obj, separators=(",", ":"))
+            json_str = json.dumps(obj, separators=(",", ":"), default=json_serializer)
             return len(json_str) >= self._blob_threshold
 
         except Exception:
@@ -767,11 +778,13 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
             try:
                 # Store individual result
                 result_key = f"agent_result:{agent_id}"
-                self.set(result_key, json.dumps(outputs[agent_id]))
+                self.set(result_key, json.dumps(outputs[agent_id], default=json_serializer))
                 logger.debug(f"- Stored result for agent {agent_id}")
 
                 # Store in group hash
-                self.hset(group_key, agent_id, json.dumps(outputs[agent_id]))
+                self.hset(
+                    group_key, agent_id, json.dumps(outputs[agent_id], default=json_serializer)
+                )
                 logger.debug(f"- Stored result in group for agent {agent_id}")
             except Exception as e:
                 logger.warning(f"Failed to store result in Redis: {e}")
@@ -862,13 +875,21 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
                         payload = execution["payload"]
 
                         # Calculate payload size to decide if it needs deduplication
-                        payload_size = len(json.dumps(payload, separators=(",", ":")))
+                        payload_size = len(
+                            json.dumps(payload, separators=(",", ":"), default=json_serializer)
+                        )
 
                         if payload_size > getattr(self, "_blob_threshold", 200):
                             # Payload is large, deduplicate it
                             original_size = payload_size
                             deduplicated_payload = self._deduplicate_object(payload)
-                            new_size = len(json.dumps(deduplicated_payload, separators=(",", ":")))
+                            new_size = len(
+                                json.dumps(
+                                    deduplicated_payload,
+                                    separators=(",", ":"),
+                                    default=json_serializer,
+                                )
+                            )
 
                             if new_size < original_size:
                                 blob_stats["deduplicated_blobs"] += 1

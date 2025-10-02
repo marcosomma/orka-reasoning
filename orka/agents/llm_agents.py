@@ -57,14 +57,12 @@ from typing import Any, Optional
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
-# Initialize logging first
-from orka.utils.logging_utils import setup_logging
-
-setup_logging()
+# Logging will be initialized by the main CLI entry point
 
 logger = logging.getLogger(__name__)
 
-from .base_agent import LegacyBaseAgent as BaseAgent
+from ..contracts import Context
+from .base_agent import BaseAgent
 
 # Load environment variables
 load_dotenv()
@@ -447,30 +445,26 @@ class OpenAIAnswerBuilder(BaseAgent):
     - Template variable resolution with rich context
     """
 
-    async def run(self, input_data: Any) -> dict[str, Any]:
-        # Extract parameters from input_data
-        original_prompt = input_data.get("prompt", self.prompt)
-        model = input_data.get("model", OPENAI_MODEL)
-        temperature = float(input_data.get("temperature", 0.7))
-        parse_json = input_data.get("parse_json", True)
-        error_tracker = input_data.get("error_tracker")
-        agent_id = input_data.get(
+    async def _run_impl(self, ctx: Context) -> dict[str, Any]:
+        # Extract parameters from ctx
+        original_prompt = ctx.get("prompt", self.prompt)
+        model = ctx.get("model") or OPENAI_MODEL
+        temperature = float(ctx.get("temperature") or 0.7)
+        parse_json = ctx.get("parse_json", True)
+        error_tracker = ctx.get("error_tracker")
+        agent_id = ctx.get(
             "agent_id",
             self.agent_id if hasattr(self, "agent_id") else "unknown",
         )
 
         # ✅ FIX: Use already-rendered prompt from execution engine if available
-        if (
-            isinstance(input_data, dict)
-            and "formatted_prompt" in input_data
-            and input_data["formatted_prompt"]
-        ):
-            render_prompt = input_data["formatted_prompt"]
+        if isinstance(ctx, dict) and "formatted_prompt" in ctx and ctx["formatted_prompt"]:
+            render_prompt = ctx["formatted_prompt"]
             logger.debug(
                 f"Using pre-rendered prompt from execution engine (length: {len(render_prompt)})"
             )
         else:
-            render_prompt = original_prompt
+            render_prompt = original_prompt or ""
             logger.debug(f"Using original prompt template (length: {len(render_prompt)})")
 
         self_evaluation = """
@@ -486,7 +480,7 @@ class OpenAIAnswerBuilder(BaseAgent):
                     }
                 ```
         """
-        full_prompt = f"{render_prompt}\n\n{input_data}\n\n{self_evaluation}"
+        full_prompt = f"{render_prompt}\n\n{ctx}\n\n{self_evaluation}"
 
         # Make API call to OpenAI
         import time
@@ -513,7 +507,9 @@ class OpenAIAnswerBuilder(BaseAgent):
             total_tokens = usage.total_tokens if usage else 0
 
             # Calculate cost (rough estimates for GPT models)
-            cost_usd = _calculate_openai_cost(model, prompt_tokens, completion_tokens)
+            cost_usd = _calculate_openai_cost(
+                model or "gpt-3.5-turbo", prompt_tokens, completion_tokens
+            )
 
             # Extract and clean the response
             answer = response.choices[0].message.content
@@ -564,13 +560,9 @@ class OpenAIAnswerBuilder(BaseAgent):
             parsed_response["_metrics"] = metrics
 
             # ✅ FIX: Store the actual rendered template, not the original template
-            if (
-                isinstance(input_data, dict)
-                and "formatted_prompt" in input_data
-                and input_data["formatted_prompt"]
-            ):
+            if isinstance(ctx, dict) and "formatted_prompt" in ctx and ctx["formatted_prompt"]:
                 # We used pre-rendered template, so it's already fully rendered
-                parsed_response["formatted_prompt"] = input_data["formatted_prompt"]
+                parsed_response["formatted_prompt"] = ctx["formatted_prompt"]
             else:
                 # We used original template, store it for consistency
                 parsed_response["formatted_prompt"] = original_prompt
@@ -606,11 +598,11 @@ class OpenAIAnswerBuilder(BaseAgent):
                 },
                 "formatted_prompt": (
                     # Use same logic as success case for consistency
-                    input_data["formatted_prompt"]
+                    ctx["formatted_prompt"]
                     if (
-                        isinstance(input_data, dict)
-                        and "formatted_prompt" in input_data
-                        and input_data["formatted_prompt"]
+                        isinstance(ctx, dict)
+                        and "formatted_prompt" in ctx
+                        and ctx["formatted_prompt"]
                     )
                     else (
                         original_prompt
@@ -663,17 +655,17 @@ class OpenAIBinaryAgent(OpenAIAnswerBuilder):
     - Handles edge cases and ambiguous inputs gracefully
     """
 
-    async def run(self, input_data: Any) -> dict[str, Any]:
+    async def _run_impl(self, ctx: Context) -> dict[str, Any]:
         # Override the parent method to add constraints to the prompt
         # Ask the model to only return a "true" or "false" value.
         constraints = "**CONSTRAINTS** ONLY and STRICTLY Return boolean 'true' or 'false' value."
 
         # Get the original prompt and add constraints
-        original_prompt = input_data.get("prompt", self.prompt)
+        original_prompt = ctx.get("prompt", self.prompt)
         enhanced_prompt = f"{original_prompt}\n\n{constraints}"
 
-        # Create new input_data with enhanced prompt
-        enhanced_input = input_data.copy()
+        # Create new ctx with enhanced prompt
+        enhanced_input = ctx.copy()
         enhanced_input["prompt"] = enhanced_prompt
 
         # Store the agent-enhanced prompt with template variables resolved
@@ -682,17 +674,17 @@ class OpenAIBinaryAgent(OpenAIAnswerBuilder):
             from jinja2 import Template
 
             template = Template(enhanced_prompt)
-            rendered_enhanced_prompt = template.render(input=input_data.get("input", ""))
+            rendered_enhanced_prompt = template.render(input=ctx.get("input", ""))
             self._last_formatted_prompt = rendered_enhanced_prompt
         except Exception:
             # Fallback: simple replacement if Jinja2 fails
             self._last_formatted_prompt = enhanced_prompt.replace(
                 "{{ input }}",
-                str(input_data.get("input", "")),
+                str(ctx.get("input", "")),
             )
 
         # Get the answer using the enhanced prompt
-        response_data = await super().run(enhanced_input)
+        response_data = await super()._run_impl(enhanced_input)
 
         # Extract answer and preserve metrics and LLM response details
         if isinstance(response_data, dict):
@@ -777,19 +769,19 @@ class OpenAIClassificationAgent(OpenAIAnswerBuilder):
     - Custom category definitions with examples
     """
 
-    async def run(self, input_data: Any) -> dict[str, Any]:
+    async def _run_impl(self, ctx: Context) -> dict[str, Any]:
         # Extract categories from params or use defaults
         categories = self.params.get("options", [])
         constrains = "**CONSTRAINS**ONLY Return values from the given options. If not return 'not-classified'"
 
         # Get the base prompt
-        base_prompt = input_data.get("prompt", self.prompt)
+        base_prompt = ctx.get("prompt", self.prompt)
 
         # Create enhanced prompt with categories
         enhanced_prompt = f"{base_prompt} {constrains}\n Options:{categories}"
 
-        # Create new input_data with enhanced prompt
-        enhanced_input = input_data.copy()
+        # Create new ctx with enhanced prompt
+        enhanced_input = ctx.copy()
         enhanced_input["prompt"] = enhanced_prompt
 
         # Store the agent-enhanced prompt with template variables resolved
@@ -798,17 +790,17 @@ class OpenAIClassificationAgent(OpenAIAnswerBuilder):
             from jinja2 import Template
 
             template = Template(enhanced_prompt)
-            rendered_enhanced_prompt = template.render(input=input_data.get("input", ""))
+            rendered_enhanced_prompt = template.render(input=ctx.get("input", ""))
             self._last_formatted_prompt = rendered_enhanced_prompt
         except Exception:
             # Fallback: simple replacement if Jinja2 fails
             self._last_formatted_prompt = enhanced_prompt.replace(
                 "{{ input }}",
-                str(input_data.get("input", "")),
+                str(ctx.get("input", "")),
             )
 
         # Use parent class to make the API call
-        response_data = await super().run(enhanced_input)
+        response_data = await super()._run_impl(enhanced_input)
 
         # Extract answer and preserve metrics and LLM response details
         if isinstance(response_data, dict):

@@ -40,7 +40,7 @@ The :class:`Orchestrator` class combines functionality from multiple specialized
 2. :class:`~orka.orchestrator.agent_factory.AgentFactory`
    Agent registry management, instantiation, and AGENT_TYPES mapping
 
-3. :class:`~orka.orchestrator.prompt_rendering.PromptRenderer`
+3. :class:`~orka.orchestrator.simplified_prompt_rendering.SimplifiedPromptRenderer`
    Jinja2 template processing and prompt formatting
 
 4. :class:`~orka.orchestrator.error_handling.ErrorHandler`
@@ -113,18 +113,17 @@ from orka.orchestrator.base import OrchestratorBase
 from orka.orchestrator.error_handling import ErrorHandler
 from orka.orchestrator.execution_engine import ExecutionEngine
 from orka.orchestrator.metrics import MetricsCollector
-from orka.orchestrator.prompt_rendering import PromptRenderer
+from orka.orchestrator.simplified_prompt_rendering import SimplifiedPromptRenderer
 
 logger = logging.getLogger(__name__)
 
 
 class Orchestrator(
-    OrchestratorBase,
-    AgentFactory,
-    PromptRenderer,
+    ExecutionEngine,  # First since it has the run method
+    OrchestratorBase,  # Base class next
+    AgentFactory,  # Then the mixins in order of dependency
     ErrorHandler,
     MetricsCollector,
-    ExecutionEngine,
 ):
     """
     The Orchestrator is the core engine that loads a YAML configuration,
@@ -135,13 +134,17 @@ class Orchestrator(
     while maintaining the same public interface.
     """
 
-    def __init__(self, config_path):
+    def __init__(self, config_path: str) -> None:
         """
         Initialize the Orchestrator with a YAML config file.
         Loads orchestrator and agent configs, sets up memory and fork management.
         """
-        # Initialize the base orchestrator
-        super().__init__(config_path)
+        # Initialize all parent classes
+        ExecutionEngine.__init__(self, config_path)
+        OrchestratorBase.__init__(self, config_path)
+        AgentFactory.__init__(self, self.orchestrator_cfg, self.agent_cfgs, self.memory)
+        ErrorHandler.__init__(self)
+        MetricsCollector.__init__(self)
 
         # Initialize agents using the agent factory
         self.agents = self._init_agents()  # Dict of agent_id -> agent instance

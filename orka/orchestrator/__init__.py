@@ -36,7 +36,7 @@ specialized functionality from focused components:
 :class:`~orka.orchestrator.execution_engine.ExecutionEngine`
     Contains the main execution loop, agent coordination, and workflow management
 
-:class:`~orka.orchestrator.prompt_rendering.PromptRenderer`
+:class:`~orka.orchestrator.simplified_prompt_rendering.SimplifiedPromptRenderer`
     Handles Jinja2 template rendering and prompt formatting
 
 :class:`~orka.orchestrator.error_handling.ErrorHandler`
@@ -77,7 +77,7 @@ Module Components
 * ``base`` - Core initialization and configuration
 * ``agent_factory`` - Agent registry and instantiation
 * ``execution_engine`` - Main execution loop and coordination
-* ``prompt_rendering`` - Template processing and formatting
+* ``simplified_prompt_rendering`` - Template processing and formatting
 * ``error_handling`` - Error tracking and retry logic
 * ``metrics`` - Performance metrics and reporting
 
@@ -105,7 +105,7 @@ from .base import OrchestratorBase
 from .error_handling import ErrorHandler
 from .execution_engine import ExecutionEngine
 from .metrics import MetricsCollector
-from .prompt_rendering import PromptRenderer
+from .simplified_prompt_rendering import SimplifiedPromptRenderer
 
 
 # Create the main Orchestrator class using multiple inheritance
@@ -113,7 +113,6 @@ class Orchestrator(
     ExecutionEngine,  # First since it has the run method
     OrchestratorBase,  # Base class next
     AgentFactory,  # Then the mixins in order of dependency
-    PromptRenderer,
     ErrorHandler,
     MetricsCollector,
 ):
@@ -135,7 +134,6 @@ class Orchestrator(
         ExecutionEngine.__init__(self, config_path)
         OrchestratorBase.__init__(self, config_path)
         AgentFactory.__init__(self, self.orchestrator_cfg, self.agent_cfgs, self.memory)
-        PromptRenderer.__init__(self)
         ErrorHandler.__init__(self)
         MetricsCollector.__init__(self)
 
@@ -151,5 +149,5 @@ __all__ = [
     "MetricsCollector",
     "Orchestrator",
     "OrchestratorBase",
-    "PromptRenderer",
+    "SimplifiedPromptRenderer",
 ]

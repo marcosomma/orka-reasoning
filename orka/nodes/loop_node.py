@@ -12,7 +12,6 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 import ast
-import asyncio
 import json
 import logging
 import os
@@ -36,8 +35,6 @@ from typing import (
 import numpy as np
 import yaml
 from jinja2 import Template
-from redis import Redis
-from redis.client import Redis as RedisType
 
 from ..memory.redisstack_logger import RedisStackMemoryLogger
 from ..utils.embedder import get_embedder
@@ -46,7 +43,6 @@ from .base_node import BaseNode
 T = TypeVar("T")
 
 logger = logging.getLogger(__name__)
-logger.info(f"DEBUG: Loading loop_node.py from {__file__}")
 
 
 class PastLoopMetadata(TypedDict, total=False):
@@ -274,9 +270,6 @@ class LoopNode(BaseNode):
         # Load user-defined past_loops_metadata from YAML configuration
         user_metadata = kwargs.get("past_loops_metadata", {})
         if user_metadata:
-            logger.info(
-                f"Loading custom past_loops_metadata with {len(user_metadata)} fields: {list(user_metadata.keys())}"
-            )
             self.past_loops_metadata: Dict[MetadataKey, str] = user_metadata
         else:
             logger.debug("Using default past_loops_metadata structure")
@@ -300,7 +293,7 @@ class LoopNode(BaseNode):
         # Persistence configuration
         self.persist_across_runs: bool = kwargs.get("persist_across_runs", True)
 
-    async def run(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _run_impl(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """Execute the loop node with threshold checking."""
         original_input = payload.get("input")
         original_previous_outputs = payload.get("previous_outputs", {})
@@ -483,6 +476,16 @@ class LoopNode(BaseNode):
             if self.memory_logger is not None:
                 orchestrator.memory = self.memory_logger
                 orchestrator.fork_manager.redis = self.memory_logger.redis  # Fixed attribute name
+
+            # ✅ CRITICAL FIX: Ensure template rendering is properly initialized
+            # The internal orchestrator needs SimplifiedPromptRenderer capabilities
+            if not hasattr(orchestrator, "render_template"):
+                # Initialize SimplifiedPromptRenderer if not already done
+                from ..orchestrator.simplified_prompt_rendering import (
+                    SimplifiedPromptRenderer,
+                )
+
+                SimplifiedPromptRenderer.__init__(orchestrator)
 
             # Create a safe version of previous_outputs to prevent circular references
             # BUT preserve important loop context for agents to see previous results
@@ -714,7 +717,7 @@ class LoopNode(BaseNode):
 
             logger.debug(f"Agents that actually executed: {executed_agents}")
             logger.debug(f"Agents with results: {list(agents_results.keys())}")
-            logger.info(f"Extraction statistics: {extraction_stats}")
+            logger.debug(f"Extraction statistics: {extraction_stats}")
 
             # Generic debugging: Check for any agents that might contain scores
             score_patterns = ["AGREEMENT_SCORE", "SCORE:", "score:", "Score:"]
@@ -729,15 +732,15 @@ class LoopNode(BaseNode):
                             logger.info(
                                 f"Found potential scoring agent '{agent_id}' with pattern '{pattern}'"
                             )
-                        logger.info(f"{agent_id} response: {response_text[:200]}...")
+                        logger.debug(f"{agent_id} response: {response_text[:200]}...")
                         break
 
             if potential_scoring_agents:
-                logger.info(f"Potential scoring agents found: {potential_scoring_agents}")
+                logger.debug(f"Potential scoring agents found: {potential_scoring_agents}")
             else:
-                logger.warning("No agents found with score patterns!")
-                logger.warning(f"All executed agents: {executed_agents}")
-                logger.warning(
+                logger.debug("No agents found with score patterns!")
+                logger.debug(f"All executed agents: {executed_agents}")
+                logger.debug(
                     f"Expected agents: {[agent.get('id') for agent in self.internal_workflow.get('agents', [])]}"
                 )
 
@@ -746,7 +749,7 @@ class LoopNode(BaseNode):
                     :3
                 ]:  # Show first 3 agents
                     if isinstance(agent_result, dict) and "response" in agent_result:
-                        logger.warning(
+                        logger.debug(
                             f"Sample response from '{agent_id}': {str(agent_result['response'])[:100]}..."
                         )
 
@@ -1462,9 +1465,11 @@ class LoopNode(BaseNode):
             }
 
             # Add helper functions using the same approach as execution engine
-            from orka.orchestrator.prompt_rendering import PromptRenderer
+            from ..orchestrator.simplified_prompt_rendering import (
+                SimplifiedPromptRenderer,
+            )
 
-            renderer = PromptRenderer()
+            renderer = SimplifiedPromptRenderer()
             helper_functions = renderer._get_template_helper_functions(helper_payload)
             template_context.update(helper_functions)
 

@@ -227,7 +227,7 @@ class GraphScoutAgent(BaseNode):
             logger.error(f"Failed to initialize GraphScout components: {e}")
             raise
 
-    async def run(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _run_impl(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Main execution method for GraphScout agent.
 
@@ -360,7 +360,7 @@ class GraphScoutAgent(BaseNode):
         if not isinstance(question, str):
             question = str(question)
 
-        return question.strip()
+        return str(question.strip())
 
     def _handle_no_candidates(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Handle case where no candidate paths are found."""

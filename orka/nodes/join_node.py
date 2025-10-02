@@ -14,8 +14,12 @@
 
 import json
 import logging
+from typing import Any, Dict, List, Optional
 
+from ..memory.redisstack_logger import RedisStackMemoryLogger
 from .base_node import BaseNode
+
+logger = logging.getLogger(__name__)
 
 
 class JoinNode(BaseNode):
@@ -32,11 +36,46 @@ class JoinNode(BaseNode):
         self.output_key = f"{self.node_id}:output"
         self._retry_key = f"{self.node_id}:join_retry_count"
 
-    def run(self, input_data):
+    async def _run_impl(self, input_data):
         """
         Run the join operation by collecting and merging results from forked agents.
         """
-        fork_group_id = input_data.get("fork_group_id", self.group_id)
+        # Try to get fork_group_id from input, fallback to finding by pattern
+        fork_group_id = input_data.get("fork_group_id")
+
+        if not fork_group_id and self.group_id:
+            # Look for fork groups that match our pattern (e.g., "opening_positions_*")
+            # Get all keys that match the pattern
+            pattern = f"fork_group:{self.group_id}_*"
+            try:
+                matching_keys = []
+                # Scan for keys matching our pattern
+                cursor = 0
+                while True:
+                    cursor, keys = self.memory_logger.scan(cursor, match=pattern, count=100)
+                    matching_keys.extend(keys)
+                    if cursor == 0:
+                        break
+
+                if matching_keys:
+                    # Get the most recent fork group (assuming timestamp is in the name)
+                    latest_key = max(
+                        matching_keys, key=lambda k: k.decode() if isinstance(k, bytes) else k
+                    )
+                    fork_group_id = (
+                        latest_key.decode() if isinstance(latest_key, bytes) else latest_key
+                    ).replace("fork_group:", "")
+                    logger.info(f"Join node '{self.node_id}' found fork group: {fork_group_id}")
+                else:
+                    logger.warning(
+                        f"Join node '{self.node_id}' could not find fork group matching pattern: {pattern}"
+                    )
+            except Exception as e:
+                logger.error(f"Join node '{self.node_id}' error finding fork group: {e}")
+
+        if not fork_group_id:
+            fork_group_id = self.group_id
+
         state_key = "waitfor:join_parallel_checks:inputs"
 
         # Get or increment retry count using backend-agnostic hash operations
@@ -89,7 +128,6 @@ class JoinNode(BaseNode):
         Returns:
             dict: Merged results from all agents
         """
-        logger = logging.getLogger(__name__)
 
         # Get all results from Redis
         merged = {}

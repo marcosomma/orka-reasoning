@@ -124,7 +124,7 @@ class MemoryReaderNode(BaseNode):
             "average_search_time": 0.0,
         }
 
-    async def run(self, context: dict[str, Any]) -> dict[str, Any]:
+    async def _run_impl(self, context: dict[str, Any]) -> dict[str, Any]:
         """Read memories using RedisStack enhanced vector search."""
         # Try to get the rendered prompt first, then fall back to raw input
         query = context.get("formatted_prompt", "")

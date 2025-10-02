@@ -151,10 +151,21 @@ from datetime import UTC, datetime
 from time import time
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, TypeVar, cast
 
+from ..contracts import OrkaResponse
+from ..response_builder import ResponseBuilder
 from .base import OrchestratorBase
+
+
+def json_serializer(obj):
+    """JSON serializer for objects not serializable by default json code"""
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
+
 from .error_handling import ErrorHandler as OrchestratorErrorHandling
 from .metrics import MetricsCollector as OrchestratorMetricsCollector
-from .prompt_rendering import PromptRenderer
+from .simplified_prompt_rendering import SimplifiedPromptRenderer
 
 logger = logging.getLogger(__name__)
 
@@ -170,7 +181,10 @@ T = TypeVar("T", bound="ExecutionEngineProtocol")
 
 
 class ExecutionEngine(
-    OrchestratorBase, PromptRenderer, OrchestratorErrorHandling, OrchestratorMetricsCollector
+    OrchestratorBase,
+    SimplifiedPromptRenderer,
+    OrchestratorErrorHandling,
+    OrchestratorMetricsCollector,
 ):
     """
     ExecutionEngine coordinates complex multi-agent workflows within the OrKa framework.
@@ -220,8 +234,8 @@ class ExecutionEngine(
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        # Initialize PromptRenderer explicitly to ensure render_prompt method is available
-        PromptRenderer.__init__(self)
+        # Initialize SimplifiedPromptRenderer explicitly to ensure render_template method is available
+        SimplifiedPromptRenderer.__init__(self)
         self.agents: Dict[str, Any] = {}
         # Set orchestrator reference for fork/join nodes - ExecutionEngine is part of Orchestrator
         self.orchestrator = self
@@ -371,17 +385,44 @@ class ExecutionEngine(
 
                         # Special handling for GraphScout decisions
                         if agent_type == "graphscoutagent":
-                            if isinstance(agent_result, dict) and "decision" in agent_result:
+                            logger.info(
+                                f"🔍 DEBUG: GraphScout agent detected, agent_result type: {type(agent_result)}"
+                            )
+                            logger.info(
+                                f"🔍 DEBUG: GraphScout agent_result keys: {list(agent_result.keys()) if isinstance(agent_result, dict) else 'Not a dict'}"
+                            )
+
+                            # ✅ CRITICAL FIX: Handle both OrkaResponse and legacy formats
+                            graphscout_decision = None
+                            if isinstance(agent_result, dict):
+                                # Check for OrkaResponse format (decision in result field)
+                                if (
+                                    "result" in agent_result
+                                    and isinstance(agent_result["result"], dict)
+                                    and "decision" in agent_result["result"]
+                                ):
+                                    graphscout_decision = agent_result["result"]
+                                    logger.info(
+                                        f"🔍 DEBUG: Found GraphScout decision in OrkaResponse format"
+                                    )
+                                # Check for legacy format (decision at top level)
+                                elif "decision" in agent_result:
+                                    graphscout_decision = agent_result
+                                    logger.info(
+                                        f"🔍 DEBUG: Found GraphScout decision in legacy format"
+                                    )
+
+                            if graphscout_decision:
                                 # CRITICAL: Log GraphScout result BEFORE routing to ensure it appears in traces
                                 payload_out = {
                                     k: v for k, v in payload.items() if k != "orchestrator"
                                 }
-                                # 🔍 DEBUG: Check agent_result before logging
+                                # 🔍 DEBUG: Check graphscout_decision before logging
                                 logger.info(
-                                    f"🔍 DEBUG: agent_result before logging: {agent_result.get('target')}"
+                                    f"🔍 DEBUG: graphscout_decision before logging: {graphscout_decision.get('target')}"
                                 )
                                 payload_out.update(
-                                    agent_result
+                                    graphscout_decision
                                 )  # Include the full GraphScout result
                                 # 🔍 DEBUG: Check payload_out after update
                                 logger.info(
@@ -414,8 +455,8 @@ class ExecutionEngine(
 
                                 # Now handle routing decisions
                                 # Create a copy to avoid modifying the logged result
-                                decision_type = agent_result.get("decision")
-                                target = agent_result.get("target")
+                                decision_type = graphscout_decision.get("decision")
+                                target = graphscout_decision.get("target")
                                 # Work with a copy of the target to avoid modifying the original
                                 if isinstance(target, list):
                                     target = target.copy()
@@ -436,7 +477,7 @@ class ExecutionEngine(
                                         continue
                                 elif decision_type == "shortlist":
                                     # Apply intelligent memory agent routing and execute sequence
-                                    shortlist = agent_result.get("target", [])
+                                    shortlist = graphscout_decision.get("target", [])
                                     if shortlist:
                                         # Apply memory agent routing logic
                                         agent_sequence = self._apply_memory_routing_logic(shortlist)
@@ -452,48 +493,104 @@ class ExecutionEngine(
                         # Create a copy of the payload for logging (without orchestrator)
                         payload_out = {k: v for k, v in payload.items() if k != "orchestrator"}
 
-                        # Handle different result types
-                        if isinstance(agent_result, dict):
-                            # Case 1: Local LLM agent response
+                        # Handle OrkaResponse format (new standardized format)
+                        if isinstance(agent_result, dict) and "component_type" in agent_result:
+                            # This is an OrkaResponse - use it directly
+                            payload_out.update(
+                                {
+                                    "result": agent_result.get("result"),
+                                    "status": agent_result.get("status"),
+                                    "error": agent_result.get("error"),
+                                    "response": agent_result.get("result"),  # Legacy compatibility
+                                    "confidence": agent_result.get("confidence", "0.0"),
+                                    "internal_reasoning": agent_result.get(
+                                        "internal_reasoning", ""
+                                    ),
+                                    "formatted_prompt": agent_result.get("formatted_prompt", ""),
+                                    "execution_time_ms": agent_result.get("execution_time_ms"),
+                                    "token_usage": agent_result.get("token_usage"),
+                                    "cost_usd": agent_result.get("cost_usd"),
+                                    "memory_entries": agent_result.get("memory_entries"),
+                                    "memories": agent_result.get(
+                                        "memory_entries"
+                                    ),  # Legacy compatibility
+                                    "_metrics": agent_result.get("metrics", {}),
+                                    "trace_id": agent_result.get("trace_id"),
+                                }
+                            )
+                            payload_out = {k: v for k, v in payload_out.items() if v is not None}
+                        # Handle legacy response formats (for backward compatibility during migration)
+                        elif isinstance(agent_result, dict):
+                            # Convert legacy response to OrkaResponse format for consistency
                             if "response" in agent_result:
-                                payload_out.update(
-                                    {
-                                        "response": agent_result["response"],
-                                        "confidence": agent_result.get("confidence", "0.0"),
-                                        "internal_reasoning": agent_result.get(
-                                            "internal_reasoning", ""
-                                        ),
-                                        "_metrics": agent_result.get("_metrics", {}),
-                                        "formatted_prompt": agent_result.get(
-                                            "formatted_prompt", ""
-                                        ),
-                                    }
+                                converted_response = ResponseBuilder.from_llm_agent_response(
+                                    agent_result, agent_id
                                 )
-                            # Case 2: Memory agent response
                             elif "memories" in agent_result:
-                                payload_out.update(
-                                    {
-                                        "memories": agent_result["memories"],
-                                        "query": agent_result.get("query", ""),
-                                        "backend": agent_result.get("backend", ""),
-                                        "search_type": agent_result.get("search_type", ""),
-                                        "num_results": agent_result.get("num_results", 0),
-                                    }
+                                converted_response = ResponseBuilder.from_memory_agent_response(
+                                    agent_result, agent_id
                                 )
-                            # Case 3: Fork/Join node response
-                            elif "status" in agent_result:
-                                payload_out.update(agent_result)
-                            # Case 4: Other result types
                             else:
-                                payload_out["result"] = agent_result
+                                converted_response = ResponseBuilder.from_node_response(
+                                    agent_result, agent_id
+                                )
+
+                            payload_out.update(
+                                {
+                                    "result": converted_response.get("result"),
+                                    "status": converted_response.get("status"),
+                                    "error": converted_response.get("error"),
+                                    "response": converted_response.get(
+                                        "result"
+                                    ),  # Legacy compatibility
+                                    "confidence": converted_response.get("confidence", "0.0"),
+                                    "internal_reasoning": converted_response.get(
+                                        "internal_reasoning", ""
+                                    ),
+                                    "formatted_prompt": converted_response.get(
+                                        "formatted_prompt", ""
+                                    ),
+                                    "execution_time_ms": converted_response.get(
+                                        "execution_time_ms"
+                                    ),
+                                    "token_usage": converted_response.get("token_usage"),
+                                    "cost_usd": converted_response.get("cost_usd"),
+                                    "memory_entries": converted_response.get("memory_entries"),
+                                    "memories": converted_response.get(
+                                        "memory_entries"
+                                    ),  # Legacy compatibility
+                                    "_metrics": converted_response.get("metrics", {}),
+                                    "trace_id": converted_response.get("trace_id"),
+                                }
+                            )
+                            payload_out = {k: v for k, v in payload_out.items() if v is not None}
                         else:
-                            # Case 5: Non-dict result
-                            payload_out["result"] = agent_result
+                            # Non-dict result - convert to OrkaResponse format
+                            converted_response = ResponseBuilder.from_tool_response(
+                                agent_result, agent_id
+                            )
+                            payload_out.update(
+                                {
+                                    "result": converted_response.get("result"),
+                                    "status": converted_response.get("status"),
+                                    "response": converted_response.get(
+                                        "result"
+                                    ),  # Legacy compatibility
+                                    "_metrics": converted_response.get("metrics", {}),
+                                }
+                            )
+                            payload_out = {k: v for k, v in payload_out.items() if v is not None}
 
                         # Special handling for fork and join nodes
                         if agent_type == "forknode":
                             # Fork node logs immediately, then executes children
-                            fork_group_id = agent_result.get("fork_group")
+                            # Extract fork data from OrkaResponse format
+                            fork_result = (
+                                agent_result.get("result", {})
+                                if isinstance(agent_result, dict)
+                                else {}
+                            )
+                            fork_group_id = fork_result.get("fork_group")
                             if fork_group_id:
                                 payload_out["fork_group_id"] = fork_group_id
                                 payload_out["fork_execution_status"] = "initiated"
@@ -521,7 +618,7 @@ class ExecutionEngine(
                                 )
 
                                 # Execute forked agents after logging fork
-                                forked_agents = agent_result.get("agents", [])
+                                forked_agents = fork_result.get("agents", [])
                                 if forked_agents:
                                     logger.info(
                                         f"Executing {len(forked_agents)} forked agents for group {fork_group_id}"
@@ -552,61 +649,9 @@ class ExecutionEngine(
                                 continue
 
                         elif agent_type == "joinnode":
-                            # Join node aggregates forked results
-                            # Get fork_group_id from payload or use the configured group
-                            fork_group_id = payload.get("fork_group_id")
-                            if not fork_group_id and hasattr(agent, "group_id"):
-                                # Use configured group (e.g., "fork_3" from YAML)
-                                fork_group_id = agent.group_id
-
-                            if fork_group_id:
-                                # Generate the actual fork group ID pattern (fork_3_timestamp)
-                                # Look for any fork group that starts with our configured group
-                                actual_fork_group_id = None
-                                for log in logs:
-                                    log_fork_group = log.get("fork_group_id")
-                                    if log_fork_group and log_fork_group.startswith(
-                                        f"{fork_group_id}_"
-                                    ):
-                                        actual_fork_group_id = log_fork_group
-                                        break
-
-                                if actual_fork_group_id:
-                                    # Collect all forked results from logs
-                                    forked_results = []
-                                    for log in logs:
-                                        if log.get(
-                                            "fork_group_id"
-                                        ) == actual_fork_group_id and log.get(
-                                            "event_type", ""
-                                        ).startswith(
-                                            "ForkedAgent-"
-                                        ):
-                                            forked_results.append(
-                                                {
-                                                    "agent_id": log["agent_id"],
-                                                    "result": log["payload"],
-                                                    "step": log.get("step"),
-                                                    "timestamp": log.get("timestamp"),
-                                                }
-                                            )
-
-                                    # Add joined results to payload
-                                    payload_out["joined_results"] = forked_results
-                                    payload_out["fork_group_id"] = actual_fork_group_id
-                                    agent_result["fork_group_id"] = actual_fork_group_id
-
-                                    logger.info(
-                                        f"Join node collected {len(forked_results)} results from fork group {actual_fork_group_id}"
-                                    )
-                                else:
-                                    logger.warning(
-                                        f"Join node could not find fork group matching pattern '{fork_group_id}_*'"
-                                    )
-                            else:
-                                logger.warning(
-                                    f"Join node '{agent_id}' has no fork_group_id or group configuration"
-                                )
+                            # Join nodes handle their own coordination internally
+                            # No special handling needed here - let the join node do its work
+                            pass
 
                         # Store the result in memory
                         result_key = f"agent_result:{agent_id}"
@@ -734,120 +779,29 @@ class ExecutionEngine(
         # Also check for ValidationAndStructuringAgent which stores prompt in llm_agent
         agent_prompt = None
         if hasattr(agent, "prompt") and agent.prompt:
-            agent_prompt = agent.prompt
+            # Ensure agent_prompt is a string, not a dict
+            agent_prompt = str(agent.prompt) if not isinstance(agent.prompt, str) else agent.prompt
         elif (
             hasattr(agent, "llm_agent")
             and hasattr(agent.llm_agent, "prompt")
             and agent.llm_agent.prompt
         ):
-            agent_prompt = agent.llm_agent.prompt
+            # Ensure agent_prompt is a string, not a dict
+            agent_prompt = (
+                str(agent.llm_agent.prompt)
+                if not isinstance(agent.llm_agent.prompt, str)
+                else agent.llm_agent.prompt
+            )
 
         if agent_prompt:
             try:
-                # Build complete template context
-                template_context = self._build_template_context(payload, agent_id)
-
-                # Debug template context if needed
-                logger.debug(
-                    f"- Template context for '{agent_id}': {list(template_context.keys())}"
-                )
-                if "get_input" in template_context:
-                    logger.debug(
-                        f"Helper functions available: get_input, get_loop_number, get_agent_response"
-                    )
-                    # Test if functions are callable
-                    try:
-                        test_input = template_context["get_input"]()
-                        logger.debug(f"- get_input() test successful: '{test_input}'")
-                    except Exception as e:
-                        logger.error(f"get_input() test failed: {e}")
-                else:
-                    logger.error("Helper functions NOT found in template context")
-                    logger.error(f"Available keys: {list(template_context.keys())}")
-
-                # Validate template before rendering
-                missing_vars = self._validate_template_variables(agent_prompt, template_context)
-                if missing_vars:
-                    logger.warning(f"Agent '{agent_id}' template missing variables: {missing_vars}")
-                    # Enhanced debugging for template issues
-                    prev_outputs = template_context.get("previous_outputs", {})
-                    logger.warning(
-                        f"Available agents in previous_outputs: {list(prev_outputs.keys())}"
-                    )
-                    for agent_name, agent_result in prev_outputs.items():
-                        if isinstance(agent_result, dict):
-                            logger.warning(f"  {agent_name}: keys = {list(agent_result.keys())}")
-                        else:
-                            logger.warning(f"  {agent_name}: {type(agent_result)} = {agent_result}")
-
-                logger.debug(f"- Available context keys: {list(template_context.keys())}")
-                if "previous_outputs" in template_context:
-                    logger.debug(
-                        f"Available previous_outputs: {list(template_context['previous_outputs'].keys())}"
-                    )
-                    # Show structure of each agent result for debugging
-                    for prev_agent, prev_result in template_context["previous_outputs"].items():
-                        if isinstance(prev_result, dict):
-                            logger.debug(
-                                f"Agent '{prev_agent}' result keys: {list(prev_result.keys())}"
-                            )
-                        else:
-                            logger.debug(
-                                f"[DEBUG] - Agent '{prev_agent}' result type: {type(prev_result)}"
-                            )
-
-                # Use template context directly
-                from jinja2 import Template
-
-                template = Template(agent_prompt)
-
-                # Debug: Show what we're about to render
-                logger.debug(
-                    f"- About to render template with {len(template_context)} context items"
-                )
-                logger.debug(f"- Template preview: {agent_prompt[:200]}...")
-
-                formatted_prompt = template.render(**template_context)
+                # Use simplified template rendering
+                formatted_prompt = self.render_template(agent_prompt, payload)
+                payload["formatted_prompt"] = formatted_prompt
 
                 # Log successful rendering
                 logger.info(f"Template rendered for '{agent_id}' - length: {len(formatted_prompt)}")
-
-                # Debug: Show a preview of the rendered result
                 logger.debug(f"- Rendered preview: {formatted_prompt[:200]}...")
-
-                # Check for unresolved variables and warn if found
-                import re
-
-                unresolved_pattern = r"\{\{\s*[^}]+\s*\}\}"
-                unresolved_vars = re.findall(unresolved_pattern, formatted_prompt)
-                if unresolved_vars:
-                    logger.warning(
-                        f"Still found {len(unresolved_vars)} unresolved variables after rendering: {unresolved_vars[:3]}"
-                    )
-                    # Replace unresolved variables with empty strings for now
-                    formatted_prompt = re.sub(unresolved_pattern, "", formatted_prompt)
-                    formatted_prompt = re.sub(r"\s+", " ", formatted_prompt).strip()
-                payload["formatted_prompt"] = formatted_prompt
-
-                # Verify rendering was successful
-                if self._has_unresolved_variables(formatted_prompt):
-                    logger.error(
-                        f"Agent '{agent_id}' has unresolved template variables in: {formatted_prompt}"
-                    )
-                    payload["template_error"] = "unresolved_variables"
-
-                # Debug logging for template rendering
-                if logger.isEnabledFor(logging.DEBUG):
-                    original_template = agent_prompt
-                    if original_template != formatted_prompt:
-                        logger.debug(f"- Agent '{agent_id}' template rendered successfully")
-                        logger.debug(f"- Original: {original_template}")
-                        logger.debug(f"- Rendered: {formatted_prompt}")
-                    else:
-                        logger.debug(
-                            f"Agent '{agent_id}' template unchanged - possible template issue"
-                        )
-                        logger.debug(f"- Template context: {template_context}")
             except Exception as e:
                 logger.error(f"Failed to render prompt for agent '{agent_id}': {e}")
                 payload["formatted_prompt"] = agent_prompt if agent_prompt else ""
@@ -998,7 +952,9 @@ class ExecutionEngine(
 
                     # Store result in Redis for JoinNode
                     join_state_key = "waitfor:join_parallel_checks:inputs"
-                    self.memory.hset(join_state_key, agent_id, json.dumps(result))
+                    self.memory.hset(
+                        join_state_key, agent_id, json.dumps(result, default=json_serializer)
+                    )
 
                     # Create log entry
                     agent = self.agents[agent_id]
@@ -1308,10 +1264,6 @@ class ExecutionEngine(
         pattern = r"\{\{\s*[^}]+\s*\}\}"
         return bool(re.search(pattern, text))
 
-    def _has_unresolved_variables(self, text: str) -> bool:
-        """Alias for _check_unresolved_variables for backward compatibility."""
-        return self._check_unresolved_variables(text)
-
     def _extract_template_variables(self, template: str) -> List[str]:
         """Extract all Jinja2 variables from template."""
         import re
@@ -1365,179 +1317,11 @@ class ExecutionEngine(
 
         context["previous_outputs"] = flattened_outputs
 
-        # Add template helper functions from PromptRenderer
-        try:
-            helper_functions = self._get_template_helper_functions(context)
-            context.update(helper_functions)
-            logger.debug(f"- Added {len(helper_functions)} helper functions to template context")
-        except Exception as e:
-            logger.error(f"Failed to add helper functions to template context: {e}")
-            logger.error(f"Exception details: {type(e).__name__}: {e}")
-            import traceback
-
-            logger.error(f"Traceback: {traceback.format_exc()}")
-
-            # Import PromptRenderer directly to ensure access to helper functions
-            from orka.orchestrator.prompt_rendering import PromptRenderer
-
-            # Create a temporary PromptRenderer instance to get the helper functions
-            temp_renderer = PromptRenderer()
-            try:
-                helper_functions = temp_renderer._get_template_helper_functions(context)
-                context.update(helper_functions)
-                logger.info(
-                    f"Added {len(helper_functions)} helper functions via fallback PromptRenderer"
-                )
-            except Exception as fallback_e:
-                logger.error(f"Fallback PromptRenderer also failed: {fallback_e}")
-
-                # Last resort: basic helper functions
-                def get_input():
-                    if "input" in context and isinstance(context["input"], dict):
-                        return context["input"].get("input", "")
-                    return str(context.get("input", ""))
-
-                def get_loop_number():
-                    if "loop_number" in context:
-                        return context["loop_number"]
-                    if "input" in context and isinstance(context["input"], dict):
-                        return context["input"].get("loop_number", 1)
-                    return 1
-
-                def get_agent_response(agent_name):
-                    prev_outputs = context.get("previous_outputs", {})
-                    if agent_name in prev_outputs:
-                        agent_result = prev_outputs[agent_name]
-                        if isinstance(agent_result, dict):
-                            return agent_result.get("response", "")
-                        return str(agent_result)
-                    return ""
-
-                # Add minimal stub functions for missing ones
-                def get_agent_memory_context(agent_type, agent_name):
-                    return "No memory context available"
-
-                def get_debate_evolution():
-                    return "First round of debate"
-
-                context.update(
-                    {
-                        "get_input": get_input,
-                        "get_loop_number": get_loop_number,
-                        "get_agent_response": get_agent_response,
-                        "get_agent_memory_context": get_agent_memory_context,
-                        "get_debate_evolution": get_debate_evolution,
-                    }
-                )
-                logger.info("Added basic fallback helper functions to template context")
+        # Template helper functions are now handled by SimplifiedPromptRenderer
 
         return context
 
-    def _validate_template_variables(self, template: str, context: Dict[str, Any]) -> List[str]:
-        """Check for missing template variables with detailed path validation."""
-        import re
-
-        # Extract all Jinja2 variables
-        variable_pattern = r"\{\{\s*([^}|]+)(?:\|[^}]*)?\s*\}\}"
-        variables = re.findall(variable_pattern, template)
-
-        missing_vars = []
-        for var_expr in variables:
-            var_path = var_expr.strip()
-            # Check if the full path is accessible
-            if not self._is_template_path_accessible(var_path, context):
-                missing_vars.append(var_path)
-
-        return missing_vars
-
-    def _is_template_path_accessible(self, var_path: str, context: Dict[str, Any]) -> bool:
-        """Check if a nested template variable path (like 'previous_outputs.binary_classifier.response') is accessible."""
-        try:
-            # Handle function calls like get_input() or get_agent_response('name')
-            if "(" in var_path and ")" in var_path:
-                # Extract function name (before the first parenthesis)
-                func_name = var_path.split("(")[0].strip()
-                # Check if the function exists in context
-                if func_name in context and callable(context[func_name]):
-                    logger.debug(
-                        f"Found callable function '{func_name}' for template path '{var_path}'"
-                    )
-                    return True
-                else:
-                    logger.debug(f"- Function '{func_name}' not found or not callable in context")
-                    # Show available functions for debugging
-                    available_funcs = [k for k, v in context.items() if callable(v)]
-                    logger.debug(f"- Available callable functions: {available_funcs}")
-                    return False
-
-            # Split the path by dots
-            path_parts = var_path.split(".")
-            current = context
-
-            for part in path_parts:
-                # Handle array access like [0]
-                if "[" in part and "]" in part:
-                    key = part.split("[")[0]
-                    index_str = part.split("[")[1].split("]")[0]
-                    if key not in current:
-                        logger.debug(f"- Missing key '{key}' in path '{var_path}'")
-                        return False
-                    current = current[key]
-                    try:
-                        index = int(index_str)
-                        if not isinstance(current, (list, tuple)):
-                            logger.debug(
-                                f"Expected list/tuple for array access in path '{var_path}'"
-                            )
-                            return False
-                        if len(current) <= index:
-                            logger.debug(f"Invalid array access [{index}] in path '{var_path}'")
-                            return False
-                        current = current[index]
-                    except (ValueError, IndexError):
-                        logger.debug(f"- Invalid array index '{index_str}' in path '{var_path}'")
-                        return False
-                else:
-                    # Simple key access
-                    if not isinstance(current, dict) or part not in current:
-                        # Enhanced debugging for missing keys, especially agent names
-                        if isinstance(current, dict):
-                            available_keys = list(current.keys())
-                            logger.debug(
-                                f"Missing key '{part}' in path '{var_path}'. Available keys: {available_keys}"
-                            )
-
-                            # Special handling for agent name mismatches in previous_outputs
-                            if (
-                                len(path_parts) > 1
-                                and path_parts[0] == "previous_outputs"
-                                and part == path_parts[1]
-                            ):  # Looking for agent name
-                                # Find similar agent names that might be the intended target
-                                similar_agents = [
-                                    key for key in available_keys if part in key or key in part
-                                ]
-                                if similar_agents:
-                                    logger.warning(
-                                        f"Template references agent '{part}' but found similar agents: {similar_agents}. Did you mean one of these?"
-                                    )
-                                else:
-                                    # Show all available agents for reference
-                                    logger.warning(
-                                        f"Template references agent '{part}' but available agents are: {available_keys}"
-                                    )
-                        else:
-                            logger.info(  # type: ignore[unreachable]
-                                f"[DEBUG] - Cannot access key '{part}' in path '{var_path}' - current value is not a dict"
-                            )
-                        return False
-                    else:
-                        current = current[part]
-
-            return True
-        except Exception as e:
-            logger.debug(f"- Error validating template path '{var_path}': {e}")
-            return False
+    # Template validation is now handled by SimplifiedPromptRenderer
 
     def _simplify_agent_result_for_templates(self, agent_result: Any) -> Any:
         """

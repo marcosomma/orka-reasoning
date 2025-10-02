@@ -50,6 +50,7 @@ orchestrator:
     - memory_reader
     - memory_validator
     - answer_router
+    - final_summary
 
 agents:
   # Step 1: Read memories using enhanced context-aware search
@@ -196,3 +197,34 @@ agents:
       category: stored
     depends_on:
       - answer_router
+  
+  - id: final_summary
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    prompt: |
+      Answer the question: "{{ get_input() }}"
+      
+      {% set memory_result = get_agent_response('memory_reader') %}
+      {% set validation = get_agent_response('memory_validator') %}
+      {% set memory_answer = get_agent_response('answer_builder') %}
+      {% set search_answer = get_agent_response('search_answer_builder') %}
+      
+      {% if memory_answer %}
+      {{ memory_answer }}
+      {% elif search_answer %}
+      {{ search_answer }}
+      {% else %}
+      I need to process your question. Let me provide the best response I can based on the available information.
+      {% endif %}
+      
+      {% if memory_result %}
+      
+      Additional context from memory: {{ memory_result }}
+      {% endif %}
+      
+      Provide a complete, accurate response that directly addresses what the user is asking about.
+    depends_on:
+      - memory_writer
