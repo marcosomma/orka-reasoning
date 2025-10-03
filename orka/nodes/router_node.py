@@ -137,7 +137,7 @@ class RouterNode(BaseNode):
 
         decision_value = previous_outputs.get(decision_key)
 
-        # Handle dictionary decision values
+        # Handle dictionary decision values FIRST before using as hash key
         if isinstance(decision_value, dict):
             decision_value = decision_value.get("response")
 
@@ -145,12 +145,18 @@ class RouterNode(BaseNode):
         decision_value_str = str(decision_value).strip().lower()
 
         # Try different matching strategies in order of preference
-        route = (
-            routing_map.get(decision_value)  # literal (True, False)
-            or routing_map.get(decision_value_str)  # string "true"/"false"
-            or routing_map.get(self._bool_key(decision_value_str))  # normalized boolean
-            or []  # default empty list
-        )
+        # Only try hashing if decision_value is not a dict (already handled above)
+        route = None
+        if not isinstance(decision_value, dict):
+            route = (
+                routing_map.get(decision_value)  # literal (True, False)
+                or routing_map.get(decision_value_str)  # string "true"/"false"
+                or routing_map.get(self._bool_key(decision_value_str))  # normalized boolean
+            )
+
+        if route is None:
+            # Try string-based matching as fallback
+            route = routing_map.get(decision_value_str) or []
 
         return route
 

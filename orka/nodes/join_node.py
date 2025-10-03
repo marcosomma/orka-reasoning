@@ -101,11 +101,20 @@ class JoinNode(BaseNode):
         # Check for max retries
         if retry_count >= self.max_retries:
             self.memory_logger.hdel("join_retry_counts", self._retry_key)
+            logger.error(
+                f"[ORKA][NODE][JOIN][TIMEOUT] Join node '{self.node_id}' timed out after {self.max_retries} retries. "
+                f"Fork group: {fork_group_id}. "
+                f"Pending agents: {pending}. "
+                f"Received agents: {received}. "
+                f"This usually means some forked agents failed or took too long to complete."
+            )
             return {
                 "status": "timeout",
                 "pending": pending,
                 "received": received,
                 "max_retries": self.max_retries,
+                "fork_group": fork_group_id,
+                "message": f"Join timed out waiting for agents: {', '.join(pending)}",
             }
 
         # Return waiting status if not all agents have completed
@@ -175,11 +184,15 @@ class JoinNode(BaseNode):
                     self.memory_logger.hset(group_key, agent_id, json.dumps(merged[agent_id]))
                     logger.debug(f"- Stored result in group for agent {agent_id}")
                 else:
-                    logger.warning(f"No result found for agent {agent_id}")
+                    logger.warning(
+                        f"[ORKA][NODE][JOIN][WARNING] No result found for agent '{agent_id}' in state key '{state_key}'"
+                    )
             except Exception as e:
-                logger.error(f"Error processing result for agent {agent_id}: {e}")
+                logger.error(
+                    f"[ORKA][NODE][JOIN][ERROR] Error processing result for agent '{agent_id}': {type(e).__name__}: {e}"
+                )
                 # Add error result to show something went wrong
-                merged[agent_id] = {"error": str(e)}
+                merged[agent_id] = {"error": str(e), "error_type": type(e).__name__}
 
         # Store output using hash operations
         self.memory_logger.hset("join_outputs", self.output_key, json.dumps(merged))

@@ -11,7 +11,6 @@
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 import logging
-from datetime import datetime
 
 from .base_node import BaseNode
 
@@ -144,7 +143,7 @@ class FailoverNode(BaseNode):
             if last_error
             else "All fallback agents failed."
         )
-        logger.error(f"{datetime.now()} > [ORKA][NODE][FAILOVER][ERROR] {error_msg}")
+        logger.error(f"[ORKA][NODE][FAILOVER][ERROR] {error_msg}")
 
         # Return structured error result instead of raising exception
         return {
@@ -265,8 +264,8 @@ class FailoverNode(BaseNode):
                 "503",
             ]
             if any(indicator in result_lower for indicator in error_indicators):
-                logger.error(
-                    f"{datetime.now()} > [ORKA][NODE][FAILOVER][DEBUG] Rejecting error message: {result[:50]}...",
+                logger.debug(
+                    f"[ORKA][NODE][FAILOVER][DEBUG] Rejecting error message: {result[:50]}...",
                 )
                 return False
 

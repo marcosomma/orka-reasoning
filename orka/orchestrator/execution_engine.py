@@ -643,7 +643,10 @@ class ExecutionEngine(
                                         )
 
                                     except Exception as fork_error:
-                                        logger.error(f"Fork execution failed: {fork_error}")
+                                        logger.error(
+                                            f"Fork execution failed for group {fork_group_id}: {type(fork_error).__name__}: {fork_error}. "
+                                            f"Agents: {forked_agents}. Check individual agent logs for details."
+                                        )
 
                                 # Skip normal logging since we already logged the fork node
                                 continue
@@ -1501,31 +1504,44 @@ class ExecutionEngine(
             response_builder_found = False
 
             for candidate in shortlist:
-                agent_id = candidate.get("node_id")
-                if not agent_id:
-                    continue
+                # GraphScout candidates have a 'path' field with the full agent sequence
+                candidate_path = candidate.get("path")
 
-                # Check if this is a memory agent
-                if self._is_memory_agent(agent_id):
-                    operation = self._get_memory_operation(agent_id)
-                    if operation == "read":
-                        memory_readers.append(agent_id)
-                        logger.info(
-                            f"Memory reader agent detected: {agent_id} - positioning at beginning"
-                        )
-                    elif operation == "write":
-                        memory_writers.append(agent_id)
-                        logger.info(
-                            f"Memory writer agent detected: {agent_id} - positioning at end"
-                        )
-                    else:
-                        # Unknown memory operation, treat as regular agent
+                # Fallback: if no path, use node_id as single-item path
+                if not candidate_path:
+                    agent_id = candidate.get("node_id")
+                    candidate_path = [agent_id] if agent_id else []
+
+                # Ensure candidate_path is a list
+                if not isinstance(candidate_path, list):
+                    candidate_path = [candidate_path]
+
+                # Process each agent in the path
+                for agent_id in candidate_path:
+                    if not agent_id:
+                        continue
+
+                    # Check if this is a memory agent
+                    if self._is_memory_agent(agent_id):
+                        operation = self._get_memory_operation(agent_id)
+                        if operation == "read":
+                            memory_readers.append(agent_id)
+                            logger.info(
+                                f"Memory reader agent detected: {agent_id} - positioning at beginning"
+                            )
+                        elif operation == "write":
+                            memory_writers.append(agent_id)
+                            logger.info(
+                                f"Memory writer agent detected: {agent_id} - positioning at end"
+                            )
+                        else:
+                            # Unknown memory operation, treat as regular agent
+                            regular_agents.append(agent_id)
+                    elif self._is_response_builder(agent_id):
                         regular_agents.append(agent_id)
-                elif self._is_response_builder(agent_id):
-                    regular_agents.append(agent_id)
-                    response_builder_found = True
-                else:
-                    regular_agents.append(agent_id)
+                        response_builder_found = True
+                    else:
+                        regular_agents.append(agent_id)
 
             # Build the intelligent sequence: readers → regular agents → writers → response_builder
             agent_sequence = []

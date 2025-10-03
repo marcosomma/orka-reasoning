@@ -11,10 +11,6 @@ orchestrator:
   agents:
     - input_classifier
     - graph_scout_router
-    - search_agent
-    - analysis_agent
-    - memory_writer
-    - response_builder
 
 agents:
   # Input classification to understand the question type
@@ -43,8 +39,8 @@ agents:
   - id: graph_scout_router
     type: graph-scout
     params:
-      k_beam: 3
-      max_depth: 2
+      k_beam: 5
+      max_depth: 10
       commit_margin: 0.2
       score_weights:
         llm: 0.5
