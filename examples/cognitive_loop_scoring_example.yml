@@ -68,11 +68,11 @@ agents:
             
             {% if has_past_loops() %}
             Previous attempts ({{ get_past_loops() | length }}):
-            {% for loop in get_past_loops() %}
-            - Loop {{ loop.loop_number }} (Score: {{ loop.score }}):
-              * Key insights: {{ loop.key_insights }}
-              * Needed improvements: {{ loop.improvements_needed }}
-              * Mistakes found: {{ loop.mistakes_found }}
+            {% for past_loop in get_past_loops() %}
+            - Loop {{ past_loop.loop_number }} (Score: {{ past_loop.score }}):
+              * Key insights: {{ past_loop.key_insights }}
+              * Needed improvements: {{ past_loop.improvements_needed }}
+              * Mistakes found: {{ past_loop.mistakes_found }}
             {% endfor %}
             
             Build upon these previous insights and address the identified gaps.
@@ -121,17 +121,17 @@ agents:
       Threshold met: {{ previous_outputs.simple_loop.threshold_met | default('Unknown') }}
       
       Cognitive Evolution Summary:
-      {% if previous_outputs.simple_loop.past_loops %}
-      {% for loop in previous_outputs.simple_loop.past_loops %}
+      {% if previous_outputs.simple_loop.response.past_loops %}
+      {% for past_loop in previous_outputs.simple_loop.response.past_loops %}
       
-      **Loop {{ loop.loop_number }}** (Score: {{ loop.score }}):
-      - Key Insights: {{ loop.key_insights }}
-      - Improvements: {{ loop.improvements_needed }}
-      - Mistakes: {{ loop.mistakes_found }}
+      **Loop {{ past_loop.loop_number }}** (Score: {{ past_loop.score }}):
+      - Key Insights: {{ past_loop.key_insights }}
+      - Improvements: {{ past_loop.improvements_needed }}
+      - Mistakes: {{ past_loop.mistakes_found }}
       {% endfor %}
       {% endif %}
       
-      Final Analysis: {{ previous_outputs.simple_loop.result | default('No result available') }}
+      Final Analysis: {{ previous_outputs.simple_loop.response.result | default('No result available') }}
       {% else %}
       The loop execution is complete. Providing a general meta-analysis of cognitive loop processing.
       {% endif %}
