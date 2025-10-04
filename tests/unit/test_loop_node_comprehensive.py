@@ -89,12 +89,12 @@ class TestLoopNode:
             payload = {"input": "test input", "previous_outputs": {}}
             result = await self.node.run(payload)
 
-            assert result["threshold_met"] is True
-            assert result["loops_completed"] == 1
-            assert result["final_score"] == 0.9
-            assert len(result["past_loops"]) == 1
-            assert result["past_loops"][0]["loop_number"] == "1"
-            assert result["past_loops"][0]["score"] == "0.9"
+            assert result["result"]["threshold_met"] is True
+            assert result["result"]["loops_completed"] == 1
+            assert result["result"]["final_score"] == 0.9
+            assert len(result["result"]["past_loops"]) == 1
+            assert result["result"]["past_loops"][0]["loop_number"] == "1"
+            assert result["result"]["past_loops"][0]["score"] == "0.9"
 
     @pytest.mark.asyncio
     async def test_run_max_loops_without_threshold(self):
@@ -116,10 +116,10 @@ class TestLoopNode:
             payload = {"input": "test input", "previous_outputs": {}}
             result = await self.node.run(payload)
 
-            assert result["threshold_met"] is False
-            assert result["loops_completed"] == 3
-            assert result["final_score"] == 0.7
-            assert len(result["past_loops"]) == 3
+            assert result["result"]["threshold_met"] is False
+            assert result["result"]["loops_completed"] == 3
+            assert result["result"]["final_score"] == 0.7
+            assert len(result["result"]["past_loops"]) == 3
 
     @pytest.mark.asyncio
     async def test_run_threshold_met_second_loop(self):
@@ -140,10 +140,10 @@ class TestLoopNode:
             payload = {"input": "test input", "previous_outputs": {}}
             result = await self.node.run(payload)
 
-            assert result["threshold_met"] is True
-            assert result["loops_completed"] == 2
-            assert result["final_score"] == 0.85
-            assert len(result["past_loops"]) == 2
+            assert result["result"]["threshold_met"] is True
+            assert result["result"]["loops_completed"] == 2
+            assert result["result"]["final_score"] == 0.85
+            assert len(result["result"]["past_loops"]) == 2
 
     @pytest.mark.asyncio
     async def test_execute_internal_workflow_yaml_config(self):
@@ -171,6 +171,7 @@ class TestLoopNode:
                     result = await self.node._execute_internal_workflow(
                         "test input",
                         {"previous": "outputs"},
+                        current_loop=1,
                     )
 
                     # Internal workflow execution failed due to parameter type mismatch
@@ -925,7 +926,7 @@ class TestLoopNode:
                 mock_orch_class.side_effect = Exception("Orchestrator error")
                 with patch("orka.nodes.loop_node.os.unlink") as mock_unlink:
                     # The implementation catches errors and returns None
-                    result = await self.node._execute_internal_workflow("input", {})
+                    result = await self.node._execute_internal_workflow("input", {}, current_loop=1)
                     assert result is None
 
     def test_default_cognitive_extraction_config(self):

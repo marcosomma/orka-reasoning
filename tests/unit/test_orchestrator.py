@@ -15,7 +15,7 @@ from orka.orchestrator.base import OrchestratorBase
 from orka.orchestrator.error_handling import ErrorHandler
 from orka.orchestrator.execution_engine import ExecutionEngine
 from orka.orchestrator.metrics import MetricsCollector
-from orka.orchestrator.prompt_rendering import PromptRenderer
+from orka.orchestrator.simplified_prompt_rendering import SimplifiedPromptRenderer
 
 
 class TestOrchestratorBase:
@@ -537,7 +537,8 @@ class TestExecutionEngine:
         assert len(logs) == 1
         log_entry = logs[0]
         assert log_entry["agent_id"] == "test_agent"
-        assert log_entry["payload"]["result"] == {"result": "success"}
+        # With OrkaResponse format, the result field is extracted from the response
+        assert log_entry["payload"]["result"] == "success"
 
 
 class TestMetricsCollector:
@@ -766,13 +767,13 @@ class TestErrorHandler:
             assert error_report["orka_execution_report"]["run_id"] == mock_error_handler.run_id
 
 
-class TestPromptRenderer:
-    """Test PromptRenderer template processing and formatting."""
+class TestSimplifiedPromptRenderer:
+    """Test SimplifiedPromptRenderer template processing and formatting."""
 
     @pytest.fixture
     def mock_prompt_renderer(self):
         """Create a mock prompt renderer."""
-        return PromptRenderer()
+        return SimplifiedPromptRenderer()
 
     def test_render_prompt_basic(self, mock_prompt_renderer):
         """Test basic prompt rendering."""
@@ -878,7 +879,7 @@ class TestOrchestratorIntegration:
             "MetricsCollector",
             "Orchestrator",
             "OrchestratorBase",
-            "PromptRenderer",
+            "SimplifiedPromptRenderer",
         ]
         for export in expected_exports:
             assert hasattr(orchestrator_module, export), f"Missing export: {export}"
@@ -891,11 +892,13 @@ class TestOrchestratorIntegration:
         from orka.orchestrator.error_handling import ErrorHandler
         from orka.orchestrator.execution_engine import ExecutionEngine
         from orka.orchestrator.metrics import MetricsCollector
-        from orka.orchestrator.prompt_rendering import PromptRenderer
+        from orka.orchestrator.simplified_prompt_rendering import (
+            SimplifiedPromptRenderer,
+        )
 
         assert issubclass(Orchestrator, OrchestratorBase)
         assert issubclass(Orchestrator, AgentFactory)
-        assert issubclass(Orchestrator, PromptRenderer)
+        assert issubclass(Orchestrator, SimplifiedPromptRenderer)
         assert issubclass(Orchestrator, ErrorHandler)
         assert issubclass(Orchestrator, MetricsCollector)
         assert issubclass(Orchestrator, ExecutionEngine)
@@ -907,7 +910,7 @@ class TestOrchestratorIntegration:
             "Orchestrator",
             "OrchestratorBase",
             "AgentFactory",
-            "PromptRenderer",
+            "SimplifiedPromptRenderer",
             "ErrorHandler",
             "MetricsCollector",
             "ExecutionEngine",
@@ -953,7 +956,7 @@ class TestOrchestratorIntegration:
                 "Orchestrator",
                 "OrchestratorBase",
                 "AgentFactory",
-                "PromptRenderer",
+                "SimplifiedPromptRenderer",
                 "ErrorHandler",
                 "MetricsCollector",
                 "ExecutionEngine",

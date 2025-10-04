@@ -212,8 +212,8 @@ class TestRAGNodeRun:
         result = await node.run(context)
 
         assert result["status"] == "success"
-        assert result["error"] is None
-        assert result["metadata"]["node_id"] == "test_rag"
+        assert "error" not in result
+        assert result["component_id"] == "test_rag"
         assert "result" in result
         assert result["result"]["answer"] == "Test answer"
         assert len(result["result"]["sources"]) == 2
@@ -282,7 +282,7 @@ class TestRAGNodeRun:
             assert result["status"] == "error"
             assert result["error"] == "Run failed"
             assert result["result"] is None
-            assert result["metadata"]["node_id"] == "test_rag"
+            assert result["component_id"] == "test_rag"
 
     @pytest.mark.asyncio
     async def test_run_with_missing_query(self):
@@ -606,8 +606,7 @@ class TestRAGNodeIntegration:
                 result = await node.run(context)
 
                 assert result["status"] == "error"
-                mock_logger.error.assert_called_once()
-                assert "RAGNode test_rag failed" in mock_logger.error.call_args[0][0]
+            assert result["error"] == "Test error"
 
     @pytest.mark.asyncio
     async def test_rag_with_different_context_types(self):

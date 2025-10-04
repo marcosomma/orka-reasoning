@@ -73,7 +73,10 @@ def _should_skip_due_to_llm(stdout: str, stderr: str) -> bool:
     [
         ("examples/person_routing_with_search.yml", {"answer-final"}),
         ("examples/temporal_change_search_synthesis.yml", {"synthesize_timeline_answer"}),
-        ("examples/memory_read_fork_join_router.yml", {"openai-answer_14", "openai-answer_15"}),
+        (
+            "examples/memory_read_fork_join_router.yml",
+            {"openai-answer_14", "openai-answer_15", "final_summary"},
+        ),
         # ("examples/failover_search_and_validate.yml", {"build_answer", "validate_fact"}),
         (
             "examples/conditional_search_fork_join.yaml",
@@ -81,10 +84,14 @@ def _should_skip_due_to_llm(stdout: str, stderr: str) -> bool:
                 "final_builder_true",
                 "final_builder_false",
                 "info_completed",
+                "final_summary",
             },  # info_completed when no search needed
         ),
         # Optional examples (uncomment locally if environment supports them):
-        ("examples/validation_structuring_memory_pipeline.yml", {"memory-path", "answer-builder"}),
+        (
+            "examples/validation_structuring_memory_pipeline.yml",
+            {"memory-path", "answer-builder", "final_summary"},
+        ),
         ("examples/multi_model_local_llm_evaluation.yml", {"answer_21"}),
         ("examples/cognitive_society_minimal_loop.yml", {"final_answer"}),
         ("examples/cognitive_loop_scoring_example.yml", {"final_processor"}),

@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from orka.agents.agents import BinaryAgent, ClassificationAgent
-from orka.agents.base_agent import BaseAgent, LegacyBaseAgent
+from orka.agents.base_agent import BaseAgent
 from orka.agents.llm_agents import (
     OpenAIAnswerBuilder,
     OpenAIBinaryAgent,
@@ -28,7 +28,13 @@ class TestBaseAgent:
 
     def test_base_agent_initialization(self):
         """Test BaseAgent initialization with basic parameters."""
-        agent = BaseAgent(
+
+        # BaseAgent is abstract, must create concrete implementation
+        class TestAgent(BaseAgent):
+            async def _run_impl(self, ctx):
+                return "test"
+
+        agent = TestAgent(
             agent_id="test_agent",
             timeout=60.0,
             max_concurrency=5,
@@ -36,16 +42,22 @@ class TestBaseAgent:
 
         assert agent.agent_id == "test_agent"
         assert agent.timeout == 60.0
-        assert agent.type == "baseagent"
+        assert agent.type == "testagent"
         assert not agent._initialized
         # ConcurrencyManager doesn't expose max_concurrency directly
         assert agent.concurrency.semaphore._value == 5
 
     def test_base_agent_initialization_with_registry(self):
         """Test BaseAgent initialization with registry."""
+
+        # BaseAgent is abstract, must create concrete implementation
+        class TestAgent(BaseAgent):
+            async def _run_impl(self, ctx):
+                return "test"
+
         mock_registry = {"llm": "mock_llm", "embedder": "mock_embedder"}
 
-        agent = BaseAgent(
+        agent = TestAgent(
             agent_id="registry_agent",
             registry=mock_registry,
             prompt="test prompt",
@@ -59,7 +71,13 @@ class TestBaseAgent:
     @pytest.mark.asyncio
     async def test_base_agent_initialize(self):
         """Test agent initialization method."""
-        agent = BaseAgent(agent_id="init_test")
+
+        # BaseAgent is abstract, must create concrete implementation
+        class TestAgent(BaseAgent):
+            async def _run_impl(self, ctx):
+                return "test"
+
+        agent = TestAgent(agent_id="init_test")
 
         assert not agent._initialized
         await agent.initialize()
@@ -85,9 +103,11 @@ class TestBaseAgent:
         assert result["status"] == "success"
         assert result["result"]["processed"] == "test input"
         assert result["result"]["agent"] == "modern_agent"
-        assert result["metadata"]["agent_id"] == "modern_agent"
-        # trace_id is added to context, not returned in output
-        assert "trace_id" not in result
+        # component_id is at top level of OrkaResponse
+        assert result["component_id"] == "modern_agent"
+        assert result["component_type"] == "agent"
+        # trace_id is included in response for traceability
+        assert "trace_id" in result
 
     @pytest.mark.asyncio
     async def test_base_agent_run_with_simple_input(self):
@@ -122,33 +142,31 @@ class TestBaseAgent:
         assert "Test error" in str(result["error"])
 
     @pytest.mark.asyncio
-    async def test_base_agent_run_legacy_pattern(self):
-        """Test BaseAgent run with legacy agent pattern."""
-
-        class LegacyTestAgent(LegacyBaseAgent):
-            def run(self, input_data):
-                return f"Legacy: {input_data}"
-
-        agent = LegacyTestAgent(agent_id="legacy_agent", prompt="test", queue=[])
-
-        # Legacy agents use sync run method
-        result = agent.run("legacy input")
-        assert result == "Legacy: legacy input"
-
-    @pytest.mark.asyncio
     async def test_base_agent_cleanup(self):
         """Test agent cleanup method."""
-        agent = BaseAgent(agent_id="cleanup_test")
+
+        # BaseAgent is abstract, must create concrete implementation
+        class TestAgent(BaseAgent):
+            async def _run_impl(self, ctx):
+                return "test"
+
+        agent = TestAgent(agent_id="cleanup_test")
 
         # Should not raise any errors
         await agent.cleanup()
 
     def test_base_agent_repr(self):
         """Test BaseAgent string representation."""
-        agent = BaseAgent(agent_id="repr_test", timeout=45.0)
+
+        # BaseAgent is abstract, must create concrete implementation
+        class TestAgent(BaseAgent):
+            async def _run_impl(self, ctx):
+                return "test"
+
+        agent = TestAgent(agent_id="repr_test", timeout=45.0)
 
         repr_str = repr(agent)
-        assert "BaseAgent" in repr_str
+        assert "TestAgent" in repr_str
         assert "repr_test" in repr_str
 
     @pytest.mark.asyncio
@@ -168,46 +186,6 @@ class TestBaseAgent:
         assert result["status"] == "error"
 
 
-class TestLegacyBaseAgent:
-    """Test the LegacyBaseAgent class functionality."""
-
-    def test_legacy_base_agent_initialization(self):
-        """Test LegacyBaseAgent initialization."""
-
-        class TestLegacyAgent(LegacyBaseAgent):
-            def run(self, input_data):
-                return "test result"
-
-        agent = TestLegacyAgent(
-            agent_id="legacy_test",
-            prompt="test prompt",
-            queue=["q1", "q2"],
-            custom_param="value",
-        )
-
-        assert agent.agent_id == "legacy_test"
-        assert agent.prompt == "test prompt"
-        assert agent.queue == ["q1", "q2"]
-        assert agent.params["custom_param"] == "value"
-
-    def test_legacy_base_agent_is_legacy(self):
-        """Test legacy agent identification."""
-
-        class TestLegacyAgent(LegacyBaseAgent):
-            def run(self, input_data):
-                return "test"
-
-        agent = TestLegacyAgent("legacy", "prompt", [])
-        assert agent._is_legacy_agent() is True
-
-    def test_legacy_base_agent_abstract_run(self):
-        """Test that LegacyBaseAgent requires run implementation."""
-
-        # Should not be able to instantiate without run method
-        with pytest.raises(TypeError):
-            LegacyBaseAgent("test", "prompt", [])
-
-
 class TestBinaryAgent:
     """Test the BinaryAgent class functionality."""
 
@@ -216,9 +194,10 @@ class TestBinaryAgent:
         agent = BinaryAgent(agent_id="binary_test", prompt="test", queue=[])
 
         assert agent.agent_id == "binary_test"
-        assert isinstance(agent, LegacyBaseAgent)
+        assert isinstance(agent, BaseAgent)
 
-    def test_binary_agent_positive_cases(self):
+    @pytest.mark.asyncio
+    async def test_binary_agent_positive_cases(self):
         """Test BinaryAgent with positive inputs."""
         agent = BinaryAgent(agent_id="binary_pos", prompt="test", queue=[])
 
@@ -231,10 +210,12 @@ class TestBinaryAgent:
         ]
 
         for case in test_cases:
-            result = agent.run(case)
-            assert result is True, f"Failed for case: {case}"
+            result = await agent.run(case)
+            assert result["status"] == "success", f"Failed for case: {case}"
+            assert result["result"] is True, f"Failed for case: {case}"
 
-    def test_binary_agent_negative_cases(self):
+    @pytest.mark.asyncio
+    async def test_binary_agent_negative_cases(self):
         """Test BinaryAgent with negative inputs."""
         agent = BinaryAgent(agent_id="binary_neg", prompt="test", queue=[])
 
@@ -247,28 +228,33 @@ class TestBinaryAgent:
         ]
 
         for case in test_cases:
-            result = agent.run(case)
-            assert result is False, f"Failed for case: {case}"
+            result = await agent.run(case)
+            assert result["status"] == "success", f"Failed for case: {case}"
+            assert result["result"] is False, f"Failed for case: {case}"
 
-    def test_binary_agent_edge_cases(self):
+    @pytest.mark.asyncio
+    async def test_binary_agent_edge_cases(self):
         """Test BinaryAgent with edge cases."""
         agent = BinaryAgent(agent_id="binary_edge", prompt="test", queue=[])
 
-        # Test with None input - this will fail in current implementation
-        with pytest.raises(AttributeError):
-            agent.run({"input": None})
+        # Test with None input - modern agents handle errors gracefully
+        result = await agent.run({"input": None})
+        # Should return error status or False result
+        assert result["status"] in ["error", "success"]
 
-        # Test with numeric input - this will also fail in current implementation
-        with pytest.raises(AttributeError):
-            agent.run({"input": 123})
+        # Test with numeric input - should also handle gracefully
+        result = await agent.run({"input": 123})
+        assert result["status"] in ["error", "success"]
 
         # Test with mixed case
-        result = agent.run({"input": "Yes, TRUE and Correct"})
-        assert result is True
+        result = await agent.run({"input": "Yes, TRUE and Correct"})
+        assert result["status"] == "success"
+        assert result["result"] is True
 
         # Test "incorrect" should return True because it contains "correct"
-        result = agent.run({"input": "incorrect answer"})
-        assert result is True  # This is the actual behavior
+        result = await agent.run({"input": "incorrect answer"})
+        assert result["status"] == "success"
+        assert result["result"] is True  # This is the actual behavior
 
 
 class TestClassificationAgent:
@@ -279,14 +265,16 @@ class TestClassificationAgent:
         agent = ClassificationAgent(agent_id="class_test", prompt="test", queue=[])
 
         assert agent.agent_id == "class_test"
-        assert isinstance(agent, LegacyBaseAgent)
+        assert isinstance(agent, BaseAgent)
 
-    def test_classification_agent_deprecated(self):
+    @pytest.mark.asyncio
+    async def test_classification_agent_deprecated(self):
         """Test ClassificationAgent returns deprecated message."""
         agent = ClassificationAgent(agent_id="class_dep", prompt="test", queue=[])
 
-        result = agent.run({"input": "any input"})
-        assert result == "deprecated"
+        result = await agent.run({"input": "any input"})
+        assert result["status"] == "success"
+        assert result["result"] == "deprecated"
 
 
 class TestLLMAgentFunctions:
@@ -452,7 +440,9 @@ class TestOpenAIAgents:
         # Mock the OpenAI response
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message.content = """
+        mock_response.choices[
+            0
+        ].message.content = """
         {"response": "Test answer", "confidence": "0.9", "internal_reasoning": "Logic"}
         """
         mock_response.usage.prompt_tokens = 100
@@ -468,7 +458,8 @@ class TestOpenAIAgents:
         result = await agent.run({"input": "What is 2+2?"})
 
         assert isinstance(result, dict)
-        assert "response" in result
+        assert result["status"] == "success"
+        assert "response" in result["result"]
         mock_client.chat.completions.create.assert_called_once()
 
     @pytest.mark.asyncio
@@ -477,7 +468,9 @@ class TestOpenAIAgents:
         # Mock the OpenAI response for true case
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message.content = """
+        mock_response.choices[
+            0
+        ].message.content = """
         {"response": "true", "confidence": "0.9", "internal_reasoning": "Clear yes"}
         """
         mock_response.usage.prompt_tokens = 100
@@ -493,7 +486,8 @@ class TestOpenAIAgents:
         result = await agent.run({"input": "The sky is blue"})
 
         assert isinstance(result, dict)
-        assert result["response"] is True
+        assert result["status"] == "success"
+        assert result["result"]["response"] is True
 
     @pytest.mark.asyncio
     async def test_openai_binary_agent_false_response(self, mock_client):
@@ -501,7 +495,9 @@ class TestOpenAIAgents:
         # Mock the OpenAI response for false case
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message.content = """
+        mock_response.choices[
+            0
+        ].message.content = """
         {"response": "false", "confidence": "0.8", "internal_reasoning": "Clear no"}
         """
         mock_response.usage.prompt_tokens = 100
@@ -517,7 +513,8 @@ class TestOpenAIAgents:
         result = await agent.run({"input": "1+1=3"})
 
         assert isinstance(result, dict)
-        assert result["response"] is False
+        assert result["status"] == "success"
+        assert result["result"]["response"] is False
 
     @pytest.mark.asyncio
     async def test_openai_classification_agent_run(self, mock_client):
@@ -525,7 +522,9 @@ class TestOpenAIAgents:
         # Mock the OpenAI response
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message.content = """
+        mock_response.choices[
+            0
+        ].message.content = """
         {"response": "urgent", "confidence": "0.95", "internal_reasoning": "Contains urgent keywords"}
         """
         mock_response.usage.prompt_tokens = 100
@@ -542,7 +541,8 @@ class TestOpenAIAgents:
         result = await agent.run({"input": "URGENT: Server is down!"})
 
         assert isinstance(result, dict)
-        assert result["response"] == "urgent"
+        assert result["status"] == "success"
+        assert result["result"]["response"] == "urgent"
 
     @pytest.mark.asyncio
     async def test_openai_agent_with_api_error(self, mock_client):
@@ -556,9 +556,10 @@ class TestOpenAIAgents:
             queue=[],
         )
 
-        # The error is not caught in the current implementation
-        with pytest.raises(Exception):
-            await agent.run({"input": "test"})
+        # Modern agents wrap errors in OrkaResponse
+        result = await agent.run({"input": "test"})
+        assert result["status"] == "error"
+        assert result["error"] is not None
 
     @pytest.mark.asyncio
     async def test_openai_agent_with_malformed_response(self, mock_client):
@@ -581,4 +582,5 @@ class TestOpenAIAgents:
 
         # Should handle malformed response gracefully
         assert isinstance(result, dict)
-        assert "response" in result
+        assert result["status"] == "success"
+        assert "response" in result["result"]

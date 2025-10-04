@@ -28,7 +28,7 @@ class TestBaseNode:
 
         # Create a concrete implementation for testing
         class ConcreteNode(BaseNode):
-            async def run(self, input_data):
+            async def _run_impl(self, input_data):
                 return {"result": "success"}
 
         node = ConcreteNode(
@@ -53,7 +53,7 @@ class TestBaseNode:
                 self.__class__.__name__ = "Failing"  # This will make type = "failing"
                 super().__init__(*args, **kwargs)
 
-            async def run(self, input_data):
+            async def _run_impl(self, input_data):
                 return {"result": "success"}
 
         node = FailingTestNode(
@@ -71,7 +71,7 @@ class TestBaseNode:
         """Test BaseNode initialize method."""
 
         class ConcreteNode(BaseNode):
-            async def run(self, input_data):
+            async def _run_impl(self, input_data):
                 return {"result": "success"}
 
         node = ConcreteNode(
@@ -87,7 +87,7 @@ class TestBaseNode:
         """Test BaseNode string representation."""
 
         class ConcreteNode(BaseNode):
-            async def run(self, input_data):
+            async def _run_impl(self, input_data):
                 return {"result": "success"}
 
         node = ConcreteNode(
@@ -152,23 +152,29 @@ class TestFailingNode:
         assert node_no_attr.id == "unknown"
 
     @patch("time.sleep")
-    def test_failing_node_run_failure(self, mock_sleep):
-        """Test that FailingNode.run raises RuntimeError."""
+    @pytest.mark.asyncio
+    async def test_failing_node_run_failure(self, mock_sleep):
+        """Test that FailingNode.run returns error response."""
 
-        with pytest.raises(RuntimeError, match="failed intentionally after 5 seconds"):
-            self.node.run({"input": "test"})
+        result = await self.node.run({"input": "test"})
+
+        assert result["status"] == "error"
+        assert "failed intentionally after 5 seconds" in result["error"]
 
         # Should have slept for 5 seconds
         mock_sleep.assert_called_once_with(5)
 
     @patch("time.sleep")
-    def test_failing_node_run_with_different_node_id(self, mock_sleep):
+    @pytest.mark.asyncio
+    async def test_failing_node_run_with_different_node_id(self, mock_sleep):
         """Test FailingNode with different node_id."""
 
         node = FailingNode("custom_fail", "prompt", [])
 
-        with pytest.raises(RuntimeError, match="custom_fail failed intentionally"):
-            node.run({})
+        result = await node.run({})
+
+        assert result["status"] == "error"
+        assert "custom_fail failed intentionally" in result["error"]
 
 
 class TestRouterNode:
@@ -207,7 +213,8 @@ class TestRouterNode:
         with pytest.raises(ValueError, match="RouterAgent requires 'params'"):
             RouterNode(node_id="router_test", params=None)
 
-    def test_router_node_run_basic_routing(self):
+    @pytest.mark.asyncio
+    async def test_router_node_run_basic_routing(self):
         """Test basic routing functionality."""
 
         params = {
@@ -227,10 +234,11 @@ class TestRouterNode:
             },
         }
 
-        route = node.run(input_data)
-        assert route == ["success_agent"]
+        result = await node.run(input_data)
+        assert result["result"] == ["success_agent"]
 
-    def test_router_node_run_string_boolean_routing(self):
+    @pytest.mark.asyncio
+    async def test_router_node_run_string_boolean_routing(self):
         """Test routing with string boolean values."""
 
         params = {
@@ -250,8 +258,8 @@ class TestRouterNode:
             },
         }
 
-        route = node.run(input_data)
-        assert route == ["valid_agent"]
+        result = await node.run(input_data)
+        assert result["result"] == ["valid_agent"]
 
         # Test with string "false"
         input_data = {
@@ -260,10 +268,11 @@ class TestRouterNode:
             },
         }
 
-        route = node.run(input_data)
-        assert route == ["invalid_agent"]
+        result = await node.run(input_data)
+        assert result["result"] == ["invalid_agent"]
 
-    def test_router_node_run_case_insensitive_routing(self):
+    @pytest.mark.asyncio
+    async def test_router_node_run_case_insensitive_routing(self):
         """Test case-insensitive routing."""
 
         params = {
@@ -284,10 +293,11 @@ class TestRouterNode:
                 },
             }
 
-            route = node.run(input_data)
-            assert route == ["approval_agent"]
+            result = await node.run(input_data)
+            assert result["result"] == ["approval_agent"]
 
-    def test_router_node_run_no_match(self):
+    @pytest.mark.asyncio
+    async def test_router_node_run_no_match(self):
         """Test routing when no route matches."""
 
         params = {
@@ -306,10 +316,11 @@ class TestRouterNode:
             },
         }
 
-        route = node.run(input_data)
-        assert route == []  # Empty list for no match
+        result = await node.run(input_data)
+        assert result["result"] == []  # Empty list for no match
 
-    def test_router_node_run_missing_decision_key(self):
+    @pytest.mark.asyncio
+    async def test_router_node_run_missing_decision_key(self):
         """Test routing when decision key is missing."""
 
         params = {
@@ -327,10 +338,11 @@ class TestRouterNode:
             },
         }
 
-        route = node.run(input_data)
-        assert route == []
+        result = await node.run(input_data)
+        assert result["result"] == []
 
-    def test_router_node_run_no_previous_outputs(self):
+    @pytest.mark.asyncio
+    async def test_router_node_run_no_previous_outputs(self):
         """Test routing with no previous outputs."""
 
         params = {
@@ -342,8 +354,8 @@ class TestRouterNode:
 
         input_data = {}  # No previous_outputs
 
-        route = node.run(input_data)
-        assert route == []
+        result = await node.run(input_data)
+        assert result["result"] == []
 
     def test_router_node_bool_key_conversion(self):
         """Test _bool_key method for boolean conversion."""
@@ -367,7 +379,8 @@ class TestRouterNode:
         assert node._bool_key("maybe") == "maybe"
         assert node._bool_key("2") == "2"
 
-    def test_router_node_multi_agent_routing(self):
+    @pytest.mark.asyncio
+    async def test_router_node_multi_agent_routing(self):
         """Test routing to multiple agents."""
 
         params = {
@@ -385,8 +398,8 @@ class TestRouterNode:
             },
         }
 
-        route = node.run(input_data)
-        assert route == ["escalation_agent", "alert_agent", "manager_agent"]
+        result = await node.run(input_data)
+        assert result["result"] == ["escalation_agent", "alert_agent", "manager_agent"]
 
 
 class TestForkNode:
@@ -432,7 +445,7 @@ class TestForkNode:
 
     @pytest.mark.asyncio
     async def test_fork_node_run_no_targets(self):
-        """Test ForkNode run with no targets raises error."""
+        """Test ForkNode run with no targets returns error."""
 
         node = ForkNode(
             node_id="fork_test",
@@ -440,8 +453,9 @@ class TestForkNode:
             targets=[],
         )
 
-        with pytest.raises(ValueError, match="requires non-empty 'targets' list"):
-            await node.run({"orchestrator": self.mock_orchestrator})
+        result = await node.run({"orchestrator": self.mock_orchestrator})
+        assert result["status"] == "error"
+        assert "requires non-empty 'targets' list" in result["error"]
 
     @pytest.mark.asyncio
     async def test_fork_node_run_sequential_mode(self):
@@ -503,11 +517,11 @@ class TestForkNode:
             "agent3",
         )
 
-        # Verify result - implementation now returns more detailed structure
-        assert result["status"] == "forked"
-        assert result["fork_group"] == "fork_group_123"
-        assert "agents" in result
-        assert "initial_state" in result
+        # Verify result - implementation now returns more detailed structure wrapped in OrkaResponse
+        assert result["result"]["status"] == "forked"
+        assert result["result"]["fork_group"] == "fork_group_123"
+        assert "agents" in result["result"]
+        assert "initial_state" in result["result"]
 
     @pytest.mark.asyncio
     async def test_fork_node_run_parallel_mode(self):
@@ -655,10 +669,10 @@ class TestMemoryWriterNode:
         result = await node.run(context)
 
         assert result["status"] == "success"
-        assert result["memory_key"] == "memory_key_123"
-        assert result["session"] == "test_session"
-        assert result["namespace"] == "test_namespace"
-        assert result["backend"] == "redisstack"
+        assert result["result"]["memory_key"] == "memory_key_123"
+        assert result["result"]["session"] == "test_session"
+        assert result["result"]["namespace"] == "test_namespace"
+        assert result["result"]["backend"] == "redisstack"
         mock_logger.log_memory.assert_called_once()
 
 
@@ -732,16 +746,16 @@ class TestMemoryReaderNode:
 
         result = await node.run(context)
 
-        assert result["query"] == "test query"
-        assert result["backend"] == "redisstack"
-        assert result["search_type"] == "enhanced_vector"
-        assert result["num_results"] == 2
-        assert len(result["memories"]) == 2
+        assert result["result"]["query"] == "test query"
+        assert result["result"]["backend"] == "redisstack"
+        assert result["result"]["search_type"] == "enhanced_vector"
+        assert result["result"]["num_results"] == 2
+        assert len(result["result"]["memories"]) == 2
 
         # Test empty query
         empty_result = await node.run({})
-        assert empty_result["error"] == "No query provided"
-        assert empty_result["memories"] == []
+        assert empty_result["result"]["error"] == "No query provided"
+        assert empty_result["result"]["memories"] == []
 
 
 class TestRAGNode:
@@ -955,14 +969,15 @@ class TestNodeIntegration:
         node1 = FailingNode("fail1", "", [])
         node2 = ForkNode("fork1", memory_logger=Mock(), targets=[["agent1"]])
 
-        # FailingNode.run is sync, should work fine
-        with pytest.raises(RuntimeError):
-            with patch("time.sleep"):
-                node1.run({})
+        # FailingNode.run now returns error response instead of raising
+        with patch("time.sleep"):
+            result1 = await node1.run({})
+            assert result1["status"] == "error"
+            assert "failed intentionally" in result1["error"]
 
         # ForkNode.run is async
         mock_orchestrator = Mock()
         mock_orchestrator.fork_manager.generate_group_id.return_value = "group123"
 
         result = await node2.run({"orchestrator": mock_orchestrator})
-        assert result["status"] == "forked"
+        assert result["result"]["status"] == "forked"

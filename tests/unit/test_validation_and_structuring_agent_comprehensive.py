@@ -91,11 +91,11 @@ class TestValidationAndStructuringAgent:
 
         result = await self.agent.run(input_data)
 
-        assert result["valid"] is True
-        assert result["reason"] == "Answer is correct and well-structured"
-        assert result["memory_object"]["fact"] == "Test fact"
-        assert "prompt" in result
-        assert "raw_llm_output" in result
+        assert result["result"]["valid"] is True
+        assert result["result"]["reason"] == "Answer is correct and well-structured"
+        assert result["result"]["memory_object"]["fact"] == "Test fact"
+        assert "prompt" in result["result"]
+        assert "raw_llm_output" in result["result"]
 
     @pytest.mark.asyncio
     async def test_run_with_invalid_json_response(self):
@@ -114,10 +114,10 @@ class TestValidationAndStructuringAgent:
 
         result = await self.agent.run(input_data)
 
-        assert result["valid"] is False
-        assert "Failed to parse JSON:" in result["reason"]
-        assert result["memory_object"] is None
-        assert result["raw_llm_output"] == invalid_response
+        assert result["result"]["valid"] is False
+        assert "Failed to parse JSON:" in result["result"]["reason"]
+        assert result["result"]["memory_object"] is None
+        assert result["result"]["raw_llm_output"] == invalid_response
 
     @pytest.mark.asyncio
     async def test_run_with_wrong_json_format(self):
@@ -141,9 +141,9 @@ class TestValidationAndStructuringAgent:
 
         result = await self.agent.run(input_data)
 
-        assert result["valid"] is False
-        assert "LLM returned wrong JSON format" in result["reason"]
-        assert result["memory_object"] is None
+        assert result["result"]["valid"] is False
+        assert "LLM returned wrong JSON format" in result["result"]["reason"]
+        assert result["result"]["memory_object"] is None
 
     @pytest.mark.asyncio
     async def test_run_with_json_without_markdown(self):
@@ -164,9 +164,9 @@ class TestValidationAndStructuringAgent:
 
         result = await self.agent.run(input_data)
 
-        assert result["valid"] is True
-        assert result["reason"] == "Good answer"
-        assert result["memory_object"]["fact"] == "Direct JSON"
+        assert result["result"]["valid"] is True
+        assert result["result"]["reason"] == "Good answer"
+        assert result["result"]["memory_object"]["fact"] == "Direct JSON"
 
     @pytest.mark.asyncio
     async def test_run_with_complex_input_extraction(self):
@@ -187,7 +187,7 @@ class TestValidationAndStructuringAgent:
 
         result = await self.agent.run(input_data)
 
-        assert result["valid"] is True
+        assert result["result"]["valid"] is True
         # Verify the agent processed the direct string inputs correctly
 
     @pytest.mark.asyncio
@@ -205,7 +205,7 @@ class TestValidationAndStructuringAgent:
 
         result = await self.agent.run(input_data)
 
-        assert "valid" in result
+        assert "valid" in result["result"]
 
     @pytest.mark.asyncio
     async def test_run_with_custom_prompt_template(self):
@@ -252,7 +252,7 @@ class TestValidationAndStructuringAgent:
             result = await self.agent.run(input_data)
 
             # Should fall back to original prompt
-            assert "valid" in result
+            assert "valid" in result["result"]
 
     @pytest.mark.asyncio
     async def test_run_with_unmatched_braces_json(self):
@@ -265,8 +265,8 @@ class TestValidationAndStructuringAgent:
 
         result = await self.agent.run(input_data)
 
-        assert result["valid"] is False
-        assert "Failed to parse JSON:" in result["reason"]
+        assert result["result"]["valid"] is False
+        assert "Failed to parse JSON:" in result["result"]["reason"]
 
     @pytest.mark.asyncio
     async def test_run_with_no_json_structure(self):
@@ -279,8 +279,8 @@ class TestValidationAndStructuringAgent:
 
         result = await self.agent.run(input_data)
 
-        assert result["valid"] is False
-        assert "Failed to parse JSON:" in result["reason"]
+        assert result["result"]["valid"] is False
+        assert "Failed to parse JSON:" in result["result"]["reason"]
 
     @pytest.mark.asyncio
     async def test_run_with_single_quotes_json(self):
@@ -296,8 +296,8 @@ class TestValidationAndStructuringAgent:
         result = await self.agent.run(input_data)
 
         # Single quotes around keys should be replaced, but this is still malformed JSON
-        assert result["valid"] is False
-        assert "Failed to parse JSON:" in result["reason"]
+        assert result["result"]["valid"] is False
+        assert "Failed to parse JSON:" in result["result"]["reason"]
 
     def test_build_prompt_with_valid_data(self):
         """Test build_prompt method with valid data."""
@@ -420,8 +420,8 @@ class TestValidationAndStructuringAgent:
 
         result = await self.agent.run(input_data)
 
-        assert result["valid"] is True
-        assert result["reason"] == "string response"
+        assert result["result"]["valid"] is True
+        assert result["result"]["reason"] == "string response"
 
     @pytest.mark.asyncio
     async def test_run_with_complex_nested_json(self):
@@ -448,9 +448,9 @@ class TestValidationAndStructuringAgent:
 
         result = await self.agent.run(input_data)
 
-        assert result["valid"] is True
-        assert result["memory_object"]["metadata"]["tags"] == ["tag1", "tag2"]
-        assert result["memory_object"]["confidence"] == 0.95
+        assert result["result"]["valid"] is True
+        assert result["result"]["memory_object"]["metadata"]["tags"] == ["tag1", "tag2"]
+        assert result["result"]["memory_object"]["confidence"] == 0.95
 
     @pytest.mark.asyncio
     async def test_run_handles_malformed_json_gracefully(self):
@@ -463,5 +463,5 @@ class TestValidationAndStructuringAgent:
 
         result = await self.agent.run(input_data)
 
-        assert result["valid"] is False
-        assert "Failed to parse JSON:" in result["reason"]
+        assert result["result"]["valid"] is False
+        assert "Failed to parse JSON:" in result["result"]["reason"]

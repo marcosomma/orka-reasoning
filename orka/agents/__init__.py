@@ -22,7 +22,7 @@ within orchestrated workflows.
 Agent Architecture
 ------------------
 
-OrKa supports two agent implementation patterns:
+OrKa supports async agent pattern:
 
 **Modern Async Pattern (Recommended)**
     Inherits from :class:`~orka.agents.base_agent.BaseAgent`
@@ -31,13 +31,6 @@ OrKa supports two agent implementation patterns:
     * Built-in timeout and concurrency control
     * Structured output handling with automatic error wrapping
     * Lifecycle hooks for initialization and cleanup
-
-**Legacy Sync Pattern (Backward Compatibility)**
-    Inherits from :class:`~orka.agents.base_agent.LegacyBaseAgent`
-
-    * Simple synchronous execution model
-    * Compatible with existing agent implementations
-    * Direct result return without wrapping
 
 Available Agent Types
 ---------------------

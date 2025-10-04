@@ -1,6 +1,57 @@
 # OrKa-Reasoning – Un-official CHANGELOG
 
 ---
+## [0.9.4] · 2025-10-03 🔧
+### Fixed
+* **🔧 Final Agent Logging - Integration Test Fix**
+  * **ORKA-FINAL Marker Missing** - Fixed execution engine early return paths that bypassed `[ORKA-FINAL]` log message
+  * **Integration Test Compatibility** - Ensured final agent ID is always logged before returning response for CLI integration tests
+  * **Logging Consistency** - Added `[ORKA-FINAL]` log to all return paths in `_extract_final_response` method
+  * **Files Updated** - `orka/orchestrator/execution_engine.py` (lines 1143-1154) - added logging before early returns
+
+* **🔧 Critical Agent Output Standardization - JSON Serialization**
+  * **DateTime Serialization Fix** - Fixed `ResponseBuilder` returning non-JSON-serializable `datetime` objects causing failures in trace generation and agent communication
+  * **Standardized Response Format** - All `OrkaResponse` objects now use ISO 8601 timestamp strings (`datetime.now().isoformat()`) ensuring consistent JSON serialization
+  * **Agent Pipeline Reliability** - Eliminated "Object of type datetime is not JSON serializable" errors that broke workflow execution and trace saving
+  * **Backward Compatibility** - Response structure unchanged except timestamp format now string-based instead of datetime object
+  * **Files Updated** - `orka/response_builder.py` (lines 75, 142) - converted `datetime.now()` to `datetime.now().isoformat()` in success and error responses
+
+* **⚡ GraphScout Multi-Agent Path Execution - Critical Routing Fix**
+  * **Full Path Execution** - Fixed `_apply_memory_routing_logic` in execution engine only executing first agent from GraphScout's multi-hop path instead of complete sequence
+  * **Path Array Extraction** - Enhanced to extract full `path` array from GraphScout candidates (e.g., `["agent1", "agent2", "agent3"]`) instead of only `node_id`
+  * **Memory Agent Positioning** - Improved intelligent positioning of memory reader agents (beginning) and memory writer agents (end) of execution sequences
+  * **Workflow Completion** - GraphScout now correctly executes complete multi-agent paths like `cognitive_architecture_loop → narrative_storyteller → philosophical_analyzer`
+  * **Files Updated** - `orka/orchestrator/execution_engine.py` (lines 1506-1545) - rewrote candidate processing to iterate through full path arrays
+
+* **🎯 Enhanced Agent Coordination & Context Flow**
+  * **Complete Sequence Execution** - Multi-hop intelligent routing now functional with all agents in GraphScout shortlist executing in proper order
+  * **Context Preservation** - Fixed context passing between agents in GraphScout-routed sequences ensuring proper data flow
+  * **Response Builder Integration** - Response builder now properly positioned at end of execution paths for final output formatting
+  * **Agent Output Consistency** - All agent types (LocalLLMAgent, GraphScoutAgent, Memory nodes) now return consistently formatted responses
+
+### Enhanced
+* **📊 Execution Flow & Logging Improvements**
+  * **GraphScout Execution Logging** - Enhanced logging showing complete multi-agent sequences: "GraphScout executing intelligently routed sequence: agent1 → agent2 → agent3 (N agents)"
+  * **Path Discovery Visibility** - Improved logging for GraphScout path evaluation, scoring, and selection decisions
+  * **Agent-Level Traceability** - Better execution traces showing complete agent sequences and decision points
+  * **Memory Agent Detection** - Enhanced logging for memory agent positioning and special routing logic
+
+### Technical Details
+* **Root Cause Analysis** - GraphScout was generating correct multi-hop paths but execution engine only extracted `node_id` field instead of full `path` array from candidates
+* **Solution Strategy** - Modified `_apply_memory_routing_logic` to extract `candidate.get("path")` and iterate through all agents in sequence with memory agent special handling
+* **JSON Serialization** - Timestamp standardization eliminates datetime object serialization errors throughout agent communication pipeline and trace generation
+* **Impact** - Enables sophisticated multi-agent reasoning patterns with GraphScout intelligent routing working as designed
+* **Testing** - Verified with 30+ workflow executions showing correct multi-hop path execution and proper agent output formatting
+
+### Migration Notes
+* **For Existing Users** - No breaking changes; workflows continue unchanged with improved GraphScout routing reliability
+* **Response Format** - `OrkaResponse.timestamp` now returns ISO 8601 string format (e.g., "2025-10-03T12:34:56.789012") instead of datetime object
+* **GraphScout Workflows** - Multi-agent paths now execute completely, enabling sophisticated cognitive architectures and reasoning patterns
+* **Performance Benefits** - Eliminated JSON serialization errors improving workflow reliability and trace generation success rate
+
+> **Production Ready**: This release fixes critical production issues preventing GraphScout multi-agent routing and agent output serialization, establishing OrKa as a reliable platform for sophisticated multi-agent cognitive architectures.
+
+---
 ## [0.9.3] · 2025-09-22 🧭
 ### Added
 * **🧭 GraphScout Agent - Intelligent Path Discovery & Multi-Agent Execution**

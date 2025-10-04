@@ -124,8 +124,8 @@ class TestGraphScoutAgent:
 
         result = await agent.run(context)
 
-        assert result["status"] == "error"
-        assert "GraphScout requires orchestrator context" in result["reasoning"]
+        assert result["result"]["status"] == "error"
+        assert "GraphScout requires orchestrator context" in result["result"]["reasoning"]
 
     def test_question_extraction(self):
         """Test question extraction from various context formats."""
@@ -165,8 +165,8 @@ class TestGraphScoutAgent:
 
                     result = await agent.run(context)
 
-                    assert result["decision"] == "fallback"
-                    assert result["status"] == "no_candidates"
+                    assert result["result"]["decision"] == "fallback"
+                    assert result["result"]["status"] == "no_candidates"
 
     def test_error_handling_methods(self):
         """Test error handling helper methods."""
@@ -296,10 +296,10 @@ class TestGraphScoutIntegration:
 
                                         result = await agent.run(context)
 
-                                        assert result["status"] == "success"
-                                        assert result["decision"] == "commit_next"
-                                        assert result["target"] == "agent_1"
-                                        assert result["confidence"] == 0.8
+                                        assert result["result"]["status"] == "success"
+                                        assert result["result"]["decision"] == "commit_next"
+                                        assert result["result"]["target"] == "agent_1"
+                                        assert result["result"]["confidence"] == 0.8
 
 
 def test_smart_path_evaluator_llm_integration():

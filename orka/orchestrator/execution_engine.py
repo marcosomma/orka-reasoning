@@ -1140,11 +1140,17 @@ class ExecutionEngine(
             payload = log_entry.get("payload", {})
             nested_result = payload.get("result")
             if isinstance(nested_result, dict) and "response" in nested_result:
+                logger.info(
+                    f"[ORKA-FINAL] Returning response from final agent: {log_entry.get('agent_id')}",
+                )
                 return nested_result["response"]
             # Handle one extra nesting level: payload.result.result.response
             if isinstance(nested_result, dict):
                 deeper_result = nested_result.get("result")
                 if isinstance(deeper_result, dict) and "response" in deeper_result:
+                    logger.info(
+                        f"[ORKA-FINAL] Returning response from final agent: {log_entry.get('agent_id')}",
+                    )
                     return deeper_result["response"]
 
             # Prioritize agents explicitly designed to provide a final answer

@@ -102,11 +102,13 @@ class TestOrchestratorQuick:
             from orka.orchestrator.error_handling import ErrorHandler
             from orka.orchestrator.execution_engine import ExecutionEngine
             from orka.orchestrator.metrics import MetricsCollector
-            from orka.orchestrator.prompt_rendering import PromptRenderer
+            from orka.orchestrator.simplified_prompt_rendering import (
+                SimplifiedPromptRenderer,
+            )
 
             assert isinstance(orchestrator, OrchestratorBase)
             assert isinstance(orchestrator, AgentFactory)
-            assert isinstance(orchestrator, PromptRenderer)
+            assert isinstance(orchestrator, SimplifiedPromptRenderer)
             assert isinstance(orchestrator, ErrorHandler)
             assert isinstance(orchestrator, MetricsCollector)
             assert isinstance(orchestrator, ExecutionEngine)
@@ -193,7 +195,7 @@ class TestOrchestratorQuick:
             "Orchestrator",
             "OrchestratorBase",
             "AgentFactory",
-            "PromptRenderer",
+            "SimplifiedPromptRenderer",
             "ErrorHandler",
             "MetricsCollector",
             "ExecutionEngine",

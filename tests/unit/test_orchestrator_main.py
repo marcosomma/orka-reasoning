@@ -66,7 +66,7 @@ class TestOrchestrator:
             "Orchestrator",
             "OrchestratorBase",
             "AgentFactory",
-            "PromptRenderer",
+            "SimplifiedPromptRenderer",
             "ErrorHandler",
             "MetricsCollector",
             "ExecutionEngine",
@@ -223,10 +223,10 @@ class TestOrchestrator:
         bases = Orchestrator.__bases__
         base_names = [base.__name__ for base in bases]
 
+        # Direct base classes only (SimplifiedPromptRenderer is inherited through ExecutionEngine)
         expected_bases = [
             "OrchestratorBase",
             "AgentFactory",
-            "PromptRenderer",
             "ErrorHandler",
             "MetricsCollector",
             "ExecutionEngine",
@@ -234,6 +234,16 @@ class TestOrchestrator:
 
         for expected_base in expected_bases:
             assert expected_base in base_names, f"Expected base class {expected_base} not found"
+
+        # Verify SimplifiedPromptRenderer is in the MRO (inherited through ExecutionEngine)
+        from orka.orchestrator.simplified_prompt_rendering import (
+            SimplifiedPromptRenderer,
+        )
+
+        mro_names = [cls.__name__ for cls in Orchestrator.__mro__]
+        assert (
+            "SimplifiedPromptRenderer" in mro_names
+        ), "SimplifiedPromptRenderer should be in MRO (inherited through ExecutionEngine)"
 
     @patch("orka.orchestrator.base.create_memory_logger")
     @patch("orka.orchestrator.base.ForkGroupManager")

@@ -124,9 +124,9 @@ class TestMemoryReaderNodeRun:
 
         result = await self.node.run(context)
 
-        assert result["memories"] == []
-        assert result["query"] == ""
-        assert result["error"] == "No query provided"
+        assert result["result"]["memories"] == []
+        assert result["result"]["query"] == ""
+        assert result["result"]["error"] == "No query provided"
 
     @pytest.mark.asyncio
     async def test_run_with_no_query(self):
@@ -135,9 +135,9 @@ class TestMemoryReaderNodeRun:
 
         result = await self.node.run(context)
 
-        assert result["memories"] == []
-        assert result["query"] == ""
-        assert result["error"] == "No query provided"
+        assert result["result"]["memories"] == []
+        assert result["result"]["query"] == ""
+        assert result["result"]["error"] == "No query provided"
 
     @pytest.mark.asyncio
     async def test_run_successful_search(self):
@@ -164,11 +164,11 @@ class TestMemoryReaderNodeRun:
 
         result = await self.node.run(context)
 
-        assert result["memories"] == mock_memories
-        assert result["query"] == "test query"
-        assert result["backend"] == "redisstack"
-        assert result["search_type"] == "enhanced_vector"
-        assert result["num_results"] == 2
+        assert result["result"]["memories"] == mock_memories
+        assert result["result"]["query"] == "test query"
+        assert result["result"]["backend"] == "redisstack"
+        assert result["result"]["search_type"] == "enhanced_vector"
+        assert result["result"]["num_results"] == 2
 
         self.mock_memory_logger.search_memories.assert_called_once_with(
             query="test query",
@@ -207,9 +207,9 @@ class TestMemoryReaderNodeRun:
         result = await self.node.run(context)
 
         # Should filter out the log entry
-        assert len(result["memories"]) == 2
-        assert result["memories"][0]["content"] == "Stored memory"
-        assert result["memories"][1]["content"] == "Another stored memory"
+        assert len(result["result"]["memories"]) == 2
+        assert result["result"]["memories"][0]["content"] == "Stored memory"
+        assert result["result"]["memories"][1]["content"] == "Another stored memory"
 
     @pytest.mark.asyncio
     async def test_run_without_search_memories_method(self):
@@ -220,9 +220,9 @@ class TestMemoryReaderNodeRun:
         context = {"input": "test query"}
         result = await self.node.run(context)
 
-        assert result["memories"] == []
-        assert result["query"] == "test query"
-        assert result["backend"] == "redisstack"
+        assert result["result"]["memories"] == []
+        assert result["result"]["query"] == "test query"
+        assert result["result"]["backend"] == "redisstack"
 
     @pytest.mark.asyncio
     async def test_run_with_exception(self):
@@ -232,10 +232,10 @@ class TestMemoryReaderNodeRun:
         context = {"input": "test query"}
         result = await self.node.run(context)
 
-        assert result["memories"] == []
-        assert result["query"] == "test query"
-        assert result["error"] == "Search failed"
-        assert result["backend"] == "redisstack"
+        assert result["result"]["memories"] == []
+        assert result["result"]["query"] == "test query"
+        assert result["result"]["error"] == "Search failed"
+        assert result["result"]["backend"] == "redisstack"
 
 
 class TestMemoryReaderNodeHNSWSearch:
@@ -818,7 +818,7 @@ class TestMemoryReaderNodeEdgeCases:
         result = await self.node.run(context)
 
         # Should handle malformed data gracefully
-        assert "memories" in result
+        assert "memories" in result["result"]
         # Malformed data should be handled - may or may not contain errors
 
     def test_context_scoring_with_malformed_data(self):

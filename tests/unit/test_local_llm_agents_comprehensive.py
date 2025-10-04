@@ -1,5 +1,6 @@
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import MagicMock, patch, Mock
 
 from orka.agents.local_llm_agents import LocalLLMAgent, _count_tokens
 
@@ -50,7 +51,7 @@ class TestLocalLLMAgent:
         self.agent = LocalLLMAgent(
             agent_id="test_llm_agent",
             prompt="Test prompt: {{ input }}",
-            queue=[],  # Required by LegacyBaseAgent
+            queue=[],  # Required by BaseAgent
             **self.test_params,
         )
 
@@ -82,7 +83,7 @@ class TestLocalLLMAgent:
 
         result = await agent.run("test input")
         assert isinstance(result, dict)
-        assert result["response"] == "summary"
+        assert result["result"]["response"] == "summary"
         mock_post.assert_called_once()
 
     @pytest.mark.asyncio
@@ -91,7 +92,7 @@ class TestLocalLLMAgent:
     @patch("time.time")
     async def test_run_with_dict_input(self, mock_time, mock_count_tokens, mock_post):
         """Test run method with dictionary input."""
-        mock_time.side_effect = [1000.0, 1001.0]  # 1000ms latency
+        mock_time.side_effect = [1000.0, 1000.0, 1002.0, 1002.0, 1002.0]  # 2000ms latency
         mock_count_tokens.side_effect = [20, 30, 50]
         mock_post.return_value.json.return_value = {"response": "Custom response"}
 
@@ -104,8 +105,8 @@ class TestLocalLLMAgent:
         result = await self.agent.run(input_data)
 
         assert isinstance(result, dict)
-        assert result["_metrics"]["model"] == "custom_model"
-        assert result["_metrics"]["latency_ms"] == 1000
+        assert result["result"]["_metrics"]["model"] == "custom_model"
+        assert result["result"]["_metrics"]["latency_ms"] == 2000
 
     @pytest.mark.asyncio
     @patch("requests.post")
@@ -113,15 +114,19 @@ class TestLocalLLMAgent:
     async def test_run_with_lm_studio_provider(self, mock_count_tokens, mock_post):
         """Test run method with LM Studio provider."""
         mock_count_tokens.return_value = 10
-        mock_post.return_value.json.return_value = {"choices": [{"message": {"content": "LM Studio response"}}]}
+        mock_post.return_value.json.return_value = {
+            "choices": [{"message": {"content": "LM Studio response"}}]
+        }
 
         self.agent.params["provider"] = "lm_studio"
         self.agent.params["model_url"] = "http://localhost:1234"
 
-        with patch("time.time", side_effect=[1000.0, 1000.2]):
+        with patch("time.time", side_effect=[1000.0, 1000.0, 1000.2, 1000.2, 1000.2]):
             result = await self.agent.run("Test input")
 
-            assert result["_metrics"]["provider"] == "lm_studio"
+            assert result["result"]["response"] == "LM Studio response"
+            assert result["result"]["_metrics"]["provider"] == "lm_studio"
+            assert result["result"]["_metrics"]["latency_ms"] == 200
 
     @pytest.mark.asyncio
     @patch("requests.post")
@@ -129,28 +134,35 @@ class TestLocalLLMAgent:
     async def test_run_with_openai_compatible_provider(self, mock_count_tokens, mock_post):
         """Test run method with OpenAI-compatible provider."""
         mock_count_tokens.return_value = 10
-        mock_post.return_value.json.return_value = {"choices": [{"message": {"content": "OpenAI response"}}]}
+        mock_post.return_value.json.return_value = {
+            "choices": [{"message": {"content": "OpenAI response"}}]
+        }
 
         self.agent.params["provider"] = "openai_compatible"
         self.agent.params["model_url"] = "http://localhost:8000"
 
-        with patch("time.time", side_effect=[1000.0, 1000.3]):
+        with patch("time.time", side_effect=[1000.0, 1000.0, 1000.3, 1000.3, 1000.3]):
             result = await self.agent.run("Test input")
 
-            assert result["_metrics"]["provider"] == "openai_compatible"
+            assert result["result"]["response"] == "OpenAI response"
+            assert result["result"]["_metrics"]["provider"] == "openai_compatible"
+            assert result["result"]["_metrics"]["latency_ms"] == 300
 
     @pytest.mark.asyncio
     @patch("requests.post")
     async def test_run_parse_llm_json_response_success(self, mock_post):
         """Test run method with successful JSON parsing."""
-        mock_post.return_value.json.return_value = {"response": '```json\n{"response": "Parsed response", "confidence": "0.95"}\n```'}
+        mock_post.return_value.json.return_value = {
+            "response": '```json\n{"response": "Parsed response", "confidence": "0.95"}\n```'
+        }
 
-        with patch("time.time", side_effect=[1000.0, 1000.1]):
+        with patch("time.time", side_effect=[1000.0, 1000.0, 1000.1, 1000.1, 1000.1]):
             with patch("orka.agents.local_llm_agents._count_tokens", return_value=10):
                 result = await self.agent.run("Test input")
 
-                assert result["response"] == "Parsed response"
-                assert result["confidence"] == "0.95"
+                assert result["result"]["response"] == "Parsed response"
+                assert result["result"]["confidence"] == "0.95"
+                assert result["result"]["_metrics"]["latency_ms"] == 100
 
     @pytest.mark.asyncio
     @patch("requests.post")
@@ -158,15 +170,16 @@ class TestLocalLLMAgent:
         """Test run method with failed JSON parsing."""
         mock_post.return_value.json.return_value = {"response": "Invalid JSON response"}
 
-        with patch("time.time", side_effect=[1000.0, 1000.1]):
+        with patch("time.time", side_effect=[1000.0, 1000.0, 1000.1, 1000.1, 1000.1]):
             with patch("orka.agents.local_llm_agents._count_tokens", return_value=10):
                 result = await self.agent.run("Test input")
 
-                assert result["response"] == "Invalid JSON response"
+                assert result["result"]["response"] == "Invalid JSON response"
                 assert (
-                    result["internal_reasoning"]
+                    result["result"]["internal_reasoning"]
                     == "Could not parse as JSON, using raw response"
                 )
+                assert result["result"]["_metrics"]["latency_ms"] == 100
 
     @pytest.mark.asyncio
     @patch("requests.post")
@@ -174,13 +187,40 @@ class TestLocalLLMAgent:
         """Test run method when an exception occurs."""
         mock_post.side_effect = Exception("LLM error")
 
-        with patch("time.time", side_effect=[1000.0, 1000.1]):
+        with patch(
+            "time.time",
+            side_effect=[
+                1000.0,
+                1000.0,
+                1000.1,
+                1000.1,
+                1000.1,
+                1000.1,
+                1000.1,
+                1000.1,
+                1000.1,
+                1000.1,
+                1000.1,
+                1000.1,
+                1000.1,
+                1000.1,
+                1000.1,
+                1000.1,
+                1000.1,
+                1000.1,
+                1000.1,
+                1000.1,
+                1000.1,
+                1000.1,
+            ],
+        ):
             with patch("orka.agents.local_llm_agents._count_tokens", return_value=10):
                 result = await self.agent.run("Test input")
 
-                assert "[LocalLLMAgent error: LLM error]" in result["response"]
-                assert result["confidence"] == "0.0"
-                assert result["_metrics"]["error"] is True
+                assert "[LocalLLMAgent error: LLM error]" in result["result"]["response"]
+                assert result["result"]["confidence"] == "0.0"
+                assert result["result"]["_metrics"]["error"] is True
+                assert result["result"]["_metrics"]["latency_ms"] == 0
 
     def test_build_prompt_simple(self):
         """Test build_prompt with simple template replacement."""
@@ -370,7 +410,7 @@ class TestLocalLLMAgent:
             self.agent.params["provider"] = provider
             mock_post.return_value.json.return_value = response
 
-            with patch("time.time", side_effect=[1000.0, 1000.1]):
+            with patch("time.time", side_effect=[1000.0, 1000.1, 1000.1, 1000.1]):
                 with patch(
                     "orka.agents.local_llm_agents._count_tokens",
                     return_value=10,
@@ -378,11 +418,11 @@ class TestLocalLLMAgent:
                     result = await self.agent.run("test")
 
                     if provider == "ollama" or provider == "unknown":
-                        assert "ollama" in result["response"]
+                        assert "ollama" in result["result"]["response"]
                     elif provider == "lm_studio":
-                        assert "lm_studio" in result["response"]
+                        assert "lm_studio" in result["result"]["response"]
                     elif provider == "openai_compatible":
-                        assert "openai" in result["response"]
+                        assert "openai" in result["result"]["response"]
 
     @pytest.mark.asyncio
     @patch("requests.post")
@@ -395,26 +435,26 @@ class TestLocalLLMAgent:
             "previous_outputs": {"agent1": "result1"},
         }
 
-        with patch("time.time", side_effect=[1000.0, 1000.1]):
+        with patch("time.time", side_effect=[1000.0, 1000.1, 1000.1, 1000.1, 1000.1]):
             with patch("orka.agents.local_llm_agents._count_tokens", return_value=10):
                 result = await self.agent.run(complex_input)
 
                 assert isinstance(result, dict)
-                assert "response" in result
-                assert "formatted_prompt" in result
+                assert "response" in result["result"]
+                assert "formatted_prompt" in result["result"]
 
     @pytest.mark.asyncio
     @patch("requests.post")
     async def test_self_evaluation_prompt_inclusion(self, mock_post):
         """Test that self-evaluation instructions are included in prompts."""
         mock_post.return_value.json.return_value = {"response": "Response"}
-        with patch("time.time", side_effect=[1000.0, 1000.1]):
+        with patch("time.time", side_effect=[1000.0, 1000.1, 1000.1, 1000.1, 1000.1]):
             with patch("orka.agents.local_llm_agents._count_tokens", return_value=10):
                 await self.agent.run("Test input")
 
                 # Verify self-evaluation instructions were added to prompt
                 call_args = mock_post.call_args[1]
-                full_prompt = call_args['json']['prompt']
+                full_prompt = call_args["json"]["prompt"]
 
                 assert "CRITICAL INSTRUCTIONS" in full_prompt
                 assert "valid JSON" in full_prompt

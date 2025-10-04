@@ -27,10 +27,10 @@ class TestDuckDuckGoTool:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) == 1
-        assert "DuckDuckGo search not available" in result[0]
-        assert "duckduckgo_search package not installed" in result[0]
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) == 1
+        assert "DuckDuckGo search not available" in result["result"][0]
+        assert "duckduckgo_search package not installed" in result["result"][0]
 
     def test_run_with_formatted_prompt(self):
         """Test run method with formatted_prompt in input_data."""
@@ -39,10 +39,10 @@ class TestDuckDuckGoTool:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) >= 1
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) >= 1
         # First result should be timestamp
-        assert "Current date and time:" in result[0]
+        assert "Current date and time:" in result["result"][0]
 
     def test_run_with_tool_formatted_prompt(self):
         """Test run method with formatted_prompt attribute on tool."""
@@ -52,9 +52,9 @@ class TestDuckDuckGoTool:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) >= 1
-        assert "Current date and time:" in result[0]
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) >= 1
+        assert "Current date and time:" in result["result"][0]
 
     def test_run_with_tool_prompt(self):
         """Test run method with prompt attribute on tool."""
@@ -63,9 +63,9 @@ class TestDuckDuckGoTool:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) >= 1
-        assert "Current date and time:" in result[0]
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) >= 1
+        assert "Current date and time:" in result["result"][0]
 
     def test_run_with_input_query(self):
         """Test run method with input query in input_data."""
@@ -74,9 +74,9 @@ class TestDuckDuckGoTool:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) >= 1
-        assert "Current date and time:" in result[0]
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) >= 1
+        assert "Current date and time:" in result["result"][0]
 
     def test_run_with_query_key(self):
         """Test run method with query key in input_data."""
@@ -85,9 +85,9 @@ class TestDuckDuckGoTool:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) >= 1
-        assert "Current date and time:" in result[0]
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) >= 1
+        assert "Current date and time:" in result["result"][0]
 
     def test_run_with_string_input(self):
         """Test run method with string input_data."""
@@ -96,9 +96,9 @@ class TestDuckDuckGoTool:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) >= 1
-        assert "Current date and time:" in result[0]
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) >= 1
+        assert "Current date and time:" in result["result"][0]
 
     def test_run_with_empty_query(self):
         """Test run method with empty query."""
@@ -107,7 +107,7 @@ class TestDuckDuckGoTool:
 
         result = tool.run(input_data)
 
-        assert result == ["No query provided"]
+        assert result["result"] == ["No query provided"]
 
     def test_run_with_none_query(self):
         """Test run method with None query."""
@@ -116,7 +116,7 @@ class TestDuckDuckGoTool:
 
         result = tool.run(input_data)
 
-        assert result == ["No query provided"]
+        assert result["result"] == ["No query provided"]
 
     def test_run_with_empty_string_query(self):
         """Test run method with empty string query."""
@@ -125,7 +125,7 @@ class TestDuckDuckGoTool:
 
         result = tool.run(input_data)
 
-        assert result == ["No query provided"]
+        assert result["result"] == ["No query provided"]
 
     def test_run_with_non_string_query(self):
         """Test run method with non-string query that gets converted."""
@@ -134,9 +134,9 @@ class TestDuckDuckGoTool:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) >= 1
-        assert "Current date and time:" in result[0]
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) >= 1
+        assert "Current date and time:" in result["result"][0]
 
     def test_run_priority_order(self):
         """Test that query priority order is correct."""
@@ -153,9 +153,9 @@ class TestDuckDuckGoTool:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) >= 1
-        assert "Current date and time:" in result[0]
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) >= 1
+        assert "Current date and time:" in result["result"][0]
 
     def test_run_priority_order_tool_formatted_prompt(self):
         """Test tool formatted_prompt priority when input formatted_prompt is not available."""
@@ -171,9 +171,9 @@ class TestDuckDuckGoTool:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) >= 1
-        assert "Current date and time:" in result[0]
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) >= 1
+        assert "Current date and time:" in result["result"][0]
 
     def test_run_priority_order_tool_prompt(self):
         """Test tool prompt priority when formatted prompts are not available."""
@@ -187,9 +187,9 @@ class TestDuckDuckGoTool:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) >= 1
-        assert "Current date and time:" in result[0]
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) >= 1
+        assert "Current date and time:" in result["result"][0]
 
     def test_run_priority_order_input_fallback(self):
         """Test input/query fallback when no prompts are available."""
@@ -203,9 +203,9 @@ class TestDuckDuckGoTool:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) >= 1
-        assert "Current date and time:" in result[0]
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) >= 1
+        assert "Current date and time:" in result["result"][0]
 
     def test_run_priority_order_query_fallback(self):
         """Test query fallback when input is not available."""
@@ -218,9 +218,9 @@ class TestDuckDuckGoTool:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) >= 1
-        assert "Current date and time:" in result[0]
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) >= 1
+        assert "Current date and time:" in result["result"][0]
 
     def test_run_with_empty_tool_prompt(self):
         """Test run method with empty tool prompt."""
@@ -229,9 +229,9 @@ class TestDuckDuckGoTool:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) >= 1
-        assert "Current date and time:" in result[0]
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) >= 1
+        assert "Current date and time:" in result["result"][0]
 
 
 class TestWebSearchTool:
@@ -250,9 +250,9 @@ class TestWebSearchTool:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) >= 1
-        assert "Current date and time:" in result[0]
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) >= 1
+        assert "Current date and time:" in result["result"][0]
 
     def test_run_with_empty_query(self):
         """Test run method with empty query."""
@@ -261,7 +261,7 @@ class TestWebSearchTool:
 
         result = tool.run(input_data)
 
-        assert result == ["No query provided"]
+        assert result["result"] == ["No query provided"]
 
     def test_extract_query_method(self):
         """Test the _extract_query method."""
@@ -287,9 +287,9 @@ class TestWebSearchTool:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) >= 1
-        assert "Current date and time:" in result[0]
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) >= 1
+        assert "Current date and time:" in result["result"][0]
 
 
 class TestSimpleSearchTool:
@@ -308,10 +308,10 @@ class TestSimpleSearchTool:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) == 2
-        assert "Current date and time:" in result[0]
-        assert "No search query provided" in result[1]
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) == 2
+        assert "Current date and time:" in result["result"][0]
+        assert "No search query provided" in result["result"][1]
 
     def test_run_with_weather_query(self):
         """Test run method with weather-related query."""
@@ -320,10 +320,10 @@ class TestSimpleSearchTool:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) == 3
-        assert "Current date and time:" in result[0]
-        assert "weather service" in result[1].lower()
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) == 3
+        assert "Current date and time:" in result["result"][0]
+        assert "weather service" in result["result"][1].lower()
 
     def test_run_with_news_query(self):
         """Test run method with news-related query."""
@@ -332,10 +332,10 @@ class TestSimpleSearchTool:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) == 3
-        assert "Current date and time:" in result[0]
-        assert "news websites" in result[1].lower()
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) == 3
+        assert "Current date and time:" in result["result"][0]
+        assert "news websites" in result["result"][1].lower()
 
     def test_run_with_stock_query(self):
         """Test run method with stock-related query."""
@@ -344,10 +344,10 @@ class TestSimpleSearchTool:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) == 3
-        assert "Current date and time:" in result[0]
-        assert "financial" in result[1].lower()
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) == 3
+        assert "Current date and time:" in result["result"][0]
+        assert "financial" in result["result"][1].lower()
 
     def test_run_with_general_query(self):
         """Test run method with general query."""
@@ -356,11 +356,11 @@ class TestSimpleSearchTool:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) == 3
-        assert "Current date and time:" in result[0]
-        assert "artificial intelligence" in result[1]
-        assert "unavailable" in result[2].lower()
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) == 3
+        assert "Current date and time:" in result["result"][0]
+        assert "artificial intelligence" in result["result"][1]
+        assert "unavailable" in result["result"][2].lower()
 
     def test_run_with_string_input(self):
         """Test run method with string input."""
@@ -369,10 +369,10 @@ class TestSimpleSearchTool:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) == 3
-        assert "Current date and time:" in result[0]
-        assert "python programming" in result[1]
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) == 3
+        assert "Current date and time:" in result["result"][0]
+        assert "python programming" in result["result"][1]
 
 
 class TestModuleImports:
@@ -420,13 +420,13 @@ class TestRealSearchIntegration:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) >= 1
-        assert "Current date and time:" in result[0]
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) >= 1
+        assert "Current date and time:" in result["result"][0]
         # Real search should return results or error message
         if len(result) > 1:
             # If we got results, they should be strings
-            for item in result[1:]:
+            for item in result["result"][1:]:
                 assert isinstance(item, str)
                 assert len(item) > 0
 
@@ -438,13 +438,13 @@ class TestRealSearchIntegration:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) >= 1
-        assert "Current date and time:" in result[0]
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) >= 1
+        assert "Current date and time:" in result["result"][0]
         # Should either return search results or fallback message
-        if "unavailable" not in result[-1].lower():
+        if "unavailable" not in result["result"][-1].lower():
             # If we got results, they should be meaningful
-            assert len(result) > 1
+            assert len(result["result"]) > 1
 
     def test_simple_search_always_works(self):
         """Test that SimpleSearchTool always provides a response."""
@@ -453,7 +453,7 @@ class TestRealSearchIntegration:
 
         result = tool.run(input_data)
 
-        assert isinstance(result, list)
-        assert len(result) >= 2
-        assert "Current date and time:" in result[0]
-        assert len(result[1]) > 0  # Should always have a response
+        assert isinstance(result["result"], list)
+        assert len(result["result"]) >= 2
+        assert "Current date and time:" in result["result"][0]
+        assert len(result["result"][1]) > 0  # Should always have a response

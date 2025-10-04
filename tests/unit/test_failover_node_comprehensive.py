@@ -122,9 +122,9 @@ class TestFailoverNodeRun:
 
         result = await node.run(input_data)
 
-        assert result["result"] == {"response": "success response"}
-        assert result["successful_child"] == "success_child"
-        assert result["success_child"] == {"response": "success response"}
+        assert result["result"]["result"] == {"response": "success response"}
+        assert result["result"]["successful_child"] == "success_child"
+        assert result["result"]["success_child"] == {"response": "success response"}
         success_child.run.assert_called_once()
 
     @pytest.mark.asyncio
@@ -134,8 +134,8 @@ class TestFailoverNodeRun:
 
         result = await node.run(input_data)
 
-        assert result["result"] == {"response": "success response"}
-        assert result["successful_child"] == "success_child"
+        assert result["result"]["result"] == {"response": "success response"}
+        assert result["result"]["successful_child"] == "success_child"
         failure_child.run.assert_called_once()
         success_child.run.assert_called_once()
 
@@ -146,8 +146,8 @@ class TestFailoverNodeRun:
 
         result = await node.run(input_data)
 
-        assert result["result"] == {"response": "sync success response"}
-        assert result["successful_child"] == "sync_success_child"
+        assert result["result"]["result"] == {"response": "sync success response"}
+        assert result["result"]["successful_child"] == "sync_success_child"
         sync_success_child.run.assert_called_once()
 
     @pytest.mark.asyncio
@@ -161,9 +161,9 @@ class TestFailoverNodeRun:
 
         result = await node.run(input_data)
 
-        assert result["status"] == "failed"
-        assert result["successful_child"] is None
-        assert "Child 2 failed" in result["error"]
+        assert result["result"]["status"] == "failed"
+        assert result["result"]["successful_child"] is None
+        assert "Child 2 failed" in result["result"]["error"]
 
     @pytest.mark.asyncio
     async def test_run_empty_children_list(self, input_data):
@@ -172,9 +172,9 @@ class TestFailoverNodeRun:
 
         result = await node.run(input_data)
 
-        assert result["status"] == "failed"
-        assert result["successful_child"] is None
-        assert "All children failed" in result["error"]
+        assert result["result"]["status"] == "failed"
+        assert result["result"]["successful_child"] is None
+        assert "All children failed" in result["result"]["error"]
 
     @pytest.mark.asyncio
     async def test_run_child_without_run_method(self, input_data):
@@ -188,8 +188,8 @@ class TestFailoverNodeRun:
 
         result = await node.run(input_data)
 
-        assert result["status"] == "failed"
-        assert result["successful_child"] is None
+        assert result["result"]["status"] == "failed"
+        assert result["result"]["successful_child"] is None
 
     @pytest.mark.asyncio
     async def test_run_child_with_non_callable_run(self, input_data):
@@ -202,8 +202,8 @@ class TestFailoverNodeRun:
 
         result = await node.run(input_data)
 
-        assert result["status"] == "failed"
-        assert result["successful_child"] is None
+        assert result["result"]["status"] == "failed"
+        assert result["result"]["successful_child"] is None
 
     @pytest.mark.asyncio
     async def test_run_child_returns_empty_result(self, input_data, empty_result_child):
@@ -212,8 +212,8 @@ class TestFailoverNodeRun:
 
         result = await node.run(input_data)
 
-        assert result["status"] == "failed"
-        assert result["successful_child"] is None
+        assert result["result"]["status"] == "failed"
+        assert result["result"]["successful_child"] is None
         empty_result_child.run.assert_called_once()
 
     @pytest.mark.asyncio
@@ -223,8 +223,8 @@ class TestFailoverNodeRun:
 
         result = await node.run(input_data)
 
-        assert result["status"] == "failed"
-        assert result["successful_child"] is None
+        assert result["result"]["status"] == "failed"
+        assert result["result"]["successful_child"] is None
         invalid_result_child.run.assert_called_once()
 
     @pytest.mark.asyncio
@@ -239,7 +239,7 @@ class TestFailoverNodeRun:
         with patch("asyncio.sleep") as mock_sleep:
             result = await node.run(input_data)
 
-            assert result["status"] == "failed"
+            assert result["result"]["status"] == "failed"
             mock_sleep.assert_called_once_with(2)
 
     @pytest.mark.asyncio
@@ -254,7 +254,7 @@ class TestFailoverNodeRun:
         with patch("asyncio.sleep") as mock_sleep:
             result = await node.run(input_data)
 
-            assert result["status"] == "failed"
+            assert result["result"]["status"] == "failed"
             mock_sleep.assert_called_once_with(2)
 
     @pytest.mark.asyncio
@@ -268,7 +268,7 @@ class TestFailoverNodeRun:
 
         result = await node.run(input_data)
 
-        assert result["successful_child"] == "node_id_child"
+        assert result["result"]["successful_child"] == "node_id_child"
 
     @pytest.mark.asyncio
     async def test_run_child_with_unknown_id(self, input_data, success_child):
@@ -282,7 +282,7 @@ class TestFailoverNodeRun:
 
         result = await node.run(input_data)
 
-        assert result["successful_child"] == "unknown_child_0"
+        assert result["result"]["successful_child"] == "unknown_child_0"
 
 
 class TestFailoverNodePromptRendering:
@@ -309,7 +309,7 @@ class TestFailoverNodePromptRendering:
 
         result = await node.run(input_data)
 
-        assert result["result"] == {"response": "templated response"}
+        assert result["result"]["result"] == {"response": "templated response"}
         # Check that the child was called with formatted_prompt
         call_args = templated_child.run.call_args[0][0]
         assert call_args["formatted_prompt"] == "Hello world"
@@ -324,7 +324,7 @@ class TestFailoverNodePromptRendering:
 
         result = await node.run(input_data)
 
-        assert result["result"] == {"response": "templated response"}
+        assert result["result"]["result"] == {"response": "templated response"}
         # Check that the child was called with original prompt as fallback
         call_args = templated_child.run.call_args[0][0]
         assert call_args["formatted_prompt"] == "Hello {{ invalid_var.nonexistent }}"
@@ -343,7 +343,7 @@ class TestFailoverNodePromptRendering:
 
         result = await node.run(input_data)
 
-        assert result["result"] == {"response": "no prompt response"}
+        assert result["result"]["result"] == {"response": "no prompt response"}
         # Check that formatted_prompt was not added
         call_args = child.run.call_args[0][0]
         assert "formatted_prompt" not in call_args
@@ -360,7 +360,7 @@ class TestFailoverNodePromptRendering:
 
         result = await node.run(input_data)
 
-        assert result["result"] == {"response": "empty prompt response"}
+        assert result["result"]["result"] == {"response": "empty prompt response"}
         # Check that formatted_prompt was not added for empty prompt
         call_args = child.run.call_args[0][0]
         assert "formatted_prompt" not in call_args

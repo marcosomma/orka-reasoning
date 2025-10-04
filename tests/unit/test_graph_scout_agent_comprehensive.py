@@ -431,12 +431,12 @@ class TestGraphScoutRunMethod:
 
         result = await self.agent.run(context)
 
-        assert result["status"] == "error"
-        assert result["decision"] == "fallback"
-        assert result["target"] is None
-        assert result["confidence"] == 0.0
-        assert "GraphScout requires orchestrator context" in result["reasoning"]
-        assert "error" in result
+        assert result["result"]["status"] == "error"
+        assert result["result"]["decision"] == "fallback"
+        assert result["result"]["target"] is None
+        assert result["result"]["confidence"] == 0.0
+        assert "GraphScout requires orchestrator context" in result["result"]["reasoning"]
+        assert "error" in result["result"]
 
     @pytest.mark.asyncio
     async def test_run_successful_workflow(self):
@@ -516,15 +516,17 @@ class TestGraphScoutRunMethod:
                                         result = await self.agent.run(context)
 
                                         # Verify successful result
-                                        assert result["status"] == "success"
-                                        assert result["decision"] == "commit_next"
-                                        assert result["target"] == "agent_1"
-                                        assert result["confidence"] == 0.85
-                                        assert result["reasoning"] == "Best candidate found"
-                                        assert "trace" in result
-                                        assert "input" in result
-                                        assert "previous_outputs" in result
-                                        assert "result" in result
+                                        assert result["result"]["status"] == "success"
+                                        assert result["result"]["decision"] == "commit_next"
+                                        assert result["result"]["target"] == "agent_1"
+                                        assert result["result"]["confidence"] == 0.85
+                                        assert (
+                                            result["result"]["reasoning"] == "Best candidate found"
+                                        )
+                                        assert "trace" in result["result"]
+                                        assert "input" in result["result"]
+                                        assert "previous_outputs" in result["result"]
+                                        assert "result" in result["result"]
 
                                         # Verify all components were called
                                         mock_graph_api.get_graph_state.assert_called_once()
@@ -553,10 +555,10 @@ class TestGraphScoutRunMethod:
 
                     result = await self.agent.run(context)
 
-                    assert result["decision"] == "fallback"
-                    assert result["status"] == "no_candidates"
-                    assert result["target"] is None
-                    assert result["confidence"] == 0.0
+                    assert result["result"]["decision"] == "fallback"
+                    assert result["result"]["status"] == "no_candidates"
+                    assert result["result"]["target"] is None
+                    assert result["result"]["confidence"] == 0.0
 
     @pytest.mark.asyncio
     async def test_run_budget_exceeded(self):
@@ -580,10 +582,10 @@ class TestGraphScoutRunMethod:
 
                         result = await self.agent.run(context)
 
-                        assert result["decision"] == "shortlist"
-                        assert result["status"] == "budget_exceeded"
-                        assert result["target"] == []
-                        assert result["confidence"] == 0.0
+                        assert result["result"]["decision"] == "shortlist"
+                        assert result["result"]["status"] == "budget_exceeded"
+                        assert result["result"]["target"] == []
+                        assert result["result"]["confidence"] == 0.0
 
     @pytest.mark.asyncio
     async def test_run_safety_violation(self):
@@ -615,10 +617,10 @@ class TestGraphScoutRunMethod:
 
                                 result = await self.agent.run(context)
 
-                                assert result["decision"] == "human_gate"
-                                assert result["status"] == "safety_violation"
-                                assert result["target"] is None
-                                assert result["confidence"] == 0.0
+                                assert result["result"]["decision"] == "human_gate"
+                                assert result["result"]["status"] == "safety_violation"
+                                assert result["result"]["target"] is None
+                                assert result["result"]["confidence"] == 0.0
 
     @pytest.mark.asyncio
     async def test_run_exception_handling(self):
@@ -635,12 +637,12 @@ class TestGraphScoutRunMethod:
 
                 result = await self.agent.run(context)
 
-                assert result["status"] == "error"
-                assert result["decision"] == "fallback"
-                assert result["target"] is None
-                assert result["confidence"] == 0.0
-                assert "GraphScout failed" in result["reasoning"]
-                assert result["error"] == "Graph API failed"
+                assert result["result"]["status"] == "error"
+                assert result["result"]["decision"] == "fallback"
+                assert result["result"]["target"] is None
+                assert result["result"]["confidence"] == 0.0
+                assert "GraphScout failed" in result["result"]["reasoning"]
+                assert result["result"]["error"] == "Graph API failed"
 
     @pytest.mark.asyncio
     async def test_run_context_propagation(self):
@@ -811,7 +813,7 @@ class TestGraphScoutEdgeCases:
                     result = await self.agent.run(context)
 
                     # Should handle minimal context gracefully
-                    assert result["status"] == "no_candidates"
+                    assert result["result"]["status"] == "no_candidates"
                     # Note: _handle_no_candidates doesn't include input in result
                     # This is expected behavior for error cases
 
