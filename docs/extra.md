@@ -13,7 +13,7 @@ Based on the analysis of `orka_or`'s implementation, here's the detailed plan to
 
 1. **Template Rendering Fix**:
 ```python
-# orka/orchestrator/prompt_rendering.py
+# orka/orchestrator/simplified_prompt_rendering.py
 
 def _enhance_payload_for_templates(self, payload: Dict[str, Any]) -> Dict[str, Any]:
     """Enhance payload for better template rendering."""

@@ -5,7 +5,7 @@ Tests for template rendering functionality, particularly around agent response h
 import pytest
 
 from orka.orchestrator.execution_engine import ExecutionEngine
-from orka.orchestrator.prompt_rendering import PromptRenderer
+from orka.orchestrator.simplified_prompt_rendering import SimplifiedPromptRenderer
 
 
 def test_local_llm_response_access():
@@ -31,7 +31,7 @@ def test_local_llm_response_access():
     assert enhanced["radical_progressive"]["response"] == "This is a progressive response"
 
     # Test template rendering
-    renderer = PromptRenderer()
+    renderer = SimplifiedPromptRenderer()
     template = "Progressive view: {{ previous_outputs.radical_progressive.response }}"
     rendered = renderer.render_prompt(template, {"previous_outputs": enhanced})
 
@@ -67,7 +67,7 @@ def test_nested_response_access():
     assert enhanced["memory_reader"]["backend"] == "redis"
 
     # Test template rendering
-    renderer = PromptRenderer()
+    renderer = SimplifiedPromptRenderer()
     template = """
     Memories: {{ previous_outputs.memory_reader.memories }}
     Query: {{ previous_outputs.memory_reader.query }}
@@ -96,7 +96,7 @@ def test_mixed_agent_responses():
     enhanced = engine._ensure_complete_context(previous_outputs)
 
     # Test template rendering
-    renderer = PromptRenderer()
+    renderer = SimplifiedPromptRenderer()
     template = """
     LLM: {{ previous_outputs.llm_agent.response }}
     Memory: {{ previous_outputs.memory_agent.response }}

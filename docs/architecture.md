@@ -43,7 +43,7 @@ The orchestration engine is decomposed into specialized modules:
 
 - **`base.py`** - Core orchestrator initialization and configuration
 - **`agent_factory.py`** - Agent registry and initialization logic
-- **`prompt_rendering.py`** - Jinja2 template processing for prompts
+- **`simplified_prompt_rendering.py`** - Jinja2 template processing for prompts with OrkaResponse support
 - **`error_handling.py`** - Comprehensive error tracking and reporting
 - **`metrics.py`** - LLM metrics collection and runtime analysis
 - **`execution_engine.py`** - Main execution loop and agent coordination
