@@ -19,9 +19,11 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
-          root_dir: orka
+          # Remove root_dir - let codecov figure it out
           override_commit: ${{ github.sha }}
           override_branch: ${{ github.ref_name }}
           commit_parent: true
           slug: marcosomma/orka-reasoning
           verbose: true
+          # Add this to help with path mapping
+          working-directory: .
