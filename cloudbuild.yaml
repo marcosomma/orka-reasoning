@@ -1,0 +1,41 @@
+# Google Cloud Build Configuration for OrKa
+# Builds Docker image and pushes to Container Registry
+
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-f'
+      - 'Dockerfile.cloudrun'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/orka-demo:latest'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/orka-demo:$SHORT_SHA'
+      - '.'
+    timeout: 3600s
+
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/orka-demo:latest'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/orka-demo:$SHORT_SHA'
+
+# Store images in Container Registry
+images:
+  - 'gcr.io/$PROJECT_ID/orka-demo:latest'
+  - 'gcr.io/$PROJECT_ID/orka-demo:$SHORT_SHA'
+
+# Build configuration
+options:
+  machineType: 'E2_HIGHCPU_8'
+  diskSizeGb: 100
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: 3600s
+

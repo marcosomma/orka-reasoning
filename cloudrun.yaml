@@ -1,0 +1,68 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: orka-demo
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/ingress-status: all
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/maxScale: "5"
+        run.googleapis.com/startup-cpu-boost: "true"
+        run.googleapis.com/execution-environment: gen2
+    spec:
+      containerConcurrency: 10
+      timeoutSeconds: 600
+      serviceAccountName: PROJECT_NUMBER-compute@developer.gserviceaccount.com
+      containers:
+      - name: orka-container
+        image: gcr.io/PROJECT_ID/orka-demo:latest
+        ports:
+        - name: http1
+          containerPort: 8000
+        env:
+        - name: ORKA_MEMORY_BACKEND
+          value: "redisstack"
+        - name: REDIS_URL
+          value: "redis://localhost:6380/0"
+        - name: ORKA_PORT
+          value: "8000"
+        - name: OLLAMA_HOST
+          value: "http://localhost:11434"
+        - name: ORKA_LOG_DIR
+          value: "/logs"
+        - name: ORKA_LOG_RETENTION_HOURS
+          value: "24"
+        - name: RATE_LIMIT_PER_MINUTE
+          value: "5"
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        resources:
+          limits:
+            cpu: "4"
+            memory: "16Gi"
+          requests:
+            cpu: "2"
+            memory: "8Gi"
+        startupProbe:
+          httpGet:
+            path: /api/health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 10
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 8000
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+  traffic:
+  - percent: 100
+    latestRevision: true
+

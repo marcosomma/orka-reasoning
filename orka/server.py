@@ -240,18 +240,46 @@ Performance Considerations
 """
 
 import base64
+import glob
 import logging
 import os
 import pprint
 import tempfile
-from typing import Any
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any, Dict, cast
 
+import httpx
+import redis
 import uvicorn
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+
+try:
+    from slowapi.errors import RateLimitExceeded  # type: ignore
+
+    SLOWAPI_AVAILABLE = True
+except ImportError:
+    SLOWAPI_AVAILABLE = False
+    RateLimitExceeded = Exception  # type: ignore
 
 from orka.orchestrator import Orchestrator
+
+# Import rate limiter
+try:
+    from orka.middleware.rate_limiter import (  # type: ignore
+        get_rate_limit,
+        limiter,
+        rate_limit_exceeded_handler,
+    )
+
+    RATE_LIMITING_ENABLED = True
+except ImportError:
+    RATE_LIMITING_ENABLED = False
+    limiter = None
+    logger = logging.getLogger(__name__)
+    logger.warning("Rate limiting disabled - slowapi not installed")
 
 app = FastAPI(
     title="OrKa AI Orchestration API",
@@ -260,16 +288,20 @@ app = FastAPI(
 )
 logger = logging.getLogger(__name__)
 
+# Add rate limiting to app state if available
+if RATE_LIMITING_ENABLED and limiter:
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
 # Ensure server logs are visible when launched via orka-start or as a module
-try:
-    # Configure logging only if nothing has configured it yet
-    if not logging.root.handlers:
+if not logging.root.handlers:
+    try:
         from orka.cli.utils import setup_logging as _orka_setup_logging
 
         _orka_setup_logging()
-except Exception:
-    # Never fail server startup due to logging configuration issues
-    pass
+    except Exception:
+        # Never fail server startup due to logging configuration issues
+        pass
 
 # CORS (optional, but useful if UI and API are on different ports during dev)
 app.add_middleware(
@@ -332,18 +364,144 @@ def sanitize_for_json(obj: Any) -> Any:
         return f"<sanitization-error: {e!s}>"
 
 
-# API endpoint at /api/run
+# Store run_id to log file mapping (in-memory)
+run_id_to_logs: Dict[str, str] = {}
+
+
+def cleanup_old_logs():
+    """Remove log files older than retention period."""
+    try:
+        retention_hours = int(os.getenv("ORKA_LOG_RETENTION_HOURS", "24"))
+        log_dir = os.getenv("ORKA_LOG_DIR", "logs")
+
+        if not os.path.exists(log_dir):
+            return
+
+        cutoff_time = datetime.now() - timedelta(hours=retention_hours)
+
+        for log_file in glob.glob(os.path.join(log_dir, "orka_trace_*.json")):
+            file_time = datetime.fromtimestamp(os.path.getmtime(log_file))
+            if file_time < cutoff_time:
+                try:
+                    os.remove(log_file)
+                    logger.info(f"Cleaned up old log file: {log_file}")
+                except Exception as e:
+                    logger.warning(f"Failed to clean up log file {log_file}: {e}")
+
+        # Clean up mapping for non-existent files
+        for run_id in list(run_id_to_logs.keys()):
+            if not os.path.exists(run_id_to_logs[run_id]):
+                del run_id_to_logs[run_id]
+
+    except Exception as e:
+        logger.warning(f"Error during log cleanup: {e}")
+
+
+def validate_yaml_size(yaml_config: str, max_size_kb: int = 100) -> bool:
+    """Validate YAML config size to prevent abuse."""
+    size_kb = len(yaml_config.encode("utf-8")) / 1024
+    return size_kb <= max_size_kb
+
+
+# Health check endpoint
+@app.get("/api/health")
+async def health_check():
+    """
+    Health check endpoint for Cloud Run and monitoring systems.
+
+    Returns:
+        JSON response with service health status
+    """
+    return JSONResponse(
+        content={
+            "status": "healthy",
+            "service": "orka-api",
+            "version": "1.0.0",
+            "timestamp": datetime.now().isoformat(),
+        }
+    )
+
+
+# Status endpoint with dependency checks
+@app.get("/api/status")
+async def status_check():
+    """
+    Detailed status check including dependencies (Redis, Ollama).
+
+    Returns:
+        JSON response with detailed service status
+    """
+    status: Dict[str, Any] = {
+        "service": "orka-api",
+        "status": "operational",
+        "timestamp": datetime.now().isoformat(),
+        "dependencies": {},
+    }
+
+    dependencies = cast(Dict[str, Any], status["dependencies"])
+
+    # Check Redis
+    try:
+        redis_url = os.getenv("REDIS_URL", "redis://localhost:6380/0")
+        r = redis.from_url(redis_url, socket_connect_timeout=2)
+        r.ping()
+        dependencies["redis"] = {"status": "connected", "url": redis_url}
+    except Exception as e:
+        dependencies["redis"] = {"status": "error", "error": str(e)}
+        status["status"] = "degraded"
+
+    # Check Ollama
+    try:
+        ollama_host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(f"{ollama_host}/api/tags")
+            if response.status_code == 200:
+                models = response.json().get("models", [])
+                dependencies["ollama"] = {
+                    "status": "ready",
+                    "models": [m.get("name") for m in models],
+                }
+            else:
+                dependencies["ollama"] = {"status": "error", "code": response.status_code}
+                status["status"] = "degraded"
+    except Exception as e:
+        dependencies["ollama"] = {"status": "error", "error": str(e)}
+        status["status"] = "degraded"
+
+    # Rate limiting info
+    if RATE_LIMITING_ENABLED:
+        status["rate_limiting"] = {"enabled": True, "limit": get_rate_limit()}
+    else:
+        status["rate_limiting"] = {"enabled": False}
+
+    return JSONResponse(content=status)
+
+
+# API endpoint at /api/run with rate limiting
 @app.post("/api/run")
+@limiter.limit(get_rate_limit()) if RATE_LIMITING_ENABLED else lambda x: x
 async def run_execution(request: Request):
+    """
+    Execute an OrKa workflow with dynamic YAML configuration.
+
+    Rate limited to prevent abuse in public deployments.
+    """
     data = await request.json()
     logger.info("\n========== [DEBUG] Incoming POST /api/run ==========")
-    print(data)
 
     input_text = data.get("input")
     yaml_config = data.get("yaml_config")
 
+    # Validate input
+    if not input_text or not yaml_config:
+        raise HTTPException(status_code=400, detail="Missing 'input' or 'yaml_config' in request")
+
+    # Validate YAML size
+    if not validate_yaml_size(yaml_config):
+        raise HTTPException(status_code=413, detail="YAML config too large (max 100KB)")
+
     logger.info("\n========== [DEBUG] YAML Config String ==========")
-    logger.info(yaml_config)
+    logger.info(yaml_config[:500] + "..." if len(yaml_config) > 500 else yaml_config)
 
     # Create a temporary file path with UTF-8 encoding
     tmp_fd, tmp_path = tempfile.mkstemp(suffix=".yml")
@@ -355,7 +513,8 @@ async def run_execution(request: Request):
 
     logger.info("\n========== [DEBUG] Instantiating Orchestrator ==========")
     orchestrator = Orchestrator(tmp_path)
-    logger.info(f"Orchestrator: {orchestrator}")
+    run_id = orchestrator.run_id  # Capture run_id from orchestrator
+    logger.info(f"Orchestrator: {orchestrator}, run_id: {run_id}")
 
     logger.info("\n========== [DEBUG] Running Orchestrator ==========")
     result = await orchestrator.run(input_text, return_logs=True)
@@ -367,17 +526,35 @@ async def run_execution(request: Request):
         logger.info(f"Warning: Failed to remove temporary file {tmp_path}")
 
     logger.info("\n========== [DEBUG] Orchestrator Result ==========")
-    print(result)
+
+    # Find the generated log file
+    log_dir = os.getenv("ORKA_LOG_DIR", "logs")
+    log_files = sorted(
+        glob.glob(os.path.join(log_dir, "orka_trace_*.json")), key=os.path.getmtime, reverse=True
+    )
+
+    # Map run_id to most recent log file
+    if log_files:
+        log_file_path = log_files[0]
+        run_id_to_logs[run_id] = log_file_path
+        log_file_url = f"/api/logs/{run_id}"
+    else:
+        log_file_url = None
 
     # Sanitize the result data for JSON serialization
     sanitized_result = sanitize_for_json(result)
 
+    # Clean up old logs periodically
+    cleanup_old_logs()
+
     try:
         return JSONResponse(
             content={
+                "run_id": run_id,
                 "input": input_text,
                 "execution_log": sanitized_result,
-                "log_file": sanitized_result,
+                "log_file_url": log_file_url,
+                "timestamp": datetime.now().isoformat(),
             },
         )
     except Exception as e:
@@ -385,12 +562,44 @@ async def run_execution(request: Request):
         # Fallback response with minimal data
         return JSONResponse(
             content={
+                "run_id": run_id,
                 "input": input_text,
                 "error": f"Error creating response: {e!s}",
                 "summary": "Execution completed but response contains non-serializable data",
             },
             status_code=500,
         )
+
+
+# Log retrieval endpoint
+@app.get("/api/logs/{run_id}")
+async def get_logs(run_id: str):
+    """
+    Retrieve execution trace logs for a specific run_id.
+
+    Args:
+        run_id: Unique identifier for the orchestration run
+
+    Returns:
+        JSON trace file as download
+    """
+    # Check if we have the log file for this run_id
+    if run_id not in run_id_to_logs:
+        raise HTTPException(status_code=404, detail=f"No logs found for run_id: {run_id}")
+
+    log_file_path = run_id_to_logs[run_id]
+
+    # Verify file exists
+    if not os.path.exists(log_file_path):
+        del run_id_to_logs[run_id]  # Clean up stale mapping
+        raise HTTPException(
+            status_code=404, detail=f"Log file not found (may have been cleaned up)"
+        )
+
+    # Return file as download
+    return FileResponse(
+        path=log_file_path, media_type="application/json", filename=f"orka_trace_{run_id}.json"
+    )
 
 
 if __name__ == "__main__":

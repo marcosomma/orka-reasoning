@@ -1,0 +1,93 @@
+# OrKa Cloud Run Dockerfile - All-in-One Container
+# Ubuntu 22.04 + Python 3.11 + Redis + Ollama + GPT-oss:20B + OrKa
+# Optimized for Google Cloud Run deployment with 16GB RAM, 4 vCPU
+
+FROM ubuntu:22.04
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    python3.11 \
+    python3.11-dev \
+    python3-pip \
+    python3.11-venv \
+    redis-server \
+    curl \
+    wget \
+    git \
+    gcc \
+    g++ \
+    supervisor \
+    && rm -rf /var/lib/apt/lists/*
+
+# Make python3.11 the default python3
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 \
+    && update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1
+
+# Install pip for Python 3.11
+RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.11
+
+# Install Ollama
+RUN curl -fsSL https://ollama.com/install.sh | sh
+
+# Copy project files
+COPY . /app/
+
+# Install OrKa with all dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir ".[all]" && \
+    pip install --no-cache-dir slowapi
+
+# Create necessary directories
+RUN mkdir -p /logs /var/log/supervisor /app/ollama_models
+
+# Set environment for Ollama to store models
+ENV OLLAMA_MODELS=/app/ollama_models
+ENV OLLAMA_HOST=0.0.0.0:11434
+
+# Download GPT-oss:20B model at build time
+# This is a placeholder - in real deployment, this would download the actual model
+# For now, we'll do it at startup to avoid massive build times
+RUN echo "Model will be downloaded at startup to optimize build time"
+
+# Copy supervisor configuration
+COPY supervisor.conf /etc/supervisor/conf.d/orka.conf
+
+# Copy startup script
+COPY startup.sh /app/startup.sh
+RUN chmod +x /app/startup.sh
+
+# Configure Redis for Cloud Run (no persistence, memory only)
+RUN mkdir -p /var/run/redis && \
+    echo "bind 127.0.0.1" > /etc/redis/redis.conf && \
+    echo "port 6380" >> /etc/redis/redis.conf && \
+    echo "daemonize no" >> /etc/redis/redis.conf && \
+    echo "maxmemory 2gb" >> /etc/redis/redis.conf && \
+    echo "maxmemory-policy allkeys-lru" >> /etc/redis/redis.conf && \
+    echo "save \"\"" >> /etc/redis/redis.conf
+
+# Environment variables for OrKa
+ENV ORKA_MEMORY_BACKEND=redisstack
+ENV REDIS_URL=redis://localhost:6380/0
+ENV ORKA_PORT=8000
+ENV ORKA_LOG_DIR=/logs
+ENV ORKA_LOG_RETENTION_HOURS=24
+ENV RATE_LIMIT_PER_MINUTE=5
+
+# Expose ports
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8000/api/health || exit 1
+
+# Start all services via startup script
+CMD ["/app/startup.sh"]
+
