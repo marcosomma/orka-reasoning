@@ -74,16 +74,26 @@ OPENAI_MODEL = os.getenv("BASE_OPENAI_MODEL", "gpt-3.5-turbo")
 # Check if we're running in test mode
 PYTEST_RUNNING = os.getenv("PYTEST_RUNNING", "").lower() in ("true", "1", "yes")
 
+
 # Initialize OpenAI client with optional API key
-client = None
-if OPENAI_API_KEY:
-    client = AsyncOpenAI(api_key=OPENAI_API_KEY)
-elif PYTEST_RUNNING:
+# Note: Client is initialized dynamically per-request to support runtime API key changes
+def _get_openai_client():
+    """Get OpenAI client, checking environment variable at runtime."""
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return None
+    return AsyncOpenAI(api_key=api_key)
+
+
+# Initialize client (will be refreshed per-request if needed)
+if PYTEST_RUNNING:
     client = AsyncOpenAI(api_key="dummy_key_for_testing")
 else:
-    logger.info(
-        "[WARNING] - OPENAI_API_KEY environment variable is not set. OpenAI-based agents will not be available. Use local LLM agents instead. Or add OPENAI_API_KEY to a .env in the current path."
-    )
+    client = _get_openai_client()
+    if client is None:
+        logger.info(
+            "[WARNING] - OPENAI_API_KEY environment variable is not set. OpenAI-based agents will not be available. Use local LLM agents instead. Or add OPENAI_API_KEY to a .env in the current path."
+        )
 
 
 def _extract_reasoning(text: str) -> tuple[str, str]:
@@ -489,12 +499,14 @@ class OpenAIAnswerBuilder(BaseAgent):
         status_code = 200  # Default success
 
         try:
-            if client is None:
+            # Get client dynamically to support runtime API key changes
+            openai_client = _get_openai_client() if not PYTEST_RUNNING else client
+            if openai_client is None:
                 raise RuntimeError(
                     "OpenAI client is not available. Please set OPENAI_API_KEY environment variable or use local LLM agents."
                 )
 
-            response = await client.chat.completions.create(
+            response = await openai_client.chat.completions.create(
                 model=model,
                 messages=[{"role": "user", "content": full_prompt}],
                 temperature=temperature,

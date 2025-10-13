@@ -11,11 +11,11 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration
-REGION=${REGION:-"eu-west1"}
+REGION=${REGION:-"europe-west1"}
 SERVICE_NAME=${SERVICE_NAME:-"orka-demo"}
 MIN_INSTANCES=${MIN_INSTANCES:-0}
 MAX_INSTANCES=${MAX_INSTANCES:-5}
-MEMORY=${MEMORY:-"16Gi"}
+MEMORY=${MEMORY:-"4Gi"}
 CPU=${CPU:-4}
 TIMEOUT=${TIMEOUT:-600}
 
@@ -81,14 +81,15 @@ gcloud run deploy $SERVICE_NAME \
     --image gcr.io/$PROJECT_ID/orka-demo:latest \
     --platform managed \
     --region $REGION \
-    --memory $MEMORY \
-    --cpu $CPU \
-    --timeout $TIMEOUT \
+    --memory 4Gi \
+    --cpu 2 \
+    --timeout 300 \
     --min-instances $MIN_INSTANCES \
     --max-instances $MAX_INSTANCES \
     --allow-unauthenticated \
     --port 8000 \
-    --set-env-vars="ORKA_MEMORY_BACKEND=redisstack,REDIS_URL=redis://localhost:6380/0,ORKA_PORT=8000,OLLAMA_HOST=http://localhost:11434,ORKA_LOG_DIR=/logs,ORKA_LOG_RETENTION_HOURS=24,RATE_LIMIT_PER_MINUTE=5" \
+    --cpu-boost \
+    --set-env-vars="ORKA_MEMORY_BACKEND=redisstack,REDIS_URL=redis://localhost:6380/0,ORKA_PORT=8000,ORKA_LOG_DIR=/logs,ORKA_LOG_RETENTION_HOURS=24,RATE_LIMIT_PER_MINUTE=5" \
     --project=$PROJECT_ID
 
 if [ $? -ne 0 ]; then

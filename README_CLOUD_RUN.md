@@ -43,10 +43,10 @@ bash deploy.sh
 # On Windows, run these commands manually:
 gcloud services enable run.googleapis.com cloudbuild.googleapis.com containerregistry.googleapis.com
 gcloud builds submit --config cloudbuild.yaml --timeout=1h
-gcloud run deploy orka-demo --image gcr.io/YOUR_PROJECT_ID/orka-demo:latest --platform managed --region eu-west1 --memory 16Gi --cpu 4 --max-instances 5 --allow-unauthenticated --timeout 600 --port 8000
+gcloud run deploy orka-demo --image gcr.io/YOUR_PROJECT_ID/orka-demo:latest --platform managed --region europe-west4-a --memory 16Gi --cpu 4 --max-instances 5 --allow-unauthenticated --timeout 600 --port 8000
 
 # 3. Test
-curl $(gcloud run services describe orka-demo --region eu-west1 --format 'value(status.url)')/api/health
+curl $(gcloud run services describe orka-demo --region europe-west4-a --format 'value(status.url)')/api/health
 ```
 
 ## 📋 New API Endpoints
@@ -179,7 +179,7 @@ After deployment completes:
 
 ```bash
 # Get your service URL
-SERVICE_URL=$(gcloud run services describe orka-demo --region eu-west1 --format 'value(status.url)')
+SERVICE_URL=$(gcloud run services describe orka-demo --region europe-west4-a --format 'value(status.url)')
 
 # 1. Health check
 curl $SERVICE_URL/api/health
@@ -208,7 +208,7 @@ gcloud builds log BUILD_ID
 ### Service Unhealthy
 ```bash
 # Check service logs
-gcloud run logs tail orka-demo --region eu-west1
+gcloud run logs tail orka-demo --region europe-west4-a
 ```
 
 ### Rate Limited
@@ -216,7 +216,7 @@ gcloud run logs tail orka-demo --region eu-west1
 # Increase rate limit
 gcloud run services update orka-demo \
   --set-env-vars="RATE_LIMIT_PER_MINUTE=10" \
-  --region eu-west1
+  --region europe-west4-a
 ```
 
 ### Cold Start Latency
@@ -224,7 +224,7 @@ gcloud run services update orka-demo \
 # Keep 1 instance warm
 gcloud run services update orka-demo \
   --min-instances 1 \
-  --region eu-west1
+  --region europe-west4-a
 ```
 
 ## 🔄 Updating the Deployment
@@ -237,7 +237,7 @@ bash deploy.sh
 
 # Method 2: Manual
 gcloud builds submit --config cloudbuild.yaml --timeout=1h
-gcloud run deploy orka-demo --image gcr.io/PROJECT_ID/orka-demo:latest --region eu-west1
+gcloud run deploy orka-demo --image gcr.io/PROJECT_ID/orka-demo:latest --region europe-west4-a
 ```
 
 ## 📞 Support

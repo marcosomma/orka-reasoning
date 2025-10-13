@@ -1,6 +1,7 @@
-# OrKa Cloud Run Dockerfile - All-in-One Container
-# Ubuntu 22.04 + Python 3.11 + Redis + Ollama + GPT-oss:20B + OrKa
-# Optimized for Google Cloud Run deployment with 16GB RAM, 4 vCPU
+# OrKa Cloud Run Dockerfile - OpenAI-Only Architecture
+# Ubuntu 22.04 + Python 3.11 + Redis + OrKa
+# Optimized for Google Cloud Run with OpenAI agents (no local LLM)
+# Requires only 4GB RAM, 2 vCPU - much cheaper and faster than local LLM
 
 FROM ubuntu:22.04
 
@@ -24,7 +25,6 @@ RUN apt-get update && apt-get install -y \
     git \
     gcc \
     g++ \
-    supervisor \
     && rm -rf /var/lib/apt/lists/*
 
 # Make python3.11 the default python3
@@ -33,9 +33,6 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
 
 # Install pip for Python 3.11
 RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.11
-
-# Install Ollama
-RUN curl -fsSL https://ollama.com/install.sh | sh
 
 # Copy project files
 COPY . /app/
@@ -46,19 +43,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir slowapi
 
 # Create necessary directories
-RUN mkdir -p /logs /var/log/supervisor /app/ollama_models
-
-# Set environment for Ollama to store models
-ENV OLLAMA_MODELS=/app/ollama_models
-ENV OLLAMA_HOST=0.0.0.0:11434
-
-# Download GPT-oss:20B model at build time
-# This is a placeholder - in real deployment, this would download the actual model
-# For now, we'll do it at startup to avoid massive build times
-RUN echo "Model will be downloaded at startup to optimize build time"
-
-# Copy supervisor configuration
-COPY supervisor.conf /etc/supervisor/conf.d/orka.conf
+RUN mkdir -p /logs
 
 # Copy startup script
 COPY startup.sh /app/startup.sh
@@ -73,13 +58,14 @@ RUN mkdir -p /var/run/redis && \
     echo "maxmemory-policy allkeys-lru" >> /etc/redis/redis.conf && \
     echo "save \"\"" >> /etc/redis/redis.conf
 
-# Environment variables for OrKa
+# Environment variables for OrKa (OpenAI-only)
 ENV ORKA_MEMORY_BACKEND=redisstack
 ENV REDIS_URL=redis://localhost:6380/0
 ENV ORKA_PORT=8000
 ENV ORKA_LOG_DIR=/logs
 ENV ORKA_LOG_RETENTION_HOURS=24
 ENV RATE_LIMIT_PER_MINUTE=5
+# Note: OPENAI_API_KEY is provided by user in request body
 
 # Expose ports
 EXPOSE 8000

@@ -1,11 +1,11 @@
 #!/bin/bash
-# OrKa Cloud Run Startup Script
-# Launches Redis, Ollama, downloads model, and starts OrKa server
+# OrKa Cloud Run Startup Script - OpenAI-Only Architecture
+# Launches Redis and OrKa server (no local LLM needed)
 
 set -e
 
 echo "========================================="
-echo "OrKa Cloud Run Startup"
+echo "OrKa Cloud Run Startup (OpenAI-Only)"
 echo "========================================="
 
 # Function to check if a service is ready
@@ -38,8 +38,8 @@ cleanup_old_logs() {
     find /logs -type f -name "*.log" -mmin +$((retention_hours * 60)) -delete 2>/dev/null || true
 }
 
-# 1. Start Redis
-echo "Starting Redis..."
+# 1. Start Redis server directly
+echo "Starting Redis server..."
 redis-server /etc/redis/redis.conf &
 REDIS_PID=$!
 sleep 3
@@ -51,43 +51,12 @@ if ! redis-cli -p 6380 ping > /dev/null 2>&1; then
 fi
 echo "Redis started successfully (PID: $REDIS_PID)"
 
-# 2. Start Ollama server
-echo "Starting Ollama server..."
-ollama serve &
-OLLAMA_PID=$!
-sleep 5
-
-# Check Ollama
-if ! check_service "Ollama" "http://localhost:11434/api/tags"; then
-    echo "ERROR: Ollama failed to start"
-    exit 1
-fi
-echo "Ollama started successfully (PID: $OLLAMA_PID)"
-
-# 3. Download/pull GPT-oss:20B model if not already present
-echo "Checking for GPT-oss:20B model..."
-if ! ollama list | grep -q "gpt-oss:20b"; then
-    echo "Downloading GPT-oss:20B model (this may take 10-15 minutes)..."
-    ollama pull gpt-oss:20b || {
-        echo "ERROR: Failed to download model"
-        echo "Attempting to use fallback model..."
-        # Fallback to a smaller model for testing
-        ollama pull llama3.2:latest || exit 1
-    }
-else
-    echo "GPT-oss:20B model already present"
-fi
-
-# 4. Verify model is loaded
-echo "Verifying model availability..."
-ollama list
-echo "Model verification complete"
-
-# 5. Clean up old logs
+# 2. Clean up old logs
 cleanup_old_logs
 
-# 6. Start OrKa server
+# 3. Start OrKa server
 echo "Starting OrKa server on port ${ORKA_PORT}..."
+echo "Using OpenAI agents (users provide OPENAI_API_KEY in requests)"
 cd /app
 exec python3 -m orka.server
 

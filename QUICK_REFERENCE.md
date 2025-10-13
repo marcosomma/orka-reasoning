@@ -5,7 +5,7 @@
 ```bash
 gcloud auth login && gcloud config set project YOUR_PROJECT_ID
 bash deploy.sh
-curl $(gcloud run services describe orka-demo --region eu-west1 --format 'value(status.url)')/api/health
+curl $(gcloud run services describe orka-demo --region europe-west4-a --format 'value(status.url)')/api/health
 ```
 
 ## 🔗 API Endpoints
@@ -30,7 +30,7 @@ curl $(gcloud run services describe orka-demo --region eu-west1 --format 'value(
 
 ```bash
 # Get URL
-URL=$(gcloud run services describe orka-demo --region eu-west1 --format 'value(status.url)')
+URL=$(gcloud run services describe orka-demo --region europe-west4-a --format 'value(status.url)')
 
 # Health check
 curl $URL/api/health
@@ -62,7 +62,7 @@ RATE_LIMIT_PER_MINUTE=5
 
 ### View Logs
 ```bash
-gcloud run logs tail orka-demo --region eu-west1
+gcloud run logs tail orka-demo --region europe-west4-a
 ```
 
 ### Update Service
@@ -72,17 +72,17 @@ bash deploy.sh
 
 ### Scale Up
 ```bash
-gcloud run services update orka-demo --max-instances 10 --region eu-west1
+gcloud run services update orka-demo --max-instances 10 --region europe-west4-a
 ```
 
 ### Change Rate Limit
 ```bash
-gcloud run services update orka-demo --set-env-vars="RATE_LIMIT_PER_MINUTE=10" --region eu-west1
+gcloud run services update orka-demo --set-env-vars="RATE_LIMIT_PER_MINUTE=10" --region europe-west4-a
 ```
 
 ### Keep Warm (Reduce Cold Start)
 ```bash
-gcloud run services update orka-demo --min-instances 1 --region eu-west1
+gcloud run services update orka-demo --min-instances 1 --region europe-west4-a
 ```
 
 ## 🐛 Troubleshooting

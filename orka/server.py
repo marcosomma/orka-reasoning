@@ -484,17 +484,38 @@ async def run_execution(request: Request):
     """
     Execute an OrKa workflow with dynamic YAML configuration.
 
+    **OpenAI-Only Architecture**: Users must provide OPENAI_API_KEY in request body.
     Rate limited to prevent abuse in public deployments.
+
+    Request format:
+    {
+        "input": "your question",
+        "yaml_config": "orchestrator yaml config",
+        "openai_api_key": "sk-..."  // Required for OpenAI agents
+    }
     """
     data = await request.json()
     logger.info("\n========== [DEBUG] Incoming POST /api/run ==========")
 
     input_text = data.get("input")
     yaml_config = data.get("yaml_config")
+    openai_api_key = data.get("openai_api_key")
 
     # Validate input
     if not input_text or not yaml_config:
         raise HTTPException(status_code=400, detail="Missing 'input' or 'yaml_config' in request")
+
+    # Validate OpenAI API key
+    if not openai_api_key:
+        raise HTTPException(
+            status_code=400,
+            detail="Missing 'openai_api_key' in request. This deployment uses OpenAI agents only. Get your API key at: https://platform.openai.com/api-keys",
+        )
+
+    if not openai_api_key.startswith("sk-"):
+        raise HTTPException(
+            status_code=400, detail="Invalid 'openai_api_key' format. Must start with 'sk-'"
+        )
 
     # Validate YAML size
     if not validate_yaml_size(yaml_config):
@@ -502,6 +523,7 @@ async def run_execution(request: Request):
 
     logger.info("\n========== [DEBUG] YAML Config String ==========")
     logger.info(yaml_config[:500] + "..." if len(yaml_config) > 500 else yaml_config)
+    logger.info(f"OpenAI API Key provided: sk-...{openai_api_key[-4:]}")
 
     # Create a temporary file path with UTF-8 encoding
     tmp_fd, tmp_path = tempfile.mkstemp(suffix=".yml")
@@ -511,13 +533,25 @@ async def run_execution(request: Request):
     with open(tmp_path, "w", encoding="utf-8") as tmp:
         tmp.write(yaml_config)
 
-    logger.info("\n========== [DEBUG] Instantiating Orchestrator ==========")
-    orchestrator = Orchestrator(tmp_path)
-    run_id = orchestrator.run_id  # Capture run_id from orchestrator
-    logger.info(f"Orchestrator: {orchestrator}, run_id: {run_id}")
+    # Set OpenAI API key in environment for this request
+    # Note: This is safe because each request runs in its own async context
+    original_openai_key = os.environ.get("OPENAI_API_KEY")
+    os.environ["OPENAI_API_KEY"] = openai_api_key
 
-    logger.info("\n========== [DEBUG] Running Orchestrator ==========")
-    result = await orchestrator.run(input_text, return_logs=True)
+    try:
+        logger.info("\n========== [DEBUG] Instantiating Orchestrator ==========")
+        orchestrator = Orchestrator(tmp_path)
+        run_id = orchestrator.run_id  # Capture run_id from orchestrator
+        logger.info(f"Orchestrator: {orchestrator}, run_id: {run_id}")
+
+        logger.info("\n========== [DEBUG] Running Orchestrator ==========")
+        result = await orchestrator.run(input_text, return_logs=True)
+    finally:
+        # Restore original API key or remove it
+        if original_openai_key:
+            os.environ["OPENAI_API_KEY"] = original_openai_key
+        elif "OPENAI_API_KEY" in os.environ:
+            del os.environ["OPENAI_API_KEY"]
 
     # Clean up the temporary file
     try:
