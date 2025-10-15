@@ -1,25 +1,25 @@
-# OrKa V0.9.2 Core Components Guide - Memory Presets Architecture
+# OrKa V0.9.2 Core Components Guide - Memory Presets
 
 [📘 Getting Started](./getting-started.md) | [⚙️ Configuration](./CONFIGURATION.md) | [🧠 Memory Presets](./memory-presets.md) | [🧠 Memory Agents](./memory-agents-guide.md) | [🐛 Debugging](./DEBUGGING.md) | [🧠 Memory System](./MEMORY_SYSTEM_GUIDE.md)
 
 ## Overview
 
-**NEW in V0.9.2**: This guide documents OrKa's core components with focus on the revolutionary **Memory Presets System** and **Unified Memory Agent Architecture**. All examples showcase **90% configuration complexity reduction** and **operation-aware intelligence**.
+**NEW in V0.9.2**: This guide documents OrKa's core components with focus on the **Memory Presets System** and **Unified Memory Agent Architecture**. Examples demonstrate simplified memory configuration using preset templates.
 
-## 🚀 Quick Component Examples - Memory Presets in Action
+## 🚀 Quick Component Examples - Memory Presets
 
-**NEW in V0.9.2**: See the power of simplified configuration with cognitive memory presets:
+**NEW in V0.9.2**: Examples showing simplified configuration with memory presets:
 
 ```bash
-# Memory Presets Demo (90% simpler configuration!)
+# Memory Presets Demo (simplified configuration)
 cp ../examples/simple_memory_preset_demo.yml test-presets.yml
 orka run test-presets.yml "What is artificial intelligence?"
 
-# All 6 Cognitive Memory Types  
-cp ../examples/memory_presets_showcase.yml test-cognitive.yml
-orka run test-cognitive.yml "Analyze neural networks"
+# All 6 Memory Preset Types  
+cp ../examples/memory_presets_showcase.yml test-types.yml
+orka run test-types.yml "Analyze neural networks"
 
-# Operation-Aware Memory Intelligence
+# Operation-Based Configuration
 cp ../examples/enhanced_memory_presets_demo.yml test-operations.yml
 orka run test-operations.yml "Explain machine learning"
 
@@ -29,19 +29,19 @@ orka run test-legacy.yml "What is quantum computing?"
 ```
 
 **Key Working Examples by Component:**
-- **🧠 Memory Presets**: [`simple_memory_preset_demo.yml`](../examples/simple_memory_preset_demo.yml) - **90% config reduction**
-- **🎯 Operation-Aware**: [`enhanced_memory_presets_demo.yml`](../examples/enhanced_memory_presets_demo.yml) - Auto-optimization
-- **🔧 Unified Memory Agents**: [`memory_presets_showcase.yml`](../examples/memory_presets_showcase.yml) - All 6 cognitive types
-- **🤖 Local LLM Integration**: All examples now use `local_llm` agents for privacy
-- **Agreement Finder**: [`cognitive_society_minimal_loop.yml`](../examples/cognitive_society_minimal_loop.yml) - With memory presets
-- **LoopNode**: [`cognitive_loop_scoring_example.yml`](../examples/cognitive_loop_scoring_example.yml) - Iterative learning
+- **🧠 Memory Presets**: [`simple_memory_preset_demo.yml`](../examples/simple_memory_preset_demo.yml) - Simplified config
+- **🎯 Operation-Based**: [`enhanced_memory_presets_demo.yml`](../examples/enhanced_memory_presets_demo.yml) - Read/write optimizations
+- **🔧 Unified Memory Agents**: [`memory_presets_showcase.yml`](../examples/memory_presets_showcase.yml) - All 6 preset types
+- **🤖 Local LLM Integration**: All examples use `local_llm` agents for local execution
+- **Agreement Finder**: [`cognitive_society_minimal_loop.yml`](../examples/cognitive_society_minimal_loop.yml) - Multi-agent similarity
+- **LoopNode**: [`cognitive_loop_scoring_example.yml`](../examples/cognitive_loop_scoring_example.yml) - Iterative execution
 - **Fork/Join**: [`conditional_search_fork_join.yaml`](../examples/conditional_search_fork_join.yaml) - Parallel processing
 
 ## Table of Contents
 
 - [🧠 Memory Presets System (NEW)](#memory-presets-system)
 - [🔧 Unified Memory Agents (NEW)](#unified-memory-agents)
-- [🎯 Operation-Aware Intelligence (NEW)](#operation-aware-intelligence)
+- [🎯 Operation-Based Configuration (NEW)](#operation-based-configuration)
 - [Agreement Finder](#agreement-finder)
 - [LoopNode](#loopnode)
 - [Shared Memory Reader (Legacy)](#shared-memory-reader)
@@ -52,13 +52,13 @@ orka run test-legacy.yml "What is quantum computing?"
 
 ### Overview
 
-**NEW in V0.9.2**: The Memory Presets System represents a **90% configuration complexity reduction** by replacing verbose memory configuration with cognitive science-based presets inspired by Marvin Minsky's memory theory.
+**NEW in V0.9.2**: The Memory Presets System simplifies memory configuration by providing preset templates with predefined retention durations and importance rules.
 
 ### Working Example
 
 See [`simple_memory_preset_demo.yml`](../examples/simple_memory_preset_demo.yml):
 
-**Before (V0.9.1 - 15+ lines of configuration):**
+**Before (V0.9.1 - Manual configuration):**
 ```yaml
 agents:
   - id: memory_reader
@@ -88,12 +88,12 @@ agents:
       vector_weight: 0.6
 ```
 
-**After (V0.9.2 - Single parameter):**
+**After (V0.9.2 - Preset-based):**
 ```yaml
 agents:
   - id: memory_reader
     type: memory
-    memory_preset: "episodic"     # Personal experiences (7 days)
+    memory_preset: "episodic"     # Personal experiences (7 days default)
     config:
       operation: read
     namespace: conversations
@@ -102,16 +102,16 @@ agents:
 
 ### Key Features
 
-- **🧠 Cognitive Memory Types**: 6 scientifically-grounded memory presets
-- **🎯 Operation-Aware Intelligence**: Automatic read/write optimization
-- **⚡ Zero Configuration**: Intelligent defaults for all memory parameters
+- **🧠 Preset Templates**: 6 predefined memory configurations with different retention durations
+- **🎯 Operation-Based Defaults**: Different default parameters for read vs write operations
+- **⚡ Reduced Configuration**: Preset parameter provides defaults for decay rules and search parameters
 - **🔧 Override Capable**: Custom configuration still possible when needed
 
 ## 🔧 Unified Memory Agents
 
 ### Overview
 
-**NEW in V0.9.2**: Unified Memory Agents replace separate `memory-reader` and `memory-writer` types with a single `type: memory` that dynamically creates the appropriate node based on the `operation` parameter.
+**NEW in V0.9.2**: Unified Memory Agents replace separate `memory-reader` and `memory-writer` types with a single `type: memory` that creates the appropriate node based on the `operation` parameter.
 
 ### Configuration
 
@@ -119,7 +119,7 @@ agents:
 # Reading from memory
 - id: knowledge_reader
   type: memory                    # Unified type
-  memory_preset: "semantic"       # Facts and knowledge
+  memory_preset: "semantic"       # Facts and knowledge preset
   config:
     operation: read               # Creates MemoryReaderNode
   namespace: knowledge_base
@@ -127,7 +127,7 @@ agents:
 # Writing to memory  
 - id: knowledge_writer
   type: memory                    # Same unified type
-  memory_preset: "semantic"       # Same cognitive type
+  memory_preset: "semantic"       # Same preset type
   config:
     operation: write              # Creates MemoryWriterNode
   namespace: knowledge_base
@@ -137,28 +137,28 @@ agents:
 
 - **🔧 Simplified Type System**: One memory type instead of two
 - **🎯 Consistent Configuration**: Same parameters for read and write
-- **⚡ Agent Factory Integration**: Intelligent node creation
+- **⚡ Agent Factory Integration**: Dynamic node creation based on operation
 - **🔄 Backward Compatibility**: Legacy types still supported
 
-## 🎯 Operation-Aware Intelligence
+## 🎯 Operation-Based Configuration
 
 ### Overview
 
-**NEW in V0.9.2**: Operation-Aware Intelligence automatically optimizes memory configuration based on whether the operation is `read` or `write`, eliminating the need for manual parameter tuning.
+**NEW in V0.9.2**: Operation-based configuration automatically applies different default parameters depending on whether the operation is `read` or `write`.
 
-### Automatic Optimizations
+### Automatic Parameter Selection
 
 **For Read Operations:**
-- Lower `similarity_threshold` for broader search
-- Higher `limit` for comprehensive results
-- Optimized `temporal_weight` for relevance
-- Enhanced `vector_weight` for semantic matching
+- Lower `similarity_threshold` for broader search results
+- Higher `limit` for more comprehensive results
+- Configured `temporal_weight` for recency scoring
+- Configured `vector_weight` for semantic matching
 
 **For Write Operations:**
-- Optimized indexing parameters
-- Efficient storage configurations
-- Metadata handling for retrieval
-- Deduplication settings
+- Configured indexing parameters for storage
+- Storage configurations for efficient writes
+- Metadata handling for future retrieval
+- Deduplication settings to avoid duplicates
 
 ### Working Example
 
@@ -167,43 +167,43 @@ See [`enhanced_memory_presets_demo.yml`](../examples/enhanced_memory_presets_dem
 ```yaml
 - id: context_reader
   type: memory
-  memory_preset: "working"        # Automatically applies read-optimized defaults
+  memory_preset: "working"        # Applies read-focused default parameters
   config:
     operation: read
-  # No manual parameters needed - all optimized automatically!
+  # Default parameters applied from preset
 
 - id: context_writer  
   type: memory
-  memory_preset: "working"        # Automatically applies write-optimized defaults
+  memory_preset: "working"        # Applies write-focused default parameters
   config:
     operation: write
-  # Storage parameters automatically optimized!
+  # Storage parameters from preset
 ```
 
 ## Agreement Finder
 
 ### Overview
 
-The Agreement Finder component computes consensus scores between multiple agent responses using semantic similarity analysis. It's a critical component in cognitive society workflows and multi-agent deliberation systems.
+The Agreement Finder component computes similarity scores between multiple agent responses using semantic vector comparison. Used in multi-agent workflows to measure consensus.
 
 ### Working Examples
 
-**See Agreement Finder in action:**
+**See Agreement Finder examples:**
 
-- **Basic Cognitive Society**: [`../examples/cognitive_society_minimal_loop.yml`](../examples/cognitive_society_minimal_loop.yml)
+- **Basic Multi-Agent**: [`../examples/cognitive_society_minimal_loop.yml`](../examples/cognitive_society_minimal_loop.yml)
 - **Advanced Consensus**: [`../examples/orka_smartest/genius_minds_convergence.yml`](../examples/orka_smartest/genius_minds_convergence.yml)
 
 ```bash
 # Test agreement finder with different topics
 cp ../examples/cognitive_society_minimal_loop.yml test-agreement.yml
 
-# Run with controversial topic (shows disagreement handling)
+# Run with debatable topic (shows disagreement handling)
 orka run test-agreement.yml "Should AI systems replace human jobs?"
 
-# Run with factual topic (shows quick consensus)  
+# Run with factual topic (shows high similarity)  
 orka run test-agreement.yml "What is 2 + 2?"
 
-# Monitor consensus scoring in real-time
+# Monitor similarity scores
 orka memory watch
 ```
 
@@ -379,7 +379,7 @@ score_extraction_fallbacks:
 
 ### Overview
 
-LoopNode is a sophisticated component that executes iterative workflows with cognitive learning and improvement. It enables workflows to run multiple iterations, learning from each attempt until a quality threshold is met or maximum iterations are reached.
+LoopNode executes iterative workflows with configurable exit conditions. It runs workflows multiple times, extracting metrics from each iteration until a quality threshold is met or maximum iterations are reached.
 
 ### Architecture and State Management
 
@@ -396,12 +396,12 @@ LoopNode is a sophisticated component that executes iterative workflows with cog
          └───────────────────────┼───────────────────────┘
                                  │
                     ┌─────────────────┐
-                    │  Cognitive      │
+                    │  Metric         │
                     │  Extraction     │
                     │                 │
                     │ • Insights      │
                     │ • Improvements  │
-                    │ • Mistakes      │
+                    │ • Errors        │
                     └─────────────────┘
 ```
 
@@ -423,12 +423,12 @@ agents:
     score_extraction_key: "quality_score"  # Direct JSON key extraction
     high_priority_agents: ["quality_scorer", "agreement_finder"]  # Check these agents first
     
-    # Cognitive learning system
+    # Metric extraction system
     cognitive_extraction:
       enabled: true
       extract_patterns:
         insights:
-          - "(?:insight|learning|discovery):\\s*(.+?)(?:\\n|$)"
+          - "(?:insight|observation|finding):\\s*(.+?)(?:\\n|$)"
           - "(?:identified|found|revealed)\\s+(.+?)(?:\\n|$)"
         improvements:
           - "(?:improve|enhance|strengthen)\\s+(.+?)(?:\\n|$)"
@@ -673,7 +673,7 @@ score_extraction_config:
 
 ### Overview
 
-The Shared Memory Reader component performs intelligent memory retrieval using RedisStack's HNSW vector indexing combined with metadata filtering. It supports hybrid search capabilities that combine semantic similarity with traditional text search.
+The Shared Memory Reader component retrieves memories from Redis using RedisStack's HNSW vector indexing combined with metadata filtering. It supports hybrid search combining semantic similarity with text search.
 
 ### Search Architecture
 
