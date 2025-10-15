@@ -4,13 +4,13 @@
 
 ## Overview
 
-**NEW in V0.9.2**: OrKa introduces **Memory Presets** that achieve **90% configuration complexity reduction**. This guide covers the revolutionary memory preset system alongside traditional configuration options for fine-grained control when needed.
+**NEW in V0.9.2**: OrKa introduces **Memory Presets** that simplify memory configuration. This guide covers the memory preset system alongside traditional configuration options for fine-grained control when needed.
 
 ## 🧠 Memory Presets Configuration - 90% Complexity Reduction
 
 ### Simplified Memory Configuration (Recommended)
 
-**NEW in V0.9.2**: Use cognitive memory presets to eliminate complex configuration:
+**NEW in V0.9.2**: Use memory presets to simplify configuration:
 
 ```yaml
 # Simple preset configuration (replaces 15+ lines of decay rules)
@@ -37,7 +37,7 @@ agents:
 
 **Minimal Configuration for V0.9.2:**
 ```bash
-# Memory presets handle all decay configuration automatically!
+# Memory presets handle decay configuration with defaults
 export ORKA_MEMORY_BACKEND=redisstack             # Default: redisstack  
 export REDIS_URL=redis://localhost:6380/0         # RedisStack connection URL
 
@@ -299,7 +299,7 @@ agents:
 
 ```yaml
 agents:
-  - id: intelligent_storage
+  - id: memory_storage
     type: memory-writer
     namespace: conversations
     params:

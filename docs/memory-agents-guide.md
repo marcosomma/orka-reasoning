@@ -1,22 +1,22 @@
 # Memory Agents - Complete Guide 🧠
 
-> **OrKa's Operation-Aware Memory System** - Comprehensive guide to memory agents with smart operation-specific defaults
+> **OrKa's Memory System** - Guide to memory agents with operation-based default configuration
 
 ## 🧠 What Are Memory Agents?
 
-Memory agents are OrKa's **intelligent memory system** that provides sophisticated storage and retrieval capabilities. Unlike simple databases, memory agents:
+Memory agents provide Redis-based storage and retrieval for workflow data. Key features:
 
-- **Think before storing** - Automatically classify importance and memory type
-- **Understand context** - Use vector embeddings for semantic search  
-- **Learn over time** - Apply intelligent decay based on usage patterns
-- **Organize knowledge** - Use namespaces and categories for structure
+- **Configurable Expiration** - Time-based expiration with importance factor multipliers
+- **Vector Search** - Use embeddings for semantic similarity search
+- **Configurable Retention** - Apply different expiration rules based on usage patterns
+- **Namespace Organization** - Use namespaces and categories for logical separation
 
 ### Memory Agent Architecture
 
 ```yaml
-- id: smart_memory
-  type: memory          # Special agent type handled by OrKa
-  memory_preset: "episodic"  # Cognitive memory type (optional)
+- id: memory_storage
+  type: memory          # Memory agent type
+  memory_preset: "episodic"  # Preset template (optional)
   config:
     operation: write    # "read" or "write" operation
   namespace: conversations   # Logical memory organization
@@ -30,7 +30,7 @@ Memory agents are OrKa's **intelligent memory system** that provides sophisticat
 
 ### 📖 Reading Memory (Search & Retrieval)
 
-Memory reading performs **intelligent semantic search** across stored memories:
+Memory reading searches stored memories using vector similarity:
 
 ```yaml
 - id: memory_search
@@ -51,12 +51,12 @@ Memory reading performs **intelligent semantic search** across stored memories:
 - `similarity_threshold` - Minimum semantic similarity score
 - `enable_context_search` - Use conversation history for context
 - `enable_temporal_ranking` - Prefer recent memories
-- `context_weight` - How much to weight conversation context (0.0-1.0)
-- `temporal_weight` - How much to boost recent memories (0.0-1.0)
+- `context_weight` - Weight for conversation context (0.0-1.0)
+- `temporal_weight` - Weight for recent memories (0.0-1.0)
 
 ### 📝 Writing Memory (Storage & Persistence)
 
-Memory writing performs **intelligent storage** with automatic classification:
+Memory writing stores data in Redis with optional vector embeddings:
 
 ```yaml
 - id: memory_store
@@ -83,16 +83,16 @@ Memory writing performs **intelligent storage** with automatic classification:
 - `memory_type` - Override automatic classification ("short_term" or "long_term")
 - `importance_score` - Override automatic importance calculation (0.0-1.0)
 
-## 🧠 Memory Presets (Operation-Aware)
+## 🧠 Memory Presets (Operation-Based Defaults)
 
-**NEW in v0.9.2**: Memory presets provide **cognitively meaningful** memory configurations with **operation-specific smart defaults** based on Marvin Minsky's theories:
+**NEW in v0.9.2**: Memory presets provide configuration templates with operation-specific defaults based on retention duration patterns:
 
 ### 1. **Sensory Memory** (`sensory`)
 ```yaml
 memory_preset: "sensory"
 ```
 - **For**: Real-time data, sensor input, immediate processing
-- **Duration**: 15 minutes (very short-term)
+- **Duration**: 15 minutes (very short retention)
 - **Read Defaults**: Fast retrieval (limit=3, similarity_threshold=0.95)
 - **Write Defaults**: Minimal indexing (vector=false, speed-optimized)
 - **Use Cases**: IoT sensors, streaming data, immediate alerts
@@ -572,4 +572,4 @@ params:
 # The memory agent will return stats in metadata
 ```
 
-Memory agents provide the foundation for truly intelligent AI systems that can learn, remember, and build on previous interactions. Use this guide to leverage OrKa's powerful memory capabilities in your applications.
+Memory agents provide the foundation for workflows with persistent state that can retrieve and build on previous interactions. Use this guide to leverage OrKa's memory capabilities in your applications.

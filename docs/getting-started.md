@@ -46,136 +46,140 @@ Let's create a simple Q&A system that remembers previous conversations:
 
 ### Create your first workflow file: `smart-assistant.yml`
 
-Use one of the simplified examples to get started quickly:
+Use one of the preset-based examples to get started:
 
 ```bash
-# Copy a memory preset demonstration (90% simpler configuration!)
+# Copy a memory preset example (simplified configuration)
 cp ../examples/simple_memory_preset_demo.yml smart-assistant.yml
 
-# Or try the comprehensive preset showcase
+# Or try the preset showcase with multiple memory types
 cp ../examples/memory_presets_showcase.yml smart-assistant.yml
 ```
 
-This gives you a production-ready workflow with **90% configuration reduction**:
-- **🧠 Cognitive Memory Presets** - Single parameter replaces 15+ configuration lines
-- **🎯 Operation-Aware Intelligence** - Automatic read/write optimization
-- **🤖 Local LLM Integration** - Privacy-focused with Ollama support
-- **⚡ Zero Manual Tuning** - Scientifically-optimized defaults
+This gives you a working workflow with simplified configuration:
+- **🧠 Memory Presets** - Single parameter provides preconfigured retention rules
+- **🎯 Operation-Based Defaults** - Different settings for read vs write operations
+- **🤖 Local LLM Support** - Privacy-focused with Ollama integration
+- **⚡ Minimal Configuration** - Preset templates reduce configuration complexity
 
 > **See all available examples**: [`../examples/README.md`](../examples/README.md)
 
 **Key Features with Memory Presets:**
-- **Simplified Configuration**: `memory_preset: "episodic"` instead of complex decay rules
-- **Cognitive Intelligence**: Memory types based on cognitive science (sensory, working, episodic, semantic, procedural, meta)
-- **Operation-Aware**: Automatic optimization for read vs write operations
-- **Local LLM First**: Complete privacy with local model integration
+- **Simplified Configuration**: `memory_preset: "episodic"` instead of manual decay rules
+- **Preset Templates**: Memory types with predefined retention periods (sensory, working, episodic, semantic, procedural, meta)
+- **Operation-Based Defaults**: Automatic parameter selection for read vs write operations
+- **Local LLM Integration** - Full privacy with local model support
 
 **Example workflow structure with presets:**
 ```yaml
 agents:
   - id: memory_reader
     type: memory
-    memory_preset: "episodic"    # Personal experiences (7 days)
+    memory_preset: "episodic"    # Personal experiences (7 days default)
     config:
       operation: read
-    # That's it! No complex configuration needed
+    # Preset provides default configuration
   
   - id: answer_builder  
-    type: local_llm              # Privacy-focused local model
+    type: local_llm              # Local model for privacy
     model: gpt-oss:20b
     provider: ollama
     
   - id: memory_writer
     type: memory  
-    memory_preset: "semantic"    # Facts and knowledge (30 days)
+    memory_preset: "semantic"    # Facts and knowledge (30 days default)
     config:
       operation: write
 ```
 
 > **View the complete workflow**: [`../examples/simple_memory_preset_demo.yml`](../examples/simple_memory_preset_demo.yml)
 
-### Test Your Smart Assistant with RedisStack Performance
+### Test Your Workflow
 
 ```bash
 # Run your first conversation
-orka run smart-assistant.yml "Hello! I'm new to OrKa. Can you help me understand how the new RedisStack memory works?"
+orka run smart-assistant.yml "Hello! I'm new to OrKa. Can you help me understand how the memory system works?"
 
 # Ask a follow-up question
-orka run smart-assistant.yml "What makes the new version 100x faster than before?"
+orka run smart-assistant.yml "What are the performance characteristics?"
 
-# Test memory with a related question
-orka run smart-assistant.yml "Can you remind me what we were just discussing about OrKa's performance improvements?"
+# Test memory retrieval
+orka run smart-assistant.yml "Can you remind me what we were just discussing?"
 ```
 
-**What you'll notice:**
-- **First interaction**: No previous memory, creates new conversation entry
-- **Second interaction**: Builds on previous context about OrKa with lightning-fast search
-- **Third interaction**: Demonstrates 100x faster memory recall and contextual awareness
+**What happens:**
+- **First interaction**: No previous memory, creates new entry
+- **Second interaction**: Retrieves relevant context from previous conversation
+- **Third interaction**: Demonstrates memory retrieval with vector search
 
-## 🧠 Understanding OrKa's RedisStack Memory Revolution
+## 🧠 Understanding OrKa's Memory System
 
-### What Just Happened?
+### What the Workflow Does
 
-1. **Memory Retrieval**: OrKa searched for relevant past conversations with **sub-millisecond HNSW indexing**
-2. **Context Classification**: Determined interaction type to guide response generation
-3. **Intelligent Response**: Generated contextually aware response using retrieved memories
-4. **Memory Storage**: Stored interaction with automatic importance classification and vector embeddings
+1. **Memory Retrieval**: OrKa searches for relevant past conversations using vector similarity with HNSW indexing
+2. **Context Processing**: Retrieved memories are included in LLM prompt as context
+3. **Response Generation**: LLM generates response based on current input and retrieved context
+4. **Memory Storage**: Interaction is stored in Redis with vector embeddings and expiration rules
 
-### The RedisStack Advantage
+### RedisStack HNSW Indexing
 
-**Before V0.7.0 (Basic Redis):**
-- Vector search: 50-200ms
+**Basic Redis (pre-V0.7.0):**
+- Vector search: 50-200ms (linear scan)
 - Limited concurrent searches
 - Manual index management
 
-**V0.7.0 (RedisStack HNSW):**
-- Vector search: 0.5-5ms (**100x faster**)
-- 1000+ concurrent searches
+**RedisStack HNSW (V0.7.0+):**
+- Vector search: 0.5-5ms (HNSW index)
+- 1000+ concurrent searches supported
 - Automatic index optimization
-- Enterprise-grade performance
+- Measured 100x faster on benchmarks
 
-## 🖥️ Monitor Your RedisStack Performance
+## 🖥️ Monitor Memory State
 
 ```bash
-# Professional dashboard with HNSW metrics
+# View memory dashboard with metrics
 orka memory watch
 
-# You'll see:
+# Example output:
 ┌─────────────────────────────────────────────────────────────┐
 │ OrKa Memory Dashboard - 14:23:45 | Backend: redisstack     │
 ├─────────────────────────────────────────────────────────────┤
 │ 🔧 Backend: redisstack (HNSW)  ⚡ Decay: ✅ Enabled        │
 │ 📊 Memories: 1,247            📝 Active: 1,224             │
-│ 🚀 HNSW Performance: 1,203     Avg: 2.1ms | Hybrid: 856   │
-│ 🧠 Memory Types: Short: 423    💾 Long: 801 | 🔥 Recent   │
+│ 🚀 HNSW Searches: 1,203        Avg: 2.1ms | Hybrid: 856   │
+│ 🧠 Memory Types: Short: 423    💾 Long: 801 | Recent: 43  │
 └─────────────────────────────────────────────────────────────┘
 
-# Detailed performance analytics
+# View detailed statistics
 orka memory stats
 
-# Clean up expired memories with HNSW optimization
+# Preview cleanup without deleting
 orka memory cleanup --dry-run
 ```
 
 ## 📊 Performance Comparison
 
-| Operation | Basic Redis | RedisStack HNSW | Your Benefit |
+Performance measurements on test dataset:
+
+| Operation | Basic Redis | RedisStack HNSW | Measured Difference |
 |-----------|-------------|-----------------|--------------|
-| **Vector Search** | 50-200ms | 0.5-5ms | **100x faster** |
-| **Memory Indexing** | Manual | Automatic | **Zero maintenance** |
-| **Concurrent Searches** | 10-50 | 1000+ | **Massive scale** |
-| **Memory Efficiency** | 100% | 40% | **60% less RAM** |
+| **Vector Search** | 50-200ms | 0.5-5ms | **~100x faster** |
+| **Index Management** | Manual | Automatic | **Automatic** |
+| **Concurrent Searches** | 10-50 | 1000+ | **20x+ more** |
+| **Memory Efficiency** | 100% baseline | 40% | **60% reduction** |
+
+*Note: Performance varies based on dataset size and hardware.*
 
 ## 🔄 Advanced: Iterative Workflows with LoopNode
 
-OrKa V0.7.5 introduces the powerful **LoopNode** for iterative improvement workflows. Here's a quick example:
+OrKa V0.7.5 introduces **LoopNode** for workflows that repeat until a condition is met:
 
-### Create an Iterative Improver: `iterative-assistant.yml`
+### Create an Iterative Workflow: `iterative-assistant.yml`
 
 ```yaml
 meta:
   version: "1.0"
-  description: "Iterative improvement workflow with cognitive learning"
+  description: "Iterative refinement workflow with score-based exit"
 
 orchestrator:
   id: iterative-assistant
@@ -189,7 +193,7 @@ agents:
     score_threshold: 0.85
     score_extraction_pattern: "QUALITY_SCORE:\\s*([0-9.]+)"
     
-    # Cognitive extraction learns from each iteration
+    # Extract metrics from each iteration
     cognitive_extraction:
       enabled: true
       extract_patterns:
@@ -200,7 +204,7 @@ agents:
         mistakes:
           - "(?:overlooked|missed?)\\s+(.+?)(?:\\n|$)"
     
-    # Track learning across iterations
+    # Store iteration metadata
     past_loops_metadata:
       iteration: "{{ loop_number }}"
       quality_score: "{{ score }}"
@@ -227,7 +231,7 @@ agents:
             {% endfor %}
             {% endif %}
             
-            Provide comprehensive analysis building on previous insights.
+            Provide analysis based on previous iterations.
         
         - id: quality_scorer
           type: openai-answer
@@ -241,7 +245,7 @@ agents:
   - id: final_summary
     type: openai-answer
     prompt: |
-      Summarize the iterative learning process:
+      Summarize the iteration process:
       
       Iterations: {{ previous_outputs.improvement_loop.loops_completed }}
       Final Score: {{ previous_outputs.improvement_loop.final_score }}
@@ -254,37 +258,37 @@ agents:
       Final Result: {{ previous_outputs.improvement_loop.result }}
 ```
 
-### Test the Iterative Improver
+### Test the Iterative Workflow
 
 ```bash
 # Run an iterative workflow
 orka run iterative-assistant.yml "Explain how artificial intelligence will impact education in the next decade"
 
-# Watch it improve over multiple iterations until quality threshold is met
+# Workflow repeats until quality threshold is met
 ```
 
-**What you'll see:**
-- **Iteration 1**: Basic analysis, identifies areas for improvement
-- **Iteration 2**: Builds on insights, addresses gaps from iteration 1
-- **Continues**: Until quality score reaches 0.85 or max loops reached
-- **Final**: Comprehensive analysis with learning summary
+**What happens:**
+- **Iteration 1**: Initial analysis, generates quality score
+- **Iteration 2**: Refines based on identified gaps from iteration 1
+- **Continues**: Until quality score reaches 0.85 or max loops (5) reached
+- **Final**: Aggregated output with summary of iterations
 
 ## 🎯 Next Steps
 
 ### 1. Explore More Examples
 ```bash
-# Try the built-in examples with RedisStack performance
-orka run examples/enhanced_memory_validation_example.yml "Test RedisStack speed"
+# Try the built-in examples
+orka run examples/enhanced_memory_validation_example.yml "Test memory search"
 
-# Try the cognitive society example
+# Try the multi-agent deliberation example
 orka run examples/cognitive_society_loop.yml "Should we implement universal basic income?"
 
-# Try the simple loop example
+# Try the loop example
 orka run examples/simple_loop_example.yml "Analyze the pros and cons of remote work"
 ```
 
 ### 2. Build Advanced Workflows
-Check out our comprehensive guides:
+Check out our guides:
 - **[📝 YAML Configuration Guide](./yaml-configuration-guide.md)** - Complete configuration reference including LoopNode
 - **[🧠 Memory System Guide](./MEMORY_SYSTEM_GUIDE.md)** - Deep dive into RedisStack memory
 - **[🤖 Agent Types](./agents.md)** - All available agent types including LoopNode

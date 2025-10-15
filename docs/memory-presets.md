@@ -1,15 +1,15 @@
-# Memory Presets - Operation-Aware Configuration 🧠
+# Memory Presets - Operation-Based Configuration 🧠
 
-> **Inspired by Marvin Minsky's Cognitive Theories** - Simplify your memory configuration with cognitively meaningful presets that **automatically adapt to read vs write operations**
+> **Memory configuration templates** - Simplify your memory configuration with preset templates that provide different defaults for read vs write operations
 
 ## 🧠 Understanding OrKa Memory Agents
 
-OrKa's memory system uses **intelligent memory agents** (`type: memory`) that can both **read from** and **write to** memory based on their configuration. These agents automatically handle:
+OrKa's memory system uses memory agents (`type: memory`) that can both read from and write to Redis-based memory. These agents handle:
 
 - **Vector embeddings** for semantic search
-- **Automatic classification** (short-term vs long-term)  
-- **Intelligent decay** based on importance
-- **Namespace organization** for multi-tenant scenarios
+- **Classification** (short-term vs long-term based on importance factors)
+- **Configurable expiration** based on importance multipliers
+- **Namespace organization** for logical separation
 
 ### Memory Agent Operations
 
@@ -40,14 +40,14 @@ Memory agents support two primary operations:
   prompt: "Store this interaction: {{ input }}"
 ```
 
-## 🎯 Quick Start with Operation-Aware Presets
+## 🎯 Quick Start with Operation-Based Presets
 
-**NEW in v0.9.2**: Presets now automatically provide **different optimized defaults** for read vs write operations!
+**NEW in v0.9.2**: Presets now provide different default parameters for read vs write operations!
 
-**Instead of complex memory configuration:**
+**Instead of manual memory configuration:**
 
 ```yaml
-# ❌ BEFORE: Complex configuration (30+ lines per agent)
+# ❌ BEFORE: Manual configuration (multiple parameters per agent)
 - id: conversation_memory
   type: memory
   config:
@@ -90,9 +90,9 @@ Memory agents support two primary operations:
   namespace: conversations
 ```
 
-## 🧠 The 6 Cognitive Memory Types (Operation-Aware)
+## 🧠 The 6 Memory Preset Types (Operation-Based)
 
-Based on Marvin Minsky's theories from "The Society of Mind". Each preset now provides **different optimized defaults** for read and write operations:
+Memory presets are templates with predefined retention durations and search parameters. Each preset provides different default parameters for read and write operations:
 
 ### 1. **Sensory Memory** (`sensory`)
 ```yaml

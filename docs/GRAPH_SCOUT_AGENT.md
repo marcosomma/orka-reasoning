@@ -1,8 +1,8 @@
-# GraphScout Agent - Intelligent Workflow Path Discovery
+# GraphScout Agent - Workflow Path Discovery
 
 **NEW in OrKa v0.9.3** 🧭
 
-The GraphScout Agent is OrKa's intelligent routing system that automatically discovers, evaluates, and executes optimal paths through your workflow graph. Instead of manually defining static routing rules, GraphScout dynamically inspects your workflow graph and intelligently selects the best sequence of agents to handle each request.
+The GraphScout Agent is OrKa's dynamic routing system that discovers, evaluates, and executes paths through your workflow graph. Instead of manually defining static routing rules, GraphScout inspects your workflow graph at runtime and selects agent sequences based on LLM evaluation.
 
 ---
 
@@ -24,11 +24,11 @@ The GraphScout Agent is OrKa's intelligent routing system that automatically dis
 
 ## Overview
 
-GraphScout transforms static workflow definitions into dynamic, intelligent routing systems. It analyzes your workflow graph in real-time, discovers possible execution paths, evaluates them using both heuristics and LLM reasoning, and automatically executes the optimal sequence of agents.
+GraphScout provides dynamic routing as an alternative to static workflow definitions. It analyzes your workflow graph at runtime, discovers possible execution paths, evaluates them using heuristics and LLM-based scoring, and executes selected agent sequences.
 
 ### Before GraphScout (Static Routing)
 ```yaml
-# Manual routing - rigid and limited
+# Manual routing - predefined paths
 - id: manual_router
   type: router
   params:
@@ -38,10 +38,10 @@ GraphScout transforms static workflow definitions into dynamic, intelligent rout
       "analysis": [analyzer_agent, summarizer_agent]
 ```
 
-### After GraphScout (Intelligent Routing)
+### After GraphScout (Dynamic Routing)
 ```yaml
-# Intelligent routing - dynamic and adaptive
-- id: smart_router
+# Dynamic routing - runtime path selection
+- id: dynamic_router
   type: graph_scout
   config:
     k_beam: 5
@@ -54,23 +54,23 @@ GraphScout transforms static workflow definitions into dynamic, intelligent rout
 
 ## Key Features
 
-### 🧭 **Intelligent Path Discovery**
-- **Graph Introspection**: Automatically discovers all possible paths through your workflow
-- **Multi-hop Reasoning**: Finds complex multi-agent sequences, not just single-step routing
-- **Dynamic Adaptation**: Adapts to workflow changes without manual reconfiguration
+### 🧭 **Path Discovery**
+- **Graph Introspection**: Discovers all reachable paths through your workflow
+- **Multi-hop Sequences**: Finds multi-agent sequences, not just single-step routing
+- **Runtime Adaptation**: Adapts to workflow changes without manual reconfiguration
 
-### 🎯 **Smart Decision Making**
-- **LLM Evaluation**: Uses advanced language models to reason about path effectiveness
+### 🎯 **LLM-Based Evaluation**
+- **LLM Scoring**: Uses language models to evaluate path effectiveness
 - **Heuristic Scoring**: Combines cost, latency, and capability analysis
 - **Confidence-based Decisions**: Makes commit/shortlist decisions based on confidence levels
 
-### 🧠 **Memory-Aware Routing**
-- **Intelligent Memory Positioning**: Automatically positions memory agents optimally
+### 🧠 **Memory Agent Ordering**
+- **Memory Agent Positioning**: Positions memory agents in execution order
   - `MemoryReaderNode` → Beginning of execution path
   - `MemoryWriterNode` → End of execution path
-- **Operation-Aware Logic**: Understands read vs write operations for optimal sequencing
+- **Operation-Aware Logic**: Differentiates read vs write operations for sequencing
 
-### ⚡ **Performance Optimization**
+### ⚡ **Performance Configuration**
 - **Budget Control**: Respects token and latency budgets
 - **Safety Assessment**: Evaluates path safety and reliability
 - **Beam Search**: Uses k-beam search for efficient path exploration
@@ -79,7 +79,7 @@ GraphScout transforms static workflow definitions into dynamic, intelligent rout
 
 ## How It Works
 
-GraphScout operates through a sophisticated multi-stage process:
+GraphScout operates through a multi-stage process:
 
 ### 1. **Graph Introspection**
 ```
@@ -94,7 +94,7 @@ Input Query → Graph Analysis → Path Discovery
 Candidate Paths → Simulation → Scoring → Ranking
 ```
 - Simulates each path execution using the DryRunEngine
-- Evaluates paths using both heuristics and LLM reasoning
+- Evaluates paths using heuristics and LLM-based scoring
 - Scores based on relevance, cost, latency, and safety
 
 ### 3. **Decision Making**
@@ -105,11 +105,11 @@ Ranked Paths → Decision Engine → Execution Plan
 - **Shortlist**: Multiple good options, execute sequentially
 - **No Path**: No suitable path found, fallback to response builder
 
-### 4. **Intelligent Execution**
+### 4. **Agent Execution**
 ```
-Execution Plan → Memory Routing → Agent Sequence → Results
+Execution Plan → Memory Ordering → Agent Sequence → Results
 ```
-- Applies memory agent routing logic
+- Applies memory agent ordering logic
 - Executes the selected agent sequence
 - Handles results and continues workflow
 
@@ -193,16 +193,16 @@ GraphScout makes three types of routing decisions:
 
 ## Memory Agent Routing
 
-GraphScout includes intelligent memory agent positioning logic:
+GraphScout includes memory agent positioning logic:
 
 ### Memory Agent Types
 - **`MemoryReaderNode`**: Agents that read from memory (operation: read)
 - **`MemoryWriterNode`**: Agents that write to memory (operation: write)
 
-### Intelligent Positioning Rules
+### Positioning Rules
 
 ```yaml
-# Execution sequence is automatically optimized:
+# Execution sequence is reordered:
 # 1. Memory Readers (beginning)
 # 2. Regular Agents (middle) 
 # 3. Memory Writers (end)
@@ -217,7 +217,7 @@ GraphScout includes intelligent memory agent positioning logic:
 
 ```yaml
 orchestrator:
-  id: intelligent_memory_workflow
+  id: memory_workflow
   agents: [graph_scout, memory_reader, search_agent, analyzer, memory_writer, response_builder]
 
 agents:
@@ -226,7 +226,7 @@ agents:
     config:
       k_beam: 5
       max_depth: 3
-    prompt: "Route intelligently: {{ input }}"
+    prompt: "Route based on input: {{ input }}"
     
   - id: memory_reader
     type: memory
@@ -730,14 +730,14 @@ orka test --config-a conservative.yml --config-b aggressive.yml
 
 ## Conclusion
 
-GraphScout Agent represents a major advancement in AI workflow orchestration, bringing intelligent, adaptive routing to OrKa workflows. By automatically discovering and evaluating optimal agent paths, GraphScout eliminates the need for manual routing configuration while providing superior performance and flexibility.
+GraphScout Agent provides dynamic routing for OrKa workflows. By discovering and evaluating paths at runtime, GraphScout eliminates the need for manual routing configuration while providing flexible workflow execution.
 
 **Key Benefits**:
-- 🧭 **Intelligent Routing**: Automatic path discovery and evaluation
-- 🧠 **Memory-Aware**: Optimal positioning of memory agents  
+- 🧭 **Dynamic Routing**: Runtime path discovery and evaluation
+- 🧠 **Memory Agent Ordering**: Positions memory agents in execution order
 - ⚡ **Performance**: Budget-aware execution with safety controls
 - 🔧 **Flexible**: Works with any workflow configuration
-- 📊 **Observable**: Comprehensive monitoring and debugging tools
+- 📊 **Observable**: Monitoring and debugging tools
 
 Start with the basic examples and gradually explore advanced features as your workflows become more complex. GraphScout scales from simple routing decisions to sophisticated multi-agent orchestration scenarios.
 
