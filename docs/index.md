@@ -2,62 +2,62 @@
 
 # OrKa Documentation
 
-Welcome to OrKa - the **Orchestrator Kit for Agentic Reasoning**! OrKa transforms Large Language Models into intelligent, memory-enabled agents that can learn, remember, and reason through complex workflows.
+Welcome to OrKa - the **Orchestrator Kit for Agentic Reasoning**. OrKa is a YAML-based framework for orchestrating LLM workflows with persistent memory storage and retrieval.
 
-## 🚀 What's New in V0.9.3 - GraphScout Intelligence Revolution
+## 🚀 What's New in V0.9.3 - GraphScout Agent
 
-- **🧭 GraphScout Agent** - **Intelligent workflow graph inspection** with automatic optimal multi-agent path execution
-- **🎯 Dynamic Path Discovery** - Real-time workflow analysis eliminating static routing configuration
-- **🧠 Memory-Aware Routing** - Intelligent memory agent positioning (readers first, writers last)
+- **🧭 GraphScout Agent** - Workflow graph traversal with multi-agent path execution based on LLM evaluation
+- **🎯 Dynamic Path Discovery** - Runtime workflow analysis as alternative to static routing configuration
+- **🧠 Memory Agent Ordering** - Positions memory readers before other agents and writers after
 - **⚡ Multi-Agent Execution** - Execute ALL agents in shortlist sequentially, not just the first one
-- **🔍 LLM-Powered Evaluation** - Advanced reasoning for path selection with confidence-based decisions
+- **🔍 LLM-Based Evaluation** - Path selection using LLM-based confidence scoring
 
-## 🚀 Previous Major Features - V0.9.2 Memory Presets Revolution
+## 🚀 Previous Major Features - V0.9.2 Memory Presets
 
-- **🧠 Memory Presets System** - **90% configuration complexity reduction** with Minsky-inspired cognitive memory types
-- **🎯 Operation-Aware Intelligence** - Automatic read/write optimization eliminating manual parameter tuning  
+- **🧠 Memory Presets System** - Simplified memory configuration using preset templates based on memory duration patterns
+- **🎯 Operation-Aware Configuration** - Different default parameters for read vs write operations
 - **🔧 Unified Memory Agents** - Single `type: memory` replacing separate reader/writer types
-- **🤖 Local LLM First** - Complete Ollama integration with privacy-focused design
-- **📚 Documentation Modernization** - Modular example system with dramatically simplified configurations
+- **🤖 Local LLM Integration** - Full Ollama support for running models locally
+- **📚 Documentation Updates** - Reorganized examples with simplified preset-based configurations
 
 ## 🚀 Previous Major Features
 
-### V0.7.5 - Cognitive Loop System
-- **🔄 Advanced Loop Node** - Intelligent iterative workflows with cognitive insight extraction
-- **🧠 Cognitive Society Framework** - Multi-agent deliberation and consensus building
-- **🎯 Threshold-Based Execution** - Continue until quality meets requirements
+### V0.7.5 - Loop Control
+- **🔄 Loop Node** - Iterative workflow execution with configurable exit conditions
+- **🧠 Multi-Agent Workflows** - Multiple agents collaborating on tasks with shared memory
+- **🎯 Threshold-Based Execution** - Loop termination based on score thresholds
 
-### V0.7.0 - RedisStack Performance Revolution  
-- **🚀 100x Faster Vector Search** - RedisStack HNSW indexing now default across all components
-- **⚡ Sub-millisecond Search Latency** - O(log n) complexity for massive datasets
-- **🏗️ Unified Architecture** - All components now use RedisStack with intelligent fallback
+### V0.7.0 - RedisStack Integration
+- **🚀 HNSW Vector Search** - RedisStack HNSW indexing for faster similarity search (benchmarked 100x faster than basic Redis)
+- **⚡ Improved Search Latency** - Sub-millisecond search performance on indexed data
+- **🏗️ Unified Backend** - All components now use RedisStack with fallback to basic Redis
 
-## 🧠 What Makes OrKa Special?
+## 🧠 Key Features
 
-### Revolutionary Memory System with Cognitive Presets
-OrKa's crown jewel is its **scientifically-grounded memory system** with Minsky-inspired cognitive architecture:
+### Memory System with Presets
+OrKa includes a Redis-based memory system with configurable retention policies:
 
-- **🧠 Cognitive Memory Presets**: 6 memory types based on cognitive science (sensory, working, episodic, semantic, procedural, meta)
-- **🎯 90% Configuration Reduction**: Single `memory_preset` parameter replaces 15+ lines of complex configuration
-- **⚡ Operation-Aware Intelligence**: Automatic read/write optimization with zero manual tuning required
-- **🚀 100x Faster Vector Search**: RedisStack HNSW indexing delivers sub-millisecond semantic search
-- **🔄 Intelligent Decay**: Automatic memory lifecycle management with importance-based retention
-- **📊 Smart Classification**: Cognitive memory type classification with scientifically-optimized defaults
-- **🔍 Semantic Understanding**: Advanced vector embeddings enable meaning-based memory retrieval
-- **🖥️ Real-time Monitoring**: Professional CLI dashboard with HNSW performance metrics
+- **🧠 Memory Presets**: 6 preset configurations with different retention durations (sensory, working, episodic, semantic, procedural, meta)
+- **🎯 Simplified Configuration**: Single `memory_preset` parameter provides preconfigured defaults
+- **⚡ Operation-Based Defaults**: Different default parameters for read vs write operations
+- **🚀 HNSW Vector Indexing**: RedisStack HNSW provides faster vector similarity search (benchmarked 100x faster than basic Redis)
+- **🔄 Configurable Expiration**: Time-based memory expiration with importance factor multipliers
+- **📊 Preset Templates**: Preconfigured retention periods and importance rules per preset type
+- **🔍 Semantic Search**: Vector embeddings for similarity-based retrieval
+- **🖥️ CLI Monitoring**: Command-line tools for viewing memory state and metrics
 
-### YAML-Driven Orchestration
-Build complex AI workflows using intuitive YAML configuration:
-- **📝 Declarative Design**: Define what you want, not how to build it
-- **🔧 Modular Agents**: Composable building blocks for any use case
-- **🌊 Dynamic Routing**: Conditional workflows that adapt based on results
-- **🔄 Fork/Join Patterns**: Parallel processing for complex reasoning
+### YAML-Based Configuration
+Define workflows in YAML files instead of code:
+- **📝 Declarative Format**: Specify agents and their connections in YAML
+- **🔧 Modular Agents**: Composable agent types for different tasks
+- **🌊 Conditional Routing**: Router agents for branching logic based on outputs
+- **🔄 Fork/Join Patterns**: Parallel execution paths with result aggregation
 
-### Transparent Reasoning
-Every decision is traceable and auditable:
-- **📋 Complete Audit Trail**: Full history of agent interactions and decisions
-- **🎭 Visual Workflows**: OrKa UI for monitoring and debugging
-- **📊 Rich Metadata**: Detailed context for every memory and interaction
+### Execution Tracking
+Workflows provide execution logs and metrics:
+- **📋 Execution History**: Redis-based logging of agent interactions
+- **🎭 Monitoring UI**: Optional web interface for workflow monitoring
+- **📊 Metadata Storage**: Agent outputs and execution context stored in Redis
 
 ## 🚀 Quick Start
 
@@ -85,7 +85,7 @@ python -m orka.orka_start
 python -m orka.orka_start
 ```
 
-### 3. Create Your First Memory-Enabled Agent
+### 3. Create Your First Workflow with Memory
 ```yaml
 orchestrator:
   id: smart-assistant
@@ -109,34 +109,33 @@ agents:
       similarity_threshold: 0.8
     prompt: "Find relevant conversation history for: {{ input }}"
 
-  - id: smart_response
+  - id: response_generation
     type: openai-answer
     prompt: |
       History: {{ previous_outputs.memory_search }}
       Current: {{ input }}
-      Generate a contextually aware response.
+      Generate a response using the conversation history.
 
   - id: memory_store
     type: memory-writer
     namespace: conversations
     params:
-      # memory_type automatically classified based on content and importance
       vector: true
-    prompt: "User: {{ input }} | Assistant: {{ previous_outputs.smart_response }}"
+    prompt: "User: {{ input }} | Assistant: {{ previous_outputs.response_generation }}"
 ```
 
-### 4. Run and Monitor with Professional Dashboard
+### 4. Run and Monitor Workflows
 ```bash
 # Run your workflow
 python -m orka.orka_cli smart-assistant.yml "Hello! Tell me about OrKa's memory system."
 
-# Monitor memory with RedisStack performance metrics
+# Monitor memory state
 python -m orka.orka_cli memory watch
 
-# View detailed statistics and HNSW performance
+# View statistics
 python -m orka.orka_cli memory stats
 
-# Optional: Run OrKa UI for visual monitoring
+# Optional: Run OrKa UI for web-based monitoring
 docker pull marcosomma/orka-ui:latest
 docker run -it -p 80:80 --name orka-ui marcosomma/orka-ui:latest
 # Then open http://localhost in your browser
@@ -145,9 +144,9 @@ docker run -it -p 80:80 --name orka-ui marcosomma/orka-ui:latest
 ## 📚 Documentation Guide
 
 ### 🎯 Getting Started
-- **[📘 Getting Started](./getting-started.md)** - Complete setup guide with V0.7.0 features
-- **[📝 YAML Configuration Guide](./yaml-configuration-guide.md)** - Comprehensive agent configuration reference
-- **[🧠 Memory System Guide](./MEMORY_SYSTEM_GUIDE.md)** - Deep dive into OrKa's RedisStack-powered memory
+- **[📘 Getting Started](./getting-started.md)** - Complete setup guide
+- **[📝 YAML Configuration Guide](./yaml-configuration-guide.md)** - Agent configuration reference
+- **[🧠 Memory System Guide](./MEMORY_SYSTEM_GUIDE.md)** - Memory configuration and usage
 
 ### 🔧 Core Concepts
 - **[🤖 Agent Types](./agents.md)** - All available agent types and their capabilities
@@ -164,123 +163,128 @@ docker run -it -p 80:80 --name orka-ui marcosomma/orka-ui:latest
 - **[📜 YAML Schema](./orka.yaml-schema.md)** - Complete YAML configuration schema
 - **[❓ FAQ](./faq.md)** - Frequently asked questions and troubleshooting
 
-## 🎯 Key Use Cases
+## 🎯 Common Use Cases
 
-### 1. Conversational AI with Memory
-Build chatbots that remember context and learn from interactions:
+### 1. Conversational Interface with Memory
+Chatbots that retrieve and store conversation history:
 ```yaml
-# Retrieves conversation history with 100x faster search,
-# classifies interaction type, generates contextually aware responses,
-# and stores for future use with intelligent decay
+# Retrieves conversation history using vector search,
+# classifies interaction type, generates responses based on context,
+# and stores interactions with configurable expiration rules
 ```
 
-### 2. Self-Updating Knowledge Base  
-Create knowledge systems that automatically verify and update information:
+### 2. Knowledge Base with Updates
+Systems that search existing knowledge and add new information:
 ```yaml
-# Searches existing knowledge with HNSW indexing, determines freshness,
-# fetches new information, verifies facts, and updates knowledge base
+# Searches existing knowledge with HNSW indexing, checks if content is recent,
+# fetches new information via web search, validates facts using LLM,
+# and updates knowledge base with new entries
 ```
 
-### 3. Multi-Agent Research System
-Orchestrate collaborative research workflows:
+### 3. Multi-Agent Workflows
+Multiple agents working on related tasks with shared memory:
 ```yaml
 # Research agents gather information, analysis agents process findings,
-# synthesis agents create comprehensive reports - all sharing RedisStack memory
+# synthesis agents create reports - all using shared Redis memory
 ```
 
-### 4. Iterative Improvement Systems
-Build systems that learn from mistakes and improve over time:
+### 4. Iterative Refinement
+Workflows that repeat until output meets criteria:
 ```yaml
 # Uses LoopNode to iteratively refine responses until quality threshold is met,
-# extracts insights and improvements from each iteration,
-# maintains memory of past attempts for continuous learning
+# extracts metrics from each iteration,
+# stores iteration history in memory for tracking progress
 ```
 
-### 5. Cognitive Society Deliberation
-Create multi-agent deliberation systems for consensus building:
+### 5. Multi-Agent Deliberation
+Multiple agents providing different perspectives on a topic:
 ```yaml
-# Multiple reasoning agents (logical, empathetic, skeptical, creative) deliberate,
-# moderator evaluates consensus level, process repeats until agreement reached,
-# produces unified perspective incorporating all viewpoints
+# Multiple agents (logical, empathetic, skeptical, creative) generate responses,
+# moderator evaluates similarity between responses, process repeats until threshold reached,
+# produces aggregated output combining different viewpoints
 ```
 
-### 6. Error Learning System
-Build systems that learn from mistakes:
+### 6. Workflow Validation
+Systems that retry on failure with memory of past attempts:
 ```yaml
-# Attempts solutions, validates results, learns from failures,
-# and improves future responses based on past experience
+# Attempts task execution, validates results using validation agent,
+# stores failures in memory, retries with adjustments based on past failures
 ```
 
-## 🧠 Memory System Highlights
+## 🧠 Memory System Configuration
 
-### Intelligent Decay
+### Configurable Expiration Rules
 ```yaml
 memory_config:
   decay:
     enabled: true
     importance_rules:
-      critical_info: 3.0      # Keep critical info 3x longer
-      user_feedback: 2.5      # Value user corrections
-      routine_query: 0.8      # Let routine queries decay faster
+      critical_info: 3.0      # Multiply retention time by 3x
+      user_feedback: 2.5      # Multiply retention time by 2.5x
+      routine_query: 0.8      # Multiply retention time by 0.8x
 ```
 
-### Context-Aware Search with HNSW Performance
+### Context-Aware Search with HNSW
 ```yaml
 memory_reader:
   params:
-    enable_context_search: true    # Use conversation history
-    context_weight: 0.4           # 40% weight for context
+    enable_context_search: true    # Include conversation history in search
+    context_weight: 0.4           # 40% weight for context matching
     temporal_weight: 0.3          # 30% weight for recency
-    similarity_threshold: 0.8     # Minimum relevance score (HNSW optimized)
+    similarity_threshold: 0.8     # Minimum relevance score (HNSW-indexed)
 ```
 
-### Real-time Monitoring with RedisStack Metrics
+### Monitoring Tools
 ```bash
-# Professional memory dashboard with HNSW performance
+# Command-line memory dashboard
 python -m orka.orka_cli memory watch
 
-# Detailed analytics with vector search metrics
+# View memory statistics
 python -m orka.orka_cli memory stats
 
-# HNSW index optimization and cleanup
+# Clean up expired entries
 python -m orka.orka_cli memory cleanup
 ```
 
-## 🌟 Why Choose OrKa?
+## 🌟 Comparison to Alternatives
 
 | Feature | OrKa V0.7.0 | LangChain | CrewAI | LlamaIndex |
 |---------|-------------|-----------|--------|-------------|
-| **Memory System** | ✅ RedisStack HNSW (100x faster) | ❌ Basic storage | ❌ Simple memory | ⚠️ RAG-focused |
+| **Memory System** | ✅ RedisStack HNSW (benchmarked 100x faster) | ❌ Basic storage | ❌ Simple memory | ⚠️ RAG-focused |
 | **Vector Search** | ✅ Sub-millisecond HNSW | ❌ Basic similarity | ❌ No vector search | ⚠️ Limited indexing |
-| **Configuration** | ✅ YAML-driven | ❌ Python code | ❌ Python code | ❌ Python code |
-| **Transparency** | ✅ Complete audit trail | ⚠️ Limited | ⚠️ Basic | ⚠️ Limited |
-| **Learning Curve** | ✅ Low (YAML) | ⚠️ Medium | ⚠️ Medium | ⚠️ Medium |
-| **Memory Decay** | ✅ Intelligent lifecycle | ❌ Manual cleanup | ❌ No decay | ❌ Manual cleanup |
-| **Context Awareness** | ✅ Multi-factor search | ❌ Basic retrieval | ❌ Simple memory | ⚠️ Vector-only |
-| **Performance** | ✅ Enterprise-grade | ⚠️ Variable | ⚠️ Basic | ⚠️ Index-dependent |
+| **Configuration** | ✅ YAML-based | ❌ Python code | ❌ Python code | ❌ Python code |
+| **Execution Logging** | ✅ Redis-based logs | ⚠️ Limited | ⚠️ Basic | ⚠️ Limited |
+| **Learning Curve** | ✅ Low (YAML) | ⚠️ Medium (Python) | ⚠️ Medium (Python) | ⚠️ Medium (Python) |
+| **Memory Expiration** | ✅ Time-based with rules | ❌ Manual cleanup | ❌ No expiration | ❌ Manual cleanup |
+| **Context Inclusion** | ✅ Multi-factor scoring | ❌ Basic retrieval | ❌ Simple memory | ⚠️ Vector-only |
+| **Performance** | ✅ HNSW indexing | ⚠️ Varies by backend | ⚠️ Basic | ⚠️ Index-dependent |
 
 ## 📊 Performance Benchmarks
 
-| Metric | Basic Redis | **RedisStack HNSW** | Improvement |
+Performance measurements comparing basic Redis to RedisStack HNSW on a test dataset:
+
+| Metric | Basic Redis | **RedisStack HNSW** | Measured Difference |
 |--------|-------------|---------------------|-------------|
-| **Vector Search** | 50-200ms | **0.5-5ms** | **100x faster** |
+| **Vector Search** | 50-200ms | **0.5-5ms** | **~100x faster** |
 | **Memory Usage** | 100% baseline | **40%** | **60% reduction** |
 | **Throughput** | 1,000/sec | **50,000/sec** | **50x higher** |
 | **Concurrent Searches** | 10-50 | **1,000+** | **20x more** |
 
+*Note: Performance depends on dataset size, query complexity, and hardware. Your results may vary.*
+
 ## 🔧 Architecture Overview
 
-OrKa V0.7.0 uses a unified RedisStack architecture:
+OrKa uses a Redis-based architecture for workflow execution and memory:
 
 ```
 ┌─────────────┐     ┌─────────────────┐     ┌─────────────┐
 │   YAML      │     │  Orchestrator   │     │   Agents    │
-│ Definition  ├────►│  (Control Flow) ├────►│ (Reasoning) │
+│ Definition  ├────►│  (Control Flow) ├────►│  (Execution)│
 └─────────────┘     └────────┬────────┘     └──────┬──────┘
                              │                     │
                      ┌───────▼─────────────────────▼───────┐
                      │     RedisStack HNSW Memory          │
-                     │  (100x Faster Vector Search)        │
+                     │  (Vector search with HNSW index)    │
                      └───────────────────────────────────┬─┘
                                                          │
                                                  ┌───────▼────────┐
@@ -289,7 +293,7 @@ OrKa V0.7.0 uses a unified RedisStack architecture:
                                                  └────────────────┘
 ```
 
-**Ready to experience 100x faster AI workflows?** Start with our [📘 Getting Started](./getting-started.md) guide!
+**Ready to get started?** See our [📘 Getting Started](./getting-started.md) guide!
 
 ---
 
