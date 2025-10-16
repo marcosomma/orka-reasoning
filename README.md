@@ -121,6 +121,22 @@ OrKa works with local models through:
 - **LM Studio** - Point to your local API endpoint
 - **Any LLM-compatible API**
 
+---
+
+## 📚 **Complete Agent & Node Reference**
+
+> **🎯 NEW: [Comprehensive Documentation for Every Agent, Node & Tool →](docs/AGENT_NODE_TOOL_INDEX.md)**
+>
+> Detailed documentation for all 18 agent types, control flow nodes, and tools:
+> - 🤖 **6 LLM Agents** - OpenAI, Local LLM, Binary, Classification, Validation
+> - 💾 **2 Memory Agents** - Reader & Writer with 100x faster HNSW indexing
+> - 🔀 **6 Control Flow Nodes** - Router, Fork/Join, Loop, Failover, GraphScout
+> - 🔧 **2 Search Tools** - DuckDuckGo, RAG
+>
+> Each with working examples, parameters, best practices, and troubleshooting!
+
+---
+
 ## Common Patterns
 
 ### Memory-First Q&A
@@ -217,6 +233,10 @@ orka run local-chat.yml "Explain machine learning simply"
 
 ## Documentation
 
+### 🌟 **[Agent & Node Reference Index →](docs/AGENT_NODE_TOOL_INDEX.md)** ⭐
+**Complete 1-to-1 documentation for every agent, node, and tool** with examples, parameters, and best practices.
+
+### Core Guides
 - [Getting Started Guide](docs/getting-started.md) - Detailed setup and first workflows
 - [Agent Types](docs/agents.md) - All available agent types and configurations  
 - [Memory System](docs/MEMORY_SYSTEM_GUIDE.md) - How memory works and configuration
