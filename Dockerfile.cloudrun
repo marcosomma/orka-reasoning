@@ -13,19 +13,28 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies (without Redis yet)
 RUN apt-get update && apt-get install -y \
     python3.11 \
     python3.11-dev \
     python3-pip \
     python3.11-venv \
-    redis-server \
     curl \
     wget \
     git \
     gcc \
     g++ \
+    ca-certificates \
+    gnupg \
+    lsb-release \
     && rm -rf /var/lib/apt/lists/*
+
+# Install RedisStack (includes RediSearch for FT.* commands)
+RUN curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/redis.list && \
+    apt-get update && \
+    apt-get install -y redis-stack-server && \
+    rm -rf /var/lib/apt/lists/*
 
 # Make python3.11 the default python3
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 \
@@ -49,14 +58,16 @@ RUN mkdir -p /logs
 COPY startup.sh /app/startup.sh
 RUN chmod +x /app/startup.sh
 
-# Configure Redis for Cloud Run (no persistence, memory only)
-RUN mkdir -p /var/run/redis && \
-    echo "bind 127.0.0.1" > /etc/redis/redis.conf && \
-    echo "port 6380" >> /etc/redis/redis.conf && \
-    echo "daemonize no" >> /etc/redis/redis.conf && \
-    echo "maxmemory 2gb" >> /etc/redis/redis.conf && \
-    echo "maxmemory-policy allkeys-lru" >> /etc/redis/redis.conf && \
-    echo "save \"\"" >> /etc/redis/redis.conf
+# Configure RedisStack for Cloud Run (no persistence, memory only)
+# Note: redis-stack-server automatically loads RediSearch, ReJSON, etc.
+# We only configure basic Redis settings here
+RUN mkdir -p /var/run/redis /etc/redis-stack && \
+    echo "bind 127.0.0.1" > /etc/redis-stack/redis-stack.conf && \
+    echo "port 6380" >> /etc/redis-stack/redis-stack.conf && \
+    echo "daemonize no" >> /etc/redis-stack/redis-stack.conf && \
+    echo "maxmemory 2gb" >> /etc/redis-stack/redis-stack.conf && \
+    echo "maxmemory-policy allkeys-lru" >> /etc/redis-stack/redis-stack.conf && \
+    echo "save \"\"" >> /etc/redis-stack/redis-stack.conf
 
 # Environment variables for OrKa (OpenAI-only)
 ENV ORKA_MEMORY_BACKEND=redisstack

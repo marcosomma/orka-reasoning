@@ -1,0 +1,233 @@
+# Iterative Learning Demo - AI That Learns Within a Session
+# =========================================================
+#
+# This workflow demonstrates genuine learning through agent orchestration:
+# 1. Initial analysis → 2. Store insights → 3. Search memory → 
+# 4. Deep analysis with context → 5. Store learnings → 6. Synthesize evolution
+#
+# Uses: OpenAI agents + Memory for knowledge persistence
+# Cost: ~$0.01-0.03 per execution (gpt-4o-mini + gpt-4o)
+# Time: ~15-30 seconds
+#
+# Try it at: https://orka-demo-647096874165.europe-west1.run.app/api/run
+
+orchestrator:
+  id: iterative-learning
+  strategy: sequential
+  agents:
+    - initial_analyzer      # Stage 1: First-pass understanding
+    - insight_storer        # Stage 2: Store what we learned
+    - knowledge_retriever   # Stage 3: Find related concepts
+    - deep_analyzer         # Stage 4: Go deeper with context
+    - learning_recorder     # Stage 5: Store advanced insights
+    - final_synthesizer     # Stage 6: Show the evolution
+
+agents:
+  # ==============================================================
+  # STAGE 1: Initial Analysis
+  # ==============================================================
+  # Purpose: Get a first understanding of the topic
+  # Model: gpt-4o-mini (fast, cheap, good for initial pass)
+  # Output: Core concepts, connections, areas to explore
+  
+  - id: initial_analyzer
+    type: openai-answer
+    model: gpt-4o-mini
+    temperature: 0.7
+    prompt: |
+      Analyze this topic: {{ get_input() }}
+      
+      Provide:
+      1. Core concepts (3-5 key points)
+      2. Connections to related topics
+      3. Areas needing deeper exploration
+      
+      Format as structured insights.
+
+  # ==============================================================
+  # STAGE 2: Store Insights in Memory
+  # ==============================================================
+  # Purpose: Persist initial understanding for later retrieval
+  # Backend: RedisStack with vector embeddings
+  # Note: This creates genuine persistence, not just passing text
+  
+  - id: insight_storer
+    type: memory
+    operation: write
+    prompt: |
+      Initial analysis of: {{ get_input() }}
+      
+      Key insights:
+      {{ get_agent_response('initial_analyzer') }}
+
+  # ==============================================================
+  # STAGE 3: Search for Related Knowledge
+  # ==============================================================
+  # Purpose: Find semantically related concepts from memory
+  # Search: Vector similarity using sentence transformers
+  # Result: Previously stored insights that relate to current analysis
+  
+  - id: knowledge_retriever
+    type: memory
+    operation: read
+    prompt: |
+      Search for concepts related to:
+      {{ get_agent_response('initial_analyzer') }}
+
+  # ==============================================================
+  # STAGE 4: Deeper Analysis with Memory Context
+  # ==============================================================
+  # Purpose: Second-pass analysis informed by memory
+  # Model: gpt-4o (more powerful for deep analysis)
+  # Context: Initial analysis + Memory search results
+  # This is where the "learning" becomes visible
+  
+  - id: deep_analyzer
+    type: openai-answer
+    model: gpt-4o
+    temperature: 0.6
+    prompt: |
+      Original question: {{ get_input() }}
+      
+      Initial analysis:
+      {{ get_agent_response('initial_analyzer') }}
+      
+      Related knowledge from memory:
+      {{ previous_outputs.knowledge_retriever }}
+      
+      Now provide a DEEPER analysis that:
+      1. Builds on the initial insights
+      2. Connects to related concepts from memory
+      3. Addresses the areas flagged for deeper exploration
+      4. Adds new perspectives not covered initially
+      
+      Show how the analysis has evolved.
+
+  # ==============================================================
+  # STAGE 5: Record Advanced Insights
+  # ==============================================================
+  # Purpose: Store the deeper understanding for future runs
+  # Metadata: Tracks evolution from initial → deep analysis
+  # Impact: Future workflows benefit from these insights
+  
+  - id: learning_recorder
+    type: memory
+    operation: write
+    prompt: |
+      Deep analysis of: {{ get_input() }}
+      
+      Advanced insights:
+      {{ get_agent_response('deep_analyzer') }}
+      
+      Evolution from initial analysis:
+      - Built upon: {{ get_agent_response('initial_analyzer') | truncate(200) }}
+      - Connected with: {{ previous_outputs.knowledge_retriever | truncate(200) }}
+
+  # ==============================================================
+  # STAGE 6: Final Synthesis
+  # ==============================================================
+  # Purpose: Show the complete learning progression
+  # Model: gpt-4o-mini (synthesis doesn't need the heavyweight)
+  # Output: Evolution summary + Comprehensive answer + Learning insights
+  # This demonstrates the value of the multi-stage approach
+  
+  - id: final_synthesizer
+    type: openai-answer
+    model: gpt-4o-mini
+    temperature: 0.4
+    prompt: |
+      Create a comprehensive final answer for: {{ get_input() }}
+      
+      Synthesize these learning stages:
+      
+      **Stage 1 - Initial Understanding:**
+      {{ get_agent_response('initial_analyzer') }}
+      
+      **Stage 2 - Memory-Enhanced Analysis:**
+      {{ get_agent_response('deep_analyzer') }}
+      
+      **Your Task:**
+      1. Show how understanding evolved through the stages
+      2. Present the final, most complete answer
+      3. Highlight what was learned through iteration
+      4. Demonstrate the value of this multi-pass approach
+      
+      Structure:
+      - Evolution Summary (how thinking progressed)
+      - Comprehensive Answer (synthesized knowledge)
+      - Learning Insights (what the iteration revealed)
+
+# ==============================================================
+# HOW TO USE THIS WORKFLOW
+# ==============================================================
+#
+# Postman Example:
+# ----------------
+# POST https://orka-demo-647096874165.europe-west1.run.app/api/run
+# Headers: Content-Type: application/json
+# Body:
+# {
+#   "input": "Explain how neural networks learn from data",
+#   "openai_api_key": "sk-YOUR_KEY_HERE",
+#   "yaml_config": "<paste this entire file as escaped string>"
+# }
+#
+# Python Example:
+# ---------------
+# import requests
+# import yaml
+#
+# with open('iterative_learning_demo.yml') as f:
+#     config = f.read()
+#
+# response = requests.post(
+#     'https://orka-demo-647096874165.europe-west1.run.app/api/run',
+#     json={
+#         'input': 'Explain quantum entanglement',
+#         'openai_api_key': 'sk-YOUR_KEY',
+#         'yaml_config': config
+#     }
+# )
+#
+# result = response.json()
+# print(result['execution_log'])
+#
+# ==============================================================
+# KEY FEATURES DEMONSTRATED
+# ==============================================================
+#
+# 1. Task Segmentation: 6 specialized agents vs 1 monolithic prompt
+# 2. Sequential Orchestration: Each agent builds on previous outputs
+# 3. Template Variables: Dynamic prompt generation with context
+# 4. Memory Persistence: Real storage & retrieval via RedisStack
+# 5. Learning Progression: Visible evolution of understanding
+# 6. Cost Efficiency: Smart model selection (mini vs full gpt-4o)
+# 7. Emergent Intelligence: Final output > sum of parts
+#
+# ==============================================================
+# EXPECTED OUTPUT STRUCTURE
+# ==============================================================
+#
+# {
+#   "run_id": "abc-123",
+#   "execution_log": {
+#     "events": [
+#       {"agent_id": "initial_analyzer", ...},
+#       {"agent_id": "insight_storer", ...},
+#       {"agent_id": "knowledge_retriever", ...},
+#       {"agent_id": "deep_analyzer", ...},
+#       {"agent_id": "learning_recorder", ...},
+#       {"agent_id": "final_synthesizer", ...}
+#     ],
+#     "cost_analysis": {
+#       "total_tokens": ~2500,
+#       "total_cost_usd": ~0.015,
+#       "models_used": ["gpt-4o-mini", "gpt-4o"]
+#     }
+#   },
+#   "log_file_url": "/api/logs/abc-123"
+# }
+#
+# ==============================================================
+
+

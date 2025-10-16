@@ -38,18 +38,25 @@ cleanup_old_logs() {
     find /logs -type f -name "*.log" -mmin +$((retention_hours * 60)) -delete 2>/dev/null || true
 }
 
-# 1. Start Redis server directly
-echo "Starting Redis server..."
-redis-server /etc/redis/redis.conf &
+# 1. Start RedisStack server (includes RediSearch)
+echo "Starting RedisStack server..."
+redis-stack-server /etc/redis-stack/redis-stack.conf &
 REDIS_PID=$!
-sleep 3
+sleep 5
 
-# Check Redis
+# Check RedisStack
 if ! redis-cli -p 6380 ping > /dev/null 2>&1; then
-    echo "ERROR: Redis failed to start"
+    echo "ERROR: RedisStack failed to start"
     exit 1
 fi
-echo "Redis started successfully (PID: $REDIS_PID)"
+
+# Verify RediSearch module is loaded
+if redis-cli -p 6380 MODULE LIST 2>/dev/null | grep -q "search"; then
+    echo "✓ RedisStack with RediSearch started successfully (PID: $REDIS_PID)"
+else
+    echo "⚠ RedisStack started but RediSearch module may not be loaded"
+    echo "  This might cause FT.* command errors"
+fi
 
 # 2. Clean up old logs
 cleanup_old_logs
