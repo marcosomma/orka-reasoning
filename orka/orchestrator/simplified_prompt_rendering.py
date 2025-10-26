@@ -384,13 +384,16 @@ class SimplifiedPromptRenderer:
                 return last_loop.get("synthesis_insights", "No synthesis insights found")
             return "No synthesis insights found"
 
-        def get_past_loop_data(key):
-            """Get specific data from the last past loop."""
+        def get_past_loop_data(key=None):
+            """Get data from the last past loop. If key is provided, return that specific value."""
             past_loops = get_past_loops()
             if past_loops:
                 last_loop = past_loops[-1]
+                if key is None:
+                    # Return the entire last loop as formatted string
+                    return str(last_loop)
                 return last_loop.get(key, f"No {key} found")
-            return f"No {key} found"
+            return "No past loops found"
 
         def get_current_topic():
             """Get the current topic being discussed."""
@@ -583,6 +586,22 @@ class SimplifiedPromptRenderer:
                             return nested_result["status"]
             return "completed"
 
+        def get_past_loops_metadata():
+            """Get past loops metadata for template rendering."""
+            if "past_loops_metadata" in payload:
+                return payload["past_loops_metadata"]
+            if "input" in payload and isinstance(payload["input"], dict):
+                return payload["input"].get("past_loops_metadata", {})
+            return {}
+
+        def get_score_threshold():
+            """Get the score threshold for loop validation."""
+            if "score_threshold" in payload:
+                return payload["score_threshold"]
+            if "input" in payload and isinstance(payload["input"], dict):
+                return payload["input"].get("score_threshold", 0.8)
+            return 0.8
+
         return {
             # Input helpers
             "get_input": get_input,
@@ -591,9 +610,11 @@ class SimplifiedPromptRenderer:
             "get_loop_number": get_loop_number,
             "has_past_loops": has_past_loops,
             "get_past_loops": get_past_loops,
+            "get_past_loops_metadata": get_past_loops_metadata,
             "get_past_insights": get_past_insights,
             "get_past_loop_data": get_past_loop_data,
             "get_round_info": get_round_info,
+            "get_score_threshold": get_score_threshold,
             # Agent helpers
             "get_agent_response": get_agent_response,
             "get_fork_responses": get_fork_responses,

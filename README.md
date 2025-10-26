@@ -98,7 +98,8 @@ OrKa provides several agent types you can use in your workflows:
 - **`router`** - Conditional branching
 - **`fork/join`** - Parallel processing
 - **`loop`** - Iterative workflows
-- **`GraphScout`** - [BETA] Find best path for workflow execution
+- **`plan_validator`** - Validate and critique proposed execution paths
+- **`graph_scout`** - [BETA] Find best path for workflow execution
 
 ### 2. Memory System
 OrKa includes a memory system that:
@@ -127,8 +128,8 @@ OrKa works with local models through:
 
 > **🎯 NEW: [Comprehensive Documentation for Every Agent, Node & Tool →](docs/AGENT_NODE_TOOL_INDEX.md)**
 >
-> Detailed documentation for all 18 agent types, control flow nodes, and tools:
-> - 🤖 **6 LLM Agents** - OpenAI, Local LLM, Binary, Classification, Validation
+> Detailed documentation for all agent types, control flow nodes, and tools:
+> - 🤖 **7 LLM Agents** - OpenAI, Local LLM, Binary, Classification, Validation, PlanValidator
 > - 💾 **2 Memory Agents** - Reader & Writer with 100x faster HNSW indexing
 > - 🔀 **6 Control Flow Nodes** - Router, Fork/Join, Loop, Failover, GraphScout
 > - 🔧 **2 Search Tools** - DuckDuckGo, RAG

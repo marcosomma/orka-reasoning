@@ -1,6 +1,6 @@
 # OrKa Agent, Node & Tool Documentation Index
 
-Complete reference for all agent types, control flow nodes, and tools in OrKa v0.9.4.
+Complete reference for all agent types, control flow nodes, and tools in OrKa v0.9.5.
 
 ## 🤖 LLM Agents
 
@@ -14,6 +14,7 @@ Agents that use language models for processing and generation.
 | **local_llm** | Local/private LLM processing (Ollama, LM Studio) | [📖 View](./agents/local-llm.md) |
 | **binary** | Simple rule-based true/false | [📖 View](./agents/binary.md) |
 | **validate_and_structure** | Answer validation with structured output | [📖 View](./agents/validate-and-structure.md) |
+| **plan_validator** | Validate and critique execution paths | [📖 View](./agents/plan-validator.md) |
 
 ## 💾 Memory Agents
 
@@ -42,6 +43,7 @@ Nodes that control workflow execution and logic.
 | **loop** | Iterative improvement with cognitive extraction | [📖 View](./nodes/loop.md) |
 | **failover** | Resilient execution with fallbacks | [📖 View](./nodes/failover.md) |
 | **graph-scout** | 🆕 Intelligent path discovery (v0.9.3+) | [📖 View](./nodes/graph-scout.md) |
+| **plan-validator** | 🆕 Path validation and critique (v0.9.5+) | [📖 View](./agents/plan-validator.md) |
 
 ## 🔧 Tools
 
@@ -65,6 +67,7 @@ External tools and integrations.
 - `openai-classification` - Categorization
 - `binary` - Simple checks
 - `router` - Route based on decisions
+- `plan_validator` - Validate execution paths
 
 ### Content Processing
 - `openai-answer` - Content generation
@@ -78,6 +81,7 @@ External tools and integrations.
 - `loop` - Iterative refinement
 - `failover` - Error handling
 - `graph-scout` - Dynamic routing
+- `plan_validator` - Path validation and critique
 
 ### Memory & Storage
 - `memory-reader` - Semantic search
@@ -327,9 +331,9 @@ orka memory cleanup --dry-run
 
 ## Version Information
 
-**Documentation Version:** v0.9.4  
+**Documentation Version:** v0.9.5  
 **Last Updated:** October 2025  
-**Compatibility:** OrKa-Reasoning v0.9.4+
+**Compatibility:** OrKa-Reasoning v0.9.5+
 
 ---
 

@@ -1,0 +1,71 @@
+# Simple Customer Support Workflow Design
+# Demonstrates multi-agent workflow design with requirements analysis
+
+orchestrator:
+  id: simple-workflow-design
+  strategy: sequential
+  agents:
+    - requirements_analyzer
+    - workflow_designer
+    - implementation_planner
+
+agents:
+  # Step 1: Analyze requirements
+  - id: requirements_analyzer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      Analyze the following request and extract key requirements:
+      
+      {{ input }}
+      
+      Provide:
+      1. Core Objectives (3-5 bullet points)
+      2. Key Stakeholders 
+      3. Critical Features
+      4. Success Criteria
+
+  # Step 2: Design the workflow
+  - id: workflow_designer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.5
+    prompt: |
+      Based on these requirements, design a detailed workflow:
+      
+      Original Request: {{ input }}
+      
+      Requirements: {{ get_agent_response('requirements_analyzer') }}
+      
+      Provide a comprehensive workflow design including:
+      1. Step-by-step process flow
+      2. Agent/role responsibilities
+      3. Data flow and handoffs
+      4. Error handling approach
+      5. Key metrics for success
+
+  # Step 3: Create implementation plan
+  - id: implementation_planner
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.4
+    prompt: |
+      Create an actionable implementation plan for this workflow:
+      
+      Original Request: {{ input }}
+      
+      Workflow Design: {{ get_agent_response('workflow_designer') }}
+      
+      Provide:
+      1. Implementation Phases (with timelines)
+      2. Required Resources
+      3. Risk Mitigation Strategies
+      4. Deployment Approach
+      5. Monitoring and Improvement Plan

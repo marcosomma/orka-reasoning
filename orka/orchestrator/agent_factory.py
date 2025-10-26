@@ -25,6 +25,7 @@ from ..agents import (
     agents,
     llm_agents,
     local_llm_agents,
+    plan_validator,
     validation_and_structuring_agent,
 )
 from ..memory.base_logger import BaseMemoryLogger
@@ -53,6 +54,7 @@ AgentClass = Union[
     Type[llm_agents.OpenAIAnswerBuilder],
     Type[llm_agents.OpenAIBinaryAgent],
     Type[llm_agents.OpenAIClassificationAgent],
+    Type[plan_validator.PlanValidatorAgent],
     Type[validation_and_structuring_agent.ValidationAndStructuringAgent],
     Type[RAGNode],
     Type[DuckDuckGoTool],
@@ -75,6 +77,7 @@ AGENT_TYPES: Dict[str, AgentClass] = {
     "openai-answer": llm_agents.OpenAIAnswerBuilder,
     "openai-binary": llm_agents.OpenAIBinaryAgent,
     "openai-classification": llm_agents.OpenAIClassificationAgent,
+    "plan_validator": plan_validator.PlanValidatorAgent,
     "validate_and_structure": validation_and_structuring_agent.ValidationAndStructuringAgent,
     "rag": RAGNode,
     "duckduckgo": DuckDuckGoTool,

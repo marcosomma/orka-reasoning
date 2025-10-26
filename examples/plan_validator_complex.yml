@@ -1,0 +1,121 @@
+# Complex Enterprise System Design
+# Demonstrates comprehensive system architecture design
+
+orchestrator:
+  id: enterprise-system-design
+  strategy: sequential
+  agents:
+    - business_analyst
+    - system_architect
+    - security_specialist
+    - implementation_strategist
+    - executive_summary
+
+agents:
+  # Step 1: Business analysis
+  - id: business_analyst
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      Conduct a comprehensive business analysis for:
+      
+      {{ input }}
+      
+      Provide:
+      1. Business Objectives
+      2. Stakeholder Analysis
+      3. Current Pain Points
+      4. Required Capabilities
+      5. Success Metrics
+
+  # Step 2: System architecture
+  - id: system_architect
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.5
+    prompt: |
+      Design a comprehensive system architecture for:
+      
+      {{ input }}
+      
+      Business Analysis: {{ get_agent_response('business_analyst') }}
+      
+      Provide:
+      1. High-Level Architecture (components and layers)
+      2. Technology Stack Recommendations
+      3. Data Flow Architecture
+      4. Integration Points
+      5. Scalability Strategy
+
+  # Step 3: Security analysis
+  - id: security_specialist
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      Analyze security requirements and design security measures:
+      
+      System: {{ input }}
+      
+      Architecture: {{ get_agent_response('system_architect') }}
+      
+      Provide:
+      1. Security Threat Analysis
+      2. Authentication & Authorization Strategy
+      3. Data Protection Measures
+      4. Compliance Requirements
+      5. Security Monitoring Plan
+
+  # Step 4: Implementation strategy
+  - id: implementation_strategist
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.4
+    prompt: |
+      Create a detailed implementation strategy:
+      
+      System: {{ input }}
+      
+      Architecture: {{ get_agent_response('system_architect') }}
+      
+      Security: {{ get_agent_response('security_specialist') }}
+      
+      Provide:
+      1. Implementation Phases (3-6 months roadmap)
+      2. Team Structure and Roles
+      3. Technology Migration Plan
+      4. Testing Strategy
+      5. Deployment and Rollout Plan
+
+  # Step 5: Executive summary
+  - id: executive_summary
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      Create an executive summary of the complete system design:
+      
+      System: {{ input }}
+      
+      Business Analysis: {{ get_agent_response('business_analyst') }}
+      Architecture: {{ get_agent_response('system_architect') }}
+      Security: {{ get_agent_response('security_specialist') }}
+      Implementation: {{ get_agent_response('implementation_strategist') }}
+      
+      Format as a concise executive summary with:
+      1. Overview (2-3 sentences)
+      2. Key Components
+      3. Implementation Timeline
+      4. Expected Benefits
+      5. Critical Success Factors

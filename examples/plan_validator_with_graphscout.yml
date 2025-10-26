@@ -1,0 +1,81 @@
+# Complex Plan Validator with GraphScout
+# Demonstrates meta-cognitive planning with intelligent routing
+
+orchestrator:
+  id: graphscout-validator-complex
+  strategy: sequential
+  agents:
+    - system_architect
+    - final_report
+
+agents:
+  # Step 1: Design the system with GraphScout + PlanValidator oversight
+  - id: system_architect
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.5
+    prompt: |
+      Design a comprehensive system for: {{ input }}
+      
+      Include:
+      1. System Architecture
+         - Components and their responsibilities
+         - Data flow and communication patterns
+         - Technology stack recommendations
+      
+      2. Key Features
+         - Automated processes
+         - Escalation mechanisms
+         - Integration points
+      
+      3. Implementation Plan
+         - Phase 1: Core infrastructure
+         - Phase 2: Automation layer
+         - Phase 3: Intelligence and analytics
+      
+      4. Risk Assessment
+         - Security considerations
+         - Scalability challenges
+         - Compliance requirements
+      
+      5. Success Metrics
+         - Performance KPIs
+         - User satisfaction metrics
+         - Operational efficiency gains
+      
+      Provide a detailed, production-ready design.
+
+  # Step 2: Generate executive report
+  - id: final_report
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      Create an executive summary of the system design:
+      
+      Request: {{ input }}
+      
+      Design: {{ get_agent_response('system_architect') }}
+      
+      Format as:
+      
+      # Executive Summary
+      
+      ## Overview
+      [2-3 sentence high-level summary]
+      
+      ## Key Components
+      [Bullet list of major components]
+      
+      ## Implementation Roadmap
+      [3 key phases with timelines]
+      
+      ## Expected Outcomes
+      [Business value and metrics]
+      
+      ## Recommendations
+      [Next steps]

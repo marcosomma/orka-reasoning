@@ -143,6 +143,7 @@ from .llm_agents import (
     OpenAIClassificationAgent,
 )
 from .local_llm_agents import LocalLLMAgent
+from .plan_validator import PlanValidatorAgent
 from .validation_and_structuring_agent import ValidationAndStructuringAgent
 
 # Register all available agent types
@@ -153,5 +154,6 @@ AGENT_REGISTRY = {
     "openai-answer": OpenAIAnswerBuilder,
     "openai-binary": OpenAIBinaryAgent,
     "openai-classification": OpenAIClassificationAgent,
+    "plan_validator": PlanValidatorAgent,
     "validate_and_structure": ValidationAndStructuringAgent,
 }

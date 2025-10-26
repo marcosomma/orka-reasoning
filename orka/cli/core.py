@@ -20,6 +20,7 @@ for running OrKa workflows.
 """
 
 import logging
+import sys
 from typing import Any
 
 from orka.orchestrator import Orchestrator
@@ -28,6 +29,56 @@ from .types import Event
 from .utils import setup_logging
 
 logger = logging.getLogger(__name__)
+
+
+def sanitize_for_console(text: str) -> str:
+    """
+    Sanitize text for Windows console output by replacing problematic Unicode characters.
+
+    Handles characters that can't be encoded in Windows cp1252 charset.
+    """
+    # Replace common Unicode characters that cause issues
+    replacements = {
+        "\u2011": "-",  # Non-breaking hyphen → regular hyphen
+        "\u2013": "-",  # En dash → hyphen
+        "\u2014": "--",  # Em dash → double hyphen
+        "\u2018": "'",  # Left single quote → apostrophe
+        "\u2019": "'",  # Right single quote → apostrophe
+        "\u201a": ",",  # Single low quote → comma
+        "\u201c": '"',  # Left double quote → quote
+        "\u201d": '"',  # Right double quote → quote
+        "\u201e": '"',  # Double low quote → quote
+        "\u2026": "...",  # Ellipsis → three dots
+        "\u202f": " ",  # Narrow no-break space → space
+        "\u00a0": " ",  # Non-breaking space → space
+    }
+
+    for unicode_char, ascii_char in replacements.items():
+        text = text.replace(unicode_char, ascii_char)
+
+    # Handle any remaining problematic characters
+    try:
+        # Try encoding with the console's encoding
+        console_encoding = sys.stdout.encoding or "utf-8"
+        text.encode(console_encoding)
+        return text
+    except (UnicodeEncodeError, AttributeError):
+        # If still problematic, use ASCII with error handling
+        return text.encode("ascii", errors="replace").decode("ascii")
+
+
+def deep_sanitize_result(obj: Any) -> Any:
+    """Recursively sanitize all strings in nested data structures."""
+    if isinstance(obj, str):
+        return sanitize_for_console(obj)
+    elif isinstance(obj, dict):
+        return {deep_sanitize_result(k): deep_sanitize_result(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [deep_sanitize_result(item) for item in obj]
+    elif isinstance(obj, tuple):
+        return tuple(deep_sanitize_result(item) for item in obj)
+    else:
+        return obj
 
 
 async def run_cli_entrypoint(
@@ -118,7 +169,9 @@ async def run_cli_entrypoint(
         return raw_result  # Already a string
 
     # Convert any other type to string for safety
-    return str(raw_result)
+    result_str = str(raw_result)
+    # Sanitize before returning to avoid encoding errors
+    return sanitize_for_console(result_str)
 
 
 def run_cli(argv: list[str] | None = None) -> int:
@@ -141,14 +194,34 @@ def run_cli(argv: list[str] | None = None) -> int:
             run_cli_entrypoint(args.config, args.input, args.log_to_file, args.verbose)
         )
         if result:
-            if isinstance(result, dict):
-                logger.info(json.dumps(result, indent=4))
-            elif isinstance(result, list):
-                for item in result:
-                    logger.info(json.dumps(item, indent=4))
-            else:
-                logger.info(result)
-            return 0
+            try:
+                # Deep sanitize the entire result structure to remove all Unicode
+                result = deep_sanitize_result(result)
+
+                # Now log the sanitized result
+                if isinstance(result, dict):
+                    output = json.dumps(result, indent=4)
+                    logger.info(output)
+                elif isinstance(result, list):
+                    for item in result:
+                        output = json.dumps(item, indent=4)
+                        logger.info(output)
+                else:
+                    logger.info(str(result))
+                return 0
+            except (UnicodeEncodeError, UnicodeDecodeError) as e:
+                # If Unicode errors still occur, just log success without details
+                logger.info(
+                    "Workflow completed successfully (output contains unsupported characters)"
+                )
+                return 0
+            except Exception as e:
+                # For any other error, log with sanitized message
+                error_msg = sanitize_for_console(str(e))
+                logger.info(
+                    f"Workflow completed successfully (error displaying output: {error_msg})"
+                )
+                return 0
         return 1
 
     return 1

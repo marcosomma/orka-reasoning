@@ -1,6 +1,61 @@
 # OrKa-Reasoning – Un-official CHANGELOG
 
 ---
+## [0.9.5] · 2025-10-26 🧠
+### Added
+* **🧠 PlanValidatorAgent - Meta-Cognitive Path Validation**
+  * **Intelligent Path Critique** - New `PlanValidatorAgent` for validating and critiquing proposed agent execution paths from GraphScout or other planning agents
+  * **Multi-Dimensional Evaluation** - Evaluates paths across five dimensions: completeness, efficiency, safety, coherence, and fallback handling
+  * **Structured Feedback System** - Returns detailed validation scores (0.0-1.0), critiques per dimension, recommended changes, and overall assessment (APPROVED/NEEDS_IMPROVEMENT/REJECTED)
+  * **Iterative Improvement Loop** - Designed for feedback loops with LoopNode, enabling iterative path refinement until validation score meets threshold
+  * **Modular Architecture** - Clean separation of concerns with `llm_client.py` for LLM communication, `critique_parser.py` for response parsing, and `agent.py` for core logic
+  * **Flexible LLM Support** - Works with Ollama, OpenAI-compatible APIs, or any local LLM provider with configurable model, temperature, and endpoint
+
+* **📊 Example Workflows - Plan Validation Patterns**
+  * **Simple Validation Workflow** - `examples/plan_validator_simple.yml` demonstrating basic workflow design validation with requirements analysis and implementation planning
+  * **Complex GraphScout Integration** - `examples/plan_validator_complex.yml` showcasing PlanValidator in feedback loop with GraphScout for enterprise system design
+  * **Loop-Based Refinement** - Workflows demonstrate iterative improvement with score thresholds (0.85) and automatic path revision based on validation feedback
+
+### Enhanced
+* **🖥️ Console Output Reliability - Unicode Handling**
+  * **Cross-Platform Console Support** - Enhanced Windows console compatibility with comprehensive Unicode character sanitization
+  * **Deep Result Sanitization** - Recursive sanitization of nested data structures (dicts, lists, tuples) to prevent encoding errors in complex workflow outputs
+  * **Graceful Error Handling** - Unicode encoding errors now caught and converted to success messages without losing workflow execution status
+  * **Improved Logging System** - Enhanced SafeFormatter in logging utilities with aggressive Unicode replacement and custom log record factory for message sanitization
+
+* **🔄 Template Rendering System - Prompt Helper Functions**
+  * **Enhanced Loop Context** - Added `get_past_loops_metadata()` and improved `get_past_loop_data(key)` functions for better loop iteration context access
+  * **Backward Compatibility** - Fixed function signatures to maintain compatibility with existing workflows while adding new capabilities
+  * **Better Error Messages** - Improved error handling for undefined template functions and missing context keys
+
+### Fixed
+* **🔧 Agent Registration - Factory Integration**
+  * **PlanValidator Registration** - Added `PlanValidatorAgent` to agent factory AGENT_TYPES registry for proper workflow integration
+  * **Import Path Resolution** - Corrected import paths for plan_validator module in orchestrator agent factory
+  * **Type System Integration** - Added proper type hints and Union types for PlanValidatorAgent in agent factory type checking
+
+* **⚡ Type Safety - MyPy Compliance**
+  * **Unreachable Statement Fix** - Resolved mypy error in `_extract_query()` method by adding explicit `Any` type annotation for flexible input handling
+  * **Type Narrowing** - Fixed false positive "right operand never evaluated" errors through proper type annotation
+  * **Clean Linting** - Achieved zero linting errors across all PlanValidatorAgent modules
+
+### Technical Details
+* **PlanValidator Architecture** - Modular design with separate concerns: LLM communication, JSON parsing with markdown block extraction, and agent logic
+* **Validation Scoring Algorithm** - Multi-criteria evaluation combining dimension-specific scores (completeness, efficiency, safety, coherence, fallback) into overall validation score
+* **Context Integration** - Extracts query, proposed path, and previous critiques from context for comprehensive validation across loop iterations
+* **Error Recovery** - Comprehensive error handling with fallback critique generation and graceful LLM failure recovery
+* **Console Encoding Solution** - Multi-layer sanitization approach: logging formatter, log record factory, and deep result sanitization for complete Unicode handling
+
+### Migration Notes
+* **For Existing Users** - No breaking changes; all existing workflows continue unchanged
+* **PlanValidator Adoption** - New agent available for path validation workflows with comprehensive documentation and examples
+* **GraphScout Integration** - PlanValidator designed to complement GraphScout for meta-cognitive workflow optimization
+* **Console Compatibility** - Improved Windows console support eliminates Unicode encoding errors in workflow outputs
+* **Loop Workflow Enhancement** - New template helpers enable better access to past loop metadata for iterative refinement patterns
+
+> **Meta-Cognitive Validation**: This release introduces the PlanValidatorAgent, enabling OrKa workflows to critique and improve their own execution paths through iterative feedback loops. The agent provides structured, multi-dimensional validation of proposed agent sequences, enabling sophisticated meta-cognitive reasoning patterns when combined with GraphScout or other planning agents.
+
+---
 ## [0.9.4] · 2025-10-03 🔧
 ### Fixed
 * **🔧 Final Agent Logging - Integration Test Fix**
