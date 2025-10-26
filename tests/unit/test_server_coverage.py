@@ -89,7 +89,9 @@ class TestServerEndpoints:
 
     def test_server_exception_handling(self):
         """Test server exception handling."""
-        with patch('orka.server.HTTPException') as mock_exc:
-            mock_exc.return_value = MagicMock(status_code=500)
-            exc = mock_exc.return_value
-            assert exc.status_code == 500
+        from fastapi import HTTPException
+        
+        # Test that HTTPException works correctly
+        exc = HTTPException(status_code=500, detail="Internal Server Error")
+        assert exc.status_code == 500
+        assert exc.detail == "Internal Server Error"
