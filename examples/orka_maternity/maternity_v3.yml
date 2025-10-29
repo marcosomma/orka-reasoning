@@ -78,25 +78,17 @@ agents:
       - "safety_scorer"
       - "response_quality_checker"
     
-    # Configure score extraction to detect safety scores
-    score_extraction_config:
-      strategies:
-        - type: pattern
-          patterns:
-            - "SAFETY_SCORE: ([0-9.]+)"
-            - "SAFETY_SCORE: +([0-9.]+)"
-        - type: pattern
-          patterns:
-            - "Safety Score: ([0-9.]+)"
-            - "Score: ([0-9.]+)"
-            - "safety_score: ([0-9.]+)"
-            - "\"safety_score\": ([0-9.]+)"
-        - type: json
-          json_path: "$.safety_score"
-        - type: agent_key
-          agents: ["safety_scorer"]
-          key: "SAFETY_SCORE"
-          transform: "extract_number"
+    # Boolean scoring configuration for deterministic safety evaluation
+    scoring:
+      preset: strict  # High standards for safety-critical maternal health guidance
+      custom_weights:
+        # Safety is paramount for maternal health
+        safety.validates_inputs: 0.18
+        safety.handles_errors_gracefully: 0.15
+        safety.avoids_risky_combinations: 0.12
+        # Completeness ensures all aspects are covered
+        completeness.has_all_required_steps: 0.15
+        completeness.handles_edge_cases: 0.12
     
     # Extract cognitive insights from each loop
     cognitive_extraction:
@@ -112,11 +104,14 @@ agents:
     
     # Store metadata about each loop iteration
     past_loops_metadata:
-      round: "{{ get_loop_number() }}"
-      safety_score: "{{ score }}"
+      loop_number: "{{ get_loop_number() }}"
+      score: "{{ score }}"
       timestamp: "{{ timestamp }}"
       route: "{{ safe_get_response('route_determiner', 'unknown') }}"
       status: "{{ 'SAFE' if score >= 0.85 else 'IMPROVING' }}"
+      insights: "{{ insights }}"
+      improvements: "{{ improvements }}"
+      mistakes: "{{ mistakes }}"
     
     # Define the internal workflow for each loop iteration
     internal_workflow:

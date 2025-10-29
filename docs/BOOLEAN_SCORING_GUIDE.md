@@ -467,5 +467,6 @@ class BooleanScoreCalculator:
 
 ## Acknowledgments
 
-Special thanks to **Ruben Puertas Rey** for the core idea of weighted boolean validation. This approach has made OrKa's scoring system more deterministic, auditable, and maintainable.
+Special thanks to **[Rubén Puertas Rey](
+linkedin.com/in/ruben-puertas-rey)** for the core idea of weighted boolean validation. This approach has made OrKa's scoring system more deterministic, auditable, and maintainable.
 

@@ -20,5 +20,6 @@ from .join_node import JoinNode
 from .loop_node import LoopNode
 from .memory_reader_node import MemoryReaderNode
 from .memory_writer_node import MemoryWriterNode
+from .path_executor_node import PathExecutorNode
 from .rag_node import RAGNode
 from .router_node import RouterNode

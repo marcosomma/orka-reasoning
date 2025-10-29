@@ -46,7 +46,10 @@ class TestLoopNodeBooleanScoring:
 
         assert node.scoring_preset == "moderate"
         assert node.score_calculator is not None
-        assert node.score_calculator.flat_weights["completeness.has_all_required_steps"] == 0.50
+        # After renormalization, the weight will be scaled to maintain sum of 1.0
+        assert node.score_calculator.flat_weights[
+            "completeness.has_all_required_steps"
+        ] == pytest.approx(0.3787878787878788, rel=1e-6)
 
     def test_initialization_without_scoring_preset(self):
         """Test LoopNode initialization without scoring preset (legacy mode)."""

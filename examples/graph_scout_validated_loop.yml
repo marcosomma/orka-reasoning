@@ -15,6 +15,7 @@ orchestrator:
   strategy: sequential
   agents:
     - path_discovery_loop
+    - path_executor
     - final_execution
 
 agents:
@@ -50,90 +51,60 @@ agents:
         agents: [path_proposer, path_validator_moderate]
       
       agents:
-        # GraphScout-style path proposer with validation feedback
+        # GraphScout for intelligent path discovery
         - id: path_proposer
-          type: local_llm
-          model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
-          temperature: 0.7
+          type: graph-scout
+          params:
+            k_beam: 5
+            max_depth: 3
+            commit_margin: 0.1
+            require_terminal: true
+            score_weights:
+              llm: 0.5
+              heuristics: 0.25
+              prior: 0.15
+              cost: 0.05
+              latency: 0.05
+            evaluation_model: "local_llm"
+            evaluation_model_name: "gpt-oss:20b"
+            llm_evaluation_enabled: true
+            fallback_to_heuristics: true
           prompt: |
-            You are GraphScout, an intelligent routing agent. Your task is to propose
-            an optimal execution path for the given query.
+            Select optimal execution path for: {{ get_input() }}
             
-            Query: {{ get_input() }}
-            
-            {% if get_loop_number() == 1 %}
-            ## Initial Path Discovery
-            
-            Analyze the query and propose an execution path considering:
-            
-            **Available Agents:**
-            - search_agent: Web search capabilities (data_retrieval, web_search)
-            - analysis_agent: Deep reasoning and analysis
-            - memory_reader: Retrieve relevant past information
-            - memory_writer: Store important findings
-            - response_builder: Final response generation (answer_emit)
-            
-            **Requirements:**
-            1. Logical agent sequence (dependencies must flow correctly)
-            2. Proper data flow between agents
-            3. Error handling and fallback paths
-            4. Input validation where needed
-            5. Edge case handling
-            6. Timeout protection for external calls
-            
-            **Response Format:**
-            ```json
-            {
-              "decision_type": "agent",
-              "target": ["agent1", "agent2", "agent3"],
-              "reasoning": "Detailed explanation of path selection",
-              "data_flow": "How data flows between agents",
-              "error_handling": "Strategy for handling failures",
-              "edge_cases": "How edge cases are addressed"
-            }
-            ```
-            
-            {% else %}
-            ## Path Refinement (Loop {{ get_loop_number() }})
-            
-            Previous attempt scored {{ get_past_loops()[-1].score }} and FAILED validation.
-            
-            **Failed Criteria:**
             {% if has_past_loops() %}
+            ## Validation Feedback (Loop {{ get_loop_number() }})
+            
             {% set last_loop = get_past_loops()[-1] %}
-            {{ last_loop.mistakes }}
+            Previous attempt scored: {{ last_loop.score }} (need 0.85)
+            
+            **Failed Criteria to Address:**
+            {% if "has_all_required_steps" in last_loop.mistakes %}
+            - Add missing agents for complete workflow
+            {% endif %}
+            {% if "includes_fallback_path" in last_loop.mistakes %}
+            - Include error handling and fallback paths
+            {% endif %}
+            {% if "handles_edge_cases" in last_loop.mistakes %}
+            - Consider edge cases and alternative scenarios
+            {% endif %}
+            {% if "validates_inputs" in last_loop.mistakes %}
+            - Add input validation step
+            {% endif %}
+            {% if "logical_agent_sequence" in last_loop.mistakes %}
+            - Fix agent ordering and dependencies
+            {% endif %}
+            {% if "proper_data_flow" in last_loop.mistakes %}
+            - Ensure proper data flow between agents
             {% endif %}
             
             **Validation History:**
             {% for past_loop in get_past_loops() %}
-            - Loop {{ past_loop.loop_number }}: Score {{ past_loop.score }}
-              Issues: {{ past_loop.improvements }}
+            Loop {{ past_loop.loop_number }}: {{ past_loop.score }} - {{ past_loop.improvements }}
             {% endfor %}
-            
-            **Your Task:**
-            Propose an IMPROVED execution path that addresses ALL failed criteria.
-            Be specific about how you're fixing each issue.
-            
-            **Available Agents:**
-            - search_agent: Web search (data_retrieval, web_search)
-            - analysis_agent: Deep reasoning and analysis
-            - memory_reader: Retrieve past information
-            - memory_writer: Store findings
-            - response_builder: Final response (answer_emit, required for terminal paths)
-            
-            **Critical Improvements Needed:**
-            1. If "has_all_required_steps" failed: Add missing agents
-            2. If "includes_fallback_path" failed: Add explicit error handling
-            3. If "handles_edge_cases" failed: Specify edge case handling
-            4. If "validates_inputs" failed: Add input validation step
-            5. If "has_timeout_protection" failed: Specify timeout strategies
-            6. If "logical_agent_sequence" failed: Fix agent ordering
-            7. If "proper_data_flow" failed: Clarify data dependencies
-            
-            Respond with the same JSON format as above, with enhanced detail.
             {% endif %}
+            
+            Select path that addresses all validation criteria.
         
         # Validate the proposed path with boolean scoring
         - id: path_validator_moderate
@@ -149,8 +120,67 @@ agents:
             completeness.has_all_required_steps: 0.20
             coherence.logical_agent_sequence: 0.05
             coherence.proper_data_flow: 0.03
+        
+        # Supporting agents for GraphScout to route to
+        - id: search_agent
+          type: duckduckgo
+          capabilities: [data_retrieval, web_search]
+          max_results: 5
+        
+        - id: analysis_agent
+          type: local_llm
+          capabilities: [reasoning, analysis]
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          prompt: |
+            Analyze the following for: {{ input }}
+            
+            {% if previous_outputs.search_agent %}
+            Search Results: {{ previous_outputs.search_agent.results }}
+            {% endif %}
+            
+            Provide comprehensive analysis.
+        
+        - id: memory_reader
+          type: memory
+          namespace: validated_paths
+          memory_preset: episodic
+          config:
+            operation: read
+            vector: true
+            top_k: 5
+          prompt: |
+            Retrieve context for: {{ input }}
+        
+        - id: memory_writer
+          type: memory
+          namespace: validated_paths
+          memory_preset: episodic
+          config:
+            operation: write
+            vector: true
+          prompt: |
+            Store findings: {{ previous_outputs }}
+        
+        - id: response_builder
+          type: local_llm
+          capabilities: [answer_emit, response_generation]
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          prompt: |
+            Generate final response for: {{ input }}
+            
+            Available context: {{ previous_outputs }}
 
   # Execute the validated path
+  - id: path_executor
+    type: path_executor
+    path_source: path_discovery_loop.response.result.path_proposer.target
+    on_agent_failure: continue
+
+  # Report on validation and execution
   - id: final_execution
     type: local_llm
     model: gpt-oss:20b
@@ -211,16 +241,32 @@ agents:
       {% endfor %}
       {% endif %}
       
+      ## Execution Results
+      {% if previous_outputs.path_executor %}
+      - Execution Status: {{ previous_outputs.path_executor.status | upper }}
+      - Executed Path: {{ previous_outputs.path_executor.executed_path }}
+      - Agents Completed: {{ previous_outputs.path_executor.results | length }}
+      {% if previous_outputs.path_executor.errors %}
+      - Errors: {{ previous_outputs.path_executor.errors }}
+      {% endif %}
+      
+      ### Agent Outcomes:
+      {% for agent_id, result in previous_outputs.path_executor.results.items() %}
+      - **{{ agent_id }}**: {{ 'SUCCESS ✓' if 'error' not in result else 'FAILED ✗' }}
+      {% endfor %}
+      {% endif %}
+      
       ---
       
       ## Your Task
-      Now that we have a validated, high-quality execution path, provide:
+      Now that we have validated AND executed the path, provide:
       
-      1. **Executive Summary**: How the path evolved and improved
+      1. **Executive Summary**: How the path evolved and improved through {{ previous_outputs.path_discovery_loop.loops_completed }} iterations
       2. **Quality Assessment**: Why this path scored {{ previous_outputs.path_discovery_loop.final_score | round(3) }}
-      3. **Key Strengths**: What makes this path robust
-      4. **Execution Readiness**: Is it ready for production?
-      5. **Recommendations**: Any final suggestions
+      3. **Execution Analysis**: Review the execution results and agent outcomes
+      4. **Key Strengths**: What makes this path robust
+      5. **Production Readiness**: Based on validation + execution, is it ready for production?
+      6. **Recommendations**: Any final suggestions based on actual execution
       
       {% else %}
       No path discovery results available. Unable to proceed.
@@ -268,7 +314,12 @@ agents:
 #   → Validator scores 0.85+ 
 #   → APPROVED - loop exits
 #
-# Result: A thoroughly validated execution path with:
+# Execution: PathExecutorNode executes the validated path
+#   → Runs each agent in sequence
+#   → Accumulates results with full context
+#   → Reports execution status and outcomes
+#
+# Result: A thoroughly validated AND executed path with:
 #   ✓ All required steps
 #   ✓ Edge case handling
 #   ✓ Error handling and fallbacks
@@ -276,4 +327,5 @@ agents:
 #   ✓ Timeout protection
 #   ✓ Logical sequence
 #   ✓ Proper data flow
+#   ✓ Actual execution results
 

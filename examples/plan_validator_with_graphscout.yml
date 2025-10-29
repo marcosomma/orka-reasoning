@@ -1,81 +1,410 @@
-# Complex Plan Validator with GraphScout
-# Demonstrates meta-cognitive planning with intelligent routing
+# GraphScout + PlanValidator Validation Loop
+# ============================================
+# 
+# This demonstrates GraphScout's intelligent routing being validated
+# in a loop by PlanValidator with boolean scoring. GraphScout has
+# access to a rich set of agents for building optimal execution paths.
 
 orchestrator:
-  id: graphscout-validator-complex
+  id: graphscout-validated-routing
   strategy: sequential
   agents:
-    - system_architect
-    - final_report
+    - routing_validation_loop
+    - execution_report
 
 agents:
-  # Step 1: Design the system with GraphScout + PlanValidator oversight
-  - id: system_architect
-    type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
-    temperature: 0.5
-    prompt: |
-      Design a comprehensive system for: {{ input }}
+  # Main validation loop: GraphScout proposes paths, PlanValidator evaluates
+  - id: routing_validation_loop
+    type: loop
+    max_loops: 4
+    score_threshold: 0.85
+    persist_across_runs: true
+    
+    # Boolean scoring for deterministic validation
+    scoring:
+      preset: moderate
+      custom_weights:
+        completeness.has_all_required_steps: 0.20
+        efficiency.uses_appropriate_agents: 0.15
+        coherence.logical_agent_sequence: 0.05
+    
+    past_loops_metadata:
+      loop_number: "{{ get_loop_number() }}"
+      score: "{{ score }}"
+      timestamp: "{{ timestamp }}"
+      insights: "{{ insights }}"
+      improvements: "{{ improvements }}"
+      mistakes: "{{ mistakes }}"
+    
+    internal_workflow:
+      orchestrator:
+        id: scout-validate-cycle
+        strategy: sequential
+        agents: [query_classifier, graphscout_router, path_validator_moderate]
       
-      Include:
-      1. System Architecture
-         - Components and their responsibilities
-         - Data flow and communication patterns
-         - Technology stack recommendations
-      
-      2. Key Features
-         - Automated processes
-         - Escalation mechanisms
-         - Integration points
-      
-      3. Implementation Plan
-         - Phase 1: Core infrastructure
-         - Phase 2: Automation layer
-         - Phase 3: Intelligence and analytics
-      
-      4. Risk Assessment
-         - Security considerations
-         - Scalability challenges
-         - Compliance requirements
-      
-      5. Success Metrics
-         - Performance KPIs
-         - User satisfaction metrics
-         - Operational efficiency gains
-      
-      Provide a detailed, production-ready design.
+      agents:
+        # Classify the query to help GraphScout
+        - id: query_classifier
+          type: local_llm
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.3
+          prompt: |
+            Classify the query to guide intelligent routing:
+            
+            Query: {{ get_input() }}
+            
+            {% if has_past_loops() %}
+            ## Previous Validation Feedback ({{ get_past_loops() | length }} attempts)
+            {% for past_loop in get_past_loops() %}
+            Loop {{ past_loop.loop_number }}: Score {{ past_loop.score }}
+            Issues: {{ past_loop.mistakes }}
+            {% endfor %}
+            {% endif %}
+            
+            Analyze:
+            1. Query complexity (simple/moderate/complex)
+            2. Required capabilities (search, reasoning, memory, generation)
+            3. Data dependencies (sequential vs parallel)
+            4. Expected output format
+            
+            Return JSON with classification.
+        
+        # GraphScout selects optimal execution path
+        - id: graphscout_router
+          type: graph-scout
+          params:
+            k_beam: 6
+            max_depth: 3
+            commit_margin: 0.1
+            require_terminal: true
+            score_weights:
+              llm: 0.5
+              heuristics: 0.25
+              prior: 0.15
+              cost: 0.05
+              latency: 0.05
+            safety_profile: default
+            cost_budget_tokens: 1500
+            latency_budget_ms: 8000
+            max_preview_tokens: 250
+            evaluation_model: "local_llm"
+            evaluation_model_name: "gpt-oss:20b"
+            validation_model: "local_llm"
+            validation_model_name: "gpt-oss:20b"
+            llm_evaluation_enabled: true
+            fallback_to_heuristics: true
+          prompt: |
+            Select the optimal execution path using available agents.
+            
+            Query: {{ input }}
+            Classification: {{ previous_outputs.query_classifier.response }}
+            
+            {% if has_past_loops() %}
+            ## Validation Feedback (Iteration {{ get_loop_number() }})
+            
+            {% set last_loop = get_past_loops()[-1] %}
+            Previous score: {{ last_loop.score }}
+            
+            {% if "has_all_required_steps" in last_loop.mistakes %}
+            ⚠ Missing required steps - ensure complete workflow
+            {% endif %}
+            {% if "uses_appropriate_agents" in last_loop.mistakes %}
+            ⚠ Suboptimal agent selection - review agent capabilities
+            {% endif %}
+            {% if "includes_fallback_path" in last_loop.mistakes %}
+            ⚠ Add error handling and fallback paths
+            {% endif %}
+            {% if "handles_edge_cases" in last_loop.mistakes %}
+            ⚠ Consider edge cases and alternative scenarios
+            {% endif %}
+            {% if "logical_agent_sequence" in last_loop.mistakes %}
+            ⚠ Fix agent ordering - check dependencies
+            {% endif %}
+            {% endif %}
+            
+            **Available Agents** (choose the best path):
+            
+            **Data Retrieval:**
+            - web_search: DuckDuckGo search for current information
+            - memory_reader: Retrieve relevant past context
+            
+            **Analysis & Reasoning:**
+            - deep_analyzer: Multi-perspective analysis and reasoning
+            - technical_specialist: Technical domain expertise
+            - business_analyst: Business strategy and requirements
+            
+            **Memory Management:**
+            - memory_writer: Store important findings for future use
+            
+            **Content Generation:**
+            - content_synthesizer: Combine multiple sources into coherent output
+            - report_generator: Generate structured reports (REQUIRED for terminal paths)
+            
+            **Validation & Quality:**
+            - fact_checker: Verify claims and validate information
+            - quality_reviewer: Review output for completeness
+            
+            **Selection Criteria:**
+            1. Match agents to query requirements
+            2. Ensure logical sequence (dependencies flow correctly)
+            3. Include error handling where needed
+            4. Optimize for cost and latency
+            5. MUST end with terminal agent (report_generator or content_synthesizer)
+            
+            Return path selection with detailed reasoning.
+        
+        # Validate GraphScout's path with boolean scoring
+        - id: path_validator_moderate
+          type: plan_validator
+          llm_model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.2
+          scoring_preset: moderate
+          custom_weights:
+            completeness.has_all_required_steps: 0.20
+            efficiency.uses_appropriate_agents: 0.15
+            coherence.logical_agent_sequence: 0.05
 
-  # Step 2: Generate executive report
-  - id: final_report
+  # Generate execution report
+  - id: execution_report
     type: local_llm
     model: gpt-oss:20b
     model_url: http://localhost:11434/api/generate
     provider: ollama
     temperature: 0.3
     prompt: |
-      Create an executive summary of the system design:
+      # GraphScout Validated Routing Report
       
-      Request: {{ input }}
+      {% if previous_outputs.routing_validation_loop %}
+      {% set loop = previous_outputs.routing_validation_loop %}
       
-      Design: {{ get_agent_response('system_architect') }}
+      ## Validation Summary
+      - Iterations Required: {{ loop.loops_completed }}
+      - Final Score: {{ (loop.final_score | default(0)) | round(3) }}
+      - Status: {{ 'APPROVED ✓' if loop.threshold_met else 'NEEDS WORK ✗' }}
       
-      Format as:
+      ## GraphScout's Final Path
+      {% if loop.response.result.graphscout_router %}
+      {{ loop.response.result.graphscout_router }}
+      {% endif %}
       
-      # Executive Summary
+      ## Boolean Validation Details
+      {% if loop.response.result.path_validator_moderate %}
+      {% set val = loop.response.result.path_validator_moderate %}
       
-      ## Overview
-      [2-3 sentence high-level summary]
+      **Assessment:** {{ val.overall_assessment | default('UNKNOWN') }}
+      **Score:** {{ (val.validation_score | default(0)) | round(3) }}
       
-      ## Key Components
-      [Bullet list of major components]
+      ### Dimension Performance
+      {% if val.dimension_scores %}
+      {% for dim, data in val.dimension_scores.items() %}
+      - {{ dim|title }}: {{ (data.percentage | default(0)) | round(0) }}%
+      {% endfor %}
+      {% endif %}
       
-      ## Implementation Roadmap
-      [3 key phases with timelines]
+      ### Quality Metrics
+      - Passed: {{ val.passed_criteria|length }}/15 criteria
+      {% if val.failed_criteria %}
+      - Failed: {{ val.failed_criteria|length }} criteria
+        {% for criterion in val.failed_criteria %}
+        - {{ criterion }}
+        {% endfor %}
+      {% endif %}
+      {% endif %}
       
-      ## Expected Outcomes
-      [Business value and metrics]
+      ## Path Evolution
+      {% if loop.response.past_loops and loop.response.past_loops|length > 1 %}
+      {% for past in loop.response.past_loops %}
+      **Iteration {{ past.loop_number | default('?') }}**: {{ past.score | default(0) }}
+      {% if past.improvements %}
+      Improvements: {{ past.improvements }}
+      {% endif %}
+      {% endfor %}
+      {% endif %}
       
-      ## Recommendations
-      [Next steps]
+      ---
+      
+      ## Your Analysis
+      
+      Provide:
+      1. Why this path is optimal for the query
+      2. How GraphScout improved across iterations
+      3. Key strengths of the final path
+      4. Readiness for production execution
+      
+      {% else %}
+      No validation loop results available.
+      {% endif %}
+
+  # Supporting agents that GraphScout can route to
+  - id: web_search
+    type: duckduckgo
+    capabilities: [data_retrieval, web_search]
+    prompt: |
+      {{ input }}
+
+  - id: memory_reader
+    type: memory
+    namespace: graphscout_validated
+    memory_preset: episodic
+    config:
+      operation: read
+      vector: true
+      top_k: 5
+    prompt: |
+      Retrieve context for: {{ input }}
+
+  - id: deep_analyzer
+    type: local_llm
+    capabilities: [reasoning, analysis, critical_thinking]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Provide deep multi-perspective analysis:
+      
+      Query: {{ input }}
+      
+      {% if previous_outputs.web_search %}
+      Context: {{ previous_outputs.web_search.result }}
+      {% endif %}
+      
+      {% if previous_outputs.memory_reader %}
+      Historical Context: {{ previous_outputs.memory_reader }}
+      {% endif %}
+      
+      Analyze from:
+      1. Technical perspective
+      2. Business perspective
+      3. Risk perspective
+      4. Innovation perspective
+
+  - id: technical_specialist
+    type: local_llm
+    capabilities: [technical_analysis, architecture, implementation]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Provide technical specialist analysis:
+      
+      {{ input }}
+      
+      {% if previous_outputs %}
+      Context: {{ previous_outputs }}
+      {% endif %}
+      
+      Focus on:
+      - Technical feasibility
+      - Architecture recommendations
+      - Implementation approach
+      - Technology stack
+
+  - id: business_analyst
+    type: local_llm
+    capabilities: [business_analysis, requirements, strategy]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Business analysis for:
+      
+      {{ input }}
+      
+      Provide:
+      1. Business objectives
+      2. Stakeholder analysis
+      3. Success criteria
+      4. ROI considerations
+
+  - id: memory_writer
+    type: memory
+    namespace: graphscout_validated
+    memory_preset: episodic
+    config:
+      operation: write
+      vector: true
+    prompt: |
+      Store findings: {{ previous_outputs }}
+
+  - id: content_synthesizer
+    type: local_llm
+    capabilities: [answer_emit, synthesis, response_generation]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Synthesize comprehensive response:
+      
+      Query: {{ input }}
+      
+      Available Information:
+      {{ previous_outputs }}
+      
+      Create coherent, well-structured response.
+
+  - id: report_generator
+    type: local_llm
+    capabilities: [answer_emit, reporting, documentation]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Generate structured report for:
+      
+      {{ input }}
+      
+      Data: {{ previous_outputs }}
+      
+      Format as professional report with sections.
+
+  - id: fact_checker
+    type: local_llm
+    capabilities: [validation, verification]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Fact-check and validate:
+      
+      {{ previous_outputs }}
+      
+      Verify accuracy and identify any issues.
+
+  - id: quality_reviewer
+    type: local_llm
+    capabilities: [quality_control, review]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Review for quality:
+      
+      {{ previous_outputs }}
+      
+      Check completeness, accuracy, and coherence.
+
+# ============================================================================
+# How This Works
+# ============================================================================
+#
+# 1. User query comes in
+# 2. Query classifier analyzes requirements
+# 3. GraphScout evaluates 9 available agents and selects optimal path
+# 4. PlanValidator scores the path with 15 boolean criteria
+# 5. If score < 0.85, loop repeats with validation feedback
+# 6. GraphScout adjusts path based on failed criteria
+# 7. Process continues until high-quality path is found
+# 8. Execution report shows evolution and final path quality
+#
+# Benefits:
+# - GraphScout has rich agent ecosystem (9 specialized agents)
+# - Validation ensures quality before execution
+# - Feedback loop enables continuous improvement
+# - Boolean scoring provides deterministic, auditable results
+# - Final path is guaranteed to meet quality standards
+#
+# ============================================================================

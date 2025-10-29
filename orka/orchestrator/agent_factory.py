@@ -36,6 +36,7 @@ from ..nodes import (
     fork_node,
     join_node,
     loop_node,
+    path_executor_node,
     router_node,
 )
 from ..nodes.graph_scout_agent import GraphScoutAgent
@@ -64,6 +65,7 @@ AgentClass = Union[
     Type[join_node.JoinNode],
     Type[fork_node.ForkNode],
     Type[loop_node.LoopNode],
+    Type[path_executor_node.PathExecutorNode],
     Type[GraphScoutAgent],
     Type[MemoryReaderNode],
     Type[MemoryWriterNode],
@@ -87,6 +89,7 @@ AGENT_TYPES: Dict[str, AgentClass] = {
     "join": join_node.JoinNode,
     "fork": fork_node.ForkNode,
     "loop": loop_node.LoopNode,
+    "path_executor": path_executor_node.PathExecutorNode,
     "graph-scout": GraphScoutAgent,
     "memory": "special_handler",  # This will be handled specially in init_single_agent
 }
@@ -194,6 +197,12 @@ class AgentFactory:
                     memory_logger=cast(RedisStackMemoryLogger, self.memory),
                     **clean_cfg,
                 )
+
+            if agent_type == "path_executor":
+                # PathExecutorNode doesn't need prompt or queue
+                clean_cfg.pop("prompt", None)
+                clean_cfg.pop("queue", None)
+                return path_executor_node.PathExecutorNode(node_id=agent_id, **clean_cfg)
 
             # Special handling for memory agent type
             if agent_type == "memory" or agent_cls == "special_handler":

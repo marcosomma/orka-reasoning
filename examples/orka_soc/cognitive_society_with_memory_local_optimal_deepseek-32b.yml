@@ -24,29 +24,18 @@ agents:
       - "agreement_moderator"    # Primary scoring agent
       - "quality_moderator"      # Secondary scoring agent
     
-    # 🔧 COMPLETELY REDESIGNED: Simplified score extraction for local models
-    score_extraction_config:
-      strategies:
-        # Strategy 1: Simple pattern matching for AGREEMENT_SCORE (PRIMARY)
-        - type: pattern
-          patterns:
-            - "AGREEMENT_SCORE: ([0-9.]+)"
-            - "Agreement Score: ([0-9.]+)"
-            - "Score: ([0-9.]+)"
-            - "AGREEMENT_SCORE\\s*([0-9.]+)"
-            - "agreement_score: ([0-9.]+)"
-        
-        # Strategy 2: Look for any decimal between 0.6-1.0 (FALLBACK)
-        - type: pattern
-          patterns:
-            - "(0\\.[6-9][0-9]?)"
-            - "([0-9])\\.[0-9]+"
-        
-        # Strategy 3: Agent response parsing (FALLBACK)
-        - type: agent_key
-          agents: ["agreement_moderator"]
-          key: "response"
-          transform: "extract_score"
+    # Boolean scoring configuration for deterministic agreement evaluation
+    scoring:
+      preset: strict  # High standards for consensus building
+      custom_weights:
+        # Completeness ensures all viewpoints are considered
+        completeness.has_all_required_steps: 0.20
+        completeness.addresses_all_query_aspects: 0.15
+        # Coherence ensures logical synthesis
+        coherence.logical_agent_sequence: 0.12
+        coherence.no_conflicting_actions: 0.10
+        # Safety for respectful deliberation
+        safety.handles_errors_gracefully: 0.08
     
     # 🔧 ENHANCED: Focus on collaborative responses for extraction
     cognitive_extraction:
@@ -68,10 +57,10 @@ agents:
           - "MAINTAINED_DIVERSITY[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
           - "CONTRIBUTION_TO_SOLUTION[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
     
-    # 🔧 ENHANCED: Restored rich metadata for past_loops
+    # 🔧 ENHANCED: Restored rich metadata for past_loops with boolean scoring fields
     past_loops_metadata:
-      round: "{{ get_loop_number() }}"
-      agreement_score: "{{ score }}"
+      loop_number: "{{ get_loop_number() }}"
+      score: "{{ score }}"
       convergence_target: "{{ get_score_threshold() }}"
       convergence_progress: "{{ 'ON_TRACK' if score >= (0.4 + (get_loop_number() - 1) * 0.08) else 'NEEDS_IMPROVEMENT' }}"
       collaboration_phase: "{{ 'INITIAL' if get_loop_number() == 1 else 'BRIDGE_BUILDING' if get_loop_number() <= 3 else 'CONSENSUS_BUILDING' }}"
@@ -80,6 +69,9 @@ agents:
       quality_score: "{{ result.quality_moderator.response if result.quality_moderator else 'No quality assessment' }}"
       synthesis_insights: "{{ result.synthesis_attempt.response if result.synthesis_attempt else 'No synthesis available' }}"
       collaborative_insights: "{{ result.collaborative_refinement.response if result.collaborative_refinement else 'No collaborative insights' }}"
+      insights: "{{ insights }}"
+      improvements: "{{ improvements }}"
+      mistakes: "{{ mistakes }}"
     
     # 🔧 COLLABORATIVE REDESIGN: Complete collaborative structure for productive consensus-building
     internal_workflow:

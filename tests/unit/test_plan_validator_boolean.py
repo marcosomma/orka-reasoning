@@ -365,7 +365,10 @@ class TestPlanValidatorAgent:
             custom_weights=custom_weights,
         )
 
-        assert agent.score_calculator.flat_weights["completeness.has_all_required_steps"] == 0.50
+        # After renormalization, the weight will be scaled to maintain sum of 1.0
+        assert agent.score_calculator.flat_weights[
+            "completeness.has_all_required_steps"
+        ] == pytest.approx(0.3787878787878788, rel=1e-6)
 
     @pytest.mark.asyncio
     async def test_extract_rationale(self):

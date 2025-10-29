@@ -1,0 +1,74 @@
+name: "PathExecutor Basic Demo"
+description: |
+  Demonstrates PathExecutorNode executing a validated agent path.
+  
+  This example shows the core validate-then-execute pattern:
+  1. Validation loop validates a proposed agent path
+  2. PathExecutor executes the approved agents
+  
+  Use this pattern when you want to validate paths before execution.
+
+agents:
+  # First, we validate a hardcoded path
+  - id: path_proposal
+    type: local_llm
+    model: "gpt-oss:20b"
+    provider: "ollama"
+    url: "http://localhost:11434/api/generate"
+    temperature: 0.3
+    prompt: |
+      Return a JSON object with a recommended agent path for this query:
+      {{ input }}
+      
+      Format:
+      {
+        "target": ["agent1", "agent2", "agent3"],
+        "reasoning": "Why this path is optimal"
+      }
+      
+      Available agents: web_search, analyzer, summarizer
+      
+      Return only the JSON.
+  
+  # Now execute the proposed path
+  - id: execute_path
+    type: path_executor
+    path_source: path_proposal.target
+    on_agent_failure: continue
+  
+  # Agent definitions
+  - id: web_search
+    type: duckduckgo
+    max_results: 5
+  
+  - id: analyzer
+    type: local_llm
+    model: "gpt-oss:20b"
+    provider: "ollama"
+    url: "http://localhost:11434/api/generate"
+    temperature: 0.4
+    prompt: |
+      Analyze the search results and extract key insights.
+      
+      Search results: {{ previous_outputs.web_search.results }}
+  
+  - id: summarizer
+    type: local_llm
+    model: "gpt-oss:20b"
+    provider: "ollama"
+    url: "http://localhost:11434/api/generate"
+    temperature: 0.3
+    prompt: |
+      Create a concise summary of the analysis.
+      
+      Analysis: {{ previous_outputs.analyzer.response }}
+      
+      Provide a clear, actionable summary.
+
+llm:
+  provider: "ollama"
+  model: "gpt-oss:20b"
+  url: "http://localhost:11434/api/generate"
+  temperature: 0.3
+  max_tokens: 2000
+

@@ -1,102 +1,448 @@
-# Complex Enterprise System Design
-# Demonstrates comprehensive system architecture design
+# Enterprise System Design with GraphScout + PlanValidator
+# =========================================================
+#
+# Complex workflow demonstrating GraphScout's intelligent routing
+# validated by PlanValidator in a loop. Includes comprehensive
+# agent ecosystem for enterprise-grade system design.
 
 orchestrator:
-  id: enterprise-system-design
+  id: enterprise-validated-design
   strategy: sequential
   agents:
-    - business_analyst
-    - system_architect
-    - security_specialist
-    - implementation_strategist
+    - design_validation_loop
+    - path_executor
     - executive_summary
 
 agents:
-  # Step 1: Business analysis
-  - id: business_analyst
-    type: local_llm
+  # Main validation loop for enterprise design
+  - id: design_validation_loop
+    type: loop
+    max_loops: 5
+    score_threshold: 0.88
+    persist_across_runs: true
+    
+    scoring:
+      preset: strict
+      custom_weights:
+        completeness.has_all_required_steps: 0.22
+        safety.validates_inputs: 0.12
+        coherence.logical_agent_sequence: 0.06
+    
+    past_loops_metadata:
+      loop_number: "{{ get_loop_number() }}"
+      score: "{{ score }}"
+      timestamp: "{{ timestamp }}"
+      insights: "{{ insights }}"
+      improvements: "{{ improvements }}"
+      mistakes: "{{ mistakes }}"
+    
+    internal_workflow:
+      orchestrator:
+        id: enterprise-design-cycle
+        strategy: sequential
+        agents: [requirements_analyzer, graphscout_architect, design_validator_strict]
+      
+      agents:
+        # Analyze requirements to guide GraphScout
+        - id: requirements_analyzer
+          type: local_llm
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.3
+          prompt: |
+            Analyze enterprise requirements:
+            
+            System Request: {{ get_input() }}
+            
+            {% if has_past_loops() %}
+            ## Design Iteration {{ get_loop_number() }}
+            
+            Previous validation results:
+            {% for past_loop in get_past_loops() %}
+            Attempt {{ past_loop.loop_number }}: Score {{ past_loop.score }}
+            Gaps: {{ past_loop.mistakes }}
+            {% endfor %}
+            {% endif %}
+            
+            Extract:
+            1. Core business objectives
+            2. Technical requirements
+            3. Security & compliance needs
+            4. Scalability requirements
+            5. Integration points
+            6. Timeline constraints
+            
+            Return structured requirements analysis.
+        
+        # GraphScout selects optimal design workflow
+        - id: graphscout_architect
+          type: graph-scout
+          params:
+            k_beam: 8
+            max_depth: 4
+            commit_margin: 0.08
+            require_terminal: true
+            score_weights:
+              llm: 0.55
+              heuristics: 0.25
+              prior: 0.10
+              cost: 0.05
+              latency: 0.05
+            safety_profile: default
+            cost_budget_tokens: 2500
+            latency_budget_ms: 12000
+            max_preview_tokens: 300
+            evaluation_model: "local_llm"
+            evaluation_model_name: "gpt-oss:20b"
+            validation_model: "local_llm"
+            validation_model_name: "gpt-oss:20b"
+            llm_evaluation_enabled: true
+            fallback_to_heuristics: true
+          prompt: |
+            Design optimal enterprise workflow path.
+            
+            Request: {{ input }}
+            Requirements: {{ previous_outputs.requirements_analyzer.response }}
+            
+            {% if has_past_loops() %}
+            ## Validation Feedback
+            
+            {% set last = get_past_loops()[-1] %}
+            Previous design scored: {{ last.score }}
+            
+            Critical issues to address:
+            {% if "has_all_required_steps" in last.mistakes %}
+            ❌ Incomplete workflow - add missing design phases
+            {% endif %}
+            {% if "addresses_all_query_aspects" in last.mistakes %}
+            ❌ Missing requirements - cover all aspects
+            {% endif %}
+            {% if "validates_inputs" in last.mistakes %}
+            ❌ Add input validation and requirement verification
+            {% endif %}
+            {% if "handles_errors_gracefully" in last.mistakes %}
+            ❌ Include error handling and risk mitigation
+            {% endif %}
+            {% if "logical_agent_sequence" in last.mistakes %}
+            ❌ Fix workflow sequence - check dependencies
+            {% endif %}
+            {% if "handles_edge_cases" in last.mistakes %}
+            ❌ Consider alternative scenarios and edge cases
+            {% endif %}
+            {% endif %}
+            
+            **Available Enterprise Design Agents:**
+            
+            **Analysis & Planning:**
+            - business_analyst: Business objectives, stakeholder analysis, ROI
+            - requirements_engineer: Detailed functional/non-functional requirements
+            - risk_assessor: Risk analysis, mitigation strategies
+            
+            **Architecture & Design:**
+            - system_architect: High-level architecture, component design
+            - technical_specialist: Technology stack, implementation patterns
+            - data_architect: Data models, storage, flow architecture
+            
+            **Security & Compliance:**
+            - security_specialist: Security architecture, threat modeling
+            - compliance_officer: Regulatory requirements, audit trails
+            
+            **Implementation & Operations:**
+            - implementation_strategist: Phased rollout, migration plans
+            - devops_engineer: CI/CD, infrastructure, monitoring
+            - qa_strategist: Testing strategy, quality assurance
+            
+            **Documentation & Delivery:**
+            - technical_writer: Documentation, runbooks
+            - executive_reporter: Executive summaries (REQUIRED for terminal)
+            
+            **Selection Guidelines:**
+            1. Must include: business analysis → architecture → security → implementation
+            2. Add specialists as needed (data, compliance, QA)
+            3. Ensure logical sequence (no architecture before requirements)
+            4. Include risk assessment for enterprise systems
+            5. MUST end with executive_reporter
+            6. Consider parallel paths for independent workstreams
+            
+            Select optimal path and justify each agent choice.
+        
+        # Validate the design workflow
+        - id: design_validator_strict
+          type: plan_validator
+          llm_model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.2
+          scoring_preset: strict
+          custom_weights:
+            completeness.has_all_required_steps: 0.22
+            safety.validates_inputs: 0.12
+            coherence.logical_agent_sequence: 0.06
+        
+        # Supporting agents (MUST be inside internal_workflow for GraphScout to see them)
+        - id: business_analyst
+          type: local_llm
+          capabilities: [business_analysis, stakeholder_management, roi_analysis]
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          prompt: |
+            Business Analysis for: {{ input }}
+      
+            Provide:
+            1. Business Objectives & Value Proposition
+            2. Stakeholder Analysis (internal/external)
+            3. Current Pain Points & Gaps
+            4. Required Business Capabilities
+            5. Success Metrics & KPIs
+            6. ROI Projections
+        
+        - id: requirements_engineer
+          type: local_llm
+          capabilities: [requirements_analysis, functional_specs, non_functional_specs]
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          prompt: |
+            Requirements Engineering for: {{ input }}
+            
+            {% if previous_outputs.business_analyst %}
+            Business Context: {{ previous_outputs.business_analyst.response }}
+            {% endif %}
+            
+            Define:
+            1. Functional Requirements (user stories, use cases)
+            2. Non-Functional Requirements (performance, scalability, availability)
+            3. System Constraints & Assumptions
+            4. User Personas & Access Patterns
+            5. Integration Requirements
+        
+        - id: risk_assessor
+          type: local_llm
+          capabilities: [risk_analysis, threat_modeling, mitigation_planning]
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          prompt: |
+            Risk Assessment for: {{ input }}
+            
+            Context: {{ previous_outputs }}
+            
+            Analyze:
+            1. Technical Risks (complexity, dependencies, technology maturity)
+            2. Business Risks (timeline, budget, resource availability)
+            3. Security Risks (threats, vulnerabilities, attack vectors)
+            4. Operational Risks (maintenance, support, scalability)
+            5. Mitigation Strategies (per risk category)
+        
+        - id: system_architect
+          type: local_llm
+          capabilities: [architecture_design, system_design, component_design]
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          prompt: |
+            System Architecture for: {{ input }}
+            
+            Requirements: {{ previous_outputs.requirements_engineer.response if previous_outputs.requirements_engineer else previous_outputs }}
+            
+            Design:
+            1. High-Level Architecture (layers, components, boundaries)
+            2. Component Interactions & Communication Patterns
+            3. Technology Stack Recommendations
+            4. Scalability Strategy (horizontal/vertical)
+            5. Data Flow Architecture
+            6. Integration Points & APIs
+        
+        - id: technical_specialist
+          type: local_llm
+          capabilities: [technical_design, technology_selection, implementation_patterns]
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          prompt: |
+                  Technical Specification for: {{ input }}
+                  
+                  Architecture: {{ previous_outputs.system_architect.response if previous_outputs.system_architect else previous_outputs }}
+                  
+                  Specify:
+                  1. Detailed Technology Stack (languages, frameworks, libraries)
+                  2. Design Patterns & Best Practices
+                  3. Code Organization & Structure
+                  4. Development Tooling (IDE, testing, CI/CD)
+                  5. Performance Optimization Strategies
+        
+        - id: data_architect
+          type: local_llm
+          capabilities: [data_modeling, database_design, data_flow]
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          prompt: |
+            Data Architecture for: {{ input }}
+            
+            System Design: {{ previous_outputs }}
+            
+            Design:
+            1. Data Models (entities, relationships, schemas)
+            2. Database Technology Selection (SQL/NoSQL/hybrid)
+            3. Data Flow & Pipeline Architecture
+            4. Data Governance & Quality
+            5. Backup, Recovery & Archival Strategy
+        
+        - id: security_specialist
+          type: local_llm
+          capabilities: [security_architecture, threat_modeling, security_controls]
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          prompt: |
+            Security Architecture for: {{ input }}
+            
+            System Context: {{ previous_outputs }}
+            
+            Design:
+            1. Threat Model & Attack Surface Analysis
+            2. Authentication & Authorization Strategy
+            3. Data Protection (encryption at-rest/in-transit)
+            4. Security Controls & Hardening
+            5. Logging, Monitoring & Incident Response
+            6. Penetration Testing & Vulnerability Management
+        
+        - id: compliance_officer
+          type: local_llm
+          capabilities: [compliance_analysis, regulatory_requirements, audit_trails]
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          prompt: |
+            Compliance Analysis for: {{ input }}
+            
+            Security Design: {{ previous_outputs.security_specialist.response if previous_outputs.security_specialist else previous_outputs }}
+            
+            Analyze:
+            1. Applicable Regulations (GDPR, HIPAA, SOC2, etc.)
+            2. Compliance Requirements Mapping
+            3. Audit Trail & Record Retention
+            4. Privacy Controls & Data Subject Rights
+            5. Compliance Monitoring & Reporting
+        
+        - id: implementation_strategist
+          type: local_llm
+          capabilities: [implementation_planning, migration_strategy, rollout_planning]
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          prompt: |
+            Implementation Strategy for: {{ input }}
+            
+            Complete Design: {{ previous_outputs }}
+            
+            Plan:
+            1. Phased Implementation Roadmap (6-12 months)
+            2. Team Structure & Roles (development, QA, ops)
+            3. Migration Strategy (if applicable)
+            4. Dependency Management
+            5. Resource Planning (people, infrastructure, budget)
+            6. Timeline & Milestones
+        
+        - id: devops_engineer
+          type: local_llm
+          capabilities: [devops_design, ci_cd, infrastructure, monitoring]
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          prompt: |
+            DevOps Strategy for: {{ input }}
+            
+            Architecture: {{ previous_outputs }}
+            
+            Design:
+            1. CI/CD Pipeline (build, test, deploy)
+            2. Infrastructure as Code (Terraform, CloudFormation)
+            3. Container Orchestration (Kubernetes, Docker)
+            4. Monitoring & Observability (logs, metrics, traces)
+            5. Incident Management & On-Call
+            6. Disaster Recovery & Business Continuity
+        
+        - id: qa_strategist
+          type: local_llm
+          capabilities: [qa_strategy, test_planning, quality_assurance]
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          prompt: |
+            QA Strategy for: {{ input }}
+            
+            Implementation Plan: {{ previous_outputs }}
+            
+            Define:
+            1. Testing Strategy (unit, integration, e2e, performance)
+            2. Test Automation Framework
+            3. Quality Gates & Acceptance Criteria
+            4. Performance & Load Testing
+            5. Security Testing (SAST, DAST, penetration)
+            6. Quality Metrics & Reporting
+        
+        - id: technical_writer
+          type: local_llm
+          capabilities: [documentation, technical_writing, runbooks]
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          prompt: |
+            Technical Documentation for: {{ input }}
+            
+            Complete System Design: {{ previous_outputs }}
+            
+            Create:
+            1. Architecture Documentation (diagrams, descriptions)
+            2. API Documentation (endpoints, schemas, examples)
+            3. Deployment Runbooks (step-by-step procedures)
+            4. Operations Guide (monitoring, troubleshooting)
+            5. Developer Onboarding Guide
+        
+        - id: executive_reporter
+          type: local_llm
+          capabilities: [answer_emit, executive_reporting, synthesis]
     model: gpt-oss:20b
     model_url: http://localhost:11434/api/generate
     provider: ollama
-    temperature: 0.3
     prompt: |
-      Conduct a comprehensive business analysis for:
-      
-      {{ input }}
-      
-      Provide:
-      1. Business Objectives
-      2. Stakeholder Analysis
-      3. Current Pain Points
-      4. Required Capabilities
-      5. Success Metrics
+            Executive Report for: {{ input }}
+            
+            Complete Enterprise Design: {{ previous_outputs }}
+            
+            Format as executive summary:
+            
+            # Executive Summary
+            
+            ## Overview
+            [2-3 sentence high-level summary]
+            
+            ## Key Components
+            [Major system components and responsibilities]
+            
+            ## Implementation Timeline
+            [Phased approach with milestones]
+            
+            ## Expected Outcomes
+            [Business value, ROI, metrics]
+            
+            ## Risk Mitigation
+            [Critical risks and mitigation strategies]
+            
+            ## Recommendations
+            [Next steps and decision points]
 
-  # Step 2: System architecture
-  - id: system_architect
-    type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
-    temperature: 0.5
-    prompt: |
-      Design a comprehensive system architecture for:
-      
-      {{ input }}
-      
-      Business Analysis: {{ get_agent_response('business_analyst') }}
-      
-      Provide:
-      1. High-Level Architecture (components and layers)
-      2. Technology Stack Recommendations
-      3. Data Flow Architecture
-      4. Integration Points
-      5. Scalability Strategy
+  # Execute the validated enterprise design workflow
+  - id: path_executor
+    type: path_executor
+    path_source: design_validation_loop.response.result.graphscout_architect.target
+    on_agent_failure: abort  # Enterprise workflows abort on failure for safety
 
-  # Step 3: Security analysis
-  - id: security_specialist
-    type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
-    temperature: 0.3
-    prompt: |
-      Analyze security requirements and design security measures:
-      
-      System: {{ input }}
-      
-      Architecture: {{ get_agent_response('system_architect') }}
-      
-      Provide:
-      1. Security Threat Analysis
-      2. Authentication & Authorization Strategy
-      3. Data Protection Measures
-      4. Compliance Requirements
-      5. Security Monitoring Plan
-
-  # Step 4: Implementation strategy
-  - id: implementation_strategist
-    type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
-    temperature: 0.4
-    prompt: |
-      Create a detailed implementation strategy:
-      
-      System: {{ input }}
-      
-      Architecture: {{ get_agent_response('system_architect') }}
-      
-      Security: {{ get_agent_response('security_specialist') }}
-      
-      Provide:
-      1. Implementation Phases (3-6 months roadmap)
-      2. Team Structure and Roles
-      3. Technology Migration Plan
-      4. Testing Strategy
-      5. Deployment and Rollout Plan
-
-  # Step 5: Executive summary
+  # Generate executive summary
   - id: executive_summary
     type: local_llm
     model: gpt-oss:20b
@@ -104,18 +450,380 @@ agents:
     provider: ollama
     temperature: 0.3
     prompt: |
-      Create an executive summary of the complete system design:
+      # Enterprise Design Validation Report
       
-      System: {{ input }}
+      {% if previous_outputs.design_validation_loop %}
+      {% set loop = previous_outputs.design_validation_loop %}
       
-      Business Analysis: {{ get_agent_response('business_analyst') }}
-      Architecture: {{ get_agent_response('system_architect') }}
-      Security: {{ get_agent_response('security_specialist') }}
-      Implementation: {{ get_agent_response('implementation_strategist') }}
+      ## Validation Summary
+      - Design Iterations: {{ loop.loops_completed }}
+      - Final Quality Score: {{ (loop.final_score | default(0)) | round(3) }}
+      - Approval Status: {{ 'APPROVED FOR PRODUCTION ✓' if loop.threshold_met else 'REQUIRES REVISION ✗' }}
       
-      Format as a concise executive summary with:
-      1. Overview (2-3 sentences)
-      2. Key Components
-      3. Implementation Timeline
-      4. Expected Benefits
-      5. Critical Success Factors
+      ## GraphScout's Enterprise Workflow
+      {% if loop.response.result.graphscout_architect %}
+      {{ loop.response.result.graphscout_architect }}
+      {% endif %}
+      
+      ## Design Quality Assessment
+      {% if loop.response.result.design_validator_strict %}
+      {% set val = loop.response.result.design_validator_strict %}
+      
+      **Overall Assessment:** {{ val.overall_assessment | default('UNKNOWN') }}
+      **Quality Score:** {{ (val.validation_score | default(0)) | round(3) }}/1.0
+      
+      ### Dimension Scores
+      {% if val.dimension_scores %}
+      {% for dim, data in val.dimension_scores.items() %}
+      - {{ dim|title }}: {{ (data.percentage | default(0)) | round(1) }}% complete
+      {% endfor %}
+      {% endif %}
+      
+      ### Quality Criteria
+      - ✓ Passed: {{ val.passed_criteria|length }}/15
+      {% if val.failed_criteria %}
+      - ✗ Failed: {{ val.failed_criteria|length }}
+        {% for criterion in val.failed_criteria %}
+        - {{ criterion }}
+        {% endfor %}
+      {% endif %}
+      {% endif %}
+      
+      ## Design Evolution
+      {% if loop.response.past_loops and loop.response.past_loops|length > 1 %}
+      {% for iteration in loop.response.past_loops %}
+      **Iteration {{ iteration.loop_number | default('?') }}**: {{ iteration.score | default(0) }}
+      {% if iteration.improvements %}
+      Key improvements: {{ iteration.improvements }}
+      {% endif %}
+      {% endfor %}
+      {% endif %}
+      
+      ## Execution Results
+      {% if previous_outputs.path_executor %}
+      - Execution Status: {{ previous_outputs.path_executor.status | upper }}
+      - Executed Path: {{ previous_outputs.path_executor.executed_path }}
+      - Agents Completed: {{ previous_outputs.path_executor.results | length }}
+      {% if previous_outputs.path_executor.errors %}
+      - Execution Errors: {{ previous_outputs.path_executor.errors | length }}
+        {% for error in previous_outputs.path_executor.errors %}
+        - {{ error }}
+        {% endfor %}
+      {% endif %}
+      
+      ### Enterprise Workflow Execution:
+      {% for agent_id, result in previous_outputs.path_executor.results.items() %}
+      - **{{ agent_id }}**: {{ 'COMPLETED ✓' if 'error' not in result else 'FAILED ✗' }}
+      {% endfor %}
+      {% endif %}
+      
+      ---
+      
+      ## Executive Summary
+      
+      Provide comprehensive summary:
+      
+      1. **Design Quality**: Why this workflow scores {{ (loop.final_score | default(0)) | round(3) }}
+      2. **Completeness**: Coverage of all enterprise requirements
+      3. **Evolution**: How design improved through {{ loop.loops_completed }} iterations
+      4. **Execution Results**: Success/failures and key outcomes
+      5. **Readiness**: Production deployment recommendations
+      6. **Risk Mitigation**: Critical success factors
+      7. **Next Steps**: Immediate action items
+      
+      {% else %}
+      No design validation data available.
+      {% endif %}
+
+# ============================================================================
+# Enterprise Design Workflow
+# ============================================================================
+#
+# This workflow demonstrates GraphScout selecting from 13 specialized agents
+# to build optimal enterprise system designs, validated by PlanValidator.
+#
+# Agent Categories:
+# - Analysis: business_analyst, requirements_engineer, risk_assessor
+# - Architecture: system_architect, technical_specialist, data_architect
+# - Security: security_specialist, compliance_officer
+# - Implementation: implementation_strategist, devops_engineer, qa_strategist
+# - Documentation: technical_writer, executive_reporter
+#
+# GraphScout's Routing Intelligence:
+# - Analyzes requirements to determine needed specialists
+# - Ensures logical sequence (requirements → architecture → security → implementation)
+# - Adapts path based on validation feedback
+# - Optimizes for completeness and quality
+#
+# Validation Loop:
+# - PlanValidator scores with 15 boolean criteria
+# - Feedback loop ensures enterprise-grade quality
+# - Iterates until score meets strict threshold (0.88)
+#
+# ============================================================================
+    
+
+  - id: requirements_engineer
+    type: local_llm
+    capabilities: [requirements_analysis, functional_specs, non_functional_specs]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Requirements Engineering for: {{ input }}
+      
+      {% if previous_outputs.business_analyst %}
+      Business Context: {{ previous_outputs.business_analyst.response }}
+      {% endif %}
+      
+      Define:
+      1. Functional Requirements (user stories, use cases)
+      2. Non-Functional Requirements (performance, scalability, availability)
+      3. System Constraints & Assumptions
+      4. User Personas & Access Patterns
+      5. Integration Requirements
+
+  - id: risk_assessor
+    type: local_llm
+    capabilities: [risk_analysis, threat_modeling, mitigation_planning]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Risk Assessment for: {{ input }}
+      
+      Context: {{ previous_outputs }}
+      
+      Analyze:
+      1. Technical Risks (complexity, dependencies, technology maturity)
+      2. Business Risks (timeline, budget, resource availability)
+      3. Security Risks (threats, vulnerabilities, attack vectors)
+      4. Operational Risks (maintenance, support, scalability)
+      5. Mitigation Strategies (per risk category)
+
+  - id: system_architect
+    type: local_llm
+    capabilities: [architecture_design, system_design, component_design]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      System Architecture for: {{ input }}
+      
+      Requirements: {{ previous_outputs.requirements_engineer.response if previous_outputs.requirements_engineer else previous_outputs }}
+      
+      Design:
+      1. High-Level Architecture (layers, components, boundaries)
+      2. Component Interactions & Communication Patterns
+      3. Technology Stack Recommendations
+      4. Scalability Strategy (horizontal/vertical)
+      5. Data Flow Architecture
+      6. Integration Points & APIs
+
+  - id: technical_specialist
+    type: local_llm
+    capabilities: [technical_design, technology_selection, implementation_patterns]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Technical Specification for: {{ input }}
+      
+      Architecture: {{ previous_outputs.system_architect.response if previous_outputs.system_architect else previous_outputs }}
+      
+      Specify:
+      1. Detailed Technology Stack (languages, frameworks, libraries)
+      2. Design Patterns & Best Practices
+      3. Code Organization & Structure
+      4. Development Tooling (IDE, testing, CI/CD)
+      5. Performance Optimization Strategies
+
+  - id: data_architect
+    type: local_llm
+    capabilities: [data_modeling, database_design, data_flow]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Data Architecture for: {{ input }}
+      
+      System Design: {{ previous_outputs }}
+      
+      Design:
+      1. Data Models (entities, relationships, schemas)
+      2. Database Technology Selection (SQL/NoSQL/hybrid)
+      3. Data Flow & Pipeline Architecture
+      4. Data Governance & Quality
+      5. Backup, Recovery & Archival Strategy
+
+  - id: security_specialist
+    type: local_llm
+    capabilities: [security_architecture, threat_modeling, security_controls]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Security Architecture for: {{ input }}
+      
+      System Context: {{ previous_outputs }}
+      
+      Design:
+      1. Threat Model & Attack Surface Analysis
+      2. Authentication & Authorization Strategy
+      3. Data Protection (encryption at-rest/in-transit)
+      4. Security Controls & Hardening
+      5. Logging, Monitoring & Incident Response
+      6. Penetration Testing & Vulnerability Management
+
+  - id: compliance_officer
+    type: local_llm
+    capabilities: [compliance_analysis, regulatory_requirements, audit_trails]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Compliance Analysis for: {{ input }}
+      
+      Security Design: {{ previous_outputs.security_specialist.response if previous_outputs.security_specialist else previous_outputs }}
+      
+      Analyze:
+      1. Applicable Regulations (GDPR, HIPAA, SOC2, etc.)
+      2. Compliance Requirements Mapping
+      3. Audit Trail & Record Retention
+      4. Privacy Controls & Data Subject Rights
+      5. Compliance Monitoring & Reporting
+
+  - id: implementation_strategist
+    type: local_llm
+    capabilities: [implementation_planning, migration_strategy, rollout_planning]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Implementation Strategy for: {{ input }}
+      
+      Complete Design: {{ previous_outputs }}
+      
+      Plan:
+      1. Phased Implementation Roadmap (6-12 months)
+      2. Team Structure & Roles (development, QA, ops)
+      3. Migration Strategy (if applicable)
+      4. Dependency Management
+      5. Resource Planning (people, infrastructure, budget)
+      6. Timeline & Milestones
+
+  - id: devops_engineer
+    type: local_llm
+    capabilities: [devops_design, ci_cd, infrastructure, monitoring]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      DevOps Strategy for: {{ input }}
+      
+      Architecture: {{ previous_outputs }}
+      
+      Design:
+      1. CI/CD Pipeline (build, test, deploy)
+      2. Infrastructure as Code (Terraform, CloudFormation)
+      3. Container Orchestration (Kubernetes, Docker)
+      4. Monitoring & Observability (logs, metrics, traces)
+      5. Incident Management & On-Call
+      6. Disaster Recovery & Business Continuity
+
+  - id: qa_strategist
+    type: local_llm
+    capabilities: [qa_strategy, test_planning, quality_assurance]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      QA Strategy for: {{ input }}
+      
+      Implementation Plan: {{ previous_outputs }}
+      
+      Define:
+      1. Testing Strategy (unit, integration, e2e, performance)
+      2. Test Automation Framework
+      3. Quality Gates & Acceptance Criteria
+      4. Performance & Load Testing
+      5. Security Testing (SAST, DAST, penetration)
+      6. Quality Metrics & Reporting
+
+  - id: technical_writer
+    type: local_llm
+    capabilities: [documentation, technical_writing, runbooks]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Technical Documentation for: {{ input }}
+      
+      Complete System Design: {{ previous_outputs }}
+      
+      Create:
+      1. Architecture Documentation (diagrams, descriptions)
+      2. API Documentation (endpoints, schemas, examples)
+      3. Deployment Runbooks (step-by-step procedures)
+      4. Operations Guide (monitoring, troubleshooting)
+      5. Developer Onboarding Guide
+
+  - id: executive_reporter
+    type: local_llm
+    capabilities: [answer_emit, executive_reporting, synthesis]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Executive Report for: {{ input }}
+      
+      Complete Enterprise Design: {{ previous_outputs }}
+      
+      Format as executive summary:
+      
+      # Executive Summary
+      
+      ## Overview
+      [2-3 sentence high-level summary]
+      
+      ## Key Components
+      [Major system components and responsibilities]
+      
+      ## Implementation Timeline
+      [Phased approach with milestones]
+      
+      ## Expected Outcomes
+      [Business value, ROI, metrics]
+      
+      ## Risk Mitigation
+      [Critical risks and mitigation strategies]
+      
+      ## Recommendations
+      [Next steps and decision points]
+
+# ============================================================================
+# Enterprise Design Workflow
+# ============================================================================
+#
+# This workflow demonstrates GraphScout selecting from 13 specialized agents
+# to build optimal enterprise system designs, validated by PlanValidator.
+#
+# Agent Categories:
+# - Analysis: business_analyst, requirements_engineer, risk_assessor
+# - Architecture: system_architect, technical_specialist, data_architect
+# - Security: security_specialist, compliance_officer
+# - Implementation: implementation_strategist, devops_engineer, qa_strategist
+# - Documentation: technical_writer, executive_reporter
+#
+# GraphScout's Routing Intelligence:
+# - Analyzes requirements to determine needed specialists
+# - Ensures logical sequence (requirements → architecture → security → implementation)
+# - Adapts path based on validation feedback
+# - Optimizes for completeness and quality
+#
+# Validation Loop:
+# - PlanValidator scores with 15 boolean criteria
+# - Feedback loop ensures enterprise-grade quality
+# - Iterates until score meets strict threshold (0.88)
+#
+# ============================================================================

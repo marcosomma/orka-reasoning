@@ -300,6 +300,326 @@ class TestMemoryAgentDetection:
         assert operation == "unknown"
 
 
+class TestControlFlowAgentFiltering:
+    """Test control flow agent filtering functionality."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.config = Mock()
+        self.config.k_beam = 3
+        self.config.max_depth = 4
+        self.introspector = GraphIntrospector(self.config)
+
+    def test_filter_plan_validator_by_type(self):
+        """Test filtering of PlanValidatorAgent by type."""
+        neighbors = ["agent1", "path_validator", "agent2"]
+
+        graph_state = Mock(spec=GraphState)
+        graph_state.nodes = {
+            "agent1": Mock(type="LocalLLMAgent"),
+            "path_validator": Mock(type="PlanValidatorAgent"),
+            "agent2": Mock(type="DuckDuckGoTool"),
+        }
+
+        filtered = self.introspector._filter_control_flow_agents_from_candidates(
+            neighbors, graph_state
+        )
+
+        assert len(filtered) == 2
+        assert "agent1" in filtered
+        assert "agent2" in filtered
+        assert "path_validator" not in filtered
+
+    def test_filter_classification_agent_by_type(self):
+        """Test filtering of ClassificationAgent by type."""
+        neighbors = ["input_classifier", "analyzer", "generator"]
+
+        graph_state = Mock(spec=GraphState)
+        graph_state.nodes = {
+            "input_classifier": Mock(type="ClassificationAgent"),
+            "analyzer": Mock(type="LocalLLMAgent"),
+            "generator": Mock(type="LocalLLMAgent"),
+        }
+
+        filtered = self.introspector._filter_control_flow_agents_from_candidates(
+            neighbors, graph_state
+        )
+
+        assert len(filtered) == 2
+        assert "analyzer" in filtered
+        assert "generator" in filtered
+        assert "input_classifier" not in filtered
+
+    def test_filter_binary_agent_by_type(self):
+        """Test filtering of BinaryAgent by type."""
+        neighbors = ["binary_check", "search_agent", "response_builder"]
+
+        graph_state = Mock(spec=GraphState)
+        graph_state.nodes = {
+            "binary_check": Mock(type="BinaryAgent"),
+            "search_agent": Mock(type="DuckDuckGoTool"),
+            "response_builder": Mock(type="LocalLLMAgent"),
+        }
+
+        filtered = self.introspector._filter_control_flow_agents_from_candidates(
+            neighbors, graph_state
+        )
+
+        assert len(filtered) == 2
+        assert "search_agent" in filtered
+        assert "response_builder" in filtered
+        assert "binary_check" not in filtered
+
+    def test_filter_validation_and_structuring_agent_by_type(self):
+        """Test filtering of ValidationAndStructuringAgent by type."""
+        neighbors = ["validator", "data_retriever", "analyzer"]
+
+        graph_state = Mock(spec=GraphState)
+        graph_state.nodes = {
+            "validator": Mock(type="ValidationAndStructuringAgent"),
+            "data_retriever": Mock(type="DuckDuckGoTool"),
+            "analyzer": Mock(type="LocalLLMAgent"),
+        }
+
+        filtered = self.introspector._filter_control_flow_agents_from_candidates(
+            neighbors, graph_state
+        )
+
+        assert len(filtered) == 2
+        assert "data_retriever" in filtered
+        assert "analyzer" in filtered
+        assert "validator" not in filtered
+
+    def test_filter_by_id_pattern_validator(self):
+        """Test filtering by ID pattern 'validator'."""
+        neighbors = ["my_validator", "search_agent", "analysis_agent"]
+
+        graph_state = Mock(spec=GraphState)
+        graph_state.nodes = {
+            "my_validator": Mock(type="LocalLLMAgent"),  # Wrong type but matches pattern
+            "search_agent": Mock(type="DuckDuckGoTool"),
+            "analysis_agent": Mock(type="LocalLLMAgent"),
+        }
+
+        filtered = self.introspector._filter_control_flow_agents_from_candidates(
+            neighbors, graph_state
+        )
+
+        assert len(filtered) == 2
+        assert "search_agent" in filtered
+        assert "analysis_agent" in filtered
+        assert "my_validator" not in filtered
+
+    def test_filter_by_id_pattern_classifier(self):
+        """Test filtering by ID pattern 'classifier'."""
+        neighbors = ["query_classifier", "memory_reader", "response_builder"]
+
+        graph_state = Mock(spec=GraphState)
+        graph_state.nodes = {
+            "query_classifier": Mock(type="LocalLLMAgent"),  # Wrong type but matches pattern
+            "memory_reader": Mock(type="LocalLLMAgent"),
+            "response_builder": Mock(type="LocalLLMAgent"),
+        }
+
+        filtered = self.introspector._filter_control_flow_agents_from_candidates(
+            neighbors, graph_state
+        )
+
+        assert len(filtered) == 2
+        assert "memory_reader" in filtered
+        assert "response_builder" in filtered
+        assert "query_classifier" not in filtered
+
+    def test_filter_by_id_pattern_input_classifier(self):
+        """Test filtering by exact ID pattern 'input_classifier'."""
+        neighbors = ["input_classifier", "graph_scout_router", "search_agent"]
+
+        graph_state = Mock(spec=GraphState)
+        graph_state.nodes = {
+            "input_classifier": Mock(type="LocalLLMAgent"),
+            "graph_scout_router": Mock(type="GraphScoutAgent"),
+            "search_agent": Mock(type="DuckDuckGoTool"),
+        }
+
+        filtered = self.introspector._filter_control_flow_agents_from_candidates(
+            neighbors, graph_state
+        )
+
+        assert len(filtered) == 2
+        assert "graph_scout_router" in filtered
+        assert "search_agent" in filtered
+        assert "input_classifier" not in filtered
+
+    def test_filter_by_id_pattern_path_validator(self):
+        """Test filtering by exact ID pattern 'path_validator'."""
+        neighbors = ["path_validator_moderate", "analyzer", "generator"]
+
+        graph_state = Mock(spec=GraphState)
+        graph_state.nodes = {
+            "path_validator_moderate": Mock(type="LocalLLMAgent"),
+            "analyzer": Mock(type="LocalLLMAgent"),
+            "generator": Mock(type="LocalLLMAgent"),
+        }
+
+        filtered = self.introspector._filter_control_flow_agents_from_candidates(
+            neighbors, graph_state
+        )
+
+        assert len(filtered) == 2
+        assert "analyzer" in filtered
+        assert "generator" in filtered
+        assert "path_validator_moderate" not in filtered
+
+    def test_filter_by_id_pattern_plan_validator(self):
+        """Test filtering by exact ID pattern 'plan_validator'."""
+        neighbors = ["plan_validator_strict", "web_search", "data_analyzer"]
+
+        graph_state = Mock(spec=GraphState)
+        graph_state.nodes = {
+            "plan_validator_strict": Mock(type="LocalLLMAgent"),
+            "web_search": Mock(type="DuckDuckGoTool"),
+            "data_analyzer": Mock(type="LocalLLMAgent"),
+        }
+
+        filtered = self.introspector._filter_control_flow_agents_from_candidates(
+            neighbors, graph_state
+        )
+
+        assert len(filtered) == 2
+        assert "web_search" in filtered
+        assert "data_analyzer" in filtered
+        assert "plan_validator_strict" not in filtered
+
+    def test_filter_no_control_flow_agents(self):
+        """Test filtering when no control flow agents present."""
+        neighbors = ["search_agent", "analysis_agent", "memory_writer", "response_builder"]
+
+        graph_state = Mock(spec=GraphState)
+        graph_state.nodes = {
+            "search_agent": Mock(type="DuckDuckGoTool"),
+            "analysis_agent": Mock(type="LocalLLMAgent"),
+            "memory_writer": Mock(type="MemoryWriterNode"),
+            "response_builder": Mock(type="LocalLLMAgent"),
+        }
+
+        filtered = self.introspector._filter_control_flow_agents_from_candidates(
+            neighbors, graph_state
+        )
+
+        assert len(filtered) == 4
+        assert filtered == neighbors
+
+    def test_filter_all_control_flow_agents(self):
+        """Test filtering when all neighbors are control flow agents."""
+        neighbors = ["input_classifier", "path_validator", "binary_check"]
+
+        graph_state = Mock(spec=GraphState)
+        graph_state.nodes = {
+            "input_classifier": Mock(type="ClassificationAgent"),
+            "path_validator": Mock(type="PlanValidatorAgent"),
+            "binary_check": Mock(type="BinaryAgent"),
+        }
+
+        filtered = self.introspector._filter_control_flow_agents_from_candidates(
+            neighbors, graph_state
+        )
+
+        assert len(filtered) == 0
+
+    def test_filter_mixed_control_flow_and_routing_agents(self):
+        """Test filtering a realistic mix of control and routing agents."""
+        neighbors = [
+            "input_classifier",
+            "graph_scout_router",
+            "path_validator_moderate",
+            "search_agent",
+            "analysis_agent",
+            "memory_reader",
+            "memory_writer",
+            "response_builder",
+        ]
+
+        graph_state = Mock(spec=GraphState)
+        graph_state.nodes = {
+            "input_classifier": Mock(type="ClassificationAgent"),
+            "graph_scout_router": Mock(type="GraphScoutAgent"),
+            "path_validator_moderate": Mock(type="PlanValidatorAgent"),
+            "search_agent": Mock(type="DuckDuckGoTool"),
+            "analysis_agent": Mock(type="LocalLLMAgent"),
+            "memory_reader": Mock(type="MemoryReaderNode"),
+            "memory_writer": Mock(type="MemoryWriterNode"),
+            "response_builder": Mock(type="LocalLLMAgent"),
+        }
+
+        filtered = self.introspector._filter_control_flow_agents_from_candidates(
+            neighbors, graph_state
+        )
+
+        # Should filter out input_classifier and path_validator_moderate
+        assert len(filtered) == 6
+        assert "graph_scout_router" in filtered
+        assert "search_agent" in filtered
+        assert "analysis_agent" in filtered
+        assert "memory_reader" in filtered
+        assert "memory_writer" in filtered
+        assert "response_builder" in filtered
+        assert "input_classifier" not in filtered
+        assert "path_validator_moderate" not in filtered
+
+    def test_filter_with_missing_node_descriptor(self):
+        """Test filtering when node descriptor is missing."""
+        neighbors = ["agent1", "agent2", "path_validator"]
+
+        graph_state = Mock(spec=GraphState)
+        graph_state.nodes = {
+            "agent1": Mock(type="LocalLLMAgent"),
+            # agent2 and path_validator missing from nodes dict
+        }
+
+        # Should not crash, should filter by pattern for path_validator
+        filtered = self.introspector._filter_control_flow_agents_from_candidates(
+            neighbors, graph_state
+        )
+
+        assert "agent1" in filtered
+        assert "agent2" in filtered  # Missing descriptor, not filtered by type
+        assert "path_validator" not in filtered  # Filtered by pattern
+
+    def test_filter_case_insensitive_pattern_matching(self):
+        """Test that pattern matching is case-insensitive."""
+        neighbors = ["PATH_VALIDATOR", "Input_Classifier", "SEARCH_AGENT"]
+
+        graph_state = Mock(spec=GraphState)
+        graph_state.nodes = {
+            "PATH_VALIDATOR": Mock(type="LocalLLMAgent"),
+            "Input_Classifier": Mock(type="LocalLLMAgent"),
+            "SEARCH_AGENT": Mock(type="DuckDuckGoTool"),
+        }
+
+        filtered = self.introspector._filter_control_flow_agents_from_candidates(
+            neighbors, graph_state
+        )
+
+        assert len(filtered) == 1
+        assert "SEARCH_AGENT" in filtered
+        assert "PATH_VALIDATOR" not in filtered
+        assert "Input_Classifier" not in filtered
+
+    def test_filter_with_exception_fallback(self):
+        """Test that exceptions fall back to original list."""
+        neighbors = ["agent1", "agent2", "path_validator"]
+
+        graph_state = Mock(spec=GraphState)
+        graph_state.nodes = None  # This will cause an exception
+
+        filtered = self.introspector._filter_control_flow_agents_from_candidates(
+            neighbors, graph_state
+        )
+
+        # Should return original list on error
+        assert filtered == neighbors
+
+
 class TestPathDiscovery:
     """Test path discovery functionality."""
 

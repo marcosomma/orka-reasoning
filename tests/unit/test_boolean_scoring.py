@@ -12,7 +12,7 @@ Tests preset loading, score calculation, and determinism.
 
 import pytest
 
-from orka.scoring import BooleanScoreCalculator, PRESETS, load_preset
+from orka.scoring import PRESETS, BooleanScoreCalculator, load_preset
 
 
 class TestPresetLoading:
@@ -225,7 +225,9 @@ class TestBooleanScoreCalculator:
 
         assert result1["score"] == result2["score"] == result3["score"]
         assert result1["assessment"] == result2["assessment"] == result3["assessment"]
-        assert result1["passed_criteria"] == result2["passed_criteria"] == result3["passed_criteria"]
+        assert (
+            result1["passed_criteria"] == result2["passed_criteria"] == result3["passed_criteria"]
+        )
 
     def test_assessment_thresholds(self):
         """Test assessment categories based on thresholds."""
@@ -247,7 +249,10 @@ class TestBooleanScoreCalculator:
 
         calculator = BooleanScoreCalculator(preset="moderate", custom_weights=custom_weights)
 
-        assert calculator.flat_weights["completeness.has_all_required_steps"] == 0.50
+        # After renormalization, the weight will be scaled to maintain sum of 1.0
+        assert calculator.flat_weights["completeness.has_all_required_steps"] == pytest.approx(
+            0.3787878787878788, rel=1e-6
+        )
 
     def test_dimension_scores(self):
         """Test dimension-level score calculation."""
@@ -422,4 +427,3 @@ class TestBooleanScoreCalculator:
         assert result["score"] > 0.0
         assert "completeness.has_all_required_steps" in result["passed_criteria"]
         assert "completeness.handles_edge_cases" in result["failed_criteria"]
-

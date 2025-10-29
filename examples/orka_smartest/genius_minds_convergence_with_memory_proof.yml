@@ -105,14 +105,18 @@ agents:
       - "insight_quality_checker"
       - "memory_tracker"  # New agent to track memory across loops
     
-    score_extraction_config:
-      strategies:
-        - type: pattern
-          patterns:
-            - "CONVERGENCE_SCORE: ([0-9.]+)"
-            - "Score: ([0-9.]+)"
-        - type: json
-          json_path: "$.convergence_score"
+    # Boolean scoring configuration for deterministic convergence evaluation
+    scoring:
+      preset: strict  # Higher standards for better convergence
+      custom_weights:
+        # Completeness ensures all perspectives are considered
+        completeness.has_all_required_steps: 0.22
+        completeness.addresses_all_query_aspects: 0.18
+        # Coherence ensures logical synthesis
+        coherence.logical_agent_sequence: 0.12
+        coherence.no_conflicting_actions: 0.10
+        # Efficiency for quality insights
+        efficiency.uses_appropriate_agents: 0.12
     
     cognitive_extraction:
       enabled: true
@@ -128,11 +132,14 @@ agents:
           - "PERSPECTIVE_([A-Z_]+)[\":]?\\s*(.+?)(?=\\n[A-Z_]+:|$)"
     
     past_loops_metadata:
-      round: "{{ get_loop_number() }}"
-      convergence_score: "{{ score }}"
+      loop_number: "{{ get_loop_number() }}"
+      score: "{{ score }}"
       timestamp: "{{ timestamp }}"
       breakthrough: "{{ safe_get_response('breakthrough_detector', 'none') }}"
       previous_perspectives: "{{ safe_get_response('memory_tracker', '{}') }}"
+      insights: "{{ insights }}"
+      improvements: "{{ improvements }}"
+      mistakes: "{{ mistakes }}"
     
     internal_workflow:
       orchestrator:

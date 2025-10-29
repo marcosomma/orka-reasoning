@@ -86,9 +86,7 @@ class BooleanScoreCalculator:
                 )
 
         # Renormalize weights to sum to 1.0 after custom overrides
-        total_weight = sum(
-            sum(criteria.values()) for criteria in self.weights.values()
-        )
+        total_weight = sum(sum(criteria.values()) for criteria in self.weights.values())
         if total_weight > 0 and abs(total_weight - 1.0) > 0.001:
             logger.info(
                 f"Renormalizing weights from {total_weight:.4f} to 1.0 after custom overrides"

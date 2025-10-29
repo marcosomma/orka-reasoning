@@ -1,0 +1,362 @@
+name: "GraphScout + PathExecutor Integration"
+description: |
+  Advanced example demonstrating GraphScout with PathExecutor.
+  
+  **How GraphScout Works:**
+  - GraphScout automatically discovers agents from the orchestrator's agent list
+  - It uses beam search + LLM evaluation to find optimal paths
+  - Agents MUST have `capabilities` tags for GraphScout to evaluate them
+  - The prompt should be minimal - GraphScout does the path selection internally
+  
+  **Workflow:**
+  1. Validation loop: GraphScout proposes paths, PlanValidator validates them
+  2. Loop continues until validation score meets threshold (0.80)
+  3. PathExecutor executes the validated agent sequence
+  
+  This is the RECOMMENDED pattern for production-grade validated execution.
+
+agents:
+  # PHASE 1: Validate the path with a loop
+  - id: validation_loop
+    type: loop
+    max_iterations: 5
+    exit_condition: "{{ get_loop_number() > 1 and loop_score >= 0.80 }}"
+    
+    internal_workflow:
+      orchestrator:
+        id: validation-internal
+        strategy: sequential
+        agents: [graphscout_router, path_validator]
+      
+      agents:
+        # GraphScout proposes optimal path from available agents
+        - id: graphscout_router
+          type: graph-scout
+          params:
+            k_beam: 5
+            max_depth: 3
+            commit_margin: 0.1
+            require_terminal: true
+            score_weights:
+              llm: 0.5
+              heuristics: 0.3
+              prior: 0.15
+              cost: 0.025
+              latency: 0.025
+            evaluation_model: "local_llm"
+            evaluation_model_name: "gpt-oss:20b"
+          prompt: |
+            Query: {{ input }}
+            
+            {% if has_past_loops() %}
+            ## Validation Feedback (Iteration {{ get_loop_number() }})
+            {% set last_loop = get_past_loops()[-1] %}
+            Previous validation score: {{ last_loop.score }}
+            
+            Issues to address:
+            {% if "has_all_required_steps" in last_loop.mistakes %}
+            - Missing required steps - ensure complete workflow
+            {% endif %}
+            {% if "uses_appropriate_agents" in last_loop.mistakes %}
+            - Suboptimal agent selection - review agent capabilities
+            {% endif %}
+            {% if "includes_fallback_path" in last_loop.mistakes %}
+            - Add error handling and fallback paths
+            {% endif %}
+            {% endif %}
+            
+            Select optimal path from available agents.
+        
+        # PlanValidator validates the path
+        - id: path_validator
+          type: plan_validator
+          llm_model: "gpt-oss:20b"
+          llm_provider: "ollama"
+          llm_url: "http://localhost:11434/api/generate"
+          temperature: 0.2
+          scoring_preset: "moderate"
+          custom_weights:
+            completeness.has_all_required_steps: 0.15
+            efficiency.uses_appropriate_agents: 0.15
+            safety.handles_errors_gracefully: 0.10
+        
+        # Agent definitions that GraphScout can select from (MUST be inside internal_workflow)
+        - id: web_search
+          type: duckduckgo
+          capabilities: [data_retrieval, web_search]
+          max_results: 5
+        
+        - id: deep_analyzer
+          type: local_llm
+          capabilities: [reasoning, analysis, multi_perspective]
+          model: "gpt-oss:20b"
+          provider: "ollama"
+          url: "http://localhost:11434/api/generate"
+          temperature: 0.4
+          prompt: |
+            Perform deep multi-perspective analysis of the available data.
+            
+            Query: {{ input }}
+            
+            {% if "web_search" in previous_outputs %}
+            Search results: {{ previous_outputs.web_search.results }}
+            {% endif %}
+            
+            Analyze from multiple perspectives:
+            1. Factual accuracy
+            2. Relevance to query
+            3. Potential implications
+            4. Missing information
+            
+            Provide comprehensive analysis.
+        
+        - id: technical_expert
+          type: local_llm
+          capabilities: [technical_analysis, expertise, best_practices]
+          model: "gpt-oss:20b"
+          provider: "ollama"
+          url: "http://localhost:11434/api/generate"
+          temperature: 0.3
+          prompt: |
+            Provide technical expert analysis.
+            
+            Query: {{ input }}
+            
+            {% if "web_search" in previous_outputs %}
+            Data: {{ previous_outputs.web_search.results }}
+            {% endif %}
+            
+            {% if "deep_analyzer" in previous_outputs %}
+            Analysis: {{ previous_outputs.deep_analyzer.response }}
+            {% endif %}
+            
+            Provide expert technical insights, best practices, and recommendations.
+        
+        - id: content_writer
+          type: local_llm
+          capabilities: [content_generation, writing, synthesis]
+          model: "gpt-oss:20b"
+          provider: "ollama"
+          url: "http://localhost:11434/api/generate"
+          temperature: 0.5
+          prompt: |
+            Generate professional, well-structured content.
+            
+            Query: {{ input }}
+            
+            Available context:
+            {% for agent_id, result in previous_outputs.items() %}
+            - {{ agent_id }}: {{ result | tojson }}
+            {% endfor %}
+            
+            Create clear, engaging, and informative content.
+        
+        - id: fact_checker
+          type: local_llm
+          capabilities: [fact_checking, verification, validation]
+          model: "gpt-oss:20b"
+          provider: "ollama"
+          url: "http://localhost:11434/api/generate"
+          temperature: 0.1
+          prompt: |
+            Verify all claims and validate information accuracy.
+            
+            Content to verify:
+            {% if "content_writer" in previous_outputs %}
+            {{ previous_outputs.content_writer.response }}
+            {% elif "deep_analyzer" in previous_outputs %}
+            {{ previous_outputs.deep_analyzer.response }}
+            {% endif %}
+            
+            Original sources:
+            {% if "web_search" in previous_outputs %}
+            {{ previous_outputs.web_search.results }}
+            {% endif %}
+            
+            Flag any inaccuracies, unsupported claims, or areas needing clarification.
+        
+        - id: quality_reviewer
+          type: local_llm
+          capabilities: [answer_emit, quality_review, assessment]
+          model: "gpt-oss:20b"
+          provider: "ollama"
+          url: "http://localhost:11434/api/generate"
+          temperature: 0.2
+          prompt: |
+            Perform final quality review.
+            
+            Query: {{ input }}
+            
+            Review criteria:
+            1. Completeness - Does it fully address the query?
+            2. Accuracy - Is information correct and verified?
+            3. Clarity - Is it easy to understand?
+            4. Structure - Is it well-organized?
+            
+            All previous outputs:
+            {{ previous_outputs | tojson(indent=2) }}
+            
+            Provide quality score (0-10) and improvement recommendations.
+  
+  # PHASE 2: Execute the validated path
+  - id: path_executor
+    type: path_executor
+    path_source: validation_loop.response.result.graphscout_router.target
+    on_agent_failure: continue
+  
+  # PHASE 3: Final quality check
+  - id: final_summary
+    type: local_llm
+    model: "gpt-oss:20b"
+    provider: "ollama"
+    url: "http://localhost:11434/api/generate"
+    temperature: 0.3
+    prompt: |
+      Synthesize the execution results into a final response.
+      
+      Original query: {{ input }}
+      
+      Validated path: {{ validation_loop.response.result.graphscout_router.target }}
+      Validation score: {{ validation_loop.response.result.path_validator.validation_score }}
+      
+      Execution results:
+      {{ path_executor.results | tojson(indent=2) }}
+      
+      Provide a comprehensive, well-structured final answer.
+
+  # ===== AGENT DEFINITIONS (GraphScout selects from these) =====
+  
+  - id: web_search
+    type: duckduckgo
+    capabilities: [data_retrieval, web_search]
+    max_results: 5
+  
+  - id: deep_analyzer
+    type: local_llm
+    capabilities: [reasoning, analysis, multi_perspective]
+    model: "gpt-oss:20b"
+    provider: "ollama"
+    url: "http://localhost:11434/api/generate"
+    temperature: 0.4
+    prompt: |
+      Perform deep multi-perspective analysis of the available data.
+      
+      Query: {{ input }}
+      
+      {% if "web_search" in previous_outputs %}
+      Search results: {{ previous_outputs.web_search.results }}
+      {% endif %}
+      
+      Analyze from multiple perspectives:
+      1. Factual accuracy
+      2. Relevance to query
+      3. Potential implications
+      4. Missing information
+      
+      Provide comprehensive analysis.
+  
+  - id: technical_expert
+    type: local_llm
+    capabilities: [technical_analysis, expertise, best_practices]
+    model: "gpt-oss:20b"
+    provider: "ollama"
+    url: "http://localhost:11434/api/generate"
+    temperature: 0.3
+    prompt: |
+      Provide technical expert analysis.
+      
+      Query: {{ input }}
+      
+      {% if "web_search" in previous_outputs %}
+      Data: {{ previous_outputs.web_search.results }}
+      {% endif %}
+      
+      {% if "deep_analyzer" in previous_outputs %}
+      Analysis: {{ previous_outputs.deep_analyzer.response }}
+      {% endif %}
+      
+      Provide expert technical insights, best practices, and recommendations.
+  
+  - id: content_writer
+    type: local_llm
+    capabilities: [content_generation, writing, synthesis]
+    model: "gpt-oss:20b"
+    provider: "ollama"
+    url: "http://localhost:11434/api/generate"
+    temperature: 0.5
+    prompt: |
+      Generate professional, well-structured content.
+      
+      Query: {{ input }}
+      
+      Available context:
+      {% for agent_id, result in previous_outputs.items() %}
+      - {{ agent_id }}: {{ result | tojson }}
+      {% endfor %}
+      
+      Create clear, engaging, and informative content.
+  
+  - id: fact_checker
+    type: local_llm
+    capabilities: [fact_checking, verification, validation]
+    model: "gpt-oss:20b"
+    provider: "ollama"
+    url: "http://localhost:11434/api/generate"
+    temperature: 0.1
+    prompt: |
+      Verify all claims and validate information accuracy.
+      
+      Content to verify:
+      {% if "content_writer" in previous_outputs %}
+      {{ previous_outputs.content_writer.response }}
+      {% elif "deep_analyzer" in previous_outputs %}
+      {{ previous_outputs.deep_analyzer.response }}
+      {% endif %}
+      
+      Original sources:
+      {% if "web_search" in previous_outputs %}
+      {{ previous_outputs.web_search.results }}
+      {% endif %}
+      
+      Flag any inaccuracies, unsupported claims, or areas needing clarification.
+  
+  - id: quality_reviewer
+    type: local_llm
+    capabilities: [answer_emit, quality_review, assessment]
+    model: "gpt-oss:20b"
+    provider: "ollama"
+    url: "http://localhost:11434/api/generate"
+    temperature: 0.2
+    prompt: |
+      Perform final quality review.
+      
+      Query: {{ input }}
+      
+      Review criteria:
+      1. Completeness - Does it fully address the query?
+      2. Accuracy - Is information correct and verified?
+      3. Clarity - Is it easy to understand?
+      4. Structure - Is it well-organized?
+      
+      All previous outputs:
+      {{ previous_outputs | tojson(indent=2) }}
+      
+      Provide quality score (0-10) and improvement recommendations.
+
+llm:
+  provider: "ollama"
+  model: "gpt-oss:20b"
+  url: "http://localhost:11434/api/generate"
+  temperature: 0.3
+  max_tokens: 2000
+
+memory:
+  backend: "redisstack"
+  host: "localhost"
+  port: 6379
+  embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+  decay_enabled: true
+  decay_config:
+    max_age_days: 30
+    decay_rate: 0.1
+
