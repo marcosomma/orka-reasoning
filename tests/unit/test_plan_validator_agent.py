@@ -8,7 +8,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from orka.agents.plan_validator import PlanValidatorAgent, critique_parser, llm_client
+from orka.agents.plan_validator import (
+    PlanValidatorAgent,
+    boolean_parser,
+    llm_client,
+    prompt_builder,
+)
 
 
 class TestPlanValidatorAgent:
@@ -127,52 +132,76 @@ class TestPlanValidatorAgent:
 
     def test_build_validation_prompt(self):
         """Test validation prompt construction."""
-        agent = PlanValidatorAgent(agent_id="test")
-
         query = "Test query"
         proposed_path = {"target": ["agent1"]}
         previous_critiques = []
         loop_number = 1
 
-        prompt = agent._build_validation_prompt(
-            query, proposed_path, previous_critiques, loop_number
+        prompt = prompt_builder.build_validation_prompt(
+            query=query,
+            proposed_path=proposed_path,
+            previous_critiques=previous_critiques,
+            loop_number=loop_number,
+            preset_name="moderate",
         )
 
-        assert "**VALIDATION ROUND:** 1" in prompt
         assert "Test query" in prompt
-        assert '"target"' in prompt
+        assert "agent1" in prompt
         assert "completeness" in prompt
         assert "efficiency" in prompt
 
     def test_build_validation_prompt_with_history(self):
         """Test prompt construction with previous critiques."""
-        agent = PlanValidatorAgent(agent_id="test")
-
         query = "Test query"
         proposed_path = {"target": ["agent1"]}
-        previous_critiques = [{"validation_score": 0.7, "assessment": "NEEDS_IMPROVEMENT"}]
+        previous_critiques = [{"validation_score": 0.7, "overall_assessment": "NEEDS_IMPROVEMENT"}]
         loop_number = 2
 
-        prompt = agent._build_validation_prompt(
-            query, proposed_path, previous_critiques, loop_number
+        prompt = prompt_builder.build_validation_prompt(
+            query=query,
+            proposed_path=proposed_path,
+            previous_critiques=previous_critiques,
+            loop_number=loop_number,
+            preset_name="moderate",
         )
 
-        assert "PREVIOUS CRITIQUES:" in prompt
-        assert "Round 1:" in prompt
+        assert "previous" in prompt.lower() or "history" in prompt.lower()
+        assert "0.7" in prompt
 
     @pytest.mark.asyncio
     async def test_run_impl_success(self):
-        """Test successful validation run."""
+        """Test successful validation run with boolean scoring."""
         agent = PlanValidatorAgent(agent_id="test")
 
-        mock_critique = {
-            "validation_score": 0.85,
-            "overall_assessment": "APPROVED",
-            "critiques": {},
-            "recommended_changes": [],
-            "approval_confidence": 0.85,
-            "rationale": "Good path",
-        }
+        # Mock boolean evaluation response
+        mock_llm_response = json.dumps(
+            {
+                "completeness": {
+                    "has_all_required_steps": True,
+                    "addresses_all_query_aspects": True,
+                    "handles_edge_cases": True,
+                    "includes_fallback_path": True,
+                },
+                "efficiency": {
+                    "minimizes_redundant_calls": True,
+                    "uses_appropriate_agents": True,
+                    "optimizes_cost": True,
+                    "optimizes_latency": True,
+                },
+                "safety": {
+                    "validates_inputs": True,
+                    "handles_errors_gracefully": True,
+                    "has_timeout_protection": True,
+                    "avoids_risky_combinations": True,
+                },
+                "coherence": {
+                    "logical_agent_sequence": True,
+                    "proper_data_flow": True,
+                    "no_conflicting_actions": True,
+                },
+                "rationale": "Good path",
+            }
+        )
 
         ctx = {
             "input": "Test query",
@@ -183,16 +212,14 @@ class TestPlanValidatorAgent:
         }
 
         with patch.object(llm_client, "call_llm", new_callable=AsyncMock) as mock_llm:
-            mock_llm.return_value = json.dumps(mock_critique)
+            mock_llm.return_value = mock_llm_response
 
-            with patch.object(critique_parser, "parse_critique") as mock_parser:
-                mock_parser.return_value = mock_critique
+            result = await agent._run_impl(ctx)
 
-                result = await agent._run_impl(ctx)
-
-                assert result["validation_score"] == 0.85
-                assert result["overall_assessment"] == "APPROVED"
-                mock_llm.assert_called_once()
+            assert result["validation_score"] == 1.0  # Perfect score
+            assert result["overall_assessment"] == "APPROVED"
+            assert "boolean_evaluations" in result
+            mock_llm.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_run_impl_llm_failure(self):
@@ -216,15 +243,15 @@ class TestPlanValidatorAgent:
             assert result["overall_assessment"] == "REJECTED"
             assert "Connection failed" in result["rationale"]
 
-    def test_create_error_critique(self):
-        """Test error critique creation."""
+    def test_create_error_result(self):
+        """Test error result creation."""
         agent = PlanValidatorAgent(agent_id="test")
 
-        critique = agent._create_error_critique("Test error")
+        result = agent._create_error_result("Test error")
 
-        assert critique["validation_score"] == 0.0
-        assert critique["overall_assessment"] == "REJECTED"
-        assert "Test error" in critique["rationale"]
+        assert result["validation_score"] == 0.0
+        assert result["overall_assessment"] == "REJECTED"
+        assert "Test error" in result["rationale"]
 
 
 class TestLLMClient:
@@ -283,95 +310,3 @@ class TestLLMClient:
         assert payload["model"] == "model"
         assert payload["messages"][0]["content"] == "Test"
         assert payload["temperature"] == 0.5
-
-
-class TestCritiqueParser:
-    """Test the critique parser module."""
-
-    def test_parse_critique_valid_json(self):
-        """Test parsing valid JSON critique."""
-        response = json.dumps(
-            {
-                "validation_score": 0.85,
-                "overall_assessment": "APPROVED",
-                "critiques": {},
-                "recommended_changes": ["change1"],
-                "approval_confidence": 0.9,
-                "rationale": "Good",
-            }
-        )
-
-        result = critique_parser.parse_critique(response)
-
-        assert result["validation_score"] == 0.85
-        assert result["overall_assessment"] == "APPROVED"
-        assert result["recommended_changes"] == ["change1"]
-
-    def test_parse_critique_json_in_markdown(self):
-        """Test parsing JSON from markdown code block."""
-        response = """```json
-{
-    "validation_score": 0.75,
-    "overall_assessment": "NEEDS_IMPROVEMENT"
-}
-```"""
-
-        result = critique_parser.parse_critique(response)
-
-        assert result["validation_score"] == 0.75
-        assert result["overall_assessment"] == "NEEDS_IMPROVEMENT"
-
-    def test_parse_critique_fallback(self):
-        """Test fallback parsing when JSON extraction fails."""
-        response = "VALIDATION_SCORE: 0.6\nSome critique text"
-
-        result = critique_parser.parse_critique(response)
-
-        assert result["validation_score"] == 0.6
-        assert "overall_assessment" in result
-
-    def test_extract_json_from_text(self):
-        """Test JSON extraction from text."""
-        text = 'Some text {"key": "value"} more text'
-
-        result = critique_parser._extract_json_from_text(text)
-
-        assert result == {"key": "value"}
-
-    def test_extract_json_from_text_invalid(self):
-        """Test JSON extraction with invalid JSON."""
-        text = "No JSON here"
-
-        result = critique_parser._extract_json_from_text(text)
-
-        assert result is None
-
-    def test_extract_score_from_text(self):
-        """Test score extraction using regex."""
-        text = "validation_score: 0.82"
-
-        score = critique_parser._extract_score_from_text(text)
-
-        assert score == 0.82
-
-    def test_extract_score_from_text_uppercase(self):
-        """Test score extraction with uppercase pattern."""
-        text = "VALIDATION_SCORE: 0.91"
-
-        score = critique_parser._extract_score_from_text(text)
-
-        assert score == 0.91
-
-    def test_extract_score_from_text_default(self):
-        """Test default score when extraction fails."""
-        text = "No score here"
-
-        score = critique_parser._extract_score_from_text(text)
-
-        assert score == 0.5
-
-    def test_score_to_assessment(self):
-        """Test score to assessment conversion."""
-        assert critique_parser._score_to_assessment(0.95) == "APPROVED"
-        assert critique_parser._score_to_assessment(0.80) == "NEEDS_IMPROVEMENT"
-        assert critique_parser._score_to_assessment(0.60) == "REJECTED"

@@ -20,7 +20,22 @@ OrKa's memory system stores and retrieves information from previous conversation
 ## Installation and Setup
 
 ### Do I need Docker?
-Docker is recommended for the memory system (Redis), but OrKa can work without it using basic in-memory storage.
+**Short answer:** Docker is recommended but not required.
+
+**How it works:**
+When you run `orka-start`, OrKa automatically tries multiple options:
+1. **Native RedisStack** (if installed locally on your system)
+2. **Docker RedisStack** (if Docker is available)
+3. **Installation instructions** (if neither is available)
+
+**Installation options:**
+- **With Docker** (easiest): Just have Docker running, `orka-start` handles the rest
+- **Without Docker**: Install RedisStack natively:
+  - Windows: Download from https://redis.io/download
+  - macOS: `brew install redis-stack`
+  - Ubuntu: `sudo apt install redis-stack-server`
+
+OrKa will automatically detect and use whichever is available.
 
 ### How do I set up local LLMs?
 1. Install Ollama from https://ollama.ai
@@ -28,7 +43,32 @@ Docker is recommended for the memory system (Redis), but OrKa can work without i
 3. Use `provider: ollama` in your YAML configuration
 
 ### What if I get Redis connection errors?
-Make sure Redis is running: `docker ps` should show a Redis container. If not, start it with: `docker run -d -p 6380:6380 redis/redis-stack:latest`
+**Check if RedisStack is running:**
+```bash
+# For Docker-based setup
+docker ps | grep redis
+
+# For native setup
+redis-cli -p 6380 ping
+```
+
+**Start RedisStack:**
+```bash
+# Option 1: Use orka-start (tries native first, then Docker)
+orka-start
+
+# Option 2: Docker manually
+docker run -d -p 6380:6380 --name orka-redis redis/redis-stack:latest
+
+# Option 3: Native RedisStack
+redis-stack-server --port 6380
+```
+
+**Verify vector search capabilities:**
+```bash
+redis-cli -p 6380 FT._LIST
+# Should show OrKa memory indexes if working correctly
+```
 
 ## Configuration and Usage
 

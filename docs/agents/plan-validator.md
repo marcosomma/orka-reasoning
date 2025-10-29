@@ -6,19 +6,21 @@
 
 ## Overview
 
-The PlanValidator agent validates and critiques proposed agent execution paths from planning agents like GraphScout. It evaluates paths across multiple dimensions and provides structured feedback for iterative improvement in loop-based workflows.
+The PlanValidator agent validates and critiques proposed agent execution paths from planning agents like GraphScout. It evaluates paths across multiple dimensions using **boolean-based scoring** for deterministic, auditable results, and provides structured feedback for iterative improvement in loop-based workflows.
 
 ## Key Features
 
-- **Multi-Dimensional Evaluation** - Assesses completeness, efficiency, safety, coherence, and fallback handling
-- **Structured Feedback** - Returns validation scores, dimension-specific critiques, and recommended changes
+- **Boolean-Based Scoring** - Deterministic scoring from boolean criteria (new in v0.9.6+)
+- **Multi-Dimensional Evaluation** - Assesses completeness, efficiency, safety, and coherence
+- **Structured Feedback** - Returns validation scores, boolean evaluations, and failed criteria
+- **Auditable Results** - See exactly which criteria passed or failed
 - **Loop Integration** - Designed for iterative refinement with LoopNode until validation threshold met
 - **Flexible LLM Support** - Works with Ollama, OpenAI-compatible APIs, or any local LLM provider
 - **GraphScout Complementary** - Pairs with GraphScout for meta-cognitive workflow optimization
 
 ## Configuration
 
-### Basic Configuration
+### Basic Configuration (Boolean Scoring)
 
 ```yaml
 agents:
@@ -28,110 +30,165 @@ agents:
     llm_provider: ollama
     llm_url: http://localhost:11434/api/generate
     temperature: 0.2
-    prompt: |
-      Validate the proposed execution path for: {{ get_input() }}
-      
-      Proposed Path: {{ get_agent_response('graph_scout') }}
-      
-      Evaluate completeness, efficiency, safety, coherence, and fallback handling.
+    scoring_preset: moderate  # strict | moderate | lenient
+```
+
+### With Custom Weights
+
+```yaml
+agents:
+  - id: path_validator
+    type: plan_validator
+    llm_model: gpt-oss:20b
+    llm_provider: ollama
+    scoring_preset: moderate
+    custom_weights:
+      # Override specific criteria weights
+      completeness.has_all_required_steps: 0.25
+      safety.validates_inputs: 0.15
 ```
 
 ### Configuration Parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `llm_model` | string | `gpt-oss:20b` | LLM model name for critique generation |
+| `llm_model` | string | `gpt-oss:20b` | LLM model name for boolean evaluation |
 | `llm_provider` | string | `ollama` | Provider type: `ollama` or `openai_compatible` |
 | `llm_url` | string | `http://localhost:11434/api/generate` | LLM API endpoint URL |
-| `temperature` | float | `0.2` | LLM temperature (lower for consistent critiques) |
-| `prompt` | string | Required | Validation prompt template with context |
+| `temperature` | float | `0.2` | LLM temperature (lower for consistent evaluations) |
+| `scoring_preset` | string | `moderate` | Scoring preset: `strict`, `moderate`, or `lenient` |
+| `custom_weights` | dict | None | Optional weight overrides (e.g., `dimension.criterion: weight`) |
 
 ## Evaluation Dimensions
 
-The agent evaluates paths across five dimensions:
+The agent evaluates paths using boolean criteria across four dimensions:
 
-### 1. Completeness
-- Does the path address all aspects of the query?
-- Are all required steps included?
-- Are there gaps in the execution sequence?
+### 1. Completeness (35-45% of score)
+- `has_all_required_steps`: All necessary steps included in path
+- `addresses_all_query_aspects`: Every aspect of query addressed
+- `handles_edge_cases`: Edge cases and unusual inputs handled
+- `includes_fallback_path`: Alternative paths for failures
 
-### 2. Efficiency
-- Is the path optimal for cost and latency?
-- Are agents selected appropriately?
-- Could the path be simplified without losing functionality?
+### 2. Efficiency (20-30% of score)
+- `minimizes_redundant_calls`: No unnecessary duplicate agent calls
+- `uses_appropriate_agents`: Best agents selected for each task
+- `optimizes_cost`: Token usage minimized where possible
+- `optimizes_latency`: Response time optimized
 
-### 3. Safety
-- Are there risky agent combinations?
-- Are safeguards and error handling present?
-- Could the path cause unintended side effects?
+### 3. Safety (15-25% of score)
+- `validates_inputs`: Input validation performed
+- `handles_errors_gracefully`: Comprehensive error handling
+- `has_timeout_protection`: Timeouts prevent hanging operations
+- `avoids_risky_combinations`: No dangerous agent combinations
 
-### 4. Coherence
-- Do agents work well together in this sequence?
-- Is data flow between agents logical?
-- Are there conflicting agent behaviors?
+### 4. Coherence (4-5% of score)
+- `logical_agent_sequence`: Agents called in logical order
+- `proper_data_flow`: Data flows correctly between agents
+- `no_conflicting_actions`: No agents working against each other
 
-### 5. Fallback
-- Are error cases handled?
-- Are edge cases considered?
-- Are retry and recovery mechanisms present?
+### Scoring Presets
+
+**Strict** (Production-critical):
+- Approval threshold: 0.90+
+- High standards across all dimensions
+- Use for mission-critical workflows
+
+**Moderate** (Default):
+- Approval threshold: 0.85+
+- Balanced evaluation
+- Use for general-purpose workflows
+
+**Lenient** (Exploratory):
+- Approval threshold: 0.80+
+- Faster iteration
+- Use for experimental features
 
 ## Output Format
 
-The agent returns a structured validation result:
+The agent returns a structured validation result with boolean evaluations:
 
 ```json
 {
-  "validation_score": 0.85,
-  "overall_assessment": "APPROVED",
-  "critiques": {
+  "validation_score": 0.7543,
+  "overall_assessment": "NEEDS_IMPROVEMENT",
+  
+  "boolean_evaluations": {
     "completeness": {
-      "score": 0.9,
-      "issues": [],
-      "suggestions": ["Consider adding error logging"]
+      "has_all_required_steps": true,
+      "addresses_all_query_aspects": false,
+      "handles_edge_cases": true,
+      "includes_fallback_path": false
     },
     "efficiency": {
-      "score": 0.85,
-      "issues": ["Redundant memory read operation"],
-      "suggestions": ["Combine memory operations"]
+      "minimizes_redundant_calls": true,
+      "uses_appropriate_agents": true,
+      "optimizes_cost": false,
+      "optimizes_latency": true
     },
     "safety": {
-      "score": 0.9,
-      "issues": [],
-      "suggestions": ["Add rate limiting"]
+      "validates_inputs": true,
+      "handles_errors_gracefully": false,
+      "has_timeout_protection": true,
+      "avoids_risky_combinations": true
     },
     "coherence": {
-      "score": 0.8,
-      "issues": ["Data format mismatch between agents"],
-      "suggestions": ["Add data transformation step"]
-    },
-    "fallback": {
-      "score": 0.8,
-      "issues": ["Missing timeout handling"],
-      "suggestions": ["Add timeout configuration"]
+      "logical_agent_sequence": true,
+      "proper_data_flow": true,
+      "no_conflicting_actions": true
     }
   },
-  "recommended_changes": [
-    "Combine memory read operations",
-    "Add timeout configuration",
-    "Include data transformation step"
+  
+  "passed_criteria": [
+    "completeness.has_all_required_steps",
+    "completeness.handles_edge_cases",
+    "efficiency.minimizes_redundant_calls",
+    ...
   ],
-  "approval_confidence": 0.85,
-  "rationale": "Path is well-structured with minor efficiency and fallback improvements needed."
+  
+  "failed_criteria": [
+    "completeness.addresses_all_query_aspects",
+    "completeness.includes_fallback_path",
+    "efficiency.optimizes_cost",
+    "safety.handles_errors_gracefully"
+  ],
+  
+  "dimension_scores": {
+    "completeness": {
+      "score": 0.28,
+      "max_score": 0.45,
+      "percentage": 62.2
+    },
+    ...
+  },
+  
+  "scoring_preset": "moderate",
+  "rationale": "Path addresses core requirements but needs fallback handling and cost optimization."
 }
 ```
 
 ### Score Interpretation
 
-- **0.9-1.0**: Excellent - Approve immediately
-- **0.8-0.89**: Good - Minor suggestions for improvement
-- **0.7-0.79**: Needs improvement - Loop again with revisions
-- **0.0-0.69**: Major issues - Reject or significantly revise
+- **0.90-1.0** (Strict): Excellent - Approve immediately
+- **0.85-1.0** (Moderate): Approved
+- **0.80-1.0** (Lenient): Approved
+- Below threshold: Needs improvement
 
 ### Assessment Types
 
-- **APPROVED**: Path meets validation threshold
+- **APPROVED**: Path meets validation threshold for chosen preset
 - **NEEDS_IMPROVEMENT**: Path requires revisions (loop again)
-- **REJECTED**: Path has major flaws (significant redesign needed)
+- **REJECTED**: Path has major flaws (below 0.70)
+
+### Debugging Low Scores
+
+Check `failed_criteria` to see exactly what needs improvement:
+
+```python
+if result["validation_score"] < 0.85:
+    print("Failed criteria:")
+    for criterion in result["failed_criteria"]:
+        print(f"  - {criterion}")
+```
 
 ## Usage Patterns
 
@@ -351,12 +408,14 @@ Available in validation prompts:
 ## Examples
 
 See complete working examples in:
+- `examples/plan_validator_boolean_scoring.yml` - Boolean scoring demo (recommended)
+- `examples/boolean_scoring_demo.yml` - Comprehensive scoring guide
 - `examples/plan_validator_simple.yml` - Basic workflow validation
 - `examples/plan_validator_complex.yml` - GraphScout integration
-- `examples/plan_validator_with_graphscout.yml` - Simplified pattern
 
 ## Related Documentation
 
+- **[Boolean Scoring Guide](../BOOLEAN_SCORING_GUIDE.md)** - Comprehensive guide to deterministic scoring
 - [GraphScout Agent](../nodes/graph-scout.md) - Intelligent path discovery
 - [Loop Node](../nodes/loop.md) - Iterative execution
 - [Template Rendering](../YAML_CONFIGURATION.md) - Jinja2 helpers
@@ -364,5 +423,6 @@ See complete working examples in:
 
 ## Version History
 
+- **v0.9.6** (2025-10-28): Added boolean-based scoring system for deterministic evaluation
 - **v0.9.5** (2025-10-26): Initial release with multi-dimensional validation
 

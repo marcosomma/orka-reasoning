@@ -71,19 +71,26 @@ pip install orka-reasoning[extra]
 ```
 
 ### 2. Start OrKa (Automatic RedisStack Setup)
-**Prerequisites:** Ensure Docker is installed and running on your system.
+**Prerequisites:** RedisStack via one of these methods:
+- Docker (easiest - will be auto-configured)
+- Native RedisStack installation (brew/apt/download)
 
 ```bash
-# Set your OpenAI key
+# Set your OpenAI key (if using OpenAI models)
 export OPENAI_API_KEY=your-key-here
 
-# Start OrKa (automatically includes RedisStack + 100x faster vector search)
-# For LOCAL development:
-python -m orka.orka_start
+# Start OrKa with automatic RedisStack detection
+# Tries native first, then Docker, then shows install instructions
+orka-start
 
-# For PRODUCTION with RedisStack:
+# Alternative: Use Python module directly
 python -m orka.orka_start
 ```
+
+**What `orka-start` does:**
+1. Checks for native RedisStack installation
+2. Falls back to Docker if native not found
+3. Provides installation instructions if neither available
 
 ### 3. Create Your First Workflow with Memory
 ```yaml

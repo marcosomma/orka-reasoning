@@ -14,18 +14,54 @@ This guide shows you how to set up OrKa and create your first AI workflows using
 ## Prerequisites
 
 - Python 3.8 or higher
-- Docker (for Redis memory backend)
+- **RedisStack** (one of the following):
+  - Docker (easiest option - `orka-start` auto-configures)
+  - Native RedisStack installation (see installation options below)
 - Optional: Local LLM like Ollama, or OpenAI API key
 
 ## Installation
 
+### Step 1: Install OrKa
 ```bash
-# Install OrKa
 pip install orka-reasoning
+```
 
-# Start Redis for memory (runs in Docker)
+### Step 2: Set Up RedisStack
+
+**Option A: Automatic Setup (Recommended)**
+```bash
+# OrKa will automatically try:
+# 1. Native RedisStack (if installed)
+# 2. Docker RedisStack (if Docker available)
 orka-start
 ```
+
+**Option B: Install RedisStack Natively (No Docker needed)**
+```bash
+# macOS
+brew install redis-stack
+
+# Ubuntu/Debian
+sudo apt install redis-stack-server
+
+# Windows
+# Download from: https://redis.io/download
+
+# Then run:
+orka-start
+```
+
+**Option C: Use Docker Manually**
+```bash
+docker run -d -p 6380:6380 --name orka-redis redis/redis-stack:latest
+```
+
+**What happens when you run `orka-start`:**
+1. First tries to find and use **native RedisStack** installation
+2. If not found, falls back to **Docker RedisStack**
+3. If neither available, provides installation instructions
+
+This means you can use OrKa **with or without Docker** - just pick the method that works best for your environment.
 
 ## Environment Setup
 

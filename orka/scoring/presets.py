@@ -1,0 +1,174 @@
+# OrKa: Orchestrator Kit Agents
+# Copyright © 2025 Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+# You may not use this file for commercial purposes without explicit permission.
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+# For commercial use, contact: marcosomma.work@gmail.com
+#
+# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+
+"""
+Scoring Presets
+===============
+
+Predefined scoring configurations for different validation strictness levels.
+"""
+
+from typing import Dict, Any
+
+PRESETS: Dict[str, Dict[str, Any]] = {
+    "strict": {
+        "description": "High standards for production-critical paths",
+        "weights": {
+            "completeness": {
+                "has_all_required_steps": 0.20,
+                "addresses_all_query_aspects": 0.15,
+                "handles_edge_cases": 0.10,
+                "includes_fallback_path": 0.10,
+            },
+            "efficiency": {
+                "minimizes_redundant_calls": 0.08,
+                "uses_appropriate_agents": 0.08,
+                "optimizes_cost": 0.04,
+                "optimizes_latency": 0.04,
+            },
+            "safety": {
+                "validates_inputs": 0.06,
+                "handles_errors_gracefully": 0.05,
+                "has_timeout_protection": 0.03,
+                "avoids_risky_combinations": 0.02,
+            },
+            "coherence": {
+                "logical_agent_sequence": 0.03,
+                "proper_data_flow": 0.01,
+                "no_conflicting_actions": 0.01,
+            },
+        },
+        "thresholds": {
+            "approved": 0.90,
+            "needs_improvement": 0.75,
+        },
+    },
+    "moderate": {
+        "description": "Balanced approach for general-purpose workflows",
+        "weights": {
+            "completeness": {
+                "has_all_required_steps": 0.18,
+                "addresses_all_query_aspects": 0.12,
+                "handles_edge_cases": 0.08,
+                "includes_fallback_path": 0.07,
+            },
+            "efficiency": {
+                "minimizes_redundant_calls": 0.10,
+                "uses_appropriate_agents": 0.10,
+                "optimizes_cost": 0.05,
+                "optimizes_latency": 0.05,
+            },
+            "safety": {
+                "validates_inputs": 0.08,
+                "handles_errors_gracefully": 0.07,
+                "has_timeout_protection": 0.03,
+                "avoids_risky_combinations": 0.02,
+            },
+            "coherence": {
+                "logical_agent_sequence": 0.03,
+                "proper_data_flow": 0.01,
+                "no_conflicting_actions": 0.01,
+            },
+        },
+        "thresholds": {
+            "approved": 0.85,
+            "needs_improvement": 0.70,
+        },
+    },
+    "lenient": {
+        "description": "Relaxed standards for exploratory workflows",
+        "weights": {
+            "completeness": {
+                "has_all_required_steps": 0.15,
+                "addresses_all_query_aspects": 0.10,
+                "handles_edge_cases": 0.05,
+                "includes_fallback_path": 0.05,
+            },
+            "efficiency": {
+                "minimizes_redundant_calls": 0.12,
+                "uses_appropriate_agents": 0.12,
+                "optimizes_cost": 0.06,
+                "optimizes_latency": 0.06,
+            },
+            "safety": {
+                "validates_inputs": 0.10,
+                "handles_errors_gracefully": 0.08,
+                "has_timeout_protection": 0.04,
+                "avoids_risky_combinations": 0.02,
+            },
+            "coherence": {
+                "logical_agent_sequence": 0.03,
+                "proper_data_flow": 0.01,
+                "no_conflicting_actions": 0.01,
+            },
+        },
+        "thresholds": {
+            "approved": 0.80,
+            "needs_improvement": 0.65,
+        },
+    },
+}
+
+
+def load_preset(preset_name: str) -> Dict[str, Any]:
+    """
+    Load a scoring preset by name.
+
+    Args:
+        preset_name: Name of preset ('strict', 'moderate', or 'lenient')
+
+    Returns:
+        Preset configuration dict
+
+    Raises:
+        ValueError: If preset name is invalid
+    """
+    if preset_name not in PRESETS:
+        available = ", ".join(PRESETS.keys())
+        raise ValueError(
+            f"Unknown scoring preset '{preset_name}'. Available: {available}"
+        )
+
+    return PRESETS[preset_name]
+
+
+def get_criteria_description(preset_name: str) -> Dict[str, str]:
+    """
+    Get human-readable descriptions of criteria for a preset.
+
+    Args:
+        preset_name: Name of preset
+
+    Returns:
+        Dict mapping criterion paths to descriptions
+    """
+    descriptions = {
+        "completeness.has_all_required_steps": "All necessary steps are included in the path",
+        "completeness.addresses_all_query_aspects": "The path addresses every aspect of the user query",
+        "completeness.handles_edge_cases": "Edge cases and unusual inputs are handled",
+        "completeness.includes_fallback_path": "Alternative paths exist for failures",
+        "efficiency.minimizes_redundant_calls": "No unnecessary duplicate agent calls",
+        "efficiency.uses_appropriate_agents": "Best agents selected for each task",
+        "efficiency.optimizes_cost": "Token usage is minimized where possible",
+        "efficiency.optimizes_latency": "Response time is minimized",
+        "safety.validates_inputs": "Input validation is performed",
+        "safety.handles_errors_gracefully": "Error handling is comprehensive",
+        "safety.has_timeout_protection": "Timeouts prevent hanging operations",
+        "safety.avoids_risky_combinations": "No dangerous agent combinations",
+        "coherence.logical_agent_sequence": "Agents are called in logical order",
+        "coherence.proper_data_flow": "Data flows correctly between agents",
+        "coherence.no_conflicting_actions": "No agents work against each other",
+    }
+
+    return descriptions
+

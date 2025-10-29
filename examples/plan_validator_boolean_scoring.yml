@@ -1,0 +1,109 @@
+# Plan Validator with Boolean Scoring
+# Demonstrates PlanValidator using deterministic boolean-based evaluation
+
+orchestrator:
+  id: validated-planning-system
+  strategy: sequential
+  agents:
+    - path_planner
+    - path_validator
+    - path_executor
+
+agents:
+  # Step 1: Plan the execution path
+  - id: path_planner
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.5
+    prompt: |
+      Plan an agent execution path for: {{ input }}
+      
+      Propose:
+      1. Agent sequence (which agents, in what order)
+      2. Data flow (what information passes between agents)
+      3. Error handling (fallback paths)
+      4. Success criteria
+      
+      Provide a structured plan in JSON format.
+
+  # Step 2: Validate the plan with boolean scoring
+  - id: path_validator
+    type: plan_validator
+    llm_model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.2
+    
+    # Boolean scoring configuration
+    scoring_preset: moderate  # Options: strict (0.90+ to approve), moderate (0.85+ to approve), lenient (0.80+ to approve)
+    
+    # Optional: Override specific criterion weights
+    # custom_weights:
+    #   completeness.has_all_required_steps: 0.25
+    #   safety.validates_inputs: 0.15
+    
+    # The PlanValidator will now return:
+    # - validation_score: Calculated from boolean criteria (deterministic)
+    # - overall_assessment: APPROVED/NEEDS_IMPROVEMENT/REJECTED
+    # - boolean_evaluations: The actual true/false values per criterion
+    # - passed_criteria: List of passed criteria
+    # - failed_criteria: List of failed criteria (for debugging)
+    # - dimension_scores: Scores broken down by dimension
+
+  # Step 3: Execute or report
+  - id: path_executor
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      Review the validation results:
+      
+      Proposed Plan: {{ get_agent_response('path_planner') }}
+      
+      Validation Score: {{ previous_outputs.path_validator.validation_score }}
+      Assessment: {{ previous_outputs.path_validator.overall_assessment }}
+      
+      {% if previous_outputs.path_validator.failed_criteria %}
+      Failed Criteria:
+      {% for criterion in previous_outputs.path_validator.failed_criteria %}
+      - {{ criterion }}
+      {% endfor %}
+      {% endif %}
+      
+      {% if previous_outputs.path_validator.overall_assessment == "APPROVED" %}
+      The plan is approved. Proceed with execution details.
+      {% else %}
+      The plan needs improvement. Suggest specific fixes for the failed criteria.
+      {% endif %}
+
+# Why Boolean Scoring?
+# 
+# 1. DETERMINISTIC:
+#    - Same boolean evaluations always produce the same score
+#    - No variation from "LLM mood" or model updates
+#
+# 2. AUDITABLE:
+#    - See exactly which criteria passed or failed
+#    - Debug why a score is low by checking failed_criteria
+#
+# 3. CONSISTENT ACROSS MODELS:
+#    - Different LLMs agree more on true/false than on 0.78 vs 0.82
+#    - Smaller/cheaper models can evaluate as well as larger ones
+#
+# 4. TUNABLE:
+#    - Adjust criterion weights in config, no retraining
+#    - Create custom presets for different use cases
+#
+# 5. TESTABLE:
+#    - Easy unit tests: assert score == 0.75 for specific booleans
+#    - Reproducible test fixtures
+#
+# Migration from old scoring:
+# - Old: LLM returns "validation_score: 0.78" directly
+# - New: LLM returns booleans, we calculate score programmatically
+# - Benefit: 10 runs of same evaluation = same score (deterministic)
+

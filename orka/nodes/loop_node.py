@@ -37,6 +37,7 @@ import yaml
 from jinja2 import Template
 
 from ..memory.redisstack_logger import RedisStackMemoryLogger
+from ..scoring import BooleanScoreCalculator
 from ..utils.embedder import get_embedder
 from .base_node import BaseNode
 
@@ -160,6 +161,33 @@ class LoopNode(BaseNode):
         self.max_loops: int = kwargs.get("max_loops", 5)
         self.score_threshold: float = kwargs.get("score_threshold", 0.8)
 
+        # Boolean scoring configuration (optional)
+        scoring_config = kwargs.get("scoring", {})
+        self.scoring_preset: Optional[str] = (
+            scoring_config.get("preset") if isinstance(scoring_config, dict) else None
+        )
+        self.custom_weights: Optional[Dict[str, float]] = (
+            scoring_config.get("custom_weights") if isinstance(scoring_config, dict) else None
+        )
+
+        # Initialize boolean score calculator if preset is configured
+        self.score_calculator: Optional[BooleanScoreCalculator] = None
+        if self.scoring_preset:
+            try:
+                self.score_calculator = BooleanScoreCalculator(
+                    preset=self.scoring_preset,
+                    custom_weights=self.custom_weights,
+                )
+                logger.info(
+                    f"LoopNode '{node_id}': Initialized with boolean scoring preset '{self.scoring_preset}'"
+                )
+            except Exception as e:
+                logger.warning(
+                    f"LoopNode '{node_id}': Failed to initialize boolean scoring: {e}. "
+                    "Falling back to legacy score extraction."
+                )
+                self.score_calculator = None
+
         # High-priority agents for score extraction (configurable)
         self.high_priority_agents: List[str] = kwargs.get(
             "high_priority_agents", ["agreement_moderator", "quality_moderator", "score_moderator"]
@@ -206,7 +234,7 @@ class LoopNode(BaseNode):
                                 r"(\d+\.?\d*)\s*out\s*of\s*10",
                                 r"(\d+\.?\d*)\s*points?",
                                 r"0\.[6-9][0-9]?",  # Pattern for high agreement scores
-                                r"([0-9])\.[0-9]+",  # Any decimal number
+                                r"([0-9]+\.[0-9]+)",  # Any decimal number
                             ],
                         }
                     ]
@@ -795,6 +823,113 @@ class LoopNode(BaseNode):
         except (ValueError, TypeError):
             return False
 
+    def _try_boolean_scoring(self, result: Dict[str, Any]) -> Optional[float]:
+        """
+        Try to extract boolean evaluations and calculate score.
+
+        Args:
+            result: Agent execution results
+
+        Returns:
+            Calculated score or None if no boolean evaluations found
+        """
+        if not self.score_calculator:
+            return None
+
+        # Look for boolean evaluation structure in agent responses
+        for agent_id, agent_result in result.items():
+            if not isinstance(agent_result, dict):
+                continue
+
+            # Check for direct boolean_evaluations key (from PlanValidator)
+            if "boolean_evaluations" in agent_result:
+                boolean_evals = agent_result["boolean_evaluations"]
+                if isinstance(boolean_evals, dict) and self._is_valid_boolean_structure(
+                    boolean_evals
+                ):
+                    try:
+                        score_result = self.score_calculator.calculate(boolean_evals)
+                        logger.debug(
+                            f"Boolean evaluations from '{agent_id}': "
+                            f"{score_result['passed_count']}/{score_result['total_criteria']} passed"
+                        )
+                        return float(score_result["score"])
+                    except Exception as e:
+                        logger.warning(f"Failed to calculate boolean score from '{agent_id}': {e}")
+                        continue
+
+            # Check for validation_score (which might be from boolean scoring)
+            if "validation_score" in agent_result and "boolean_evaluations" in agent_result:
+                try:
+                    return float(agent_result["validation_score"])
+                except (ValueError, TypeError):
+                    continue
+
+            # Try to parse boolean structure from response text
+            if "response" in agent_result:
+                response_text = str(agent_result["response"])
+                boolean_evals = self._extract_boolean_from_text(response_text)
+                if boolean_evals and self._is_valid_boolean_structure(boolean_evals):
+                    try:
+                        score_result = self.score_calculator.calculate(boolean_evals)
+                        logger.debug(
+                            f"Boolean evaluations from '{agent_id}' response text: "
+                            f"{score_result['passed_count']}/{score_result['total_criteria']} passed"
+                        )
+                        return float(score_result["score"])
+                    except Exception as e:
+                        logger.debug(f"Failed to parse boolean from '{agent_id}' response: {e}")
+                        continue
+
+        return None
+
+    def _is_valid_boolean_structure(self, data: Any) -> bool:
+        """
+        Check if data contains valid boolean evaluation structure.
+
+        Args:
+            data: Data to check
+
+        Returns:
+            True if valid boolean structure
+        """
+        if not isinstance(data, dict):
+            return False
+
+        expected_dimensions = ["completeness", "efficiency", "safety", "coherence"]
+        found_valid = 0
+
+        for dimension in expected_dimensions:
+            if dimension in data and isinstance(data[dimension], dict):
+                dim_data = data[dimension]
+                # Check if it has boolean values
+                if any(isinstance(v, bool) for v in dim_data.values()):
+                    found_valid += 1
+
+        return found_valid >= 2
+
+    def _extract_boolean_from_text(self, text: str) -> Optional[Dict[str, Dict[str, bool]]]:
+        """
+        Extract boolean evaluations from text.
+
+        Args:
+            text: Text to parse
+
+        Returns:
+            Boolean evaluations dict or None
+        """
+        try:
+            # Try to extract JSON
+            json_match = re.search(r"\{.*\}", text, re.DOTALL)
+            if json_match:
+                data = json.loads(json_match.group(0))
+                if isinstance(data, dict) and self._is_valid_boolean_structure(data):
+                    return data
+        except (json.JSONDecodeError, Exception):
+            pass
+
+        return None
+
     async def _extract_score(self, result: Dict[str, Any]) -> float:
         """Extract score from result using configured extraction strategies."""
         if not result:
@@ -809,6 +944,19 @@ class LoopNode(BaseNode):
                     response_text[:100] + "..." if len(response_text) > 100 else response_text
                 )
                 logger.debug(f"Agent '{agent_id}' response preview: {response_preview}")
+
+        # PRIORITY 0: Try boolean scoring if configured
+        if self.score_calculator:
+            boolean_score = self._try_boolean_scoring(result)
+            if boolean_score is not None:
+                logger.info(
+                    f"✅ Using boolean scoring: {boolean_score:.4f} (preset: {self.scoring_preset})"
+                )
+                return boolean_score
+            else:
+                logger.debug(
+                    "Boolean scoring attempted but no valid evaluations found, falling back to legacy"
+                )
 
         strategies = self.score_extraction_config.get("strategies", [])
 
@@ -908,15 +1056,16 @@ class LoopNode(BaseNode):
                                         f"🔍 Searching in {agent_id}.{key}: {repr(text_content[:200])}"
                                     )
                                     match = re.search(pattern, text_content)
-                                    if match and match.group(1):
-                                        logger.debug(f"✅ Matched text: '{text_content[:200]}'")
+                                    if match:
                                         try:
                                             score = float(match.group(1))
+                                            logger.debug(f"✅ Matched text: '{text_content[:200]}'")
                                             logger.info(
                                                 f"✅ Found score {score} in {agent_id}.{key} using pattern: {pattern}"
                                             )
                                             return score
-                                        except (ValueError, TypeError):
+                                        except (ValueError, TypeError, IndexError):
+                                            # Pattern might not have a capture group or couldn't convert to float
                                             continue
                                     else:
                                         if (

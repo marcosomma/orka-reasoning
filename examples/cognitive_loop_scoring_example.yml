@@ -13,8 +13,13 @@ agents:
     type: loop
     max_loops: 5
     score_threshold: 0.75
-    score_extraction_pattern: "SCORE:\\s*([0-9.]+)"
     persist_across_runs: true  # Enable persistence of past loops across different workflow runs
+    
+    # Boolean-based scoring configuration (deterministic and auditable)
+    scoring:
+      preset: moderate  # Options: strict, moderate, lenient
+    # Or use legacy pattern-based scoring:
+    # score_extraction_pattern: "SCORE:\\s*([0-9.]+)"
     
     # Cognitive extraction configuration
     cognitive_extraction:
