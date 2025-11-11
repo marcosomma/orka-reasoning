@@ -263,6 +263,8 @@ class PathExecutorNode(BaseNode):
     def _extract_agent_path(self, context: Dict[str, Any]) -> Tuple[List[str], Optional[str]]:
         """
         Extract agent path from previous_outputs using path_source.
+        
+        🐛 Bug #3 Fix: Try multiple path variants to handle different output structures
 
         Args:
             context: Execution context with previous_outputs
@@ -277,25 +279,60 @@ class PathExecutorNode(BaseNode):
         if not previous_outputs:
             return [], "No previous_outputs available"
 
-        # Navigate the dot-notation path
-        path_parts = self.path_source.split(".")
+        # Try multiple path variants to handle different output structures
+        paths_to_try = [
+            self.path_source,  # Original path
+        ]
+        
+        # Generate common variations
+        # Example: "loop.response.result.agent.target" ->
+        #   also try: "loop.result.agent.target", "loop.response.agent.target"
+        parts = self.path_source.split(".")
+        
+        # Try removing 'response' if present
+        if 'response' in parts:
+            variant = [p for p in parts if p != 'response']
+            paths_to_try.append(".".join(variant))
+        
+        # Try removing 'result' if present
+        if 'result' in parts:
+            variant = [p for p in parts if p != 'result']
+            paths_to_try.append(".".join(variant))
+        
+        # Try adding '.response' if not present
+        if 'response' not in parts and len(parts) > 1:
+            variant = parts[:1] + ['response'] + parts[1:]
+            paths_to_try.append(".".join(variant))
+        
+        # Try each path variant
+        last_error = None
+        for path_variant in paths_to_try:
+            result, error = self._try_navigate_path(previous_outputs, path_variant)
+            if result is not None:
+                logger.debug(f"PathExecutor '{self.node_id}': Successfully extracted path using variant '{path_variant}'")
+                return result, None
+            last_error = error
+        
+        # All variants failed
+        logger.warning(f"PathExecutor '{self.node_id}': Failed all path variants. Tried: {paths_to_try}")
+        return [], last_error or "Could not find path data in any variant"
+    
+    def _try_navigate_path(self, previous_outputs: Dict[str, Any], path: str) -> Tuple[Optional[List[str]], Optional[str]]:
+        """
+        Try to navigate a specific dot-notation path.
+        
+        Returns:
+            Tuple of (agent_path or None, error_message or None)
+        """
+        path_parts = path.split(".")
         current = previous_outputs
 
         for i, part in enumerate(path_parts):
             if not isinstance(current, dict):
-                partial_path = ".".join(path_parts[:i])
-                return [], (
-                    f"Cannot navigate path at '{partial_path}': "
-                    f"expected dict, got {type(current).__name__}"
-                )
+                return None, f"Not a dict at '{'.'.join(path_parts[:i])}'"
 
             if part not in current:
-                partial_path = ".".join(path_parts[: i + 1])
-                available_keys = list(current.keys())[:5]
-                return [], (
-                    f"Key '{part}' not found in path '{partial_path}'. "
-                    f"Available keys: {available_keys}"
-                )
+                return None, f"Key '{part}' not found"
 
             current = current[part]
 
@@ -303,10 +340,7 @@ class PathExecutorNode(BaseNode):
         agent_path = self._parse_agent_list(current)
 
         if agent_path is None:
-            return [], (
-                f"Could not extract agent list from path '{self.path_source}'. "
-                f"Expected 'target' field or list, got: {type(current).__name__}"
-            )
+            return None, f"No agent list at path '{path}'"
 
         return agent_path, None
 
