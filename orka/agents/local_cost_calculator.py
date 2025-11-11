@@ -334,10 +334,17 @@ _default_calculator: LocalCostCalculator | None = None
 
 
 def get_cost_calculator() -> LocalCostCalculator:
-    """Get the global cost calculator instance."""
+    """
+    Get the global cost calculator instance.
+    
+    🐛 Bug #5 Fix: Default to zero_legacy policy to avoid confusing users.
+    Users can opt-in to real cost calculation via ORKA_LOCAL_COST_POLICY=calculate
+    """
     global _default_calculator
     if _default_calculator is None:
-        policy = os.environ.get("ORKA_LOCAL_COST_POLICY", "calculate")
+        # Default to "zero_legacy" to show $0.00 for local models (less confusing)
+        # Users who want real infrastructure costs can set ORKA_LOCAL_COST_POLICY=calculate
+        policy = os.environ.get("ORKA_LOCAL_COST_POLICY", "zero_legacy")
         _default_calculator = LocalCostCalculator(policy=policy)
     return _default_calculator
 

@@ -15,6 +15,14 @@ description: |
   
   This is the RECOMMENDED pattern for production-grade validated execution.
 
+orchestrator:
+  id: graphscout-path-executor
+  strategy: sequential
+  agents:
+    - validation_loop
+    - path_executor
+    - final_summary
+
 agents:
   # PHASE 1: Validate the path with a loop
   - id: validation_loop
@@ -79,126 +87,10 @@ agents:
             completeness.has_all_required_steps: 0.15
             efficiency.uses_appropriate_agents: 0.15
             safety.handles_errors_gracefully: 0.10
-        
-        # Agent definitions that GraphScout can select from (MUST be inside internal_workflow)
-        - id: web_search
-          type: duckduckgo
-          capabilities: [data_retrieval, web_search]
-          max_results: 5
-        
-        - id: deep_analyzer
-          type: local_llm
-          capabilities: [reasoning, analysis, multi_perspective]
-          model: "gpt-oss:20b"
-          provider: "ollama"
-          url: "http://localhost:11434/api/generate"
-          temperature: 0.4
-          prompt: |
-            Perform deep multi-perspective analysis of the available data.
-            
-            Query: {{ input }}
-            
-            {% if "web_search" in previous_outputs %}
-            Search results: {{ previous_outputs.web_search.results }}
-            {% endif %}
-            
-            Analyze from multiple perspectives:
-            1. Factual accuracy
-            2. Relevance to query
-            3. Potential implications
-            4. Missing information
-            
-            Provide comprehensive analysis.
-        
-        - id: technical_expert
-          type: local_llm
-          capabilities: [technical_analysis, expertise, best_practices]
-          model: "gpt-oss:20b"
-          provider: "ollama"
-          url: "http://localhost:11434/api/generate"
-          temperature: 0.3
-          prompt: |
-            Provide technical expert analysis.
-            
-            Query: {{ input }}
-            
-            {% if "web_search" in previous_outputs %}
-            Data: {{ previous_outputs.web_search.results }}
-            {% endif %}
-            
-            {% if "deep_analyzer" in previous_outputs %}
-            Analysis: {{ previous_outputs.deep_analyzer.response }}
-            {% endif %}
-            
-            Provide expert technical insights, best practices, and recommendations.
-        
-        - id: content_writer
-          type: local_llm
-          capabilities: [content_generation, writing, synthesis]
-          model: "gpt-oss:20b"
-          provider: "ollama"
-          url: "http://localhost:11434/api/generate"
-          temperature: 0.5
-          prompt: |
-            Generate professional, well-structured content.
-            
-            Query: {{ input }}
-            
-            Available context:
-            {% for agent_id, result in previous_outputs.items() %}
-            - {{ agent_id }}: {{ result | tojson }}
-            {% endfor %}
-            
-            Create clear, engaging, and informative content.
-        
-        - id: fact_checker
-          type: local_llm
-          capabilities: [fact_checking, verification, validation]
-          model: "gpt-oss:20b"
-          provider: "ollama"
-          url: "http://localhost:11434/api/generate"
-          temperature: 0.1
-          prompt: |
-            Verify all claims and validate information accuracy.
-            
-            Content to verify:
-            {% if "content_writer" in previous_outputs %}
-            {{ previous_outputs.content_writer.response }}
-            {% elif "deep_analyzer" in previous_outputs %}
-            {{ previous_outputs.deep_analyzer.response }}
-            {% endif %}
-            
-            Original sources:
-            {% if "web_search" in previous_outputs %}
-            {{ previous_outputs.web_search.results }}
-            {% endif %}
-            
-            Flag any inaccuracies, unsupported claims, or areas needing clarification.
-        
-        - id: quality_reviewer
-          type: local_llm
-          capabilities: [answer_emit, quality_review, assessment]
-          model: "gpt-oss:20b"
-          provider: "ollama"
-          url: "http://localhost:11434/api/generate"
-          temperature: 0.2
-          prompt: |
-            Perform final quality review.
-            
-            Query: {{ input }}
-            
-            Review criteria:
-            1. Completeness - Does it fully address the query?
-            2. Accuracy - Is information correct and verified?
-            3. Clarity - Is it easy to understand?
-            4. Structure - Is it well-organized?
-            
-            All previous outputs:
-            {{ previous_outputs | tojson(indent=2) }}
-            
-            Provide quality score (0-10) and improvement recommendations.
   
   # PHASE 2: Execute the validated path
+  # 🐛 Bug #2 Fix: Removed duplicate agent definitions from internal_workflow
+  # GraphScout discovers agents from main orchestrator's agent list (see lines 229+)
   - id: path_executor
     type: path_executor
     path_source: validation_loop.response.result.graphscout_router.target

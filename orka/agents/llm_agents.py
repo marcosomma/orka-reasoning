@@ -118,6 +118,28 @@ def _extract_json_content(text: str) -> str:
     return str(brace_match.group(0)) if brace_match else text
 
 
+def _normalize_python_to_json(text: str) -> str:
+    """
+    🐛 Bug #6 Fix: Normalize Python dict syntax to valid JSON.
+    
+    Converts common Python syntax to JSON:
+    - Single quotes to double quotes
+    - True/False/None to true/false/null
+    """
+    import re
+    
+    # Replace Python booleans with JSON booleans
+    text = re.sub(r'\bTrue\b', 'true', text)
+    text = re.sub(r'\bFalse\b', 'false', text)
+    text = re.sub(r'\bNone\b', 'null', text)
+    
+    # Replace single quotes with double quotes (carefully, to avoid breaking strings)
+    # This is a simple approach - may need refinement for complex cases
+    text = text.replace("'", '"')
+    
+    return text
+
+
 def _parse_json_safely(json_content: str) -> dict[str, Any] | None:
     """Safely parse JSON with fallback for malformed content."""
     import json
@@ -129,11 +151,22 @@ def _parse_json_safely(json_content: str) -> dict[str, Any] | None:
         return None
     except json.JSONDecodeError:
         try:
-            fixed_json = _fix_malformed_json(json_content)
-            result = json.loads(fixed_json)
+            # 🐛 Bug #6 Fix: Try normalizing Python syntax to JSON before fixing
+            normalized = _normalize_python_to_json(json_content)
+            result = json.loads(normalized)
             if isinstance(result, dict):
                 return result
             return None
+        except json.JSONDecodeError:
+            try:
+                # Last resort: try malformed JSON fixer
+                fixed_json = _fix_malformed_json(json_content)
+                result = json.loads(fixed_json)
+                if isinstance(result, dict):
+                    return result
+                return None
+            except Exception:
+                return None
         except Exception:
             return None
 

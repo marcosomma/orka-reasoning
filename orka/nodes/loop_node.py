@@ -1590,26 +1590,29 @@ class LoopNode(BaseNode):
             safe_input = safe_input[:200] + "...<truncated>"
 
         # Complete template context for Jinja2 rendering
+        # 🐛 FIX Bug #9: Do NOT include full result in template to prevent trace bloat
+        # Only include summary data that won't cause exponential growth
         template_context = {
             "loop_number": loop_number,
             "score": score,
             "reasoning_quality": reasoning_quality,
             "convergence_trend": convergence_trend,
             "timestamp": datetime.now().isoformat(),
-            "result": safe_result,
+            # REMOVED: "result": safe_result - causes O(2^N) data growth in traces
             "input": safe_input,
             "insights": cognitive_insights.get("insights", ""),
             "improvements": cognitive_insights.get("improvements", ""),
             "mistakes": cognitive_insights.get("mistakes", ""),
-            "previous_outputs": safe_result,
+            # REMOVED: "previous_outputs": safe_result - not needed in metadata
         }
 
         # ✅ FIX: Add helper functions to template context for LoopNode metadata rendering
         try:
             # Create a payload-like structure for helper functions
+            # 🐛 FIX Bug #9: Don't include full result to prevent trace bloat
             helper_payload = {
                 "input": safe_input,
-                "previous_outputs": safe_result,
+                "previous_outputs": {},  # Empty to prevent bloat - templates should use template_context instead
                 "loop_number": loop_number,
             }
 

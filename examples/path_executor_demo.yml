@@ -8,6 +8,16 @@ description: |
   
   Use this pattern when you want to validate paths before execution.
 
+orchestrator:
+  id: path-executor-demo
+  strategy: sequential
+  agents:
+    - path_proposal
+    - execute_path
+    - web_search
+    - analyzer
+    - summarizer
+
 agents:
   # First, we validate a hardcoded path
   - id: path_proposal
