@@ -1099,30 +1099,40 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
             # Check if there's a direct _metrics field
             if "_metrics" in resolved_payload:
                 metrics = resolved_payload["_metrics"]
-
-            # Check in previous_outputs for agent responses with _metrics
-            elif "previous_outputs" in resolved_payload:
-                prev_outputs = resolved_payload["previous_outputs"]
-                for agent_response in prev_outputs.values():
-                    if isinstance(agent_response, dict) and "_metrics" in agent_response:
-                        # Merge metrics from all agent responses
-                        agent_metrics = agent_response["_metrics"]
-                        for key, value in agent_metrics.items():
-                            if key in ["tokens", "prompt_tokens", "completion_tokens"]:
-                                metrics[key] = metrics.get(key, 0) + value
-                            elif key in ["cost_usd", "latency_ms"]:
-                                metrics[key] = metrics.get(key, 0.0) + value
-                            else:
-                                metrics[key] = value  # model, provider, etc.
-
-            # Check for response field with _metrics
-            elif "response" in resolved_payload and isinstance(resolved_payload["response"], dict):
-                response = resolved_payload["response"]
-                if "_metrics" in response:
-                    metrics = response["_metrics"]
+            else:
+                # Recursively search for _metrics in nested structures
+                self._extract_metrics_recursive(resolved_payload, metrics)
 
             return metrics
 
         except Exception as e:
             logger.error(f"Failed to extract agent metrics: {e}")
             return {}
+
+    def _extract_metrics_recursive(
+        self, data: Any, metrics: Dict[str, Any], max_depth: int = 10, current_depth: int = 0
+    ) -> None:
+        """Recursively search for _metrics fields in nested dictionaries and merge them."""
+        if current_depth >= max_depth or not isinstance(data, dict):
+            return
+
+        for key, value in data.items():
+            if key == "_metrics" and isinstance(value, dict):
+                # Found metrics, merge them
+                for metric_key, metric_value in value.items():
+                    if metric_key in ["tokens", "prompt_tokens", "completion_tokens"]:
+                        metrics[metric_key] = metrics.get(metric_key, 0) + metric_value
+                    elif metric_key in ["cost_usd", "latency_ms"]:
+                        metrics[metric_key] = metrics.get(metric_key, 0.0) + metric_value
+                    else:
+                        # For model, provider, etc., keep the first value found
+                        if metric_key not in metrics:
+                            metrics[metric_key] = metric_value
+            elif isinstance(value, dict):
+                # Recurse into nested dictionaries
+                self._extract_metrics_recursive(value, metrics, max_depth, current_depth + 1)
+            elif isinstance(value, list):
+                # Recurse into lists
+                for item in value:
+                    if isinstance(item, dict):
+                        self._extract_metrics_recursive(item, metrics, max_depth, current_depth + 1)
