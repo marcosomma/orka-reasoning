@@ -377,6 +377,12 @@ class LoopNode(BaseNode):
 
             # Add to our local past_loops array
             past_loops.append(past_loop_obj)
+            
+            # 🐛 Fix: Limit past_loops size to prevent unbounded growth
+            MAX_PAST_LOOPS_PER_RUN = 20
+            if len(past_loops) > MAX_PAST_LOOPS_PER_RUN:
+                past_loops = past_loops[-MAX_PAST_LOOPS_PER_RUN:]
+                logger.debug(f"Trimmed past_loops to most recent {MAX_PAST_LOOPS_PER_RUN} entries")
 
             # Store loop result in Redis if memory_logger is available
             if self.memory_logger is not None:
@@ -911,6 +917,8 @@ class LoopNode(BaseNode):
     def _extract_boolean_from_text(self, text: str) -> Optional[Dict[str, Dict[str, bool]]]:
         """
         Extract boolean evaluations from text.
+        
+        🐛 Fix: Normalize Python dict syntax to JSON before parsing
 
         Args:
             text: Text to parse
@@ -922,10 +930,23 @@ class LoopNode(BaseNode):
             # Try to extract JSON
             json_match = re.search(r"\{.*\}", text, re.DOTALL)
             if json_match:
-                data = json.loads(json_match.group(0))
+                json_text = json_match.group(0)
+                
+                # 🐛 Normalize Python syntax to JSON (same fix as llm_agents.py)
+                json_text = re.sub(r'\bTrue\b', 'true', json_text)
+                json_text = re.sub(r'\bFalse\b', 'false', json_text)
+                json_text = re.sub(r'\bNone\b', 'null', json_text)
+                json_text = json_text.replace("'", '"')
+                
+                data = json.loads(json_text)
                 if isinstance(data, dict) and self._is_valid_boolean_structure(data):
+                    logger.debug(f"✅ Successfully extracted boolean evaluations from text")
                     return data
-        except (json.JSONDecodeError, Exception):
+        except json.JSONDecodeError as e:
+            logger.debug(f"JSON parse failed: {e}")
+            pass
+        except Exception as e:
+            logger.debug(f"Boolean extraction failed: {e}")
             pass
 
         return None
@@ -1866,8 +1887,13 @@ class LoopNode(BaseNode):
         return " | ".join(values)
 
     async def _load_past_loops_from_redis(self) -> List[PastLoopMetadata]:
-        """Load past loops from Redis if available."""
+        """
+        Load past loops from Redis if available.
+        
+        🐛 Fix: Limit past_loops to prevent unbounded growth across runs
+        """
         past_loops: List[PastLoopMetadata] = []
+        MAX_PAST_LOOPS = 20  # Limit to prevent memory/trace bloat
 
         if self.memory_logger is not None:
             try:
@@ -1878,10 +1904,18 @@ class LoopNode(BaseNode):
                 if stored_data:
                     loaded_loops = json.loads(stored_data)
                     if isinstance(loaded_loops, list):
-                        past_loops = loaded_loops
-                        logger.info(
-                            f"Loaded {len(past_loops)} past loops from Redis for node {self.node_id}"
-                        )
+                        # 🐛 CRITICAL FIX: Limit to most recent N loops
+                        if len(loaded_loops) > MAX_PAST_LOOPS:
+                            past_loops = loaded_loops[-MAX_PAST_LOOPS:]
+                            logger.warning(
+                                f"Loaded {len(loaded_loops)} past loops from Redis, "
+                                f"trimmed to most recent {MAX_PAST_LOOPS} to prevent bloat"
+                            )
+                        else:
+                            past_loops = loaded_loops
+                            logger.info(
+                                f"Loaded {len(past_loops)} past loops from Redis for node {self.node_id}"
+                            )
                     else:
                         logger.warning(
                             f"Invalid past loops data format in Redis for node {self.node_id}"
