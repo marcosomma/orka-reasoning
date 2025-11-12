@@ -1665,7 +1665,8 @@ class LoopNode(BaseNode):
         past_loop_obj.setdefault("loop_number", loop_number)
         past_loop_obj.setdefault("score", score)
         past_loop_obj.setdefault("timestamp", datetime.now().isoformat())
-        past_loop_obj.setdefault("result", safe_result)
+        # 🐛 Bug #9 Fix: DO NOT add result field - it causes exponential trace bloat
+        # past_loop_obj.setdefault("result", safe_result)  # REMOVED - was causing O(2^N) growth
 
         return past_loop_obj
 

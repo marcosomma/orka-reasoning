@@ -309,12 +309,22 @@ class PathExecutorNode(BaseNode):
         for path_variant in paths_to_try:
             result, error = self._try_navigate_path(previous_outputs, path_variant)
             if result is not None:
-                logger.debug(f"PathExecutor '{self.node_id}': Successfully extracted path using variant '{path_variant}'")
+                logger.info(f"PathExecutor '{self.node_id}': ✅ Successfully extracted path using variant '{path_variant}': {result}")
                 return result, None
+            else:
+                logger.debug(f"PathExecutor '{self.node_id}': ❌ Variant '{path_variant}' failed: {error}")
             last_error = error
         
-        # All variants failed
-        logger.warning(f"PathExecutor '{self.node_id}': Failed all path variants. Tried: {paths_to_try}")
+        # All variants failed - log structure for debugging
+        logger.error(f"PathExecutor '{self.node_id}': ❌ Failed all path variants. Tried: {paths_to_try}")
+        logger.error(f"PathExecutor '{self.node_id}': Available keys in previous_outputs: {list(previous_outputs.keys())}")
+        # Log first level of structure to help debugging
+        for key in list(previous_outputs.keys())[:5]:
+            val = previous_outputs[key]
+            if isinstance(val, dict):
+                logger.error(f"  - {key}: dict with keys {list(val.keys())[:5]}")
+            else:
+                logger.error(f"  - {key}: {type(val).__name__}")
         return [], last_error or "Could not find path data in any variant"
     
     def _try_navigate_path(self, previous_outputs: Dict[str, Any], path: str) -> Tuple[Optional[List[str]], Optional[str]]:

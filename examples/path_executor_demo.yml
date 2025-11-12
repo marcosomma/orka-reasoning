@@ -12,11 +12,10 @@ orchestrator:
   id: path-executor-demo
   strategy: sequential
   agents:
-    - path_proposal
-    - execute_path
-    - web_search
-    - analyzer
-    - summarizer
+    - path_proposal      # Proposes agent path
+    - execute_path       # PathExecutor dynamically executes: web_search, analyzer, summarizer
+    # Note: web_search, analyzer, summarizer are NOT in orchestrator list
+    # They are executed dynamically by PathExecutor based on path_proposal output
 
 agents:
   # First, we validate a hardcoded path
