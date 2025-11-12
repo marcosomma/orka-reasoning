@@ -377,7 +377,7 @@ class LoopNode(BaseNode):
 
             # Add to our local past_loops array
             past_loops.append(past_loop_obj)
-            
+
             # 🐛 Fix: Limit past_loops size to prevent unbounded growth
             MAX_PAST_LOOPS_PER_RUN = 20
             if len(past_loops) > MAX_PAST_LOOPS_PER_RUN:
@@ -508,6 +508,14 @@ class LoopNode(BaseNode):
 
             # Use parent's memory logger to maintain consistency
             if self.memory_logger is not None:
+                # Close the orphaned memory logger created by Orchestrator.__init__
+                # to prevent connection pool exhaustion
+                if hasattr(orchestrator.memory, "close"):
+                    try:
+                        orchestrator.memory.close()
+                    except Exception as e:
+                        logger.debug(f"Failed to close orphaned memory logger: {e}")
+
                 orchestrator.memory = self.memory_logger
                 orchestrator.fork_manager.redis = self.memory_logger.redis  # Fixed attribute name
 
@@ -840,10 +848,14 @@ class LoopNode(BaseNode):
             Calculated score or None if no boolean evaluations found
         """
         if not self.score_calculator:
-            logger.debug(f"LoopNode '{self.node_id}': No score_calculator configured (scoring preset not set)")
+            logger.debug(
+                f"LoopNode '{self.node_id}': No score_calculator configured (scoring preset not set)"
+            )
             return None
 
-        logger.info(f"LoopNode '{self.node_id}': Attempting boolean score extraction from {len(result)} agents")
+        logger.info(
+            f"LoopNode '{self.node_id}': Attempting boolean score extraction from {len(result)} agents"
+        )
 
         # Look for boolean evaluation structure in agent responses
         for agent_id, agent_result in result.items():
@@ -857,7 +869,7 @@ class LoopNode(BaseNode):
             if "boolean_evaluations" in agent_result:
                 boolean_evals = agent_result["boolean_evaluations"]
                 logger.info(f"  - Agent '{agent_id}': Found boolean_evaluations field")
-                
+
                 if isinstance(boolean_evals, dict) and self._is_valid_boolean_structure(
                     boolean_evals
                 ):
@@ -870,7 +882,10 @@ class LoopNode(BaseNode):
                         )
                         return float(score_result["score"])
                     except Exception as e:
-                        logger.error(f"Failed to calculate boolean score from '{agent_id}': {e}", exc_info=True)
+                        logger.error(
+                            f"Failed to calculate boolean score from '{agent_id}': {e}",
+                            exc_info=True,
+                        )
                         continue
                 else:
                     logger.warning(f"  - Agent '{agent_id}': boolean_evaluations invalid structure")
@@ -889,8 +904,10 @@ class LoopNode(BaseNode):
             # Try to parse boolean structure from response text
             if "response" in agent_result:
                 response_text = str(agent_result["response"])
-                logger.debug(f"  - Agent '{agent_id}': Checking response text ({len(response_text)} chars)...")
-                
+                logger.debug(
+                    f"  - Agent '{agent_id}': Checking response text ({len(response_text)} chars)..."
+                )
+
                 boolean_evals = self._extract_boolean_from_text(response_text)
                 if boolean_evals and self._is_valid_boolean_structure(boolean_evals):
                     try:
@@ -907,7 +924,9 @@ class LoopNode(BaseNode):
                 else:
                     logger.debug(f"  - Agent '{agent_id}': No valid boolean structure in response")
 
-        logger.warning(f"LoopNode '{self.node_id}': ❌ No valid boolean evaluations found in any agent")
+        logger.warning(
+            f"LoopNode '{self.node_id}': ❌ No valid boolean evaluations found in any agent"
+        )
         return None
 
     def _is_valid_boolean_structure(self, data: Any) -> bool:
@@ -938,7 +957,7 @@ class LoopNode(BaseNode):
     def _extract_boolean_from_text(self, text: str) -> Optional[Dict[str, Dict[str, bool]]]:
         """
         Extract boolean evaluations from text.
-        
+
         🐛 Fix: Normalize Python dict syntax to JSON before parsing
 
         Args:
@@ -952,19 +971,19 @@ class LoopNode(BaseNode):
             json_match = re.search(r"\{.*\}", text, re.DOTALL)
             if json_match:
                 json_text = json_match.group(0)
-                
+
                 # 🐛 Normalize Python syntax to JSON (same fix as llm_agents.py)
-                json_text = re.sub(r'\bTrue\b', 'true', json_text)
-                json_text = re.sub(r'\bFalse\b', 'false', json_text)
-                json_text = re.sub(r'\bNone\b', 'null', json_text)
+                json_text = re.sub(r"\bTrue\b", "true", json_text)
+                json_text = re.sub(r"\bFalse\b", "false", json_text)
+                json_text = re.sub(r"\bNone\b", "null", json_text)
                 json_text = json_text.replace("'", '"')
-                
+
                 data = json.loads(json_text)
-                
+
                 # 🐛 CRITICAL FIX: Convert UPPERCASE keys to lowercase
                 # LLMs return {"COMPLETENESS": ...} but we need {"completeness": ...}
                 if isinstance(data, dict):
-                    normalized_data = {}
+                    normalized_data: Dict[str, Dict[str, bool]] = {}
                     for key, value in data.items():
                         normalized_key = key.lower()
                         if isinstance(value, dict):
@@ -974,13 +993,13 @@ class LoopNode(BaseNode):
                             normalized_data[normalized_key] = value
                     data = normalized_data
                     logger.debug(f"Normalized keys to lowercase: {list(data.keys())}")
-                
+
                 if self._is_valid_boolean_structure(data):
                     logger.info(f"✅ Successfully extracted boolean evaluations from text")
-                    return data
+                    return cast(Dict[str, Dict[str, bool]], data)
                 else:
                     logger.debug(f"❌ Invalid boolean structure. Keys found: {list(data.keys())}")
-                    
+
         except json.JSONDecodeError as e:
             logger.debug(f"JSON parse failed: {e}")
         except Exception as e:
@@ -1926,7 +1945,7 @@ class LoopNode(BaseNode):
     async def _load_past_loops_from_redis(self) -> List[PastLoopMetadata]:
         """
         Load past loops from Redis if available.
-        
+
         🐛 Fix: Limit past_loops to prevent unbounded growth across runs
         """
         past_loops: List[PastLoopMetadata] = []

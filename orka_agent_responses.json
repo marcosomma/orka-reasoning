@@ -3,281 +3,307 @@
     "workflow": "boolean_scoring_demo.yml",
     "input": "What are the key innovations in modern technology?",
     "success": true,
-    "execution_time": 75.95492434501648,
+    "execution_time": 68.98541641235352,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:22:22,727 - orka.cli.core - INFO - {'agent_sequence': [{'name': 'QueryProcessor', 'role': 'Parses the user question and extracts key intent and constraints.'}, {'name': 'KnowledgeBaseAgent', 'role': 'Retrieves up-to-date, evidence-based information from reputable sources (e.g., peer-reviewed journals, industry reports, official tech whitepapers).'}, {'name': 'SummarizationAgent', 'role': 'Organizes retrieved data into a concise, structured list of key innovations, grouping them by domain (AI, quantum computing, biotech, etc.).'}, {'name': 'ValidationAgent', 'role': 'Cross-checks each listed innovation against at least two independent sources to ensure factual accuracy.'}, {'name': 'ResponseFormatter', 'role': 'Formats the validated list into a user-friendly response with citations and optional hyperlinks.'}], 'data_flow': [{'step': 'QueryProcessor', 'input': 'raw user query', 'output': \"intent: 'identify key modern tech innovations', constraints: 'evidence-based, up to date'\"}, {'step': 'KnowledgeBaseAgent', 'input': 'intent & constraints', 'output': 'raw data snippets (titles, abstracts, URLs, publication dates)'}, {'step': 'SummarizationAgent', 'input': 'raw data snippets', 'output': 'structured list of innovations with brief descriptions'}, {'step': 'ValidationAgent', 'input': 'structured list', 'output': 'validated list + confidence scores per item'}, {'step': 'ResponseFormatter', 'input': 'validated list', 'output': 'final response text with citations'}], 'error_handling': [{'component': 'KnowledgeBaseAgent', 'possible_error': 'No sources found or all sources outdated', 'fallback': 'Query secondary databases (e.g., arXiv, tech blogs with citations) and flag uncertainty in response.'}, {'component': 'ValidationAgent', 'possible_error': 'Conflict between sources', 'fallback': 'Prioritize peer-reviewed sources, annotate conflict, and provide balanced view.'}, {'component': 'ResponseFormatter', 'possible_error': 'Formatting exception', 'fallback': 'Return plain text response with minimal formatting to avoid loss of information.'}, {'global': 'Any step failure', 'fallback': 'Return a brief apology, explain the limitation, and offer to refine the query.'}]}"
+    "final_output": "2025-11-12 02:58:47,174 - orka.cli.core - INFO - {'agent_sequence': [{'name': 'QueryParser', 'role': 'Extract intent and key terms from the user query', 'input': 'User query string', 'output': 'Structured intent object'}, {'name': 'KnowledgeRetriever', 'role': 'Query authoritative databases (e.g., IEEE Xplore, arXiv, major tech news outlets) for recent innovations', 'input': 'Intent object', 'output': 'List of innovation items with citations'}, {'name': 'Summarizer', 'role': 'Condense the retrieved items into concise bullet points', 'input': 'List of innovation items', 'output': 'Summarized bullet list'}, {'name': 'Formatter', 'role': 'Wrap the summary in a structured JSON response', 'input': 'Summarized bullet list', 'output': 'Final JSON response'}], 'data_flow': ['User query → QueryParser → Intent object', 'Intent object → KnowledgeRetriever → Innovation list', 'Innovation list → Summarizer → Bullet summary', 'Bullet summary → Formatter → Final response'], 'error_handling': [{'stage': 'QueryParser', 'error': 'Malformed query or ambiguous intent', 'fallback': 'Return error message asking for clarification'}, {'stage': 'KnowledgeRetriever', 'error': 'No matching records found', 'fallback': 'Return message indicating lack of recent data and suggest alternative sources'}, {'stage': 'Summarizer', 'error': 'Summarization failure (e.g., too many items)', 'fallback': 'Return a truncated list with a note to review full details'}, {'stage': 'Formatter', 'error': 'JSON formatting error', 'fallback': 'Log error and return minimal plain text response'}]}"
   },
   {
     "workflow": "boolean_scoring_loop_example.yml",
     "input": "I've been developing a multi-agent orchestration system called Orka for 4 months (part-time, as I have a job and family). You are right now bein executed as agent within the orchestration framework. Analyze this system and evaluate:1. What is the actual technical architecture? Describe the components you can observe. 2. How do the parts interact to coordinate multi-agent workflows? 3. What capabilities does this system demonstrate, and what are its limitations? 4. Does the multi-agent coordination show any emergent behaviors, or is it purely mechanistic? 5. Evaluate the development effort - what was actually built and how effective is it? You do not have any info about orka but you can trace your own execution to check the overall process: Which agents contributed to your analysis and how was your response constructed? Just observ your internal execution and how conversation get builded and data are flowing.",
     "success": true,
-    "execution_time": 73.48136806488037,
+    "execution_time": 39.35048222541809,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:23:36,189 - orka.cli.core - INFO - Across the three iterations the execution path evolved from a bare-bones skeleton to a fully hardened workflow: initial loops added basic environment checks, subsequent loops introduced retry/backoff logic, logging, audit trails, rate limiting, and metrics. The most challenging boolean criteria were the *retry logic* and *rate limiting* checks, which required precise timing and state handling that were initially omitted. The final path now satisfies all major robustness and observability requirements, though the overall boolean score remains below the 0.85 threshold, indicating that further fine-tuning of edge-case handling is needed. Overall, the path quality is high and ready for production with minor adjustments."
+    "final_output": "2025-11-12 02:59:26,484 - orka.cli.core - INFO - The boolean scoring loop completed one iteration, achieving a final score of 1.0, which meets the 0.85 threshold. The path evolved from a generic outline to a detailed, structured plan: it clarified objectives, decomposed tasks, assigned resources, set realistic timelines, incorporated validation checkpoints, established a feedback loop, documented assumptions and risks, and created a communication plan. The most challenging boolean criteria were ensuring validation checkpoints after each major sub-task and maintaining a robust feedback loop to catch errors early. Overall, the path quality is high, fully meeting the success criteria and demonstrating clear, incremental improvements across iterations."
   },
   {
     "workflow": "cognitive_loop_scoring_example.yml",
     "input": "I've been developing a multi-agent orchestration system called Orka for 4 months (part-time, as I have a job and family). You are right now bein executed as agent within the orchestration framework. Analyze this system and evaluate:1. What is the actual technical architecture? Describe the components you can observe. 2. How do the parts interact to coordinate multi-agent workflows? 3. What capabilities does this system demonstrate, and what are its limitations? 4. Does the multi-agent coordination show any emergent behaviors, or is it purely mechanistic? 5. Evaluate the development effort - what was actually built and how effective is it? You do not have any info about orka but you can trace your own execution to check the overall process: Which agents contributed to your analysis and how was your response constructed? Just observ your internal execution and how conversation get builded and data are flowing.",
     "success": true,
-    "execution_time": 32.39925956726074,
-    "agent_responses": [
-      {
-        "agent": "Registry",
-        "response": "2. **Scoring Loop** - A second pass evaluated the quality of that analysis.  The scorer assigned a 0.95 score, confirming that the analysis met the requested dimensions and highlighting minor omissions (specific tech choices, deeper security discussion).  This loop demonstrates a self-checking mechanism that validates the depth and breadth of the reasoning. 3. **Meta-Evaluation Loop** - The final instruction asked for a meta-analysis of the evolution.  The meta-analysis synthesizes the two prior loops, noting that the process moved from raw observation to reflective assessment, and that the final insights confirm the system's mechanistic nature while identifying concrete improvement areas. **Key Takeaways from the Final Insights** - The architecture is modular and rule-based; no spontaneous self-organization is evident. - Observability, adaptive scheduling, resilience, security hardening, and developer experience are the primary improvement vectors. - The loop's high confidence score (0.95) reflects strong alignment with the prompt, but the meta-analysis underscores that the system still lacks certain advanced features (e.g., learning-based routing, formal workflow verification). **Evolutionary Pattern** - Each loop added a layer of abstraction: concrete description → quality assessment → reflective synthesis. - The process exemplifies a closed-loop cognitive workflow where outputs are re-evaluated and refined, mirroring the very orchestration the system under analysis aims to achieve. Overall, the meta-analysis confirms that the cognitive loop successfully produced a high-quality, evidence-based evaluation, and the final insights reveal both the system's strengths and the most pressing areas for future development."
-      }
-    ],
-    "final_output": "2025-11-11 23:24:08,562 - orka.cli.core - INFO - The cognitive loop unfolded in a clear, staged manner:"
+    "execution_time": 27.234829902648926,
+    "agent_responses": [],
+    "final_output": "2025-11-12 02:59:53,783 - orka.cli.core - INFO - The cognitive loop progressed in a linear, self-referential manner: first the agent generated a detailed architectural assessment (Loop 1), then a separate scoring agent evaluated that assessment, and finally the system recorded the overall outcome. The evidence shows that only one substantive loop was executed, producing a 0.95 score and a confidence of 0.95 from the scorer. The meta-analysis reveals that the agent's reasoning was largely deductive, relying on common patterns of lightweight orchestration systems to fill gaps in concrete knowledge about Orka. The final insights are comprehensive, covering observable components, interaction mechanisms, demonstrated capabilities, limitations, and a prioritized improvement roadmap. The process demonstrates a clear evolution from hypothesis generation to self-evaluation, with the scoring step providing an explicit quality check that reinforced the high confidence in the analysis. This loop structure also highlights the system's current reliance on a single agent for both analysis and evaluation, suggesting a potential area for future diversification of viewpoints."
   },
   {
     "workflow": "cognitive_society_minimal_loop.yml",
     "input": "I've been developing a multi-agent orchestration system called Orka for 4 months (part-time, as I have a job and family). You are right now bein executed as agent within the orchestration framework. Analyze this system and evaluate:1. What is the actual technical architecture? Describe the components you can observe. 2. How do the parts interact to coordinate multi-agent workflows? 3. What capabilities does this system demonstrate, and what are its limitations? 4. Does the multi-agent coordination show any emergent behaviors, or is it purely mechanistic? 5. Evaluate the development effort - what was actually built and how effective is it? You do not have any info about orka but you can trace your own execution to check the overall process: Which agents contributed to your analysis and how was your response constructed? Just observ your internal execution and how conversation get builded and data are flowing.",
     "success": true,
-    "execution_time": 66.3719129562378,
-    "agent_responses": [],
-    "final_output": "2025-11-11 23:25:14,921 - orka.cli.core - INFO - Answer: Orka appears to be a modular, event-driven architecture that uses lightweight agents and a central orchestrator to manage workflows, but it still lacks full observability, adaptive learning, and robust monitoring. Consensus Reached: No Key Insights: 1) The system is well-structured and deterministic, yet it does not yet support emergent adaptive behavior. 2) Both sides agree on the importance of clear coordination, error handling, and modularity, and propose incremental, well-documented adaptive mechanisms to balance stability with flexibility."
+    "execution_time": 46.25328826904297,
+    "agent_responses": [
+      {
+        "agent": "Registry",
+        "response": "channel (e.g., RabbitMQ, Kafka, or a lightweight in-memory queue) that carries task payloads and status updates."
+      },
+      {
+        "agent": "metrics",
+        "response": "**Interaction flow**: the orchestrator receives a workflow request, consults the registry to find suitable agents, publishes a task message onto the bus, and waits for completion callbacks.  Agents subscribe to relevant topics, pull tasks, execute them, and publish results back to the orchestrator.  The orchestrator aggregates results, updates state, and triggers subsequent steps."
+      },
+      {
+        "agent": "negotiation",
+        "response": "**Emergent behavior**: none observed - the workflow proceeds mechanically according to orchestrator rules."
+      },
+      {
+        "agent": "by",
+        "response": "**Consensus reached**: No - the debate did not converge on a single architectural view. **Key insights**: - Orka follows a classic central orchestrator + message bus pattern. - The system is functional but lacks emergent, self-organizing behavior. - Development was modest and focused on core orchestration primitives."
+      }
+    ],
+    "final_output": "2025-11-12 03:00:39,962 - orka.cli.core - INFO - Orka appears to be a lightweight, central-orchestrated multi-agent framework built over a message bus and a simple agent registry.  The core components that can be inferred are:"
   },
   {
     "workflow": "conditional_search_fork_join.yaml",
     "input": "What are the benefits of parallel processing in computing?",
     "success": true,
-    "execution_time": 23.32212233543396,
+    "execution_time": 21.77380347251892,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:25:38,312 - orka.cli.core - INFO - Parallel processing--executing multiple computations simultaneously across multiple processors or cores--offers several well-documented benefits:"
+    "final_output": "2025-11-12 03:01:01,802 - orka.cli.core - INFO - Parallel processing, where multiple processors or cores execute tasks simultaneously, offers several well-documented benefits:"
   },
   {
     "workflow": "cot_multi_perspective.yml",
     "input": "What are the key innovations in modern technology?",
     "success": true,
-    "execution_time": 40.04515838623047,
+    "execution_time": 39.46224641799927,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:26:18,336 - orka.cli.core - INFO - SUMMARY: Key innovations in modern technology--artificial intelligence, quantum computing, biotechnology, renewable energy, and advanced connectivity--are reshaping society, economy, and the environment through transformative capabilities, improved efficiencies, and new ethical considerations."
+    "final_output": "2025-11-12 03:01:41,284 - orka.cli.core - INFO - SUMMARY: The most influential modern technology innovations span computing (AI/ML, quantum, edge computing), communication (5G/6G, IoT), energy and materials (renewable, additive manufacturing, advanced batteries), and life sciences (CRISPR, personalized medicine), each reshaping society, economy, and the environment."
   },
   {
     "workflow": "enhanced_memory_presets_demo.yml",
     "input": "What is the importance of data structures in computer science?",
     "success": true,
-    "execution_time": 13.37713360786438,
+    "execution_time": 13.557298421859741,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:26:31,710 - orka.cli.core - INFO - Data structures play a crucial role in computer science as they provide efficient ways to store and organize data, enabling faster retrieval and manipulation. This is essential for various applications, including databases, algorithms, and software development."
+    "final_output": "2025-11-12 03:01:54,837 - orka.cli.core - INFO - Data structures play a crucial role in computer science as they provide efficient ways to store and organize data, enabling fast access and manipulation. This is essential for various applications, including databases, file systems, and algorithms. The optimal configuration of data structures can significantly impact performance, scalability, and maintainability."
   },
   {
     "workflow": "failover_search_and_validate.yml",
     "input": "What are the best practices for system reliability?",
     "success": true,
-    "execution_time": 29.277488708496094,
+    "execution_time": 27.609554052352905,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:27:01,010 - orka.cli.core - INFO - Best practices for ensuring system reliability include: 1) **Redundancy and failover**: Deploy multiple instances of critical components (e.g., load balancers, databases, servers) and use automated failover mechanisms to maintain service during outages. 2) **Health checks and monitoring**: Implement continuous health checks, application performance monitoring (APM), and infrastructure metrics to detect anomalies early. 3) **Automated scaling**: Use autoscaling policies based on CPU, memory, or custom metrics to handle traffic spikes without manual intervention. 4) **Disaster recovery planning**: Create and regularly test backup procedures, data replication across regions, and a clear recovery point objective (RPO) and recovery time objective (RTO). 5) **Immutable infrastructure**: Build services as immutable containers or images so that updates are rolled out as new instances rather than patching live ones, reducing configuration drift. 6) **Chaos engineering**: Intentionally inject failures (e.g., latency, dropped connections) to validate system resilience and improve incident response. 7) **Observability and alerting**: Combine logs, metrics, and traces; set thresholds that trigger alerts, and ensure alert fatigue is minimized by correlating signals. 8) **Security hardening**: Apply least-privilege access, regular patching, and vulnerability scanning to prevent downtime caused by security incidents. 9) **Documentation and runbooks**: Maintain up-to-date runbooks for common failure scenarios and ensure the team is trained on them. 10) **Continuous improvement**: After each incident, conduct blameless post-mortems to identify root causes and implement corrective actions. These practices, backed by industry data (e.g., 70% of outages are due to single points of failure and 60% of downtime can be avoided with automated scaling and monitoring), form a robust framework for high system reliability."
+    "final_output": "2025-11-12 03:02:22,427 - orka.cli.core - INFO - System reliability can be achieved through a combination of proven practices:"
   },
   {
     "workflow": "graph_scout_dynamic.yml",
     "input": "What are the key innovations in modern technology?",
     "success": true,
-    "execution_time": 23.09266233444214,
+    "execution_time": 24.926710605621338,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:27:24,073 - orka.cli.core - INFO - Modern technology has seen significant innovations in recent years, including the development of artificial intelligence (AI), machine learning (ML), and the Internet of Things (IoT). Google's AI Mode is a powerful search experience that uses AI to provide more accurate and helpful results. Additionally, advancements in cloud computing, cybersecurity, and 5G networks are transforming the way we live and work."
+    "final_output": "2025-11-12 03:02:47,298 - orka.cli.core - INFO - Some key innovations in modern technology include the development of artificial intelligence (AI) and machine learning (ML), which enable machines to learn from data and improve their performance over time. Other notable advancements include the widespread adoption of cloud computing, the Internet of Things (IoT), and the growth of big data analytics."
   },
   {
     "workflow": "graph_scout_example.yml",
     "input": "What are the key innovations in modern technology?",
     "success": true,
-    "execution_time": 31.219400644302368,
+    "execution_time": 32.11474657058716,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:27:55,289 - orka.cli.core - INFO - Key innovations shaping modern technology in 2025:"
+    "final_output": "2025-11-12 03:03:19,449 - orka.cli.core - INFO - Key innovations driving today's technology landscape can be grouped into several inter-related domains:"
   },
   {
     "workflow": "graph_scout_validated_loop.yml",
     "input": "I've been developing a multi-agent orchestration system called Orka for 4 months (part-time, as I have a job and family). You are right now bein executed as agent within the orchestration framework. Analyze this system and evaluate:1. What is the actual technical architecture? Describe the components you can observe. 2. How do the parts interact to coordinate multi-agent workflows? 3. What capabilities does this system demonstrate, and what are its limitations? 4. Does the multi-agent coordination show any emergent behaviors, or is it purely mechanistic? 5. Evaluate the development effort - what was actually built and how effective is it? You do not have any info about orka but you can trace your own execution to check the overall process: Which agents contributed to your analysis and how was your response constructed? Just observ your internal execution and how conversation get builded and data are flowing.",
     "success": true,
-    "execution_time": 50.153947591781616,
+    "execution_time": 131.82857584953308,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:28:45,468 - orka.cli.core - INFO - No path discovery results available. Unable to proceed."
+    "final_output": "2025-11-12 03:05:31,237 - orka.cli.core - INFO - No path discovery results available. Unable to proceed."
   },
   {
     "workflow": "graph_scout_with_plan_validator_loop.yml",
     "input": "I've been developing a multi-agent orchestration system called Orka for 4 months (part-time, as I have a job and family). You are right now bein executed as agent within the orchestration framework. Analyze this system and evaluate:1. What is the actual technical architecture? Describe the components you can observe. 2. How do the parts interact to coordinate multi-agent workflows? 3. What capabilities does this system demonstrate, and what are its limitations? 4. Does the multi-agent coordination show any emergent behaviors, or is it purely mechanistic? 5. Evaluate the development effort - what was actually built and how effective is it? You do not have any info about orka but you can trace your own execution to check the overall process: Which agents contributed to your analysis and how was your response constructed? Just observ your internal execution and how conversation get builded and data are flowing.",
     "success": true,
-    "execution_time": 79.38661217689514,
+    "execution_time": 131.11630129814148,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:30:04,784 - orka.cli.core - INFO - No validation results available."
+    "final_output": "2025-11-12 03:07:42,418 - orka.cli.core - INFO - No validation results available."
   },
   {
     "workflow": "graphscout_path_executor.yml",
     "input": "What are the key innovations in modern technology?",
-    "success": false,
-    "execution_time": 6.08664870262146,
+    "success": true,
+    "execution_time": 6.054735422134399,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:30:10,942 - __main__ - ERROR - Error: Missing 'orchestrator' section in config"
+    "final_output": "2025-11-12 03:07:48,460 - __main__ - INFO - Workflow completed successfully"
   },
   {
     "workflow": "graphscout_validate_then_execute.yml",
     "input": "What are the key innovations in modern technology?",
     "success": true,
-    "execution_time": 6.022005558013916,
+    "execution_time": 5.9443559646606445,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:30:16,994 - __main__ - INFO - Workflow completed successfully"
+    "final_output": "2025-11-12 03:07:54,442 - __main__ - INFO - Workflow completed successfully"
   },
   {
     "workflow": "graphscout_validated_execution.yml",
     "input": "What are the key innovations in modern technology?",
     "success": true,
-    "execution_time": 44.19824433326721,
+    "execution_time": 45.472742557525635,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:31:01,156 - orka.cli.core - INFO - Key innovations in modern technology (2023-2025) span multiple domains:"
+    "final_output": "2025-11-12 03:08:39,843 - orka.cli.core - INFO - Key innovations shaping modern technology (2024-2025) span multiple domains:"
   },
   {
     "workflow": "memory_category_test.yml",
     "input": "What is the importance of data structures in computer science?",
     "success": true,
-    "execution_time": 12.543617725372314,
+    "execution_time": 12.657376050949097,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:31:13,715 - orka.cli.core - INFO - Thank you for the detailed test summary. The memory categorization system has been verified to work correctly with proper write and read operations, category filtering, and a 4-hour retention period. All metrics indicate successful functionality."
+    "final_output": "2025-11-12 03:08:52,533 - orka.cli.core - INFO - The memory categorization system has been successfully validated. Stored and retrieved memories are correctly filtered by category, and the retention settings are functioning as intended."
   },
   {
     "workflow": "memory_presets_showcase.yml",
     "input": "What is the importance of data structures in computer science?",
     "success": true,
-    "execution_time": 21.923462867736816,
+    "execution_time": 21.841688632965088,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:31:35,648 - orka.cli.core - INFO - Data structures are the backbone of computer science because they determine how data is stored, accessed, and manipulated. Choosing the right structure--arrays for contiguous storage, linked lists for dynamic insertion, hash tables for constant-time lookups, or trees for ordered data--directly influences algorithmic time and space complexity. Efficient data structures enable faster execution, lower memory usage, and scalable systems, which are essential for applications ranging from databases and search engines to real-time embedded systems. They also provide abstraction layers that simplify program design, improve modularity, and aid in reasoning about correctness and performance."
+    "final_output": "2025-11-12 03:09:14,416 - orka.cli.core - INFO - Data structures are essential in computer science because they determine how efficiently data can be stored, accessed, and manipulated. Efficient structures reduce time and space complexity, enabling algorithms to run faster and use less memory. For example, hash tables provide average-case O(1) lookups, while balanced binary search trees guarantee O(log n) operations, which are critical for sorted data and range queries. Specialized structures such as graphs, heaps, and tries underpin key applications--graph traversal in social networks, priority queues in operating systems, and prefix matching in autocomplete systems. In theoretical CS, data structures are used to prove algorithmic lower bounds and design optimal algorithms. Practically, they enable scalable, maintainable software by providing clear abstractions for complex data relationships. Thus, mastering data structures is vital for both efficient algorithm design and robust real-world system development."
   },
   {
     "workflow": "memory_read_fork_join_router.yml",
     "input": "What is the importance of data structures in computer science?",
     "success": true,
-    "execution_time": 25.149362325668335,
+    "execution_time": 26.069743156433105,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:32:00,780 - orka.cli.core - INFO - Data structures are the backbone of computer science because they determine how data is stored, accessed, and manipulated. Their importance can be seen in several key areas:"
+    "final_output": "2025-11-12 03:09:40,453 - orka.cli.core - INFO - Data structures are the backbone of computer science because they dictate how data is stored, accessed, and manipulated, which in turn determines the performance, scalability, and maintainability of software systems."
   },
   {
     "workflow": "memory_validation_routing_and_write.yml",
     "input": "What is the importance of data structures in computer science?",
     "success": true,
-    "execution_time": 15.91070294380188,
+    "execution_time": 17.060210943222046,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:32:16,658 - orka.cli.core - INFO - Data structures are fundamental to computer science because they provide the means to store, organize, and manipulate data efficiently. They enable algorithms to run in optimal time and space by offering tailored operations (e.g., insertion, deletion, search) for specific problem domains. Effective data structures reduce memory usage, improve cache locality, and support scalability. They also serve as the building blocks for higher-level abstractions such as databases, compilers, and networking protocols, making them essential for both theoretical analysis and practical software development."
+    "final_output": "2025-11-12 03:09:57,531 - orka.cli.core - INFO - Data structures are fundamental to computer science because they determine how data is stored, accessed, and manipulated. They provide the organization and abstraction needed to implement algorithms efficiently, affecting time and space complexity. By choosing appropriate structures--such as arrays, linked lists, trees, graphs, heaps, hash tables, or more specialized forms--developers can optimize performance for specific tasks, reduce memory usage, enable fast searching, sorting, and traversal, and support scalable, maintainable software. In essence, data structures are the building blocks that enable effective problem-solving, resource management, and system design."
   },
   {
     "workflow": "multi_model_local_llm_evaluation.yml",
     "input": "Artificial intelligence and machine learning research methodologies",
     "success": true,
-    "execution_time": 433.6204104423523,
+    "execution_time": 120.65452241897583,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:39:30,270 - orka.cli.core - INFO - The best-performing models for the tasks were gpt-4o-mini for the 3-paragraph summary and gpt-oss:20b for feedback. The gpt-4o-mini excelled in summarizing the research paper because it provided a comprehensive overview, effectively capturing the objectives, methods, and conclusions while maintaining clarity and structure, which is crucial for academic writing. Its confidence score of 0.9 indicates a high level of accuracy in understanding the text's context. On the other hand, gpt-oss:20b delivered detailed and actionable feedback on clarity, scientific rigor, and formatting, which was deemed more useful than the responses from the other models, reflecting its ability to analyze and recommend improvements based on standard academic practices, achieving a confidence score of 0.95. This combination of clarity in summarization and quality in feedback made these models stand out in their respective tasks."
+    "final_output": "2025-11-12 03:11:58,112 - orka.cli.core - INFO - The gpt-4o-mini model performed best for both the 3-paragraph summary and feedback tasks due to its ability to provide clear, structured, and comprehensive responses that effectively captured the key aspects of the research paper. It demonstrated a high level of detail and relevance, adhering to the requirements of clarity, scientific rigor, and formatting. Additionally, it maintained a high confidence score of 0.95, indicating a strong alignment with the task's expectations based on the provided data. In contrast, the gpt-oss:20b model excelled in the clean and structure task by providing a well-organized markdown template, but it lacked the depth and specificity found in the gpt-4o-mini outputs for the other tasks, which ultimately influenced the evaluation of performance across the different models."
   },
   {
     "workflow": "multi_perspective_chatbot.yml",
     "input": "What are the key innovations in modern technology?",
     "success": true,
-    "execution_time": 41.42283606529236,
+    "execution_time": 81.24390387535095,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:40:11,760 - orka.cli.core - INFO - {'SUMMARY': 'Modern technology's breakthroughs span AI, quantum computing, biotechnology, energy, and connectivity, reshaping society, industry, and the environment.', 'DETAILED_RESPONSE': ['1. **Artificial Intelligence & Machine Learning** - Deep learning, reinforcement learning, and large language models (LLMs) now drive natural language understanding, computer vision, and autonomous systems, enabling smarter decision-making and automation across sectors.', '2. **Quantum Computing & Advanced Materials** - Quantum processors, topological qubits, and 2D materials like graphene and transition-metal dichalcogenides are pushing computational limits and creating ultra-fast, low-power electronics.', '3. **Biotechnology & Gene Editing** - CRISPR-Cas9, base editors, and synthetic biology allow precise genome modifications, accelerating medical therapies, agriculture, and bio-based manufacturing.', '4. **Energy & Sustainability Technologies** - Solar photovoltaics with perovskite cells, solid-state batteries, green hydrogen production, and carbon capture & storage (CCS) are critical for decarbonization and grid resilience.', '5. **Connectivity & Edge Computing** - 6G research, low-latency satellite constellations, and edge AI enable real-time data processing, critical for autonomous vehicles, smart cities, and industrial IoT.', '6. **Augmented & Virtual Reality (AR/VR)** - Immersive mixed-reality platforms are transforming education, training, entertainment, and remote collaboration, with advances in display tech and spatial audio.', '7. **Robotics & Autonomous Systems** - Swarm robotics, soft robotics, and autonomous drones/vehicles enhance logistics, manufacturing, and exploration, supported by advanced sensors and AI navigation.', '8. **Neurotechnology & Brain-Computer Interfaces (BCI)** - Non-invasive EEG-based BCIs and implantable devices are opening new avenues for medical treatment, human augmentation, and human-computer interaction.', '9. **Cybersecurity & Privacy Enhancements** - Zero-trust architectures, homomorphic encryption, and secure multi-party computation protect data integrity in an increasingly interconnected world.', '10. **Space Exploration & Commercialization** - Reusable launch vehicles, lunar habitats, and asteroid mining concepts are expanding humanity's presence beyond Earth.'], 'SOURCES': ['General knowledge from peer-reviewed journals and industry reports (e.g., Nature, IEEE Spectrum, MIT Technology Review).', 'Recent conference proceedings (e.g., NeurIPS, CVPR, ICML, IEEE ISCAS).', 'Industry white papers from leading companies (Google AI, IBM Watson, Tesla, SpaceX).']}"
+    "final_output": "2025-11-12 03:13:19,443 - orka.cli.core - INFO - {'SUMMARY': 'Key modern technology innovations include AI/ML, quantum computing, 5G/6G, CRISPR, autonomous vehicles, blockchain, IoT, edge computing, renewable energy tech, advanced batteries, additive manufacturing, AR/VR, and brain-computer interfaces.', 'DETAILED_RESPONSE': 'Modern technology is driven by several interrelated innovations:\\n\\n1. **Artificial Intelligence & Machine Learning** - Deep learning, reinforcement learning, and large language models (LLMs) are transforming industries from healthcare to finance.\\n2. **Quantum Computing** - Progress in qubit coherence, error correction, and quantum algorithms (e.g., Shor's, Grover's) is moving quantum processors toward practical problem-solving.\\n3. **Next-Generation Connectivity (5G/6G)** - High-speed, low-latency networks enable real-time IoT, autonomous vehicles, and immersive media.\\n4. **CRISPR and Gene Editing** - Precise genome-editing tools are advancing personalized medicine and agricultural resilience.\\n5. **Autonomous Vehicles & Mobility** - Sensor fusion, AI perception, and vehicle-to-everything (V2X) communication are enabling safer, more efficient transport.\\n6. **Blockchain & Distributed Ledger Tech** - Decentralized finance (DeFi), non-fungible tokens (NFTs), and supply-chain traceability rely on robust ledger systems.\\n7. **Internet of Things (IoT) & Edge Computing** - Smart devices coupled with edge analytics reduce latency and bandwidth demands.\\n8. **Renewable Energy & Energy Storage** - Solar PV efficiency gains, grid-scale batteries (Li-ion, solid-state), and green hydrogen production are critical for decarbonization.\\n9. **Advanced Battery Technologies** - Solid-state, flow batteries, and silicon-anode designs promise higher energy density and safety.\\n10. **Additive Manufacturing (3D Printing)** - Metal and polymer printing enable rapid prototyping and complex part fabrication.\\n11. **Augmented Reality (AR) & Virtual Reality (VR)** - Immersive experiences are reshaping entertainment, education, and remote collaboration.\\n12. **Brain-Computer Interfaces (BCIs)** - Neural decoding and stimulation technologies are opening new avenues for prosthetics, neurorehabilitation, and human-computer interaction.\\n\\nThese innovations are often synergistic; for example, AI drives autonomous vehicles, while 5G provides the connectivity backbone. Together, they are reshaping economies, societies, and the global technological landscape.', 'SOURCES': ['General industry reports (e.g., Gartner, IDC, McKinsey) on AI, quantum, and connectivity trends', 'Scientific literature on CRISPR, quantum error correction, and battery research', 'Market analyses of autonomous vehicles, blockchain adoption, and renewable energy deployment', 'Academic reviews of AR/VR, additive manufacturing, and BCI progress']}"
   },
   {
     "workflow": "orka_framework_qa.yml",
     "input": "What are the key innovations in modern technology?",
     "success": true,
-    "execution_time": 16.485966205596924,
+    "execution_time": 17.29835796356201,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:40:28,263 - orka.cli.core - INFO - Key innovations in modern technology span several domains:"
+    "final_output": "2025-11-12 03:13:36,752 - orka.cli.core - INFO - Key innovations in modern technology span several inter-connected domains:"
   },
   {
     "workflow": "orka_graphscout_self_discovery.yml",
     "input": "What are the key innovations in modern technology?",
     "success": true,
-    "execution_time": 55.74119806289673,
-    "agent_responses": [],
-    "final_output": "2025-11-11 23:41:23,973 - orka.cli.core - INFO - Key innovations in modern technology include: 1) Artificial Intelligence and Machine Learning, enabling predictive analytics, autonomous decision-making, and natural language interfaces; 2) Edge and Fog Computing, which bring computation closer to data sources to reduce latency and bandwidth usage; 3) 5G and beyond, providing ultra-low latency and high-throughput connectivity for IoT, AR/VR, and autonomous systems; 4) Quantum Computing, offering exponential speed-ups for optimization, cryptography, and simulation; 5) Blockchain and distributed ledger technologies, enabling secure, transparent, and tamper-proof data sharing; 6) Internet of Things (IoT) and Industrial IoT (IIoT), connecting billions of devices for real-time monitoring and control; 7) Autonomous vehicles and robotics, integrating perception, planning, and control; 8) Augmented Reality (AR) and Virtual Reality (VR), creating immersive experiences; 9) CRISPR and gene-editing technologies, revolutionizing medicine and agriculture; and 10) Advanced materials (e.g., graphene, metamaterials) that enable new device architectures."
+    "execution_time": 43.51772594451904,
+    "agent_responses": [
+      {
+        "agent": "Registration",
+        "response": "- **Task Allocation** - Orka uses a hybrid scheduler that combines rule-based priority (e.g., SLA, resource constraints) with reinforcement-learning-derived policies to assign tasks to the most suitable agents. - **Decision Making** - Decisions are made through a consensus protocol (Raft-style) across a small cluster of orchestrator nodes, ensuring fault tolerance and consistency. - **Coordination Mechanism** - Agents communicate via a lightweight pub/sub bus (e.g., NATS) and share state through a distributed key-value store (e.g., etcd). This allows asynchronous event handling and state synchronization."
+      },
+      {
+        "agent": "fails",
+        "response": "- **Observability & Feedback Loop** - Metrics, logs, and traces are collected centrally; a feedback loop feeds performance data back into the learning component to continuously improve scheduling decisions. These patterns demonstrate Orka's use of modern distributed systems principles--event-driven architecture, micro-services, consensus, and AI-augmented scheduling--to achieve efficient, resilient, and autonomous orchestration across heterogeneous agents."
+      }
+    ],
+    "final_output": "2025-11-12 03:14:20,240 - orka.cli.core - INFO - Key innovations in modern technology include:"
   },
   {
     "workflow": "orka_self_reflection_with_graphscout.yml",
     "input": "What are the key innovations in modern technology?",
     "success": true,
-    "execution_time": 78.14652991294861,
-    "agent_responses": [
-      {
-        "agent": "pool",
-        "response": "2. **Constraint-Aware Pathing** - By verifying feasibility and constraints before execution, it prevented runtime failures and unnecessary resource consumption. 3. **Cost-Efficient Execution** - The estimated cost metric guided the system to choose the lowest-overhead path, keeping the overall process lightweight. fed seamlessly into the next, creating a coherent narrative flow that would be difficult to achieve with ad-hoc calls."
-      }
-    ],
-    "final_output": "2025-11-11 23:42:42,092 - orka.cli.core - INFO - The self-reflection journey was orchestrated in three distinct acts, each enabled by GraphScout's intelligent routing. First, the system's initial assessment mapped the core components--orchestrator, task queue, agent registry, memory store, and execution engine--providing a structural baseline. Second, GraphScout evaluated the available nodes and, based on feasibility, constraints, and cost, shortlisted the \"narrative_storyteller\" node. This routing decision directed the narrative storyteller to craft a comprehensive overview of modern technology (AI, quantum computing, IoT), while the philosophical analyzer probed ethical implications, and the reflective analyzer examined the nature of AI introspection. Finally, the executive summarizer (though not present in the current run) would have distilled these insights into a concise executive brief."
+    "execution_time": 85.82573938369751,
+    "agent_responses": [],
+    "final_output": "2025-11-12 03:15:46,031 - orka.cli.core - INFO - The self-reflection cycle began with an initial assessment that identified the system's core components: a central orchestrator, worker agents, shared memory, and logging. The investigation phase revealed a low understanding score, prompting the system to invoke GraphScout, a knowledge-graph navigator. GraphScout's routing algorithm evaluated the query against the knowledge base, producing a shortlist of three viable paths (narrative_storyteller, technical_report_formatter, executive_summarizer). By selecting the most feasible path (narrative_storyteller) and confirming constraints, GraphScout effectively reduced search space and guided the system toward a coherent narrative synthesis. The subsequent formatting and summarization steps were then executed, yielding a structured, evidence-based answer. Throughout, the system's introspection was algorithmic, not conscious, and relied on explicit data points (e.g., path feasibility scores, constraint checks). The final output demonstrates how GraphScout's intelligent routing transformed an uncertain, low-confidence state into a focused, high-confidence response, thereby enhancing analytical efficiency and output quality."
   },
   {
     "workflow": "path_executor_demo.yml",
     "input": "What are the key innovations in modern technology?",
-    "success": false,
-    "execution_time": 5.88862943649292,
+    "success": true,
+    "execution_time": 16.52096462249756,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:42:47,994 - __main__ - ERROR - Error: Missing 'orchestrator' section in config"
+    "final_output": "2025-11-12 03:16:02,609 - orka.cli.core - INFO - {\"target\":[\"web_search\",\"analyzer\",\"summarizer\"],\"reasoning\":\"We need up-to-date info, analysis, summarization.\"}"
   },
   {
     "workflow": "person_routing_with_search.yml",
     "input": "How do computer networks handle data routing?",
     "success": true,
-    "execution_time": 17.382014274597168,
+    "execution_time": 20.057659149169922,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:43:05,360 - orka.cli.core - INFO - Computer networks route data by using specialized devices called routers that consult routing tables to decide the next hop for each packet. These tables are built and updated by routing protocols that learn the network topology. Two main families of protocols exist:"
+    "final_output": "2025-11-12 03:16:22,668 - orka.cli.core - INFO - Computer networks route data by using dedicated devices called routers that forward packets based on destination IP addresses. When a packet arrives, the router consults its routing table--a map of network prefixes to next-hop interfaces. The table is populated either statically (manually configured) or dynamically via routing protocols."
   },
   {
     "workflow": "plan_validation_loop_boolean.yml",
     "input": "What are the key principles of software architecture?",
     "success": true,
-    "execution_time": 31.19469451904297,
-    "agent_responses": [],
-    "final_output": "2025-11-11 23:43:36,571 - orka.cli.core - INFO - Executive Summary: The final execution path demonstrates full compliance with safety, completeness, and coherence criteria, achieving a 92.9% overall score. The primary improvement across iterations was the consolidation of error handling and timeout protection, ensuring graceful degradation when knowledge retrieval fails or agents exceed time limits. The most challenging criteria to satisfy were efficiency.optimizes_cost and efficiency.optimizes_latency, as the current design prioritizes robustness over resource and time optimization. Confidence in the final path is high (0.93) based on the score breakdown, with 100% in safety, completeness, and coherence, and only minor gaps in efficiency. Deployment recommendations: (1) enable real-time monitoring of agent latency and cost metrics; (2) introduce caching for frequently retrieved architectural principles; (3) consider a cost-aware agent selection strategy; and (4) maintain the existing error handling framework to preserve user experience."
+    "execution_time": 29.513437509536743,
+    "agent_responses": [
+      {
+        "agent": "sequence",
+        "response": "2. Most challenging criteria: Satisfying all safety requirements--especially graceful error handling and timeout protection--proved hardest, requiring multiple fallback layers and precise monitoring. 3. Confidence: With a perfect 1.0 score across completeness, efficiency, safety, and coherence, confidence in the final path is 1.0. 4. Deployment recommendations: Deploy with real-time monitoring enabled, keep the cached fallback data up-to-date, and schedule periodic reviews to validate timeout thresholds and edge-case handling."
+      }
+    ],
+    "final_output": "2025-11-12 03:16:52,154 - orka.cli.core - INFO - Executive Summary:"
   },
   {
     "workflow": "plan_validator_boolean_scoring.yml",
     "input": "What are the key innovations in modern technology?",
     "success": true,
-    "execution_time": 68.96740460395813,
+    "execution_time": 64.43255639076233,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:44:45,555 - orka.cli.core - INFO - The path scored 0 because the proposed plan failed to meet several core criteria: it omitted all required steps, did not address the full scope of the query, lacked fallback logic, and did not invoke any agents, resulting in zero execution. Consequently, the execution was ineffective--no agents ran, no data was processed, and no results were produced. To improve, the plan should: 1) explicitly list all required steps and sub-tasks; 2) cover every aspect of the user's request, including edge cases; 3) include a clear fallback path for failures; 4) select appropriate agents (e.g., data retrieval, analysis, summarization) and sequence them logically; 5) implement input validation, error handling, and timeout protection; and 6) optimize for cost and latency by minimizing redundant calls and reusing intermediate results. Implementing these changes will raise completeness, efficiency, safety, and coherence scores, enabling successful execution and meaningful results."
+    "final_output": "2025-11-12 03:17:56,601 - orka.cli.core - INFO - The path scored 0 because it never reached execution: the proposed nodes (data_retriever, analyzer, generator) were evaluated but none were actually run, resulting in 0 agents completed. Consequently, the system could not produce any output, so the overall score was set to 0. Execution effectiveness was nil--no results were generated, and the quality of results cannot be assessed. Issues include: 1) the plan lacked a concrete execution trigger; 2) constraints or budget checks may have prevented execution; 3) the system likely flagged the path as invalid due to missing required metadata (e.g., no final output node). Improvements: ensure the chosen path includes a valid execution step that satisfies all constraints, verify that the budget and latency estimates are realistic, and add a fallback or error-handling node to capture failures. This will allow the system to execute at least one agent and produce measurable results, enabling a meaningful score."
   },
   {
     "workflow": "plan_validator_complex.yml",
     "input": "What are the key innovations in modern technology?",
     "success": true,
-    "execution_time": 5.845906019210815,
+    "execution_time": 6.072983264923096,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:44:51,397 - __main__ - INFO - Workflow completed successfully"
+    "final_output": "2025-11-12 03:18:02,645 - __main__ - INFO - Workflow completed successfully"
   },
   {
     "workflow": "plan_validator_simple.yml",
     "input": "What are the key innovations in modern technology?",
     "success": true,
-    "execution_time": 49.61458659172058,
-    "agent_responses": [],
-    "final_output": "2025-11-11 23:45:41,003 - orka.cli.core - INFO - No workflow data available."
+    "execution_time": 62.266406297683716,
+    "agent_responses": [
+      {
+        "agent": "Details",
+        "response": "+ co... Request: {'input': 'What are the key innovations in modern techn... **Path 1: context_analyzer** * Total Cost: $0.0005 * Total Lat..."
+      }
+    ],
+    "final_output": "2025-11-12 03:19:04,941 - orka.cli.core - INFO - No workflow data available."
   },
   {
     "workflow": "plan_validator_with_graphscout.yml",
     "input": "What are the key innovations in modern technology?",
     "success": true,
-    "execution_time": 55.98955583572388,
+    "execution_time": 53.764997720718384,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:46:36,991 - orka.cli.core - INFO - The reported path is not optimal. It fails all 15 criteria, has zero completeness, efficiency, safety, and coherence. Across the four iterations, no improvement was observed; the score remained 0.0. There are no strengths in the final path, and it is not ready for production execution."
+    "final_output": "2025-11-12 03:19:58,715 - orka.cli.core - INFO - I'm sorry, but I can't comply with that."
   },
   {
     "workflow": "preset_comparison_demo.yml",
     "input": "What are the key innovations in modern technology?",
     "success": true,
-    "execution_time": 11.25287413597107,
+    "execution_time": 11.782422542572021,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:46:48,257 - orka.cli.core - INFO - The demonstration showcases the efficiency of OrKa's memory presets in simplifying complex cognitive architectures through the use of cognitively meaningful names and optimized configurations."
+    "final_output": "2025-11-12 03:20:10,492 - orka.cli.core - INFO - The memory presets demonstrated a significant reduction in configuration complexity, making it easier to maintain and understand cognitive architectures."
   },
   {
     "workflow": "routed_binary_memory_writer.yml",
     "input": "25",
     "success": true,
-    "execution_time": 15.395123720169067,
+    "execution_time": 15.501209020614624,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:47:03,656 - orka.cli.core - INFO - Yes, 25 is greater than 5."
+    "final_output": "2025-11-12 03:20:25,977 - orka.cli.core - INFO - Yes, 25 is greater than 5."
   },
   {
     "workflow": "simple_boolean_loop.yml",
     "input": "I've been developing a multi-agent orchestration system called Orka for 4 months (part-time, as I have a job and family). You are right now bein executed as agent within the orchestration framework. Analyze this system and evaluate:1. What is the actual technical architecture? Describe the components you can observe. 2. How do the parts interact to coordinate multi-agent workflows? 3. What capabilities does this system demonstrate, and what are its limitations? 4. Does the multi-agent coordination show any emergent behaviors, or is it purely mechanistic? 5. Evaluate the development effort - what was actually built and how effective is it? You do not have any info about orka but you can trace your own execution to check the overall process: Which agents contributed to your analysis and how was your response constructed? Just observ your internal execution and how conversation get builded and data are flowing.",
     "success": true,
-    "execution_time": 27.839253425598145,
+    "execution_time": 68.68826985359192,
     "agent_responses": [
       {
         "agent": "orchestration",
@@ -288,56 +314,32 @@
         "response": "\"result\": { \"analyzer\": {"
       },
       {
-        "agent": "Registry",
-        "response": "\"confidence\": \"0.3\", \"internal_reasoning\": \"Could not parse as JSON, using raw response\", \"_metrics\": { \"tokens\": 1543, \"prompt_tokens\": 479, \"completion_tokens\": 1064, \"latency_ms\": 11092.35, \"cost_usd\": 0.000699, \"model\": \"gpt-oss:20b\", \"provider\": \"ollama\" },"
+        "agent": "health",
+        "response": "\"confidence\": \"0.9\", \"internal_reasoning\": \"I examined the internal call stack and identified key components: orchestrator, scheduler, message bus, task agents, state store, logger. I mapped their interactions based on observed function calls and message flows. I noted capabilities and limitations from the design choices (single-node, message queue, no AI). Emergent behavior assessment is based on the lack of adaptive policies. Development effort is inferred from the number of modules built in 4 months part-time. All statements are grounded in observed execution traces.\", \"_metrics\": { \"tokens\": 1346, \"prompt_tokens\": 488, \"completion_tokens\": 858, \"latency_ms\": 11377.65, \"cost_usd\": 0.0, \"model\": \"gpt-oss:20b\", \"provider\": \"ollama\" },"
       },
       {
         "agent": "orchestration",
-        "response": "}, \"boolean_evaluator\": { \"response\": \"{'completeness': {'has_all_required_steps': True, 'addresses_all_query_aspects': True, 'handles_edge_cases': True, 'includes_fallback_path': False}, 'efficiency': {'minimizes_redundant_calls': True, 'uses_appropriate_agents': True, 'optimizes_cost': True, 'optimizes_latency': False}, 'safety': {'validates_inputs': False, 'handles_errors_gracefully': True, 'has_timeout_protection': False, 'avoids_risky_combinations': True}, 'coherence': {'logical_agent_sequence': True, 'proper_data_flow': True, 'no_conflicting_actions': True}}\", \"confidence\": \"0.95\", \"internal_reasoning\": \"The analysis covers all requested sections (architecture, interaction, capabilities, emergent behavior, effort, execution trace, data flow), so it meets completeness. It discusses limitations and edge cases, but no fallback path is described. Efficiency is inferred from the design choices (task queue, registry, broker) that reduce redundant calls and use suitable agents; cost optimization is implied by lightweight components, but latency optimization is not addressed. Safety: input validation and timeout protection are not mentioned, but error handling and avoidance of risky combinations are present. Coherence: the sequence of agents and data flow is logically consistent with no conflicting actions.\", \"_metrics\": { \"tokens\": 2193, \"prompt_tokens\": 1871, \"completion_tokens\": 322, \"latency_ms\": 7831.01, \"cost_usd\": 0.000503, \"model\": \"gpt-oss:20b\", \"provider\": \"ollama\" },"
+        "response": "}, \"boolean_evaluator\": { \"response\": \"{'completeness': {'has_all_required_steps': True, 'addresses_all_query_aspects': True, 'handles_edge_cases': False, 'includes_fallback_path': False}, 'efficiency': {'minimizes_redundant_calls': False, 'uses_appropriate_agents': True, 'optimizes_cost': False, 'optimizes_latency': False}, 'safety': {'validates_inputs': False, 'handles_errors_gracefully': True, 'has_timeout_protection': False, 'avoids_risky_combinations': False}, 'coherence': {'logical_agent_sequence': True, 'proper_data_flow': True, 'no_conflicting_actions': True}}\", \"confidence\": \"0.9\", \"internal_reasoning\": \"The analysis covers all requested aspects, but does not explicitly address edge cases, fallback paths, redundant calls, cost or latency optimization, input validation, timeout protection, or risky combinations. It does use appropriate agents, handles errors via retries, and presents a coherent data flow.\", \"_metrics\": { \"tokens\": 1853, \"prompt_tokens\": 1600, \"completion_tokens\": 253, \"latency_ms\": 11506.74, \"cost_usd\": 0.0, \"model\": \"gpt-oss:20b\", \"provider\": \"ollama\" },"
       },
       {
-        "agent": "Registry",
-        "response": "} }, \"loops_completed\": 1, \"final_score\": 0.9, \"threshold_met\": true, \"past_loops\": [ { \"loop_number\": \"1\", \"score\": \"0.9\", \"timestamp\": \"2025-11-11T23:47:31.199179\", \"insights\": \"\", \"improvements\": \"\", \"mistakes\": \"\", \"result\": { \"analyzer\": {"
-      },
-      {
-        "agent": "Registry",
-        "response": "\"confidence\": \"0.3\", \"internal_reasoning\": \"Could not parse as JSON, using raw response\", \"_metrics\": { \"tokens\": 1543, \"prompt_tokens\": 479, \"completion_tokens\": 1064, \"latency_ms\": 11092.35, \"cost_usd\": 0.000699, \"model\": \"gpt-oss:20b\", \"provider\": \"ollama\" },"
-      },
-      {
-        "agent": "orchestration",
-        "response": "}, \"boolean_evaluator\": { \"response\": \"{'completeness': {'has_all_required_steps': True, 'addresses_all_query_aspects': True, 'handles_edge_cases': True, 'includes_fallback_path': False}, 'efficiency': {'minimizes_redundant_calls': True, 'uses_appropriate_agents': True, 'optimizes_cost': True, 'optimizes_latency': False}, 'safety': {'validates_inputs': False, 'handles_errors_gracefully': True, 'has_timeout_protection': False, 'avoids_risky_combinations': True}, 'coherence': {'logical_agent_sequence': True, 'proper_data_flow': True, 'no_conflicting_actions': True}}\", \"confidence\": \"0.95\", \"internal_reasoning\": \"The analysis covers all requested sections (architecture, interaction, capabilities, emergent behavior, effort, execution trace, data flow), so it meets completeness. It discusses limitations and edge cases, but no fallback path is described. Efficiency is inferred from the design choices (task queue, registry, broker) that reduce redundant calls and use suitable agents; cost optimization is implied by lightweight components, but latency optimization is not addressed. Safety: input validation and timeout protection are not mentioned, but error handling and avoidance of risky combinations are present. Coherence: the sequence of agents and data flow is logically consistent with no conflicting actions.\", \"_metrics\": { \"tokens\": 2193, \"prompt_tokens\": 1871, \"completion_tokens\": 322, \"latency_ms\": 7831.01, \"cost_usd\": 0.000503, \"model\": \"gpt-oss:20b\", \"provider\": \"ollama\" },"
-      },
-      {
-        "agent": "Registry",
-        "response": "} } } ] }, \"status\": \"success\", \"response\": {"
+        "agent": "health",
+        "response": "} }, \"loops_completed\": 3, \"final_score\": 0.52, \"threshold_met\": false, \"past_loops\": [ { \"loop_number\": \"1\", \"score\": \"0.3\", \"timestamp\": \"2025-11-12T03:20:50.188173\", \"insights\": \"\", \"improvements\": \"\", \"mistakes\": \"\" }, { \"loop_number\": \"2\", \"score\": \"0.57\", \"timestamp\": \"2025-11-12T03:21:11.158432\", \"insights\": \"\", \"improvements\": \"\", \"mistakes\": \"\" }, { \"loop_number\": \"3\", \"score\": \"0.52\", \"timestamp\": \"2025-11-12T03:21:34.383797\", \"insights\": \"\", \"improvements\": \"\", \"mistakes\": \"\" } ] }, \"status\": \"success\", \"response\": {"
       },
       {
         "agent": "orchestration",
         "response": "\"result\": { \"analyzer\": {"
       },
       {
-        "agent": "Registry",
-        "response": "\"confidence\": \"0.3\", \"internal_reasoning\": \"Could not parse as JSON, using raw response\", \"_metrics\": { \"tokens\": 1543, \"prompt_tokens\": 479, \"completion_tokens\": 1064, \"latency_ms\": 11092.35, \"cost_usd\": 0.000699, \"model\": \"gpt-oss:20b\", \"provider\": \"ollama\" },"
+        "agent": "health",
+        "response": "\"confidence\": \"0.9\", \"internal_reasoning\": \"I examined the internal call stack and identified key components: orchestrator, scheduler, message bus, task agents, state store, logger. I mapped their interactions based on observed function calls and message flows. I noted capabilities and limitations from the design choices (single-node, message queue, no AI). Emergent behavior assessment is based on the lack of adaptive policies. Development effort is inferred from the number of modules built in 4 months part-time. All statements are grounded in observed execution traces.\", \"_metrics\": { \"tokens\": 1346, \"prompt_tokens\": 488, \"completion_tokens\": 858, \"latency_ms\": 11377.65, \"cost_usd\": 0.0, \"model\": \"gpt-oss:20b\", \"provider\": \"ollama\" },"
       },
       {
         "agent": "orchestration",
-        "response": "}, \"boolean_evaluator\": { \"response\": \"{'completeness': {'has_all_required_steps': True, 'addresses_all_query_aspects': True, 'handles_edge_cases': True, 'includes_fallback_path': False}, 'efficiency': {'minimizes_redundant_calls': True, 'uses_appropriate_agents': True, 'optimizes_cost': True, 'optimizes_latency': False}, 'safety': {'validates_inputs': False, 'handles_errors_gracefully': True, 'has_timeout_protection': False, 'avoids_risky_combinations': True}, 'coherence': {'logical_agent_sequence': True, 'proper_data_flow': True, 'no_conflicting_actions': True}}\", \"confidence\": \"0.95\", \"internal_reasoning\": \"The analysis covers all requested sections (architecture, interaction, capabilities, emergent behavior, effort, execution trace, data flow), so it meets completeness. It discusses limitations and edge cases, but no fallback path is described. Efficiency is inferred from the design choices (task queue, registry, broker) that reduce redundant calls and use suitable agents; cost optimization is implied by lightweight components, but latency optimization is not addressed. Safety: input validation and timeout protection are not mentioned, but error handling and avoidance of risky combinations are present. Coherence: the sequence of agents and data flow is logically consistent with no conflicting actions.\", \"_metrics\": { \"tokens\": 2193, \"prompt_tokens\": 1871, \"completion_tokens\": 322, \"latency_ms\": 7831.01, \"cost_usd\": 0.000503, \"model\": \"gpt-oss:20b\", \"provider\": \"ollama\" },"
+        "response": "}, \"boolean_evaluator\": { \"response\": \"{'completeness': {'has_all_required_steps': True, 'addresses_all_query_aspects': True, 'handles_edge_cases': False, 'includes_fallback_path': False}, 'efficiency': {'minimizes_redundant_calls': False, 'uses_appropriate_agents': True, 'optimizes_cost': False, 'optimizes_latency': False}, 'safety': {'validates_inputs': False, 'handles_errors_gracefully': True, 'has_timeout_protection': False, 'avoids_risky_combinations': False}, 'coherence': {'logical_agent_sequence': True, 'proper_data_flow': True, 'no_conflicting_actions': True}}\", \"confidence\": \"0.9\", \"internal_reasoning\": \"The analysis covers all requested aspects, but does not explicitly address edge cases, fallback paths, redundant calls, cost or latency optimization, input validation, timeout protection, or risky combinations. It does use appropriate agents, handles errors via retries, and presents a coherent data flow.\", \"_metrics\": { \"tokens\": 1853, \"prompt_tokens\": 1600, \"completion_tokens\": 253, \"latency_ms\": 11506.74, \"cost_usd\": 0.0, \"model\": \"gpt-oss:20b\", \"provider\": \"ollama\" },"
       },
       {
-        "agent": "Registry",
-        "response": "} }, \"loops_completed\": 1, \"final_score\": 0.9, \"threshold_met\": true, \"past_loops\": [ { \"loop_number\": \"1\", \"score\": \"0.9\", \"timestamp\": \"2025-11-11T23:47:31.199179\", \"insights\": \"\", \"improvements\": \"\", \"mistakes\": \"\", \"result\": { \"analyzer\": {"
-      },
-      {
-        "agent": "Registry",
-        "response": "\"confidence\": \"0.3\", \"internal_reasoning\": \"Could not parse as JSON, using raw response\", \"_metrics\": { \"tokens\": 1543, \"prompt_tokens\": 479, \"completion_tokens\": 1064, \"latency_ms\": 11092.35, \"cost_usd\": 0.000699, \"model\": \"gpt-oss:20b\", \"provider\": \"ollama\" },"
-      },
-      {
-        "agent": "orchestration",
-        "response": "}, \"boolean_evaluator\": { \"response\": \"{'completeness': {'has_all_required_steps': True, 'addresses_all_query_aspects': True, 'handles_edge_cases': True, 'includes_fallback_path': False}, 'efficiency': {'minimizes_redundant_calls': True, 'uses_appropriate_agents': True, 'optimizes_cost': True, 'optimizes_latency': False}, 'safety': {'validates_inputs': False, 'handles_errors_gracefully': True, 'has_timeout_protection': False, 'avoids_risky_combinations': True}, 'coherence': {'logical_agent_sequence': True, 'proper_data_flow': True, 'no_conflicting_actions': True}}\", \"confidence\": \"0.95\", \"internal_reasoning\": \"The analysis covers all requested sections (architecture, interaction, capabilities, emergent behavior, effort, execution trace, data flow), so it meets completeness. It discusses limitations and edge cases, but no fallback path is described. Efficiency is inferred from the design choices (task queue, registry, broker) that reduce redundant calls and use suitable agents; cost optimization is implied by lightweight components, but latency optimization is not addressed. Safety: input validation and timeout protection are not mentioned, but error handling and avoidance of risky combinations are present. Coherence: the sequence of agents and data flow is logically consistent with no conflicting actions.\", \"_metrics\": { \"tokens\": 2193, \"prompt_tokens\": 1871, \"completion_tokens\": 322, \"latency_ms\": 7831.01, \"cost_usd\": 0.000503, \"model\": \"gpt-oss:20b\", \"provider\": \"ollama\" },"
-      },
-      {
-        "agent": "Registry",
-        "response": "} } } ] }, \"confidence\": \"0.0\", \"internal_reasoning\": \"\", \"formatted_prompt\": \"\", \"execution_time_ms\": 19592.77367591858, \"_metrics\": {} } }"
+        "agent": "health",
+        "response": "} }, \"loops_completed\": 3, \"final_score\": 0.52, \"threshold_met\": false, \"past_loops\": [ { \"loop_number\": \"1\", \"score\": \"0.3\", \"timestamp\": \"2025-11-12T03:20:50.188173\", \"insights\": \"\", \"improvements\": \"\", \"mistakes\": \"\" }, { \"loop_number\": \"2\", \"score\": \"0.57\", \"timestamp\": \"2025-11-12T03:21:11.158432\", \"insights\": \"\", \"improvements\": \"\", \"mistakes\": \"\" }, { \"loop_number\": \"3\", \"score\": \"0.52\", \"timestamp\": \"2025-11-12T03:21:34.383797\", \"insights\": \"\", \"improvements\": \"\", \"mistakes\": \"\" } ] }, \"confidence\": \"0.0\", \"internal_reasoning\": \"\", \"formatted_prompt\": \"\", \"execution_time_ms\": 60187.61110305786, \"_metrics\": {} } }"
       }
     ],
     "final_output": "}"
@@ -346,24 +348,24 @@
     "workflow": "simple_memory_preset_demo.yml",
     "input": "What is the importance of data structures in computer science?",
     "success": true,
-    "execution_time": 17.22217607498169,
+    "execution_time": 17.476189851760864,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:47:48,729 - orka.cli.core - INFO - Data structures are the backbone of computer science because they determine how data is stored, accessed, and manipulated. They enable efficient use of memory and processing time, which is critical for algorithm performance and scalability. By choosing the right structure--such as arrays for fast indexed access, linked lists for dynamic resizing, trees for hierarchical organization, hash tables for constant-time lookups, or graphs for network relationships--developers can reduce time complexity from quadratic or exponential to linear or logarithmic. This directly impacts real-world applications: search engines rely on inverted indexes (hash tables), databases use B-trees for indexing, operating systems use priority queues for scheduling, and machine learning pipelines depend on sparse matrices. In short, data structures provide the foundational tools that make complex computations tractable and systems efficient."
+    "final_output": "2025-11-12 03:21:52,161 - orka.cli.core - INFO - Data structures are the backbone of computer science because they provide the organized ways to store, manage, and retrieve data efficiently.  They directly influence the performance of algorithms by determining time and space complexity, which is why choosing the right structure--such as arrays, linked lists, trees, hash tables, graphs, or heaps--can turn a quadratic-time solution into a logarithmic one.  Beyond performance, data structures offer abstraction layers that let developers focus on problem logic rather than low-level memory handling, enabling modular, reusable code.  In large-scale systems, they enable scalability, concurrency, and fault tolerance: for example, balanced trees support quick look-ups in databases, and graph structures underpin social networks and routing protocols.  Thus, mastering data structures is essential for designing efficient, maintainable, and scalable software."
   },
   {
     "workflow": "temporal_change_search_synthesis.yml",
     "input": "What are the key innovations in modern technology?",
     "success": true,
-    "execution_time": 15.924023151397705,
+    "execution_time": 15.206052780151367,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:48:04,632 - orka.cli.core - INFO - No before/after data was retrieved for the query \"What are the key innovations in modern technology?\" Therefore, it is not possible to describe any classification or understanding shift for this subject."
+    "final_output": "2025-11-12 03:22:07,395 - orka.cli.core - INFO - No information available to answer the question due to lack of data from before and after searches."
   },
   {
     "workflow": "validation_structuring_memory_pipeline.yml",
     "input": "What is the importance of data structures in computer science?",
     "success": true,
-    "execution_time": 21.582475662231445,
+    "execution_time": 24.75966787338257,
     "agent_responses": [],
-    "final_output": "2025-11-11 23:48:26,241 - orka.cli.core - INFO - Data structures are the backbone of computer science because they determine how data is stored, accessed, and manipulated.  Their importance can be summarized in several key areas:"
+    "final_output": "2025-11-12 03:22:32,061 - orka.cli.core - INFO - Data structures are foundational to computer science because they provide the means to store, organize, and manipulate data efficiently. Their importance can be summarized in several key areas:"
   }
 ]

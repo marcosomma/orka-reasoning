@@ -188,31 +188,38 @@ def wait_for_redis(port: int, max_attempts: int = 30) -> None:
     try:
         result = subprocess.run(
             ["docker", "ps", "--filter", "name=docker-redis-1", "--format", "{{.Status}}"],
-            capture_output=True, text=True, check=False
+            capture_output=True,
+            text=True,
+            check=False,
         )
-        
+
         if result.returncode == 0 and result.stdout.strip():
             logger.info(f"📦 Redis container status: {result.stdout.strip()}")
-            
+
             # Use Docker health check for more reliable detection
             for attempt in range(max_attempts):
                 try:
                     health_result = subprocess.run(
                         ["docker", "exec", "docker-redis-1", "redis-cli", "ping"],
-                        capture_output=True, text=True, check=False, timeout=5
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                        timeout=5,
                     )
-                    
+
                     if health_result.returncode == 0 and "PONG" in health_result.stdout:
                         logger.info(f"✅ Redis is ready on port {port}! (verified via Docker)")
                         return
-                        
+
                 except subprocess.TimeoutExpired:
                     pass
                 except Exception:
                     pass
-                
+
                 if attempt < max_attempts - 1:
-                    logger.info(f"Redis not ready yet, waiting... (attempt {attempt + 1}/{max_attempts})")
+                    logger.info(
+                        f"Redis not ready yet, waiting... (attempt {attempt + 1}/{max_attempts})"
+                    )
                     time.sleep(2)
                 else:
                     # Fall back to host connection test
@@ -254,13 +261,12 @@ def wait_for_redis(port: int, max_attempts: int = 30) -> None:
                     import redis
 
                     client = redis.Redis(
-                        host="localhost", 
-                        port=port, 
+                        host="localhost",
+                        port=port,
                         decode_responses=True,
                         socket_connect_timeout=10,
                         socket_timeout=10,
                         retry_on_timeout=True,
-                        retry_on_error=[redis.ConnectionError, redis.TimeoutError]
                     )
                     if client.ping():
                         logger.info(f"✅ Redis is ready on port {port}!")
