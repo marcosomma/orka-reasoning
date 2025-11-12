@@ -840,53 +840,74 @@ class LoopNode(BaseNode):
             Calculated score or None if no boolean evaluations found
         """
         if not self.score_calculator:
+            logger.debug(f"LoopNode '{self.node_id}': No score_calculator configured (scoring preset not set)")
             return None
+
+        logger.info(f"LoopNode '{self.node_id}': Attempting boolean score extraction from {len(result)} agents")
 
         # Look for boolean evaluation structure in agent responses
         for agent_id, agent_result in result.items():
             if not isinstance(agent_result, dict):
+                logger.debug(f"  - Agent '{agent_id}': Not a dict, skipping")
                 continue
+
+            logger.debug(f"  - Agent '{agent_id}': Checking for boolean evaluations...")
 
             # Check for direct boolean_evaluations key (from PlanValidator)
             if "boolean_evaluations" in agent_result:
                 boolean_evals = agent_result["boolean_evaluations"]
+                logger.info(f"  - Agent '{agent_id}': Found boolean_evaluations field")
+                
                 if isinstance(boolean_evals, dict) and self._is_valid_boolean_structure(
                     boolean_evals
                 ):
                     try:
                         score_result = self.score_calculator.calculate(boolean_evals)
-                        logger.debug(
-                            f"Boolean evaluations from '{agent_id}': "
-                            f"{score_result['passed_count']}/{score_result['total_criteria']} passed"
+                        logger.info(
+                            f"✅ Boolean evaluations from '{agent_id}': "
+                            f"{score_result['passed_count']}/{score_result['total_criteria']} passed, "
+                            f"score={score_result['score']:.4f}"
                         )
                         return float(score_result["score"])
                     except Exception as e:
-                        logger.warning(f"Failed to calculate boolean score from '{agent_id}': {e}")
+                        logger.error(f"Failed to calculate boolean score from '{agent_id}': {e}", exc_info=True)
                         continue
+                else:
+                    logger.warning(f"  - Agent '{agent_id}': boolean_evaluations invalid structure")
 
             # Check for validation_score (which might be from boolean scoring)
             if "validation_score" in agent_result and "boolean_evaluations" in agent_result:
+                logger.info(f"  - Agent '{agent_id}': Found validation_score field")
                 try:
-                    return float(agent_result["validation_score"])
-                except (ValueError, TypeError):
+                    score = float(agent_result["validation_score"])
+                    logger.info(f"✅ Using validation_score from '{agent_id}': {score:.4f}")
+                    return score
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"  - Agent '{agent_id}': Invalid validation_score: {e}")
                     continue
 
             # Try to parse boolean structure from response text
             if "response" in agent_result:
                 response_text = str(agent_result["response"])
+                logger.debug(f"  - Agent '{agent_id}': Checking response text ({len(response_text)} chars)...")
+                
                 boolean_evals = self._extract_boolean_from_text(response_text)
                 if boolean_evals and self._is_valid_boolean_structure(boolean_evals):
                     try:
                         score_result = self.score_calculator.calculate(boolean_evals)
-                        logger.debug(
-                            f"Boolean evaluations from '{agent_id}' response text: "
-                            f"{score_result['passed_count']}/{score_result['total_criteria']} passed"
+                        logger.info(
+                            f"✅ Boolean evaluations from '{agent_id}' response text: "
+                            f"{score_result['passed_count']}/{score_result['total_criteria']} passed, "
+                            f"score={score_result['score']:.4f}"
                         )
                         return float(score_result["score"])
                     except Exception as e:
-                        logger.debug(f"Failed to parse boolean from '{agent_id}' response: {e}")
+                        logger.debug(f"  - Failed to parse boolean from '{agent_id}' response: {e}")
                         continue
+                else:
+                    logger.debug(f"  - Agent '{agent_id}': No valid boolean structure in response")
 
+        logger.warning(f"LoopNode '{self.node_id}': ❌ No valid boolean evaluations found in any agent")
         return None
 
     def _is_valid_boolean_structure(self, data: Any) -> bool:
@@ -939,15 +960,31 @@ class LoopNode(BaseNode):
                 json_text = json_text.replace("'", '"')
                 
                 data = json.loads(json_text)
-                if isinstance(data, dict) and self._is_valid_boolean_structure(data):
-                    logger.debug(f"✅ Successfully extracted boolean evaluations from text")
+                
+                # 🐛 CRITICAL FIX: Convert UPPERCASE keys to lowercase
+                # LLMs return {"COMPLETENESS": ...} but we need {"completeness": ...}
+                if isinstance(data, dict):
+                    normalized_data = {}
+                    for key, value in data.items():
+                        normalized_key = key.lower()
+                        if isinstance(value, dict):
+                            # Normalize nested dict (keep snake_case)
+                            normalized_data[normalized_key] = {k: v for k, v in value.items()}
+                        else:
+                            normalized_data[normalized_key] = value
+                    data = normalized_data
+                    logger.debug(f"Normalized keys to lowercase: {list(data.keys())}")
+                
+                if self._is_valid_boolean_structure(data):
+                    logger.info(f"✅ Successfully extracted boolean evaluations from text")
                     return data
+                else:
+                    logger.debug(f"❌ Invalid boolean structure. Keys found: {list(data.keys())}")
+                    
         except json.JSONDecodeError as e:
             logger.debug(f"JSON parse failed: {e}")
-            pass
         except Exception as e:
-            logger.debug(f"Boolean extraction failed: {e}")
-            pass
+            logger.error(f"Boolean extraction exception: {e}", exc_info=True)
 
         return None
 
