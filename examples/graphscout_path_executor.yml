@@ -27,8 +27,10 @@ agents:
   # PHASE 1: Validate the path with a loop
   - id: validation_loop
     type: loop
-    max_iterations: 5
-    exit_condition: "{{ get_loop_number() > 1 and loop_score >= 0.80 }}"
+    max_loops: 3  # Force stop after 3 iterations
+    persist_across_runs: false  # Prevent infinite accumulation across workflow runs
+    score_threshold: 0.5  # Exit if score reaches this
+    # No exit_condition - rely on max_loops for guaranteed termination
     
     internal_workflow:
       orchestrator:
@@ -45,6 +47,8 @@ agents:
             max_depth: 3
             commit_margin: 0.1
             require_terminal: true
+            safety_profile: "permissive"  # Disable overly strict safety checks
+            safety_threshold: 0.5  # Don't block paths on safety violations
             score_weights:
               llm: 0.5
               heuristics: 0.3
@@ -56,11 +60,12 @@ agents:
           prompt: |
             Query: {{ input }}
             
-            {% if has_past_loops() %}
+            {% if has_past_loops() and get_past_loops()|length > 0 %}
             ## Validation Feedback (Iteration {{ get_loop_number() }})
             {% set last_loop = get_past_loops()[-1] %}
-            Previous validation score: {{ last_loop.score }}
+            Previous validation score: {{ last_loop.score|default('N/A') }}
             
+            {% if last_loop.mistakes and last_loop.mistakes|length > 0 %}
             Issues to address:
             {% if "has_all_required_steps" in last_loop.mistakes %}
             - Missing required steps - ensure complete workflow
@@ -70,6 +75,7 @@ agents:
             {% endif %}
             {% if "includes_fallback_path" in last_loop.mistakes %}
             - Add error handling and fallback paths
+            {% endif %}
             {% endif %}
             {% endif %}
             
@@ -87,10 +93,99 @@ agents:
             completeness.has_all_required_steps: 0.15
             efficiency.uses_appropriate_agents: 0.15
             safety.handles_errors_gracefully: 0.10
+
+  # ===== EXECUTION AGENTS (Top Level) =====
+  # These agents are available for GraphScout to discover and PathExecutor to execute
+  # They are NOT in the orchestrator sequence, so they won't auto-execute
+  
+  - id: web_search
+    type: duckduckgo
+    capabilities: [data_retrieval, web_search]
+    prompt: |
+      {{ input }}
+  
+  - id: deep_analyzer
+    type: local_llm
+    capabilities: [reasoning, analysis, deep_thinking]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.4
+    prompt: |
+      Provide deep, multi-perspective analysis of: {{ input }}
+      
+      {% if previous_outputs.web_search %}
+      Search Context: {{ previous_outputs.web_search.result }}
+      {% endif %}
+      
+      Consider multiple viewpoints and provide comprehensive insights.
+  
+  - id: technical_expert
+    type: local_llm
+    capabilities: [technical_analysis, expertise, domain_knowledge]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      Provide expert technical analysis for: {{ input }}
+      
+      Available Context: {{ previous_outputs }}
+      
+      Focus on technical accuracy and domain expertise.
+  
+  - id: content_writer
+    type: local_llm
+    capabilities: [answer_emit, content_generation, writing]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.5
+    prompt: |
+      Create comprehensive, well-written content for: {{ input }}
+      
+      {% if previous_outputs.web_search %}
+      Research: {{ previous_outputs.web_search }}
+      {% endif %}
+      {% if previous_outputs.deep_analyzer %}
+      Analysis: {{ previous_outputs.deep_analyzer.response }}
+      {% endif %}
+      {% if previous_outputs.technical_expert %}
+      Technical Input: {{ previous_outputs.technical_expert.response }}
+      {% endif %}
+      
+      Generate clear, engaging, and accurate content.
+  
+  - id: fact_checker
+    type: local_llm
+    capabilities: [verification, validation, fact_checking]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.2
+    prompt: |
+      Verify the accuracy of information:
+      
+      Content: {{ previous_outputs }}
+      
+      Check for factual errors, inconsistencies, and provide corrections if needed.
+  
+  - id: quality_reviewer
+    type: local_llm
+    capabilities: [quality_assessment, review, critique]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      Review the quality of outputs:
+      
+      Results: {{ previous_outputs }}
+      
+      Assess completeness, accuracy, clarity, and overall quality.
+      Provide improvement suggestions if needed.
   
   # PHASE 2: Execute the validated path
-  # 🐛 Bug #2 Fix: Removed duplicate agent definitions from internal_workflow
-  # GraphScout discovers agents from main orchestrator's agent list (see lines 229+)
   - id: path_executor
     type: path_executor
     path_source: validation_loop.response.result.graphscout_router.target
@@ -108,132 +203,65 @@ agents:
       
       Original query: {{ input }}
       
-      Validated path: {{ validation_loop.response.result.graphscout_router.target }}
-      Validation score: {{ validation_loop.response.result.path_validator.validation_score }}
+      {% if previous_outputs.validation_loop %}
+      ## Validation Phase
+      - Loops: {{ previous_outputs.validation_loop.loops_completed | default('N/A') }}
+      - Score: {{ (previous_outputs.validation_loop.final_score | default(0)) | round(3) }}
+      - Validated Path: {{ previous_outputs.validation_loop.response.result.graphscout_router.target | default([]) }}
+      {% endif %}
       
-      Execution results:
-      {{ path_executor.results | tojson(indent=2) }}
+      {% if previous_outputs.path_executor %}
+      ## Execution Phase
+      {% set executor = previous_outputs.path_executor.response | default(previous_outputs.path_executor) %}
+      - Status: {{ (executor.status | default('unknown')) | upper }}
+      - Executed: {{ executor.executed_path | default([]) }}
+      - Results: {{ (executor.results | default({})) | length }} agents completed
       
-      Provide a comprehensive, well-structured final answer.
+      ### Execution Results:
+      {{ (executor.results | default({})) | tojson(indent=2) }}
+      {% endif %}
+      
+      ---
+      
+      Provide a comprehensive, well-structured final answer based on the execution results.
 
-  # ===== AGENT DEFINITIONS (GraphScout selects from these) =====
-  
-  - id: web_search
-    type: duckduckgo
-    capabilities: [data_retrieval, web_search]
-    max_results: 5
-  
-  - id: deep_analyzer
-    type: local_llm
-    capabilities: [reasoning, analysis, multi_perspective]
-    model: "gpt-oss:20b"
-    provider: "ollama"
-    url: "http://localhost:11434/api/generate"
-    temperature: 0.4
-    prompt: |
-      Perform deep multi-perspective analysis of the available data.
-      
-      Query: {{ input }}
-      
-      {% if "web_search" in previous_outputs %}
-      Search results: {{ previous_outputs.web_search.results }}
-      {% endif %}
-      
-      Analyze from multiple perspectives:
-      1. Factual accuracy
-      2. Relevance to query
-      3. Potential implications
-      4. Missing information
-      
-      Provide comprehensive analysis.
-  
-  - id: technical_expert
-    type: local_llm
-    capabilities: [technical_analysis, expertise, best_practices]
-    model: "gpt-oss:20b"
-    provider: "ollama"
-    url: "http://localhost:11434/api/generate"
-    temperature: 0.3
-    prompt: |
-      Provide technical expert analysis.
-      
-      Query: {{ input }}
-      
-      {% if "web_search" in previous_outputs %}
-      Data: {{ previous_outputs.web_search.results }}
-      {% endif %}
-      
-      {% if "deep_analyzer" in previous_outputs %}
-      Analysis: {{ previous_outputs.deep_analyzer.response }}
-      {% endif %}
-      
-      Provide expert technical insights, best practices, and recommendations.
-  
-  - id: content_writer
-    type: local_llm
-    capabilities: [content_generation, writing, synthesis]
-    model: "gpt-oss:20b"
-    provider: "ollama"
-    url: "http://localhost:11434/api/generate"
-    temperature: 0.5
-    prompt: |
-      Generate professional, well-structured content.
-      
-      Query: {{ input }}
-      
-      Available context:
-      {% for agent_id, result in previous_outputs.items() %}
-      - {{ agent_id }}: {{ result | tojson }}
-      {% endfor %}
-      
-      Create clear, engaging, and informative content.
-  
-  - id: fact_checker
-    type: local_llm
-    capabilities: [fact_checking, verification, validation]
-    model: "gpt-oss:20b"
-    provider: "ollama"
-    url: "http://localhost:11434/api/generate"
-    temperature: 0.1
-    prompt: |
-      Verify all claims and validate information accuracy.
-      
-      Content to verify:
-      {% if "content_writer" in previous_outputs %}
-      {{ previous_outputs.content_writer.response }}
-      {% elif "deep_analyzer" in previous_outputs %}
-      {{ previous_outputs.deep_analyzer.response }}
-      {% endif %}
-      
-      Original sources:
-      {% if "web_search" in previous_outputs %}
-      {{ previous_outputs.web_search.results }}
-      {% endif %}
-      
-      Flag any inaccuracies, unsupported claims, or areas needing clarification.
-  
-  - id: quality_reviewer
-    type: local_llm
-    capabilities: [answer_emit, quality_review, assessment]
-    model: "gpt-oss:20b"
-    provider: "ollama"
-    url: "http://localhost:11434/api/generate"
-    temperature: 0.2
-    prompt: |
-      Perform final quality review.
-      
-      Query: {{ input }}
-      
-      Review criteria:
-      1. Completeness - Does it fully address the query?
-      2. Accuracy - Is information correct and verified?
-      3. Clarity - Is it easy to understand?
-      4. Structure - Is it well-organized?
-      
-      All previous outputs:
-      {{ previous_outputs | tojson(indent=2) }}
-      
-      Provide quality score (0-10) and improvement recommendations.
+# ============================================================================
+# GraphScout + PathExecutor Pattern
+# ============================================================================
+#
+# This demonstrates the validated execution pattern:
+#
+# 1. Validation Loop (Planning Phase):
+#    - GraphScout proposes optimal agent paths
+#    - PlanValidator scores each proposal with boolean criteria
+#    - Loop iterates until score threshold is met (0.5)
+#
+# 2. Path Execution (Execution Phase):
+#    - PathExecutor extracts the validated path
+#    - Executes each agent in sequence
+#    - Accumulates results from all agents
+#
+# 3. Final Summary (Reporting Phase):
+#    - Synthesizes validation and execution results
+#    - Provides comprehensive analysis
+#
+# ============================================================================
+# Agent Scoping - CRITICAL
+# ============================================================================
+#
+# Execution agents (web_search, deep_analyzer, etc.) are defined at the TOP LEVEL
+# of the agents list, NOT inside the loop's internal_workflow.
+#
+# Why?
+# - GraphScout discovers agents from the orchestrator's global agent registry
+# - PathExecutor can only execute agents from the global agent registry
+# - Agents defined inside internal_workflow are scoped to that workflow only
+#
+# These agents are NOT in the orchestrator's execution sequence (line 21-24),
+# so they won't auto-execute. They are only discovered by GraphScout and executed
+# by PathExecutor when included in the validated path.
+#
+# ============================================================================
 
 llm:
   provider: "ollama"

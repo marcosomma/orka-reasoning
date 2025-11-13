@@ -331,6 +331,13 @@ class LoopNode(BaseNode):
         logger.debug(f"LoopNode.run() original_input: {original_input}")
         logger.debug(f"LoopNode.run() original_input type: {type(original_input)}")
 
+        # 🐛 GraphScout Fix: Extract parent orchestrator's agents for internal workflow
+        if "orchestrator" in payload and hasattr(payload["orchestrator"], "agent_cfgs"):
+            self._parent_agents = payload["orchestrator"].agent_cfgs
+            logger.debug(
+                f"LoopNode: Captured {len(self._parent_agents)} parent agents for GraphScout"
+            )
+
         # Create a working copy of previous_outputs to avoid circular references
         loop_previous_outputs = original_previous_outputs.copy()
 
@@ -472,6 +479,29 @@ class LoopNode(BaseNode):
         # Get the original workflow configuration
         original_workflow = self.internal_workflow.copy()
 
+        # 🐛 GraphScout Fix: Inject parent orchestrator's agents for GraphScout discovery
+        # If the internal workflow has a GraphScout agent, it needs access to all agents
+        # from the parent orchestrator to discover routing candidates
+        if hasattr(self, "_parent_agents") and self._parent_agents:
+            # Merge parent agents with internal workflow agents
+            internal_agents = original_workflow.get("agents", [])
+            internal_agent_ids = {
+                agent["id"] for agent in internal_agents if isinstance(agent, dict)
+            }
+
+            # Add parent agents that aren't already in internal workflow
+            for parent_agent in self._parent_agents:
+                if (
+                    isinstance(parent_agent, dict)
+                    and parent_agent.get("id") not in internal_agent_ids
+                ):
+                    internal_agents.append(parent_agent)
+
+            original_workflow["agents"] = internal_agents
+            logger.debug(
+                f"LoopNode: Merged {len(self._parent_agents)} parent agents for GraphScout visibility"
+            )
+
         # Ensure we have the basic structure
         if "orchestrator" not in original_workflow:
             original_workflow["orchestrator"] = {}
@@ -497,14 +527,21 @@ class LoopNode(BaseNode):
             }
         )
 
+        # DEBUG: Log the orchestrator config before creating temp file
+        orchestrator_agents = original_workflow.get("orchestrator", {}).get("agents", [])
+        logger.info(f"🔍 DEBUG: Internal workflow orchestrator.agents BEFORE temp file: {orchestrator_agents}")
+        logger.debug(f"🔍 DEBUG: Full orchestrator config: {original_workflow.get('orchestrator', {})}")
+        
         # Create temporary workflow file
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
             yaml.dump(original_workflow, f)
             temp_file = f.name
+            logger.info(f"🔍 DEBUG: Wrote temp workflow file: {temp_file}")
 
         try:
             # Create orchestrator for internal workflow
             orchestrator = Orchestrator(temp_file)
+            logger.info(f"🔍 DEBUG: Orchestrator created with queue: {orchestrator.orchestrator_cfg.get('agents', [])}")
 
             # Use parent's memory logger to maintain consistency
             if self.memory_logger is not None:
@@ -574,9 +611,15 @@ class LoopNode(BaseNode):
             logger.debug(f"LoopNode workflow_input keys: {list(workflow_input.keys())}")
 
             # Execute workflow with return_logs=True to get full logs for processing
-            agent_sequence = [agent.get("id") for agent in self.internal_workflow.get("agents", [])]
+            # Get the ORCHESTRATOR's execution sequence, not all agent definitions
+            # (since some agents may be defined for GraphScout routing but not executed)
+            orchestrator_cfg = self.internal_workflow.get("orchestrator", {})
+            agent_sequence = orchestrator_cfg.get("agents", [])
+            # If agents is a simple list of strings, use as-is. If it's dicts, extract IDs
+            if agent_sequence and isinstance(agent_sequence[0], dict):
+                agent_sequence = [agent.get("id") for agent in agent_sequence]
             logger.debug(
-                f"About to execute internal workflow with {len(agent_sequence)} agents defined"
+                f"About to execute internal workflow with {len(agent_sequence)} agents in execution sequence"
             )
             logger.debug(f"Full agent sequence: {agent_sequence}")
 

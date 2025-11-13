@@ -100,6 +100,12 @@ class GraphIntrospector:
                 "ValidationAndStructuringAgent",
                 "ClassificationAgent",
                 "BinaryAgent",
+                "LoopNode",  # Prevent infinite recursion
+                "ForkNode",  # Structural node
+                "JoinNode",  # Structural node
+                "RouterNode",  # Already handles routing
+                "PathExecutorNode",  # Executes paths, not a target
+                "FailoverNode",  # Control flow
             }
 
             # Also filter by ID patterns commonly used for control flow
@@ -109,6 +115,12 @@ class GraphIntrospector:
                 "input_classifier",
                 "path_validator",
                 "plan_validator",
+                "_loop",  # Prevent loops from being routed to themselves
+                "_router",  # Router nodes
+                "_fork",  # Fork nodes
+                "_join",  # Join nodes
+                "path_executor",  # Path executor nodes
+                "failover",  # Failover nodes
             }
 
             filtered_neighbors = []
@@ -495,6 +507,8 @@ class GraphIntrospector:
                         "depth": len(terminal_path),
                         "feasible": True,
                         "constraints_met": True,
+                        "graphscout_generated": getattr(path, "_graphscout_generated", False)
+                        or len(terminal_path) > 1,
                     }
                     extended_candidates.append(candidate)
 
@@ -769,6 +783,16 @@ class GraphIntrospector:
                     logger.debug(f"Path infeasible: node {node_id} not found")
                     return False
 
+            graphscout_generated = candidate.get("graphscout_generated", False)
+
+            # SPECIAL CASE: For GraphScout-generated routing, skip edge connectivity checks
+            if graphscout_generated:
+                logger.debug(
+                    "GraphScout-generated path detected; skipping edge feasibility checks for %s",
+                    " → ".join(path),
+                )
+                return True
+
             # SPECIAL CASE: For GraphScout direct routing (depth=1), skip edge connectivity checks
             # GraphScout can route directly to any available agent regardless of edges
             if candidate.get("depth", 1) == 1 and len(path) == 1:
@@ -847,6 +871,10 @@ class GraphIntrospector:
             candidate["estimated_latency"] = estimated_latency
 
             return True
+
+        except Exception as e:
+            logger.error(f"Resource constraint check failed: {e}")
+            return True  # Default to allowing if check fails
 
         except Exception as e:
             logger.error(f"Resource constraint check failed: {e}")

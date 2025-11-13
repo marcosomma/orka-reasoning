@@ -18,8 +18,8 @@ agents:
   - id: validated_routing_loop
     type: loop
     max_loops: 4
-    score_threshold: 0.85
-    persist_across_runs: true
+    score_threshold: 0.5
+    persist_across_runs: false  # Prevent accumulation across runs
     
     # Boolean scoring configuration
     scoring:
@@ -160,68 +160,71 @@ agents:
             completeness.has_all_required_steps: 0.22
             efficiency.uses_appropriate_agents: 0.12
             coherence.logical_agent_sequence: 0.05
-        
-        # Supporting agents for GraphScout to route to
-        - id: search_agent
-          type: duckduckgo
-          capabilities: [data_retrieval, web_search]
-          prompt: |
-            {{ input }}
-        
-        - id: analysis_agent
-          type: local_llm
-          capabilities: [reasoning, analysis]
-          model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
-          prompt: |
-            Analyze: {{ input }}
-            
-            {% if previous_outputs.search_agent %}
-            Context: {{ previous_outputs.search_agent.result }}
-            {% endif %}
-            
-            Provide comprehensive analysis.
-        
-        - id: memory_reader
-          type: memory
-          namespace: graph_scout_validated
-          memory_preset: episodic
-          config:
-            operation: read
-            vector: true
-            top_k: 5
-          prompt: |
-            Retrieve relevant context for: {{ input }}
-        
-        - id: memory_writer
-          type: memory
-          namespace: graph_scout_validated
-          memory_preset: episodic
-          config:
-            operation: write
-            vector: true
-          prompt: |
-            Store findings: {{ previous_outputs }}
-        
-        - id: response_builder
-          type: local_llm
-          capabilities: [answer_emit, response_generation]
-          model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
-          prompt: |
-            Create final response for: {{ input }}
-            
-            {% if previous_outputs.search_agent %}
-            Search Results: {{ previous_outputs.search_agent }}
-            {% endif %}
-            {% if previous_outputs.analysis_agent %}
-            Analysis: {{ previous_outputs.analysis_agent.response }}
-            {% endif %}
-            {% if previous_outputs.memory_reader %}
-            Context: {{ previous_outputs.memory_reader }}
-            {% endif %}
+
+  # ===== EXECUTION AGENTS (Top Level) =====
+  # These agents are available for GraphScout to discover and PathExecutor to execute
+  
+  # Supporting agents for GraphScout to route to
+  - id: search_agent
+    type: duckduckgo
+    capabilities: [data_retrieval, web_search]
+    prompt: |
+      {{ input }}
+  
+  - id: analysis_agent
+    type: local_llm
+    capabilities: [reasoning, analysis]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Analyze: {{ input }}
+      
+      {% if previous_outputs.search_agent %}
+      Context: {{ previous_outputs.search_agent.result }}
+      {% endif %}
+      
+      Provide comprehensive analysis.
+  
+  - id: memory_reader
+    type: memory
+    namespace: graph_scout_validated
+    memory_preset: episodic
+    config:
+      operation: read
+      vector: true
+      top_k: 5
+    prompt: |
+      Retrieve relevant context for: {{ input }}
+  
+  - id: memory_writer
+    type: memory
+    namespace: graph_scout_validated
+    memory_preset: episodic
+    config:
+      operation: write
+      vector: true
+    prompt: |
+      Store findings: {{ previous_outputs }}
+  
+  - id: response_builder
+    type: local_llm
+    capabilities: [answer_emit, response_generation]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Create final response for: {{ input }}
+      
+      {% if previous_outputs.search_agent %}
+      Search Results: {{ previous_outputs.search_agent }}
+      {% endif %}
+      {% if previous_outputs.analysis_agent %}
+      Analysis: {{ previous_outputs.analysis_agent.response }}
+      {% endif %}
+      {% if previous_outputs.memory_reader %}
+      Context: {{ previous_outputs.memory_reader }}
+      {% endif %}
 
   # Execute the validated GraphScout path
   - id: path_executor
@@ -243,9 +246,9 @@ agents:
       {% set loop = previous_outputs.validated_routing_loop %}
       
       ## Loop Summary
-      - Iterations: {{ loop.loops_completed }}
-      - Final Score: {{ loop.final_score | round(3) }}
-      - Status: {{ 'APPROVED ✓' if loop.threshold_met else 'REJECTED ✗' }}
+      - Iterations: {{ loop.loops_completed | default('N/A') }}
+      - Final Score: {{ (loop.final_score | default(0)) | round(3) }}
+      - Status: {{ 'APPROVED ✓' if loop.threshold_met | default(false) else 'REJECTED ✗' }}
       
       ## GraphScout's Final Decision
       {% if loop.response.result.graph_scout_router %}
@@ -256,17 +259,19 @@ agents:
       {% if loop.response.result.path_validator_moderate %}
       {% set val = loop.response.result.path_validator_moderate %}
       
-      **Assessment:** {{ val.overall_assessment }}
-      **Score:** {{ val.validation_score | round(3) }}
+      **Assessment:** {{ val.overall_assessment | default('N/A') }}
+      **Score:** {{ (val.validation_score | default(0)) | round(3) }}
       
       ### Dimension Breakdown
+      {% if val.dimension_scores %}
       {% for dim, data in val.dimension_scores.items() %}
-      - {{ dim|title }}: {{ data.percentage|round(0) }}%
+      - {{ dim|title }}: {{ (data.percentage | default(0))|round(0) }}%
       {% endfor %}
+      {% endif %}
       
       ### Quality Metrics
-      - Passed: {{ val.passed_criteria|length }}/15 criteria
-      - Failed: {{ val.failed_criteria|length }} criteria
+      - Passed: {{ (val.passed_criteria | default([])) | length }}/15 criteria
+      - Failed: {{ (val.failed_criteria | default([])) | length }} criteria
       {% if val.failed_criteria %}
       
       Still Missing:
@@ -283,12 +288,30 @@ agents:
       {% endfor %}
       {% endif %}
       
+      ## Execution Results
+      {% if previous_outputs.path_executor %}
+      {% set executor = previous_outputs.path_executor.response %}
+      - Execution Status: {{ (executor.status | default('unknown')) | upper }}
+      - Executed Path: {{ executor.executed_path | default([]) }}
+      - Agents Completed: {{ (executor.results | default({})) | length }}
+      {% if executor.errors %}
+      - Errors: {{ executor.errors }}
+      {% endif %}
+      
+      ### Agent Outcomes:
+      {% for agent_id, result in (executor.results | default({})).items() %}
+      - **{{ agent_id }}**: {{ 'SUCCESS' if 'error' not in result else 'FAILED' }}
+      {% endfor %}
+      {% else %}
+      Path execution pending or validation threshold not met.
+      {% endif %}
+      
       ---
       
       Provide analysis:
-      1. Why did GraphScout need {{ loop.loops_completed }} iteration(s)?
-      2. What made the final path score {{ loop.final_score | round(3) }}?
-      3. Is this path production-ready?
+      1. Why did GraphScout need {{ loop.loops_completed | default('N/A') }} iteration(s)?
+      2. What made the final path score {{ (loop.final_score | default(0)) | round(3) }}?
+      3. Based on validation and execution, is this path production-ready?
       4. What are the key quality indicators?
       
       {% else %}

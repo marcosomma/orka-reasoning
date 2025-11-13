@@ -54,11 +54,26 @@ pattern by taking validated agent sequences and actually executing them.
 """
 
 import logging
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 from .base_node import BaseNode
 
 logger = logging.getLogger(__name__)
+
+
+def _make_json_serializable(obj: Any) -> Any:
+    """Convert non-JSON-serializable objects to serializable formats."""
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    elif isinstance(obj, dict):
+        return {k: _make_json_serializable(v) for k, v in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [_make_json_serializable(item) for item in obj]
+    elif hasattr(obj, "__dict__"):
+        return _make_json_serializable(vars(obj))
+    else:
+        return obj
 
 
 class PathExecutorNode(BaseNode):
@@ -236,12 +251,12 @@ class PathExecutorNode(BaseNode):
 
             result_dict: Dict[str, Any] = {
                 "executed_path": agent_path,
-                "results": results,
+                "results": _make_json_serializable(results),
                 "status": status,
             }
 
             if errors:
-                result_dict["errors"] = errors
+                result_dict["errors"] = _make_json_serializable(errors)
 
             logger.info(
                 f"PathExecutor '{self.node_id}': Execution complete. "
@@ -263,7 +278,7 @@ class PathExecutorNode(BaseNode):
     def _extract_agent_path(self, context: Dict[str, Any]) -> Tuple[List[str], Optional[str]]:
         """
         Extract agent path from previous_outputs using path_source.
-        
+
         🐛 Bug #3 Fix: Try multiple path variants to handle different output structures
 
         Args:
@@ -283,41 +298,77 @@ class PathExecutorNode(BaseNode):
         paths_to_try = [
             self.path_source,  # Original path
         ]
-        
+
         # Generate common variations
         # Example: "loop.response.result.agent.target" ->
         #   also try: "loop.result.agent.target", "loop.response.agent.target"
         parts = self.path_source.split(".")
-        
+
         # Try removing 'response' if present
-        if 'response' in parts:
-            variant = [p for p in parts if p != 'response']
+        if "response" in parts:
+            variant = [p for p in parts if p != "response"]
             paths_to_try.append(".".join(variant))
-        
+
         # Try removing 'result' if present
-        if 'result' in parts:
-            variant = [p for p in parts if p != 'result']
+        if "result" in parts:
+            variant = [p for p in parts if p != "result"]
             paths_to_try.append(".".join(variant))
-        
+
         # Try adding '.response' if not present
-        if 'response' not in parts and len(parts) > 1:
-            variant = parts[:1] + ['response'] + parts[1:]
+        if "response" not in parts and len(parts) > 1:
+            variant = parts[:1] + ["response"] + parts[1:]
             paths_to_try.append(".".join(variant))
-        
+
         # Try each path variant
         last_error = None
         for path_variant in paths_to_try:
-            result, error = self._try_navigate_path(previous_outputs, path_variant)
-            if result is not None:
-                logger.info(f"PathExecutor '{self.node_id}': ✅ Successfully extracted path using variant '{path_variant}': {result}")
-                return result, None
+            agent_path, error, resolved_obj, decision_container = self._try_navigate_path(
+                previous_outputs, path_variant
+            )
+            if agent_path is not None:
+                decision_type = self._extract_decision(
+                    decision_container, previous_outputs, resolved_obj
+                )
+
+                # Handle shortlist by executing ALL candidates (not just best)
+                if decision_type == "shortlist":
+                    logger.info(
+                        f"PathExecutor '{self.node_id}': GraphScout returned shortlist with {len(agent_path)} agents, "
+                        f"will execute all in sequence: {agent_path}"
+                    )
+                    # agent_path already contains all agents from shortlist (excluding logical ones)
+                    # Just continue to execute them all
+                    pass  # Continue to return agent_path normally
+                elif decision_type and decision_type not in {"commit_next", "commit_path", "shortlist"}:
+                    logger.error(
+                        f"PathExecutor '{self.node_id}': Decision '{decision_type}' is not executable "
+                        f"for path_source '{path_variant}'."
+                    )
+                    return [], (
+                        f"GraphScout decision '{decision_type}' cannot be executed automatically. "
+                        "Awaiting validated path."
+                    )
+
+                if decision_type == "commit_next" and len(agent_path) > 1:
+                    agent_path = [agent_path[0]]
+
+                logger.info(
+                    f"PathExecutor '{self.node_id}': [OK] Successfully extracted path using variant '{path_variant}': {agent_path}"
+                )
+                return agent_path, None
             else:
-                logger.debug(f"PathExecutor '{self.node_id}': ❌ Variant '{path_variant}' failed: {error}")
+                logger.debug(
+                    f"PathExecutor '{self.node_id}': [FAIL] Variant '{path_variant}' failed: {error}"
+                )
             last_error = error
-        
+
         # All variants failed - log structure for debugging
-        logger.error(f"PathExecutor '{self.node_id}': ❌ Failed all path variants. Tried: {paths_to_try}")
-        logger.error(f"PathExecutor '{self.node_id}': Available keys in previous_outputs: {list(previous_outputs.keys())}")
+        logger.error(
+            f"PathExecutor '{self.node_id}': [ERROR] Failed all path variants. Tried: {paths_to_try}"
+        )
+        logger.error(
+            f"PathExecutor '{self.node_id}': Available keys in previous_outputs: {list(previous_outputs.keys())}"
+        )
         # Log first level of structure to help debugging
         for key in list(previous_outputs.keys())[:5]:
             val = previous_outputs[key]
@@ -326,33 +377,83 @@ class PathExecutorNode(BaseNode):
             else:
                 logger.error(f"  - {key}: {type(val).__name__}")
         return [], last_error or "Could not find path data in any variant"
-    
-    def _try_navigate_path(self, previous_outputs: Dict[str, Any], path: str) -> Tuple[Optional[List[str]], Optional[str]]:
+
+    def _try_navigate_path(
+        self, previous_outputs: Dict[str, Any], path: str
+    ) -> Tuple[Optional[List[str]], Optional[str], Optional[Any], Optional[Any]]:
         """
         Try to navigate a specific dot-notation path.
-        
+
         Returns:
-            Tuple of (agent_path or None, error_message or None)
+            Tuple of (agent_path or None, error_message or None, resolved_object, decision_container)
         """
         path_parts = path.split(".")
-        current = previous_outputs
+        current: Any = previous_outputs
+        parent: Any = None
 
         for i, part in enumerate(path_parts):
             if not isinstance(current, dict):
-                return None, f"Not a dict at '{'.'.join(path_parts[:i])}'"
+                return None, f"Not a dict at '{'.'.join(path_parts[:i])}'", current, parent
 
             if part not in current:
-                return None, f"Key '{part}' not found"
+                return None, f"Key '{part}' not found", current, parent
 
+            parent = current
             current = current[part]
 
         # Extract agent list from the result
         agent_path = self._parse_agent_list(current)
 
         if agent_path is None:
-            return None, f"No agent list at path '{path}'"
+            return None, f"No agent list at path '{path}'", current, parent
 
-        return agent_path, None
+        return agent_path, None, current, parent
+
+    def _extract_decision(
+        self,
+        decision_container: Optional[Any],
+        previous_outputs: Dict[str, Any],
+        resolved_obj: Any,
+    ) -> Optional[str]:
+        """
+        Determine the decision type associated with the resolved GraphScout output.
+
+        Args:
+            decision_container: Immediate container object returned by navigation.
+            previous_outputs: Full previous_outputs structure.
+            resolved_obj: The resolved GraphScout target object.
+
+        Returns:
+            Decision string if available, otherwise None.
+        """
+        if isinstance(decision_container, dict) and isinstance(
+            decision_value := decision_container.get("decision"), str
+        ):
+            return decision_value
+
+        # Fall back to searching the broader previous_outputs structure
+        return self._find_decision_for_target(previous_outputs, resolved_obj)
+
+    def _find_decision_for_target(self, data: Any, target: Any) -> Optional[str]:
+        """
+        Recursively search for the decision type associated with a GraphScout target object.
+        """
+        if isinstance(data, dict):
+            target_obj = data.get("target")
+            if target_obj is target and isinstance(data.get("decision"), str):
+                return str(data["decision"])
+            for value in data.values():
+                decision = self._find_decision_for_target(value, target)
+                if decision is not None:
+                    return decision
+
+        elif isinstance(data, list):
+            for item in data:
+                decision = self._find_decision_for_target(item, target)
+                if decision is not None:
+                    return decision
+
+        return None
 
     def _parse_agent_list(self, data: Any) -> Optional[List[str]]:
         """
@@ -366,22 +467,80 @@ class PathExecutorNode(BaseNode):
         """
         # Case 1: Direct list
         if isinstance(data, list):
-            return [str(agent_id) for agent_id in data]
+            # Check if list contains dicts (GraphScout candidate format)
+            if data and isinstance(data[0], dict):
+                # Extract node_id from each candidate dict
+                agent_ids = []
+                for item in data:
+                    if isinstance(item, dict) and "node_id" in item:
+                        node_id = str(item["node_id"])
+                        # Exclude logical/routing agents
+                        if not self._is_logical_agent(node_id):
+                            agent_ids.append(node_id)
+                    elif (
+                        isinstance(item, dict) and "path" in item and isinstance(item["path"], list)
+                    ):
+                        # Use path items, excluding logical agents
+                        for path_item in item["path"]:
+                            if not self._is_logical_agent(str(path_item)):
+                                agent_ids.append(str(path_item))
+                    else:
+                        # Fallback: try to use as string
+                        agent_id = str(item)
+                        if not self._is_logical_agent(agent_id):
+                            agent_ids.append(agent_id)
+                return agent_ids if agent_ids else None
+            else:
+                # Simple list of agent ID strings
+                return [str(agent_id) for agent_id in data if not self._is_logical_agent(str(agent_id))]
 
         # Case 2: Dict with 'target' field (GraphScout format)
         if isinstance(data, dict):
             if "target" in data:
                 target = data["target"]
                 if isinstance(target, list):
-                    return [str(agent_id) for agent_id in target]
+                    # Recursively parse the list (handles both dict and string formats)
+                    return self._parse_agent_list(target)
 
             # Case 3: Dict with 'path' field (alternative format)
             if "path" in data:
                 path = data["path"]
                 if isinstance(path, list):
-                    return [str(agent_id) for agent_id in path]
+                    return [str(agent_id) for agent_id in path if not self._is_logical_agent(str(agent_id))]
 
         return None
+    
+    def _is_logical_agent(self, agent_id: str) -> bool:
+        """
+        Check if an agent is a logical/routing agent that should be excluded from execution.
+        
+        Logical agents include:
+        - GraphScout agents (routing)
+        - PathValidator agents (validation)
+        - Loop nodes (control flow)
+        - Fork/Join nodes (control flow)
+        
+        Args:
+            agent_id: Agent identifier to check
+            
+        Returns:
+            True if agent is logical and should be excluded, False otherwise
+        """
+        logical_patterns = [
+            "graph_scout",
+            "graphscout",
+            "path_proposer",
+            "path_validator",
+            "validator",
+            "router",
+            "routing",
+            "loop",
+            "fork",
+            "join",
+        ]
+        
+        agent_id_lower = agent_id.lower()
+        return any(pattern in agent_id_lower for pattern in logical_patterns)
 
     def _validate_execution_context(self, context: Dict[str, Any]) -> Optional[str]:
         """

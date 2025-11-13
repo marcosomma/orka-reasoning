@@ -121,7 +121,7 @@ class YAMLLoader:
         Returns:
             The loaded YAML configuration.
         """
-        with open(self.path) as f:
+        with open(self.path, encoding='utf-8') as f:
             return yaml.safe_load(f)  # type: ignore
 
     def get_orchestrator(self) -> Dict[str, Any]:

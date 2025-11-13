@@ -30,7 +30,7 @@ class TestDuckDuckGoTool:
         assert isinstance(result["result"], list)
         assert len(result["result"]) == 1
         assert "DuckDuckGo search not available" in result["result"][0]
-        assert "duckduckgo_search package not installed" in result["result"][0]
+        assert "ddgs package not installed" in result["result"][0]
 
     def test_run_with_formatted_prompt(self):
         """Test run method with formatted_prompt in input_data."""

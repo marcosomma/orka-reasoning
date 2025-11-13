@@ -290,10 +290,10 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 socket_keepalive=True,
                 socket_keepalive_options={},
                 retry_on_timeout=True,
-                health_check_interval=60,  # Less frequent health checks to reduce load
-                max_connections=50,  # Increased to handle nested orchestrators and loops
-                socket_connect_timeout=10,  # Longer timeout for connection establishment
-                socket_timeout=30,  # Longer timeout for operations
+                health_check_interval=300,  # Health check every 5 minutes (balanced)
+                max_connections=100,  # Further increased for complex nested workflows
+                socket_connect_timeout=5,  # Faster connection timeout
+                socket_timeout=10,  # Shorter operation timeout (fail fast)
             )
             logger.debug(
                 f"Created Redis connection pool with max_connections=50, socket_timeout=30s"

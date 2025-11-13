@@ -673,7 +673,7 @@ Agent ID: {agent_id}
 Type: {agent_info['type']}
 Description: {agent_info['description']}
 Capabilities: {', '.join(agent_info['capabilities'])}
-Prompt: {agent_info['prompt'][:200]}...
+Prompt: {(agent_info.get('prompt') or '')[:200]}...
 Cost Estimate: ${agent_info['cost_estimate']:.4f}
 Latency Estimate: {agent_info['latency_estimate']}ms
 """

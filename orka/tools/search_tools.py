@@ -32,7 +32,7 @@ from typing import Any, List
 
 # Optional imports for search engines
 try:
-    from duckduckgo_search import DDGS
+    from ddgs import DDGS
 
     HAS_DUCKDUCKGO = True
     DDGS_INSTANCE: Any = DDGS
@@ -79,7 +79,7 @@ class DuckDuckGoTool(BaseTool):
         """
         # Check if DuckDuckGo is available
         if not HAS_DUCKDUCKGO:
-            return ["DuckDuckGo search not available - duckduckgo_search package not installed"]
+            return ["DuckDuckGo search not available - ddgs package not installed"]
 
         # Get query - prioritize formatted_prompt from orchestrator, then fallback to other sources
         query = ""
