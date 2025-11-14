@@ -21,6 +21,7 @@ Handles LLM metrics extraction, aggregation, and reporting.
 import logging
 import os
 import platform
+import shutil
 import subprocess
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Tuple
@@ -90,13 +91,29 @@ class MetricsCollector:
 
         # GPU information
         try:
-            import GPUtil
-
-            gpus = GPUtil.getGPUs()
-            if gpus:
-                env_info["gpu_type"] = (
-                    f"{gpus[0].name} ({len(gpus)} GPU{'s' if len(gpus) > 1 else ''})"
+            # Use shutil.which to check for nvidia-smi (no deprecation warning)
+            nvidia_smi_path = shutil.which("nvidia-smi")
+            if nvidia_smi_path:
+                # Query GPU information using nvidia-smi
+                result = subprocess.run(
+                    ["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"],
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
                 )
+                if result.returncode == 0 and result.stdout.strip():
+                    gpu_names = [
+                        line.strip() for line in result.stdout.strip().split("\n") if line.strip()
+                    ]
+                    if gpu_names:
+                        gpu_count = len(gpu_names)
+                        env_info["gpu_type"] = (
+                            f"{gpu_names[0]} ({gpu_count} GPU{'s' if gpu_count > 1 else ''})"
+                        )
+                    else:
+                        env_info["gpu_type"] = "none"
+                else:
+                    env_info["gpu_type"] = "none"
             else:
                 env_info["gpu_type"] = "none"
         except Exception:

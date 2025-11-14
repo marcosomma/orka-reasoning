@@ -1709,6 +1709,7 @@ class ExecutionEngine(
                 for term in ["localllm", "local_llm", "answer", "response", "builder"]
             )
             and "classification" not in agent_type
+            and "response_generation" in getattr(agent, "capabilities", [])
         )
 
     def _apply_memory_routing_logic(self, shortlist: List[Dict[str, Any]]) -> List[str]:

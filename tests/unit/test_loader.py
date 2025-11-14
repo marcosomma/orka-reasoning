@@ -1,11 +1,12 @@
 """Unit tests for orka.loader - simplified version."""
 
-import pytest
-import tempfile
 import os
-from unittest.mock import patch, Mock
-from orka.loader import YAMLLoader
+import tempfile
+from unittest.mock import Mock, patch
 
+import pytest
+
+from orka.loader import YAMLLoader
 
 # Skip auto-mocking for this test
 pytestmark = [pytest.mark.unit, pytest.mark.no_auto_mock]
@@ -25,31 +26,31 @@ agents:
     type: local_llm
     prompt: "Test: {{ input }}"
 """
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
             f.write(config_content)
             temp_file = f.name
-        
+
         try:
             # Test initialization
             loader = YAMLLoader(temp_file)
-            
+
             # Test attributes
             assert loader.path == temp_file
             assert loader.config is not None
             assert isinstance(loader.config, dict)
-            
+
             # Test get_orchestrator
             orchestrator_config = loader.get_orchestrator()
             assert orchestrator_config["id"] == "test_workflow"
             assert orchestrator_config["strategy"] == "sequential"
-            
+
             # Test get_agents
             agents_config = loader.get_agents()
             assert len(agents_config) == 1
             assert agents_config[0]["id"] == "test_agent"
             assert agents_config[0]["type"] == "local_llm"
-            
+
         finally:
             os.unlink(temp_file)
 
@@ -68,24 +69,24 @@ agents:
     type: local_llm
     prompt: "Valid template: {{ input }}"
 """
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
             f.write(config_content)
             temp_file = f.name
-        
+
         try:
             # Mock the template validator to avoid dependency issues
-            with patch('orka.utils.template_validator.TemplateValidator') as mock_validator_class:
+            with patch("orka.utils.template_validator.TemplateValidator") as mock_validator_class:
                 mock_validator = Mock()
                 mock_validator.validate_template.return_value = (True, "", [])
                 mock_validator_class.return_value = mock_validator
-                
+
                 loader = YAMLLoader(temp_file)
                 result = loader.validate()
-                
+
                 assert result is True
                 mock_validator.validate_template.assert_called()
-                
+
         finally:
             os.unlink(temp_file)
 
@@ -96,11 +97,11 @@ agents:
   - id: test_agent
     type: local_llm
 """
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
             f.write(config_content)
             temp_file = f.name
-        
+
         try:
             loader = YAMLLoader(temp_file)
             with pytest.raises(ValueError, match="Missing 'orchestrator' section"):
@@ -114,11 +115,11 @@ agents:
 orchestrator:
   id: test_workflow
 """
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
             f.write(config_content)
             temp_file = f.name
-        
+
         try:
             loader = YAMLLoader(temp_file)
             with pytest.raises(ValueError, match="Missing 'agents' section"):
@@ -135,11 +136,11 @@ agents:
   test_agent:
     type: local_llm
 """
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
             f.write(config_content)
             temp_file = f.name
-        
+
         try:
             loader = YAMLLoader(temp_file)
             with pytest.raises(ValueError, match="'agents' should be a list"):
@@ -157,21 +158,21 @@ agents:
     type: local_llm
     prompt: "Invalid template"
 """
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
             f.write(config_content)
             temp_file = f.name
-        
+
         try:
-            with patch('orka.utils.template_validator.TemplateValidator') as mock_validator_class:
+            with patch("orka.utils.template_validator.TemplateValidator") as mock_validator_class:
                 mock_validator = Mock()
                 mock_validator.validate_template.return_value = (False, "Template error", [])
                 mock_validator_class.return_value = mock_validator
-                
+
                 loader = YAMLLoader(temp_file)
                 with pytest.raises(ValueError, match="Template validation failed"):
                     loader.validate()
-                    
+
         finally:
             os.unlink(temp_file)
 
@@ -181,18 +182,18 @@ agents:
 some_other_section:
   value: test
 """
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
             f.write(config_content)
             temp_file = f.name
-        
+
         try:
             loader = YAMLLoader(temp_file)
-            
+
             # Should return empty dict/list for missing sections
             assert loader.get_orchestrator() == {}
             assert loader.get_agents() == []
-            
+
         finally:
             os.unlink(temp_file)
 

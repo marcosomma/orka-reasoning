@@ -1,6 +1,24 @@
 # OrKa-Reasoning – Un-official CHANGELOG
 
 ---
+## [0.9.6] · 2025-11-15 🧠
+Orka v0.9.6 – Pre-Production Release Candidate
+
+**Major improvements:**
+- Major refactor for modularity, type discipline, error handling, traceability, and logic clarity.
+- Full unit/component test coverage; tests now use targeted mocking for true isolation.
+- Deterministic, weighted multi-criteria scoring for agentic graph workflows.
+- Graceful fallback on LLM/agent errors, strong reliability under failure modes.
+- Performance and memory benchmark suites, plus comprehensive example/FAQ coverage.
+- Docs and CHANGELOGs are now tightly aligned with actual code structure and capability.
+
+**Known caveats (roadmap to 1.0.0):**
+- Some scoring heuristics and validation checks remain as TODOs, always returning neutral/optimistic values.
+- Boolean criteria validation and an audit trail of “which criteria triggered block/admit” are not yet implemented.
+- PathExecutor/true shortlist execution is still unimplemented (though planned in design/docs).
+- Some LLM result handling could be further hardened for unexpected output or schema drift.
+- No full E2E or black-box integration with a stubbed LLM/memory—current tests are near, but not at, production integration level.
+---
 ## [0.9.5] · 2025-10-26 🧠
 ### Added
 * **🧠 PlanValidatorAgent - Meta-Cognitive Path Validation**
