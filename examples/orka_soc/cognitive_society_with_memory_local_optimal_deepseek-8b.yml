@@ -397,28 +397,15 @@ agents:
             
             SYNTHESIS: [How perspectives work together in 2-3 sentences]
 
-        # 🔧 OPTIMIZED: Ultra-simple agreement moderator
+        # 🔧 OPTIMIZED: Loop Validator Node - Robust boolean evaluation
         - id: agreement_moderator
-          type: local_llm
-          model: deepseek-r1:8b
+          type: loop_validator
+          llm_model: deepseek-r1:8b
           model_url: http://localhost:11434/api/generate
           provider: ollama
+          scoring_preset: moderate
+          evaluation_target: synthesis_attempt  # Evaluate the synthesis quality
           temperature: 0.1
-          prompt: |
-            AGREEMENT ASSESSMENT - Round {{ get_loop_number() }}
-            TOPIC: {{ get_input() }}
-            TARGET: {{ get_score_threshold() }}+ agreement to stop
-            
-            CURRENT AGREEMENT: {{ safe_get_response('agreement_finder', 'No agreement') | truncate(150) }}
-            SYNTHESIS: {{ safe_get_response('synthesis_attempt', 'No synthesis') | truncate(150) }}
-            
-            CRITICAL: You MUST respond EXACTLY in this format with NO additional text:
-            
-            AGREEMENT_SCORE: [number between 0.0 and 1.0]
-            CONTINUE: [YES or NO]
-            
-            Example: AGREEMENT_SCORE: 0.7
-            CONTINUE: NO
 
         # 🔧 OPTIMIZED: Minimal memory writer
         - id: shared_memory_writer

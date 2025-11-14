@@ -40,44 +40,15 @@ agents:
             
             Provide comprehensive insights.
         
-        # Evaluate using boolean criteria
+        # Evaluate using loop_validator node - robust boolean evaluation
         - id: boolean_evaluator
-          type: local_llm
-          model: gpt-oss:20b
+          type: loop_validator
+          llm_model: gpt-oss:20b
           model_url: http://localhost:11434/api/generate
           provider: ollama
+          scoring_preset: moderate
+          evaluation_target: analyzer  # Evaluate the analyzer's output
           temperature: 0.1
-          prompt: |
-            Evaluate this analysis using boolean criteria:
-            {{ get_agent_response('analyzer') }}
-            
-            Return JSON with true/false for each:
-            
-            {
-              "completeness": {
-                "has_all_required_steps": true,
-                "addresses_all_query_aspects": false,
-                "handles_edge_cases": true,
-                "includes_fallback_path": false
-              },
-              "efficiency": {
-                "minimizes_redundant_calls": true,
-                "uses_appropriate_agents": true,
-                "optimizes_cost": true,
-                "optimizes_latency": false
-              },
-              "safety": {
-                "validates_inputs": false,
-                "handles_errors_gracefully": true,
-                "has_timeout_protection": false,
-                "avoids_risky_combinations": true
-              },
-              "coherence": {
-                "logical_agent_sequence": true,
-                "proper_data_flow": true,
-                "no_conflicting_actions": true
-              }
-            }
 
 # Usage Examples:
 #

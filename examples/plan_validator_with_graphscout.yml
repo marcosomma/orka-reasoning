@@ -4,6 +4,35 @@
 # This demonstrates GraphScout's intelligent routing being validated
 # in a loop by PlanValidator with boolean scoring. GraphScout has
 # access to a rich set of agents for building optimal execution paths.
+#
+# DUAL VALIDATION APPROACH:
+# ==========================
+# 1. GraphScout (numeric mode): Fast path discovery and ranking
+# 2. PlanValidator: Comprehensive validation with boolean criteria
+#
+# ALTERNATIVE: GraphScout Boolean Mode
+# =====================================
+# For simpler workflows or stronger safety, use GraphScout's built-in
+# boolean scoring instead of (or in addition to) PlanValidator:
+#
+#   scoring_mode: "boolean"           # Enable deterministic mode
+#   require_critical: true            # Safety + input checks mandatory
+#   important_threshold: 0.8          # 80% capability match required
+#   strict_mode: false                # Allow efficiency/history to be optional
+#
+# Benefits of GraphScout Boolean vs PlanValidator:
+# - Faster (no LLM calls for validation)
+# - More deterministic (rule-based checks)
+# - Lower overhead for simple workflows
+# - Still provides audit trails
+#
+# Use PlanValidator when you need:
+# - Complex multi-dimensional validation
+# - LLM-powered reasoning about path quality
+# - Customizable validation presets
+# - Dimension-level scoring (completeness, coherence, etc.)
+#
+# See docs/SCORING_ARCHITECTURE.md for detailed comparison.
 
 orchestrator:
   id: graphscout-validated-routing

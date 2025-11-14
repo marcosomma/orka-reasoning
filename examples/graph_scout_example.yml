@@ -3,6 +3,28 @@
 #
 # This example demonstrates how to use the GraphScout agent for intelligent
 # path discovery and selection in complex workflows.
+#
+# SCORING MODES:
+# ==============
+# GraphScout supports two scoring modes:
+#
+# 1. NUMERIC MODE (default, used here):
+#    - Continuous scores (0.0-1.0) with weighted criteria
+#    - Fast, flexible, good for exploration and ranking
+#    - Use for: Real-time routing, multi-criteria optimization
+#
+# 2. BOOLEAN MODE (deterministic, for compliance):
+#    - Explicit pass/fail for each criterion with audit trails
+#    - Deterministic, auditable, regulatory-ready
+#    - Use for: Production safety gates, compliance, debugging
+#
+# To enable boolean mode, add to params:
+#   scoring_mode: "boolean"
+#   strict_mode: false
+#   require_critical: true
+#   important_threshold: 0.8
+#
+# See docs/SCORING_ARCHITECTURE.md for full details.
 
 orchestrator:
   id: graph_scout_demo

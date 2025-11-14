@@ -10,6 +10,23 @@
 # - Efficiency: Only approved paths execute
 # - Auditability: Full trace of validation + execution
 # - Flexibility: Can reject/refine before executing
+#
+# SCORING MODE NOTE:
+# ==================
+# This workflow uses NUMERIC mode in GraphScout (for path discovery) + 
+# PlanValidator (for validation). For even stronger safety guarantees, consider:
+#
+#   scoring_mode: "boolean"  # In plan_proposer params
+#   strict_mode: true        # All criteria must pass
+#   require_critical: true   # Critical safety checks mandatory
+#
+# Boolean mode provides:
+# - Deterministic pass/fail criteria
+# - Full audit trails for compliance
+# - Explicit safety validation
+# - Clear failure reasons for debugging
+#
+# See docs/SCORING_ARCHITECTURE.md for comparison.
 
 orchestrator:
   id: validate-then-execute

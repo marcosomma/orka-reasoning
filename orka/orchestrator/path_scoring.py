@@ -8,6 +8,11 @@ Path Scoring System
 ==================
 
 Multi-criteria scoring system for evaluating candidate paths.
+
+Supports two modes:
+1. **Numeric Mode (default)**: Continuous scores (0.0-1.0) with weighted aggregation
+2. **Boolean Mode**: Deterministic pass/fail criteria with audit trails
+
 Combines LLM evaluation, heuristics, historical priors, and budget considerations.
 """
 
@@ -21,7 +26,17 @@ logger = logging.getLogger(__name__)
 
 class PathScorer:
     """
-    Multi-criteria path scoring system.
+    Multi-criteria path scoring system with dual-mode support.
+
+    **Numeric Mode (default)**:
+    - Continuous scores (0.0-1.0)
+    - Weighted aggregation
+    - Probabilistic ranking
+
+    **Boolean Mode**:
+    - Deterministic pass/fail criteria
+    - Audit trails for compliance
+    - Explicit failure reasons
 
     Evaluates candidate paths using:
     - LLM relevance assessment
@@ -32,9 +47,34 @@ class PathScorer:
     """
 
     def __init__(self, config: Any):
-        """Initialize path scorer with configuration."""
+        """
+        Initialize path scorer with configuration.
+
+        Args:
+            config: Configuration object with scoring_mode parameter:
+                   - 'numeric' (default): Continuous scoring
+                   - 'boolean': Deterministic criteria evaluation
+        """
         self.config = config
         self.score_weights = config.score_weights
+
+        # Scoring mode selection
+        self.scoring_mode = getattr(config, "scoring_mode", "numeric")
+        if self.scoring_mode not in ("numeric", "boolean"):
+            logger.warning(
+                f"Invalid scoring_mode '{self.scoring_mode}', defaulting to 'numeric'"
+            )
+            self.scoring_mode = "numeric"
+
+        # Initialize boolean scoring engine if needed
+        self.boolean_engine = None
+        if self.scoring_mode == "boolean":
+            from .boolean_scoring import BooleanScoringEngine
+
+            self.boolean_engine = BooleanScoringEngine(config)
+            logger.info("PathScorer initialized in BOOLEAN mode with deterministic criteria")
+        else:
+            logger.info("PathScorer initialized in NUMERIC mode with continuous scoring")
         
         # Extract scoring thresholds from config
         self.max_reasonable_cost = getattr(config, "max_reasonable_cost", 0.10)
@@ -63,14 +103,28 @@ class PathScorer:
         """
         Score all candidates using multi-criteria evaluation.
 
+        **Behavior depends on scoring_mode**:
+        - **numeric**: Returns continuous scores (0.0-1.0)
+        - **boolean**: Returns pass/fail criteria with audit trails
+
         Args:
             candidates: List of candidate paths to score
             question: The question/query being routed
             context: Execution context
 
         Returns:
-            List of candidates with scores and components
+            List of candidates with scores and components (sorted by score/pass-rate)
         """
+        # Route to appropriate scoring method
+        if self.scoring_mode == "boolean":
+            return await self._score_candidates_boolean(candidates, question, context)
+        else:
+            return await self._score_candidates_numeric(candidates, question, context)
+
+    async def _score_candidates_numeric(
+        self, candidates: List[Dict[str, Any]], question: str, context: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
+        """Score candidates using continuous numeric scores (original implementation)."""
         try:
             scored_candidates = []
 
@@ -96,7 +150,7 @@ class PathScorer:
             final_candidates = scored_candidates[:k_beam]
 
             logger.info(
-                f"Scored {len(scored_candidates)} candidates, "
+                f"[NUMERIC] Scored {len(scored_candidates)} candidates, "
                 f"top score: {scored_candidates[0]['score']:.3f}, "
                 f"keeping top {len(final_candidates)} (k_beam={k_beam})"
             )
@@ -104,7 +158,66 @@ class PathScorer:
             return final_candidates
 
         except Exception as e:
-            logger.error(f"Candidate scoring failed: {e}")
+            logger.error(f"Numeric candidate scoring failed: {e}")
+            return candidates
+
+    async def _score_candidates_boolean(
+        self, candidates: List[Dict[str, Any]], question: str, context: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
+        """Score candidates using deterministic boolean criteria."""
+        try:
+            assert self.boolean_engine is not None, "Boolean engine not initialized"
+
+            scored_candidates = []
+
+            # Evaluate each candidate using boolean criteria
+            for candidate in candidates:
+                result = await self.boolean_engine.evaluate_candidate(
+                    candidate, question, context
+                )
+
+                # Add boolean scoring results to candidate
+                candidate["boolean_result"] = {
+                    "overall_pass": result.overall_pass,
+                    "criteria_results": result.criteria_results,
+                    "passed_criteria": result.passed_criteria,
+                    "total_criteria": result.total_criteria,
+                    "pass_percentage": result.pass_percentage,
+                    "critical_failures": result.critical_failures,
+                    "reasoning": result.reasoning,
+                    "audit_trail": result.audit_trail,
+                }
+
+                # Set numeric score based on pass percentage for sorting
+                candidate["score"] = result.pass_percentage if result.overall_pass else 0.0
+                candidate["confidence"] = 1.0 if result.overall_pass else 0.0
+
+                scored_candidates.append(candidate)
+
+            # Sort by pass status first, then by pass percentage
+            scored_candidates.sort(
+                key=lambda x: (
+                    x["boolean_result"]["overall_pass"],
+                    x["boolean_result"]["pass_percentage"],
+                ),
+                reverse=True,
+            )
+
+            # Apply beam width limiting
+            k_beam = getattr(self.config, "k_beam", 3)
+            final_candidates = scored_candidates[:k_beam]
+
+            passing = sum(1 for c in scored_candidates if c["boolean_result"]["overall_pass"])
+            logger.info(
+                f"[BOOLEAN] Evaluated {len(scored_candidates)} candidates: "
+                f"{passing} passed, {len(scored_candidates) - passing} failed, "
+                f"keeping top {len(final_candidates)} (k_beam={k_beam})"
+            )
+
+            return final_candidates
+
+        except Exception as e:
+            logger.error(f"Boolean candidate scoring failed: {e}")
             return candidates
 
     async def _score_candidate(

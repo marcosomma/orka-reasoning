@@ -307,6 +307,7 @@ class ExecutionEngine(
                         "graphscoutagent",
                         "pathexecutornode",
                         "loopnode",
+                        "loopvalidatornode",
                     ):
                         payload["orchestrator"] = self
                         payload["run_id"] = self.run_id

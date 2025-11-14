@@ -560,33 +560,13 @@ agents:
         
         # 🔧 COMPLETELY REDESIGNED: Ultra-simple agreement moderator
         - id: agreement_moderator
-          type: local_llm
-          model: deepseek-r1:32b
+          type: loop_validator
+          llm_model: deepseek-r1:32b
           model_url: http://localhost:11434/api/generate
           provider: ollama
+          scoring_preset: moderate
+          evaluation_target: agreement_finder  # Evaluate the agreement quality
           temperature: 0.1  # Ultra-low for scoring consistency
-          prompt: |
-            TOPIC: {{ get_input() }} - Round {{ get_loop_number() }}
-            TARGET: {{ get_score_threshold() }}+ agreement to stop debate
-            
-            AGENTS:
-            Progressive: {{ safe_get_response('radical_progressive', 'No progressive response') }}
-            Conservative: {{ safe_get_response('traditional_conservative', 'No conservative response') }}
-            Realist: {{ safe_get_response('pragmatic_realist', 'No realist response') }}
-            Purist: {{ safe_get_response('ethical_purist', 'No purist response') }}
-            
-            AGREEMENT: {{ safe_get_response('agreement_finder', 'No agreement found') }}
-            
-            CRITICAL: You MUST respond in this EXACT format:
-            
-            AGREEMENT_SCORE: [number between 0.0 and 1.0]
-            ANALYSIS: [Why this score in one sentence]
-            CONTINUE: [YES or NO]
-            
-            Example:
-            AGREEMENT_SCORE: 0.7
-            ANALYSIS: Strong alignment on core points with minor details unresolved.
-            CONTINUE: NO
 
         # Single shared memory writer - captures final debate state
         - id: shared_memory_writer

@@ -1,16 +1,24 @@
 # Scoring Architecture in OrKa
 
-## Two Distinct Scoring Systems
+## Three Scoring Systems
 
-OrKa uses TWO separate scoring systems for different purposes. Understanding this distinction is critical for proper usage.
+OrKa provides THREE scoring systems for different purposes. Understanding these distinctions is critical for proper usage.
 
 ---
 
-## 1. PathScorer (Numeric Scoring)
+## 1. PathScorer with Dual-Mode Support
 
 **Location**: `orka/orchestrator/path_scoring.py`  
 **Used By**: GraphScout for path discovery  
-**Purpose**: Rank candidate paths during exploration
+**Purpose**: Rank and validate candidate paths during exploration
+
+**NEW**: PathScorer now supports BOTH numeric and boolean modes, switchable via configuration.
+
+---
+
+### 1A. PathScorer - Numeric Mode (Default)
+
+**Purpose**: Fast, weighted ranking of candidate paths
 
 ### Scoring Components
 
@@ -51,12 +59,120 @@ config = GraphScoutConfig(
 )
 ```
 
-### When to Use
+### When to Use Numeric Mode
 
 - GraphScout path discovery and ranking
 - Real-time routing decisions
 - Multi-criteria optimization
 - Dynamic workflow planning
+- When you need soft rankings with weighted criteria
+
+---
+
+### 1B. PathScorer - Boolean Mode (**NEW**)
+
+**Purpose**: Deterministic, auditable path validation with explicit pass/fail criteria
+
+### Criteria Categories
+
+Boolean mode evaluates 5 categories of criteria, each returning explicit True/False results:
+
+#### 1. Input Readiness (CRITICAL)
+- `all_required_inputs_available`: All required inputs exist in `previous_outputs`
+- `no_circular_dependencies`: Agent not already in execution chain
+- `input_types_compatible`: Data types match expected formats
+
+#### 2. Safety (CRITICAL)
+- `no_risky_capabilities_without_sandbox`: Dangerous operations have safety tags
+- `output_validation_present`: Outputs are validated before use
+- `rate_limits_configured`: API calls have rate limiting
+
+#### 3. Capability Match (IMPORTANT)
+- `capabilities_cover_question_type`: Agent can handle the question type
+- `modality_match`: Text/image/audio capabilities match question
+- `domain_overlap_sufficient`: Semantic similarity above threshold
+
+#### 4. Efficiency (NICE-TO-HAVE)
+- `path_length_optimal`: Length in optimal range (2-3 agents)
+- `cost_within_budget`: Estimated cost < budget limit
+- `latency_acceptable`: Estimated latency < timeout
+
+#### 5. Historical Performance (NICE-TO-HAVE)
+- `success_rate_above_threshold`: Historical success rate > 70%
+- `no_recent_failures`: No failures in last 5 runs
+
+### Decision Logic
+
+```python
+# All CRITICAL criteria must pass
+if not all(input_readiness) or not all(safety):
+    return FAIL
+
+# At least 80% of IMPORTANT criteria must pass
+if capability_match_percentage < 0.8:
+    return FAIL
+
+# NICE-TO-HAVE criteria don't block (unless strict_mode=True)
+return PASS
+```
+
+### Output Format
+
+```python
+{
+    "boolean_result": {
+        "overall_pass": True,
+        "criteria_results": {
+            "input_readiness": {
+                "all_required_inputs_available": True,
+                "no_circular_dependencies": True,
+                "input_types_compatible": True
+            },
+            "safety": {
+                "no_risky_capabilities_without_sandbox": True,
+                "output_validation_present": True,
+                "rate_limits_configured": True
+            },
+            # ... other categories ...
+        },
+        "passed_criteria": 13,
+        "total_criteria": 14,
+        "pass_percentage": 0.929,
+        "critical_failures": [],
+        "reasoning": "All critical and important criteria passed. Path is valid and safe.",
+        "audit_trail": "Boolean Criteria Evaluation:\n..."
+    },
+    "score": 0.929,  # For sorting
+    "confidence": 1.0
+}
+```
+
+### Configuration
+
+Enable boolean mode via `GraphScoutConfig`:
+
+```yaml
+- id: graph_scout_router
+  type: graph-scout
+  params:
+    scoring_mode: "boolean"  # Switch to deterministic mode
+    strict_mode: false        # false = only critical + important matter
+    require_critical: true    # true = all critical must pass
+    important_threshold: 0.8  # 80% of important must pass
+    include_nice_to_have: true  # true = check efficiency/history
+    min_success_rate: 0.70    # Historical success threshold
+    min_domain_overlap: 0.30  # Domain overlap threshold
+    max_acceptable_cost: 0.10 # Maximum cost in USD
+    max_acceptable_latency: 10000  # Maximum latency in ms
+```
+
+### When to Use Boolean Mode
+
+- **Compliance & Audit**: When you need to prove why paths were selected/rejected
+- **Production Safety**: When you need guaranteed safety checks
+- **Debugging**: When numeric scores are mysterious and you need clarity
+- **Regulatory Requirements**: When decisions must be explainable
+- **Testing**: When you want deterministic, repeatable outcomes
 
 ---
 
@@ -138,14 +254,15 @@ PlanValidator uses presets (strict, moderate, lenient):
 
 ## Comparison: When to Use Which
 
-| Aspect | PathScorer (Numeric) | PlanValidator (Boolean) |
-|--------|---------------------|------------------------|
-| **Purpose** | Rank & select paths | Approve/reject proposals |
-| **Output** | Continuous score 0.0-1.0 | Boolean pass/fail per criterion |
-| **Speed** | Fast (heuristics + optional LLM) | Moderate (LLM reasoning required) |
-| **Use Case** | Real-time routing | Validation before execution |
-| **Flexibility** | Weighted multi-criteria | Fixed boolean checks |
-| **Determinism** | Non-deterministic (LLM) | Deterministic (criteria-based) |
+| Aspect | PathScorer Numeric | PathScorer Boolean | PlanValidator |
+|--------|--------------------|--------------------|---------------|
+| **Purpose** | Rank paths | Validate safety | Approve proposals |
+| **Output** | Score 0.0-1.0 | Boolean + audit | Boolean + dimensions |
+| **Speed** | Fast | Very fast | Moderate |
+| **Use Case** | Routing | Safety gates | Quality assurance |
+| **Flexibility** | Weighted | Fixed criteria | Customizable presets |
+| **Determinism** | Non-deterministic | **Deterministic** | LLM-based |
+| **Audit Trail** | Score components | **Full audit** | Dimension reasoning |
 
 ---
 

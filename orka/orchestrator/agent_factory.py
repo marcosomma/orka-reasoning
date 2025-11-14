@@ -30,13 +30,13 @@ from ..agents import (
 )
 from ..memory.base_logger import BaseMemoryLogger
 from ..memory.redisstack_logger import RedisStackMemoryLogger
-from ..nodes import (
+from ..nodes import (  # path_executor_node - lazy loaded to avoid circular imports (Bug #1)
     failing_node,
     failover_node,
     fork_node,
     join_node,
     loop_node,
-    # path_executor_node - lazy loaded to avoid circular imports (Bug #1)
+    loop_validator_node,
     router_node,
 )
 from ..nodes.graph_scout_agent import GraphScoutAgent
@@ -66,6 +66,7 @@ AgentClass = Union[
     Type[join_node.JoinNode],
     Type[fork_node.ForkNode],
     Type[loop_node.LoopNode],
+    Type[loop_validator_node.LoopValidatorNode],
     # Type[path_executor_node.PathExecutorNode], - lazy loaded (Bug #1 fix)
     Type[GraphScoutAgent],
     Type[MemoryReaderNode],
@@ -90,6 +91,7 @@ AGENT_TYPES: Dict[str, AgentClass] = {
     "join": join_node.JoinNode,
     "fork": fork_node.ForkNode,
     "loop": loop_node.LoopNode,
+    "loop_validator": loop_validator_node.LoopValidatorNode,
     "path_executor": "special_handler",  # 🐛 Bug #1: Lazy loaded to avoid circular imports
     "graph-scout": GraphScoutAgent,
     "memory": "special_handler",  # This will be handled specially in init_single_agent
@@ -199,10 +201,17 @@ class AgentFactory:
                     **clean_cfg,
                 )
 
+            if agent_type == "loop_validator":
+                # LoopValidatorNode expects node_id and LLM configuration
+                return loop_validator_node.LoopValidatorNode(
+                    node_id=agent_id,
+                    **clean_cfg,
+                )
+
             if agent_type == "path_executor":
                 # 🐛 Bug #1 Fix: Lazy load PathExecutorNode to avoid circular imports
                 from ..nodes import path_executor_node
-                
+
                 # PathExecutorNode doesn't need prompt or queue
                 clean_cfg.pop("prompt", None)
                 clean_cfg.pop("queue", None)

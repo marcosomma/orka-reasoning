@@ -1,5 +1,29 @@
 # Boolean-Based Scoring System Demo
-# Demonstrates deterministic, auditable scoring with PlanValidator and LoopNode
+# Demonstrates deterministic, auditable scoring with LoopValidatorNode
+#
+# NEW: LoopValidatorNode
+# =====================
+# A specialized node that wraps LLM evaluation with robust format handling.
+# Eliminates the need for fragile prompt engineering in loops.
+#
+# Key Benefits:
+# - Built-in prompt templates (strict/moderate/lenient)
+# - Robust parsing with multiple fallback strategies
+# - Model-agnostic operation (works with any LLM)
+# - Consistent output format for LoopNode consumption
+# - No manual JSON formatting required in prompts
+#
+# When to Use LoopValidatorNode:
+# - Loop workflows requiring boolean pass/fail evaluation
+# - Scenarios where LLM output format compliance is problematic  
+# - Production systems needing reliable score extraction
+# - Workflows that need to work across different LLM models
+#
+# When to Use PlanValidatorAgent Instead:
+# - Validating complete execution plans (not loop iterations)
+# - Need weighted scoring with dimension breakdowns
+# - Require detailed validation rationale
+# - One-time validation (not iterative loops)
 
 orchestrator:
   id: boolean-scoring-demo
@@ -85,43 +109,15 @@ agents:
             {% endfor %}
             {% endif %}
         
+        # NEW: Loop Validator Node - Robust boolean evaluation with built-in parsing
         - id: boolean_evaluator
-          type: local_llm
-          model: gpt-oss:20b
+          type: loop_validator
+          llm_model: gpt-oss:20b
           model_url: http://localhost:11434/api/generate
           provider: ollama
+          scoring_preset: moderate  # strict/moderate/lenient
+          evaluation_target: improver  # Evaluate the improver's output
           temperature: 0.1
-          prompt: |
-            Evaluate the improved path using BOOLEAN criteria.
-            
-            Path: {{ get_agent_response('improver') }}
-            
-            Answer TRUE or FALSE for each criterion:
-            
-            COMPLETENESS:
-            - has_all_required_steps: [true/false]
-            - addresses_all_query_aspects: [true/false]
-            - handles_edge_cases: [true/false]
-            - includes_fallback_path: [true/false]
-            
-            EFFICIENCY:
-            - minimizes_redundant_calls: [true/false]
-            - uses_appropriate_agents: [true/false]
-            - optimizes_cost: [true/false]
-            - optimizes_latency: [true/false]
-            
-            SAFETY:
-            - validates_inputs: [true/false]
-            - handles_errors_gracefully: [true/false]
-            - has_timeout_protection: [true/false]
-            - avoids_risky_combinations: [true/false]
-            
-            COHERENCE:
-            - logical_agent_sequence: [true/false]
-            - proper_data_flow: [true/false]
-            - no_conflicting_actions: [true/false]
-            
-            Respond ONLY with JSON structure above.
 
 # Benefits of Boolean Scoring:
 # 1. DETERMINISTIC: Same booleans always produce same score

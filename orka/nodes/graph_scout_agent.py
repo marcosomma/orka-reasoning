@@ -73,12 +73,25 @@ class GraphScoutConfig:
     max_depth: int = 2
     commit_margin: float = 0.15
 
-    # Scoring weights
+    # Scoring mode selection
+    scoring_mode: str = "numeric"  # "numeric" (default) or "boolean" (deterministic)
+
+    # Scoring weights (for numeric mode)
     score_weights: Optional[Dict[str, float]] = None
+
+    # Boolean scoring configuration (for boolean mode)
+    strict_mode: bool = False  # All criteria must pass
+    require_critical: bool = True  # Critical criteria are mandatory
+    important_threshold: float = 0.8  # 80% of important criteria must pass
+    include_nice_to_have: bool = True  # Include efficiency/history checks
+    min_success_rate: float = 0.70  # Historical success rate threshold
+    min_domain_overlap: float = 0.30  # Minimum domain overlap for capability match
 
     # Budget constraints
     cost_budget_tokens: int = 800
     latency_budget_ms: int = 1200
+    max_acceptable_cost: float = 0.10  # Maximum acceptable cost (boolean mode)
+    max_acceptable_latency: int = 10000  # Maximum acceptable latency in ms (boolean mode)
 
     # Safety settings
     safety_profile: str = "default"
@@ -109,7 +122,8 @@ class GraphScoutConfig:
 
     # Safety thresholds
     risky_capabilities: Optional[Set[str]] = None  # Auto-initialized in post_init
-    safety_markers: Optional[Set[str]] = None  # Auto-initialized in post_init
+    safety_markers: Optional[Set[str]] = None  # Auto-initialized in post_init (backward compat)
+    required_safety_markers: Optional[Set[str]] = None  # Auto-initialized in post_init
     safe_default_score: float = 0.70  # Unknown safety default
 
     def __post_init__(self) -> None:
@@ -125,9 +139,16 @@ class GraphScoutConfig:
 
         # Initialize safety sets if not provided
         if self.risky_capabilities is None:
-            self.risky_capabilities = {"file_write", "code_execution", "external_api"}
+            self.risky_capabilities = {
+                "file_write",
+                "code_execution",
+                "external_api",
+                "database_write",
+            }
         if self.safety_markers is None:
             self.safety_markers = {"sandboxed", "read_only", "validated"}
+        if self.required_safety_markers is None:
+            self.required_safety_markers = self.safety_markers  # Default to same set
 
 
 @dataclass
@@ -211,9 +232,18 @@ class GraphScoutAgent(BaseNode):
             k_beam=params.get("k_beam", 3),
             max_depth=params.get("max_depth", 2),
             commit_margin=params.get("commit_margin", 0.15),
+            scoring_mode=params.get("scoring_mode", "numeric"),
             score_weights=params.get("score_weights"),
+            strict_mode=params.get("strict_mode", False),
+            require_critical=params.get("require_critical", True),
+            important_threshold=params.get("important_threshold", 0.8),
+            include_nice_to_have=params.get("include_nice_to_have", True),
+            min_success_rate=params.get("min_success_rate", 0.70),
+            min_domain_overlap=params.get("min_domain_overlap", 0.30),
             cost_budget_tokens=params.get("cost_budget_tokens", 800),
             latency_budget_ms=params.get("latency_budget_ms", 1200),
+            max_acceptable_cost=params.get("max_acceptable_cost", 0.10),
+            max_acceptable_latency=params.get("max_acceptable_latency", 10000),
             safety_profile=params.get("safety_profile", "default"),
             safety_threshold=params.get("safety_threshold", 0.2),
             max_preview_tokens=params.get("max_preview_tokens", 192),
