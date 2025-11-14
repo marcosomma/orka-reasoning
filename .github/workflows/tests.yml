@@ -1,0 +1,60 @@
+name: Unit Tests
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master ]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install pytest pytest-cov pytest-asyncio
+    
+    - name: Run unit tests with coverage
+      run: |
+        pytest tests/unit/ --cov=orka --cov-report=xml --cov-report=term-missing --cov-fail-under=100 -v
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        override_commit: ${{ github.sha }}
+        override_branch: ${{ github.ref_name }}
+        commit_parent: true
+        slug: marcosomma/orka-reasoning
+        verbose: true
+        working-directory: .
+      if: always()  # Upload coverage even if tests fail
+    
+    - name: Archive test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results
+        path: |
+          coverage.xml
+          .coverage
+      if: always()
