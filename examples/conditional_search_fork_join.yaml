@@ -35,8 +35,8 @@ agents:
   - id: fork_parallel_checks
     type: fork
     targets:
-      - topic_validity_check
-      - summary_category_check
+      - [topic_validity_check]  # Fixed: Each branch must be wrapped in a list
+      - [summary_category_check]
     depends_on:
       - search_required
   - id: topic_validity_check

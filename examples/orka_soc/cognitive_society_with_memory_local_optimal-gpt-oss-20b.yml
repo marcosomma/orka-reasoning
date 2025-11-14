@@ -408,10 +408,13 @@ agents:
             CURRENT AGREEMENT: {{ safe_get_response('agreement_finder', 'No agreement') | truncate(150) }}
             SYNTHESIS: {{ safe_get_response('synthesis_attempt', 'No synthesis') | truncate(150) }}
             
-            Rate agent agreement (0.0-1.0). Start with "AGREEMENT_SCORE:"
+            CRITICAL: You MUST respond EXACTLY in this format with NO additional text:
             
-            AGREEMENT_SCORE: [your score 0.0-1.0]
-            CONTINUE: [YES if below {{ get_score_threshold() }}, NO if {{ get_score_threshold() }}+]
+            AGREEMENT_SCORE: [number between 0.0 and 1.0]
+            CONTINUE: [YES or NO]
+            
+            Example: AGREEMENT_SCORE: 0.7
+            CONTINUE: NO
 
         # 🔧 OPTIMIZED: Minimal memory writer
         - id: shared_memory_writer

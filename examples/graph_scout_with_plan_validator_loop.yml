@@ -17,13 +17,15 @@ agents:
   # Main validation loop with real GraphScout
   - id: validated_routing_loop
     type: loop
-    max_loops: 4
-    score_threshold: 0.5
+    max_loops: 2
+    score_threshold: 0.15
     persist_across_runs: false  # Prevent accumulation across runs
+    fallback_score: 0.10  # Score to use when validation agent times out
+    timeout_score: 0.08  # Score to use when validation explicitly times out
     
     # Boolean scoring configuration
     scoring:
-      preset: moderate
+      preset: lenient
       custom_weights:
         completeness.has_all_required_steps: 0.22
         efficiency.uses_appropriate_agents: 0.12
@@ -155,7 +157,8 @@ agents:
           model_url: http://localhost:11434/api/generate
           provider: ollama
           temperature: 0.2
-          scoring_preset: moderate
+          timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
+          scoring_preset: lenient
           custom_weights:
             completeness.has_all_required_steps: 0.22
             efficiency.uses_appropriate_agents: 0.12

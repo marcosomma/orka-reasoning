@@ -36,8 +36,8 @@ agents:
   - id: fork_3
     type: fork
     targets:
-      - openai-binary_4
-      - openai-answer_7
+      - [openai-binary_4]  # Fixed: Each branch must be wrapped in a list
+      - [openai-answer_7]
     depends_on:
       - openai-answer_2
   - id: openai-binary_4

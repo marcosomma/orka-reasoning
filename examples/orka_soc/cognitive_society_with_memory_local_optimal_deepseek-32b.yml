@@ -17,7 +17,7 @@ agents:
   - id: cognitive_debate_loop
     type: loop
     max_loops: 3  # 🔧 RESTORED: Back to reasonable complexity
-    score_threshold: 0.95  # Aligned with other society workflows
+    score_threshold: 0.35  # Lowered from 0.95 to realistic convergence threshold for deepseek-r1:32b
     
     # 🔧 NEW: High-priority agents for score extraction (checked first)
     high_priority_agents:
@@ -577,12 +577,16 @@ agents:
             
             AGREEMENT: {{ safe_get_response('agreement_finder', 'No agreement found') }}
             
-            TASK: Rate agent agreement (0.0-1.0). Must start with "AGREEMENT_SCORE:"
+            CRITICAL: You MUST respond in this EXACT format:
             
-            FORMAT:
-            AGREEMENT_SCORE: [your score 0.0-1.0]
-            ANALYSIS: [Why this score]
-            CONTINUE: [YES if below {{ get_score_threshold() }}, NO if {{ get_score_threshold() }}+]
+            AGREEMENT_SCORE: [number between 0.0 and 1.0]
+            ANALYSIS: [Why this score in one sentence]
+            CONTINUE: [YES or NO]
+            
+            Example:
+            AGREEMENT_SCORE: 0.7
+            ANALYSIS: Strong alignment on core points with minor details unresolved.
+            CONTINUE: NO
 
         # Single shared memory writer - captures final debate state
         - id: shared_memory_writer

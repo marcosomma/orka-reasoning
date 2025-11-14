@@ -25,6 +25,8 @@ agents:
     max_loops: 3
     score_threshold: 0.05  # Path must score 5% to proceed (lenient threshold)
     persist_across_runs: false  # Prevent accumulation across runs
+    fallback_score: 0.03  # Score to use when validation agent times out
+    timeout_score: 0.02  # Score to use when validation explicitly times out
     
     # Boolean scoring for deterministic validation
     scoring:
@@ -113,6 +115,7 @@ agents:
           model_url: http://localhost:11434/api/generate
           provider: ollama
           temperature: 0.2
+          timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
           
           # Boolean scoring configuration (lenient for shortlist proposals)
           scoring_preset: lenient

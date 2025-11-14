@@ -27,9 +27,11 @@ agents:
   # PHASE 1: Validate the path with a loop
   - id: validation_loop
     type: loop
-    max_loops: 3  # Force stop after 3 iterations
+    max_loops: 2  # Force stop after 2 iterations
     persist_across_runs: false  # Prevent infinite accumulation across workflow runs
-    score_threshold: 0.5  # Exit if score reaches this
+    score_threshold: 0.15  # Exit if score reaches this
+    fallback_score: 0.10  # Score to use when validation agent times out
+    timeout_score: 0.08  # Score to use when validation explicitly times out
     # No exit_condition - rely on max_loops for guaranteed termination
     
     internal_workflow:
@@ -88,7 +90,8 @@ agents:
           llm_provider: "ollama"
           llm_url: "http://localhost:11434/api/generate"
           temperature: 0.2
-          scoring_preset: "moderate"
+          timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
+          scoring_preset: "lenient"
           custom_weights:
             completeness.has_all_required_steps: 0.15
             efficiency.uses_appropriate_agents: 0.15

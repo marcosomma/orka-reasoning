@@ -520,12 +520,13 @@ class ExecutionEngine(
                                     # We distinguish patterns by checking if a validator is next in queue.
                                     # This prevents premature execution before validation completes.
                                     # ========================================================================
-                                    
+
                                     has_validator = any(
-                                        "validator" in agent_id.lower() or "path_validator" in agent_id.lower()
+                                        "validator" in agent_id.lower()
+                                        or "path_validator" in agent_id.lower()
                                         for agent_id in remaining_queue
                                     )
-                                    
+
                                     if has_validator:
                                         # VALIDATION PATTERN DETECTED
                                         # GraphScout proposal stored in agent result, validator runs next
@@ -543,7 +544,9 @@ class ExecutionEngine(
                                         shortlist = graphscout_decision.get("target", [])
                                         if shortlist:
                                             # Apply memory agent routing logic
-                                            agent_sequence = self._apply_memory_routing_logic(shortlist)
+                                            agent_sequence = self._apply_memory_routing_logic(
+                                                shortlist
+                                            )
 
                                             # 🔍 CRITICAL FIX: Append remaining queue to preserve sequential workflow
                                             # GraphScout provides routing suggestions, but shouldn't override the workflow structure
@@ -961,6 +964,60 @@ class ExecutionEngine(
             logger.error(f"Failed to execute agent '{agent_id}': {e}")
             raise
 
+    async def _run_branch_with_retry(
+        self: "ExecutionEngine",
+        branch_agents: List[str],
+        input_data: Any,
+        previous_outputs: Dict[str, Any],
+        max_retries: int = 2,
+        retry_delay: float = 1.0,
+    ) -> Dict[str, Any]:
+        """
+        Run a branch with exponential backoff retry logic.
+
+        Args:
+            branch_agents: List of agent IDs to execute sequentially
+            input_data: Input data for the branch
+            previous_outputs: Context from previous agents
+            max_retries: Maximum number of retry attempts
+            retry_delay: Initial delay between retries (exponential backoff)
+
+        Returns:
+            Branch execution results
+
+        Raises:
+            Exception: If all retry attempts fail
+        """
+        last_exception = None
+
+        for attempt in range(max_retries + 1):
+            try:
+                result = await self._run_branch_async(branch_agents, input_data, previous_outputs)
+
+                if attempt > 0:
+                    logger.info(f"Branch {branch_agents} succeeded on retry {attempt}")
+
+                return result
+
+            except Exception as e:
+                last_exception = e
+
+                if attempt < max_retries:
+                    delay = retry_delay * (2**attempt)  # Exponential backoff
+                    logger.warning(
+                        f"Branch {branch_agents} failed (attempt {attempt + 1}/{max_retries + 1}): "
+                        f"{type(e).__name__}: {e}. Retrying in {delay}s..."
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    logger.error(
+                        f"Branch {branch_agents} failed after {max_retries + 1} attempts: "
+                        f"{type(e).__name__}: {e}"
+                    )
+
+        # All retries exhausted
+        raise last_exception  # type: ignore
+
     async def _run_branch_async(
         self: "ExecutionEngine",
         branch_agents: List[str],
@@ -1018,10 +1075,16 @@ class ExecutionEngine(
 
         logger.debug(f"- Executing {len(branches)} branches: {branches}")
 
-        # Execute branches in parallel
+        # Execute branches in parallel with retry logic
         try:
             branch_tasks = [
-                self._run_branch_async(branch, input_data, enhanced_previous_outputs.copy())
+                self._run_branch_with_retry(
+                    branch,
+                    input_data,
+                    enhanced_previous_outputs.copy(),
+                    max_retries=2,  # Configurable via orchestrator config
+                    retry_delay=1.0,
+                )
                 for branch in branches
             ]
 
@@ -1037,13 +1100,42 @@ class ExecutionEngine(
 
             for i, branch_result in enumerate(branch_results):
                 if isinstance(branch_result, BaseException):
-                    logger.error(f"Branch {i} failed: {branch_result}")
-                    # Create error log entry
+                    # ENHANCED: Capture full exception details
+                    error_type = type(branch_result).__name__
+                    error_msg = str(branch_result)
+                    error_traceback = None
+
+                    if hasattr(branch_result, "__traceback__"):
+                        import traceback
+
+                        error_traceback = "".join(
+                            traceback.format_exception(
+                                type(branch_result), branch_result, branch_result.__traceback__
+                            )
+                        )
+
+                    # Log with full context
+                    logger.error(
+                        f"Branch {i} failed with {error_type}: {error_msg}\n"
+                        f"Branch agents: {branches[i]}\n"
+                        f"Fork group: {fork_group_id}"
+                    )
+
+                    if error_traceback:
+                        logger.debug(f"Full traceback:\n{error_traceback}")
+
+                    # Create comprehensive error log entry
                     error_log = {
                         "agent_id": f"branch_{i}_error",
                         "event_type": "BranchError",
                         "timestamp": datetime.now(UTC).isoformat(),
-                        "payload": {"error": str(branch_result)},
+                        "payload": {
+                            "error": error_msg,
+                            "error_type": error_type,
+                            "error_traceback": error_traceback,
+                            "branch_agents": branches[i],
+                            "fork_group_id": fork_group_id,
+                        },
                         "step": f"{self.step_index}[{i}]",
                         "run_id": self.run_id,
                     }
@@ -1111,6 +1203,36 @@ class ExecutionEngine(
 
                     # Update context for next agents
                     updated_previous_outputs[agent_id] = result
+
+            # Check if we have any successful branches
+            successful_branches = [r for r in branch_results if not isinstance(r, BaseException)]
+
+            if not successful_branches and len(branch_results) > 0:
+                # All branches failed - create fallback result
+                logger.error(
+                    f"All {len(branch_results)} branches failed in fork group {fork_group_id}. "
+                    "Creating fallback empty result."
+                )
+
+                # Return minimal valid structure so workflow can continue
+                fallback_result = {
+                    "status": "partial_failure",
+                    "successful_branches": 0,
+                    "total_branches": len(branch_results),
+                    "error": "All parallel branches failed",
+                }
+
+                # Add to result logs
+                result_logs.append(
+                    {
+                        "agent_id": f"{fork_group_id}_fallback",
+                        "event_type": "ForkGroupFallback",
+                        "timestamp": datetime.now(UTC).isoformat(),
+                        "payload": fallback_result,
+                        "step": self.step_index,
+                        "run_id": self.run_id,
+                    }
+                )
 
             logger.info(f"Parallel execution completed: {len(result_logs)} results")
             return result_logs
