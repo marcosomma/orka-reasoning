@@ -162,7 +162,16 @@ agents:
             coherence.logical_agent_sequence: 0.05
 
   # ===== EXECUTION AGENTS (Top Level) =====
-  # These agents are available for GraphScout to discover and PathExecutor to execute
+  # CRITICAL: These agents MUST be at top-level, NOT inside internal_workflow
+  # - GraphScout discovers agents from orchestrator.agents (global registry)
+  # - PathExecutor can only execute agents in the global registry
+  # - Agents inside internal_workflow are scoped locally and NOT accessible
+  # 
+  # These agents are NOT in the orchestrator sequence, so they won't auto-execute.
+  # They are only discovered by GraphScout and executed by PathExecutor when
+  # included in the validated path.
+  #
+  # See docs/AGENT_SCOPING.md for detailed explanation.
   
   # Supporting agents for GraphScout to route to
   - id: search_agent

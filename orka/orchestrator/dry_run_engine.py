@@ -21,6 +21,8 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
+from .llm_response_schemas import validate_path_evaluation, validate_path_validation
+
 logger = logging.getLogger(__name__)
 
 
@@ -52,6 +54,110 @@ class ValidationResult:
     risk_assessment: str
 
 
+class DeterministicPathEvaluator:
+    """Fallback evaluator using heuristics when LLM fails."""
+
+    def __init__(self, config: Any):
+        """Initialize deterministic evaluator with config."""
+        self.config = config
+        logger.info("DeterministicPathEvaluator initialized for LLM fallback")
+
+    def evaluate_candidates(
+        self, candidates: List[Dict], question: str, context: Dict
+    ) -> List[Dict]:
+        """Evaluate candidates using rule-based heuristics."""
+        evaluated = []
+
+        for candidate in candidates:
+            node_id = candidate["node_id"]
+            path = candidate.get("path", [node_id])
+
+            # Heuristic scoring
+            relevance = self._score_relevance(node_id, question)
+            confidence = self._score_confidence(path, context)
+            efficiency = self._score_efficiency(path)
+
+            candidate["llm_evaluation"] = {
+                "relevance_score": relevance,
+                "confidence": confidence,
+                "reasoning": f"Heuristic evaluation: {node_id} matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": True,
+            }
+
+            candidate["llm_validation"] = {
+                "is_valid": relevance > 0.5,
+                "confidence": confidence,
+                "efficiency_score": efficiency,
+                "validation_reasoning": f"Heuristic validation based on path structure (length: {len(path)})",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": True,
+            }
+
+            evaluated.append(candidate)
+
+        logger.info(f"DeterministicPathEvaluator evaluated {len(evaluated)} candidates")
+        return evaluated
+
+    def _score_relevance(self, node_id: str, question: str) -> float:
+        """Score relevance based on keyword matching."""
+        node_id_lower = node_id.lower()
+        question_lower = question.lower()
+
+        # Base score
+        score = 0.5
+
+        # Keyword matching
+        keywords = {
+            "search": ["search", "find", "look", "query"],
+            "memory": ["remember", "recall", "history", "past"],
+            "analysis": ["analyze", "evaluate", "assess", "examine"],
+            "llm": ["generate", "create", "write", "answer"],
+        }
+
+        for agent_type, question_keywords in keywords.items():
+            if agent_type in node_id_lower:
+                if any(kw in question_lower for kw in question_keywords):
+                    score += 0.3
+                    break
+
+        return min(1.0, score)
+
+    def _score_confidence(self, path: List[str], context: Dict) -> float:
+        """Score confidence based on path structure."""
+        # Optimal path length gives higher confidence
+        length = len(path)
+
+        if 2 <= length <= 3:
+            return 0.8  # Optimal length
+        elif length == 1:
+            return 0.6  # Single agent - might be incomplete
+        elif length == 4:
+            return 0.7  # Slightly longer, still acceptable
+        else:
+            return max(0.4, 0.7 - (length - 4) * 0.1)
+
+    def _score_efficiency(self, path: List[str]) -> float:
+        """Score efficiency based on path length."""
+        length = len(path)
+
+        # Shorter paths are more efficient
+        if length <= 2:
+            return 0.9
+        elif length == 3:
+            return 0.8
+        elif length == 4:
+            return 0.6
+        else:
+            return max(0.3, 0.6 - (length - 4) * 0.1)
+
+
 class SmartPathEvaluator:
     """
     LLM-powered intelligent path evaluation system.
@@ -64,9 +170,12 @@ class SmartPathEvaluator:
     """
 
     def __init__(self, config: Any):
-        """Initialize smart evaluator with LLM configuration."""
+        """Initialize smart evaluator with LLM configuration and deterministic fallback."""
         self.config = config
         self.max_preview_tokens = config.max_preview_tokens
+
+        # Initialize deterministic fallback evaluator
+        self.deterministic_evaluator = DeterministicPathEvaluator(config)
 
         # LLM configuration for two-stage evaluation
         self.evaluation_llm_config = {
@@ -87,7 +196,9 @@ class SmartPathEvaluator:
             "temperature": 0.0,  # Deterministic validation
         }
 
-        logger.debug("SmartPathEvaluator initialized with LLM-powered evaluation")
+        logger.debug(
+            "SmartPathEvaluator initialized with LLM-powered evaluation and deterministic fallback"
+        )
 
     async def simulate_candidates(
         self,
@@ -97,7 +208,7 @@ class SmartPathEvaluator:
         orchestrator: Any,
     ) -> List[Dict[str, Any]]:
         """
-        Evaluate candidates using LLM reasoning based on real agent information.
+        Evaluate candidates using LLM reasoning with deterministic fallback.
 
         Args:
             candidates: List of candidate paths
@@ -106,8 +217,13 @@ class SmartPathEvaluator:
             orchestrator: Orchestrator instance
 
         Returns:
-            Candidates with LLM evaluation results
+            Candidates with evaluation results (LLM or deterministic)
         """
+        # Check if LLM evaluation is disabled
+        if not getattr(self.config, "llm_evaluation_enabled", True):
+            logger.info("LLM evaluation disabled, using deterministic evaluator")
+            return self.deterministic_evaluator.evaluate_candidates(candidates, question, context)
+
         try:
             # Extract all available agent information
             available_agents = await self._extract_all_agent_info(orchestrator)
@@ -130,8 +246,20 @@ class SmartPathEvaluator:
             )
             return evaluated_candidates
 
+        except (ValueError, json.JSONDecodeError, KeyError) as e:
+            logger.error(f"LLM evaluation failed: {e}")
+
+            # Check if fallback to heuristics is enabled
+            if getattr(self.config, "fallback_to_heuristics", True):
+                logger.warning("Falling back to deterministic evaluator")
+                return self.deterministic_evaluator.evaluate_candidates(
+                    candidates, question, context
+                )
+            else:
+                logger.critical("LLM evaluation failed and fallback disabled")
+                raise
         except Exception as e:
-            logger.error(f"Smart evaluation failed, falling back to heuristics: {e}")
+            logger.error(f"Smart evaluation failed with unexpected error: {e}")
             # Fallback to basic heuristic evaluation
             return await self._fallback_heuristic_evaluation(candidates, question, context)
 
@@ -1081,15 +1209,16 @@ IMPORTANT: Make each evaluation UNIQUE and SPECIFIC to the path and question typ
             }
 
     def _parse_evaluation_response(self, response: str, node_id: str) -> PathEvaluation:
-        """Parse LLM evaluation response into structured format."""
+        """Parse and validate LLM evaluation response into structured format."""
         try:
             data = json.loads(response)
 
-            # Validate required fields exist and are not None
-            required_fields = ["relevance_score", "confidence", "reasoning"]
-            for field in required_fields:
-                if field not in data or data[field] is None:
-                    raise ValueError(f"Missing or null required field: {field}")
+            # Validate against schema
+            is_valid, error_msg = validate_path_evaluation(data)
+            if not is_valid:
+                logger.warning(f"Evaluation response failed schema validation: {error_msg}")
+                logger.debug(f"Invalid response: {data}")
+                raise ValueError(f"Schema validation failed: {error_msg}")
 
             return PathEvaluation(
                 node_id=node_id,
@@ -1104,14 +1233,24 @@ IMPORTANT: Make each evaluation UNIQUE and SPECIFIC to the path and question typ
                 efficiency_rating=str(data.get("efficiency_rating", "medium")),
             )
 
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON in evaluation response: {e}")
+            return self._create_fallback_evaluation(node_id)
         except Exception as e:
             logger.error(f"Failed to parse evaluation response: {e}")
             return self._create_fallback_evaluation(node_id)
 
     def _parse_validation_response(self, response: str) -> ValidationResult:
-        """Parse LLM validation response into structured format."""
+        """Parse and validate LLM validation response into structured format."""
         try:
             data = json.loads(response)
+
+            # Validate against schema
+            is_valid, error_msg = validate_path_validation(data)
+            if not is_valid:
+                logger.warning(f"Validation response failed schema validation: {error_msg}")
+                logger.debug(f"Invalid response: {data}")
+                raise ValueError(f"Schema validation failed: {error_msg}")
 
             return ValidationResult(
                 is_valid=bool(data.get("is_valid", True)),
@@ -1124,6 +1263,9 @@ IMPORTANT: Make each evaluation UNIQUE and SPECIFIC to the path and question typ
                 risk_assessment=str(data.get("risk_assessment", "medium")),
             )
 
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON in validation response: {e}")
+            return self._create_fallback_validation()
         except Exception as e:
             logger.error(f"Failed to parse validation response: {e}")
             return self._create_fallback_validation()

@@ -499,23 +499,47 @@ class ExecutionEngine(
                                         )
                                         continue
                                 elif decision_type == "shortlist":
-                                    # Check if there's a validator in the remaining queue
-                                    # If yes, DON'T auto-execute - let validator score the proposal first
+                                    # ========================================================================
+                                    # CRITICAL: GraphScout Shortlist Handling - Validation vs Execution
+                                    # ========================================================================
+                                    # GraphScout returns "shortlist" decision type in TWO distinct scenarios:
+                                    #
+                                    # 1. VALIDATION PATTERN (Propose → Validate → Execute):
+                                    #    - GraphScout proposes a path for validator to score
+                                    #    - Validator (PlanValidator) runs next in queue
+                                    #    - DO NOT auto-execute the shortlist
+                                    #    - Let validator score the proposal first
+                                    #    - PathExecutor executes AFTER validation passes
+                                    #
+                                    # 2. DIRECT EXECUTION PATTERN (Propose → Execute):
+                                    #    - GraphScout makes final routing decision
+                                    #    - No validator in remaining queue
+                                    #    - DO auto-execute the shortlist immediately
+                                    #    - Legacy behavior for direct GraphScout routing
+                                    #
+                                    # We distinguish patterns by checking if a validator is next in queue.
+                                    # This prevents premature execution before validation completes.
+                                    # ========================================================================
+                                    
                                     has_validator = any(
                                         "validator" in agent_id.lower() or "path_validator" in agent_id.lower()
                                         for agent_id in remaining_queue
                                     )
                                     
                                     if has_validator:
-                                        # Validation loop detected: GraphScout proposes, validator scores
-                                        # DON'T auto-execute - just store the proposal and continue to validator
+                                        # VALIDATION PATTERN DETECTED
+                                        # GraphScout proposal stored in agent result, validator runs next
+                                        # The validator will access the proposal via previous_outputs
+                                        # and score it using boolean criteria or numeric scoring
                                         logger.info(
                                             f"GraphScout returned shortlist for VALIDATION (not execution). "
                                             f"Validator will score this proposal: {remaining_queue[0] if remaining_queue else 'unknown'}"
                                         )
-                                        # Continue normal flow - validator runs next
+                                        # Continue normal flow - validator runs next in sequence
                                     else:
-                                        # No validator detected: auto-execute the shortlist (legacy behavior)
+                                        # DIRECT EXECUTION PATTERN DETECTED
+                                        # No validator found - this is a direct routing decision
+                                        # Auto-execute the shortlist as the final path
                                         shortlist = graphscout_decision.get("target", [])
                                         if shortlist:
                                             # Apply memory agent routing logic
