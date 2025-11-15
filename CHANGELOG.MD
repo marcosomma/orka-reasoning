@@ -2,22 +2,35 @@
 
 ---
 ## [0.9.6] · 2025-11-15 🧠
-Orka v0.9.6 – Pre-Production Release Candidate
+OrKa v0.9.6 – Advanced beta / pre-production
 
-**Major improvements:**
-- Major refactor for modularity, type discipline, error handling, traceability, and logic clarity.
-- Full unit/component test coverage; tests now use targeted mocking for true isolation.
-- Deterministic, weighted multi-criteria scoring for agentic graph workflows.
-- Graceful fallback on LLM/agent errors, strong reliability under failure modes.
-- Performance and memory benchmark suites, plus comprehensive example/FAQ coverage.
-- Docs and CHANGELOGs are now tightly aligned with actual code structure and capability.
+### Summary
+This release collects a set of substantial refactors and feature work focused on reliability, modularity and testability. The `deterministic_scoring_new` branch refactors major components (scoring, LLM evaluation, graph introspection, decision engine and loop nodes) into clearer, single-responsibility modules and introduces a deterministic, weighted multi-criteria scoring pipeline for agent path evaluation.
 
-**Known caveats (roadmap to 1.0.0):**
-- Some scoring heuristics and validation checks remain as TODOs, always returning neutral/optimistic values.
-- Boolean criteria validation and an audit trail of “which criteria triggered block/admit” are not yet implemented.
-- PathExecutor/true shortlist execution is still unimplemented (though planned in design/docs).
-- Some LLM result handling could be further hardened for unexpected output or schema drift.
-- No full E2E or black-box integration with a stubbed LLM/memory—current tests are near, but not at, production integration level.
+### Added
+- Deterministic multi-criteria scoring pipeline for agent path evaluation (LLM signal, heuristics, priors, cost, latency) with traceable breakdowns and configurable weights.
+- Modularized core components: `GraphScoutAgent`, `PathScorer`, `DecisionEngine` and `SmartPathEvaluator` are now separate modules with explicit configuration and initialization paths.
+
+### Enhanced
+- Error handling and resilience across initialization, scoring, LLM responses and orchestration paths (broader structured try/except coverage and improved logging).
+- Testability: unit and component tests exercise core algorithmic logic (scoring, graph introspection, loop behaviour); external dependencies (LLMs, Redis) are targeted by mocks to keep tests deterministic.
+
+### Fixed / Improved
+- Improved initialization and configuration paths for the refactored components to reduce coupling and make extension easier.
+- Logging improvements to surface score components and decision rationale for auditing and debugging.
+
+### Test status and readiness
+- Reported aggregated coverage is approximately 74% for this release candidate. The test suite covers core algorithmic components and provides regression protection for the main refactor points.
+- Integration and performance tests exist (often using mocks for external services). These validate system wiring and scalability patterns but do not yet include many un-mocked end-to-end runs against live LLMs and a real memory backend.
+
+### Known gaps and recommended next steps before 1.0.0
+- End-to-end validation: add a small set of reproducible E2E tests that run against deterministic stubs or lightweight local services (local LLM stubs, a Redis test instance) to increase confidence in real deployments.
+- Priors and domain-specific scoring: several priors and advanced safety heuristics are planned but not yet implemented; these remain TODOs to improve scoring fidelity for domain-specific workloads.
+- PathExecutor shortlist semantics: validate a few edge cases around shortlist/commit semantics with production-like scenarios.
+- Harden LLM schema handling: strengthen parsing and schema validation for unexpected or malformed LLM outputs.
+
+### Conclusions
+This branch represents a meaningful improvement over `master` in structure, testability and reliability. It is suitable to publish as an advanced beta / pre-production release (v0.9.6) for pilot deployments and research integration. The remaining work to reach a stable v1.0.0 is focused, measurable and primarily centered on a small set of E2E validations, priors/safety additions and a few production-grade edge cases.
 ---
 ## [0.9.5] · 2025-10-26 🧠
 ### Added
