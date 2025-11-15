@@ -335,44 +335,39 @@ def sanitize_for_json(obj: Any) -> Any:
 # API endpoint at /api/run
 @app.post("/api/run")
 async def run_execution(request: Request):
-    data = await request.json()
-    logger.info("\n========== [DEBUG] Incoming POST /api/run ==========")
-    print(data)
-
-    input_text = data.get("input")
-    yaml_config = data.get("yaml_config")
-
-    logger.info("\n========== [DEBUG] YAML Config String ==========")
-    logger.info(yaml_config)
-
-    # Create a temporary file path with UTF-8 encoding
-    tmp_fd, tmp_path = tempfile.mkstemp(suffix=".yml")
-    os.close(tmp_fd)  # Close the file descriptor
-
-    # Write with explicit UTF-8 encoding
-    with open(tmp_path, "w", encoding="utf-8") as tmp:
-        tmp.write(yaml_config)
-
-    logger.info("\n========== [DEBUG] Instantiating Orchestrator ==========")
-    orchestrator = Orchestrator(tmp_path)
-    logger.info(f"Orchestrator: {orchestrator}")
-
-    logger.info("\n========== [DEBUG] Running Orchestrator ==========")
-    result = await orchestrator.run(input_text, return_logs=True)
-
-    # Clean up the temporary file
+    tmp_path = None
     try:
-        os.remove(tmp_path)
-    except Exception:
-        logger.info(f"Warning: Failed to remove temporary file {tmp_path}")
+        data = await request.json()
+        logger.info("\n========== [DEBUG] Incoming POST /api/run ==========")
+        print(data)
 
-    logger.info("\n========== [DEBUG] Orchestrator Result ==========")
-    print(result)
+        input_text = data.get("input")
+        yaml_config = data.get("yaml_config")
 
-    # Sanitize the result data for JSON serialization
-    sanitized_result = sanitize_for_json(result)
+        logger.info("\n========== [DEBUG] YAML Config String ==========")
+        logger.info(yaml_config)
 
-    try:
+        # Create a temporary file path with UTF-8 encoding
+        tmp_fd, tmp_path = tempfile.mkstemp(suffix=".yml")
+        os.close(tmp_fd)  # Close the file descriptor
+
+        # Write with explicit UTF-8 encoding
+        with open(tmp_path, "w", encoding="utf-8") as tmp:
+            tmp.write(yaml_config)
+
+        logger.info("\n========== [DEBUG] Instantiating Orchestrator ==========")
+        orchestrator = Orchestrator(tmp_path)
+        logger.info(f"Orchestrator: {orchestrator}")
+
+        logger.info("\n========== [DEBUG] Running Orchestrator ==========")
+        result = await orchestrator.run(input_text, return_logs=True)
+
+        logger.info("\n========== [DEBUG] Orchestrator Result ==========")
+        print(result)
+
+        # Sanitize the result data for JSON serialization
+        sanitized_result = sanitize_for_json(result)
+
         return JSONResponse(
             content={
                 "input": input_text,
@@ -385,15 +380,25 @@ async def run_execution(request: Request):
         # Fallback response with minimal data
         return JSONResponse(
             content={
-                "input": input_text,
+                "input": data.get("input") if 'data' in locals() else 'N/A',
                 "error": f"Error creating response: {e!s}",
                 "summary": "Execution completed but response contains non-serializable data",
             },
             status_code=500,
         )
+    finally:
+        # Clean up the temporary file
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except Exception as e:
+                logger.warning(f"Warning: Failed to remove temporary file {tmp_path}: {e!s}")
 
 
-if __name__ == "__main__":
+def main():
     # Get port from environment variable, default to 8000
     port = int(os.environ.get("ORKA_PORT", 8001))  # Default to 8001 to avoid conflicts
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+if __name__ == "__main__":
+    main()

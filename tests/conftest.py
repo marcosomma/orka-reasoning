@@ -1,14 +1,151 @@
+import sys
+from types import ModuleType
+from unittest.mock import MagicMock
+
+
+# Minimal test-time shim for redis to avoid network/ConnectionPool side-effects.
+def _ensure_redis_shim():
+    if "redis" in sys.modules:
+        return
+    redis_mod = ModuleType("redis")
+    # Provide classes/attrs used in production imports
+    class RedisShim:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def ping(self):
+            return True
+
+        def hset(self, *args, **kwargs):
+            return None
+
+        def expire(self, *args, **kwargs):
+            return None
+
+        def disconnect(self):
+            return None
+
+    class ConnectionPoolShim:
+        def __init__(self, *args, **kwargs):
+            # mimic attributes checked by tests
+            self.max_connections = kwargs.get("max_connections", 100)
+            self._created_connections = 0
+            self._available_connections = []
+            self._in_use_connections = []
+
+        @classmethod
+        def from_url(cls, *args, **kwargs):
+            return cls(*args, **kwargs)
+
+    redis_mod.Redis = RedisShim
+    redis_mod.ConnectionPool = ConnectionPoolShim
+    # Common exceptions referenced
+    class RedisError(Exception):
+        pass
+
+    redis_mod.TimeoutError = RedisError
+    redis_mod.ConnectionError = RedisError
+    # Provide a minimal `redis.asyncio` module used by some fixtures
+    try:
+        import types as _types
+        asyncio_mod = _types.ModuleType("redis.asyncio")
+
+        class AsyncRedisShim(RedisShim):
+            async def ping(self):
+                return True
+
+        asyncio_mod.Redis = AsyncRedisShim
+        asyncio_mod.ConnectionPool = ConnectionPoolShim
+        redis_mod.asyncio = asyncio_mod
+    except Exception:
+        # best-effort; not critical
+        pass
+
+        # Also provide submodules expected by production imports (e.g. redis.client)
+        client_mod = ModuleType("redis.client")
+        client_mod.Redis = RedisShim
+        sys.modules["redis.client"] = client_mod
+        redis_mod.client = client_mod
+
+        connection_mod = ModuleType("redis.connection")
+        connection_mod.ConnectionPool = ConnectionPoolShim
+        sys.modules["redis.connection"] = connection_mod
+        redis_mod.connection = connection_mod
+
+        sys.modules["redis"] = redis_mod
+
+
+_ensure_redis_shim()
+
+def pytest_configure(config):
+    # Silence or configure pytest options if needed
+    pass
+import os
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def global_test_mocks(monkeypatch):
+    """
+    Global test fixtures to mock heavy external dependencies so unit tests
+    run deterministically in CI (no Redis, no model downloads, no network).
+
+    This fixture is autouse and applies to all tests.
+    """
+    # Mock the memory logger factory to return a lightweight mock object
+    try:
+        import orka.memory_logger as memory_logger_mod
+
+        def fake_create_memory_logger(*args, **kwargs):
+            m = MagicMock()
+            # minimal attributes used across the codebase
+            m.redis = MagicMock()
+            m.index_name = kwargs.get("memory_preset", "orka_enhanced_memory")
+            m.store = MagicMock()
+            m.query = MagicMock(return_value=[])
+            return m
+
+        monkeypatch.setattr(memory_logger_mod, "create_memory_logger", fake_create_memory_logger)
+    except Exception:
+        # If module not importable during some targeted tests, skip patch
+        pass
+
+    # Prevent embedder/model download attempts
+    try:
+        import orka.utils.embedder as embedder_mod
+
+        monkeypatch.setattr(embedder_mod, "download_model_if_missing", lambda *a, **k: None)
+        monkeypatch.setattr(embedder_mod, "load_local_model", lambda *a, **k: MagicMock())
+    except Exception:
+        pass
+
+    # Ensure environment variables that trigger network or longer flows are disabled
+    os.environ.setdefault("ORKA_MEMORY_BACKEND", "redisstack")
+    os.environ.setdefault("ORKA_DEBUG_KEEP_PREVIOUS_OUTPUTS", "false")
+
+    # Patch any known Redis client factories to avoid actual network calls
+    try:
+        import orka.memory.redisstack_logger as rs_mod
+
+        monkeypatch.setattr(rs_mod, "Redis", MagicMock())
+    except Exception:
+        pass
+
+    yield
 """Test configuration and fixtures for OrKa test suite."""
 
-import os
-import pytest
-import warnings
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
-from typing import Dict, Any, Generator, List
-import tempfile
-import yaml
 import asyncio
+import os
+import tempfile
+import warnings
 from pathlib import Path
+from typing import Any, Dict, Generator, List
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
+import pytest
+import yaml
 
 # Set test environment
 os.environ["PYTEST_RUNNING"] = "true"
@@ -67,6 +204,7 @@ def mock_external_services(request):
          patch('sentence_transformers.SentenceTransformer', return_value=embedder_mock), \
          patch('ddgs.DDGS', return_value=ddgs_mock), \
          patch('litellm.completion', return_value=litellm_mock), \
+         patch('litellm.llms.custom_httpx.async_client_cleanup.close_litellm_async_clients', lambda *a, **k: None), \
          patch('httpx.AsyncClient'):
         yield
 
@@ -167,7 +305,7 @@ def sample_context():
 @pytest.fixture
 def sample_graph_state():
     """Sample graph state for GraphScout tests."""
-    from orka.orchestrator.graph_api import GraphState, NodeDescriptor, EdgeDescriptor
+    from orka.orchestrator.graph_api import EdgeDescriptor, GraphState, NodeDescriptor
     
     nodes = {
         "test_agent": NodeDescriptor(

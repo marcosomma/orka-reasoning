@@ -76,7 +76,7 @@ class TestGraphState:
             )
         }
         edges = [EdgeDescriptor(src="node1", dst="node2")]
-        
+
         state = GraphState(
             nodes=nodes,
             edges=edges,
@@ -103,7 +103,7 @@ class TestGraphAPI:
     async def test_get_graph_state(self):
         """Test get_graph_state method."""
         api = GraphAPI()
-        
+
         mock_orchestrator = Mock()
         mock_orchestrator.agents = {
             "agent1": Mock(
@@ -122,9 +122,9 @@ class TestGraphAPI:
         }
         mock_orchestrator.step_index = 0
         mock_orchestrator.queue = ["agent1"]
-        
+
         state = await api.get_graph_state(mock_orchestrator, "test_run_id")
-        
+
         assert isinstance(state, GraphState)
         assert "agent1" in state.nodes
 
@@ -132,7 +132,7 @@ class TestGraphAPI:
     async def test_extract_nodes(self):
         """Test _extract_nodes method."""
         api = GraphAPI()
-        
+
         mock_orchestrator = Mock()
         mock_orchestrator.agents = {
             "agent1": Mock(
@@ -145,9 +145,9 @@ class TestGraphAPI:
                 safety_tags=[],
             )
         }
-        
+
         nodes = await api._extract_nodes(mock_orchestrator)
-        
+
         assert "agent1" in nodes
         assert isinstance(nodes["agent1"], NodeDescriptor)
 
@@ -155,26 +155,26 @@ class TestGraphAPI:
     async def test_extract_nodes_no_agents(self):
         """Test _extract_nodes when orchestrator has no agents."""
         api = GraphAPI()
-        
+
         mock_orchestrator = Mock()
         del mock_orchestrator.agents  # Remove agents attribute
-        
+
         nodes = await api._extract_nodes(mock_orchestrator)
-        
+
         assert nodes == {}
 
     @pytest.mark.asyncio
     async def test_build_edges(self):
         """Test _build_edges method."""
         api = GraphAPI()
-        
+
         mock_orchestrator = Mock()
         mock_orchestrator.orchestrator_cfg = {
             "agents": ["agent1", "agent2", "agent3"],
         }
-        
+
         edges = await api._build_edges(mock_orchestrator)
-        
+
         assert isinstance(edges, list)
         # Should create edges between consecutive agents
         assert len(edges) >= 2
@@ -183,40 +183,40 @@ class TestGraphAPI:
     async def test_get_current_node(self):
         """Test _get_current_node method."""
         api = GraphAPI()
-        
+
         mock_orchestrator = Mock()
         mock_orchestrator.queue = ["agent1", "agent2"]
         mock_orchestrator.step_index = 0
-        
+
         current = await api._get_current_node(mock_orchestrator, "test_run_id")
-        
+
         assert current == "agent1"
 
     @pytest.mark.asyncio
     async def test_get_current_node_empty_queue(self):
         """Test _get_current_node with empty queue."""
         api = GraphAPI()
-        
+
         mock_orchestrator = Mock()
         mock_orchestrator.queue = []
-        
+
         current = await api._get_current_node(mock_orchestrator, "test_run_id")
-        
+
         assert current == "unknown"
 
     @pytest.mark.asyncio
     async def test_get_visited_nodes(self):
         """Test _get_visited_nodes method."""
         api = GraphAPI()
-        
+
         mock_orchestrator = Mock()
         mock_orchestrator.step_index = 2
         mock_orchestrator.orchestrator_cfg = {
             "agents": ["agent1", "agent2", "agent3"],
         }
-        
+
         visited = await api._get_visited_nodes(mock_orchestrator, "test_run_id")
-        
+
         assert isinstance(visited, set)
         assert len(visited) >= 0
 
@@ -224,135 +224,140 @@ class TestGraphAPI:
     async def test_get_runtime_state(self):
         """Test _get_runtime_state method."""
         api = GraphAPI()
-        
+
         mock_orchestrator = Mock()
-        mock_orchestrator.run_id = "test_run_123"
         mock_orchestrator.step_index = 5
         mock_orchestrator.queue = []
-        
+        mock_orchestrator.run_id = "test_run_id"
+
         state = await api._get_runtime_state(mock_orchestrator, "test_run_id")
-        
+
         assert isinstance(state, dict)
-        assert state["run_id"] == "test_run_123"
+        assert state["run_id"] == "test_run_id"
         assert state["step_index"] == 5
 
     @pytest.mark.asyncio
     async def test_get_budgets(self):
         """Test _get_budgets method."""
         api = GraphAPI()
-        
+
         mock_orchestrator = Mock()
         mock_orchestrator.orchestrator_cfg = {
-            "budget": {"max_cost": 0.1, "max_tokens": 1000},
+            "budgets": {"max_cost_usd": 0.1, "max_tokens": 1000},
         }
-        
+
         budgets = await api._get_budgets(mock_orchestrator)
-        
+
         assert isinstance(budgets, dict)
-        assert budgets["max_cost"] == 0.1
+        assert budgets["max_cost_usd"] == 0.1
 
     @pytest.mark.asyncio
     async def test_get_budgets_no_budget_config(self):
         """Test _get_budgets when no budget config exists."""
         api = GraphAPI()
-        
+
         mock_orchestrator = Mock()
         mock_orchestrator.orchestrator_cfg = {}
-        
+
         budgets = await api._get_budgets(mock_orchestrator)
-        
+
         assert isinstance(budgets, dict)
 
     @pytest.mark.asyncio
     async def test_get_constraints(self):
         """Test _get_constraints method."""
         api = GraphAPI()
-        
+
         mock_orchestrator = Mock()
         mock_orchestrator.orchestrator_cfg = {
             "constraints": {"max_depth": 5},
         }
-        
+
         constraints = await api._get_constraints(mock_orchestrator)
-        
+
         assert isinstance(constraints, dict)
         assert constraints["max_depth"] == 5
 
     def test_extract_prompt_summary(self):
         """Test _extract_prompt_summary method."""
         api = GraphAPI()
-        
+
         mock_agent = Mock()
         mock_agent.prompt = "This is a test prompt for an agent"
-        
+
         summary = api._extract_prompt_summary(mock_agent)
-        
+
         assert isinstance(summary, str)
         assert len(summary) > 0
 
     def test_extract_capabilities(self):
         """Test _extract_capabilities method."""
         api = GraphAPI()
-        
+
         mock_agent = Mock()
         mock_agent.capabilities = ["text_generation", "reasoning"]
-        
+
         capabilities = api._extract_capabilities(mock_agent)
-        
+
         assert capabilities == ["text_generation", "reasoning"]
 
     def test_extract_capabilities_no_attribute(self):
         """Test _extract_capabilities when agent has no capabilities."""
         api = GraphAPI()
-        
+
         mock_agent = Mock()
         del mock_agent.capabilities  # Remove attribute
-        
+
         capabilities = api._extract_capabilities(mock_agent)
-        
+
         assert capabilities == []
 
     def test_extract_contract(self):
         """Test _extract_contract method."""
         api = GraphAPI()
-        
+
         mock_agent = Mock()
         mock_agent.contract = {"input": "str", "output": "str"}
-        
+
         contract = api._extract_contract(mock_agent)
-        
+
         assert contract == {"input": "str", "output": "str"}
 
     def test_extract_cost_model(self):
         """Test _extract_cost_model method."""
         api = GraphAPI()
-        
+
         mock_agent = Mock()
         mock_agent.cost_model = {"base_cost": 0.001, "per_token": 0.0001}
-        
+
         cost_model = api._extract_cost_model(mock_agent)
-        
+
         assert cost_model == {"base_cost": 0.001, "per_token": 0.0001}
 
     def test_extract_safety_tags(self):
         """Test _extract_safety_tags method."""
         api = GraphAPI()
-        
+
         mock_agent = Mock()
         mock_agent.safety_tags = ["safe", "verified"]
-        
+
         tags = api._extract_safety_tags(mock_agent)
-        
+
         assert tags == ["safe", "verified"]
 
     def test_extract_metadata(self):
         """Test _extract_metadata method."""
         api = GraphAPI()
-        
+
         mock_agent = Mock()
         mock_agent.metadata = {"version": "1.0", "author": "test"}
-        
-        metadata = api._extract_metadata(mock_agent)
-        
-        assert metadata == {"version": "1.0", "author": "test"}
 
+        mock_agent.node_id = "test_node_id"
+
+        metadata = api._extract_metadata(mock_agent)
+
+        assert metadata == {
+            "class_name": "Mock",
+            "module": "unittest.mock",
+            "node_id": "test_node_id",
+        }

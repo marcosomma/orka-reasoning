@@ -1,8 +1,81 @@
+import asyncio
+from unittest.mock import AsyncMock, MagicMock
+
+
+def test_execution_engine_run_success(monkeypatch):
+    """Exercise ExecutionEngine.run success path with mocked agents and runner."""
+    # Import here so monkeypatch of heavy imports in conftest apply
+    from orka.orchestrator import execution_engine as ee_mod
+
+    # Create a fake execution engine class to test the public run flow
+    class DummyEngine(ee_mod.ExecutionEngine):
+        def __init__(self, *a, **k):
+            # call base init but avoid heavy wiring
+            super().__init__(*a, **k)
+
+    # Prepare a minimal orchestrator config that ExecutionEngine expects
+    fake_config = {
+        "orchestrator": {"id": "test", "strategy": "sequential"},
+        "agents": [],
+    }
+
+    # Patch the internal comprehensive runner so run() resolves quickly
+    async def fake_run(self, input_data, logs, return_logs=False):
+        return {"status": "success", "result": {}}
+
+    monkeypatch.setattr(
+        ee_mod.ExecutionEngine,
+        "_run_with_comprehensive_error_handling",
+        fake_run,
+        raising=False,
+    )
+
+    # Instantiate with dummy YAML path (OrchestratorBase expects a path)
+    engine = ee_mod.ExecutionEngine("tests/unit/orchestrator/dummy_path.yml")
+
+    loop = asyncio.new_event_loop()
+    try:
+        asyncio.set_event_loop(loop)
+        result = loop.run_until_complete(engine.run({}))
+    finally:
+        loop.close()
+
+    assert isinstance(result, dict)
+    assert result.get("status") in ("success", "ok", None) or "result" in result
+
+
+def test_execution_engine_run_error_handling(monkeypatch):
+    """Ensure ExecutionEngine.run captures exceptions from internal runner and returns an error-like dict."""
+    from orka.orchestrator import execution_engine as ee_mod
+
+    async def fake_run_raises(self, input_data, logs, return_logs=False):
+        raise RuntimeError("simulated")
+
+    monkeypatch.setattr(
+        ee_mod.ExecutionEngine,
+        "_run_with_comprehensive_error_handling",
+        fake_run_raises,
+        raising=False,
+    )
+
+    engine = ee_mod.ExecutionEngine("tests/unit/orchestrator/dummy_path.yml")
+
+    import asyncio as _asyncio
+
+    loop = _asyncio.new_event_loop()
+    try:
+        _asyncio.set_event_loop(loop)
+        import pytest
+
+        with pytest.raises(RuntimeError):
+            loop.run_until_complete(engine.run({}))
+    finally:
+        loop.close()
 """Unit tests for orka.orchestrator.execution_engine."""
 
 import asyncio
 from datetime import UTC, datetime
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 

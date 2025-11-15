@@ -662,8 +662,6 @@ class GraphIntrospector:
                         any(
                             term in agent_type
                             for term in [
-                                "localllm",
-                                "local_llm",
                                 "answer",
                                 "response",
                                 "builder",
