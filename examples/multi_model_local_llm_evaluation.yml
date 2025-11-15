@@ -24,7 +24,7 @@ agents:
     type: local_llm
     queue: orka:local_llm_1
     prompt: "Clean and structure this research document for analysis. Remove formatting artifacts, standardize section headers, and return a clear markdown version: {{ get_input() }}"
-    model: deepseek-r1:8b
+    model: llama3.2:3b
     model_url: http://localhost:11434/api/generate
     provider: ollama
     temperature: 0.7
@@ -54,9 +54,9 @@ agents:
   - id: eval_4
     type: openai-classification
     queue: orka:eval_4
-    prompt: "Three agents processed the same research document. Evaluate which output is better in terms of clarity, formatting, and readiness for analysis. Respond based on which version you prefer. Use this structure: --- deepseek-r1:8b_output: {{ get_agent_response('local_llm_1') }} gpt-4o-mini_output: {{ get_agent_response('gpt4o_2') }} gpt-oss:20b_output: {{ get_agent_response('local_llm_19') }} ---"
+    prompt: "Three agents processed the same research document. Evaluate which output is better in terms of clarity, formatting, and readiness for analysis. Respond based on which version you prefer. Use this structure: --- llama3.2:3b_output: {{ get_agent_response('local_llm_1') }} gpt-4o-mini_output: {{ get_agent_response('gpt4o_2') }} gpt-oss:20b_output: {{ get_agent_response('local_llm_19') }} ---"
     options:
-      - deepseek-r1:8b
+      - llama3.2:3b
       - gpt-4o-mini
       - gpt-oss:20b
     model: gpt-3.5-turbo
@@ -74,7 +74,7 @@ agents:
     type: local_llm
     queue: orka:local_llm_6
     prompt: "Provide a comprehensive 3-paragraph summary of this research paper, focusing on objectives, methods, and conclusions: {{ get_input() }}"
-    model: deepseek-r1:8b
+    model: llama3.2:3b
     model_url: http://localhost:11434/api/generate
     provider: ollama
     temperature: 0.7
@@ -104,11 +104,11 @@ agents:
   - id: eval_9
     type: openai-classification
     queue: orka:eval_9
-    prompt: "Compare three summaries of a research paper. Which one is clearer, more informative, and better structured? --- deepseek-r1:8b_summary: {{ get_agent_response('local_llm_6') }} gpt-4o-mini_summary: {{ get_agent_response('gpt4o_7') }} gpt-oss:20b_summary: {{ get_agent_response('local_llm_20') }} ---"
+    prompt: "Compare three summaries of a research paper. Which one is clearer, more informative, and better structured? --- llama3.2:3b_summary: {{ get_agent_response('local_llm_6') }} gpt-4o-mini_summary: {{ get_agent_response('gpt4o_7') }} gpt-oss:20b_summary: {{ get_agent_response('local_llm_20') }} ---"
     options:
       - gpt-oss:20b
       - gpt-4o-mini
-      - deepseek-r1:8b
+      - llama3.2:3b
     model: gpt-3.5-turbo
     depends_on:
       - join_8
@@ -124,7 +124,7 @@ agents:
     type: local_llm
     queue: orka:local_llm_11
     prompt: "Generate constructive feedback for the author of this research document, focusing on clarity, scientific rigor, and formatting: {{ get_input() }}"
-    model: deepseek-r1:8b
+    model: llama3.2:3b
     model_url: http://localhost:11434/api/generate
     provider: ollama
     temperature: 0.7
@@ -154,9 +154,9 @@ agents:
   - id: eval_14
     type: openai-classification
     queue: orka:eval_14
-    prompt: "Which feedback among the three is more useful, specific, and actionable for improving the research paper? --- deepseek-r1:8b_feedback: {{ get_agent_response('local_llm_11') }} gpt-4o-mini_feedback: {{ get_agent_response('gpt4o_12') }} gpt-oss:20b_feedback: {{ get_agent_response('local_llm_21') }} ---"
+    prompt: "Which feedback among the three is more useful, specific, and actionable for improving the research paper? --- llama3.2:3b_feedback: {{ get_agent_response('local_llm_11') }} gpt-4o-mini_feedback: {{ get_agent_response('gpt4o_12') }} gpt-oss:20b_feedback: {{ get_agent_response('local_llm_21') }} ---"
     options:
-      - deepseek-r1:8b
+      - llama3.2:3b
       - gpt-4o-mini
       - gpt-oss:20b
     model: gpt-3.5-turbo
