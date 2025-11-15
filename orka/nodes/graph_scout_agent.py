@@ -44,10 +44,13 @@ based on the current question and context.
 import asyncio
 import json
 import logging
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
+from ..observability.metrics import GraphScoutMetrics
+from ..observability.structured_logging import StructuredLogger
 from ..orchestrator.budget_controller import BudgetController
 from ..orchestrator.decision_engine import DecisionEngine
 from ..orchestrator.dry_run_engine import SmartPathEvaluator
@@ -58,6 +61,7 @@ from ..orchestrator.safety_controller import SafetyController
 from .base_node import BaseNode
 
 logger = logging.getLogger(__name__)
+structured_logger = StructuredLogger(__name__)
 
 
 @dataclass
@@ -69,12 +73,25 @@ class GraphScoutConfig:
     max_depth: int = 2
     commit_margin: float = 0.15
 
-    # Scoring weights
+    # Scoring mode selection
+    scoring_mode: str = "numeric"  # "numeric" (default) or "boolean" (deterministic)
+
+    # Scoring weights (for numeric mode)
     score_weights: Optional[Dict[str, float]] = None
+
+    # Boolean scoring configuration (for boolean mode)
+    strict_mode: bool = False  # All criteria must pass
+    require_critical: bool = True  # Critical criteria are mandatory
+    important_threshold: float = 0.8  # 80% of important criteria must pass
+    include_nice_to_have: bool = True  # Include efficiency/history checks
+    min_success_rate: float = 0.70  # Historical success rate threshold
+    min_domain_overlap: float = 0.30  # Minimum domain overlap for capability match
 
     # Budget constraints
     cost_budget_tokens: int = 800
     latency_budget_ms: int = 1200
+    max_acceptable_cost: float = 0.10  # Maximum acceptable cost (boolean mode)
+    max_acceptable_latency: int = 10000  # Maximum acceptable latency in ms (boolean mode)
 
     # Safety settings
     safety_profile: str = "default"
@@ -92,8 +109,25 @@ class GraphScoutConfig:
     log_previews: str = "head64"
     log_components: bool = True
 
+    # Scoring thresholds (configurable magic numbers)
+    max_reasonable_cost: float = 0.10  # $0.10 maximum cost threshold
+    path_length_penalty: float = 0.10  # -0.10 penalty per extra hop
+    keyword_match_boost: float = 0.30  # +0.30 for keyword match
+    default_neutral_score: float = 0.50  # Neutral score for unknowns
+    optimal_path_length: Tuple[int, int] = (2, 3)  # Optimal path lengths (min, max)
+
+    # Input readiness thresholds
+    min_readiness_score: float = 0.30  # Minimum partial readiness score
+    no_requirements_score: float = 0.90  # Score when no inputs required
+
+    # Safety thresholds
+    risky_capabilities: Optional[Set[str]] = None  # Auto-initialized in post_init
+    safety_markers: Optional[Set[str]] = None  # Auto-initialized in post_init (backward compat)
+    required_safety_markers: Optional[Set[str]] = None  # Auto-initialized in post_init
+    safe_default_score: float = 0.70  # Unknown safety default
+
     def __post_init__(self) -> None:
-        """Set default score weights if not provided."""
+        """Set default score weights and safety sets if not provided."""
         if self.score_weights is None:
             self.score_weights = {
                 "llm": 0.45,
@@ -102,6 +136,19 @@ class GraphScoutConfig:
                 "cost": 0.10,
                 "latency": 0.05,
             }
+
+        # Initialize safety sets if not provided
+        if self.risky_capabilities is None:
+            self.risky_capabilities = {
+                "file_write",
+                "code_execution",
+                "external_api",
+                "database_write",
+            }
+        if self.safety_markers is None:
+            self.safety_markers = {"sandboxed", "read_only", "validated"}
+        if self.required_safety_markers is None:
+            self.required_safety_markers = self.safety_markers  # Default to same set
 
 
 @dataclass
@@ -185,9 +232,18 @@ class GraphScoutAgent(BaseNode):
             k_beam=params.get("k_beam", 3),
             max_depth=params.get("max_depth", 2),
             commit_margin=params.get("commit_margin", 0.15),
+            scoring_mode=params.get("scoring_mode", "numeric"),
             score_weights=params.get("score_weights"),
+            strict_mode=params.get("strict_mode", False),
+            require_critical=params.get("require_critical", True),
+            important_threshold=params.get("important_threshold", 0.8),
+            include_nice_to_have=params.get("include_nice_to_have", True),
+            min_success_rate=params.get("min_success_rate", 0.70),
+            min_domain_overlap=params.get("min_domain_overlap", 0.30),
             cost_budget_tokens=params.get("cost_budget_tokens", 800),
             latency_budget_ms=params.get("latency_budget_ms", 1200),
+            max_acceptable_cost=params.get("max_acceptable_cost", 0.10),
+            max_acceptable_latency=params.get("max_acceptable_latency", 10000),
             safety_profile=params.get("safety_profile", "default"),
             safety_threshold=params.get("safety_threshold", 0.2),
             max_preview_tokens=params.get("max_preview_tokens", 192),
@@ -229,7 +285,7 @@ class GraphScoutAgent(BaseNode):
 
     async def _run_impl(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Main execution method for GraphScout agent.
+        Main execution method for GraphScout agent with observability.
 
         Args:
             context: Execution context containing input, previous_outputs, orchestrator
@@ -237,6 +293,12 @@ class GraphScoutAgent(BaseNode):
         Returns:
             Decision result with selected path and trace information
         """
+        start_time = time.time()
+        run_id = context.get("run_id", "unknown")
+
+        # Initialize metrics collection
+        metrics = GraphScoutMetrics(run_id=run_id)
+
         try:
             # Ensure components are initialized
             if not self.graph_api:
@@ -245,10 +307,11 @@ class GraphScoutAgent(BaseNode):
             # Extract key information from context
             question = self._extract_question(context)
             orchestrator = context.get("orchestrator")
-            run_id = context.get("run_id", "unknown")
 
             if not orchestrator:
-                raise ValueError("GraphScout requires orchestrator context")
+                error_msg = "GraphScout requires orchestrator context"
+                metrics.add_error(error_msg)
+                raise ValueError(error_msg)
 
             logger.info(f"GraphScout processing question: {question[:100]}...")
 
@@ -260,7 +323,10 @@ class GraphScoutAgent(BaseNode):
                 graph_state, question, context, executing_node=self.node_id
             )
 
+            metrics.candidates_discovered = len(candidates)
+
             if not candidates:
+                structured_logger.warning("No candidates discovered", run_id=run_id)
                 return self._handle_no_candidates(context)
 
             logger.info(f"Discovered {len(candidates)} candidate paths")
@@ -315,6 +381,25 @@ class GraphScoutAgent(BaseNode):
                 f"(confidence: {decision_result.get('confidence', 0.0):.3f})"
             )
 
+            # Finalize metrics
+            metrics.selected_path = decision_result.get("target", [])
+            metrics.selection_confidence = decision_result.get("confidence", 0.0)
+            metrics.selection_reasoning = decision_result.get("reasoning", "")
+            metrics.total_time_ms = (time.time() - start_time) * 1000
+
+            # Log structured decision
+            structured_logger.log_graphscout_decision(
+                decision_type=decision_result.get("decision_type", "unknown"),
+                target=decision_result.get("target", []),
+                confidence=metrics.selection_confidence,
+                run_id=run_id,
+                candidates_evaluated=metrics.candidates_discovered,
+                execution_time_ms=metrics.total_time_ms,
+            )
+
+            # Log metrics summary
+            logger.info(f"📊 {metrics.summary()}")
+
             # Return structured result for execution engine and logging
             result = {
                 "decision": decision_result.get("decision_type"),
@@ -323,6 +408,7 @@ class GraphScoutAgent(BaseNode):
                 "reasoning": decision_result.get("reasoning", ""),
                 "trace": trace,
                 "status": "success",
+                "metrics": metrics.to_dict(),
                 # Add fields for proper logging/tracing
                 "input": question,
                 "previous_outputs": context.get("previous_outputs", {}),
@@ -341,6 +427,14 @@ class GraphScoutAgent(BaseNode):
             return result
 
         except Exception as e:
+            metrics.add_error(str(e))
+            metrics.total_time_ms = (time.time() - start_time) * 1000
+            structured_logger.error(
+                f"GraphScout execution failed: {e}",
+                run_id=run_id,
+                error=str(e),
+                metrics_summary=metrics.summary(),
+            )
             logger.error(f"GraphScout execution failed: {e}")
             return {
                 "decision": "fallback",

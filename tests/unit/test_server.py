@@ -1,294 +1,249 @@
-"""Tests for orka.server module."""
-
 import base64
+import json
 import os
-from unittest.mock import AsyncMock, Mock, mock_open, patch
-
 import pytest
-from fastapi.testclient import TestClient
+from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch, mock_open
 
-# Import the components we're testing
-from orka.server import app, sanitize_for_json
+from fastapi import Request
+from fastapi.responses import JSONResponse
 
+from orka.server import app, sanitize_for_json, run_execution
+from orka.orchestrator import Orchestrator
+
+class CustomObject:
+    def __init__(self, value):
+        self.value = value
+
+    def __eq__(self, other):
+        return isinstance(other, CustomObject) and self.value == other.value
+
+    def __repr__(self):
+        return f"CustomObject(value={self.value})"
+
+class NonSerializableObject:
+    __slots__ = ()
+    def __init__(self):
+        pass
+
+    def __repr__(self):
+        return "<NonSerializableObject>"
 
 class TestSanitizeForJson:
-    """Test the sanitize_for_json function."""
-
-    def test_sanitize_primitive_types(self):
-        """Test sanitization of primitive types."""
-        assert sanitize_for_json(None) is None
-        assert sanitize_for_json("string") == "string"
-        assert sanitize_for_json(42) == 42
-        assert sanitize_for_json(3.14) == 3.14
+    def test_primitive_types(self):
+        assert sanitize_for_json("hello") == "hello"
+        assert sanitize_for_json(123) == 123
+        assert sanitize_for_json(123.45) == 123.45
         assert sanitize_for_json(True) is True
-        assert sanitize_for_json(False) is False
+        assert sanitize_for_json(None) is None
 
-    def test_sanitize_bytes(self):
-        """Test sanitization of bytes objects."""
-        test_bytes = b"hello world"
-        expected = {
-            "__type": "bytes",
-            "data": base64.b64encode(test_bytes).decode("utf-8"),
-        }
+    def test_bytes_object(self):
+        data = b"test bytes"
+        expected = {"__type": "bytes", "data": base64.b64encode(data).decode("utf-8")}
+        assert sanitize_for_json(data) == expected
 
-        result = sanitize_for_json(test_bytes)
-        assert result == expected
+    def test_list_and_tuple(self):
+        data = [1, "two", b"three"]
+        expected = [1, "two", {"__type": "bytes", "data": base64.b64encode(b"three").decode("utf-8")}]
+        assert sanitize_for_json(data) == expected
 
-    def test_sanitize_list_and_tuple(self):
-        """Test sanitization of list and tuple objects."""
-        test_list = [1, "string", b"bytes", None]
-        expected_list = [
-            1,
-            "string",
-            {"__type": "bytes", "data": base64.b64encode(b"bytes").decode("utf-8")},
-            None,
-        ]
+        data = (1, "two", b"three")
+        expected = [1, "two", {"__type": "bytes", "data": base64.b64encode(b"three").decode("utf-8")}]
+        assert sanitize_for_json(data) == expected
 
-        result = sanitize_for_json(test_list)
-        assert result == expected_list
+    def test_dictionary(self):
+        data = {"key1": 1, "key2": b"value2"}
+        expected = {"key1": 1, "key2": {"__type": "bytes", "data": base64.b64encode(b"value2").decode("utf-8")}} 
+        assert sanitize_for_json(data) == expected
 
-        # Test tuple (should be converted to list)
-        result_tuple = sanitize_for_json(tuple(test_list))
-        assert result_tuple == expected_list
+    def test_datetime_object(self):
+        dt = datetime(2023, 1, 1, 10, 30, 0)
+        assert sanitize_for_json(dt) == "2023-01-01T10:30:00"
 
-    def test_sanitize_dict(self):
-        """Test sanitization of dictionary objects."""
-        test_dict = {
-            "string_key": "value",
-            123: "numeric_key",
-            "bytes_value": b"test",
-            "nested": {"inner": "value"},
-        }
+    def test_custom_object_with_dict(self):
+        obj = CustomObject("custom_value")
+        expected = {"__type": "CustomObject", "data": {"value": "custom_value"}}
+        assert sanitize_for_json(obj) == expected
 
-        result = sanitize_for_json(test_dict)
+    def test_custom_object_without_dict(self):
+        class NoDictObject:
+            __slots__ = ('value',)
+            def __init__(self, value):
+                self.value = value
+        obj = NoDictObject("slot_value")
+        assert sanitize_for_json(obj) == f"<non-serializable: {type(obj).__name__}>"
 
-        assert result["string_key"] == "value"
-        assert result["123"] == "numeric_key"  # Key converted to string
-        assert result["bytes_value"]["__type"] == "bytes"
-        assert result["nested"]["inner"] == "value"
-
-    def test_sanitize_datetime_object(self):
-        """Test sanitization of datetime-like objects."""
-        mock_datetime = Mock()
-        mock_datetime.isoformat.return_value = "2023-01-01T12:00:00"
-
-        result = sanitize_for_json(mock_datetime)
-        assert result == "2023-01-01T12:00:00"
-        mock_datetime.isoformat.assert_called_once()
-
-    def test_sanitize_custom_object_with_dict(self):
-        """Test sanitization of custom objects with __dict__."""
-
-        class CustomObject:
-            def __init__(self):
-                self.attr1 = "value1"
-                self.attr2 = 42
-
-        obj = CustomObject()
-        result = sanitize_for_json(obj)
-
-        assert result["__type"] == "CustomObject"
-        assert result["data"]["attr1"] == "value1"
-        assert result["data"]["attr2"] == 42
-
-    def test_sanitize_custom_object_dict_exception(self):
-        """Test sanitization of custom objects where accessing __dict__ fails."""
-
-        # Create a custom object that will raise an exception when __dict__ is accessed
-        class ProblematicObject:
-            def __init__(self):
-                pass
-
+    def test_custom_object_dict_conversion_failure(self):
+        class FailingDictObject:
             @property
             def __dict__(self):
-                raise ValueError("Cannot access __dict__")
+                raise Exception("Dict access failed")
+        obj = FailingDictObject()
+        assert sanitize_for_json(obj) == "<sanitization-error: Dict access failed>"
 
-        obj = ProblematicObject()
-        result = sanitize_for_json(obj)
-        # When an exception occurs during sanitization, it returns a sanitization-error message
-        assert "sanitization-error" in result
-        assert "Cannot access __dict__" in result
-
-    def test_sanitize_non_serializable_object(self):
-        """Test sanitization of objects without __dict__."""
-
-        # Create a simple object without __dict__ by using __slots__
-        class NonSerializableObject:
-            __slots__ = ["value"]
-
-            def __init__(self):
-                self.value = "test"
-
+    def test_non_serializable_object(self):
         obj = NonSerializableObject()
+        assert sanitize_for_json(obj) == f"<non-serializable: {type(obj).__name__}>"
+
+    @patch("orka.server.logger")
+    def test_sanitization_error_logging(self, mock_logger):
+        class ErrorObject:
+            @property
+            def __dict__(self):
+                raise Exception("Error during dict access")
+        obj = ErrorObject()
         result = sanitize_for_json(obj)
-        assert "non-serializable: NonSerializableObject" in result
-
-    def test_sanitize_exception_handling(self):
-        """Test sanitization with general exceptions."""
-        with patch("orka.server.logger") as mock_logger:
-            # Create a scenario that will trigger the outer exception handler
-            with patch("orka.server.isinstance", side_effect=RuntimeError("Test error")):
-                result = sanitize_for_json("test")
-
-                assert "sanitization-error" in result
-                assert "Test error" in result
-                mock_logger.warning.assert_called_once()
+        assert result == "<sanitization-error: Error during dict access>"
+        mock_logger.warning.assert_called_once()
+        assert "Failed to sanitize object for JSON: Error during dict access" in mock_logger.warning.call_args[0][0]
 
 
-class TestServerEndpoints:
-    """Test the FastAPI server endpoints."""
+class TestRunExecution:
+    @pytest.fixture
+    def mock_orchestrator_instance(self):
+        mock_orch = AsyncMock(spec=Orchestrator)
+        mock_orch.run.return_value = [{"agent": "output"}]
+        return mock_orch
 
-    def setup_method(self):
-        """Set up test fixtures."""
-        self.client = TestClient(app)
+    @pytest.fixture
+    def mock_request(self):
+        request = MagicMock(spec=Request)
+        request.json = AsyncMock(return_value={
+            "input": "test input",
+            "yaml_config": """orchestrator:
+  id: test_orch
+agents:
+  - id: agent1
+    type: dummy"""
+        })
+        return request
 
+    @pytest.mark.asyncio
     @patch("orka.server.Orchestrator")
-    @patch("orka.server.tempfile.mkstemp")
-    @patch("orka.server.os.close")
-    @patch("orka.server.os.remove")
+    @patch("tempfile.mkstemp", return_value=(123, "/tmp/test_config.yml"))
+    @patch("os.close", MagicMock())
+    @patch("os.remove", MagicMock())
     @patch("builtins.open", new_callable=mock_open)
-    def test_api_run_success(
-        self,
-        mock_file,
-        mock_remove,
-        mock_close,
-        mock_mkstemp,
-        mock_orchestrator_class,
-    ):
-        """Test successful API run execution."""
-        # Mock tempfile creation
-        mock_mkstemp.return_value = (123, "/tmp/test.yml")
+    @patch("orka.server.logger")
+    async def test_run_execution_success(self, mock_logger, mock_open, mock_mkstemp, MockOrchestrator, mock_request, mock_orchestrator_instance):
+        MockOrchestrator.return_value = mock_orchestrator_instance
 
-        # Mock orchestrator with ASYNC run method
-        mock_orchestrator = Mock()
-        mock_orchestrator.run = AsyncMock(return_value={"result": "success", "data": "test_data"})
-        mock_orchestrator_class.return_value = mock_orchestrator
+        response = await run_execution(mock_request)
 
-        # Test data
-        request_data = {
-            "input": "test input",
-            "yaml_config": "test:\n  value: example",
-        }
-
-        # Make request
-        response = self.client.post("/api/run", json=request_data)
-
-        # Verify response
-        assert response.status_code == 200
-        response_data = response.json()
-
-        assert response_data["input"] == "test input"
-        assert "execution_log" in response_data
-        assert "log_file" in response_data
-
-        # Verify mocks were called correctly
+        mock_request.json.assert_awaited_once()
         mock_mkstemp.assert_called_once_with(suffix=".yml")
-        mock_close.assert_called_once_with(123)
-        # The open call - just verify it was called with the right parameters
-        mock_file.assert_called_with("/tmp/test.yml", "w", encoding="utf-8")
-        # Since mock_open creates a complex mock, we just check the orchestrator was called correctly
-        mock_orchestrator_class.assert_called_once_with("/tmp/test.yml")
-        mock_orchestrator.run.assert_called_once_with("test input", return_logs=True)
-        mock_remove.assert_called_once_with("/tmp/test.yml")
+        # mock_close is not a mock object, so we can't assert called on it
+        mock_open.assert_called_once_with("/tmp/test_config.yml", "w", encoding="utf-8")
+        mock_open().write.assert_called_once()
+        MockOrchestrator.assert_called_once_with("/tmp/test_config.yml")
+        mock_orchestrator_instance.run.assert_awaited_once_with("test input", return_logs=True)
+        # mock_remove is not a mock object, so we can't assert called on it
 
-    def test_api_run_file_cleanup_exception(self):
-        """Test API run when file cleanup fails."""
-        with patch("orka.server.Orchestrator") as mock_orchestrator_class:
-            # Mock orchestrator
-            mock_orchestrator = Mock()
-            mock_orchestrator.run = AsyncMock(return_value={"result": "success"})
-            mock_orchestrator_class.return_value = mock_orchestrator
+        assert isinstance(response, JSONResponse)
+        content = json.loads(response.body)
+        assert content["input"] == "test input"
+        assert content["execution_log"] == [{"agent": "output"}]
+        assert content["log_file"] == [{"agent": "output"}]
+        assert response.status_code == 200
+        mock_logger.info.assert_called()
 
-            with patch("orka.server.os.remove") as mock_remove:
-                # Mock remove to raise an exception (should not affect response)
-                mock_remove.side_effect = Exception("Remove failed")
+    @pytest.mark.asyncio
+    @patch("orka.server.Orchestrator")
+    @patch("tempfile.mkstemp", return_value=(123, "/tmp/test_config.yml"))
+    @patch("os.close", MagicMock())
+    @patch("os.remove", MagicMock())
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("orka.server.logger")
+    async def test_run_execution_orchestrator_instantiation_failure(self, mock_logger, mock_open, mock_mkstemp, MockOrchestrator, mock_request):
+        MockOrchestrator.side_effect = Exception("Orchestrator init failed")
 
-                response = self.client.post(
-                    "/api/run",
-                    json={"input": "test", "yaml_config": "test: value"},
-                )
+        response = await run_execution(mock_request)
 
-                # Should still succeed despite cleanup failure
-                assert response.status_code == 200
+        assert isinstance(response, JSONResponse)
+        assert response.status_code == 500
+        content = json.loads(response.body)
+        assert "error" in content
+        assert "Orchestrator init failed" in content["error"]
+        mock_logger.error.assert_called_once()
+        assert "Error creating JSONResponse: Orchestrator init failed" in mock_logger.error.call_args[0][0]
 
-    def test_cors_middleware(self):
-        """Test CORS middleware is properly configured."""
-        # Make a simple request to check CORS headers
-        response = self.client.get("/")  # This will 404 but should have CORS headers
+    @pytest.mark.asyncio
+    @patch("orka.server.Orchestrator")
+    @patch("tempfile.mkstemp", return_value=(123, "/tmp/test_config.yml"))
+    @patch("os.close", MagicMock())
+    @patch("os.remove", MagicMock())
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("orka.server.logger")
+    async def test_run_execution_orchestrator_run_failure(self, mock_logger, mock_open, mock_mkstemp, MockOrchestrator, mock_request, mock_orchestrator_instance):
+        MockOrchestrator.return_value = mock_orchestrator_instance
+        mock_orchestrator_instance.run.side_effect = Exception("Orchestrator run failed")
 
-        # Even with 404, CORS headers should be present if middleware is configured
-        # Note: TestClient doesn't always show CORS headers the same way as a real browser
-        assert response.status_code == 404  # Endpoint doesn't exist, but that's expected
+        response = await run_execution(mock_request)
 
-    def test_api_run_basic_functionality(self):
-        """Test that the API endpoint exists and handles basic requests."""
-        # Test with minimal valid data instead of empty data
-        request_data = {
-            "input": "test input",
-            "yaml_config": "test: value",  # Provide a basic YAML config
-        }
+        assert isinstance(response, JSONResponse)
+        assert response.status_code == 500
+        content = json.loads(response.body)
+        assert "error" in content
+        assert "Orchestrator run failed" in content["error"]
+        mock_logger.error.assert_called_once()
+        assert "Error creating JSONResponse: Orchestrator run failed" in mock_logger.error.call_args[0][0]
 
-        with patch("orka.server.Orchestrator") as mock_orchestrator_class:
-            # Mock orchestrator
-            mock_orchestrator = Mock()
-            mock_orchestrator.run = AsyncMock(return_value={"result": "success"})
-            mock_orchestrator_class.return_value = mock_orchestrator
+    @pytest.mark.asyncio
+    @patch("orka.server.Orchestrator")
+    @patch("tempfile.mkstemp", return_value=(123, "/tmp/test_config.yml"))
+    @patch("os.close", MagicMock())
+    @patch("orka.server.os.remove")
+    @patch("orka.server.os.path.exists", return_value=True)
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("orka.server.logger")
+    async def test_run_execution_os_remove_failure(self, mock_logger, mock_open, mock_exists, mock_os_remove, mock_mkstemp, MockOrchestrator, mock_request, mock_orchestrator_instance):
+        MockOrchestrator.return_value = mock_orchestrator_instance
+        mock_os_remove.side_effect = Exception("OS remove failed")
 
-            response = self.client.post("/api/run", json=request_data)
+        response = await run_execution(mock_request)
 
-            # Should respond successfully
-            assert response.status_code == 200
+        mock_os_remove.assert_called_once_with("/tmp/test_config.yml")
+        mock_logger.warning.assert_any_call("Warning: Failed to remove temporary file /tmp/test_config.yml: OS remove failed")
 
-    def test_api_run_orchestrator_exception(self):
-        """Test API run when orchestrator raises an exception."""
-        request_data = {
-            "input": "test input",
-            "yaml_config": "test: value",
-        }
+        assert isinstance(response, JSONResponse)
+        content = json.loads(response.body)
+        assert content["input"] == "test input"
+        assert content["execution_log"] == [{"agent": "output"}]
+        assert response.status_code == 200
 
-        with patch("orka.server.Orchestrator") as mock_orchestrator_class:
-            # Mock orchestrator that raises an exception during initialization
-            mock_orchestrator_class.side_effect = Exception("Orchestrator init failed")
+    @pytest.mark.asyncio
+    @patch("orka.server.Orchestrator")
+    @patch("tempfile.mkstemp", return_value=(123, "/tmp/test_config.yml"))
+    @patch("os.close", MagicMock())
+    @patch("os.remove", MagicMock())
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("orka.server.logger")
+    @patch("orka.server.sanitize_for_json", side_effect=Exception("Sanitization failed"))
+    async def test_run_execution_json_response_creation_failure(self, mock_sanitize_for_json, mock_logger, mock_open, mock_mkstemp, MockOrchestrator, mock_request, mock_orchestrator_instance):
+        MockOrchestrator.return_value = mock_orchestrator_instance
 
-            # In the test environment, FastAPI's TestClient will raise the exception
-            # rather than converting it to an HTTP 500 response
-            with pytest.raises(Exception, match="Orchestrator init failed"):
-                response = self.client.post("/api/run", json=request_data)
+        response = await run_execution(mock_request)
 
+        assert isinstance(response, JSONResponse)
+        assert response.status_code == 500
+        content = json.loads(response.body)
+        assert "error" in content
+        assert "Sanitization failed" in content["error"]
+        mock_logger.error.assert_called_once()
+        assert "Error creating JSONResponse: Sanitization failed" in mock_logger.error.call_args[0][0]
 
-class TestServerMain:
-    """Test the server main execution logic."""
+@patch("uvicorn.run")
+@patch("sys.exit")
+def test_server_startup_with_env_port(mock_exit, mock_run):
+    with patch.dict("os.environ", {"ORKA_PORT": "8002"}):
+        from orka import server
+        server.main()
+    mock_run.assert_called_once_with(app, host="0.0.0.0", port=8002)
 
-    def test_main_default_port(self):
-        """Test main execution with default port."""
-        with patch.dict(os.environ, {}, clear=True):
-            port = int(os.environ.get("ORKA_PORT", 8001))
-            assert port == 8001
-
-    def test_main_custom_port(self):
-        """Test main execution with custom port from environment."""
-        with patch.dict(os.environ, {"ORKA_PORT": "9000"}):
-            port = int(os.environ.get("ORKA_PORT", 8001))
-            assert port == 9000
-
-    def test_main_invalid_port(self):
-        """Test main execution with invalid port from environment."""
-        with patch.dict(os.environ, {"ORKA_PORT": "invalid"}):
-            with pytest.raises(ValueError):
-                int(os.environ.get("ORKA_PORT", 8001))
-
-
-class TestServerApp:
-    """Test the FastAPI app configuration."""
-
-    def test_app_configuration(self):
-        """Test FastAPI app is properly configured."""
-        assert app.title == "OrKa AI Orchestration API"
-        assert app.description == "🚀 High-performance API gateway for AI workflow orchestration"
-        assert app.version == "1.0.0"
-
-    def test_app_has_cors_middleware(self):
-        """Test that CORS middleware is configured."""
-        # Check that middleware is present
-        middleware_classes = [m.cls.__name__ for m in app.user_middleware]
-        assert "CORSMiddleware" in middleware_classes
+@patch("uvicorn.run")
+@patch("sys.exit")
+def test_server_startup_default_port(mock_exit, mock_run):
+    with patch.dict("os.environ", {}):
+        from orka import server
+        server.main()
+    mock_run.assert_called_once_with(app, host="0.0.0.0", port=8001)

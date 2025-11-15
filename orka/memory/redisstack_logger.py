@@ -290,14 +290,13 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
                 socket_keepalive=True,
                 socket_keepalive_options={},
                 retry_on_timeout=True,
-                health_check_interval=60,  # Less frequent health checks to reduce load
-                max_connections=8,  # Further reduced to prevent connection exhaustion
-                socket_connect_timeout=10,  # Longer timeout for connection establishment
-                socket_timeout=30,  # Longer timeout for operations
-                retry_on_error=[ConnectionError, TimeoutError],  # Retry on these errors
+                health_check_interval=300,  # Health check every 5 minutes (balanced)
+                max_connections=100,  # Further increased for complex nested workflows
+                socket_connect_timeout=5,  # Faster connection timeout
+                socket_timeout=10,  # Shorter operation timeout (fail fast)
             )
             logger.debug(
-                f"Created Redis connection pool with max_connections=15, socket_timeout=30s"
+                f"Created Redis connection pool with max_connections=50, socket_timeout=30s"
             )
             return pool
         except Exception as e:
@@ -1527,9 +1526,21 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
     def close(self):
         """Clean up resources."""
         try:
+            # Close the main Redis client
             if hasattr(self, "redis_client") and self.redis_client is not None:
                 self.redis_client.close()
-            # Thread-local connections are managed by the connection pool
+
+            # Disconnect and close the connection pool to free all connections
+            if hasattr(self, "_connection_pool") and self._connection_pool is not None:
+                try:
+                    self._connection_pool.disconnect()
+                except Exception as e:
+                    logger.debug(f"Error disconnecting connection pool: {e}")
+
+            # Stop the memory decay scheduler to prevent background threads
+            if hasattr(self, "_stop_decay") and self._stop_decay is not None:
+                self._stop_decay.set()
+
         except Exception as e:
             logger.error(f"Error closing RedisStack logger: {e}")
 

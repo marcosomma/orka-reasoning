@@ -19,28 +19,22 @@ agents:
   - id: cognitive_debate_loop
     type: loop
     max_loops: 3
-    score_threshold: 0.95
     
     high_priority_agents:
       - "agreement_moderator"
     
-    score_extraction_config:
-      strategies:
-        - type: pattern
-          patterns:
-            - "AGREEMENT_SCORE: ([0-9.]+)"
-            - "Agreement Score: ([0-9.]+)"
-            - "Score: ([0-9.]+)"
-            - "AGREEMENT_SCORE\\s*([0-9.]+)"
-            - "agreement_score: ([0-9.]+)"
-        - type: pattern
-          patterns:
-            - "(0\\.[6-9][0-9]?)"
-            - "([0-9])\\.[0-9]+"
-        - type: agent_key
-          agents: ["agreement_moderator"]
-          key: "response"
-          transform: "extract_score"
+    # Boolean scoring configuration for deterministic agreement evaluation
+    scoring:
+      preset: strict  # High standards for consensus building
+      custom_weights:
+        # Completeness ensures all viewpoints are considered
+        completeness.has_all_required_steps: 0.20
+        completeness.addresses_all_query_aspects: 0.15
+        # Coherence ensures logical synthesis
+        coherence.logical_agent_sequence: 0.12
+        coherence.no_conflicting_actions: 0.10
+        # Safety for respectful deliberation
+        safety.handles_errors_gracefully: 0.08
     
     # 🔧 OPTIMIZED: Reduced extraction patterns and length
     cognitive_extraction:
@@ -56,10 +50,13 @@ agents:
     
     # 🔧 OPTIMIZED: Essential metadata only
     past_loops_metadata:
-      round: "{{ get_loop_number() }}"
-      agreement_score: "{{ score }}"
+      loop_number: "{{ get_loop_number() }}"
+      score: "{{ score }}"
       timestamp: "{{ timestamp }}"
       status: "{{ 'CONVERGED' if score >= get_score_threshold() else 'CONTINUING' }}"
+      insights: "{{ insights }}"
+      improvements: "{{ improvements }}"
+      mistakes: "{{ mistakes }}"
     
     internal_workflow:
       orchestrator:
@@ -395,25 +392,15 @@ agents:
             
             SYNTHESIS: [How perspectives work together in 2-3 sentences]
 
-        # 🔧 OPTIMIZED: Ultra-simple agreement moderator
+        # 🔧 OPTIMIZED: Loop Validator Node - Robust boolean evaluation
         - id: agreement_moderator
-          type: local_llm
-          model: gpt-oss:20b
+          type: loop_validator
+          llm_model: gpt-oss:20b
           model_url: http://localhost:11434/api/generate
           provider: ollama
+          scoring_preset: moderate
+          evaluation_target: synthesis_attempt  # Evaluate the synthesis quality
           temperature: 0.1
-          prompt: |
-            AGREEMENT ASSESSMENT - Round {{ get_loop_number() }}
-            TOPIC: {{ get_input() }}
-            TARGET: {{ get_score_threshold() }}+ agreement to stop
-            
-            CURRENT AGREEMENT: {{ safe_get_response('agreement_finder', 'No agreement') | truncate(150) }}
-            SYNTHESIS: {{ safe_get_response('synthesis_attempt', 'No synthesis') | truncate(150) }}
-            
-            Rate agent agreement (0.0-1.0). Start with "AGREEMENT_SCORE:"
-            
-            AGREEMENT_SCORE: [your score 0.0-1.0]
-            CONTINUE: [YES if below {{ get_score_threshold() }}, NO if {{ get_score_threshold() }}+]
 
         # 🔧 OPTIMIZED: Minimal memory writer
         - id: shared_memory_writer

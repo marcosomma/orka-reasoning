@@ -1,0 +1,351 @@
+# GraphScout + PlanValidator Loop (Real GraphScout Agent)
+# =========================================================
+#
+# This example shows the ACTUAL GraphScout agent working in a validation loop.
+# GraphScout dynamically selects paths, which are then validated by PlanValidator
+# using boolean scoring. The loop continues until a high-quality path is found.
+
+orchestrator:
+  id: graph-scout-validated
+  strategy: sequential
+  agents:
+    - validated_routing_loop
+    - path_executor
+    - execute_validated_path
+
+agents:
+  # Main validation loop with real GraphScout
+  - id: validated_routing_loop
+    type: loop
+    max_loops: 2
+    score_threshold: 0.15
+    persist_across_runs: false  # Prevent accumulation across runs
+    fallback_score: 0.10  # Score to use when validation agent times out
+    timeout_score: 0.08  # Score to use when validation explicitly times out
+    
+    # Boolean scoring configuration
+    scoring:
+      preset: lenient
+      custom_weights:
+        completeness.has_all_required_steps: 0.22
+        efficiency.uses_appropriate_agents: 0.12
+        coherence.logical_agent_sequence: 0.05
+    
+    past_loops_metadata:
+      loop_number: "{{ get_loop_number() }}"
+      score: "{{ score }}"
+      timestamp: "{{ timestamp }}"
+      insights: "{{ insights }}"
+      improvements: "{{ improvements }}"
+      mistakes: "{{ mistakes }}"
+    
+    internal_workflow:
+      orchestrator:
+        id: scout-validate
+        strategy: sequential
+        agents: [input_classifier, graph_scout_router, path_validator_moderate]
+      
+      agents:
+        # Classify input to guide GraphScout
+        - id: input_classifier
+          type: local_llm
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.3
+          prompt: |
+            Classify this query into categories:
+            Query: {{ get_input() }}
+            
+            {% if has_past_loops() %}
+            Previous routing attempts ({{ get_past_loops() | length }}):
+            {% for past_loop in get_past_loops() %}
+            Loop {{ past_loop.loop_number }} - Score: {{ past_loop.score }}
+            Issues: {{ past_loop.mistakes }}
+            {% endfor %}
+            
+            Consider these past failures when classifying.
+            {% endif %}
+            
+            Categories:
+            - factual: Requires data retrieval, search
+            - analytical: Requires deep reasoning, analysis
+            - memory_dependent: Needs historical context
+            - multi_step: Requires orchestration of multiple agents
+            
+            Return JSON: {"primary": "category", "secondary": "category", "complexity": "low|medium|high"}
+        
+        # GraphScout with enhanced routing based on validation feedback
+        - id: graph_scout_router
+          type: graph-scout
+          params:
+            k_beam: 5
+            max_depth: 3
+            commit_margin: 0.1
+            require_terminal: true
+            score_weights:
+              llm: 0.5
+              heuristics: 0.25
+              prior: 0.15
+              cost: 0.05
+              latency: 0.05
+            safety_profile: default
+            cost_budget_tokens: 1000
+            latency_budget_ms: 5000
+            max_preview_tokens: 200
+            evaluation_model: "local_llm"
+            evaluation_model_name: "gpt-oss:20b"
+            validation_model: "local_llm"
+            validation_model_name: "gpt-oss:20b"
+            llm_evaluation_enabled: true
+            fallback_to_heuristics: true
+          prompt: |
+            You are GraphScout. Select the optimal execution path.
+            
+            Query: {{ input }}
+            Classification: {{ previous_outputs.input_classifier.response }}
+            
+            {% if has_past_loops() %}
+            ## Previous Validation Feedback ({{ get_past_loops() | length }} attempts)
+            
+            {% for past_loop in get_past_loops() %}
+            **Attempt {{ past_loop.loop_number }}** - Score: {{ past_loop.score }}
+            Failed Criteria: {{ past_loop.mistakes }}
+            {% endfor %}
+            
+            ## Critical Requirements Based on Feedback:
+            {% if has_past_loops() %}
+            {% set last_loop = get_past_loops()[-1] %}
+            {% if "has_all_required_steps" in last_loop.mistakes %}
+            - Include ALL necessary agents in sequence
+            {% endif %}
+            {% if "includes_fallback_path" in last_loop.mistakes %}
+            - Add explicit fallback/error handling agents
+            {% endif %}
+            {% if "handles_edge_cases" in last_loop.mistakes %}
+            - Consider edge cases and alternative paths
+            {% endif %}
+            {% if "validates_inputs" in last_loop.mistakes %}
+            - Add input validation step early in path
+            {% endif %}
+            {% if "uses_appropriate_agents" in last_loop.mistakes %}
+            - Reconsider agent selection - use most suitable agents
+            {% endif %}
+            {% endif %}
+            {% endif %}
+            
+            **Available Agents:**
+            - search_agent: Web search, data retrieval
+            - analysis_agent: Deep reasoning, multi-perspective analysis
+            - memory_reader: Retrieve stored information
+            - memory_writer: Store important findings
+            - response_builder: Generate final response (REQUIRED for terminal paths)
+            
+            **Selection Criteria:**
+            1. Relevance to query classification
+            2. Logical sequence and data dependencies
+            3. Completeness (all necessary steps)
+            4. Error handling capability
+            5. Cost and latency efficiency
+            
+            Return your path selection with detailed reasoning.
+        
+        # Validate GraphScout's selection with boolean scoring
+        - id: path_validator_moderate
+          type: plan_validator
+          llm_model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.2
+          timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
+          scoring_preset: lenient
+          custom_weights:
+            completeness.has_all_required_steps: 0.22
+            efficiency.uses_appropriate_agents: 0.12
+            coherence.logical_agent_sequence: 0.05
+
+  # ===== EXECUTION AGENTS (Top Level) =====
+  # CRITICAL: These agents MUST be at top-level, NOT inside internal_workflow
+  # - GraphScout discovers agents from orchestrator.agents (global registry)
+  # - PathExecutor can only execute agents in the global registry
+  # - Agents inside internal_workflow are scoped locally and NOT accessible
+  # 
+  # These agents are NOT in the orchestrator sequence, so they won't auto-execute.
+  # They are only discovered by GraphScout and executed by PathExecutor when
+  # included in the validated path.
+  #
+  # See docs/AGENT_SCOPING.md for detailed explanation.
+  
+  # Supporting agents for GraphScout to route to
+  - id: search_agent
+    type: duckduckgo
+    capabilities: [data_retrieval, web_search]
+    prompt: |
+      {{ input }}
+  
+  - id: analysis_agent
+    type: local_llm
+    capabilities: [reasoning, analysis]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Analyze: {{ input }}
+      
+      {% if previous_outputs.search_agent %}
+      Context: {{ previous_outputs.search_agent.result }}
+      {% endif %}
+      
+      Provide comprehensive analysis.
+  
+  - id: memory_reader
+    type: memory
+    namespace: graph_scout_validated
+    memory_preset: episodic
+    config:
+      operation: read
+      vector: true
+      top_k: 5
+    prompt: |
+      Retrieve relevant context for: {{ input }}
+  
+  - id: memory_writer
+    type: memory
+    namespace: graph_scout_validated
+    memory_preset: episodic
+    config:
+      operation: write
+      vector: true
+    prompt: |
+      Store findings: {{ previous_outputs }}
+  
+  - id: response_builder
+    type: local_llm
+    capabilities: [answer_emit, response_generation]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Create final response for: {{ input }}
+      
+      {% if previous_outputs.search_agent %}
+      Search Results: {{ previous_outputs.search_agent }}
+      {% endif %}
+      {% if previous_outputs.analysis_agent %}
+      Analysis: {{ previous_outputs.analysis_agent.response }}
+      {% endif %}
+      {% if previous_outputs.memory_reader %}
+      Context: {{ previous_outputs.memory_reader }}
+      {% endif %}
+
+  # Execute the validated GraphScout path
+  - id: path_executor
+    type: path_executor
+    path_source: validated_routing_loop.response.result.graph_scout_router.target
+    on_agent_failure: continue
+
+  # Report on validation and execution
+  - id: execute_validated_path
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      # GraphScout Validation Report
+      
+      {% if previous_outputs.validated_routing_loop %}
+      {% set loop = previous_outputs.validated_routing_loop %}
+      
+      ## Loop Summary
+      - Iterations: {{ loop.loops_completed | default('N/A') }}
+      - Final Score: {{ (loop.final_score | default(0)) | round(3) }}
+      - Status: {{ 'APPROVED ✓' if loop.threshold_met | default(false) else 'REJECTED ✗' }}
+      
+      ## GraphScout's Final Decision
+      {% if loop.response.result.graph_scout_router %}
+      {{ loop.response.result.graph_scout_router }}
+      {% endif %}
+      
+      ## Validation Results
+      {% if loop.response.result.path_validator_moderate %}
+      {% set val = loop.response.result.path_validator_moderate %}
+      
+      **Assessment:** {{ val.overall_assessment | default('N/A') }}
+      **Score:** {{ (val.validation_score | default(0)) | round(3) }}
+      
+      ### Dimension Breakdown
+      {% if val.dimension_scores %}
+      {% for dim, data in val.dimension_scores.items() %}
+      - {{ dim|title }}: {{ (data.percentage | default(0))|round(0) }}%
+      {% endfor %}
+      {% endif %}
+      
+      ### Quality Metrics
+      - Passed: {{ (val.passed_criteria | default([])) | length }}/15 criteria
+      - Failed: {{ (val.failed_criteria | default([])) | length }} criteria
+      {% if val.failed_criteria %}
+      
+      Still Missing:
+      {% for criterion in val.failed_criteria %}
+      - {{ criterion }}
+      {% endfor %}
+      {% endif %}
+      {% endif %}
+      
+      ## How GraphScout Improved
+      {% if loop.response.past_loops and loop.response.past_loops|length > 1 %}
+      {% for past in loop.response.past_loops %}
+      **Loop {{ past.loop_number }}**: {{ past.score }} → {{ past.improvements }}
+      {% endfor %}
+      {% endif %}
+      
+      ## Execution Results
+      {% if previous_outputs.path_executor %}
+      {% set executor = previous_outputs.path_executor.response %}
+      - Execution Status: {{ (executor.status | default('unknown')) | upper }}
+      - Executed Path: {{ executor.executed_path | default([]) }}
+      - Agents Completed: {{ (executor.results | default({})) | length }}
+      {% if executor.errors %}
+      - Errors: {{ executor.errors }}
+      {% endif %}
+      
+      ### Agent Outcomes:
+      {% for agent_id, result in (executor.results | default({})).items() %}
+      - **{{ agent_id }}**: {{ 'SUCCESS' if 'error' not in result else 'FAILED' }}
+      {% endfor %}
+      {% else %}
+      Path execution pending or validation threshold not met.
+      {% endif %}
+      
+      ---
+      
+      Provide analysis:
+      1. Why did GraphScout need {{ loop.loops_completed | default('N/A') }} iteration(s)?
+      2. What made the final path score {{ (loop.final_score | default(0)) | round(3) }}?
+      3. Based on validation and execution, is this path production-ready?
+      4. What are the key quality indicators?
+      
+      {% else %}
+      No validation results available.
+      {% endif %}
+
+# ============================================================================
+# How This Works
+# ============================================================================
+#
+# 1. GraphScout receives query + validation feedback from previous loops
+# 2. GraphScout selects path using its beam search + LLM evaluation
+# 3. PlanValidator evaluates the selected path with 15 boolean criteria
+# 4. If score < 0.85, loop repeats with feedback
+# 5. GraphScout adjusts path selection based on failed criteria
+# 6. Process continues until high-quality path is found
+#
+# Benefits:
+# - GraphScout learns from validation feedback
+# - Deterministic scoring ensures consistent quality
+# - Audit trail shows why paths were rejected
+# - Final path is guaranteed to meet quality standards
+#
+# ============================================================================
+

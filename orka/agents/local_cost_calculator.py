@@ -112,7 +112,7 @@ class LocalCostCalculator:
             )
 
         if self.policy == CostPolicy.ZERO_LEGACY:
-            logger.warning("Using deprecated zero cost policy for local LLMs")
+            logger.info("Using zero cost policy for local LLMs (set via ORKA_LOCAL_COST_POLICY)")
             return 0.0
 
         # Calculate electricity cost
@@ -334,9 +334,17 @@ _default_calculator: LocalCostCalculator | None = None
 
 
 def get_cost_calculator() -> LocalCostCalculator:
-    """Get the global cost calculator instance."""
+    """
+    Get the global cost calculator instance.
+    
+    Default policy provides realistic cost estimates for local models based on
+    electricity and hardware costs. Users can opt-in to zero cost via
+    ORKA_LOCAL_COST_POLICY=zero_legacy
+    """
     global _default_calculator
     if _default_calculator is None:
+        # Default to "calculate" to provide realistic cost estimates for local models
+        # Users can set ORKA_LOCAL_COST_POLICY=zero_legacy if they prefer $0.00
         policy = os.environ.get("ORKA_LOCAL_COST_POLICY", "calculate")
         _default_calculator = LocalCostCalculator(policy=policy)
     return _default_calculator

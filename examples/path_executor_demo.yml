@@ -1,0 +1,95 @@
+name: "PathExecutor Basic Demo"
+description: |
+  Demonstrates PathExecutorNode executing a validated agent path.
+  
+  This example shows the core validate-then-execute pattern:
+  1. Validation loop validates a proposed agent path
+  2. PathExecutor executes the approved agents
+  
+  Use this pattern when you want to validate paths before execution.
+
+orchestrator:
+  id: path-executor-demo
+  strategy: sequential
+  agents:
+    - path_proposal      # Proposes agent path
+    - execute_path       # PathExecutor dynamically executes: web_search, analyzer, summarizer
+    # Note: web_search, analyzer, summarizer are NOT in orchestrator list
+    # They are executed dynamically by PathExecutor based on path_proposal output
+
+agents:
+  # GraphScout intelligently proposes optimal agent path
+  - id: path_proposal
+    type: graph-scout
+    params:
+      k_beam: 5
+      max_depth: 3
+      commit_margin: 0.1
+      require_terminal: true
+      score_weights:
+        llm: 0.5
+        heuristics: 0.3
+        prior: 0.15
+        cost: 0.025
+        latency: 0.025
+      evaluation_model: "local_llm"
+      evaluation_model_name: "gpt-oss:20b"
+      llm_evaluation_enabled: true
+      fallback_to_heuristics: true
+    prompt: |
+      Select optimal execution path for: {{ input }}
+      
+      Available agents:
+      - web_search: Retrieve current information from the web
+      - analyzer: Analyze and extract key insights
+      - summarizer: Create concise summaries (terminal agent)
+      
+      Select the best path for this query.
+  
+  # Now execute the GraphScout-proposed path
+  - id: execute_path
+    type: path_executor
+    path_source: path_proposal.target
+    on_agent_failure: continue
+  
+  # Agent definitions - these are discovered by GraphScout and executed by PathExecutor
+  - id: web_search
+    type: duckduckgo
+    capabilities: [data_retrieval, web_search]
+    max_results: 5
+  
+  - id: analyzer
+    type: local_llm
+    capabilities: [analysis, reasoning]
+    model: "gpt-oss:20b"
+    provider: "ollama"
+    url: "http://localhost:11434/api/generate"
+    temperature: 0.4
+    timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
+    prompt: |
+      Analyze the search results and extract key insights.
+      
+      Search results: {{ previous_outputs.web_search.results }}
+  
+  - id: summarizer
+    type: local_llm
+    capabilities: [answer_emit, summarization]
+    model: "gpt-oss:20b"
+    provider: "ollama"
+    url: "http://localhost:11434/api/generate"
+    temperature: 0.3
+    timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
+    prompt: |
+      Create a concise summary of the analysis.
+      
+      Analysis: {{ previous_outputs.analyzer.response }}
+      
+      Provide a clear, actionable summary.
+
+llm:
+  provider: "ollama"
+  model: "gpt-oss:20b"
+  url: "http://localhost:11434/api/generate"
+  temperature: 0.3
+  max_tokens: 2000
+

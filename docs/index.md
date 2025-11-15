@@ -1,3 +1,71 @@
+[Getting Started](./getting-started.md) | [Agent Types](./agents.md) | [GraphScout Agent](./GRAPH_SCOUT_AGENT.md) | [Architecture](./architecture.md) | [Ontology](./ONTOLOGY.md) | [Extending Agents](./extending-agents.md) | [Observability](./observability.md) | [YAML Schema](./orka.yaml-schema.md) | [YAML Configuration Guide](./yaml-configuration-guide.md) | [Runtime Modes](./runtime-modes.md) | [Security](./security.md) | [FAQ](./faq.md)
+
+# OrKa — Orchestrator Kit for Agentic Workflows
+
+OrKa is a YAML-first framework for composing and running multi-step agent workflows. It focuses on making it straightforward to define pipelines of agents, persist and reuse contextual memory, and observe executions.
+
+Key capabilities
+
+- Declarative workflows: define orchestrators and agents in YAML (Jinja2 templates are used for prompt rendering).
+- Modular agents: agents are pluggable components that can be LLM-backed, deterministic code, or connectors to tools and APIs.
+- Optional memory layer: a Redis-compatible backend is used to store metadata, execution traces and, when available, vector embeddings for semantic search.
+- Control nodes: loop, fork/join, router and path-execution nodes let you express conditional and iterative logic in workflows.
+- CLI and observability: a command-line interface and optional UI/tools help run, monitor and inspect workflows.
+
+What OrKa is not
+
+- It is not a managed LLM service. OrKa integrates with local and remote LLMs but does not provide hosted LLMs.
+- It is not a one-size-fits-all agent marketplace; it is a toolkit for building orchestrated workflows that you configure and extend.
+
+How it works (high level)
+
+1. Write a YAML workflow that declares an `orchestrator` and a list of `agents` with their types and prompts.
+2. Run the workflow using the CLI or programmatic API. The orchestrator renders prompts, invokes agents, and collects outputs.
+3. Outputs and optional memory writes are stored in the run context and can be persisted to the configured memory backend.
+4. Observability hooks log execution events for later inspection; you can use the CLI watch/stats commands or an optional UI to view traces.
+
+Memory and search
+
+OrKa supports a pluggable memory implementation. A Redis-compatible server is the default backend. When a RedisStack-like backend with vector search is available, OrKa can store and query vector embeddings for semantic search. Performance characteristics depend on dataset sizes, index settings and hardware; see `docs/benchmark/` for example tests and reproduce them in your environment.
+
+Running and installing
+
+Install from the repository or from an available package index:
+
+```powershell
+# from source
+pip install -e .
+
+# (if published)
+pip install orka-reasoning
+```
+
+Start a Redis-compatible server or RedisStack before running workflows. The repository includes helper scripts and documentation describing common setups; `orka-start` can assist with local Redis/RedisStack discovery in some environments.
+
+Example CLI usage
+
+```powershell
+python -m orka.orka_cli run my_workflow.yml "input text"
+python -m orka.orka_cli memory stats
+python -m orka.orka_cli memory watch
+```
+
+Extending OrKa
+
+- Add new agents under `orka/agents/` and register them in the agent registry.
+- Write unit tests under `tests/unit/` and mock external dependencies (LLMs, Redis) for deterministic tests.
+
+Observability and debugging
+
+OrKa logs execution events and, where configured, persists traces to the memory backend. Use debug logging and the CLI monitoring commands to investigate runs. For production deployments, configure structured logging and monitor the memory backend health.
+
+Performance notes
+
+Benchmarks in `docs/benchmark/` show example measurements for specific environments. These are illustrative; if you care about latency or throughput, run benchmarks with your data, index configuration and hardware.
+
+Where to read next
+
+Start with [Getting Started](./getting-started.md) and the examples in the `examples/` folder. For details about agent types, memory configuration and advanced topics see the other pages in this `docs/` folder.
 [📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🧭 GraphScout Agent](./GRAPH_SCOUT_AGENT.md) | [🔍 Architecture](./architecture.md) | [🧩 Ontology](./ONTOLOGY.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
 
 # OrKa Documentation
@@ -71,19 +139,26 @@ pip install orka-reasoning[extra]
 ```
 
 ### 2. Start OrKa (Automatic RedisStack Setup)
-**Prerequisites:** Ensure Docker is installed and running on your system.
+**Prerequisites:** RedisStack via one of these methods:
+- Docker (easiest - will be auto-configured)
+- Native RedisStack installation (brew/apt/download)
 
 ```bash
-# Set your OpenAI key
+# Set your OpenAI key (if using OpenAI models)
 export OPENAI_API_KEY=your-key-here
 
-# Start OrKa (automatically includes RedisStack + 100x faster vector search)
-# For LOCAL development:
-python -m orka.orka_start
+# Start OrKa with automatic RedisStack detection
+# Tries native first, then Docker, then shows install instructions
+orka-start
 
-# For PRODUCTION with RedisStack:
+# Alternative: Use Python module directly
 python -m orka.orka_start
 ```
+
+**What `orka-start` does:**
+1. Checks for native RedisStack installation
+2. Falls back to Docker if native not found
+3. Provides installation instructions if neither available
 
 ### 3. Create Your First Workflow with Memory
 ```yaml

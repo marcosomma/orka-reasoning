@@ -1,72 +1,99 @@
-"""
-Unit tests for the tui_interface.py module.
-Tests the TUI interface module imports and compatibility features.
-"""
+import pytest
+from unittest.mock import MagicMock, patch
 
+from orka.tui_interface import ModernTUIInterface
 
-class TestTUIInterface:
-    """Test suite for the TUI Interface module."""
+class MockArgs:
+    def __init__(self, **kwargs):
+        self.backend = kwargs.get('backend', 'redisstack')
+        self.json = kwargs.get('json', False)
+        self.interval = kwargs.get('interval', 2.0)
+        self.use_rich = kwargs.get('use_rich', False)
+        self.fallback = kwargs.get('fallback', False)
 
-    def test_module_imports(self):
-        """Test that the module imports correctly."""
-        # Import the module
-        from orka import tui_interface
+    def __getattr__(self, name):
+        return self.__dict__.get(name)
 
-        # Check that the main class is available
-        assert hasattr(tui_interface, "ModernTUIInterface")
+@patch("orka.tui.interface.RICH_AVAILABLE", True)
+def test_modern_tui_interface_initialization():
+    tui = ModernTUIInterface()
+    assert tui.console is not None
+    assert not tui.running
+    assert tui.current_view == "dashboard"
 
-        # Check __all__ export
-        assert hasattr(tui_interface, "__all__")
-        assert "ModernTUIInterface" in tui_interface.__all__
+@patch("orka.tui.interface.RICH_AVAILABLE", True)
+@patch("orka.tui.interface.TEXTUAL_AVAILABLE", True)
+@patch("orka.tui.interface.ModernTUIInterface._run_textual_interface")
+def test_run_defaults_to_textual(mock_run_textual):
+    args = MockArgs()
+    tui = ModernTUIInterface()
+    tui.data_manager.init_memory_logger = MagicMock()
+    tui.run(args)
+    tui.data_manager.init_memory_logger.assert_called_once_with(args)
+    mock_run_textual.assert_called_once_with(args)
 
-    def test_textual_availability_detection(self):
-        """Test textual availability detection."""
-        # Import the module to trigger textual availability check
-        from orka import tui_interface
+@patch("orka.tui.interface.RICH_AVAILABLE", True)
+@patch("orka.tui.interface.TEXTUAL_AVAILABLE", False)
+@patch("orka.tui.interface.ModernTUIInterface._run_rich_interface")
+def test_run_falls_back_to_rich_when_textual_unavailable(mock_run_rich, capsys):
+    args = MockArgs()
+    tui = ModernTUIInterface()
+    tui.data_manager.init_memory_logger = MagicMock()
+    tui.run(args)
+    tui.data_manager.init_memory_logger.assert_called_once_with(args)
+    captured = capsys.readouterr()
+    assert "Textual not available" in captured.out
 
-        # Check that TEXTUAL_AVAILABLE variable exists
-        assert hasattr(tui_interface, "TEXTUAL_AVAILABLE")
-        assert isinstance(tui_interface.TEXTUAL_AVAILABLE, bool)
+@patch("orka.tui.interface.RICH_AVAILABLE", True)
+@patch("orka.tui.interface.TEXTUAL_AVAILABLE", True)
+@patch("orka.tui.interface.ModernTUIInterface._run_rich_interface")
+def test_run_uses_rich_when_flagged(mock_run_rich, capsys):
+    args = MockArgs(use_rich=True)
+    tui = ModernTUIInterface()
+    tui.data_manager.init_memory_logger = MagicMock()
+    tui.run(args)
+    tui.data_manager.init_memory_logger.assert_called_once_with(args)
+    captured = capsys.readouterr()
+    assert "Using Rich fallback interface" in captured.out
 
-    def test_orka_monitor_app_availability(self):
-        """Test OrKaMonitorApp availability based on textual installation."""
-        from orka import tui_interface
+@patch("orka.tui.interface.RICH_AVAILABLE", False)
+@patch("orka.tui.fallback.FallbackInterface.run_basic_fallback")
+def test_run_falls_back_to_basic_when_rich_unavailable(mock_run_basic, caplog):
+    args = MockArgs()
+    tui = ModernTUIInterface()
+    tui.run(args)
+    assert "Modern TUI requires 'rich' library" in caplog.text
+    mock_run_basic.assert_called_once_with(args)
 
-        # Test should work regardless of textual availability
-        if tui_interface.TEXTUAL_AVAILABLE:
-            # If textual is available, OrKaMonitorApp should be defined
-            assert hasattr(tui_interface, "OrKaMonitorApp")
-            assert "OrKaMonitorApp" in tui_interface.__all__
-        else:
-            # If textual is not available, module should still import successfully
-            assert hasattr(tui_interface, "TEXTUAL_AVAILABLE")
-            assert tui_interface.TEXTUAL_AVAILABLE is False
+@patch("orka.tui.interface.signal.signal")
+def test_signal_handler(mock_signal_call):
+    tui = ModernTUIInterface()
+    tui.running = True
+    tui._signal_handler(None, None)
+    assert not tui.running
 
-    def test_modern_tui_interface_import(self):
-        """Test that ModernTUIInterface is properly imported."""
-        from orka.tui_interface import ModernTUIInterface
+@patch("orka.tui.interface.RICH_AVAILABLE", True)
+@patch("orka.tui.interface.Live")
+@patch("orka.tui.interface.time.sleep", side_effect=KeyboardInterrupt)
+def test_run_rich_interface_main_loop(mock_sleep, mock_live):
+    args = MockArgs()
+    tui = ModernTUIInterface()
+    tui.running = True
+    tui.data_manager = MagicMock()
+    tui.layouts = MagicMock()
+    live_context = mock_live.return_value.__enter__.return_value
+    tui._run_rich_interface(args)
+    tui.data_manager.update_data.assert_called_once()
+    tui.layouts.get_view.assert_called_with("dashboard")
+    live_context.update.assert_called()
+    mock_sleep.assert_called_once()
 
-        # Check that it's a class
-        assert isinstance(ModernTUIInterface, type)
-
-    def test_textual_app_import_attempt(self):
-        """Test attempt to import OrKaTextualApp."""
-        from orka import tui_interface
-
-        # The import may succeed or fail depending on textual availability
-        # We just check that the module handles it gracefully
-        if hasattr(tui_interface, "OrKaTextualApp"):
-            # If available, check it's a class or None
-            assert tui_interface.OrKaTextualApp is None or isinstance(
-                tui_interface.OrKaTextualApp,
-                type,
-            )
-
-    def test_module_docstring(self):
-        """Test that the module has proper documentation."""
-        from orka import tui_interface
-
-        # Check module docstring
-        assert tui_interface.__doc__ is not None
-        assert "OrKa TUI Interface" in tui_interface.__doc__
-        assert "Core Features" in tui_interface.__doc__
+@patch("orka.tui.interface.TEXTUAL_AVAILABLE", True)
+@patch("orka.tui.textual_app.OrKaTextualApp")
+def test_run_textual_interface(mock_app):
+    args = MockArgs()
+    tui = ModernTUIInterface()
+    tui.data_manager = MagicMock()
+    tui._run_textual_interface(args)
+    mock_app.assert_called_once_with(tui.data_manager)
+    mock_app.return_value.run.assert_called_once()

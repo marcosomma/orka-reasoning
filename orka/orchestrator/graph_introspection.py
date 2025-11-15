@@ -79,6 +79,81 @@ class GraphIntrospector:
             logger.error(f"Failed to filter memory agents: {e}")
             return neighbors  # Fallback to original list
 
+    def _filter_control_flow_agents_from_candidates(
+        self, neighbors: List[str], graph_state: GraphState
+    ) -> List[str]:
+        """
+        Filter out control flow agents (validators, classifiers) from GraphScout routing.
+        These agents are part of the loop's control flow, not routing targets.
+
+        Args:
+            neighbors: List of neighbor node IDs
+            graph_state: Current graph state with orchestrator info
+
+        Returns:
+            Filtered list of neighbors excluding control flow agents
+        """
+        try:
+            # Control flow agent types that should not be routing candidates
+            control_flow_types = {
+                "PlanValidatorAgent",
+                "ValidationAndStructuringAgent",
+                "ClassificationAgent",
+                "BinaryAgent",
+                "LoopNode",  # Prevent infinite recursion
+                "ForkNode",  # Structural node
+                "JoinNode",  # Structural node
+                "RouterNode",  # Already handles routing
+                "PathExecutorNode",  # Executes paths, not a target
+                "FailoverNode",  # Control flow
+            }
+
+            # Also filter by ID patterns commonly used for control flow
+            control_flow_id_patterns = {
+                "validator",
+                "classifier",
+                "input_classifier",
+                "path_validator",
+                "plan_validator",
+                "_loop",  # Prevent loops from being routed to themselves
+                "_router",  # Router nodes
+                "_fork",  # Fork nodes
+                "_join",  # Join nodes
+                "path_executor",  # Path executor nodes
+                "failover",  # Failover nodes
+            }
+
+            filtered_neighbors = []
+            for neighbor_id in neighbors:
+                node_desc = graph_state.nodes.get(neighbor_id)
+
+                # Skip if it's a known control flow type
+                if node_desc and node_desc.type in control_flow_types:
+                    logger.debug(
+                        f"Filtering control flow agent {neighbor_id} (type: {node_desc.type})"
+                    )
+                    continue
+
+                # Skip if ID matches control flow patterns
+                neighbor_lower = neighbor_id.lower()
+                if any(pattern in neighbor_lower for pattern in control_flow_id_patterns):
+                    logger.debug(f"Filtering control flow agent {neighbor_id} (pattern match)")
+                    continue
+
+                filtered_neighbors.append(neighbor_id)
+
+            control_count = len(neighbors) - len(filtered_neighbors)
+            if control_count > 0:
+                logger.info(
+                    f"Filtered {control_count} control flow agents from {len(neighbors)} neighbors"
+                )
+
+            return filtered_neighbors
+
+        except Exception as e:
+            logger.error(f"Failed to filter control flow agents: {e}")
+            return neighbors  # Fallback to original list
+
     def _add_memory_agents_for_shortlist(
         self, neighbors: List[str], graph_state: GraphState
     ) -> List[Dict[str, Any]]:
@@ -190,6 +265,11 @@ class GraphIntrospector:
             # Filter out memory agents from regular candidate discovery
             filtered_neighbors = self._filter_memory_agents_from_candidates(neighbors, graph_state)
 
+            # Filter out control flow agents (validators, classifiers) from routing
+            filtered_neighbors = self._filter_control_flow_agents_from_candidates(
+                filtered_neighbors, graph_state
+            )
+
             for neighbor_id in filtered_neighbors:
                 candidate = {
                     "node_id": neighbor_id,
@@ -291,12 +371,26 @@ class GraphIntrospector:
                     )
 
                 logger.info(
-                    f"GraphScout universal routing: found {len(available_agents)} available agents: {available_agents}"
+                    f"GraphScout universal routing: found {len(available_agents)} available agents (before filtering): {available_agents}"
+                )
+
+                # Filter out memory agents from regular candidate discovery
+                filtered_agents = self._filter_memory_agents_from_candidates(
+                    available_agents, graph_state
+                )
+
+                # Filter out control flow agents (validators, classifiers) from GraphScout routing
+                filtered_agents = self._filter_control_flow_agents_from_candidates(
+                    filtered_agents, graph_state
+                )
+
+                logger.info(
+                    f"GraphScout routing after filtering: {len(filtered_agents)} agents: {filtered_agents}"
                 )
                 logger.info(
                     f"GraphScout supports ALL orchestrator types: sequential, dynamic, fork/join, parallel"
                 )
-                return available_agents
+                return filtered_agents
 
             # NORMAL CASE: Follow sequential edges for non-GraphScout agents
             # Find outgoing edges from current node
@@ -413,6 +507,8 @@ class GraphIntrospector:
                         "depth": len(terminal_path),
                         "feasible": True,
                         "constraints_met": True,
+                        "graphscout_generated": getattr(path, "_graphscout_generated", False)
+                        or len(terminal_path) > 1,
                     }
                     extended_candidates.append(candidate)
 
@@ -566,8 +662,6 @@ class GraphIntrospector:
                         any(
                             term in agent_type
                             for term in [
-                                "localllm",
-                                "local_llm",
                                 "answer",
                                 "response",
                                 "builder",
@@ -687,6 +781,16 @@ class GraphIntrospector:
                     logger.debug(f"Path infeasible: node {node_id} not found")
                     return False
 
+            graphscout_generated = candidate.get("graphscout_generated", False)
+
+            # SPECIAL CASE: For GraphScout-generated routing, skip edge connectivity checks
+            if graphscout_generated:
+                logger.debug(
+                    "GraphScout-generated path detected; skipping edge feasibility checks for %s",
+                    " → ".join(path),
+                )
+                return True
+
             # SPECIAL CASE: For GraphScout direct routing (depth=1), skip edge connectivity checks
             # GraphScout can route directly to any available agent regardless of edges
             if candidate.get("depth", 1) == 1 and len(path) == 1:
@@ -765,6 +869,10 @@ class GraphIntrospector:
             candidate["estimated_latency"] = estimated_latency
 
             return True
+
+        except Exception as e:
+            logger.error(f"Resource constraint check failed: {e}")
+            return True  # Default to allowing if check fails
 
         except Exception as e:
             logger.error(f"Resource constraint check failed: {e}")

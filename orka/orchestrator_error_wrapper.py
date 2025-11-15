@@ -242,6 +242,7 @@ class OrkaErrorHandler:
                 return result
 
         except Exception as critical_error:
+            self.error_telemetry["execution_status"] = "failed" # Set status immediately on critical failure
             # Critical failure - save everything we have so far
             self.record_error(
                 "critical_failure",

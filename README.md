@@ -76,7 +76,8 @@ agents:
 # Install OrKa
 pip install orka-reasoning
 
-# Start Redis (for memory)
+# Start RedisStack (for memory)
+# Automatically tries native RedisStack first, then Docker
 orka-start
 
 # Memory TUI
@@ -85,6 +86,20 @@ orka memory watch
 # Run a workflow
 orka run my-workflow.yml "What is machine learning?"
 ```
+
+### RedisStack Setup Options
+
+OrKa needs RedisStack for its memory system. When you run `orka-start`, it automatically:
+1. **Tries native RedisStack** (if installed on your system)
+2. **Falls back to Docker** (if Docker is running)
+3. **Shows install instructions** (if neither is available)
+
+**Choose your preferred method:**
+- **Docker** (easiest): Just have Docker running, `orka-start` handles everything
+- **Native** (no Docker needed):
+  - macOS: `brew install redis-stack`
+  - Ubuntu: `sudo apt install redis-stack-server`
+  - Windows: Download from [redis.io](https://redis.io/download)
 
 ## How It Works
 

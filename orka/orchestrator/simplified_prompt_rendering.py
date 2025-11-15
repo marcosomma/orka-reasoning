@@ -694,9 +694,16 @@ class SimplifiedPromptRenderer:
             try:
                 formatted_prompt = self.render_prompt(agent.prompt, payload)
                 payload["formatted_prompt"] = formatted_prompt
-            except Exception:
+            except Exception as e:
+                # 🐛 Bug #7 Fix: Log warning when rendering fails
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Prompt rendering failed for agent {getattr(agent, 'agent_id', 'unknown')}: {e}")
                 # If rendering fails, use the original prompt
-                payload["formatted_prompt"] = agent.prompt
+                payload["formatted_prompt"] = agent.prompt or ""
+        else:
+            # 🐛 Bug #7 Fix: Always set formatted_prompt, even if empty
+            # This ensures consistent trace output and prevents KeyErrors
+            payload["formatted_prompt"] = ""
 
     @staticmethod
     def normalize_bool(value):

@@ -637,41 +637,31 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
 
         return ref
 
-    def _deduplicate_object(self, obj: Any) -> Any:
-        """
-        Recursively deduplicate an object, replacing large blobs with references.
-
-        Args:
-            obj: Object to deduplicate
-
-        Returns:
-            Deduplicated object with blob references
-        """
-        if not isinstance(obj, dict):
-            return obj
-
-        # Check if this object should be stored as a blob
-        if self._should_deduplicate_blob(obj):
-            blob_hash = self._store_blob(obj)
-            return self._create_blob_reference(blob_hash, list(obj.keys()))
-
-        # Recursively deduplicate nested objects
-        deduplicated = {}
-        for key, value in obj.items():
-            deduplicated[key] = self._recursive_deduplicate(value)
-
-        return deduplicated
-
     def _recursive_deduplicate(self, obj: Any) -> Any:
         """
         Helper method to recursively apply deduplication.
         """
         if isinstance(obj, dict):
-            return self._deduplicate_object(obj)
+            return self._deduplicate_dict_content(obj)
         elif isinstance(obj, list):
             return [self._recursive_deduplicate(item) for item in obj]
         else:
             return obj
+
+    def _deduplicate_dict_content(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Recursively deduplicate content within a dictionary, replacing large blobs with references.
+        This method processes the *values* of the dictionary.
+        """
+        processed_data = {}
+        for key, value in data.items():
+            processed_data[key] = self._recursive_deduplicate(value)
+
+        # After processing nested content, check if this dictionary itself should be a blob
+        if self._should_deduplicate_blob(processed_data):
+            blob_hash = self._store_blob(processed_data)
+            return self._create_blob_reference(blob_hash, list(processed_data.keys()))
+        return processed_data
 
     def _process_memory_for_saving(
         self, memory_entries: list[dict[str, Any]]
@@ -780,7 +770,10 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
                 result_key = f"agent_result:{agent_id}"
                 self.set(result_key, json.dumps(outputs[agent_id], default=json_serializer))
                 logger.debug(f"- Stored result for agent {agent_id}")
+            except Exception as e:
+                logger.warning(f"Failed to store result in Redis: {e}")
 
+            try:
                 # Store in group hash
                 self.hset(
                     group_key, agent_id, json.dumps(outputs[agent_id], default=json_serializer)
@@ -788,7 +781,6 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
                 logger.debug(f"- Stored result in group for agent {agent_id}")
             except Exception as e:
                 logger.warning(f"Failed to store result in Redis: {e}")
-
         return outputs
 
     def save_enhanced_trace(self, file_path: str, enhanced_data: Dict[str, Any]) -> None:
@@ -882,7 +874,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
                         if payload_size > getattr(self, "_blob_threshold", 200):
                             # Payload is large, deduplicate it
                             original_size = payload_size
-                            deduplicated_payload = self._deduplicate_object(payload)
+                            deduplicated_payload = self._deduplicate_dict_content(payload)
                             new_size = len(
                                 json.dumps(
                                     deduplicated_payload,
@@ -1099,30 +1091,44 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
             # Check if there's a direct _metrics field
             if "_metrics" in resolved_payload:
                 metrics = resolved_payload["_metrics"]
-
-            # Check in previous_outputs for agent responses with _metrics
-            elif "previous_outputs" in resolved_payload:
-                prev_outputs = resolved_payload["previous_outputs"]
-                for agent_response in prev_outputs.values():
-                    if isinstance(agent_response, dict) and "_metrics" in agent_response:
-                        # Merge metrics from all agent responses
-                        agent_metrics = agent_response["_metrics"]
-                        for key, value in agent_metrics.items():
-                            if key in ["tokens", "prompt_tokens", "completion_tokens"]:
-                                metrics[key] = metrics.get(key, 0) + value
-                            elif key in ["cost_usd", "latency_ms"]:
-                                metrics[key] = metrics.get(key, 0.0) + value
-                            else:
-                                metrics[key] = value  # model, provider, etc.
-
-            # Check for response field with _metrics
-            elif "response" in resolved_payload and isinstance(resolved_payload["response"], dict):
-                response = resolved_payload["response"]
-                if "_metrics" in response:
-                    metrics = response["_metrics"]
+            elif isinstance(resolved_payload, list):
+                for item in resolved_payload:
+                    if isinstance(item, dict):
+                        self._extract_metrics_recursive(item, metrics)
+            else:
+                # Recursively search for _metrics in nested structures
+                self._extract_metrics_recursive(resolved_payload, metrics)
 
             return metrics
 
         except Exception as e:
             logger.error(f"Failed to extract agent metrics: {e}")
             return {}
+
+    def _extract_metrics_recursive(
+        self, data: Any, metrics: Dict[str, Any], max_depth: int = 10, current_depth: int = 0
+    ) -> None:
+        """Recursively search for _metrics fields in nested dictionaries and merge them."""
+        if current_depth >= max_depth or not isinstance(data, dict):
+            return
+
+        for key, value in data.items():
+            if key == "_metrics" and isinstance(value, dict):
+                # Found metrics, merge them
+                for metric_key, metric_value in value.items():
+                    if metric_key in ["tokens", "prompt_tokens", "completion_tokens"]:
+                        metrics[metric_key] = metrics.get(metric_key, 0) + metric_value
+                    elif metric_key in ["cost_usd", "latency_ms"]:
+                        metrics[metric_key] = metrics.get(metric_key, 0.0) + metric_value
+                    else:
+                        # For model, provider, etc., keep the first value found
+                        if metric_key not in metrics:
+                            metrics[metric_key] = metric_value
+            elif isinstance(value, dict):
+                # Recurse into nested dictionaries
+                self._extract_metrics_recursive(value, metrics, max_depth, current_depth + 1)
+            elif isinstance(value, list):
+                # Recurse into lists
+                for item in value:
+                    if isinstance(item, dict):
+                        self._extract_metrics_recursive(item, metrics, max_depth, current_depth + 1)

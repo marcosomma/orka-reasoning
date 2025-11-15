@@ -1,327 +1,467 @@
-# OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
-#
-# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
-#
-# Licensed under the Apache License, Version 2.0 (Apache 2.0).
-# You may not use this file for commercial purposes without explicit permission.
-#
-# Full license: https://www.apache.org/licenses/LICENSE-2.0
-# For commercial use, contact: marcosomma.work@gmail.com
-#
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
-
-import asyncio
-import logging
-import os
-import pathlib
-import subprocess
 import sys
-import time
-from unittest.mock import MagicMock, patch
-
-import pytest
-
-# Set PYTEST_RUNNING environment variable at the earliest possible moment
-os.environ["PYTEST_RUNNING"] = "true"
-
-# Add project root to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
-# Environment detection
-IS_CI = os.environ.get("CI", "").lower() in ("true", "1", "yes")
-IS_GITHUB_ACTIONS = "false"
-PYTEST_RUNNING = os.environ.get("PYTEST_RUNNING", "").lower() == "true"
-USE_REAL_REDIS = os.environ.get("USE_REAL_REDIS", "false").lower() == "true"
-
-# Test execution configuration
-SKIP_LLM_TESTS = os.environ.get("SKIP_LLM_TESTS", "true" if IS_CI else "false").lower() == "true"
-REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6380/0")
-
-# Set environment variables
-os.environ["PYTEST_RUNNING"] = "true"
-os.environ["SKIP_LLM_TESTS"] = str(SKIP_LLM_TESTS).lower()
+from types import ModuleType
+from unittest.mock import MagicMock
 
 
-# Load .env early so real keys are available for integration tests (non-CI)
-def _load_env_file(env_path: pathlib.Path) -> None:
-    try:
-        for line in env_path.read_text(encoding="utf-8").splitlines():
-            if not line or line.lstrip().startswith("#") or "=" not in line:
-                continue
-            key, val = line.split("=", 1)
-            key = key.strip()
-            val = val.strip().strip('"').strip("'")
-            # Do not override already-set environment vars
-            if key and key not in os.environ:
-                os.environ[key] = val
-    except Exception:
-        pass
-
-
-_root = pathlib.Path(__file__).resolve().parent.parent
-_env = _root / ".env"
-if _env.exists():
-    _load_env_file(_env)
-
-# Ensure OPENAI_API_KEY always present to avoid crashes; tests can still mock LLMs
-os.environ["OPENAI_API_KEY"] = os.environ.get("OPENAI_API_KEY", "dummy_key_for_testing")
-
-# Configure logging for CI
-if IS_CI:
-    logging.basicConfig(
-        level=logging.WARNING,  # Less verbose in CI
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
-else:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
-
-# Import fake Redis if needed
-try:
-    from fake_redis import FakeRedisClient
-except ImportError:
-    # Create a minimal fake Redis client if the module doesn't exist
-    class FakeRedisClient:
-        def __init__(self):
-            self._data = {}
-            self._sets = {}
+# Minimal test-time shim for redis to avoid network/ConnectionPool side-effects.
+def _ensure_redis_shim():
+    if "redis" in sys.modules:
+        return
+    redis_mod = ModuleType("redis")
+    # Provide classes/attrs used in production imports
+    class RedisShim:
+        def __init__(self, *args, **kwargs):
+            pass
 
         def ping(self):
             return True
 
-        def get(self, key):
-            return self._data.get(key)
+        def hset(self, *args, **kwargs):
+            return None
 
-        def set(self, key, value):
-            self._data[key] = value
-            return True
+        def expire(self, *args, **kwargs):
+            return None
 
-        def delete(self, *keys):
-            count = 0
-            for key in keys:
-                if key in self._data:
-                    del self._data[key]
-                    count += 1
-            return count
+        def disconnect(self):
+            return None
 
-        def flushdb(self):
-            self._data.clear()
-            self._sets.clear()
-            return True
+    class ConnectionPoolShim:
+        def __init__(self, *args, **kwargs):
+            # mimic attributes checked by tests
+            self.max_connections = kwargs.get("max_connections", 100)
+            self._created_connections = 0
+            self._available_connections = []
+            self._in_use_connections = []
 
-        def sadd(self, key, *members):
-            if key not in self._sets:
-                self._sets[key] = set()
-            self._sets[key].update(members)
-            return len(members)
+        @classmethod
+        def from_url(cls, *args, **kwargs):
+            return cls(*args, **kwargs)
 
-        def smembers(self, key):
-            return self._sets.get(key, set())
+    redis_mod.Redis = RedisShim
+    redis_mod.ConnectionPool = ConnectionPoolShim
+    # Common exceptions referenced
+    class RedisError(Exception):
+        pass
+
+    redis_mod.TimeoutError = RedisError
+    redis_mod.ConnectionError = RedisError
+    # Provide a minimal `redis.asyncio` module used by some fixtures
+    try:
+        import types as _types
+        asyncio_mod = _types.ModuleType("redis.asyncio")
+
+        class AsyncRedisShim(RedisShim):
+            async def ping(self):
+                return True
+
+        asyncio_mod.Redis = AsyncRedisShim
+        asyncio_mod.ConnectionPool = ConnectionPoolShim
+        redis_mod.asyncio = asyncio_mod
+    except Exception:
+        # best-effort; not critical
+        pass
+
+        # Also provide submodules expected by production imports (e.g. redis.client)
+        client_mod = ModuleType("redis.client")
+        client_mod.Redis = RedisShim
+        sys.modules["redis.client"] = client_mod
+        redis_mod.client = client_mod
+
+        connection_mod = ModuleType("redis.connection")
+        connection_mod.ConnectionPool = ConnectionPoolShim
+        sys.modules["redis.connection"] = connection_mod
+        redis_mod.connection = connection_mod
+
+        sys.modules["redis"] = redis_mod
 
 
-try:
-    import redis
-except ImportError:
-    redis = None
+_ensure_redis_shim()
+
+def pytest_configure(config):
+    # Silence or configure pytest options if needed
+    pass
+import os
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def global_test_mocks(monkeypatch):
+    """
+    Global test fixtures to mock heavy external dependencies so unit tests
+    run deterministically in CI (no Redis, no model downloads, no network).
+
+    This fixture is autouse and applies to all tests.
+    """
+    # Mock the memory logger factory to return a lightweight mock object
+    try:
+        import orka.memory_logger as memory_logger_mod
+
+        def fake_create_memory_logger(*args, **kwargs):
+            m = MagicMock()
+            # minimal attributes used across the codebase
+            m.redis = MagicMock()
+            m.index_name = kwargs.get("memory_preset", "orka_enhanced_memory")
+            m.store = MagicMock()
+            m.query = MagicMock(return_value=[])
+            return m
+
+        monkeypatch.setattr(memory_logger_mod, "create_memory_logger", fake_create_memory_logger)
+    except Exception:
+        # If module not importable during some targeted tests, skip patch
+        pass
+
+    # Prevent embedder/model download attempts
+    try:
+        import orka.utils.embedder as embedder_mod
+
+        monkeypatch.setattr(embedder_mod, "download_model_if_missing", lambda *a, **k: None)
+        monkeypatch.setattr(embedder_mod, "load_local_model", lambda *a, **k: MagicMock())
+    except Exception:
+        pass
+
+    # Ensure environment variables that trigger network or longer flows are disabled
+    os.environ.setdefault("ORKA_MEMORY_BACKEND", "redisstack")
+    os.environ.setdefault("ORKA_DEBUG_KEEP_PREVIOUS_OUTPUTS", "false")
+
+    # Patch any known Redis client factories to avoid actual network calls
+    try:
+        import orka.memory.redisstack_logger as rs_mod
+
+        monkeypatch.setattr(rs_mod, "Redis", MagicMock())
+    except Exception:
+        pass
+
+    yield
+"""Test configuration and fixtures for OrKa test suite."""
+
+import asyncio
+import os
+import tempfile
+import warnings
+from pathlib import Path
+from typing import Any, Dict, Generator, List
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
+import pytest
+import yaml
+
+# Set test environment
+os.environ["PYTEST_RUNNING"] = "true"
+os.environ["ORKA_ENV"] = "test"
+
+# Mock external services that should not run in unit tests
+MOCK_EXTERNAL_SERVICES = [
+    'redis.Redis',
+    'redis.asyncio.Redis', 
+    'sentence_transformers.SentenceTransformer',
+    'ddgs.DDGS',
+    'openai.OpenAI',
+    'litellm.completion',
+    'httpx.AsyncClient',
+]
+
+
+@pytest.fixture(autouse=True)
+def mock_external_services(request):
+    """Auto-mock external services for unit tests, but allow opt-out."""
+    # Skip auto-mocking if test is marked with no_auto_mock
+    if hasattr(request, 'node') and request.node.get_closest_marker('no_auto_mock'):
+        yield
+        return
+    
+    # Mock Redis
+    redis_mock = Mock()
+    redis_mock.ping.return_value = True
+    redis_mock.set.return_value = True
+    redis_mock.get.return_value = '{"test": "data"}'
+    redis_mock.delete.return_value = 1
+    redis_mock.exists.return_value = True
+    redis_mock.scan_iter.return_value = iter(['test:key1', 'test:key2'])
+    redis_mock.hset.return_value = True
+    redis_mock.hget.return_value = '{"vector": [0.1, 0.2, 0.3]}'
+    redis_mock.ft.return_value = Mock()
+    
+    # Mock SentenceTransformer
+    embedder_mock = Mock()
+    embedder_mock.encode.return_value = [[0.1, 0.2, 0.3] * 128]  # 384-dim vector
+    
+    # Mock DDGS
+    ddgs_mock = Mock()
+    ddgs_mock.text.return_value = [
+        {"title": "Test Result", "body": "Test content", "href": "https://test.com"}
+    ]
+    
+    # Mock LiteLLM
+    litellm_mock = Mock()
+    litellm_mock.completion.return_value = Mock(
+        choices=[Mock(message=Mock(content="Test LLM response"))]
+    )
+    
+    with patch('redis.Redis', return_value=redis_mock), \
+         patch('redis.asyncio.Redis', return_value=redis_mock), \
+         patch('sentence_transformers.SentenceTransformer', return_value=embedder_mock), \
+         patch('ddgs.DDGS', return_value=ddgs_mock), \
+         patch('litellm.completion', return_value=litellm_mock), \
+         patch('litellm.llms.custom_httpx.async_client_cleanup.close_litellm_async_clients', lambda *a, **k: None), \
+         patch('httpx.AsyncClient'):
+        yield
+
+
+@pytest.fixture
+def mock_redis():
+    """Mock Redis client for unit tests."""
+    redis_mock = Mock()
+    redis_mock.ping.return_value = True
+    redis_mock.set.return_value = True
+    redis_mock.get.return_value = '{"test": "data"}'
+    redis_mock.delete.return_value = 1
+    redis_mock.exists.return_value = True
+    redis_mock.scan_iter.return_value = iter(['test:key1', 'test:key2'])
+    redis_mock.hset.return_value = True
+    redis_mock.hget.return_value = '{"vector": [0.1, 0.2, 0.3]}'
+    redis_mock.ft.return_value = Mock()
+    return redis_mock
+
+
+@pytest.fixture
+def mock_llm_response():
+    """Mock LLM response for unit tests."""
+    return {
+        "response": "Test LLM response",
+        "tokens": 100,
+        "cost": 0.001,
+        "latency": 1.5,
+        "model": "test-model"
+    }
+
+
+@pytest.fixture
+def mock_embedder():
+    """Mock sentence transformer embedder."""
+    embedder_mock = Mock()
+    embedder_mock.encode.return_value = [[0.1, 0.2, 0.3] * 128]  # 384-dim vector
+    embedder_mock.get_sentence_embedding_dimension.return_value = 384
+    return embedder_mock
+
+
+@pytest.fixture
+def mock_search_results():
+    """Mock search results for DuckDuckGo."""
+    return [
+        {
+            "title": "Test Search Result 1",
+            "body": "This is test content for search result 1",
+            "href": "https://example.com/result1"
+        },
+        {
+            "title": "Test Search Result 2", 
+            "body": "This is test content for search result 2",
+            "href": "https://example.com/result2"
+        }
+    ]
+
+
+@pytest.fixture
+def temp_config_file():
+    """Create temporary YAML config file."""
+    config_data = {
+        'orchestrator': {
+            'id': 'test_workflow',
+            'strategy': 'sequential',
+            'queue': 'test_queue',
+            'agents': ['test_agent']
+        },
+        'agents': [{
+            'id': 'test_agent',
+            'type': 'local_llm',
+            'prompt': 'Test prompt: {{ input }}',
+            'provider': 'ollama',
+            'model': 'test-model'
+        }]
+    }
+    
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:
+        yaml.dump(config_data, f)
+        yield f.name
+    
+    os.unlink(f.name)
+
+
+@pytest.fixture
+def sample_context():
+    """Sample execution context for tests."""
+    return {
+        'run_id': 'test_run_123',
+        'input': 'Test input query',
+        'previous_outputs': {},
+        'orchestrator': Mock(),
+        'step_index': 0,
+        'queue': ['test_agent']
+    }
+
+
+@pytest.fixture
+def sample_graph_state():
+    """Sample graph state for GraphScout tests."""
+    from orka.orchestrator.graph_api import EdgeDescriptor, GraphState, NodeDescriptor
+    
+    nodes = {
+        "test_agent": NodeDescriptor(
+            id="test_agent",
+            type="LocalLLMAgent",
+            prompt_summary="Test agent for unit tests",
+            capabilities=["text_generation"],
+            contract={},
+            cost_model={"base_cost": 0.001},
+            safety_tags=["safe"],
+            metadata={}
+        ),
+        "search_agent": NodeDescriptor(
+            id="search_agent",
+            type="SearchAgent",
+            prompt_summary="Search agent for testing",
+            capabilities=["web_search"],
+            contract={},
+            cost_model={"base_cost": 0.002},
+            safety_tags=["safe"],
+            metadata={}
+        )
+    }
+    
+    edges = [EdgeDescriptor(src="test_agent", dst="search_agent", weight=1.0)]
+    
+    return GraphState(
+        nodes=nodes,
+        edges=edges,
+        current_node="test_agent",
+        visited_nodes=set(),
+        runtime_state={"run_id": "test_run_123"},
+        budgets={"max_tokens": 1000, "max_cost": 0.10},
+        constraints={}
+    )
+
+
+@pytest.fixture
+def mock_orchestrator():
+    """Mock orchestrator for unit tests."""
+    orchestrator = Mock()
+    orchestrator.agents = {
+        "test_agent": Mock(
+            __class__=Mock(__name__="LocalLLMAgent"),
+            required_inputs=[],
+            capabilities=["text_generation"],
+            safety_tags=["safe"]
+        ),
+        "search_agent": Mock(
+            __class__=Mock(__name__="SearchAgent"),
+            required_inputs=["query"],
+            capabilities=["web_search"],
+            safety_tags=["safe"]
+        )
+    }
+    orchestrator.orchestrator_cfg = {
+        "agents": ["test_agent", "search_agent"],
+        "strategy": "sequential"
+    }
+    orchestrator.queue = ["test_agent"]
+    orchestrator.step_index = 0
+    orchestrator.memory_manager = Mock()
+    return orchestrator
+
+
+@pytest.fixture
+def sample_candidates():
+    """Sample candidates for GraphScout path evaluation."""
+    return [
+        {
+            "node_id": "test_agent",
+            "path": ["test_agent"],
+            "estimated_cost": 0.001,
+            "estimated_latency": 500,
+            "confidence": 0.8
+        },
+        {
+            "node_id": "search_agent", 
+            "path": ["test_agent", "search_agent"],
+            "estimated_cost": 0.003,
+            "estimated_latency": 1500,
+            "confidence": 0.9
+        }
+    ]
+
+
+@pytest.fixture
+def temp_memory_file():
+    """Create temporary memory file for testing."""
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        f.write('{"test_memory": {"content": "test data", "timestamp": "2024-01-01T00:00:00Z"}}')
+        yield f.name
+    
+    os.unlink(f.name)
+
+
+@pytest.fixture
+def event_loop():
+    """Create event loop for async tests."""
+    loop = asyncio.new_event_loop()
+    yield loop
+    loop.close()
 
 
 # Pytest configuration
 def pytest_configure(config):
     """Configure pytest for different environments."""
-    if IS_CI:
-        # Add CI-specific markers
-        config.addinivalue_line("markers", "ci_only: mark test to run only in CI")
-        config.addinivalue_line("markers", "local_only: mark test to run only locally")
-
-    # Skip slow tests in CI by default
-    if IS_CI and not config.getoption("--run-slow", default=False):
-        config.addinivalue_line("markers", "slow: mark test as slow running")
+    # Add custom markers
+    config.addinivalue_line("markers", "unit: Unit tests with mocked external services")
+    config.addinivalue_line("markers", "integration: Integration tests with real services")
+    config.addinivalue_line("markers", "slow: Slow running tests")
+    config.addinivalue_line("markers", "no_auto_mock: Skip automatic mocking of external services")
 
 
 def pytest_collection_modifyitems(config, items):
-    """Modify test collection based on environment."""
-    if IS_CI:
-        # Skip local-only tests in CI
-        skip_local = pytest.mark.skip(reason="Skipped in CI environment")
-        for item in items:
-            if "local_only" in item.keywords:
-                item.add_marker(skip_local)
-
-        # Skip slow tests if not explicitly requested
-        if not config.getoption("--run-slow", default=False):
-            skip_slow = pytest.mark.skip(reason="Slow tests skipped (use --run-slow)")
-            for item in items:
-                if "slow" in item.keywords:
-                    item.add_marker(skip_slow)
-    else:
-        # Skip CI-only tests locally
-        skip_ci = pytest.mark.skip(reason="CI-only test")
-        for item in items:
-            if "ci_only" in item.keywords:
-                item.add_marker(skip_ci)
+    """Modify test collection based on markers."""
+    for item in items:
+        # Auto-mark unit tests
+        if "unit" in str(item.fspath):
+            item.add_marker(pytest.mark.unit)
+        # Auto-mark integration tests  
+        elif "integration" in str(item.fspath):
+            item.add_marker(pytest.mark.integration)
 
 
-def pytest_addoption(parser):
-    """Add custom pytest options."""
-    parser.addoption(
-        "--run-slow",
-        action="store_true",
-        default=False,
-        help="Run slow tests",
-    )
-    parser.addoption(
-        "--use-real-services",
-        action="store_true",
-        default=USE_REAL_REDIS,
-        help="Use real Redis services",
-    )
-
-
-# Core fixtures
-@pytest.fixture(scope="session")
-def event_loop_policy():
-    """Set event loop policy for async tests."""
-    return asyncio.DefaultEventLoopPolicy()
-
-
-@pytest.fixture(scope="session", autouse=True)
-def configure_test_environment():
-    """Configure the test environment."""
-    # Set test-specific environment variables
-    os.environ["ORKA_ENV"] = "test"
-    os.environ["ORKA_LOG_LEVEL"] = "WARNING" if IS_CI else "INFO"
-
-    yield
-
-    # Cleanup after all tests
-    if not IS_CI:  # Only cleanup locally
-        cleanup_test_data()
-
-
-@pytest.fixture(scope="session")
-def redis_client():
-    """Provide Redis client based on configuration."""
-    if USE_REAL_REDIS and redis and wait_for_redis(REDIS_URL):
-        client = redis.from_url(REDIS_URL)
-        yield client
-        try:
-            client.flushdb()  # Clean up after tests
-        except Exception:
-            pass
-    else:
-        yield FakeRedisClient()
-
-
-@pytest.fixture(scope="function", autouse=True)
-def isolate_tests():
-    """Ensure test isolation."""
-    # Clear any global state
-    import gc
-
-    gc.collect()
-
-    yield
-
-    # Post-test cleanup
-    gc.collect()
-
-
-@pytest.fixture(scope="session", autouse=True)
-def mock_external_services():
-    """Mock external services in CI environment."""
-    if IS_CI or SKIP_LLM_TESTS:
-        with patch("openai.OpenAI") as mock_openai:
-            # Configure OpenAI mock
-            mock_response = MagicMock()
-            mock_response.choices = [MagicMock()]
-            mock_response.choices[0].message.content = "Mocked response"
-            mock_openai.return_value.chat.completions.create.return_value = mock_response
-            yield mock_openai
-    else:
-        yield None
-
-
-# Configuration fixtures
-@pytest.fixture(scope="session")
-def basic_config():
-    """Basic configuration for testing."""
+# Helper functions for tests
+def create_test_config(agents_config: List[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Create test configuration dictionary."""
+    if agents_config is None:
+        agents_config = [{
+            'id': 'test_agent',
+            'type': 'local_llm',
+            'prompt': 'Test: {{ input }}',
+            'provider': 'test',
+            'model': 'test-model'
+        }]
+    
     return {
-        "orchestrator": {
-            "id": "test_orchestrator",
-            "strategy": "sequential",
-            "queue": "orka:test",
+        'orchestrator': {
+            'id': 'test_workflow',
+            'strategy': 'sequential',
+            'queue': 'test_queue',
+            'agents': [agent['id'] for agent in agents_config]
         },
+        'agents': agents_config
     }
 
 
-@pytest.fixture(scope="session")
-def agent_config():
-    """Basic agent configuration."""
-    return {
-        "id": "test_agent",
-        "type": "openai-answer",
-        "queue": "orka:test_queue",
-        "prompt": "Test prompt: {{ input }}",
-    }
-
-
-@pytest.fixture(scope="function")
-def mock_memory_logger():
-    """Mock memory logger for testing."""
-    mock_logger = MagicMock()
-    mock_logger.log_event.return_value = None
-    mock_logger.get_events.return_value = []
-    mock_logger.clear_events.return_value = None
-    return mock_logger
-
-
-@pytest.fixture(scope="function")
-def temp_yaml_config(tmp_path):
-    """Create a temporary YAML config file."""
-    config_content = """
-orchestrator:
-  id: test_orchestrator
-  strategy: sequential
-  queue: orka:test
-  agents:
-    - test_agent
-
-agents:
-  - id: test_agent
-    type: openai-answer
-    queue: orka:test_queue
-    prompt: "Test prompt: {{ input }}"
-"""
-    config_file = tmp_path / "test_config.yml"
-    config_file.write_text(config_content)
-    return str(config_file)
-
-
-# Utility functions
-def wait_for_redis(redis_url: str, max_retries: int = 5, retry_delay: float = 1.0) -> bool:
-    """Wait for Redis to be available."""
-    if not redis:
-        return False
-
-    for attempt in range(max_retries):
-        try:
-            client = redis.from_url(redis_url)
-            client.ping()
-            return True
-        except Exception:
-            if attempt < max_retries - 1:
-                time.sleep(retry_delay)
-    return False
-
-
-def cleanup_test_data():
-    """Clean up test data after test session."""
-    try:
-        script_path = os.path.join(os.path.dirname(__file__), "..", "scripts", "delete_memory.py")
-        if os.path.exists(script_path):
-            subprocess.run([sys.executable, script_path], check=False, timeout=30)
-    except Exception as e:
-        logging.warning(f"Failed to cleanup test data: {e}")
+def assert_mock_called_with_pattern(mock_obj, pattern: str):
+    """Assert that mock was called with argument containing pattern."""
+    for call in mock_obj.call_args_list:
+        args, kwargs = call
+        for arg in args:
+            if isinstance(arg, str) and pattern in arg:
+                return True
+        for value in kwargs.values():
+            if isinstance(value, str) and pattern in value:
+                return True
+    raise AssertionError(f"Mock was not called with argument containing '{pattern}'")

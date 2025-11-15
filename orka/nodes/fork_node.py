@@ -101,6 +101,7 @@ class ForkNode(BaseNode):
         orchestrator.fork_manager.create_group(fork_group_id, all_flat_agents)
         logger.debug(f"- Created fork group {fork_group_id} with agents {all_flat_agents}")
 
+        state_key = None
         if self.memory_logger is not None:
             # Store fork group mapping and agent list using backend-agnostic methods
             self.memory_logger.hset(f"fork_group_mapping:{self.node_id}", "group_id", fork_group_id)

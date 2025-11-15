@@ -18,12 +18,12 @@ agents:
   - id: fork_metrics
     type: fork
     targets:
-      - policies_rag
-      - prior_incidents_reader
-      - risk_predictor
-      - vulnerability_analyzer
-      - reversibility_estimator
-      - consent_checker
+      - [policies_rag]  # Fixed: Each branch must be wrapped in a list
+      - [prior_incidents_reader]
+      - [risk_predictor]
+      - [vulnerability_analyzer]
+      - [reversibility_estimator]
+      - [consent_checker]
 
   - id: policies_rag
     type: memory

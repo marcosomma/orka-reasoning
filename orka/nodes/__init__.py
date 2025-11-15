@@ -18,7 +18,9 @@ from .failover_node import FailoverNode
 from .fork_node import ForkNode
 from .join_node import JoinNode
 from .loop_node import LoopNode
+from .loop_validator_node import LoopValidatorNode
 from .memory_reader_node import MemoryReaderNode
 from .memory_writer_node import MemoryWriterNode
+from .path_executor_node import PathExecutorNode
 from .rag_node import RAGNode
 from .router_node import RouterNode

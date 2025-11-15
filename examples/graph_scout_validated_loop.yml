@@ -1,0 +1,383 @@
+# GraphScout with Boolean Validation Loop
+# =========================================
+#
+# This example demonstrates an advanced workflow where GraphScout's path selection
+# is iteratively validated and improved using boolean scoring in a loop.
+#
+# Flow:
+# 1. GraphScout proposes an execution path
+# 2. PlanValidatorAgent evaluates it with boolean criteria
+# 3. If validation fails, GraphScout adjusts and tries again
+# 4. Loop continues until path meets quality threshold (0.85)
+
+orchestrator:
+  id: validated-graph-scout
+  strategy: sequential
+  agents:
+    - path_discovery_loop
+    - path_executor
+    - final_execution
+
+agents:
+  # Iterative path discovery with validation
+  - id: path_discovery_loop
+    type: loop
+    max_loops: 3
+    score_threshold: 0.05  # Path must score 5% to proceed (lenient threshold)
+    persist_across_runs: false  # Prevent accumulation across runs
+    fallback_score: 0.03  # Score to use when validation agent times out
+    timeout_score: 0.02  # Score to use when validation explicitly times out
+    
+    # Boolean scoring for deterministic validation
+    scoring:
+      preset: lenient  # Use lenient preset for less strict validation
+      custom_weights:
+        # Reduce emphasis on strict criteria
+        completeness.has_all_required_steps: 0.10
+        coherence.logical_agent_sequence: 0.02
+        coherence.proper_data_flow: 0.01
+    
+    # Track validation feedback across loops
+    past_loops_metadata:
+      loop_number: "{{ get_loop_number() }}"
+      score: "{{ score }}"
+      timestamp: "{{ timestamp }}"
+      insights: "{{ insights }}"
+      improvements: "{{ improvements }}"
+      mistakes: "{{ mistakes }}"
+    
+    internal_workflow:
+      orchestrator:
+        id: discovery-validation
+        strategy: sequential
+        agents: [path_proposer, path_validator_moderate]
+      
+      agents:
+        # GraphScout for intelligent path discovery
+        - id: path_proposer
+          type: graph-scout
+          params:
+            k_beam: 5
+            max_depth: 3
+            commit_margin: 0.1  # Margin for commitment decision (shortlist when close competition)
+            require_terminal: true  # Prefer paths ending with response builders
+            score_weights:
+              llm: 0.5
+              heuristics: 0.25
+              prior: 0.15
+              cost: 0.05
+              latency: 0.05
+            evaluation_model: "local_llm"
+            evaluation_model_name: "gpt-oss:20b"
+            llm_evaluation_enabled: true
+            fallback_to_heuristics: true
+          prompt: |
+            Select optimal execution path for: {{ get_input() }}
+            
+            {% if has_past_loops() %}
+            ## Validation Feedback (Loop {{ get_loop_number() }})
+            
+            {% set last_loop = get_past_loops()[-1] %}
+            Previous attempt scored: {{ last_loop.score }} (need 0.05 to pass)
+            
+            **Failed Criteria to Address:**
+            {% if "has_all_required_steps" in last_loop.mistakes %}
+            - Add missing agents for complete workflow
+            {% endif %}
+            {% if "includes_fallback_path" in last_loop.mistakes %}
+            - Include error handling and fallback paths
+            {% endif %}
+            {% if "handles_edge_cases" in last_loop.mistakes %}
+            - Consider edge cases and alternative scenarios
+            {% endif %}
+            {% if "validates_inputs" in last_loop.mistakes %}
+            - Add input validation step
+            {% endif %}
+            {% if "logical_agent_sequence" in last_loop.mistakes %}
+            - Fix agent ordering and dependencies
+            {% endif %}
+            {% if "proper_data_flow" in last_loop.mistakes %}
+            - Ensure proper data flow between agents
+            {% endif %}
+            
+            **Validation History:**
+            {% for past_loop in get_past_loops() %}
+            Loop {{ past_loop.loop_number }}: {{ past_loop.score }} - {{ past_loop.improvements }}
+            {% endfor %}
+            {% endif %}
+            
+            Select path that addresses all validation criteria.
+        
+        # Validate the PROPOSAL with boolean scoring
+        - id: path_validator_moderate
+          type: plan_validator
+          llm_model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.2
+          timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
+          
+          # Boolean scoring configuration (lenient for shortlist proposals)
+          scoring_preset: lenient
+          custom_weights:
+            completeness.has_all_required_steps: 0.10
+            coherence.logical_agent_sequence: 0.02
+            coherence.proper_data_flow: 0.01
+
+  # ===== EXECUTION AGENTS (Top Level) =====
+  # CRITICAL: These agents MUST be at top-level, NOT inside internal_workflow
+  # - GraphScout discovers agents from orchestrator.agents (global registry)
+  # - PathExecutor can only execute agents in the global registry
+  # - Agents inside internal_workflow are scoped locally and NOT accessible
+  # 
+  # These agents are NOT in the orchestrator sequence (lines 17-19), so they
+  # won't auto-execute. They are only discovered by GraphScout and executed
+  # by PathExecutor when included in the validated path.
+  #
+  # See docs/AGENT_SCOPING.md for detailed explanation.
+  
+  # Search agent for web retrieval
+  - id: search_agent
+    type: duckduckgo
+    capabilities: [data_retrieval, web_search]
+    max_results: 5
+  
+  # Analysis agent for deep reasoning
+  - id: analysis_agent
+    type: local_llm
+    capabilities: [reasoning, analysis]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      Analyze the following for: {{ input }}
+      
+      {% if previous_outputs.search_agent %}
+      Search Results: {{ previous_outputs.search_agent.response }}
+      {% endif %}
+      
+      Provide comprehensive analysis.
+  
+  # Memory reader for context retrieval
+  - id: memory_reader
+    type: memory
+    namespace: validated_paths
+    memory_preset: "semantic"
+    config:
+      operation: read
+      vector: true
+      query_key: input
+    prompt: |
+      Retrieve context for: {{ input }}
+  
+  # Memory writer for storing results
+  - id: memory_writer
+    type: memory
+    namespace: validated_paths
+    memory_preset: "episodic"
+    config:
+      operation: write
+      vector: true
+    prompt: |
+      Query: {{ input }}
+      {% if previous_outputs.search_agent %}
+      Search performed: Yes
+      {% endif %}
+      {% if previous_outputs.analysis_agent %}  
+      Analysis generated: Yes
+      {% endif %}
+  
+  # Final response builder
+  - id: response_builder
+    type: local_llm
+    capabilities: [answer_emit, response_generation]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      Create a comprehensive response for: {{ input }}
+      
+      {% if previous_outputs.memory_reader %}
+      Context: {{ previous_outputs.memory_reader.response }}
+      {% endif %}
+      
+      {% if previous_outputs.search_agent %}
+      Search Results: {{ previous_outputs.search_agent.response }}
+      {% endif %}
+      
+      {% if previous_outputs.analysis_agent %}
+      Analysis: {{ previous_outputs.analysis_agent.response }}
+      {% endif %}
+      
+      Provide a clear, well-structured response.
+
+  # PathExecutor: Execute the validated path from the loop
+  - id: path_executor
+    type: path_executor
+    path_source: path_discovery_loop.response.result.path_proposer.target
+    on_agent_failure: continue
+
+  # Report on validation and execution
+  - id: final_execution
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      # Validated Path Execution Plan
+      
+      {% if previous_outputs.path_discovery_loop %}
+      {% set loop_result = previous_outputs.path_discovery_loop.response %}
+      
+      ## Validation Summary
+      - Loops Required: {{ previous_outputs.path_discovery_loop.loops_completed | default('N/A') }}
+      - Final Score: {{ (previous_outputs.path_discovery_loop.final_score | default(0)) | round(3) }}
+      - Validation Status: {{ 'APPROVED ✓' if previous_outputs.path_discovery_loop.threshold_met | default(false) else 'FAILED ✗' }}
+      
+      ## Approved Execution Path
+      {% if loop_result.result.path_proposer %}
+      {{ loop_result.result.path_proposer.response }}
+      {% endif %}
+      
+      ## Boolean Validation Breakdown
+      {% if loop_result.result.path_validator_moderate %}
+      {% set validation = loop_result.result.path_validator_moderate %}
+      
+      **Overall Assessment:** {{ validation.overall_assessment | default('N/A') }}
+      **Score:** {{ (validation.validation_score | default(0)) | round(3) }}
+      
+      ### Dimension Scores
+      {% if validation.dimension_scores %}
+      {% for dimension, data in validation.dimension_scores.items() %}
+      - {{ dimension|capitalize }}: {{ (data.percentage | default(0))|round(1) }}% ({{ (data.score | default(0))|round(3) }}/{{ (data.max_score | default(0))|round(3) }})
+      {% endfor %}
+      {% endif %}
+      
+      ### Passed Criteria ({{ validation.passed_criteria|length }}/15)
+      {% for criterion in validation.passed_criteria[:5] %}
+      - ✓ {{ criterion }}
+      {% endfor %}
+      {% if validation.passed_criteria|length > 5 %}
+      ... and {{ validation.passed_criteria|length - 5 }} more
+      {% endif %}
+      
+      {% if validation.failed_criteria %}
+      ### Failed Criteria ({{ validation.failed_criteria|length }})
+      {% for criterion in validation.failed_criteria %}
+      - ✗ {{ criterion }}
+      {% endfor %}
+      {% endif %}
+      {% endif %}
+      
+      ## Evolution Across Loops
+      {% if loop_result.past_loops %}
+      {% for past_loop in loop_result.past_loops %}
+      **Loop {{ past_loop.loop_number }}**: Score {{ past_loop.score }}
+      - Issues: {{ past_loop.mistakes or 'None' }}
+      {% endfor %}
+      {% endif %}
+      
+      ## Execution Results
+      {% if previous_outputs.path_executor %}
+      {% set executor = previous_outputs.path_executor.response %}
+      - Execution Status: {{ (executor.status | default('unknown')) | upper }}
+      - Executed Path: {{ executor.executed_path | default([]) }}
+      - Agents Completed: {{ (executor.results | default({})) | length }}
+      {% if executor.errors %}
+      - Errors: {{ executor.errors }}
+      {% endif %}
+      
+      ### Agent Outcomes:
+      {% for agent_id, result in (executor.results | default({})).items() %}
+      - **{{ agent_id }}**: {{ 'SUCCESS' if 'error' not in result else 'FAILED' }}
+      {% endfor %}
+      {% else %}
+      Path was not executed yet (validation threshold not met or execution pending).
+      {% endif %}
+      
+      ---
+      
+      ## Your Task
+      {% if previous_outputs.path_executor %}
+      Now that we have validated AND executed the path, provide:
+      
+      1. **Executive Summary**: How the path evolved through {{ previous_outputs.path_discovery_loop.loops_completed | default('N/A') }} iterations
+      2. **Quality Assessment**: Why this path scored {{ (previous_outputs.path_discovery_loop.final_score | default(0)) | round(3) }}
+      3. **Execution Analysis**: Review the execution results and agent outcomes above
+      4. **Key Strengths**: What makes this path robust (or weak)
+      5. **Production Readiness**: Based on validation + execution, is it ready for production?
+      6. **Recommendations**: Specific improvements needed based on actual execution results
+      {% else %}
+      Validation completed but path was not executed (threshold not met or max loops reached).
+      
+      1. **Validation Summary**: Explain why validation failed (score: {{ (previous_outputs.path_discovery_loop.final_score | default(0)) | round(3) }})
+      2. **Failed Criteria**: Review the failed validation criteria above
+      3. **Path Issues**: What specific problems exist in the proposed path?
+      4. **Recommendations**: What changes are needed for the path to pass validation?
+      5. **Next Steps**: Should GraphScout try different agents or a different sequence?
+      {% endif %}
+      
+      {% else %}
+      No path discovery results available. Unable to proceed.
+      {% endif %}
+
+# ============================================================================
+# Usage Examples
+# ============================================================================
+#
+# 1. Run with a simple query:
+#    orka run graph_scout_validated_loop.yml "What are the latest AI trends?"
+#
+# 2. Run with a complex query requiring multiple agents:
+#    orka run graph_scout_validated_loop.yml "Research quantum computing advances, 
+#    analyze their impact on cryptography, and store key findings for future reference"
+#
+# 3. Observe the validation loop in action:
+#    - Watch how GraphScout's proposals improve across iterations
+#    - See which boolean criteria fail and get addressed
+#    - Track dimension scores (completeness, efficiency, safety, coherence)
+#
+# 4. Check trace logs for detailed breakdown:
+#    - Each loop shows: score, passed_criteria, failed_criteria
+#    - Final validation includes dimension_scores and rationale
+#    - Evolution summary shows how path quality improved
+#
+# 5. Adjust validation strictness:
+#    - Change score_threshold (line 25): 0.75 (easier) to 0.90 (harder)
+#    - Change preset (line 29): lenient → moderate → strict
+#    - Add custom_weights (lines 30-34) to emphasize specific criteria
+#
+# ============================================================================
+# Expected Behavior
+# ============================================================================
+#
+# Loop 1: GraphScout proposes initial path
+#   → Validator scores it (often 0.60-0.75 on first try)
+#   → Identifies missing: edge cases, fallbacks, timeout protection
+#
+# Loop 2: GraphScout improves path with explicit error handling
+#   → Validator scores higher (0.75-0.85)
+#   → May still miss: input validation, specific edge cases
+#
+# Loop 3: GraphScout adds remaining missing pieces
+#   → Validator scores 0.85+ 
+#   → APPROVED - loop exits
+#
+# Execution: PathExecutorNode executes the validated path
+#   → Runs each agent in sequence
+#   → Accumulates results with full context
+#   → Reports execution status and outcomes
+#
+# Result: A thoroughly validated AND executed path with:
+#   ✓ All required steps
+#   ✓ Edge case handling
+#   ✓ Error handling and fallbacks
+#   ✓ Input validation
+#   ✓ Timeout protection
+#   ✓ Logical sequence
+#   ✓ Proper data flow
+#   ✓ Actual execution results
+

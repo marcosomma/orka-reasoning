@@ -1,0 +1,128 @@
+# Boolean-Based Scoring System Demo
+# Demonstrates deterministic, auditable scoring with LoopValidatorNode
+#
+# NEW: LoopValidatorNode
+# =====================
+# A specialized node that wraps LLM evaluation with robust format handling.
+# Eliminates the need for fragile prompt engineering in loops.
+#
+# Key Benefits:
+# - Built-in prompt templates (strict/moderate/lenient)
+# - Robust parsing with multiple fallback strategies
+# - Model-agnostic operation (works with any LLM)
+# - Consistent output format for LoopNode consumption
+# - No manual JSON formatting required in prompts
+#
+# When to Use LoopValidatorNode:
+# - Loop workflows requiring boolean pass/fail evaluation
+# - Scenarios where LLM output format compliance is problematic  
+# - Production systems needing reliable score extraction
+# - Workflows that need to work across different LLM models
+#
+# When to Use PlanValidatorAgent Instead:
+# - Validating complete execution plans (not loop iterations)
+# - Need weighted scoring with dimension breakdowns
+# - Require detailed validation rationale
+# - One-time validation (not iterative loops)
+
+orchestrator:
+  id: boolean-scoring-demo
+  strategy: sequential
+  agents:
+    - path_proposer
+    - path_validator_strict
+    - path_validator_moderate
+    - improvement_loop
+
+agents:
+  # Step 1: Propose a path
+  - id: path_proposer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.5
+    prompt: |
+      Propose an agent execution path for this query: {{ input }}
+      
+      Provide a structured path with:
+      - Agent sequence
+      - Data flow
+      - Error handling
+  
+  # Step 2: Validate with STRICT preset (production-critical)
+  - id: path_validator_strict
+    type: plan_validator
+    llm_model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.2
+    scoring_preset: strict  # High standards: approved at 0.90+
+    # Note: Removed old numeric validation_score, now using boolean criteria
+
+  # Step 3: Validate with MODERATE preset (balanced)
+  - id: path_validator_moderate
+    type: plan_validator
+    llm_model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.2
+    scoring_preset: moderate  # Balanced: approved at 0.85+
+
+  # Step 4: Improvement loop with boolean scoring
+  - id: improvement_loop
+    type: loop
+    max_loops: 3
+    score_threshold: 0.30  # Lowered from 0.85 to realistic boolean scoring thresholds
+    
+    # Boolean scoring with custom weights
+    scoring:
+      preset: moderate
+      custom_weights:
+        # Override specific criteria weights
+        completeness.has_all_required_steps: 0.25  # Emphasize completeness
+        safety.validates_inputs: 0.15  # Emphasize safety
+    
+    internal_workflow:
+      orchestrator:
+        id: improvement-cycle
+        strategy: sequential
+        agents: [improver, boolean_evaluator]
+      
+      agents:
+        - id: improver
+          type: local_llm
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.6
+          prompt: |
+            Improve the proposed path based on feedback:
+            
+            Original: {{ get_input() }}
+            
+            {% if has_past_loops() %}
+            Previous attempts: {{ get_past_loops() | length }}
+            {% for past_loop in get_past_loops() %}
+            Loop {{ past_loop.loop_number }}: Score {{ past_loop.score }}
+            Failed: {{ past_loop.failed_criteria | join(', ') }}
+            {% endfor %}
+            {% endif %}
+        
+        # NEW: Loop Validator Node - Robust boolean evaluation with built-in parsing
+        - id: boolean_evaluator
+          type: loop_validator
+          llm_model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          scoring_preset: moderate  # strict/moderate/lenient
+          evaluation_target: improver  # Evaluate the improver's output
+          temperature: 0.1
+
+# Benefits of Boolean Scoring:
+# 1. DETERMINISTIC: Same booleans always produce same score
+# 2. AUDITABLE: See exactly which criteria passed/failed
+# 3. CONSISTENT: Different LLMs agree more on true/false than numeric scores
+# 4. TUNABLE: Adjust weights without retraining
+# 5. TESTABLE: Easy to write unit tests with exact expected scores
+

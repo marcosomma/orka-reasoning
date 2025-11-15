@@ -1,0 +1,74 @@
+# Simple Boolean Scoring Loop
+# A minimal example showing boolean-based loop termination
+
+orchestrator:
+  id: simple-boolean-loop
+  strategy: sequential
+  agents:
+    - quality_loop
+
+agents:
+  - id: quality_loop
+    type: loop
+    max_loops: 3
+    score_threshold: 0.30  # Lowered from 0.85 to match actual performance with gpt-oss:20b
+    
+    # Boolean scoring - just specify the preset!
+    scoring:
+      preset: moderate  # Options: strict (0.90), moderate (0.85), lenient (0.80)
+    
+    internal_workflow:
+      orchestrator:
+        id: internal
+        strategy: sequential
+        agents: [analyzer, boolean_evaluator]
+      
+      agents:
+        # Generate analysis
+        - id: analyzer
+          type: local_llm
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.7
+          prompt: |
+            Analyze: {{ get_input() }}
+            
+            {% if get_loop_number() > 1 %}
+            Previous attempt had issues. Improve the analysis.
+            {% endif %}
+            
+            Provide comprehensive insights.
+        
+        # Evaluate using loop_validator node - robust boolean evaluation
+        - id: boolean_evaluator
+          type: loop_validator
+          llm_model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          scoring_preset: moderate
+          evaluation_target: analyzer  # Evaluate the analyzer's output
+          temperature: 0.1
+
+# Usage Examples:
+#
+# 1. Run with default moderate preset (threshold: 0.85):
+#    orka run simple_boolean_loop.yml "Analyze user authentication flow"
+#
+# 2. Switch to strict preset (threshold: 0.90) by editing line 18:
+#    scoring:
+#      preset: strict
+#
+# 3. Add custom weights to emphasize specific criteria:
+#    scoring:
+#      preset: moderate
+#      custom_weights:
+#        safety.validates_inputs: 0.20  # Increase from default
+#        completeness.has_all_required_steps: 0.25
+#
+# 4. View detailed scoring breakdown in trace logs:
+#    - boolean_evaluations: Shows all true/false values
+#    - dimension_scores: Shows score per dimension (completeness, efficiency, etc.)
+#    - passed_criteria: List of criteria that passed
+#    - failed_criteria: List of criteria that failed
+

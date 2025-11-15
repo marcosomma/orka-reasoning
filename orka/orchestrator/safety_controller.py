@@ -316,19 +316,16 @@ class SafetyController:
     def _node_has_capability(self, node_id: str, capability: str) -> bool:
         """Check if node has a specific capability."""
         try:
-            # Simple heuristic based on node ID
-            node_lower = node_id.lower()
-
-            capability_indicators = {
-                "external_api_calls": ["api", "http", "web", "search"],
-                "file_system_access": ["file", "disk", "storage"],
-                "database_writes": ["db", "database", "write", "store"],
-                "email_sending": ["email", "mail", "send"],
-                "code_execution": ["exec", "run", "execute", "code"],
-            }
-
-            indicators = capability_indicators.get(capability, [])
-            return any(indicator in node_lower for indicator in indicators) if indicators else False
+            orchestrator = getattr(self.config, "orchestrator", None)
+            if not orchestrator or not hasattr(orchestrator, "agents"):
+                return False
+            
+            agent = orchestrator.agents.get(node_id)
+            if not agent:
+                return False
+            
+            agent_capabilities = getattr(agent, "capabilities", [])
+            return capability in agent_capabilities
 
         except Exception as e:
             logger.error(f"Capability checking failed: {e}")

@@ -74,6 +74,68 @@ pip install -v orka-reasoning
 
 ## RedisStack Issues
 
+### RedisStack Not Available / Installation Options
+
+**Symptoms:**
+- `"Both native and Docker Redis Stack unavailable"` error
+- Cannot start OrKa
+- Memory system not working
+
+**Understanding the Startup Process:**
+
+When you run `orka-start`, it automatically tries (in order):
+1. **Native RedisStack** (if installed on your system)
+2. **Docker RedisStack** (if Docker is available)
+3. **Error with instructions** (if neither is available)
+
+**Solutions by Installation Method:**
+
+**Option A: Install RedisStack Natively (No Docker Required)**
+
+*macOS:*
+```bash
+brew install redis-stack
+orka-start  # Will now use native installation
+```
+
+*Ubuntu/Debian:*
+```bash
+sudo apt update
+sudo apt install redis-stack-server
+orka-start  # Will now use native installation
+```
+
+*Windows:*
+1. Download from https://redis.io/download
+2. Install and add to PATH
+3. Run `orka-start`
+
+**Option B: Use Docker**
+
+*Prerequisites:* Docker must be installed and running
+
+```bash
+# Verify Docker is running
+docker ps
+
+# Let orka-start handle it automatically
+orka-start
+
+# Or start manually
+docker run -d -p 6380:6380 --name orka-redis redis/redis-stack:latest
+```
+
+**Verify Installation:**
+```bash
+# Check if RedisStack is running
+redis-cli -p 6380 ping
+# Should return: PONG
+
+# Verify vector search capabilities
+redis-cli -p 6380 FT._LIST
+# Should show OrKa memory indexes (after first use)
+```
+
 ### "FT.CREATE unknown command"
 
 **Symptoms:**
@@ -83,26 +145,30 @@ pip install -v orka-reasoning
 
 **Causes:**
 1. Using basic Redis instead of RedisStack
-2. Docker not running
+2. RedisStack modules not loaded
 3. Wrong Redis connection URL
 
 **Solutions:**
 
-1. Verify RedisStack:
+1. Verify RedisStack is running (not basic Redis):
 ```bash
-# Check if RedisStack is running
-docker ps | grep redis-stack
+# Check if RedisStack modules are loaded
+redis-cli -p 6380 MODULE LIST
 
-# Check available commands
-redis-cli FT._LIST
+# Should show: redisearch, redistimeseries, etc.
 ```
 
-2. Start RedisStack properly:
+2. Restart with proper RedisStack:
 ```bash
-docker run -d -p 6380:6380 redis/redis-stack:latest
+# Stop any existing Redis
+docker stop orka-redis
+docker rm orka-redis
+
+# Restart with orka-start (uses RedisStack)
+orka-start
 ```
 
-3. Check connection URL:
+3. Check connection URL points to RedisStack:
 ```bash
 export REDIS_URL=redis://localhost:6380/0
 orka memory configure

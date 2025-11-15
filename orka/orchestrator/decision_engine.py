@@ -72,6 +72,8 @@ class DecisionEngine:
                         best_terminal.get("confidence", 0.8),
                         f"🎯 Terminal path to response builder (score={best_terminal.get('score', 0.0):.3f})",
                     )
+                # If no terminal paths found, continue with normal decision logic
+                # This allows shortlist to be returned when appropriate
 
             top_candidate = scored_candidates[0]
             top_score = top_candidate.get("score", 0.0)

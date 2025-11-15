@@ -27,7 +27,7 @@ agents:
     temperature: 0.1
     queue: orka:memory-check
     prompt: |
-      'Check if the following memory data is relevant to the question and has high confidence. Question: {{ get_input() }} Memory: {{ get_agent_response(''memory-reader'') }} Return true if: 1) The memory contains relevant information about the question; 2) The memory has a confidence score higher than 0.89; 3) The memory is not "NONE". Return false otherwise. Answer with exactly ''true'' or ''false'' only.'
+      Check if the following memory data is relevant to the question and has high confidence. Question: {{ get_input() }} Memory: {{ get_agent_response('memory-reader') }} Return true if: 1) The memory contains relevant information about the question; 2) The memory has a confidence score higher than 0.89; 3) The memory is not "NONE". Return false otherwise. Answer with exactly 'true' or 'false' only.
   - id: router
     type: router
     params:

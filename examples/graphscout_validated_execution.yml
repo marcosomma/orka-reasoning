@@ -1,0 +1,207 @@
+# GraphScout Validated Execution
+# ================================
+#
+# This demonstrates GraphScout in EXECUTION MODE where:
+# 1. GraphScout proposes and EXECUTES a path
+# 2. The path quality is monitored/validated during execution
+# 3. Results are collected from the actual agent executions
+#
+# Key difference from validation-only examples:
+# - GraphScout is in the MAIN orchestrator (not inside a loop)
+# - The execution engine actually follows GraphScout's routing
+# - Real agents are executed, not just proposed
+
+orchestrator:
+  id: graphscout-execution-demo
+  strategy: sequential
+  agents:
+    - input_analyzer
+    - graphscout_router  # GraphScout executes here, routing to selected agents
+    - result_synthesizer
+
+agents:
+  # Step 1: Analyze input to guide routing
+  - id: input_analyzer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
+    prompt: |
+      Analyze this request:
+      {{ input }}
+      
+      Determine:
+      1. Information needs (search, analysis, generation)
+      2. Complexity level
+      3. Required capabilities
+      
+      Return brief analysis.
+
+  # Step 2: GraphScout routes and orchestrator EXECUTES the path
+  - id: graphscout_router
+    type: graph-scout
+    params:
+      k_beam: 5
+      max_depth: 3
+      commit_margin: 0.1
+      require_terminal: true
+      score_weights:
+        llm: 0.50
+        heuristics: 0.25
+        prior: 0.15
+        cost: 0.05
+        latency: 0.05
+      safety_profile: default
+      cost_budget_tokens: 1500
+      latency_budget_ms: 8000
+      max_preview_tokens: 250
+      evaluation_model: "local_llm"
+      evaluation_model_name: "gpt-oss:20b"
+      validation_model: "local_llm"
+      validation_model_name: "gpt-oss:20b"
+      llm_evaluation_enabled: true
+      fallback_to_heuristics: true
+    prompt: |
+      Select and route to optimal agent path.
+      
+      Query: {{ input }}
+      Analysis: {{ previous_outputs.input_analyzer.response }}
+      
+      **Available Agents:**
+      
+      **Data Retrieval:**
+      - web_search: DuckDuckGo search for current information
+      - memory_reader: Retrieve relevant past context
+      
+      **Analysis:**
+      - deep_analyzer: Multi-perspective analysis
+      - technical_expert: Technical domain expertise
+      
+      **Generation:**
+      - content_synthesizer: Combine sources (terminal capable)
+      - report_builder: Structured reports (terminal capable)
+      
+      **Guidelines:**
+      1. Select minimum agents for completeness
+      2. Ensure logical dependencies
+      3. Must end with terminal agent
+      4. Optimize for cost and latency
+      
+      **IMPORTANT**: The path you select WILL BE EXECUTED.
+      The orchestrator will follow your routing decision.
+
+  # Step 3: Synthesize results from executed path
+  - id: result_synthesizer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
+    prompt: |
+      # Execution Results
+      
+      ## GraphScout's Decision
+      {% if previous_outputs.graphscout_router %}
+      - Selected Path: {{ previous_outputs.graphscout_router.target }}
+      - Confidence: {{ previous_outputs.graphscout_router.confidence }}
+      - Reasoning: {{ previous_outputs.graphscout_router.reasoning }}
+      {% endif %}
+      
+      ## Executed Agents & Results
+      {% for agent_id, output in previous_outputs.items() %}
+      {% if agent_id not in ['input_analyzer', 'graphscout_router', 'result_synthesizer'] %}
+      
+      ### {{ agent_id }}
+      {{ output }}
+      
+      {% endif %}
+      {% endfor %}
+      
+      ---
+      
+      Synthesize the final response based on all executed agent results.
+
+  # Supporting agents that GraphScout can route to
+  - id: web_search
+    type: duckduckgo
+    capabilities: [data_retrieval, web_search]
+    prompt: |
+      {{ input }}
+
+  - id: memory_reader
+    type: memory
+    namespace: graphscout_execution
+    memory_preset: episodic
+    config:
+      operation: read
+      vector: true
+      top_k: 5
+    prompt: |
+      Retrieve context for: {{ input }}
+
+  - id: deep_analyzer
+    type: local_llm
+    capabilities: [reasoning, analysis]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
+    prompt: |
+      Deep analysis of: {{ input }}
+      
+      {% if previous_outputs.web_search %}
+      Search Results: {{ previous_outputs.web_search.result }}
+      {% endif %}
+      
+      {% if previous_outputs.memory_reader %}
+      Historical Context: {{ previous_outputs.memory_reader }}
+      {% endif %}
+      
+      Provide comprehensive multi-perspective analysis.
+
+  - id: technical_expert
+    type: local_llm
+    capabilities: [technical_analysis, expertise]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
+    prompt: |
+      Technical expert analysis for: {{ input }}
+      
+      Context: {{ previous_outputs }}
+      
+      Provide detailed technical insights.
+
+  - id: content_synthesizer
+    type: local_llm
+    capabilities: [answer_emit, synthesis]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
+    prompt: |
+      Synthesize comprehensive response:
+      
+      Query: {{ input }}
+      Available Data: {{ previous_outputs }}
+      
+      Create well-structured, complete answer.
+
+  - id: report_builder
+    type: local_llm
+    capabilities: [answer_emit, reporting]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
+    prompt: |
+      Generate structured report:
+      
+      Topic: {{ input }}
+      Data: {{ previous_outputs }}
+      
+      Format as professional report with sections.

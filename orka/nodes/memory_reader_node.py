@@ -250,11 +250,11 @@ class MemoryReaderNode(BaseNode):
                         filtered_memories.append(memory)
                     else:
                         logger.info(
-                            f"🔍 FILTERED OUT: log_type={metadata.get('log_type')}, category={metadata.get('category')}",
+                            f"[SEARCH] FILTERED OUT: log_type={metadata.get('log_type')}, category={metadata.get('category')}"
                         )
 
                 logger.info(
-                    f"🔍 FINAL RESULTS: {len(memories)} total memories, {len(filtered_memories)} stored memories after filtering",
+                    f"[SEARCH] FINAL RESULTS: {len(memories)} total memories, {len(filtered_memories)} stored memories after filtering"
                 )
                 memories = filtered_memories
 

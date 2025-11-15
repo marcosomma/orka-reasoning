@@ -1,0 +1,328 @@
+# GraphScout: Validate Then Execute (Hybrid Approach)
+# ======================================================
+#
+# This demonstrates the HYBRID approach:
+# 1. VALIDATION PHASE: Loop validates GraphScout's proposed path
+# 2. EXECUTION PHASE: If approved, GraphScout executes the validated path
+#
+# Benefits:
+# - Safety: Paths are validated before execution
+# - Efficiency: Only approved paths execute
+# - Auditability: Full trace of validation + execution
+# - Flexibility: Can reject/refine before executing
+#
+# SCORING MODE NOTE:
+# ==================
+# This workflow uses NUMERIC mode in GraphScout (for path discovery) + 
+# PlanValidator (for validation). For even stronger safety guarantees, consider:
+#
+#   scoring_mode: "boolean"  # In plan_proposer params
+#   strict_mode: true        # All criteria must pass
+#   require_critical: true   # Critical safety checks mandatory
+#
+# Boolean mode provides:
+# - Deterministic pass/fail criteria
+# - Full audit trails for compliance
+# - Explicit safety validation
+# - Clear failure reasons for debugging
+#
+# See docs/SCORING_ARCHITECTURE.md for comparison.
+
+orchestrator:
+  id: validate-then-execute
+  strategy: sequential
+  agents:
+    - path_validation_loop  # Phase 1: Validate the plan
+    - path_executor         # Phase 2: Execute validated path
+    - execution_report      # Phase 3: Report results
+
+agents:
+  # PHASE 1: Validate GraphScout's routing plan
+  - id: path_validation_loop
+    type: loop
+    max_loops: 2
+    score_threshold: 0.15
+    persist_across_runs: true
+    fallback_score: 0.10  # Score to use when validation agent times out
+    timeout_score: 0.08  # Score to use when validation explicitly times out
+    
+    scoring:
+      preset: lenient
+      custom_weights:
+        completeness.has_all_required_steps: 0.20
+        efficiency.uses_appropriate_agents: 0.15
+    
+    past_loops_metadata:
+      loop_number: "{{ get_loop_number() }}"
+      score: "{{ score }}"
+      timestamp: "{{ timestamp }}"
+      insights: "{{ insights }}"
+      improvements: "{{ improvements }}"
+      mistakes: "{{ mistakes }}"
+    
+    internal_workflow:
+      orchestrator:
+        id: validation-cycle
+        strategy: sequential
+        agents: [plan_proposer, plan_validator]
+      
+      agents:
+        # GraphScout proposes a plan (doesn't execute yet)
+        - id: plan_proposer
+          type: graph-scout
+          params:
+            k_beam: 5
+            max_depth: 3
+            commit_margin: 0.12
+            require_terminal: true
+            score_weights:
+              llm: 0.50
+              heuristics: 0.30
+              prior: 0.12
+              cost: 0.04
+              latency: 0.04
+            evaluation_model: "local_llm"
+            evaluation_model_name: "gpt-oss:20b"
+            llm_evaluation_enabled: true
+            fallback_to_heuristics: true
+          prompt: |
+            Select optimal execution path for: {{ get_input() }}
+            
+            {% if has_past_loops() %}
+            ## Validation Feedback (Attempt {{ get_loop_number() }})
+            {% set last = get_past_loops()[-1] %}
+            Previous score: {{ last.score }} (need 0.85)
+            Failed criteria: {{ last.mistakes }}
+            
+            Address these issues in your new path selection.
+            {% endif %}
+            
+            Select path that meets all validation criteria.
+        
+        # Validate the proposed plan
+        - id: plan_validator
+          type: plan_validator
+          llm_model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.2
+          timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
+          scoring_preset: lenient
+          custom_weights:
+            completeness.has_all_required_steps: 0.20
+            efficiency.uses_appropriate_agents: 0.15
+
+  # ===== EXECUTION AGENTS (Top Level) =====
+  # CRITICAL: These agents MUST be at top-level, NOT inside internal_workflow
+  # - GraphScout discovers agents from orchestrator.agents (global registry)
+  # - PathExecutor can only execute agents in the global registry
+  # - Agents inside internal_workflow are scoped locally and NOT accessible
+  # 
+  # These agents are NOT in the orchestrator sequence, so they won't auto-execute.
+  # They are only discovered by GraphScout and executed by PathExecutor when
+  # included in the validated path.
+  #
+  # See docs/AGENT_SCOPING.md for detailed explanation.
+  
+  # Supporting agents for GraphScout to route to
+  - id: web_search
+    type: duckduckgo
+    capabilities: [data_retrieval, web_search]
+    prompt: |
+      {{ input }}
+  
+  - id: memory_reader
+    type: memory
+    namespace: validated_execution
+    memory_preset: episodic
+    config:
+      operation: read
+      vector: true
+      top_k: 5
+    prompt: |
+      Retrieve context for: {{ input }}
+  
+  - id: data_analyzer
+    type: local_llm
+    capabilities: [analysis, reasoning]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Analyze data for: {{ input }}
+      
+      Context: {{ previous_outputs }}
+      
+      Provide comprehensive analysis.
+  
+  - id: technical_specialist
+    type: local_llm
+    capabilities: [technical_analysis, expertise]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Technical analysis: {{ input }}
+      
+      Data: {{ previous_outputs }}
+  
+  - id: content_generator
+    type: local_llm
+    capabilities: [answer_emit, generation]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Generate final content:
+      
+      Topic: {{ input }}
+      Research: {{ previous_outputs }}
+      
+      Create comprehensive, well-structured response.
+
+  # PHASE 2: Execute the validated plan
+  - id: path_executor
+    type: path_executor
+    path_source: path_validation_loop.response.result.plan_proposer.target
+    on_agent_failure: continue
+
+  # PHASE 3: Execution report
+  - id: execution_report
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      # Validate-Then-Execute Summary
+      
+      ## Validation Phase
+      {% if previous_outputs.path_validation_loop %}
+      - Iterations: {{ previous_outputs.path_validation_loop.loops_completed | default('N/A') }}
+      - Final Score: {{ (previous_outputs.path_validation_loop.final_score | default(0)) | round(3) }}
+      - Threshold Met: {{ 'YES ✓' if previous_outputs.path_validation_loop.threshold_met | default(false) else 'NO ✗' }}
+      {% endif %}
+      
+      ## Execution Phase
+      {% if previous_outputs.path_executor %}
+      {% set executor = previous_outputs.path_executor.response | default(previous_outputs.path_executor) %}
+      - Status: {{ (executor.status | default('unknown')) | upper }}
+      - Executed Path: {{ executor.executed_path | default([]) }}
+      - Agents Completed: {{ (executor.results | default({})) | length }}
+      {% if executor.errors %}
+      - Errors: {{ (executor.errors | default([])) | length }}
+      {% endif %}
+      
+      ### Agent Results:
+      {% for agent_id, result in (executor.results | default({})).items() %}
+      **{{ agent_id }}**: {{ 'SUCCESS' if 'error' not in result else 'FAILED' }}
+      {% endfor %}
+      {% endif %}
+      
+      ## Analysis
+      {% if previous_outputs.path_validation_loop and (previous_outputs.path_validation_loop.threshold_met | default(false)) %}
+      
+      ✅ **EXECUTION COMPLETE**
+      
+      The validation loop refined the plan through
+      {{ previous_outputs.path_validation_loop.loops_completed | default('N/A') }} iteration(s),
+      achieving a quality score of {{ (previous_outputs.path_validation_loop.final_score | default(0)) | round(3) }}.
+      
+      {% if previous_outputs.path_executor %}
+      The validated path was then EXECUTED by PathExecutorNode:
+      {{ (previous_outputs.path_executor.response.executed_path | default(previous_outputs.path_executor.executed_path)) | default([]) }}
+      {% endif %}
+      
+      ### Benefits of This Approach:
+      1. **Safety**: Validation before execution
+      2. **Quality**: Iterative refinement (score: {{ (previous_outputs.path_validation_loop.final_score | default(0)) | round(3) }})
+      3. **Auditability**: Full trace of validation + execution
+      4. **Efficiency**: Only approved paths consume resources
+      
+      ### Execution Results:
+      Analyze the agent results and provide insights on:
+      - Workflow effectiveness
+      - Result quality
+      - Any issues encountered
+      - Recommendations for improvement
+      
+      {% else %}
+      
+      ❌ **EXECUTION BLOCKED**
+      
+      {% if previous_outputs.path_validation_loop %}
+      The validation loop was unable to produce an acceptable plan within
+      {{ previous_outputs.path_validation_loop.loops_completed | default('N/A') }} iterations.
+      {% else %}
+      Validation loop did not complete.
+      {% endif %}
+      
+      PathExecutorNode did NOT execute (validation threshold not met).
+      
+      ### Next Steps:
+      1. Review failed criteria
+      2. Adjust validation thresholds if too strict
+      3. Provide more agent options for plan_proposer
+      4. Increase max_loops for more refinement
+      
+      {% endif %}
+
+# ============================================================================
+# Validate-Then-Execute Pattern
+# ============================================================================
+#
+# This pattern separates PLANNING from EXECUTION:
+#
+# 1. Validation Loop (Planning Phase):
+#    - Proposes execution paths
+#    - Validates each proposal with boolean scoring
+#    - Iterates until quality threshold met
+#    - Returns APPROVED or REJECTED decision
+#
+# 2. Conditional Execution (Execution Phase):
+#    - Checks if plan was approved
+#    - If YES: Executes the validated agent sequence
+#    - If NO: Blocks execution and provides feedback
+#
+# 3. Execution Report (Results Phase):
+#    - Shows validation trace
+#    - Shows execution results (if executed)
+#    - Provides analysis and recommendations
+#
+# ============================================================================
+# When to Use This Pattern
+# ============================================================================
+#
+# Perfect for:
+# - High-stakes decisions requiring validation
+# - Expensive operations (API calls, long computations)
+# - Workflows where plans can be cached/reused
+# - Regulatory/compliance scenarios requiring approval
+# - Multi-stage workflows with checkpoints
+#
+# Not ideal for:
+# - Real-time routing decisions
+# - Simple, low-risk operations
+# - When immediate execution is required
+# - High-frequency, low-latency scenarios
+#
+# ============================================================================
+# PathExecutorNode Implementation
+# ============================================================================
+#
+# This example now uses PathExecutorNode to ACTUALLY EXECUTE validated paths.
+#
+# The flow is:
+#
+# 1. Validation Loop validates the proposed agent path
+# 2. PathExecutorNode extracts the path from loop results
+# 3. PathExecutorNode executes each agent in the path sequentially
+# 4. Results are accumulated and returned
+#
+# Key PathExecutorNode features:
+# - path_source: Dot-notation path to agent list in previous_outputs
+# - on_agent_failure: "continue" or "abort" error handling
+# - Returns: executed_path, results (per agent), status, errors (if any)
+#
+# ============================================================================
+

@@ -326,6 +326,8 @@ class GraphAPI:
     def _extract_capabilities(self, agent: Any) -> List[str]:
         """Extract agent capabilities."""
         try:
+            if hasattr(agent, "capabilities"):
+                return getattr(agent, "capabilities", [])
             capabilities: List[str] = []
 
             # Infer capabilities from agent type
@@ -353,16 +355,14 @@ class GraphAPI:
     def _extract_contract(self, agent: Any) -> Dict[str, Any]:
         """Extract agent input/output contract."""
         try:
-            contract = {
+            if hasattr(agent, "contract"):
+                return getattr(agent, "contract", {})
+            contract: Dict[str, Any] = {
                 "required_inputs": [],
                 "optional_inputs": [],
                 "outputs": [],
                 "side_effects": False,
             }
-
-            # TODO: Implement contract extraction based on agent type
-            # This would analyze the agent's run method signature and behavior
-
             return contract
 
         except Exception:
@@ -371,12 +371,15 @@ class GraphAPI:
     def _extract_cost_model(self, agent: Any) -> Dict[str, Any]:
         """Extract agent cost model."""
         try:
-            # Default cost model - can be enhanced with actual metrics
-            return {
-                "base_cost": 0.001,  # Base cost in USD
-                "token_cost": 0.00001,  # Cost per token
-                "latency_estimate_ms": 1000,  # Estimated latency
-            }
+            return getattr(
+                agent,
+                "cost_model",
+                {
+                    "base_cost": 0.001,  # Base cost in USD
+                    "token_cost": 0.00001,  # Cost per token
+                    "latency_estimate_ms": 1000,  # Estimated latency
+                },
+            )
 
         except Exception:
             return {}
@@ -384,9 +387,11 @@ class GraphAPI:
     def _extract_safety_tags(self, agent: Any) -> List[str]:
         """Extract safety-related tags."""
         try:
-            tags = []
+            if hasattr(agent, "safety_tags"):
+                return getattr(agent, "safety_tags", [])
+            tags: List[str] = []
 
-            # Infer safety considerations from agent type
+            # Infer safety tags from agent type
             agent_type = agent.__class__.__name__.lower()
 
             if "memory" in agent_type and "writer" in agent_type:

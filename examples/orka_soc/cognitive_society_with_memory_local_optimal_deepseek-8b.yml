@@ -25,11 +25,18 @@ agents:
     high_priority_agents:
       - "agreement_moderator"
     
-    score_extraction_config:
-      strategies:
-        - type: pattern
-          patterns:
-            - "AGREEMENT_SCORE: ([0-9.]+)"
+    # Boolean scoring configuration for deterministic agreement evaluation
+    scoring:
+      preset: strict  # High standards for consensus building
+      custom_weights:
+        # Completeness ensures all viewpoints are considered
+        completeness.has_all_required_steps: 0.20
+        completeness.addresses_all_query_aspects: 0.15
+        # Coherence ensures logical synthesis
+        coherence.logical_agent_sequence: 0.12
+        coherence.no_conflicting_actions: 0.10
+        # Safety for respectful deliberation
+        safety.handles_errors_gracefully: 0.08
     
     # 🔧 OPTIMIZED: Reduced extraction patterns and length
     cognitive_extraction:
@@ -45,10 +52,13 @@ agents:
     
     # 🔧 OPTIMIZED: Essential metadata only
     past_loops_metadata:
-      round: "{{ get_loop_number() }}"
-      agreement_score: "{{ score }}"
+      loop_number: "{{ get_loop_number() }}"
+      score: "{{ score }}"
       timestamp: "{{ timestamp }}"
       status: "{{ 'CONVERGED' if score >= get_score_threshold() else 'CONTINUING' }}"
+      insights: "{{ insights }}"
+      improvements: "{{ improvements }}"
+      mistakes: "{{ mistakes }}"
     
     internal_workflow:
       orchestrator:
@@ -108,15 +118,15 @@ agents:
         - id: opening_positions
           type: fork
           targets:
-            - radical_progressive
-            - traditional_conservative
-            - pragmatic_realist
-            - ethical_purist
+            - - radical_progressive  # Fixed: Each branch must be a list (double-dash YAML syntax)
+            - - traditional_conservative
+            - - pragmatic_realist
+            - - ethical_purist
         
         # 🔧 OPTIMIZED: Condensed progressive agent
         - id: radical_progressive
           type: local_llm
-          model: deepseek-r1:8b
+          model: llama3.2:3b
           model_url: http://localhost:11434/api/generate
           provider: ollama
           temperature: 0.3
@@ -143,7 +153,7 @@ agents:
         # 🔧 OPTIMIZED: Condensed conservative agent
         - id: traditional_conservative
           type: local_llm
-          model: deepseek-r1:8b
+          model: llama3.2:3b
           model_url: http://localhost:11434/api/generate
           provider: ollama
           temperature: 0.3
@@ -170,7 +180,7 @@ agents:
         # 🔧 OPTIMIZED: Condensed realist agent
         - id: pragmatic_realist
           type: local_llm
-          model: deepseek-r1:8b
+          model: llama3.2:3b
           model_url: http://localhost:11434/api/generate
           provider: ollama
           temperature: 0.2
@@ -197,7 +207,7 @@ agents:
         # 🔧 OPTIMIZED: Condensed purist agent
         - id: ethical_purist
           type: local_llm
-          model: deepseek-r1:8b
+          model: llama3.2:3b
           model_url: http://localhost:11434/api/generate
           provider: ollama
           temperature: 0.4
@@ -228,7 +238,7 @@ agents:
         # 🔧 OPTIMIZED: Simple agreement finder
         - id: agreement_finder
           type: local_llm
-          model: deepseek-r1:8b
+          model: llama3.2:3b
           model_url: http://localhost:11434/api/generate
           provider: ollama
           temperature: 0.2
@@ -249,15 +259,15 @@ agents:
         - id: collaborative_refinement
           type: fork
           targets:
-            - progressive_refinement
-            - conservative_refinement
-            - realist_refinement
-            - purist_refinement
+            - - progressive_refinement  # Fixed: Each branch must be a list (double-dash YAML syntax)
+            - - conservative_refinement
+            - - realist_refinement
+            - - purist_refinement
         
         # 🔧 OPTIMIZED: Condensed progressive refinement
         - id: progressive_refinement
           type: local_llm
-          model: deepseek-r1:8b
+          model: llama3.2:3b
           model_url: http://localhost:11434/api/generate
           provider: ollama
           temperature: 0.4
@@ -284,7 +294,7 @@ agents:
         # 🔧 OPTIMIZED: Condensed conservative refinement
         - id: conservative_refinement
           type: local_llm
-          model: deepseek-r1:8b
+          model: llama3.2:3b
           model_url: http://localhost:11434/api/generate
           provider: ollama
           temperature: 0.4
@@ -311,7 +321,7 @@ agents:
         # 🔧 OPTIMIZED: Condensed realist refinement
         - id: realist_refinement
           type: local_llm
-          model: deepseek-r1:8b
+          model: llama3.2:3b
           model_url: http://localhost:11434/api/generate
           provider: ollama
           temperature: 0.3
@@ -338,7 +348,7 @@ agents:
         # 🔧 OPTIMIZED: Condensed purist refinement
         - id: purist_refinement
           type: local_llm
-          model: deepseek-r1:8b
+          model: llama3.2:3b
           model_url: http://localhost:11434/api/generate
           provider: ollama
           temperature: 0.5
@@ -369,7 +379,7 @@ agents:
         # 🔧 OPTIMIZED: Simplified synthesis
         - id: synthesis_attempt
           type: local_llm
-          model: deepseek-r1:8b
+          model: llama3.2:3b
           model_url: http://localhost:11434/api/generate
           provider: ollama
           temperature: 0.4
@@ -387,25 +397,15 @@ agents:
             
             SYNTHESIS: [How perspectives work together in 2-3 sentences]
 
-        # 🔧 OPTIMIZED: Ultra-simple agreement moderator
+        # 🔧 OPTIMIZED: Loop Validator Node - Robust boolean evaluation
         - id: agreement_moderator
-          type: local_llm
-          model: deepseek-r1:8b
+          type: loop_validator
+          llm_model: llama3.2:3b
           model_url: http://localhost:11434/api/generate
           provider: ollama
+          scoring_preset: moderate
+          evaluation_target: synthesis_attempt  # Evaluate the synthesis quality
           temperature: 0.1
-          prompt: |
-            AGREEMENT ASSESSMENT - Round {{ get_loop_number() }}
-            TOPIC: {{ get_input() }}
-            TARGET: {{ get_score_threshold() }}+ agreement to stop
-            
-            CURRENT AGREEMENT: {{ safe_get_response('agreement_finder', 'No agreement') | truncate(150) }}
-            SYNTHESIS: {{ safe_get_response('synthesis_attempt', 'No synthesis') | truncate(150) }}
-            
-            Rate agent agreement (0.0-1.0). Start with "AGREEMENT_SCORE:"
-            
-            AGREEMENT_SCORE: [your score 0.0-1.0]
-            CONTINUE: [YES if below {{ get_score_threshold() }}, NO if {{ get_score_threshold() }}+]
 
         # 🔧 OPTIMIZED: Minimal memory writer
         - id: shared_memory_writer
@@ -444,7 +444,7 @@ agents:
   # 🔧 OPTIMIZED: Simplified meta-analysis
   - id: meta_debate_reflection
     type: local_llm
-    model: deepseek-r1:8b
+    model: llama3.2:3b
     model_url: http://localhost:11434/api/generate
     provider: ollama
     temperature: 0.3
@@ -464,7 +464,7 @@ agents:
   # 🔧 OPTIMIZED: Essential final synthesis only
   - id: final_synthesis_processor
     type: local_llm
-    model: deepseek-r1:8b
+    model: llama3.2:3b
     model_url: http://localhost:11434/api/generate
     provider: ollama
     temperature: 0.3

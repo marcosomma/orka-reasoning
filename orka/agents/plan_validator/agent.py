@@ -21,10 +21,14 @@ Works in feedback loops with GraphScout to iteratively improve path selection.
 
 import json
 import logging
-from typing import Any, Dict, List, cast
+import re
+from typing import Any, Dict, List, Optional, cast
+
+from orka.scoring import BooleanScoreCalculator
 
 from ..base_agent import BaseAgent, Context
-from . import critique_parser, llm_client
+from . import boolean_parser, llm_client
+from .prompt_builder import build_validation_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +47,8 @@ class PlanValidatorAgent(BaseAgent):
         llm_provider: Provider type ("ollama" or "openai_compatible")
         llm_url: LLM API endpoint URL
         temperature: Temperature for LLM generation
+        scoring_preset: Scoring preset name ('strict', 'moderate', 'lenient')
+        custom_weights: Optional custom weight overrides
         **kwargs: Additional arguments for BaseAgent
     """
 
@@ -53,6 +59,8 @@ class PlanValidatorAgent(BaseAgent):
         llm_provider: str = "ollama",
         llm_url: str = "http://localhost:11434/api/generate",
         temperature: float = 0.2,
+        scoring_preset: str = "moderate",
+        custom_weights: Optional[Dict[str, float]] = None,
         **kwargs: Any,
     ):
         super().__init__(agent_id, **kwargs)
@@ -61,8 +69,17 @@ class PlanValidatorAgent(BaseAgent):
         self.llm_provider = llm_provider
         self.llm_url = llm_url
         self.temperature = temperature
+        self.scoring_preset = scoring_preset
 
-        logger.info(f"Initialized PlanValidatorAgent '{agent_id}' with model '{llm_model}'")
+        self.score_calculator = BooleanScoreCalculator(
+            preset=scoring_preset,
+            custom_weights=custom_weights,
+        )
+
+        logger.info(
+            f"Initialized PlanValidatorAgent '{agent_id}' with model '{llm_model}' "
+            f"and scoring preset '{scoring_preset}'"
+        )
 
     async def _run_impl(self, ctx: Context) -> Dict[str, Any]:
         """
@@ -91,17 +108,18 @@ class PlanValidatorAgent(BaseAgent):
         logger.info(f"PlanValidator (Round {loop_number}): Evaluating proposed path")
         logger.debug(f"Query: {original_query[:100]}...")
 
-        # Build validation prompt
-        validation_prompt = self._build_validation_prompt(
-            original_query,
-            proposed_path,
-            previous_critiques,
-            loop_number,
+        # Build validation prompt requesting boolean evaluations
+        validation_prompt = build_validation_prompt(
+            query=original_query,
+            proposed_path=proposed_path,
+            previous_critiques=previous_critiques,
+            loop_number=loop_number,
+            preset_name=self.scoring_preset,
         )
 
-        # Call LLM for critique
+        # Call LLM for boolean evaluation
         try:
-            critique_response = await llm_client.call_llm(
+            llm_response = await llm_client.call_llm(
                 prompt=validation_prompt,
                 model=self.llm_model,
                 url=self.llm_url,
@@ -110,14 +128,27 @@ class PlanValidatorAgent(BaseAgent):
             )
         except RuntimeError as e:
             logger.error(f"LLM call failed: {e}")
-            return self._create_error_critique(str(e))
+            return self._create_error_result(str(e))
 
-        # Parse and structure the critique
-        validation_result = critique_parser.parse_critique(critique_response)
+        # Parse boolean evaluations from LLM response
+        boolean_evaluations = boolean_parser.parse_boolean_evaluation(llm_response)
+
+        # Calculate score using boolean calculator
+        score_result = self.score_calculator.calculate(boolean_evaluations)
+
+        # Build validation result with additional metadata
+        validation_result = self._build_validation_result(
+            score_result=score_result,
+            boolean_evaluations=boolean_evaluations,
+            llm_response=llm_response,
+        )
 
         logger.info(
-            f"Validation Score: {validation_result['validation_score']:.2f} "
+            f"Validation Score: {validation_result['validation_score']:.4f} "
             f"- {validation_result['overall_assessment']}"
+        )
+        logger.debug(
+            f"Passed: {score_result['passed_count']}/{score_result['total_criteria']} criteria"
         )
 
         return validation_result
@@ -194,98 +225,79 @@ class PlanValidatorAgent(BaseAgent):
 
         return critiques
 
-    def _build_validation_prompt(
+    def _build_validation_result(
         self,
-        query: str,
-        proposed_path: Dict[str, Any],
-        previous_critiques: List[Dict[str, Any]],
-        loop_number: int,
-    ) -> str:
+        score_result: Dict[str, Any],
+        boolean_evaluations: Dict[str, Dict[str, bool]],
+        llm_response: str,
+    ) -> Dict[str, Any]:
         """
-        Build validation prompt for LLM.
+        Build final validation result from score calculation.
 
         Args:
-            query: Original user query
-            proposed_path: Path proposed by GraphScout
-            previous_critiques: Past validation feedback
-            loop_number: Current iteration number
+            score_result: Result from BooleanScoreCalculator
+            boolean_evaluations: Boolean evaluations from LLM
+            llm_response: Raw LLM response
 
         Returns:
-            Formatted prompt string
+            Validation result dict
         """
-        # Format previous critiques section
-        critique_history = ""
-        if previous_critiques:
-            critique_history = "\n\n**PREVIOUS CRITIQUES:**\n"
-            for i, critique in enumerate(previous_critiques, 1):
-                critique_history += f"Round {i}: {json.dumps(critique, indent=2)}\n"
+        return {
+            "validation_score": score_result["score"],
+            "overall_assessment": score_result["assessment"],
+            "boolean_evaluations": boolean_evaluations,
+            "breakdown": score_result["breakdown"],
+            "passed_criteria": score_result["passed_criteria"],
+            "failed_criteria": score_result["failed_criteria"],
+            "dimension_scores": score_result["dimension_scores"],
+            "rationale": self._extract_rationale(llm_response),
+            "scoring_preset": self.scoring_preset,
+        }
 
-        prompt = f"""You are a Plan Validator agent. Your job is to critique and validate proposed agent execution paths.
-
-**VALIDATION ROUND:** {loop_number}
-
-**ORIGINAL QUERY:**
-{query}
-
-**PROPOSED PATH (from GraphScout):**
-{json.dumps(proposed_path, indent=2)}
-{critique_history}
-
-**YOUR TASK:**
-Evaluate the proposed path across these dimensions:
-1. **Completeness**: Does it address all aspects of the query?
-2. **Efficiency**: Is it optimal (cost, latency, agent selection)?
-3. **Safety**: Any risky combinations or missing safeguards?
-4. **Coherence**: Do the agents work well together in this sequence?
-5. **Fallback**: Are error cases and edge cases handled?
-
-**OUTPUT FORMAT (JSON only):**
-{{
-    "validation_score": <0.0-1.0 overall score>,
-    "overall_assessment": "<APPROVED|NEEDS_IMPROVEMENT|REJECTED>",
-    "critiques": {{
-        "completeness": {{"score": <0-1>, "issues": ["..."], "suggestions": ["..."]}},
-        "efficiency": {{"score": <0-1>, "issues": [], "suggestions": []}},
-        "safety": {{"score": <0-1>, "issues": ["..."], "suggestions": ["..."]}},
-        "coherence": {{"score": <0-1>, "issues": [], "suggestions": []}},
-        "fallback": {{"score": <0-1>, "issues": ["..."], "suggestions": ["..."]}}
-    }},
-    "recommended_changes": ["specific change 1", "specific change 2"],
-    "approval_confidence": <0.0-1.0>,
-    "rationale": "Brief explanation of the overall assessment and key concerns"
-}}
-
-**SCORING GUIDELINES:**
-- 0.9-1.0: Excellent, approve immediately
-- 0.8-0.89: Good with minor suggestions
-- 0.7-0.79: Needs improvement, loop again
-- 0.0-0.69: Major issues, reject or significantly revise
-
-VALIDATION_SCORE: <your score>
-"""
-        return prompt
-
-    def _create_error_critique(self, error_message: str) -> Dict[str, Any]:
+    def _extract_rationale(self, llm_response: str) -> str:
         """
-        Create error critique when validation fails.
+        Extract rationale from LLM response.
+
+        Args:
+            llm_response: Raw LLM response
+
+        Returns:
+            Rationale string
+        """
+        try:
+            json_data = json.loads(llm_response)
+            if isinstance(json_data, dict) and "rationale" in json_data:
+                return str(json_data["rationale"])
+        except json.JSONDecodeError:
+            pass
+
+        rationale_match = re.search(r'"rationale":\s*"([^"]+)"', llm_response, re.IGNORECASE)
+        if rationale_match:
+            return str(rationale_match.group(1))
+
+        if len(llm_response) < 500:
+            return llm_response[:200]
+        return llm_response[:200] + "..."
+
+    def _create_error_result(self, error_message: str) -> Dict[str, Any]:
+        """
+        Create error result when validation fails.
 
         Args:
             error_message: Error description
 
         Returns:
-            Error critique dict
+            Error validation result dict
         """
         return {
             "validation_score": 0.0,
             "overall_assessment": "REJECTED",
-            "critiques": {
-                "completeness": {"score": 0.0, "issues": [error_message], "suggestions": []},
-                "efficiency": {"score": 0.0, "issues": [], "suggestions": []},
-                "safety": {"score": 0.0, "issues": [], "suggestions": []},
-                "coherence": {"score": 0.0, "issues": [], "suggestions": []},
-                "fallback": {"score": 0.0, "issues": [], "suggestions": []},
-            },
-            "recommended_changes": [],
-            "approval_confidence": 0.0,
+            "boolean_evaluations": {},
+            "breakdown": {},
+            "passed_criteria": [],
+            "failed_criteria": [],
+            "dimension_scores": {},
             "rationale": f"Validation failed: {error_message}",
+            "scoring_preset": self.scoring_preset,
+            "error": error_message,
         }

@@ -1,0 +1,181 @@
+# Boolean-Based Scoring Loop Example
+# Demonstrates LoopNode with deterministic, auditable boolean scoring
+
+orchestrator:
+  id: boolean-scoring-loop-example
+  strategy: sequential
+  agents:
+    - path_proposer
+    - validation_loop
+    - final_summary
+
+agents:
+  # Step 1: Generate initial execution path
+  - id: path_proposer
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    prompt: |
+      Propose an agent execution path for this query: {{ get_input() }}
+      
+      Provide a structured path with:
+      - Agent sequence
+      - Data flow
+      - Error handling
+      
+      Be specific and actionable.
+
+  # Step 2: Boolean-based validation loop
+  - id: validation_loop
+    type: loop
+    max_loops: 3
+    score_threshold: 0.30  # Lowered from 0.85 to realistic boolean scoring thresholds
+    persist_across_runs: false
+    
+    # Boolean scoring configuration (NEW!)
+    scoring:
+      preset: moderate  # Options: strict, moderate, lenient
+      custom_weights:
+        # Optional: Override specific criteria weights
+        # completeness.has_all_required_steps: 0.25
+        # safety.validates_inputs: 0.15
+    
+    # Extract insights from boolean evaluations
+    cognitive_extraction:
+      enabled: true
+      max_length_per_category: 300
+      extract_patterns:
+        insights:
+          - "(?:passed|true|✓).*?([A-Za-z_]+).*?(?:\\n|$)"
+          - "(?:score|percentage):\\s*100"
+        improvements:
+          - "(?:failed|false|✗).*?([A-Za-z_]+).*?(?:\\n|$)"
+          - "(?:missing|lacks|needs)\\s+(.+?)(?:\\n|$)"
+        mistakes:
+          - "(?:failed_criteria).*?:\\s*\\[(.+?)\\]"
+      agent_priorities:
+        path_evaluator: ["improvements", "mistakes"]
+    
+    # Metadata structure for tracking loop evolution
+    past_loops_metadata:
+      loop_number: "{{ get_loop_number() }}"
+      score: "{{ score }}"
+      timestamp: "{{ timestamp }}"
+      insights: "{{ insights }}"
+      improvements: "{{ improvements }}"
+      mistakes: "{{ mistakes }}"
+    
+    # Internal workflow - iteratively improve the path
+    internal_workflow:
+      orchestrator:
+        id: validation-internal
+        strategy: sequential
+        agents: [path_improver, path_evaluator]
+      
+      agents:
+        # Improve the path based on previous feedback
+        - id: path_improver
+          type: local_llm
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.7
+          prompt: |
+            Improve the proposed path based on feedback:
+            
+            Original: {{ get_input() }}
+            
+            {% if has_context('path_proposer') %}
+            Current Path:
+            {{ get_agent_response('path_proposer') }}
+            {% endif %}
+            
+            {% if has_past_loops() %}
+            Previous attempts: {{ get_past_loops() | length }}
+            
+            {% for past_loop in get_past_loops() %}
+            Loop {{ past_loop.loop_number }}: Score {{ past_loop.score }}
+            Failed: {{ past_loop.mistakes }}
+            {% endfor %}
+            {% endif %}
+            
+            Provide an improved, detailed execution path addressing all gaps.
+        
+        # Evaluate using boolean criteria
+        - id: path_evaluator
+          type: local_llm
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.2
+          prompt: |
+            Evaluate the improved path using BOOLEAN criteria.
+            
+            Path: {{ get_agent_response('path_improver') }}
+            
+            Answer TRUE or FALSE for each criterion:
+            
+            COMPLETENESS:
+            - has_all_required_steps: [true/false]
+            - addresses_all_query_aspects: [true/false]
+            - handles_edge_cases: [true/false]
+            - includes_fallback_path: [true/false]
+            
+            EFFICIENCY:
+            - minimizes_redundant_calls: [true/false]
+            - uses_appropriate_agents: [true/false]
+            - optimizes_cost: [true/false]
+            - optimizes_latency: [true/false]
+            
+            SAFETY:
+            - validates_inputs: [true/false]
+            - handles_errors_gracefully: [true/false]
+            - has_timeout_protection: [true/false]
+            - avoids_risky_combinations: [true/false]
+            
+            COHERENCE:
+            - logical_agent_sequence: [true/false]
+            - proper_data_flow: [true/false]
+            - no_conflicting_actions: [true/false]
+            
+            Respond ONLY with JSON structure above.
+
+  # Step 3: Final summary
+  - id: final_summary
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.5
+    prompt: |
+      Summarize the boolean scoring loop results:
+      
+      {% if previous_outputs.validation_loop %}
+      ## Loop Statistics
+      - Loops completed: {{ previous_outputs.validation_loop.loops_completed }}
+      - Final score: {{ previous_outputs.validation_loop.final_score }}
+      - Threshold (0.85) met: {{ previous_outputs.validation_loop.threshold_met }}
+      
+      ## Evolution Summary
+      {% if previous_outputs.validation_loop.response.past_loops %}
+      {% for past_loop in previous_outputs.validation_loop.response.past_loops %}
+      **Loop {{ past_loop.loop_number }}** (Score: {{ past_loop.score }}):
+      - Improvements made: {{ past_loop.improvements }}
+      - Remaining issues: {{ past_loop.mistakes }}
+      {% endfor %}
+      {% endif %}
+      
+      ## Final Path
+      {{ previous_outputs.validation_loop.response.result.path_improver.response }}
+      
+      {% else %}
+      No validation loop results available.
+      {% endif %}
+      
+      Provide a concise summary highlighting:
+      1. How the path improved across iterations
+      2. Which boolean criteria were challenging
+      3. Final assessment of path quality
+

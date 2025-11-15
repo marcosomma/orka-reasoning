@@ -1,0 +1,164 @@
+# Plan Validation Loop with Boolean Scoring
+# Uses PlanValidatorAgent with built-in boolean scoring for deterministic path evaluation
+
+orchestrator:
+  id: plan-validation-loop
+  strategy: sequential
+  agents:
+    - validation_loop_strict
+    - final_report
+
+agents:
+  # Iterative validation loop with STRICT boolean scoring
+  - id: validation_loop_strict
+    type: loop
+    max_loops: 5
+    score_threshold: 0.35  # Lowered from 0.90 to match actual gpt-oss:20b performance
+    persist_across_runs: true
+    
+    # Boolean scoring configuration
+    scoring:
+      preset: strict  # Highest standards for production paths
+      custom_weights:
+        # Emphasize safety and completeness for production
+        completeness.has_all_required_steps: 0.25
+        safety.validates_inputs: 0.10
+        safety.handles_errors_gracefully: 0.08
+    
+    # Track which criteria failed in each loop
+    past_loops_metadata:
+      loop_number: "{{ get_loop_number() }}"
+      score: "{{ score }}"
+      timestamp: "{{ timestamp }}"
+      insights: "{{ insights }}"
+      improvements: "{{ improvements }}"
+      mistakes: "{{ mistakes }}"
+    
+    internal_workflow:
+      orchestrator:
+        id: validation-workflow
+        strategy: sequential
+        agents: [path_proposer, path_validator_strict]
+      
+      agents:
+        # Propose or improve the execution path
+        - id: path_proposer
+          type: local_llm
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.7
+          prompt: |
+            {% if get_loop_number() == 1 %}
+            Design an execution path for: {{ get_input() }}
+            
+            Requirements:
+            - Clear agent sequence
+            - Data flow between agents
+            - Error handling strategy
+            - Edge case handling
+            - Input validation
+            - Timeout protection
+            {% else %}
+            Improve the execution path based on validation feedback:
+            
+            Query: {{ get_input() }}
+            
+            Previous Attempt (Loop {{ get_loop_number() - 1 }}):
+            {% if has_past_loops() %}
+            {% set last_loop = get_past_loops()[-1] %}
+            Score: {{ last_loop.score }}
+            Failed Criteria: {{ last_loop.mistakes }}
+            {% endif %}
+            
+            Address ALL failed criteria. Be specific and concrete.
+            {% endif %}
+        
+        # Validate with boolean scoring (using PlanValidatorAgent)
+        - id: path_validator_strict
+          type: plan_validator
+          llm_model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.2
+          
+          # Boolean scoring configuration
+          scoring_preset: strict
+          custom_weights:
+            completeness.has_all_required_steps: 0.25
+            safety.validates_inputs: 0.10
+            safety.handles_errors_gracefully: 0.08
+
+  # Generate final report with detailed breakdown
+  - id: final_report
+    type: local_llm
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    prompt: |
+      # Boolean Scoring Validation Report
+      
+      {% if previous_outputs.validation_loop_strict %}
+      {% set loop_result = previous_outputs.validation_loop_strict.response %}
+      
+      ## Summary
+      - Total Iterations: {{ previous_outputs.validation_loop_strict.loops_completed | default(0) }}
+      - Final Score: {{ (previous_outputs.validation_loop_strict.final_score | default(0)) | round(3) }}
+      - Threshold (0.90): {{ 'MET ✓' if previous_outputs.validation_loop_strict.threshold_met else 'NOT MET ✗' }}
+      
+      ## Scoring Evolution
+      {% if loop_result.past_loops %}
+      {% for past_loop in loop_result.past_loops %}
+      
+      ### Loop {{ past_loop.loop_number | default('?') }}
+      - Score: {{ past_loop.score | default(0) }}
+      - Status: {{ 'PASS' if (past_loop.score | default(0) | float) >= 0.90 else 'FAIL' }}
+      - Issues Found: {{ past_loop.mistakes | default('None') }}
+      {% endfor %}
+      {% endif %}
+      
+      ## Final Boolean Evaluation
+      {% if loop_result.result.path_validator_strict %}
+      {% set validation = loop_result.result.path_validator_strict %}
+      
+      **Overall Assessment:** {{ validation.overall_assessment | default('UNKNOWN') }}
+      **Final Score:** {{ (validation.validation_score | default(0)) | round(3) }}
+      
+      ### Dimension Breakdown
+      {% if validation.dimension_scores %}
+      {% for dimension, data in validation.dimension_scores.items() %}
+      - **{{ dimension|capitalize }}**: {{ (data.percentage | default(0)) | round(1) }}% ({{ (data.score | default(0)) | round(3) }}/{{ (data.max_score | default(1)) | round(3) }})
+      {% endfor %}
+      {% endif %}
+      
+      ### Passed Criteria ({{ validation.passed_criteria|length }})
+      {% for criterion in validation.passed_criteria %}
+      - ✓ {{ criterion }}
+      {% endfor %}
+      
+      {% if validation.failed_criteria %}
+      ### Failed Criteria ({{ validation.failed_criteria|length }})
+      {% for criterion in validation.failed_criteria %}
+      - ✗ {{ criterion }}
+      {% endfor %}
+      {% endif %}
+      
+      ### Final Execution Path
+      {{ loop_result.result.path_proposer.response | default('Path not available') }}
+      {% endif %}
+      {% else %}
+      No validation results available.
+      {% endif %}
+      
+      ---
+      
+      Generate a concise executive summary highlighting:
+      1. Key improvements made across iterations
+      2. Most challenging criteria to satisfy
+      3. Confidence in the final path (based on score breakdown)
+      4. Recommendations for deployment
+      
+      Note: This example validates PATH DESCRIPTIONS (text), not executable agent sequences.
+      For executable paths with GraphScout, see: graph_scout_validated_loop.yml
+

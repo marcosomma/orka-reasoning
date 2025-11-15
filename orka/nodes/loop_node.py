@@ -37,6 +37,7 @@ import yaml
 from jinja2 import Template
 
 from ..memory.redisstack_logger import RedisStackMemoryLogger
+from ..scoring import BooleanScoreCalculator
 from ..utils.embedder import get_embedder
 from .base_node import BaseNode
 
@@ -160,6 +161,33 @@ class LoopNode(BaseNode):
         self.max_loops: int = kwargs.get("max_loops", 5)
         self.score_threshold: float = kwargs.get("score_threshold", 0.8)
 
+        # Boolean scoring configuration (optional)
+        scoring_config = kwargs.get("scoring", {})
+        self.scoring_preset: Optional[str] = (
+            scoring_config.get("preset") if isinstance(scoring_config, dict) else None
+        )
+        self.custom_weights: Optional[Dict[str, float]] = (
+            scoring_config.get("custom_weights") if isinstance(scoring_config, dict) else None
+        )
+
+        # Initialize boolean score calculator if preset is configured
+        self.score_calculator: Optional[BooleanScoreCalculator] = None
+        if self.scoring_preset:
+            try:
+                self.score_calculator = BooleanScoreCalculator(
+                    preset=self.scoring_preset,
+                    custom_weights=self.custom_weights,
+                )
+                logger.info(
+                    f"LoopNode '{node_id}': Initialized with boolean scoring preset '{self.scoring_preset}'"
+                )
+            except Exception as e:
+                logger.warning(
+                    f"LoopNode '{node_id}': Failed to initialize boolean scoring: {e}. "
+                    "Falling back to legacy score extraction."
+                )
+                self.score_calculator = None
+
         # High-priority agents for score extraction (configurable)
         self.high_priority_agents: List[str] = kwargs.get(
             "high_priority_agents", ["agreement_moderator", "quality_moderator", "score_moderator"]
@@ -206,7 +234,7 @@ class LoopNode(BaseNode):
                                 r"(\d+\.?\d*)\s*out\s*of\s*10",
                                 r"(\d+\.?\d*)\s*points?",
                                 r"0\.[6-9][0-9]?",  # Pattern for high agreement scores
-                                r"([0-9])\.[0-9]+",  # Any decimal number
+                                r"([0-9]+\.[0-9]+)",  # Any decimal number
                             ],
                         }
                     ]
@@ -303,6 +331,13 @@ class LoopNode(BaseNode):
         logger.debug(f"LoopNode.run() original_input: {original_input}")
         logger.debug(f"LoopNode.run() original_input type: {type(original_input)}")
 
+        # 🐛 GraphScout Fix: Extract parent orchestrator's agents for internal workflow
+        if "orchestrator" in payload and hasattr(payload["orchestrator"], "agent_cfgs"):
+            self._parent_agents = payload["orchestrator"].agent_cfgs
+            logger.debug(
+                f"LoopNode: Captured {len(self._parent_agents)} parent agents for GraphScout"
+            )
+
         # Create a working copy of previous_outputs to avoid circular references
         loop_previous_outputs = original_previous_outputs.copy()
 
@@ -349,6 +384,12 @@ class LoopNode(BaseNode):
 
             # Add to our local past_loops array
             past_loops.append(past_loop_obj)
+
+            # 🐛 Fix: Limit past_loops size to prevent unbounded growth
+            MAX_PAST_LOOPS_PER_RUN = 20
+            if len(past_loops) > MAX_PAST_LOOPS_PER_RUN:
+                past_loops = past_loops[-MAX_PAST_LOOPS_PER_RUN:]
+                logger.debug(f"Trimmed past_loops to most recent {MAX_PAST_LOOPS_PER_RUN} entries")
 
             # Store loop result in Redis if memory_logger is available
             if self.memory_logger is not None:
@@ -438,6 +479,29 @@ class LoopNode(BaseNode):
         # Get the original workflow configuration
         original_workflow = self.internal_workflow.copy()
 
+        # 🐛 GraphScout Fix: Inject parent orchestrator's agents for GraphScout discovery
+        # If the internal workflow has a GraphScout agent, it needs access to all agents
+        # from the parent orchestrator to discover routing candidates
+        if hasattr(self, "_parent_agents") and self._parent_agents:
+            # Merge parent agents with internal workflow agents
+            internal_agents = original_workflow.get("agents", [])
+            internal_agent_ids = {
+                agent["id"] for agent in internal_agents if isinstance(agent, dict)
+            }
+
+            # Add parent agents that aren't already in internal workflow
+            for parent_agent in self._parent_agents:
+                if (
+                    isinstance(parent_agent, dict)
+                    and parent_agent.get("id") not in internal_agent_ids
+                ):
+                    internal_agents.append(parent_agent)
+
+            original_workflow["agents"] = internal_agents
+            logger.debug(
+                f"LoopNode: Merged {len(self._parent_agents)} parent agents for GraphScout visibility"
+            )
+
         # Ensure we have the basic structure
         if "orchestrator" not in original_workflow:
             original_workflow["orchestrator"] = {}
@@ -463,17 +527,32 @@ class LoopNode(BaseNode):
             }
         )
 
+        # DEBUG: Log the orchestrator config before creating temp file
+        orchestrator_agents = original_workflow.get("orchestrator", {}).get("agents", [])
+        logger.info(f"🔍 DEBUG: Internal workflow orchestrator.agents BEFORE temp file: {orchestrator_agents}")
+        logger.debug(f"🔍 DEBUG: Full orchestrator config: {original_workflow.get('orchestrator', {})}")
+        
         # Create temporary workflow file
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
             yaml.dump(original_workflow, f)
             temp_file = f.name
+            logger.info(f"🔍 DEBUG: Wrote temp workflow file: {temp_file}")
 
         try:
             # Create orchestrator for internal workflow
             orchestrator = Orchestrator(temp_file)
+            logger.info(f"🔍 DEBUG: Orchestrator created with queue: {orchestrator.orchestrator_cfg.get('agents', [])}")
 
             # Use parent's memory logger to maintain consistency
             if self.memory_logger is not None:
+                # Close the orphaned memory logger created by Orchestrator.__init__
+                # to prevent connection pool exhaustion
+                if hasattr(orchestrator.memory, "close"):
+                    try:
+                        orchestrator.memory.close()
+                    except Exception as e:
+                        logger.debug(f"Failed to close orphaned memory logger: {e}")
+
                 orchestrator.memory = self.memory_logger
                 orchestrator.fork_manager.redis = self.memory_logger.redis  # Fixed attribute name
 
@@ -532,9 +611,15 @@ class LoopNode(BaseNode):
             logger.debug(f"LoopNode workflow_input keys: {list(workflow_input.keys())}")
 
             # Execute workflow with return_logs=True to get full logs for processing
-            agent_sequence = [agent.get("id") for agent in self.internal_workflow.get("agents", [])]
+            # Get the ORCHESTRATOR's execution sequence, not all agent definitions
+            # (since some agents may be defined for GraphScout routing but not executed)
+            orchestrator_cfg = self.internal_workflow.get("orchestrator", {})
+            agent_sequence = orchestrator_cfg.get("agents", [])
+            # If agents is a simple list of strings, use as-is. If it's dicts, extract IDs
+            if agent_sequence and isinstance(agent_sequence[0], dict):
+                agent_sequence = [agent.get("id") for agent in agent_sequence]
             logger.debug(
-                f"About to execute internal workflow with {len(agent_sequence)} agents defined"
+                f"About to execute internal workflow with {len(agent_sequence)} agents in execution sequence"
             )
             logger.debug(f"Full agent sequence: {agent_sequence}")
 
@@ -795,6 +880,176 @@ class LoopNode(BaseNode):
         except (ValueError, TypeError):
             return False
 
+    def _try_boolean_scoring(self, result: Dict[str, Any]) -> Optional[float]:
+        """
+        Try to extract boolean evaluations and calculate score.
+
+        Args:
+            result: Agent execution results
+
+        Returns:
+            Calculated score or None if no boolean evaluations found
+        """
+        if not self.score_calculator:
+            logger.debug(
+                f"LoopNode '{self.node_id}': No score_calculator configured (scoring preset not set)"
+            )
+            return None
+
+        logger.info(
+            f"LoopNode '{self.node_id}': Attempting boolean score extraction from {len(result)} agents"
+        )
+
+        # Look for boolean evaluation structure in agent responses
+        for agent_id, agent_result in result.items():
+            if not isinstance(agent_result, dict):
+                logger.debug(f"  - Agent '{agent_id}': Not a dict, skipping")
+                continue
+
+            logger.debug(f"  - Agent '{agent_id}': Checking for boolean evaluations...")
+
+            # Check for direct boolean_evaluations key (from PlanValidator)
+            if "boolean_evaluations" in agent_result:
+                boolean_evals = agent_result["boolean_evaluations"]
+                logger.info(f"  - Agent '{agent_id}': Found boolean_evaluations field")
+
+                if isinstance(boolean_evals, dict) and self._is_valid_boolean_structure(
+                    boolean_evals
+                ):
+                    try:
+                        score_result = self.score_calculator.calculate(boolean_evals)
+                        logger.info(
+                            f"✅ Boolean evaluations from '{agent_id}': "
+                            f"{score_result['passed_count']}/{score_result['total_criteria']} passed, "
+                            f"score={score_result['score']:.4f}"
+                        )
+                        return float(score_result["score"])
+                    except Exception as e:
+                        logger.error(
+                            f"Failed to calculate boolean score from '{agent_id}': {e}",
+                            exc_info=True,
+                        )
+                        continue
+                else:
+                    logger.warning(f"  - Agent '{agent_id}': boolean_evaluations invalid structure")
+
+            # Check for validation_score (which might be from boolean scoring)
+            if "validation_score" in agent_result and "boolean_evaluations" in agent_result:
+                logger.info(f"  - Agent '{agent_id}': Found validation_score field")
+                try:
+                    score = float(agent_result["validation_score"])
+                    logger.info(f"✅ Using validation_score from '{agent_id}': {score:.4f}")
+                    return score
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"  - Agent '{agent_id}': Invalid validation_score: {e}")
+                    continue
+
+            # Try to parse boolean structure from response text
+            if "response" in agent_result:
+                response_text = str(agent_result["response"])
+                logger.debug(
+                    f"  - Agent '{agent_id}': Checking response text ({len(response_text)} chars)..."
+                )
+
+                boolean_evals = self._extract_boolean_from_text(response_text)
+                if boolean_evals and self._is_valid_boolean_structure(boolean_evals):
+                    try:
+                        score_result = self.score_calculator.calculate(boolean_evals)
+                        logger.info(
+                            f"✅ Boolean evaluations from '{agent_id}' response text: "
+                            f"{score_result['passed_count']}/{score_result['total_criteria']} passed, "
+                            f"score={score_result['score']:.4f}"
+                        )
+                        return float(score_result["score"])
+                    except Exception as e:
+                        logger.debug(f"  - Failed to parse boolean from '{agent_id}' response: {e}")
+                        continue
+                else:
+                    logger.debug(f"  - Agent '{agent_id}': No valid boolean structure in response")
+
+        logger.warning(
+            f"LoopNode '{self.node_id}': ❌ No valid boolean evaluations found in any agent"
+        )
+        return None
+
+    def _is_valid_boolean_structure(self, data: Any) -> bool:
+        """
+        Check if data contains valid boolean evaluation structure.
+
+        Args:
+            data: Data to check
+
+        Returns:
+            True if valid boolean structure
+        """
+        if not isinstance(data, dict):
+            return False
+
+        expected_dimensions = ["completeness", "efficiency", "safety", "coherence"]
+        found_valid = 0
+
+        for dimension in expected_dimensions:
+            if dimension in data and isinstance(data[dimension], dict):
+                dim_data = data[dimension]
+                # Check if it has boolean values
+                if any(isinstance(v, bool) for v in dim_data.values()):
+                    found_valid += 1
+
+        return found_valid >= 2
+
+    def _extract_boolean_from_text(self, text: str) -> Optional[Dict[str, Dict[str, bool]]]:
+        """
+        Extract boolean evaluations from text.
+
+        🐛 Fix: Normalize Python dict syntax to JSON before parsing
+
+        Args:
+            text: Text to parse
+
+        Returns:
+            Boolean evaluations dict or None
+        """
+        try:
+            # Try to extract JSON
+            json_match = re.search(r"\{.*\}", text, re.DOTALL)
+            if json_match:
+                json_text = json_match.group(0)
+
+                # 🐛 Normalize Python syntax to JSON (same fix as llm_agents.py)
+                json_text = re.sub(r"\bTrue\b", "true", json_text)
+                json_text = re.sub(r"\bFalse\b", "false", json_text)
+                json_text = re.sub(r"\bNone\b", "null", json_text)
+                json_text = json_text.replace("'", '"')
+
+                data = json.loads(json_text)
+
+                # 🐛 CRITICAL FIX: Convert UPPERCASE keys to lowercase
+                # LLMs return {"COMPLETENESS": ...} but we need {"completeness": ...}
+                if isinstance(data, dict):
+                    normalized_data: Dict[str, Dict[str, bool]] = {}
+                    for key, value in data.items():
+                        normalized_key = key.lower()
+                        if isinstance(value, dict):
+                            # Normalize nested dict (keep snake_case)
+                            normalized_data[normalized_key] = {k: v for k, v in value.items()}
+                        else:
+                            normalized_data[normalized_key] = value
+                    data = normalized_data
+                    logger.debug(f"Normalized keys to lowercase: {list(data.keys())}")
+
+                if self._is_valid_boolean_structure(data):
+                    logger.info(f"✅ Successfully extracted boolean evaluations from text")
+                    return cast(Dict[str, Dict[str, bool]], data)
+                else:
+                    logger.debug(f"❌ Invalid boolean structure. Keys found: {list(data.keys())}")
+
+        except json.JSONDecodeError as e:
+            logger.debug(f"JSON parse failed: {e}")
+        except Exception as e:
+            logger.error(f"Boolean extraction exception: {e}", exc_info=True)
+
+        return None
+
     async def _extract_score(self, result: Dict[str, Any]) -> float:
         """Extract score from result using configured extraction strategies."""
         if not result:
@@ -809,6 +1064,19 @@ class LoopNode(BaseNode):
                     response_text[:100] + "..." if len(response_text) > 100 else response_text
                 )
                 logger.debug(f"Agent '{agent_id}' response preview: {response_preview}")
+
+        # PRIORITY 0: Try boolean scoring if configured
+        if self.score_calculator:
+            boolean_score = self._try_boolean_scoring(result)
+            if boolean_score is not None:
+                logger.info(
+                    f"✅ Using boolean scoring: {boolean_score:.4f} (preset: {self.scoring_preset})"
+                )
+                return boolean_score
+            else:
+                logger.debug(
+                    "Boolean scoring attempted but no valid evaluations found, falling back to legacy"
+                )
 
         strategies = self.score_extraction_config.get("strategies", [])
 
@@ -908,15 +1176,16 @@ class LoopNode(BaseNode):
                                         f"🔍 Searching in {agent_id}.{key}: {repr(text_content[:200])}"
                                     )
                                     match = re.search(pattern, text_content)
-                                    if match and match.group(1):
-                                        logger.debug(f"✅ Matched text: '{text_content[:200]}'")
+                                    if match:
                                         try:
                                             score = float(match.group(1))
+                                            logger.debug(f"✅ Matched text: '{text_content[:200]}'")
                                             logger.info(
                                                 f"✅ Found score {score} in {agent_id}.{key} using pattern: {pattern}"
                                             )
                                             return score
-                                        except (ValueError, TypeError):
+                                        except (ValueError, TypeError, IndexError):
+                                            # Pattern might not have a capture group or couldn't convert to float
                                             continue
                                     else:
                                         if (
@@ -1441,26 +1710,29 @@ class LoopNode(BaseNode):
             safe_input = safe_input[:200] + "...<truncated>"
 
         # Complete template context for Jinja2 rendering
+        # 🐛 FIX Bug #9: Do NOT include full result in template to prevent trace bloat
+        # Only include summary data that won't cause exponential growth
         template_context = {
             "loop_number": loop_number,
             "score": score,
             "reasoning_quality": reasoning_quality,
             "convergence_trend": convergence_trend,
             "timestamp": datetime.now().isoformat(),
-            "result": safe_result,
+            # REMOVED: "result": safe_result - causes O(2^N) data growth in traces
             "input": safe_input,
             "insights": cognitive_insights.get("insights", ""),
             "improvements": cognitive_insights.get("improvements", ""),
             "mistakes": cognitive_insights.get("mistakes", ""),
-            "previous_outputs": safe_result,
+            # REMOVED: "previous_outputs": safe_result - not needed in metadata
         }
 
         # ✅ FIX: Add helper functions to template context for LoopNode metadata rendering
         try:
             # Create a payload-like structure for helper functions
+            # 🐛 FIX Bug #9: Don't include full result to prevent trace bloat
             helper_payload = {
                 "input": safe_input,
-                "previous_outputs": safe_result,
+                "previous_outputs": {},  # Empty to prevent bloat - templates should use template_context instead
                 "loop_number": loop_number,
             }
 
@@ -1513,7 +1785,8 @@ class LoopNode(BaseNode):
         past_loop_obj.setdefault("loop_number", loop_number)
         past_loop_obj.setdefault("score", score)
         past_loop_obj.setdefault("timestamp", datetime.now().isoformat())
-        past_loop_obj.setdefault("result", safe_result)
+        # 🐛 Bug #9 Fix: DO NOT add result field - it causes exponential trace bloat
+        # past_loop_obj.setdefault("result", safe_result)  # REMOVED - was causing O(2^N) growth
 
         return past_loop_obj
 
@@ -1713,8 +1986,13 @@ class LoopNode(BaseNode):
         return " | ".join(values)
 
     async def _load_past_loops_from_redis(self) -> List[PastLoopMetadata]:
-        """Load past loops from Redis if available."""
+        """
+        Load past loops from Redis if available.
+
+        🐛 Fix: Limit past_loops to prevent unbounded growth across runs
+        """
         past_loops: List[PastLoopMetadata] = []
+        MAX_PAST_LOOPS = 20  # Limit to prevent memory/trace bloat
 
         if self.memory_logger is not None:
             try:
@@ -1725,10 +2003,18 @@ class LoopNode(BaseNode):
                 if stored_data:
                     loaded_loops = json.loads(stored_data)
                     if isinstance(loaded_loops, list):
-                        past_loops = loaded_loops
-                        logger.info(
-                            f"Loaded {len(past_loops)} past loops from Redis for node {self.node_id}"
-                        )
+                        # 🐛 CRITICAL FIX: Limit to most recent N loops
+                        if len(loaded_loops) > MAX_PAST_LOOPS:
+                            past_loops = loaded_loops[-MAX_PAST_LOOPS:]
+                            logger.warning(
+                                f"Loaded {len(loaded_loops)} past loops from Redis, "
+                                f"trimmed to most recent {MAX_PAST_LOOPS} to prevent bloat"
+                            )
+                        else:
+                            past_loops = loaded_loops
+                            logger.info(
+                                f"Loaded {len(past_loops)} past loops from Redis for node {self.node_id}"
+                            )
                     else:
                         logger.warning(
                             f"Invalid past loops data format in Redis for node {self.node_id}"

@@ -121,7 +121,7 @@ class YAMLLoader:
         Returns:
             The loaded YAML configuration.
         """
-        with open(self.path) as f:
+        with open(self.path, encoding='utf-8') as f:
             return yaml.safe_load(f)  # type: ignore
 
     def get_orchestrator(self) -> Dict[str, Any]:
@@ -159,4 +159,33 @@ class YAMLLoader:
             raise ValueError("Missing 'agents' section in config")
         if not isinstance(self.config["agents"], list):
             raise ValueError("'agents' should be a list")
+        
+        # Validate all agent prompt templates
+        self._validate_agent_templates()
+        
         return True
+
+    def _validate_agent_templates(self) -> None:
+        """
+        Validate Jinja2 syntax in all agent prompts.
+        
+        Raises:
+            ValueError: If any template has syntax errors
+        """
+        from orka.utils.template_validator import TemplateValidator
+        
+        validator = TemplateValidator()
+        errors = []
+        
+        for agent_cfg in self.config.get("agents", []):
+            agent_id = agent_cfg.get("id", "unknown")
+            prompt = agent_cfg.get("prompt", "")
+            
+            if prompt:
+                is_valid, error_msg, variables = validator.validate_template(prompt)
+                if not is_valid:
+                    errors.append(f"Agent '{agent_id}': {error_msg}")
+        
+        if errors:
+            error_report = "\n".join(errors)
+            raise ValueError(f"Template validation failed:\n{error_report}")
