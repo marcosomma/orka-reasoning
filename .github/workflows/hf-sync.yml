@@ -22,11 +22,14 @@ jobs:
           rm -f hf_snapshot/*.pdf || true
           # Optional: remove image files if you don't want to mirror them to HF
           rm -f hf_snapshot/*.png || true
-          # Initialize an independent repo for the snapshot and commit
+          # Initialize an independent repo for the snapshot and commit on branch 'main'
           pushd hf_snapshot
           git init
+          # Ensure we have a 'main' branch (git versions without -b may ignore this; checkout -b will create it)
+          git checkout -b main || true
           git add -A
-          git commit -m "Auto snapshot for HF mirror (no history)" || true
+          # Fail the job if there's nothing to commit — this avoids pushing an empty repo
+          git commit -m "Auto snapshot for HF mirror (no history)"
           popd
       - name: Reorganize README files for HF display
         run: |
@@ -51,4 +54,5 @@ jobs:
           git -C hf_snapshot remote remove hf || true
           git -C hf_snapshot remote add hf "$HF_URL"
           git -C hf_snapshot lfs install
-          git -C hf_snapshot push hf master:main --force
+          # Push the current HEAD to HF main — using HEAD avoids refspec mismatch errors
+          git -C hf_snapshot push hf HEAD:main --force
