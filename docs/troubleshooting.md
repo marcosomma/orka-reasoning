@@ -1,5 +1,9 @@
 # OrKa Troubleshooting Guide
 
+> **Last Updated:** 16 November 2025  
+> **Status:** 🟢 Current  
+> **Related:** [Debugging](DEBUGGING.md) | [FAQ](faq.md) | [Observability](observability.md) | [Testing](TESTING.md) | [index](index.md)
+
 This guide helps you diagnose and fix common issues in OrKa. For each problem, we provide:
 - Symptoms to identify the issue
 - Common causes
@@ -488,3 +492,5 @@ Found a bug or have a fix? We welcome contributions!
 4. Include tests and documentation
 
 See our [Contributing Guide](../CONTRIBUTING.md) for more details.
+---
+← [Debugging](DEBUGGING.md) | [📚 index](index.md) | [FAQ](faq.md) →

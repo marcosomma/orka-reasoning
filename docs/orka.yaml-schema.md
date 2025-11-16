@@ -1,6 +1,11 @@
-[📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
-
 # orka.yaml Schema
+
+> ⚠️ **Consolidation Notice:** This schema reference will be merged as an appendix in [YAML_CONFIGURATION.md](YAML_CONFIGURATION.md) in v0.9.7. Please refer to the primary configuration guide for comprehensive documentation.
+
+> **Last Updated:** 16 November 2025  
+> **Status:** 🟡 To be consolidated  
+> **Primary Guide:** [YAML_CONFIGURATION.md](YAML_CONFIGURATION.md)  
+> **Related:** [INDEX](INDEX.md)
 
 ## Top-Level Fields
 | Field         | Type   | Required | Description                      |
@@ -32,7 +37,8 @@
   type: binary
   prompt: Is the following statement factually correct?
   queue: orka:fact_check
-  timeout: 45.0  # Longer timeout for complex fact checking
+  timeout: 60.0               # Optional: Override default timeout
+```
   max_concurrency: 5  # Limit parallel executions
 ```
 
@@ -46,4 +52,3 @@
   queue: orka:classify
 ```
 
-[📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)

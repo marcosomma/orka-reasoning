@@ -1,5 +1,9 @@
 # OrKa Debugging and Troubleshooting Guide
 
+> **Last Updated:** 16 November 2025  
+> **Status:** 🟢 Current  
+> **Related:** [Troubleshooting](troubleshooting.md) | [FAQ](faq.md) | [Observability](observability.md) | [Testing](TESTING.md) | [INDEX](INDEX.md)
+
 [📘 Getting Started](./getting-started.md) | [⚙️ Configuration](./CONFIGURATION.md) | [🧠 Memory System](./MEMORY_SYSTEM_GUIDE.md) | [🤖 Agent Types](./agents.md)
 
 ## Overview
@@ -824,3 +828,5 @@ curl http://localhost:8000/health/components
 ```
 
 This debugging guide provides comprehensive troubleshooting procedures for the most common OrKa issues. For component-specific debugging, refer to the respective documentation sections.
+---
+← [Testing](TESTING.md) | [📚 index](index.md) | [Troubleshooting](troubleshooting.md) →

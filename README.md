@@ -249,15 +249,16 @@ orka run local-chat.yml "Explain machine learning simply"
 
 ## Documentation
 
-### 🌟 **[Agent & Node Reference Index →](docs/AGENT_NODE_TOOL_INDEX.md)** ⭐
-**Complete 1-to-1 documentation for every agent, node, and tool** with examples, parameters, and best practices.
+### 📚 **[Documentation Index →](docs/index.md)** - Start Here!
+**Complete documentation hub** with organized guides, tutorials, and references for all OrKa features.
 
-### Core Guides
-- [Getting Started Guide](docs/getting-started.md) - Detailed setup and first workflows
-- [Agent Types](docs/agents.md) - All available agent types and configurations  
-- [Memory System](docs/MEMORY_SYSTEM_GUIDE.md) - How memory works and configuration
-- [YAML Configuration](docs/yaml-configuration-guide.md) - Complete YAML reference
-- [Examples](examples/README.md) - 15+ ready-to-use workflow templates
+Quick links:
+- **[📘 Quickstart](docs/quickstart.md)** - Get running in 5 minutes
+- **[🎯 Agent & Node Reference](docs/AGENT_NODE_TOOL_INDEX.md)** - Every agent, node & tool documented
+- **[🧠 Memory System](docs/MEMORY_SYSTEM_GUIDE.md)** - Intelligent memory configuration
+- **[⚙️ YAML Configuration](docs/YAML_CONFIGURATION.md)** - Complete workflow reference
+- **[🧭 GraphScout Agent](docs/GRAPH_SCOUT_AGENT.md)** - Dynamic routing system
+- **[📋 Examples](examples/README.md)** - 50+ ready-to-use workflow templates
 
 ## Getting Help
 
