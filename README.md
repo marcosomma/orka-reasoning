@@ -249,7 +249,7 @@ orka run local-chat.yml "Explain machine learning simply"
 
 ## Documentation
 
-### 📚 **[Documentation Index →](docs/INDEX.md)** - Start Here!
+### 📚 **[Documentation Index →](docs/index.md)** - Start Here!
 **Complete documentation hub** with organized guides, tutorials, and references for all OrKa features.
 
 Quick links:
