@@ -2,6 +2,10 @@
 
 # Agent Types in OrKa ***(Patent Pending)***
 
+> **Last Updated:** 16 November 2025  
+> **Status:** 🟢 Current  
+> **Related:** [Advanced Agents](agents-advanced.md) | [Extending Agents](extending-agents.md) | [Agent Index](AGENT_NODE_TOOL_INDEX.md) | [INDEX](INDEX.md)
+
 In OrKa, **agents** are modular processing units that receive input and return structured output — all orchestrated via a declarative YAML configuration.
 
 Agents can represent different cognitive functions: classification, decision-making, web search, conditional routing, memory management, and more.
@@ -490,3 +494,5 @@ Performs Retrieval-Augmented Generation with vector search and LLM generation.
 For detailed configuration examples, see the [YAML Configuration Guide](./yaml-configuration-guide.md).
 
 [📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
+---
+← [YAML Configuration](YAML_CONFIGURATION.md) | [📚 INDEX](INDEX.md) | [Advanced Agents](agents-advanced.md) →

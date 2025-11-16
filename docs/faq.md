@@ -2,6 +2,10 @@
 
 # OrKa FAQ
 
+> **Last Updated:** 16 November 2025  
+> **Status:** 🟢 Current  
+> **Related:** [Troubleshooting](troubleshooting.md) | [Debugging](DEBUGGING.md) | [Getting Started](getting-started.md) | [INDEX](INDEX.md)
+
 ## General Questions
 
 ### What is OrKa?

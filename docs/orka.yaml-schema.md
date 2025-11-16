@@ -2,6 +2,13 @@
 
 # orka.yaml Schema
 
+> ⚠️ **Consolidation Notice:** This schema reference will be merged as an appendix in [YAML_CONFIGURATION.md](YAML_CONFIGURATION.md) in v0.9.7. Please refer to the primary configuration guide for comprehensive documentation.
+
+> **Last Updated:** 16 November 2025  
+> **Status:** 🟡 To be consolidated  
+> **Primary Guide:** [YAML_CONFIGURATION.md](YAML_CONFIGURATION.md)  
+> **Related:** [INDEX](INDEX.md)
+
 ## Top-Level Fields
 | Field         | Type   | Required | Description                      |
 |---------------|--------|----------|----------------------------------|

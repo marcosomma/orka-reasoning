@@ -2,6 +2,10 @@
 
 # OrKa Architecture V0.7.0 ***(Patent Pending)***
 
+> **Last Updated:** 16 November 2025  
+> **Status:** 🟢 Current  
+> **Related:** [Components](COMPONENTS.md) | [Visual Architecture](VISUAL_ARCHITECTURE_GUIDE.md) | [Ontology](ONTOLOGY.md) | [INDEX](INDEX.md)
+
 OrKa (Orchestrator Kit for Agentic Reasoning) is built on a revolutionary architecture: modular AI agents orchestrated through a declarative YAML interface, with **100x faster vector search** powered by RedisStack HNSW indexing.
 
 This document breaks down the key architectural components and how they work together in the V0.7.0 unified architecture.
@@ -220,4 +224,5 @@ All agent outputs are logged with HNSW-optimized metadata:
 OrKa's architecture is intentionally minimal, observable, and composable — so you can build LLM-based cognition that doesn't disappear into a black box.
 
 [📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
-
+---
+← [Getting Started](getting-started.md) | [📚 INDEX](INDEX.md) | [Components](COMPONENTS.md) →

@@ -2,6 +2,13 @@
 
 # YAML Configuration Guide for OrKa
 
+> ⚠️ **Consolidation Notice:** This guide will be merged into [YAML_CONFIGURATION.md](YAML_CONFIGURATION.md) in v0.9.7. Please refer to the primary configuration guide for the most up-to-date information.
+
+> **Last Updated:** 16 November 2025  
+> **Status:** 🟡 To be consolidated  
+> **Primary Guide:** [YAML_CONFIGURATION.md](YAML_CONFIGURATION.md)  
+> **Related:** [INDEX](INDEX.md)
+
 This guide provides detailed examples and patterns for configuring different types of agents, nodes, and tools in your OrKa YAML configuration.
 
 ## 🚀 Quick Start with Examples

@@ -1,5 +1,9 @@
 # OrKa Production Best Practices
 
+> **Last Updated:** 16 November 2025  
+> **Status:** 🟢 Current  
+> **Related:** [Security](security.md) | [Observability](observability.md) | [Runtime Modes](runtime-modes.md) | [Architecture](architecture.md) | [INDEX](INDEX.md)
+
 This guide covers best practices for deploying and operating OrKa in production environments, focusing on performance, reliability, and maintainability.
 
 ## Table of Contents
@@ -423,3 +427,5 @@ except Exception as e:
 - [API Reference](./api-reference.md)
 - [Monitoring Guide](./observability.md)
 - [Troubleshooting Guide](./troubleshooting.md)
+---
+← [GraphScout](GRAPH_SCOUT_AGENT.md) | [📚 INDEX](INDEX.md) | [Testing](TESTING.md) →

@@ -1,5 +1,12 @@
 # OrKa V0.9.2 Configuration Guide - Simplified with Memory Presets
 
+> ⚠️ **Deprecation Notice:** This general configuration guide is being deprecated. Memory-specific configuration has been moved to [MEMORY_SYSTEM_GUIDE.md](MEMORY_SYSTEM_GUIDE.md), and YAML configuration is now in [YAML_CONFIGURATION.md](YAML_CONFIGURATION.md). This file will be archived in v1.0.
+
+> **Last Updated:** 16 November 2025  
+> **Status:** 🔴 Deprecated - Use primary guides  
+> **Replaced By:** [YAML_CONFIGURATION.md](YAML_CONFIGURATION.md) | [MEMORY_SYSTEM_GUIDE.md](MEMORY_SYSTEM_GUIDE.md)  
+> **Related:** [INDEX](INDEX.md)
+
 [📘 Getting Started](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Memory System](./MEMORY_SYSTEM_GUIDE.md) | [🧠 Memory Presets](./memory-presets.md) | [🐛 Debugging](./DEBUGGING.md)
 
 ## Overview
