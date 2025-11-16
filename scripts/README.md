@@ -56,7 +56,7 @@ Edit `DOC_SEQUENCE` in the script to modify navigation order:
 ```python
 DOC_SEQUENCE = [
     ("README.md", None),
-    ("docs/INDEX.md", "INDEX"),
+    ("docs/index.md", "INDEX"),
     ("docs/quickstart.md", "Quickstart"),
     # ... add more files
 ]

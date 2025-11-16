@@ -26,7 +26,7 @@ from typing import Dict, List, Tuple
 # Documentation reading order (for footer navigation)
 DOC_SEQUENCE = [
     ("README.md", None),  # Root file
-    ("docs/INDEX.md", "INDEX"),
+    ("docs/index.md", "INDEX"),
     ("docs/quickstart.md", "Quickstart"),
     ("docs/getting-started.md", "Getting Started"),
     ("docs/architecture.md", "Architecture"),
