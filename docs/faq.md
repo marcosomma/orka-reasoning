@@ -151,4 +151,3 @@ A: Yes, use `fork` nodes to split execution into parallel branches, then `join` 
 **Q: How do I debug complex workflows?**
 A: Enable verbose logging (`--verbose`), use the OrKa UI for visualization, and check Redis streams for detailed execution traces.
 
-[📘 Getting Start](./getting-started.md) | [🤖 Advanced Agents](./agents-advanced.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)

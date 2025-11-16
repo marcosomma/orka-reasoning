@@ -1,5 +1,3 @@
-[📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
-
 # Agent Types in OrKa
 
 > **Last Updated:** 16 November 2025  
@@ -493,6 +491,4 @@ Performs Retrieval-Augmented Generation with vector search and LLM generation.
 
 For detailed configuration examples, see the [YAML Configuration Guide](./yaml-configuration-guide.md).
 
-[📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
----
 ← [YAML Configuration](YAML_CONFIGURATION.md) | [📚 index](index.md) | [Advanced Agents](agents-advanced.md) →
