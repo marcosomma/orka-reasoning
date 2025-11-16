@@ -1,5 +1,3 @@
-[📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
-
 # YAML Configuration Guide for OrKa
 
 > ⚠️ **Consolidation Notice:** This guide will be merged into [YAML_CONFIGURATION.md](YAML_CONFIGURATION.md) in v0.9.7. Please refer to the primary configuration guide for the most up-to-date information.

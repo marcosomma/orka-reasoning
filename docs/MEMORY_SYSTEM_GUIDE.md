@@ -4,8 +4,6 @@
 > **Status:** 🟢 Current  
 > **Related:** [Memory Agents Guide](memory-agents-guide.md) | [Memory Presets](memory-presets.md) | [Memory Backends](MEMORY_BACKENDS.md) | [INDEX](INDEX.md)
 
-[📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md) | [⚙️ Configuration](./CONFIGURATION.md) | [🐛 Debugging](./DEBUGGING.md) | [🧩 Components](./COMPONENTS.md) | [🧪 Testing](./TESTING.md) | [🔗 Integration](./INTEGRATION_EXAMPLES.md)
-
 ## 🧠 Introduction to OrKa's Memory System
 
 OrKa's memory system is inspired by human cognitive science and provides sophisticated memory management that makes AI agents truly intelligent and contextually aware. Unlike traditional stateless AI systems, OrKa agents can remember, learn, and build on previous interactions.
