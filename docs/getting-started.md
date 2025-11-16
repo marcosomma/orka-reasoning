@@ -375,4 +375,4 @@ redis-cli FT._LIST
 
 [📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
 ---
-← [Quickstart](quickstart.md) | [📚 INDEX](INDEX.md) | [Architecture](architecture.md) →
+← [Quickstart](quickstart.md) | [📚 index](index.md) | [Architecture](architecture.md) →

@@ -160,4 +160,4 @@ Evaluates a yes/no question using LLM reasoning. Returns a strict boolean value 
 Builds a composed final output using previous agent results, leveraging OpenAI's capabilities.
 
 ---
-← [Agents](agents.md) | [📚 INDEX](INDEX.md) | [Extending Agents](extending-agents.md) →
+← [Agents](agents.md) | [📚 index](index.md) | [Extending Agents](extending-agents.md) →

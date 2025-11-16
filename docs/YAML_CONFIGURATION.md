@@ -2,7 +2,7 @@
 
 > **Last Updated:** 16 November 2025  
 > **Status:** 🟢 Primary Configuration Guide  
-> **Related:** [Getting Started](getting-started.md) | [YAML Schema](orka.yaml-schema.md) | [Runtime Modes](runtime-modes.md) | [INDEX](INDEX.md)
+> **Related:** [Getting Started](getting-started.md) | [YAML Schema](orka.yaml-schema.md) | [Runtime Modes](runtime-modes.md) | [index](index.md)
 
 ## Orchestrator Configuration
 
@@ -728,4 +728,4 @@ orchestrator:
       prompt: "How should I perform this task: {{ input }}"
 ```
 ---
-← [Visual Architecture](VISUAL_ARCHITECTURE_GUIDE.md) | [📚 INDEX](INDEX.md) | [Agents](agents.md) →
+← [Visual Architecture](VISUAL_ARCHITECTURE_GUIDE.md) | [📚 index](index.md) | [Agents](agents.md) →

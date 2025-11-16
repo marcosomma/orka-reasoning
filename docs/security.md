@@ -2,7 +2,7 @@
 
 > **Last Updated:** 16 November 2025  
 > **Status:** 🟢 Current  
-> **Related:** [Best Practices](best-practices.md) | [Memory Backends](MEMORY_BACKENDS.md) | [Configuration](CONFIGURATION.md) | [INDEX](INDEX.md)
+> **Related:** [Best Practices](best-practices.md) | [Memory Backends](MEMORY_BACKENDS.md) | [Configuration](CONFIGURATION.md) | [index](index.md)
 
 ## Redis/RedisStack
 - Use TLS for Redis if deployed publicly

@@ -574,4 +574,4 @@ params:
 
 Memory agents provide the foundation for workflows with persistent state that can retrieve and build on previous interactions. Use this guide to leverage OrKa's memory capabilities in your applications.
 ---
-← [Memory System](MEMORY_SYSTEM_GUIDE.md) | [📚 INDEX](INDEX.md) | [GraphScout](GRAPH_SCOUT_AGENT.md) →
+← [Memory System](MEMORY_SYSTEM_GUIDE.md) | [📚 index](index.md) | [GraphScout](GRAPH_SCOUT_AGENT.md) →

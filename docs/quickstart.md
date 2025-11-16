@@ -282,4 +282,4 @@ The one-click installer script is served over HTTPS and is digitally signed. You
 curl -sSL https://orkacore.com/quickstart.sh.asc | gpg --verify
 ```
 ---
-← [INDEX](INDEX.md) | [📚 INDEX](INDEX.md) | [Getting Started](getting-started.md) →
+← [index](index.md) | [📚 index](index.md) | [Getting Started](getting-started.md) →

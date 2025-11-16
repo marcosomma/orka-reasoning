@@ -753,4 +753,4 @@ Start with the basic examples and gradually explore advanced features as your wo
 - Read the [performance tuning guide](#performance-tuning)
 - Join the [OrKa community](https://discord.gg/orka) for support and examples
 ---
-← [Memory Agents](memory-agents-guide.md) | [📚 INDEX](INDEX.md) | [Best Practices](best-practices.md) →
+← [Memory Agents](memory-agents-guide.md) | [📚 index](index.md) | [Best Practices](best-practices.md) →

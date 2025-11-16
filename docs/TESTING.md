@@ -2,7 +2,7 @@
 
 > **Last Updated:** 16 November 2025  
 > **Status:** 🟢 Current  
-> **Related:** [Test Coverage Strategy](TEST_COVERAGE_ENHANCEMENT_STRATEGY.md) | [Testing Roadmap](TESTING_IMPROVEMENTS_ROADMAP.md) | [Debugging](DEBUGGING.md) | [INDEX](INDEX.md)
+> **Related:** [Test Coverage Strategy](TEST_COVERAGE_ENHANCEMENT_STRATEGY.md) | [Testing Roadmap](TESTING_IMPROVEMENTS_ROADMAP.md) | [Debugging](DEBUGGING.md) | [index](index.md)
 
 [📘 Getting Started](./getting-started.md) | [⚙️ Configuration](./CONFIGURATION.md) | [🐛 Debugging](./DEBUGGING.md) | [🧩 Core Components](./COMPONENTS.md)
 
@@ -1119,4 +1119,4 @@ echo "For detailed testing, run: python run_all_tests.py"
 
 This comprehensive test suite addresses all the key issues identified in the problem statement and provides validation procedures for the core OrKa components. The tests can be run individually or as a complete suite to ensure system stability and correct behavior.
 ---
-← [Best Practices](best-practices.md) | [📚 INDEX](INDEX.md) | [Debugging](DEBUGGING.md) →
+← [Best Practices](best-practices.md) | [📚 index](index.md) | [Debugging](DEBUGGING.md) →

@@ -829,4 +829,4 @@ curl http://localhost:8000/health/components
 
 This debugging guide provides comprehensive troubleshooting procedures for the most common OrKa issues. For component-specific debugging, refer to the respective documentation sections.
 ---
-← [Testing](TESTING.md) | [📚 INDEX](INDEX.md) | [Troubleshooting](troubleshooting.md) →
+← [Testing](TESTING.md) | [📚 index](index.md) | [Troubleshooting](troubleshooting.md) →

@@ -1490,4 +1490,4 @@ agents:
 
 This comprehensive component guide provides the detailed documentation needed for effective debugging and development of OrKa workflows, addressing the specific gaps identified in the problem statement.
 ---
-← [Architecture](architecture.md) | [📚 INDEX](INDEX.md) | [Visual Architecture](VISUAL_ARCHITECTURE_GUIDE.md) →
+← [Architecture](architecture.md) | [📚 index](index.md) | [Visual Architecture](VISUAL_ARCHITECTURE_GUIDE.md) →

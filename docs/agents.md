@@ -495,4 +495,4 @@ For detailed configuration examples, see the [YAML Configuration Guide](./yaml-c
 
 [📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
 ---
-← [YAML Configuration](YAML_CONFIGURATION.md) | [📚 INDEX](INDEX.md) | [Advanced Agents](agents-advanced.md) →
+← [YAML Configuration](YAML_CONFIGURATION.md) | [📚 index](index.md) | [Advanced Agents](agents-advanced.md) →

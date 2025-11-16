@@ -633,4 +633,4 @@ OrKa uses a Redis-based architecture for workflow execution and memory:
 
 [📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
 ---
-← [None](..\README.md) | [📚 INDEX](INDEX.md) | [Quickstart](quickstart.md) →
+← [None](..\README.md) | [📚 index](index.md) | [Quickstart](quickstart.md) →

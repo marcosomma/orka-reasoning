@@ -2,7 +2,7 @@
 
 > **Last Updated:** 16 November 2025  
 > **Status:** 🟢 Current  
-> **Related:** [Debugging](DEBUGGING.md) | [FAQ](faq.md) | [Observability](observability.md) | [Testing](TESTING.md) | [INDEX](INDEX.md)
+> **Related:** [Debugging](DEBUGGING.md) | [FAQ](faq.md) | [Observability](observability.md) | [Testing](TESTING.md) | [index](index.md)
 
 This guide helps you diagnose and fix common issues in OrKa. For each problem, we provide:
 - Symptoms to identify the issue
@@ -493,4 +493,4 @@ Found a bug or have a fix? We welcome contributions!
 
 See our [Contributing Guide](../CONTRIBUTING.md) for more details.
 ---
-← [Debugging](DEBUGGING.md) | [📚 INDEX](INDEX.md) | [FAQ](faq.md) →
+← [Debugging](DEBUGGING.md) | [📚 index](index.md) | [FAQ](faq.md) →

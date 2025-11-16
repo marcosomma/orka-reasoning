@@ -5,7 +5,7 @@
 > **Last Updated:** 16 November 2025  
 > **Status:** 🔴 Deprecated - Use primary guides  
 > **Replaced By:** [YAML_CONFIGURATION.md](YAML_CONFIGURATION.md) | [MEMORY_SYSTEM_GUIDE.md](MEMORY_SYSTEM_GUIDE.md)  
-> **Related:** [INDEX](INDEX.md)
+> **Related:** [index](index.md)
 
 [📘 Getting Started](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Memory System](./MEMORY_SYSTEM_GUIDE.md) | [🧠 Memory Presets](./memory-presets.md) | [🐛 Debugging](./DEBUGGING.md)
 

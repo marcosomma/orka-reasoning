@@ -428,4 +428,4 @@ except Exception as e:
 - [Monitoring Guide](./observability.md)
 - [Troubleshooting Guide](./troubleshooting.md)
 ---
-← [GraphScout](GRAPH_SCOUT_AGENT.md) | [📚 INDEX](INDEX.md) | [Testing](TESTING.md) →
+← [GraphScout](GRAPH_SCOUT_AGENT.md) | [📚 index](index.md) | [Testing](TESTING.md) →
