@@ -1,6 +1,11 @@
-[📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md)
-
 # YAML Configuration Guide for OrKa
+
+> ⚠️ **Consolidation Notice:** This guide will be merged into [YAML_CONFIGURATION.md](YAML_CONFIGURATION.md) in v0.9.7. Please refer to the primary configuration guide for the most up-to-date information.
+
+> **Last Updated:** 16 November 2025  
+> **Status:** 🟡 To be consolidated  
+> **Primary Guide:** [YAML_CONFIGURATION.md](YAML_CONFIGURATION.md)  
+> **Related:** [index](index.md)
 
 This guide provides detailed examples and patterns for configuring different types of agents, nodes, and tools in your OrKa YAML configuration.
 
@@ -1188,7 +1193,7 @@ agents:
 
 This comprehensive guide covers all the major agent types, configuration patterns, and best practices for building robust OrKa workflows.
 
-[📘 Getting Start](./getting-started.md) | [🤖 Agent Types](./agents.md) | [🔍 Architecture](./architecture.md) | [🧠 Idea](./index.md) | [🧪 Extending Agents](./extending-agents.md) | [📊 Observability](./observability.md) | [📜 YAML Schema](./orka.yaml-schema.md) | [📝 YAML Configuration Guide](./yaml-configuration-guide.md) | [⚙ Runtime Modes](./runtime-modes.md) | [🔐 Security](./security.md) | [❓ FAQ](./faq.md) 
+ 
 
 ### Running Your Configuration
 

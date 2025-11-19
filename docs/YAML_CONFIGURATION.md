@@ -1,3 +1,9 @@
+# OrKa YAML Configuration Guide
+
+> **Last Updated:** 16 November 2025  
+> **Status:** 🟢 Primary Configuration Guide  
+> **Related:** [Getting Started](getting-started.md) | [YAML Schema](orka.yaml-schema.md) | [Runtime Modes](runtime-modes.md) | [index](index.md)
+
 ## Orchestrator Configuration
 
 The Orchestrator is the core engine of Orka that coordinates all components. It uses a modular architecture with the following key components:
@@ -721,3 +727,5 @@ orchestrator:
       type: "openai-answer"
       prompt: "How should I perform this task: {{ input }}"
 ```
+---
+← [Visual Architecture](VISUAL_ARCHITECTURE_GUIDE.md) | [📚 index](index.md) | [Agents](agents.md) →
