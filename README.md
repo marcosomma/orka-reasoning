@@ -87,6 +87,28 @@ orka memory watch
 orka run my-workflow.yml "What is machine learning?"
 ```
 
+## Visual Workflow Builder (OrKa UI)
+
+**Don't want to write YAML by hand?** Use **OrKa UI** - a drag-and-drop visual editor:
+
+```bash
+# Pull and run the UI
+docker pull marcosomma/orka-ui:latest
+docker run -d -p 8080:80 --name orka-ui marcosomma/orka-ui:latest
+
+# Open in browser
+# http://localhost:8080
+```
+
+**Features:**
+- 🎨 Drag-and-drop workflow builder
+- 🔧 Visual node configuration
+- 📤 One-click YAML export
+- 🚀 Built-in workflow execution
+- 📚 Example workflow library
+
+**[📖 Read the full OrKa UI documentation →](docs/orka-ui.md)**
+
 ### RedisStack Setup Options
 
 OrKa needs RedisStack for its memory system. When you run `orka-start`, it automatically:
@@ -249,15 +271,16 @@ orka run local-chat.yml "Explain machine learning simply"
 
 ## Documentation
 
-### 🌟 **[Agent & Node Reference Index →](docs/AGENT_NODE_TOOL_INDEX.md)** ⭐
-**Complete 1-to-1 documentation for every agent, node, and tool** with examples, parameters, and best practices.
+### 📚 **[Documentation Index →](docs/index.md)** - Start Here!
+**Complete documentation hub** with organized guides, tutorials, and references for all OrKa features.
 
-### Core Guides
-- [Getting Started Guide](docs/getting-started.md) - Detailed setup and first workflows
-- [Agent Types](docs/agents.md) - All available agent types and configurations  
-- [Memory System](docs/MEMORY_SYSTEM_GUIDE.md) - How memory works and configuration
-- [YAML Configuration](docs/yaml-configuration-guide.md) - Complete YAML reference
-- [Examples](examples/README.md) - 15+ ready-to-use workflow templates
+Quick links:
+- **[📘 Quickstart](docs/quickstart.md)** - Get running in 5 minutes
+- **[🎯 Agent & Node Reference](docs/AGENT_NODE_TOOL_INDEX.md)** - Every agent, node & tool documented
+- **[🧠 Memory System](docs/MEMORY_SYSTEM_GUIDE.md)** - Intelligent memory configuration
+- **[⚙️ YAML Configuration](docs/YAML_CONFIGURATION.md)** - Complete workflow reference
+- **[🧭 GraphScout Agent](docs/GRAPH_SCOUT_AGENT.md)** - Dynamic routing system
+- **[📋 Examples](examples/README.md)** - 50+ ready-to-use workflow templates
 
 ## Getting Help
 
