@@ -151,3 +151,110 @@ class TestMemoryCompressor:
         assert summary == "Summary"
         summarizer.summarize.assert_called_once()
 
+    @pytest.mark.asyncio
+    async def test_create_summary_with_generate(self):
+        """Test _create_summary using generate method."""
+        compressor = MemoryCompressor()
+        summarizer = AsyncMock()
+        # No summarize method, only generate
+        delattr(summarizer, "summarize")
+        summarizer.generate = AsyncMock(return_value="Generated summary")
+        
+        entries = [
+            {"content": "Entry 1"},
+            {"content": "Entry 2"},
+        ]
+        
+        summary = await compressor._create_summary(entries, summarizer)
+        
+        assert summary == "Generated summary"
+        summarizer.generate.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_create_summary_exception_in_summarizer(self):
+        """Test _create_summary handles exceptions from summarizer."""
+        compressor = MemoryCompressor()
+        summarizer = AsyncMock()
+        summarizer.summarize = AsyncMock(side_effect=Exception("Summarization failed"))
+        
+        entries = [{"content": "Entry 1"}]
+        
+        with pytest.raises(Exception, match="Summarization failed"):
+            await compressor._create_summary(entries, summarizer)
+
+    @pytest.mark.asyncio
+    async def test_compress_no_old_entries_under_max(self):
+        """Test compress when no old entries and under max entries."""
+        compressor = MemoryCompressor(max_entries=1000, time_window=timedelta(days=7))
+        summarizer = AsyncMock()
+        summarizer.summarize = AsyncMock(return_value="Summary")
+        
+        # All entries are recent (within time window) and under max
+        recent_time = datetime.now() - timedelta(days=1)
+        entries = [
+            {"importance": 0.1, "timestamp": recent_time, "content": "Recent entry"}
+            for _ in range(50)
+        ]
+        
+        result = await compressor.compress(entries, summarizer)
+        
+        # Should return entries as-is since no old entries and under max
+        assert result == entries
+        summarizer.summarize.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_compress_no_old_entries_over_max(self):
+        """Test compress when no old entries but over max entries."""
+        compressor = MemoryCompressor(max_entries=10, importance_threshold=0.3, time_window=timedelta(days=7))
+        summarizer = AsyncMock()
+        summarizer.summarize = AsyncMock(return_value="Summary text")
+        
+        # All entries are recent (within time window) but over max
+        recent_time = datetime.now() - timedelta(days=1)
+        entries = [
+            {"importance": 0.1, "timestamp": recent_time, "content": f"Entry {i}"}
+            for i in range(20)
+        ]
+        
+        result = await compressor.compress(entries, summarizer)
+        
+        # Should compress since over max entries
+        assert len(result) < len(entries)
+        summarizer.summarize.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_compress_exception_during_summary(self):
+        """Test compress handles exceptions during summary creation."""
+        compressor = MemoryCompressor(max_entries=10, importance_threshold=0.3)
+        summarizer = AsyncMock()
+        summarizer.summarize = AsyncMock(side_effect=Exception("Summary error"))
+        
+        old_time = datetime.now() - timedelta(days=10)
+        entries = [
+            {"importance": 0.1, "timestamp": old_time, "content": "Old entry"}
+            for _ in range(20)
+        ]
+        
+        # Should return original entries if summarization fails
+        result = await compressor.compress(entries, summarizer)
+        
+        assert result == entries
+        summarizer.summarize.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_compress_with_missing_summarize_and_generate(self):
+        """Test compress when summarizer has neither summarize nor generate."""
+        compressor = MemoryCompressor(max_entries=10, importance_threshold=0.3)
+        summarizer = Mock()  # No methods
+        
+        old_time = datetime.now() - timedelta(days=10)
+        entries = [
+            {"importance": 0.1, "timestamp": old_time, "content": "Old entry"}
+            for _ in range(20)
+        ]
+        
+        # Should return original entries when summarizer validation fails
+        result = await compressor.compress(entries, summarizer)
+        
+        assert result == entries
+
