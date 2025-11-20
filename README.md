@@ -61,7 +61,7 @@ agents:
     
   - id: answer
     type: local_llm
-    model: llama3.2
+    model: llama3.2:3b
     prompt: "Answer based on: {{ previous_outputs }}"
     
   - id: memory_store
@@ -76,8 +76,9 @@ agents:
 # Install OrKa
 pip install orka-reasoning
 
-# Start RedisStack (for memory)
+# Start RedisStack + Backend + UI
 # Automatically tries native RedisStack first, then Docker
+# UI available at http://localhost:8080
 orka-start
 
 # Memory TUI
@@ -91,13 +92,34 @@ orka run my-workflow.yml "What is machine learning?"
 
 **Don't want to write YAML by hand?** Use **OrKa UI** - a drag-and-drop visual editor:
 
+### Automatic Start (Recommended)
 ```bash
-# Pull and run the UI
-docker pull marcosomma/orka-ui:latest
-docker run -d -p 8080:80 --name orka-ui marcosomma/orka-ui:latest
+# UI automatically starts with orka-start
+orka-start
 
-# Open in browser
-# http://localhost:8080
+# Access at http://localhost:8080
+```
+
+### Manual Start (Alternative)
+```bash
+# Pull and run the UI manually
+docker pull marcosomma/orka-ui:latest
+docker run -d -p 8080:80 --name orka-ui \
+  -e VITE_API_URL_LOCAL=http://localhost:8000/api/run@dist \
+  marcosomma/orka-ui:latest
+
+# Access at http://localhost:8080
+```
+
+### Configuration
+```bash
+# Skip UI (Redis + Backend only)
+export ORKA_DISABLE_UI=true
+orka-start
+
+# Use cached Docker image (faster startup)
+export ORKA_UI_SKIP_PULL=true
+orka-start
 ```
 
 **Features:**
@@ -109,12 +131,17 @@ docker run -d -p 8080:80 --name orka-ui marcosomma/orka-ui:latest
 
 **[📖 Read the full OrKa UI documentation →](docs/orka-ui.md)**
 
-### RedisStack Setup Options
+### What `orka-start` Provides
 
-OrKa needs RedisStack for its memory system. When you run `orka-start`, it automatically:
-1. **Tries native RedisStack** (if installed on your system)
-2. **Falls back to Docker** (if Docker is running)
-3. **Shows install instructions** (if neither is available)
+When you run `orka-start`, it automatically sets up:
+1. **RedisStack** (memory backend) - tries native first, then Docker
+2. **OrKa Backend API** (port 8000) - workflow execution engine
+3. **OrKa UI** (port 8080) - visual workflow builder (if Docker available)
+
+**RedisStack Setup:**
+- **Tries native RedisStack** (if installed on your system)
+- **Falls back to Docker** (if Docker is running)
+- **Shows install instructions** (if neither is available)
 
 **Choose your preferred method:**
 - **Docker** (easiest): Just have Docker running, `orka-start` handles everything

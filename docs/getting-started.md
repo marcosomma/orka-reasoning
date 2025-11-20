@@ -15,11 +15,37 @@ This guide shows you how to set up OrKa and create your first AI workflows using
 
 ## Prerequisites
 
-- Python 3.8 or higher
+### Software Requirements
+- **Python 3.11 or higher**
 - **RedisStack** (one of the following):
   - Docker (easiest option - `orka-start` auto-configures)
   - Native RedisStack installation (see installation options below)
+- **Docker** (optional but recommended for OrKa UI)
 - Optional: Local LLM like Ollama, or OpenAI API key
+
+### Hardware Requirements
+
+OrKa is **local-first** focused, meaning you can run everything privately on your machine. Requirements depend on your chosen model:
+
+**Minimum (for llama3.2:3b - used in most examples):**
+- **RAM:** 8GB minimum, 16GB recommended
+- **Storage:** 5GB for model + data
+- **CPU:** Modern multi-core processor (Apple Silicon, Intel i5/i7, AMD Ryzen)
+
+**Recommended (for better performance):**
+- **RAM:** 16GB+ for smooth operation with multiple agents
+- **GPU:** NVIDIA GPU with 6GB+ VRAM (optional, accelerates inference)
+- **Storage:** 20GB+ for multiple models and memory data
+
+**Model-Specific Requirements:**
+- `llama3.2:3b` (3 billion parameters): ~4GB RAM, used in **all examples** except multi-model tests
+- `gpt-oss:20b` (20 billion parameters): ~16GB RAM
+- `deepseek-r1:8b`: ~8GB RAM
+- `deepseek-r1:32b`: ~32GB RAM
+
+> 💡 **Note:** All example workflows in `examples/` use `llama3.2:3b` by default for accessibility, except for:
+> - `multi_model_local_llm_evaluation.yml` (tests different models)
+> - Files with model names in their filename (e.g., `*deepseek-32b.yml`)
 
 ## Installation
 
@@ -59,11 +85,74 @@ docker run -d -p 6380:6380 --name orka-redis redis/redis-stack:latest
 ```
 
 **What happens when you run `orka-start`:**
-1. First tries to find and use **native RedisStack** installation
-2. If not found, falls back to **Docker RedisStack**
-3. If neither available, provides installation instructions
+1. Starts **RedisStack** (native or Docker) on port 6380
+2. Starts **OrKa Backend API** on port 8000
+3. **Automatically pulls and starts OrKa UI** container on port 8080 (if Docker is available)
+4. All services run until you press Ctrl+C
 
-This means you can use OrKa **with or without Docker** - just pick the method that works best for your environment.
+**Service Lifecycle:**
+- **Startup:** Pulls latest UI image (can be skipped with `ORKA_UI_SKIP_PULL=true`)
+- **Running:** All services available at their respective ports
+- **Shutdown:** Clean stop of all services when you exit (Ctrl+C)
+
+This means you can use OrKa **with or without Docker** - Docker is only required for the UI container.
+
+## Services & Ports Overview
+
+When you run `orka-start`, the following services are available:
+
+| Service | Port | URL | Purpose | Auto-Start |
+|---------|------|-----|---------|------------|
+| **RedisStack** | 6380 | `redis://localhost:6380` | Memory backend & vector search | ✅ Always |
+| **OrKa Backend API** | 8000 | `http://localhost:8000` | Workflow execution engine | ✅ Always |
+| **OrKa UI** | 8080 | `http://localhost:8080` | Visual workflow builder | ✅ With Docker |
+
+**Quick Access:**
+- 🎨 **Build workflows visually:** http://localhost:8080 (opens automatically with `orka-start`)
+- 📡 **API health check:** http://localhost:8000/health
+- 💾 **Redis connection:** `redis://localhost:6380/0`
+- 📚 **Browse 30+ examples:** Available in UI at http://localhost:8080/examples
+
+### OrKa UI Integration
+
+The **OrKa UI** is a visual workflow builder that runs as a Docker container and is **automatically started** when you run `orka-start`.
+
+**Features:**
+- 🎨 **Visual Workflow Builder:** Drag-and-drop YAML editor
+- 📚 **Example Library:** 30+ pre-built workflows ready to use
+- 🔍 **Live Validation:** Real-time YAML syntax checking
+- 📊 **Execution Monitoring:** Track workflow progress
+- 💾 **Local Storage:** Workflows saved in browser
+
+**Access & Requirements:**
+- **URL:** http://localhost:8080 (automatically opens when `orka-start` runs)
+- **Container:** `marcosomma/orka-ui:latest` (auto-pulled on first run)
+- **Requirements:** Docker installed and running
+- **Startup Time:** ~2-5 seconds (after initial image pull)
+
+**Configuration Options:**
+```bash
+# Default: UI starts automatically with latest version
+orka-start
+
+# Fast startup: Skip Docker image pull (use cached version)
+export ORKA_UI_SKIP_PULL=true
+orka-start
+
+# Backend only: Disable UI completely
+export ORKA_DISABLE_UI=true
+orka-start
+
+# Custom API URL for UI
+export ORKA_API_URL=http://custom-host:8000
+orka-start
+
+# Windows PowerShell:
+$env:ORKA_UI_SKIP_PULL="true"
+$env:ORKA_DISABLE_UI="true"
+$env:ORKA_API_URL="http://custom-host:8000"
+orka-start
+```
 
 ## Environment Setup
 
@@ -120,8 +209,9 @@ agents:
   
   - id: answer_builder  
     type: local_llm              # Local model for privacy
-    model: gpt-oss:20b
+    model: llama3.2:3b          # Default model used in all examples
     provider: ollama
+    temperature: 0.7
     
   - id: memory_writer
     type: memory  
@@ -129,6 +219,12 @@ agents:
     config:
       operation: write
 ```
+
+> 💡 **Model Choice:** We use `llama3.2:3b` in all examples because it:
+> - Runs on most modern laptops (4GB RAM requirement)
+> - Provides good quality for learning and development
+> - Fast inference times for interactive workflows
+> - Can be easily swapped for larger models when needed
 
 > **View the complete workflow**: [`../examples/simple_memory_preset_demo.yml`](../examples/simple_memory_preset_demo.yml)
 
@@ -340,23 +436,76 @@ orka-start
 docker run -it -p 80:80 marcosomma/orka-ui:latest
 ```
 
-## 🐛 Troubleshooting RedisStack
+## 🐛 Troubleshooting
 
 ### Common Issues & Quick Fixes
 
 | Issue | Quick Fix |
 |-------|-----------|
-| `"unknown command 'FT.CREATE'"` | You're using basic Redis. OrKa will auto-fallback, but install Docker for RedisStack |
-| Slow performance | Check Docker is running: `docker ps` |
-| Memory not persisting | Verify RedisStack container: `docker logs orka-redis` |
+| **UI not accessible at port 8080** | Check Docker is running: `docker ps \| grep orka-ui`. Use `ORKA_DISABLE_UI=false` if disabled |
+| **UI shows "API connection error"** | Ensure OrKa backend is running on port 8000. Check with `curl http://localhost:8000/health` |
+| **"unknown command 'FT.CREATE'"** | You're using basic Redis. OrKa will auto-fallback, but install RedisStack for full features |
+| **Slow performance** | Check Docker is running: `docker ps` |
+| **Memory not persisting** | Verify RedisStack container: `docker logs orka-redis` |
+| **UI not updating** | Pull latest image: `docker pull marcosomma/orka-ui:latest` then restart `orka-start` |
 
-### Verify RedisStack is Working
+### Verify Services are Running
+
+```bash
+# Check all OrKa services
+docker ps --filter name=orka
+
+# Expected output should show:
+# - orka-ui (port 8080)
+# - Redis container (if using Docker backend)
+
+# Check OrKa backend
+ps aux | grep orka  # Unix/macOS
+Get-Process | Where-Object {$_.ProcessName -like "*python*"}  # Windows
+
+# Test UI accessibility
+curl http://localhost:8080
+
+# Test backend API
+curl http://localhost:8000/health
+```
+
+### RedisStack Verification
 ```bash
 # Check if vector search is available
-redis-cli FT._LIST
+redis-cli -p 6380 FT._LIST
 
 # Should show OrKa memory indexes
 # If empty, OrKa will create them automatically
+```
+
+### UI-Specific Troubleshooting
+
+**UI container won't start:**
+```bash
+# Check Docker logs
+docker logs orka-ui
+
+# Remove and restart
+docker stop orka-ui
+docker rm orka-ui
+orka-start
+```
+
+**UI not connecting to backend:**
+```bash
+# Verify API URL configuration
+docker inspect orka-ui | grep VITE_API_URL
+
+# Should show: VITE_API_URL_LOCAL=http://localhost:8000/api/run@dist
+```
+
+**Force UI update:**
+```bash
+# Pull latest version and restart
+docker pull marcosomma/orka-ui:latest
+docker stop orka-ui && docker rm orka-ui
+orka-start
 ```
 
 ## 🌟 Why OrKa V0.7.0 is Game-Changing

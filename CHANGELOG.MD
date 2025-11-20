@@ -1,6 +1,83 @@
 # OrKa-Reasoning – Un-official CHANGELOG
 
 ---
+## [0.9.7] · 2025-11-20 🚀
+OrKa v0.9.7 – Integrated UI & Local-First Standardization
+
+### Summary
+This release focuses on seamless UI integration, local-first model standardization, and improved developer experience. The `orka-start` command now launches a complete stack (Redis + Backend + UI) with Docker-based UI management, and all example workflows have been standardized to use `llama3.2:3b` as the default local model for consistent 4GB RAM deployment.
+
+### Added
+- **🖥️ Integrated OrKa UI in orka-start**
+  - **One-Command Stack** - `orka-start` now automatically starts RedisStack (port 6380), Backend API (port 8000), and OrKa UI (port 8080)
+  - **Docker Management Module** - New `orka/startup/ui.py` module for Docker container lifecycle management (start, stop, status checks, cleanup)
+  - **Configuration Control** - Environment variables for flexible deployment:
+    - `ORKA_DISABLE_UI=true` - Backend-only mode (no UI)
+    - `ORKA_UI_SKIP_PULL=true` - Fast startup, skip Docker image pull
+    - `ORKA_API_URL` - Custom backend URL for UI (default: http://localhost:8000/api/run)
+  - **Automatic Cleanup** - UI container cleanup integrated in `orka-stop` and emergency shutdown handlers
+  - **UI Container Management** - Functions: `start_ui_container()`, `stop_ui_container()`, `is_ui_container_running()`, `cleanup_ui_container()`
+
+- **📊 Local-First Model Standardization**
+  - **llama3.2:3b Default** - All 39 example workflows updated from `gpt-oss:20b` to `llama3.2:3b` for consistent 4GB RAM requirements
+  - **Hardware-Optimized Examples** - Examples now target accessible local hardware (4-8GB RAM, CPU inference)
+  - **Multi-Model Preservation** - Kept specialized workflows unchanged:
+    - `multi_model_local_llm_evaluation.yml` - Multi-model comparison workflow
+    - DeepSeek-specific workflows - Maintained for reasoning benchmarks
+    - `graph_scout_dynamic.yml` - Custom model configuration examples
+  - **Updated Workflows** - Root examples (30), orka_maternity (5), orka_smartest (3), orka_soc (1)
+
+### Enhanced
+- **📖 Documentation - Getting Started & Hardware Requirements**
+  - **Hardware Requirements Section** - Added comprehensive hardware specs for different deployment scenarios:
+    - Basic (llama3.2:3b): 4GB RAM, 2 CPU cores
+    - Medium (llama3.1:8b): 8GB RAM, 4 CPU cores
+    - Large (llama3.1:70b, DeepSeek-R1): 48GB+ RAM, 8+ cores, GPU recommended
+  - **Services & Ports Overview** - Clear mapping of all services and their ports (6380, 8000, 8080)
+  - **OrKa UI Integration Guide** - Step-by-step setup with environment variable configuration
+  - **Local-First Focus** - Documented privacy-first approach with Ollama + llama3.2:3b as reference stack
+  
+- **⚡ Quick Setup Updates**
+  - **Single Command Setup** - Updated quickstart to show unified `orka-start` command for all services
+  - **URL Reference** - Added service URLs for Redis, Backend, and UI in quick reference
+  - **Configuration Examples** - Added optional environment variable examples for different deployment modes
+
+### Fixed
+- **🧪 Test Infrastructure - PyTorch Import Conflicts**
+  - **Test Isolation** - Mocked torch/sentence_transformers modules to prevent import-time conflicts in unit tests
+  - **23 Unit Tests** - Created comprehensive test suite for UI module (437 lines):
+    - Container status checking (3 tests)
+    - Start operations with various scenarios (6 tests)
+    - Stop operations and cleanup (5 tests)
+    - Environment variable handling (4 tests)
+    - Docker error handling (5 tests)
+  - **100% Test Pass Rate** - All UI module tests passing with full isolation via mocking
+  - **Exception Handling** - Added try/except to `cleanup_ui_container()` for graceful test failure handling
+
+### Technical Details
+- **UI Module Architecture** - Subprocess-based Docker management with comprehensive error handling and logging
+- **Container Lifecycle** - Automatic pull, start, stop, and removal of `marcosomma/orka-ui:latest` Docker image
+- **Integration Points** - UI startup integrated in `orka/startup/orchestrator.py` after backend initialization
+- **Cleanup Integration** - UI cleanup added to `orka/startup/cleanup.py` for both normal and emergency shutdown
+- **Export Management** - UI functions exported in `orka/startup/__init__.py` for public API
+- **Test Strategy** - Mock-based unit tests avoid Docker dependency, test logic and error paths in isolation
+
+### Migration Notes
+- **For Existing Users** - `orka-start` now launches UI automatically; use `ORKA_DISABLE_UI=true` to restore old behavior
+- **Model Updates** - If using custom workflows with `gpt-oss:20b`, consider migrating to `llama3.2:3b` for lower RAM usage
+- **Docker Requirement** - UI feature requires Docker installed and running; backend-only mode available with `ORKA_DISABLE_UI=true`
+- **Port Changes** - UI now occupies port 8080; ensure no conflicts with existing services
+- **Configuration Migration** - New environment variables available for UI customization (see documentation)
+
+### Deployment Recommendations
+- **Development** - Use default `orka-start` for full stack with visual workflow builder
+- **Production** - Consider `ORKA_DISABLE_UI=true` for backend-only deployment in containerized environments
+- **CI/CD** - Use `ORKA_UI_SKIP_PULL=true` to speed up repeated test runs with cached Docker images
+- **Airgapped** - Pre-pull `marcosomma/orka-ui:latest`, then use `ORKA_UI_SKIP_PULL=true`
+
+> **Local-First Integration**: This release completes OrKa's local-first vision by providing a unified stack that runs entirely on local hardware with no external API dependencies. The integrated UI, standardized llama3.2:3b examples, and comprehensive hardware guidance make OrKa accessible for privacy-focused developers with modest hardware (4GB RAM minimum).
+
+---
 ## [0.9.6] · 2025-11-15 🧠
 OrKa v0.9.6 – Advanced beta / pre-production
 

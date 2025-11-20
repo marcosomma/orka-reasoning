@@ -21,6 +21,7 @@ monitoring, and shutdown coordination.
 
 import asyncio
 import logging
+import os
 import subprocess
 import sys
 
@@ -37,6 +38,7 @@ from .infrastructure.health import (
     wait_for_services,
 )
 from .infrastructure.redis import start_native_redis
+from .ui import start_ui_container
 
 logger = logging.getLogger(__name__)
 
@@ -79,8 +81,9 @@ async def main() -> None:
     2. Starts the appropriate infrastructure services (Redis natively)
     3. Waits for services to be ready
     4. Launches the OrKa backend server
-    5. Monitors the backend process to ensure it's running
-    6. Handles graceful shutdown on keyboard interrupt
+    5. Starts the OrKa UI container (if Docker is available)
+    6. Monitors the backend process to ensure it's running
+    7. Handles graceful shutdown on keyboard interrupt
 
     The function runs until interrupted (e.g., via Ctrl+C), at which point
     it cleans up all started processes and containers.
@@ -94,6 +97,7 @@ async def main() -> None:
     # Track all processes for cleanup
     processes = {}
     backend_proc = None
+    ui_started = False
 
     try:
         # Start infrastructure
@@ -107,6 +111,13 @@ async def main() -> None:
         processes["backend"] = backend_proc
 
         display_startup_success()
+
+        # Start OrKa UI container (optional - won't fail if Docker is not available)
+        # Check if UI should be disabled via environment variable
+        if os.getenv("ORKA_DISABLE_UI", "").lower() not in ("true", "1", "yes"):
+            ui_started = start_ui_container()
+            if ui_started:
+                logger.info("🌐 OrKa UI is ready at http://localhost:8080")
 
         # Monitor processes
         await monitor_backend_process(backend_proc)

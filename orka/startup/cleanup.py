@@ -24,6 +24,7 @@ from typing import Dict
 
 from .config import get_docker_dir
 from .infrastructure.redis import cleanup_redis_docker, terminate_redis_process
+from .ui import cleanup_ui_container
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,9 @@ def cleanup_services(backend: str, processes: Dict[str, subprocess.Popen] = {}) 
     """
     try:
         logger.info("🧹 Starting comprehensive service cleanup...")
+
+        # Cleanup UI container first
+        cleanup_ui_container()
 
         # Terminate native processes
         if processes:
@@ -160,6 +164,9 @@ def emergency_cleanup() -> None:
     logger.warning("🚨 Performing emergency cleanup...")
 
     try:
+        # Cleanup UI container in emergency mode
+        cleanup_ui_container()
+
         # Kill all OrKa-related containers
         result = subprocess.run(
             ["docker", "ps", "-q", "--filter", "name=docker-"],

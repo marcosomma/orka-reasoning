@@ -70,6 +70,9 @@ from .infrastructure import (  # Redis; Health & monitoring
 )
 from .orchestrator import main, run_startup, start_infrastructure
 
+# UI container management
+from .ui import cleanup_ui_container, is_ui_container_running, start_ui_container, stop_ui_container
+
 # Public API - these are the main functions that should be used
 __all__ = [
     # Main entry points (most commonly used)
@@ -84,6 +87,11 @@ __all__ = [
     "start_backend",
     "is_backend_running",
     "terminate_backend_process",
+    # UI container management
+    "start_ui_container",
+    "stop_ui_container",
+    "is_ui_container_running",
+    "cleanup_ui_container",
     # Service-specific functions (for compatibility)
     "start_native_redis",
     "start_redis_docker",

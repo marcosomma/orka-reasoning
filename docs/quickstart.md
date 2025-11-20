@@ -12,16 +12,25 @@ Get OrKa running in 5 minutes and create your first AI workflow.
 # 1. Install OrKa
 pip install orka-reasoning
 
-# 2. Start Redis (for memory)
+# 2. Start all services (Redis + Backend + UI)
 orka-start
+# ✅ RedisStack: redis://localhost:6380
+# ✅ Backend API: http://localhost:8000
+# ✅ UI: http://localhost:8080
 
-# 3. Optional: Set up local LLM
+# 3. Install local LLM (recommended - runs privately on your machine)
 # Install Ollama from https://ollama.ai
-ollama pull llama3.2
+ollama pull llama3.2:3b  # Default model used in all examples (4GB RAM)
 
-# 4. Optional: Set OpenAI key (if using cloud models)
+# 4. Optional: Set OpenAI key (if using cloud models instead)
 export OPENAI_API_KEY=your-key-here
 ```
+
+**What you get:**
+- 🎨 **Visual Workflow Builder** at http://localhost:8080
+- 💾 **Memory System** with RedisStack
+- 🤖 **30+ Example Workflows** ready to use
+- 🔒 **Privacy-first** with local LLM support
 
 ## Manual Setup (Alternative)
 
@@ -62,17 +71,25 @@ source .env
 
 ### 2. Start OrKa
 
-Choose your deployment mode:
-
 ```bash
-# Development (RedisStack only)
+# All-in-one: Starts RedisStack + Backend + UI
 orka-start
 
-# Memory Watch
-orka memory watch
+# Services available:
+# - Redis: redis://localhost:6380
+# - Backend: http://localhost:8000
+# - UI: http://localhost:8080
 
-# Optional: Start UI
-docker run -d -p 80:80 marcosomma/orka-ui:latest
+# Optional: Fast startup (skip Docker image pull)
+export ORKA_UI_SKIP_PULL=true
+orka-start
+
+# Optional: Backend only (no UI)
+export ORKA_DISABLE_UI=true
+orka-start
+
+# Memory monitoring TUI
+orka memory watch
 ```
 
 ## Verify Installation

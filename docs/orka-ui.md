@@ -97,7 +97,52 @@ Think of it as a **visual programming environment** for AI agent orchestration, 
 
 ## Installation & Setup
 
-### Using Docker (Recommended)
+### Option 1: Automatic Start with `orka-start` (Recommended)
+
+The **easiest way** to use OrKa UI is through the `orka-start` command, which automatically sets up everything you need:
+
+```bash
+# Install OrKa if you haven't already
+pip install orka-reasoning
+
+# Start Redis, Backend, and UI all at once
+orka-start
+```
+
+**What this does:**
+1. ✅ Starts **RedisStack** (memory backend)
+2. ✅ Starts **OrKa Backend API** (port 8000)
+3. ✅ Starts **OrKa UI** (port 8080) - if Docker is available
+4. ✅ Automatically pulls the latest UI Docker image
+
+**Access the UI:**
+```
+http://localhost:8080
+```
+
+**Configuration Options:**
+```bash
+# Skip Docker image pull for faster startup (uses cached version)
+export ORKA_UI_SKIP_PULL=true
+orka-start
+
+# Disable UI completely (Redis + Backend only)
+export ORKA_DISABLE_UI=true
+orka-start
+
+# Custom API URL
+export ORKA_API_URL=http://custom-host:8000
+orka-start
+
+# Windows PowerShell:
+$env:ORKA_UI_SKIP_PULL="true"
+$env:ORKA_DISABLE_UI="true"
+orka-start
+```
+
+### Option 2: Manual Docker Setup
+
+If you prefer to run the UI container manually or need custom configuration:
 
 #### Prerequisites
 - Docker installed and running
@@ -112,7 +157,7 @@ docker pull marcosomma/orka-ui:latest
 ```bash
 docker run -d \
   -p 8080:80 \
-  -e VITE_API_URL_LOCAL=http://localhost:8000/api/run \
+  -e VITE_API_URL_LOCAL=http://localhost:8000/api/run@dist \
   --name orka-ui \
   marcosomma/orka-ui:latest
 ```
@@ -123,19 +168,21 @@ Open your browser and navigate to:
 http://localhost:8080
 ```
 
-### Configuration Options
+### Manual Configuration Options
+
+When running the UI container manually, you can customize its behavior:
 
 #### Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `VITE_API_URL_LOCAL` | OrKa backend API endpoint | `http://localhost:8000/api/run` |
+| `VITE_API_URL_LOCAL` | OrKa backend API endpoint | `http://localhost:8000/api/run@dist` |
 
 #### Custom API URL Example
 ```bash
 docker run -d \
   -p 8080:80 \
-  -e VITE_API_URL_LOCAL=https://your-api-domain.com/api/run \
+  -e VITE_API_URL_LOCAL=https://your-api-domain.com/api/run@dist \
   --name orka-ui \
   marcosomma/orka-ui:latest
 ```
@@ -144,10 +191,18 @@ docker run -d \
 Change the host port (left side) to use a different port:
 ```bash
 # Use port 3000 instead of 8080
-docker run -d -p 3000:80 -e VITE_API_URL_LOCAL=http://localhost:8000/api/run --name orka-ui marcosomma/orka-ui:latest
+docker run -d \
+  -p 3000:80 \
+  -e VITE_API_URL_LOCAL=http://localhost:8000/api/run@dist \
+  --name orka-ui \
+  marcosomma/orka-ui:latest
 ```
 
-### Building from Source
+> **💡 Tip:** When using `orka-start`, the UI is automatically configured with the correct API URL and port mappings. Manual configuration is only needed if you're running the UI separately.
+
+### Option 3: Building from Source
+
+For developers who want to customize the UI or contribute to development:
 
 #### Prerequisites
 - Node.js 18+ and npm

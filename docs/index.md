@@ -409,8 +409,9 @@ pip install orka-reasoning[extra]
 # Set your OpenAI key (if using OpenAI models)
 export OPENAI_API_KEY=your-key-here
 
-# Start OrKa with automatic RedisStack detection
+# Start OrKa with automatic RedisStack detection + UI
 # Tries native first, then Docker, then shows install instructions
+# UI automatically available at http://localhost:8080
 orka-start
 
 # Alternative: Use Python module directly
@@ -421,6 +422,18 @@ python -m orka.orka_start
 1. Checks for native RedisStack installation
 2. Falls back to Docker if native not found
 3. Provides installation instructions if neither available
+4. **Launches OrKa UI on http://localhost:8080** (if Docker available)
+
+**OrKa UI Configuration:**
+```bash
+# Disable UI (Redis + Backend only)
+export ORKA_DISABLE_UI=true
+orka-start
+
+# Skip Docker image pull for faster startup
+export ORKA_UI_SKIP_PULL=true
+orka-start
+```
 
 ### 3. Create Your First Workflow with Memory
 ```yaml
