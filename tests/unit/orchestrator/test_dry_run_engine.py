@@ -1080,3 +1080,428 @@ class TestSmartPathEvaluator:
             assert isinstance(result, ValidationResult)
             assert result.is_valid is True
             assert result.confidence == 0.8
+
+    @pytest.mark.asyncio
+    async def test_simulate_candidates_json_decode_error(self):
+        """Test simulate_candidates with JSONDecodeError in evaluation."""
+        config = self.create_mock_config()
+        evaluator = SmartPathEvaluator(config)
+
+        candidates = [{"node_id": "test_agent", "path": ["test_agent"]}]
+        question = "Test question"
+        context = {}
+        orchestrator = Mock()
+
+        # Mock _extract_all_agent_info to succeed
+        with patch.object(evaluator, "_extract_all_agent_info", return_value={"test_agent": {"id": "test_agent"}}):
+            # Mock _llm_path_evaluation to raise JSONDecodeError
+            with patch.object(evaluator, "_llm_path_evaluation", side_effect=json.JSONDecodeError("Error", "", 0)):
+                result = await evaluator.simulate_candidates(candidates, question, context, orchestrator)
+
+                # Should fall back to deterministic evaluator
+                assert len(result) == 1
+                assert result[0]["llm_evaluation"]["is_deterministic_fallback"] is True
+
+    @pytest.mark.asyncio
+    async def test_simulate_candidates_key_error(self):
+        """Test simulate_candidates with KeyError in evaluation."""
+        config = self.create_mock_config()
+        evaluator = SmartPathEvaluator(config)
+
+        candidates = [{"node_id": "test_agent", "path": ["test_agent"]}]
+        question = "Test question"
+        context = {}
+        orchestrator = Mock()
+
+        with patch.object(evaluator, "_extract_all_agent_info", return_value={"test_agent": {"id": "test_agent"}}):
+            with patch.object(evaluator, "_llm_path_evaluation", side_effect=KeyError("missing_key")):
+                result = await evaluator.simulate_candidates(candidates, question, context, orchestrator)
+
+                # Should fall back to deterministic evaluator
+                assert len(result) == 1
+
+    @pytest.mark.asyncio
+    async def test_call_evaluation_llm_disabled(self):
+        """Test _call_evaluation_llm when LLM is disabled."""
+        config = self.create_mock_config()
+        config.llm_evaluation_enabled = False
+        evaluator = SmartPathEvaluator(config)
+
+        with pytest.raises(ValueError, match="LLM evaluation is required but disabled"):
+            await evaluator._call_evaluation_llm("test prompt")
+
+    @pytest.mark.asyncio
+    async def test_call_evaluation_llm_unsupported_provider(self):
+        """Test _call_evaluation_llm with unsupported provider."""
+        config = self.create_mock_config()
+        config.provider = "unsupported_provider"
+        evaluator = SmartPathEvaluator(config)
+
+        with pytest.raises(ValueError):
+            await evaluator._call_evaluation_llm("test prompt")
+
+    @pytest.mark.asyncio
+    async def test_call_evaluation_llm_lm_studio(self):
+        """Test _call_evaluation_llm with LM Studio provider."""
+        config = self.create_mock_config()
+        config.provider = "lm_studio"
+        evaluator = SmartPathEvaluator(config)
+
+        mock_response = json.dumps({"evaluation": "test"})
+
+        with patch.object(evaluator, "_call_lm_studio_async", return_value=mock_response):
+            with patch.object(evaluator, "_extract_json_from_response", return_value=mock_response):
+                result = await evaluator._call_evaluation_llm("test prompt")
+                assert result == mock_response
+
+    @pytest.mark.asyncio
+    async def test_call_evaluation_llm_no_json_in_response(self):
+        """Test _call_evaluation_llm when response has no JSON."""
+        config = self.create_mock_config()
+        evaluator = SmartPathEvaluator(config)
+
+        with patch.object(evaluator, "_call_ollama_async", return_value="no json here"):
+            with patch.object(evaluator, "_extract_json_from_response", return_value=None):
+                with pytest.raises(ValueError):
+                    await evaluator._call_evaluation_llm("test prompt")
+
+    @pytest.mark.asyncio
+    async def test_call_validation_llm_disabled(self):
+        """Test _call_validation_llm when LLM is disabled."""
+        config = self.create_mock_config()
+        config.llm_evaluation_enabled = False
+        evaluator = SmartPathEvaluator(config)
+
+        with pytest.raises(ValueError):
+            await evaluator._call_validation_llm("test prompt")
+
+    @pytest.mark.asyncio
+    async def test_call_validation_llm_unsupported_provider(self):
+        """Test _call_validation_llm with unsupported provider."""
+        config = self.create_mock_config()
+        config.provider = "unknown"
+        evaluator = SmartPathEvaluator(config)
+
+        with pytest.raises(ValueError):
+            await evaluator._call_validation_llm("test prompt")
+
+    @pytest.mark.asyncio
+    async def test_call_validation_llm_lmstudio(self):
+        """Test _call_validation_llm with lmstudio provider."""
+        config = self.create_mock_config()
+        config.provider = "lmstudio"
+        evaluator = SmartPathEvaluator(config)
+
+        mock_response = json.dumps({"validation": "test"})
+
+        with patch.object(evaluator, "_call_lm_studio_async", return_value=mock_response):
+            with patch.object(evaluator, "_extract_json_from_response", return_value=mock_response):
+                result = await evaluator._call_validation_llm("test prompt")
+                assert result == mock_response
+
+    @pytest.mark.asyncio
+    async def test_call_validation_llm_no_json(self):
+        """Test _call_validation_llm when no JSON in response."""
+        config = self.create_mock_config()
+        evaluator = SmartPathEvaluator(config)
+
+        with patch.object(evaluator, "_call_ollama_async", return_value="plain text"):
+            with patch.object(evaluator, "_extract_json_from_response", return_value=None):
+                with pytest.raises(ValueError):
+                    await evaluator._call_validation_llm("test prompt")
+
+    @pytest.mark.asyncio
+    async def test_stage2_validation_exception(self):
+        """Test _stage2_path_validation with exception."""
+        config = self.create_mock_config()
+        evaluator = SmartPathEvaluator(config)
+
+        candidate = {"node_id": "test_agent", "path": ["test_agent"]}
+        evaluation = PathEvaluation(
+            node_id="test_agent",
+            relevance_score=0.8,
+            confidence=0.9,
+            reasoning="Test",
+            expected_output="Output",
+            estimated_tokens=100,
+            estimated_cost=0.001,
+            estimated_latency_ms=500,
+            risk_factors=[],
+            efficiency_rating="high",
+        )
+        question = "Test question"
+        context = {}
+
+        with patch.object(evaluator, "_build_validation_prompt", side_effect=Exception("Error")):
+            result = await evaluator._stage2_path_validation(candidate, evaluation, question, context)
+
+            # Should return fallback validation
+            assert isinstance(result, ValidationResult)
+            assert result.is_valid is True  # Fallback assumes valid
+
+    @pytest.mark.asyncio
+    async def test_stage1_evaluation_exception(self):
+        """Test _stage1_path_evaluation with exception."""
+        config = self.create_mock_config()
+        evaluator = SmartPathEvaluator(config)
+
+        candidate = {"node_id": "test_agent", "path": ["test_agent"]}
+        question = "Test question"
+        context = {}
+        agent_info = {"id": "test_agent", "type": "LocalLLMAgent"}
+
+        with patch.object(evaluator, "_build_evaluation_prompt", side_effect=Exception("Error")):
+            result = await evaluator._stage1_path_evaluation(candidate, question, context, agent_info)
+
+            # Should return fallback evaluation
+            assert isinstance(result, PathEvaluation)
+            assert result.node_id == "test_agent"
+
+    @pytest.mark.asyncio
+    async def test_build_comprehensive_evaluation_prompt(self):
+        """Test _build_comprehensive_evaluation_prompt method."""
+        config = self.create_mock_config()
+        evaluator = SmartPathEvaluator(config)
+
+        question = "Test question"
+        available_agents = {
+            "agent1": {
+                "type": "LocalLLMAgent",
+                "description": "Test agent",
+                "capabilities": ["reasoning"],
+                "prompt": "Test prompt",
+                "cost_estimate": 0.01,
+                "latency_estimate": 100,
+            }
+        }
+        possible_paths = [
+            {
+                "agents": [{"id": "agent1", "description": "Test agent"}],
+                "total_cost": 0.01,
+                "total_latency": 100,
+            }
+        ]
+        context = {"current_agent_id": "router", "previous_outputs": {"prev": "result"}}
+
+        prompt = evaluator._build_comprehensive_evaluation_prompt(
+            question, available_agents, possible_paths, context
+        )
+
+        assert isinstance(prompt, str)
+        assert "Test question" in prompt
+        assert "agent1" in prompt
+        assert "LocalLLMAgent" in prompt
+
+    @pytest.mark.asyncio
+    async def test_generate_path_specific_outcome_single_agent(self):
+        """Test _generate_path_specific_outcome with single agent paths."""
+        config = self.create_mock_config()
+        evaluator = SmartPathEvaluator(config)
+
+        available_agents = {
+            "search": {"type": "DuckDuckGoTool"},
+            "classifier": {"type": "ClassificationAgent"},
+            "memory_reader": {"type": "MemoryReaderNode"},
+            "memory_writer": {"type": "MemoryWriterNode"},
+            "llm_analysis": {"type": "LocalLLMAgent"},
+            "llm_response": {"type": "OpenAIAnswerBuilder"},
+            "graph_scout": {"type": "GraphScoutAgent"},
+            "binary": {"type": "BinaryAgent"},
+        }
+
+        # Test search agent
+        outcome = evaluator._generate_path_specific_outcome(["search"], available_agents)
+        assert "news" in outcome.lower() or "web" in outcome.lower()
+
+        # Test classifier
+        outcome = evaluator._generate_path_specific_outcome(["classifier"], available_agents)
+        assert "categorized" in outcome.lower() or "classification" in outcome.lower()
+
+        # Test memory reader
+        outcome = evaluator._generate_path_specific_outcome(
+            ["memory_reader"], available_agents
+        )
+        assert "stored" in outcome.lower() or "retrieved" in outcome.lower()
+
+        # Test memory writer
+        outcome = evaluator._generate_path_specific_outcome(
+            ["memory_writer"], available_agents
+        )
+        assert "stored" in outcome.lower()
+
+        # Test graph scout
+        outcome = evaluator._generate_path_specific_outcome(
+            ["graph_scout"], available_agents
+        )
+        assert "routing" in outcome.lower() or "path" in outcome.lower()
+
+        # Test binary agent
+        outcome = evaluator._generate_path_specific_outcome(["binary"], available_agents)
+        assert "yes" in outcome.lower() or "no" in outcome.lower() or "binary" in outcome.lower()
+
+    @pytest.mark.asyncio
+    async def test_generate_path_specific_outcome_multi_agent(self):
+        """Test _generate_path_specific_outcome with multi-agent paths."""
+        config = self.create_mock_config()
+        evaluator = SmartPathEvaluator(config)
+
+        available_agents = {
+            "search": {"type": "DuckDuckGoTool"},
+            "llm": {"type": "LocalLLMAgent"},
+            "memory": {"type": "MemoryReaderNode"},
+        }
+
+        outcome = evaluator._generate_path_specific_outcome(
+            ["search", "llm"], available_agents
+        )
+        assert "multi-step" in outcome.lower() or "workflow" in outcome.lower()
+
+    @pytest.mark.asyncio
+    async def test_generate_path_specific_outcome_empty_path(self):
+        """Test _generate_path_specific_outcome with empty path."""
+        config = self.create_mock_config()
+        evaluator = SmartPathEvaluator(config)
+
+        outcome = evaluator._generate_path_specific_outcome([], {})
+        assert outcome == "Unknown outcome"
+
+    @pytest.mark.asyncio
+    async def test_generate_fallback_path_evaluation_search_response(self):
+        """Test _generate_fallback_path_evaluation with search + response path."""
+        config = self.create_mock_config()
+        evaluator = SmartPathEvaluator(config)
+
+        available_agents = {
+            "search": {"type": "DuckDuckGoTool"},
+            "response_builder": {"type": "OpenAIAnswerBuilder"},
+        }
+
+        result = evaluator._generate_fallback_path_evaluation(
+            ["search", "response_builder"], available_agents
+        )
+
+        assert result["score"] >= 0.8  # Should get high score
+        assert "search" in result["reasoning"].lower()
+        assert len(result["pros"]) > 0
+
+    @pytest.mark.asyncio
+    async def test_generate_fallback_path_evaluation_analysis_response(self):
+        """Test _generate_fallback_path_evaluation with analysis + response path."""
+        config = self.create_mock_config()
+        evaluator = SmartPathEvaluator(config)
+
+        available_agents = {
+            "llm_analysis": {"type": "LocalLLMAgent"},
+            "response_builder": {"type": "LocalLLMAgent"},
+        }
+
+        result = evaluator._generate_fallback_path_evaluation(
+            ["llm_analysis", "response_builder"], available_agents
+        )
+
+        assert result["score"] > 0.5
+        assert "analysis" in result["reasoning"].lower() or "analytical" in result["reasoning"].lower()
+
+    @pytest.mark.asyncio
+    async def test_generate_fallback_path_evaluation_single_non_builder(self):
+        """Test _generate_fallback_path_evaluation with single non-response-builder agent."""
+        config = self.create_mock_config()
+        evaluator = SmartPathEvaluator(config)
+
+        available_agents = {"search": {"type": "DuckDuckGoTool"}}
+
+        result = evaluator._generate_fallback_path_evaluation(["search"], available_agents)
+
+        # Should be penalized for missing response generation
+        assert result["score"] < 0.8
+        assert len(result["cons"]) > 0
+
+    @pytest.mark.asyncio
+    async def test_generate_fallback_path_evaluation_overly_complex(self):
+        """Test _generate_fallback_path_evaluation with overly complex path."""
+        config = self.create_mock_config()
+        evaluator = SmartPathEvaluator(config)
+
+        available_agents = {
+            "a1": {"type": "LocalLLMAgent"},
+            "a2": {"type": "LocalLLMAgent"},
+            "a3": {"type": "LocalLLMAgent"},
+            "a4": {"type": "LocalLLMAgent"},
+        }
+
+        result = evaluator._generate_fallback_path_evaluation(
+            ["a1", "a2", "a3", "a4"], available_agents
+        )
+
+        # Should be penalized for complexity
+        assert "complex" in result["reasoning"].lower() or any("complex" in con.lower() for con in result["cons"])
+
+    @pytest.mark.asyncio
+    async def test_get_agent_description_known_types(self):
+        """Test _get_agent_description with known Orka agent types."""
+        config = self.create_mock_config()
+        evaluator = SmartPathEvaluator(config)
+
+        class LocalLLMAgent:
+            pass
+
+        class DuckDuckGoTool:
+            pass
+
+        class MemoryReaderNode:
+            pass
+
+        class GraphScoutAgent:
+            pass
+
+        llm = LocalLLMAgent()
+        search = DuckDuckGoTool()
+        memory = MemoryReaderNode()
+        scout = GraphScoutAgent()
+
+        desc_llm = evaluator._get_agent_description(llm)
+        assert "language model" in desc_llm.lower() or "llm" in desc_llm.lower()
+
+        desc_search = evaluator._get_agent_description(search)
+        assert "search" in desc_search.lower() or "duckduckgo" in desc_search.lower()
+
+        desc_memory = evaluator._get_agent_description(memory)
+        assert "memory" in desc_memory.lower() or "retrieve" in desc_memory.lower()
+
+        desc_scout = evaluator._get_agent_description(scout)
+        assert "routing" in desc_scout.lower() or "path" in desc_scout.lower()
+
+    @pytest.mark.asyncio
+    async def test_infer_capabilities_known_types(self):
+        """Test _infer_capabilities with known Orka agent types."""
+        config = self.create_mock_config()
+        evaluator = SmartPathEvaluator(config)
+
+        class LocalLLMAgent:
+            pass
+
+        class DuckDuckGoTool:
+            pass
+
+        class RouterNode:
+            pass
+
+        class BinaryAgent:
+            pass
+
+        llm = LocalLLMAgent()
+        search = DuckDuckGoTool()
+        router = RouterNode()
+        binary = BinaryAgent()
+
+        caps_llm = evaluator._infer_capabilities(llm)
+        assert "text_generation" in caps_llm or "reasoning" in caps_llm
+
+        caps_search = evaluator._infer_capabilities(search)
+        assert "web_search" in caps_search or "information_retrieval" in caps_search
+
+        caps_router = evaluator._infer_capabilities(router)
+        assert "routing" in caps_router or "decision_making" in caps_router
+
+        caps_binary = evaluator._infer_capabilities(binary)
+        assert "binary_decision" in caps_binary
