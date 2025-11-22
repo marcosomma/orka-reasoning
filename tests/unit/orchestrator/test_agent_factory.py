@@ -405,3 +405,326 @@ class TestAgentFactory:
             call_kwargs = mock_writer.call_args[1]
             expected_decay_config = {"agent_setting": "agent_value"}
             assert call_kwargs["decay_config"] == expected_decay_config
+
+    @patch('orka.orchestrator.agent_factory.fork_node.ForkNode')
+    def test_fork_node_creation(self, mock_fork):
+        """Test creation of fork node."""
+        mock_fork_instance = Mock()
+        mock_fork.return_value = mock_fork_instance
+        
+        orchestrator_cfg = {"id": "test_orchestrator"}
+        agent_cfgs = [
+            {
+                "id": "fork_agent",
+                "type": "fork",
+                "prompt": "Fork execution",
+                "queue": ["path1", "path2"],
+                "fork_group": "test_group"
+            }
+        ]
+        memory = self.create_mock_memory()
+        
+        factory = AgentFactory(orchestrator_cfg, agent_cfgs, memory)
+        instances = factory._init_agents()
+        
+        assert "fork_agent" in instances
+        assert instances["fork_agent"] == mock_fork_instance
+        
+        call_kwargs = mock_fork.call_args[1]
+        assert call_kwargs["node_id"] == "fork_agent"
+        assert call_kwargs["prompt"] == "Fork execution"
+        assert call_kwargs["queue"] == ["path1", "path2"]
+        assert call_kwargs["fork_group"] == "test_group"
+        assert "memory_logger" in call_kwargs
+
+    @patch('orka.orchestrator.agent_factory.join_node.JoinNode')
+    def test_join_node_creation(self, mock_join):
+        """Test creation of join node."""
+        mock_join_instance = Mock()
+        mock_join.return_value = mock_join_instance
+        
+        orchestrator_cfg = {"id": "test_orchestrator"}
+        agent_cfgs = [
+            {
+                "id": "join_agent",
+                "type": "join",
+                "prompt": "Join results",
+                "queue": ["next_agent"],
+                "fork_group": "test_group"
+            }
+        ]
+        memory = self.create_mock_memory()
+        
+        factory = AgentFactory(orchestrator_cfg, agent_cfgs, memory)
+        instances = factory._init_agents()
+        
+        assert "join_agent" in instances
+        assert instances["join_agent"] == mock_join_instance
+        
+        call_kwargs = mock_join.call_args[1]
+        assert call_kwargs["node_id"] == "join_agent"
+        assert call_kwargs["prompt"] == "Join results"
+        assert call_kwargs["queue"] == ["next_agent"]
+        assert call_kwargs["fork_group"] == "test_group"
+        assert "memory_logger" in call_kwargs
+
+    @patch('orka.orchestrator.agent_factory.failover_node.FailoverNode')
+    def test_failover_node_creation(self, mock_failover):
+        """Test creation of failover node with children."""
+        mock_failover_instance = Mock()
+        mock_failover.return_value = mock_failover_instance
+        
+        orchestrator_cfg = {"id": "test_orchestrator"}
+        agent_cfgs = [
+            {
+                "id": "failover_agent",
+                "type": "failover",
+                "queue": ["next_agent"],
+                "children": [
+                    {"id": "child1", "type": "router", "prompt": "Child 1"},
+                    {"id": "child2", "type": "router", "prompt": "Child 2"}
+                ]
+            }
+        ]
+        memory = self.create_mock_memory()
+        
+        factory = AgentFactory(orchestrator_cfg, agent_cfgs, memory)
+        
+        with patch('orka.orchestrator.agent_factory.router_node.RouterNode') as mock_router:
+            mock_router.return_value = Mock()
+            instances = factory._init_agents()
+            
+            assert "failover_agent" in instances
+            assert instances["failover_agent"] == mock_failover_instance
+            
+            # Verify children were instantiated
+            call_kwargs = mock_failover.call_args[1]
+            assert call_kwargs["node_id"] == "failover_agent"
+            assert call_kwargs["queue"] == ["next_agent"]
+            assert "children" in call_kwargs
+            assert len(call_kwargs["children"]) == 2
+
+    @patch('orka.orchestrator.agent_factory.loop_node.LoopNode')
+    def test_loop_node_creation(self, mock_loop):
+        """Test creation of loop node."""
+        mock_loop_instance = Mock()
+        mock_loop.return_value = mock_loop_instance
+        
+        orchestrator_cfg = {"id": "test_orchestrator"}
+        agent_cfgs = [
+            {
+                "id": "loop_agent",
+                "type": "loop",
+                "prompt": "Loop iteration",
+                "queue": ["validator", "body"],
+                "max_iterations": 5,
+                "break_condition": "success"
+            }
+        ]
+        memory = self.create_mock_memory()
+        
+        factory = AgentFactory(orchestrator_cfg, agent_cfgs, memory)
+        instances = factory._init_agents()
+        
+        assert "loop_agent" in instances
+        assert instances["loop_agent"] == mock_loop_instance
+        
+        call_kwargs = mock_loop.call_args[1]
+        assert call_kwargs["node_id"] == "loop_agent"
+        assert call_kwargs["prompt"] == "Loop iteration"
+        assert call_kwargs["queue"] == ["validator", "body"]
+        assert call_kwargs["max_iterations"] == 5
+        assert call_kwargs["break_condition"] == "success"
+        assert "memory_logger" in call_kwargs
+
+    @patch('orka.orchestrator.agent_factory.loop_validator_node.LoopValidatorNode')
+    def test_loop_validator_node_creation(self, mock_loop_validator):
+        """Test creation of loop validator node."""
+        mock_validator_instance = Mock()
+        mock_loop_validator.return_value = mock_validator_instance
+        
+        orchestrator_cfg = {"id": "test_orchestrator"}
+        agent_cfgs = [
+            {
+                "id": "validator_agent",
+                "type": "loop_validator",
+                "llm_model": "gpt-4",
+                "validation_prompt": "Check if loop should continue"
+            }
+        ]
+        memory = self.create_mock_memory()
+        
+        factory = AgentFactory(orchestrator_cfg, agent_cfgs, memory)
+        instances = factory._init_agents()
+        
+        assert "validator_agent" in instances
+        assert instances["validator_agent"] == mock_validator_instance
+        
+        call_kwargs = mock_loop_validator.call_args[1]
+        assert call_kwargs["node_id"] == "validator_agent"
+        assert call_kwargs["llm_model"] == "gpt-4"
+        assert call_kwargs["validation_prompt"] == "Check if loop should continue"
+
+    @patch('orka.orchestrator.agent_factory.validation_and_structuring_agent.ValidationAndStructuringAgent')
+    def test_validate_and_structure_agent_creation(self, mock_validate):
+        """Test creation of validation and structuring agent."""
+        mock_validate_instance = Mock()
+        mock_validate.return_value = mock_validate_instance
+        
+        orchestrator_cfg = {"id": "test_orchestrator"}
+        agent_cfgs = [
+            {
+                "id": "validate_agent",
+                "type": "validate_and_structure",
+                "prompt": "Validate and structure data",
+                "queue": ["next_agent"],
+                "store_structure": True,
+                "schema": {"type": "object"}
+            }
+        ]
+        memory = self.create_mock_memory()
+        
+        factory = AgentFactory(orchestrator_cfg, agent_cfgs, memory)
+        instances = factory._init_agents()
+        
+        assert "validate_agent" in instances
+        assert instances["validate_agent"] == mock_validate_instance
+        
+        # ValidationAndStructuringAgent receives params dict
+        call_args = mock_validate.call_args[0]
+        params = call_args[0]
+        assert params["agent_id"] == "validate_agent"
+        assert params["prompt"] == "Validate and structure data"
+        assert params["queue"] == ["next_agent"]
+        assert params["store_structure"] is True
+        assert params["schema"] == {"type": "object"}
+
+    @patch('orka.orchestrator.agent_factory.RAGNode')
+    @patch('orka.contracts.Registry')
+    def test_rag_node_creation(self, mock_registry_class, mock_rag):
+        """Test creation of RAG node."""
+        mock_rag_instance = Mock()
+        mock_rag.return_value = mock_rag_instance
+        mock_registry_instance = Mock()
+        mock_registry_class.return_value = mock_registry_instance
+        
+        orchestrator_cfg = {"id": "test_orchestrator"}
+        agent_cfgs = [
+            {
+                "id": "rag_agent",
+                "type": "rag",
+                "prompt": "Retrieve and generate",
+                "queue": "next_agent",
+                "retrieval_config": {"top_k": 5}
+            }
+        ]
+        memory = self.create_mock_memory()
+        
+        factory = AgentFactory(orchestrator_cfg, agent_cfgs, memory)
+        instances = factory._init_agents()
+        
+        assert "rag_agent" in instances
+        assert instances["rag_agent"] == mock_rag_instance
+        
+        call_kwargs = mock_rag.call_args[1]
+        assert call_kwargs["node_id"] == "rag_agent"
+        assert call_kwargs["prompt"] == "Retrieve and generate"
+        assert call_kwargs["queue"] == "next_agent"
+        assert call_kwargs["retrieval_config"] == {"top_k": 5}
+
+    def test_default_agent_with_list_queue(self):
+        """Test default agent instantiation with list queue parameter."""
+        orchestrator_cfg = {"id": "test_orchestrator"}
+        agent_cfgs = [
+            {
+                "id": "test_agent",
+                "type": "local_llm",
+                "prompt": "Test prompt",
+                "queue": ["agent1", "agent2"],
+                "model": "llama"
+            }
+        ]
+        memory = self.create_mock_memory()
+        
+        # Create mock agent class
+        mock_agent_class = Mock()
+        mock_agent_instance = Mock()
+        mock_agent_class.return_value = mock_agent_instance
+        mock_agent_class.__name__ = "LocalLLMAgent"
+        
+        # Patch AGENT_TYPES registry
+        with patch.dict('orka.orchestrator.agent_factory.AGENT_TYPES', 
+                       {'local_llm': mock_agent_class}):
+            factory = AgentFactory(orchestrator_cfg, agent_cfgs, memory)
+            instances = factory._init_agents()
+            
+            assert "test_agent" in instances
+            assert instances["test_agent"] == mock_agent_instance
+            call_kwargs = mock_agent_class.call_args[1]
+            assert call_kwargs["agent_id"] == "test_agent"
+            assert call_kwargs["prompt"] == "Test prompt"
+            assert call_kwargs["queue"] == ["agent1", "agent2"]
+            assert call_kwargs["model"] == "llama"
+
+    def test_default_agent_with_string_queue(self):
+        """Test default agent instantiation with string queue parameter."""
+        orchestrator_cfg = {"id": "test_orchestrator"}
+        agent_cfgs = [
+            {
+                "id": "test_agent",
+                "type": "openai-answer",
+                "prompt": "Answer question",
+                "queue": "validator",
+                "model": "gpt-4"
+            }
+        ]
+        memory = self.create_mock_memory()
+        
+        # Create mock agent class
+        mock_agent_class = Mock()
+        mock_agent_instance = Mock()
+        mock_agent_class.return_value = mock_agent_instance
+        mock_agent_class.__name__ = "OpenAIAnswerBuilder"
+        
+        # Patch AGENT_TYPES registry
+        with patch.dict('orka.orchestrator.agent_factory.AGENT_TYPES', 
+                       {'openai-answer': mock_agent_class}):
+            factory = AgentFactory(orchestrator_cfg, agent_cfgs, memory)
+            instances = factory._init_agents()
+            
+            assert "test_agent" in instances
+            assert instances["test_agent"] == mock_agent_instance
+            call_kwargs = mock_agent_class.call_args[1]
+            assert call_kwargs["agent_id"] == "test_agent"
+            assert call_kwargs["queue"] == ["validator"]  # Should be converted to list
+
+    def test_default_agent_with_none_queue(self):
+        """Test default agent instantiation with None queue parameter."""
+        orchestrator_cfg = {"id": "test_orchestrator"}
+        agent_cfgs = [
+            {
+                "id": "test_agent",
+                "type": "openai-binary",
+                "prompt": "Yes or no",
+                "model": "gpt-3.5-turbo"
+            }
+        ]
+        memory = self.create_mock_memory()
+        
+        # Create mock agent class
+        mock_agent_class = Mock()
+        mock_agent_instance = Mock()
+        mock_agent_class.return_value = mock_agent_instance
+        mock_agent_class.__name__ = "OpenAIBinaryAgent"
+        
+        # Patch AGENT_TYPES registry
+        with patch.dict('orka.orchestrator.agent_factory.AGENT_TYPES', 
+                       {'openai-binary': mock_agent_class}):
+            factory = AgentFactory(orchestrator_cfg, agent_cfgs, memory)
+            instances = factory._init_agents()
+            
+            assert "test_agent" in instances
+            assert instances["test_agent"] == mock_agent_instance
+            call_kwargs = mock_agent_class.call_args[1]
+            assert call_kwargs["agent_id"] == "test_agent"
+            assert call_kwargs["queue"] is None
