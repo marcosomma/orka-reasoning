@@ -1137,8 +1137,11 @@ class TestSmartPathEvaluator:
         config.provider = "unsupported_provider"
         evaluator = SmartPathEvaluator(config)
 
-        with pytest.raises(ValueError):
-            await evaluator._call_evaluation_llm("test prompt")
+        # Mock Ollama/LM Studio calls to prevent real connections
+        with patch.object(evaluator, "_call_ollama_async", return_value="mock"):
+            with patch.object(evaluator, "_call_lm_studio_async", return_value="mock"):
+                with pytest.raises(ValueError):
+                    await evaluator._call_evaluation_llm("test prompt")
 
     @pytest.mark.asyncio
     async def test_call_evaluation_llm_lm_studio(self):
@@ -1149,7 +1152,8 @@ class TestSmartPathEvaluator:
 
         mock_response = json.dumps({"evaluation": "test"})
 
-        with patch.object(evaluator, "_call_lm_studio_async", return_value=mock_response):
+        # Mock at async method level to prevent real connection attempts
+        with patch.object(evaluator, "_call_lm_studio_async", new_callable=AsyncMock, return_value=mock_response):
             with patch.object(evaluator, "_extract_json_from_response", return_value=mock_response):
                 result = await evaluator._call_evaluation_llm("test prompt")
                 assert result == mock_response
@@ -1182,8 +1186,11 @@ class TestSmartPathEvaluator:
         config.provider = "unknown"
         evaluator = SmartPathEvaluator(config)
 
-        with pytest.raises(ValueError):
-            await evaluator._call_validation_llm("test prompt")
+        # Mock Ollama/LM Studio calls to prevent real connections
+        with patch.object(evaluator, "_call_ollama_async", return_value="mock"):
+            with patch.object(evaluator, "_call_lm_studio_async", return_value="mock"):
+                with pytest.raises(ValueError):
+                    await evaluator._call_validation_llm("test prompt")
 
     @pytest.mark.asyncio
     async def test_call_validation_llm_lmstudio(self):
@@ -1194,7 +1201,8 @@ class TestSmartPathEvaluator:
 
         mock_response = json.dumps({"validation": "test"})
 
-        with patch.object(evaluator, "_call_lm_studio_async", return_value=mock_response):
+        # Mock at async method level to prevent real connection attempts
+        with patch.object(evaluator, "_call_lm_studio_async", new_callable=AsyncMock, return_value=mock_response):
             with patch.object(evaluator, "_extract_json_from_response", return_value=mock_response):
                 result = await evaluator._call_validation_llm("test prompt")
                 assert result == mock_response
