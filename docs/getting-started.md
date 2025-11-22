@@ -1,8 +1,8 @@
 # Getting Started with OrKa
 
-> **Last Updated:** 16 November 2025  
+> **Last Updated:** 22 November 2025  
 > **Status:** 🟢 Current  
-> **Related:** [Quickstart](quickstart.md) | [Architecture](architecture.md) | [Agents](agents.md) | [INDEX](INDEX.md)
+> **Related:** [Quickstart](quickstart.md) | [Architecture](architecture.md) | [Agents](agents.md) | [INDEX](index.md)
 
 This guide shows you how to set up OrKa and create your first AI workflows using YAML configuration files.
 
@@ -521,7 +521,5 @@ orka-start
 **Ready to experience the future of AI orchestration?** Your RedisStack-powered OrKa system is now running with 100x faster vector search!
 
 ---
-
-
 ---
-← [Quickstart](quickstart.md) | [📚 index](index.md) | [Architecture](architecture.md) →
+← [Quickstart](quickstart.md) | [📚 INDEX](index.md) | [Architecture](architecture.md) →

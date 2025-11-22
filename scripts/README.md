@@ -75,7 +75,7 @@ Recommended usage:
 
 ### `generate_sitemap.py`
 - Auto-generate sitemap XML for documentation website
-- Update INDEX.md from actual file structure
+- Update index.md from actual file structure
 - Detect new/removed files
 
 ### `validate_examples.py`

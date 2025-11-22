@@ -114,7 +114,7 @@ agents:
             Analyze: {{ input }}
             
             {% if previous_outputs.data_retriever %}
-            Data: {{ safe_get(previous_outputs, 'data_retriever.result', 'No data available') }}
+            Data: {{ safe_get_response('data_retriever', 'No data available', previous_outputs) }}
             {% endif %}
         
         - id: generator
@@ -131,7 +131,7 @@ agents:
   # Execute the validated path
   - id: path_executor
     type: path_executor
-    path_source: routing_loop.response.result.graphscout_router.target
+    path_source: routing_loop
     on_agent_failure: continue
 
   # Execution summary

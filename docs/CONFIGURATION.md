@@ -2,7 +2,7 @@
 
 > ⚠️ **Deprecation Notice:** This general configuration guide is being deprecated. Memory-specific configuration has been moved to [MEMORY_SYSTEM_GUIDE.md](MEMORY_SYSTEM_GUIDE.md), and YAML configuration is now in [YAML_CONFIGURATION.md](YAML_CONFIGURATION.md). This file will be archived in v1.0.
 
-> **Last Updated:** 16 November 2025  
+> **Last Updated:** 22 November 2025  
 > **Status:** 🔴 Deprecated - Use primary guides  
 > **Replaced By:** [YAML_CONFIGURATION.md](YAML_CONFIGURATION.md) | [MEMORY_SYSTEM_GUIDE.md](MEMORY_SYSTEM_GUIDE.md)  
 > **Related:** [index](index.md)

@@ -1,6 +1,6 @@
 # OrKa Memory System - Complete Guide
 
-> **Last Updated:** 16 November 2025  
+> **Last Updated:** 22 November 2025  
 > **Status:** 🟢 Current  
 > **Related:** [Memory Agents Guide](memory-agents-guide.md) | [Memory Presets](memory-presets.md) | [Memory Backends](MEMORY_BACKENDS.md) | [index](index.md)
 
@@ -1341,4 +1341,4 @@ python -m orka.orka_cli your_config.yml "test input" --verbose
 
 This comprehensive guide covers OrKa's memory system from basic concepts to advanced patterns. The memory system is what makes OrKa agents truly intelligent and capable of learning and improving over time.
 ---
-← [Extending Agents](extending-agents.md) | [📚 index](index.md) | [Memory Agents](memory-agents-guide.md) →
+← [Extending Agents](extending-agents.md) | [📚 INDEX](index.md) | [Memory Agents](memory-agents-guide.md) →

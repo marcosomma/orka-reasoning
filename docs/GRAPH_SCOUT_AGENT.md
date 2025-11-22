@@ -1,8 +1,8 @@
 # GraphScout Agent - Workflow Path Discovery
 
-> **Last Updated:** 16 November 2025  
+> **Last Updated:** 22 November 2025  
 > **Status:** 🆕 New in v0.9.3  
-> **Related:** [GraphScout Execution Modes](GRAPHSCOUT_EXECUTION_MODES.md) | [Router Agent](agents.md#router) | [Architecture](architecture.md) | [INDEX](INDEX.md)
+> **Related:** [GraphScout Execution Modes](GRAPHSCOUT_EXECUTION_MODES.md) | [Router Agent](agents.md#router) | [Architecture](architecture.md) | [INDEX](index.md)
 
 **NEW in OrKa v0.9.3** 🧭
 
@@ -753,4 +753,4 @@ Start with the basic examples and gradually explore advanced features as your wo
 - Read the [performance tuning guide](#performance-tuning)
 - Join the [OrKa community](https://discord.gg/orka) for support and examples
 ---
-← [Memory Agents](memory-agents-guide.md) | [📚 index](index.md) | [Best Practices](best-practices.md) →
+← [Memory Agents](memory-agents-guide.md) | [📚 INDEX](index.md) | [Best Practices](best-practices.md) →

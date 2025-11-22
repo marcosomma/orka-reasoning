@@ -1,6 +1,6 @@
 # OrKa Visual Architecture Guide
 
-> **Last Updated:** 16 November 2025  
+> **Last Updated:** 22 November 2025  
 > **Status:** 🆕 New in v0.9.6  
 > **Related:** [Architecture](architecture.md) | [Components](COMPONENTS.md) | [index](index.md)
 
@@ -633,6 +633,5 @@ For questions about visual specifications or to contribute custom components:
 **Guide Version:** 1.0.0  
 **Last Updated:** 16 November 2025  
 **Maintained By:** OrKa Documentation Team
-
 ---
-← [Components](COMPONENTS.md) | [📚 index](index.md) | [YAML Configuration](YAML_CONFIGURATION.md) →
+← [Components](COMPONENTS.md) | [📚 INDEX](index.md) | [YAML Configuration](YAML_CONFIGURATION.md) →

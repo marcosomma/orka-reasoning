@@ -364,6 +364,19 @@ class GraphIntrospector:
                     if target_is_graphscout:
                         logger.debug(f"Skipping other GraphScout agent: {node_id}")
                         continue
+                    
+                    # Skip PathExecutor nodes to prevent recursive execution loops
+                    node_type = getattr(node_obj, "type", None)
+                    node_class = node_obj.__class__.__name__ if hasattr(node_obj, "__class__") else None
+                    logger.debug(f"Checking node {node_id}: type={node_type}, class={node_class}")
+                    
+                    target_is_path_executor = (
+                        (node_type and "path_executor" in node_type.lower()) or
+                        (node_class and "PathExecutor" in node_class)
+                    )
+                    if target_is_path_executor:
+                        logger.info(f"⚠️ Skipping PathExecutor agent: {node_id} (type={node_type}, class={node_class})")
+                        continue
 
                     available_agents.append(node_id)
                     logger.debug(

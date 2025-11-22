@@ -10,6 +10,7 @@ from textual.screen import Screen
 from textual.widgets import Footer, Header, Static
 
 from .textual_widgets import LogsWidget, MemoryTableWidget, StatsWidget
+from .message_renderer import VintageMessageRenderer
 
 
 class BaseOrKaScreen(Screen):
@@ -148,41 +149,15 @@ class ShortMemoryScreen(BaseOrKaScreen):
             # Deselected - show simple placeholder
             content_widget.update("[dim]Select a row to view memory content and metadata[/dim]")  # type: ignore [unreachable]
         else:
-            # Selected - show content and metadata
+            # Selected - show content and metadata using VintageMessageRenderer
             try:
-                content = self.data_manager._get_content(message.memory_data)
-                metadata_display = self.data_manager._format_metadata_for_display(
+                # Use the advanced message renderer for better formatting
+                renderer = VintageMessageRenderer(theme="default")
+                formatted_content = renderer.render_memory_content(
                     message.memory_data,
+                    show_full_key=False
                 )
-                memory_key = self.data_manager._get_key(message.memory_data)
-                memory_type = self.data_manager._get_memory_type(message.memory_data)
-                importance_score = self.data_manager._get_importance_score(message.memory_data)
-                node_id = self.data_manager._get_node_id(message.memory_data)
-
-                # Format content
-                if content is None or str(content).strip() == "":
-                    content_text = "[dim]No content[/dim]"
-                else:
-                    content_str = str(content)
-                    # Don't truncate content - let users scroll to see everything
-                    content_text = content_str
-
-                # Build comprehensive display
-                key_short = memory_key[-20:] if len(memory_key) > 20 else memory_key
-
-                formatted_content = f"""[bold blue]Memory: ...{key_short}[/bold blue]
-
-[bold green]📄 CONTENT:[/bold green]
-{content_text}
-
-[bold yellow]📋 METADATA:[/bold yellow]
-{metadata_display}
-
-[bold cyan]🏷️ SYSTEM INFO:[/bold cyan]
-[cyan]Type:[/cyan] {memory_type}
-[cyan]Node ID:[/cyan] {node_id}
-[cyan]Importance:[/cyan] {importance_score}"""
-
+                
                 content_widget.update(formatted_content)
             except Exception as e:
                 content_widget.update(f"[red]Error loading content: {e!s}[/red]")
@@ -256,41 +231,15 @@ class LongMemoryScreen(BaseOrKaScreen):
             # Deselected - show simple placeholder
             content_widget.update("[dim]Select a row to view memory content and metadata[/dim]")  # type: ignore [unreachable]
         else:
-            # Selected - show content and metadata
+            # Selected - show content and metadata using VintageMessageRenderer
             try:
-                content = self.data_manager._get_content(message.memory_data)
-                metadata_display = self.data_manager._format_metadata_for_display(
+                # Use the advanced message renderer for better formatting
+                renderer = VintageMessageRenderer(theme="default")
+                formatted_content = renderer.render_memory_content(
                     message.memory_data,
+                    show_full_key=False
                 )
-                memory_key = self.data_manager._get_key(message.memory_data)
-                memory_type = self.data_manager._get_memory_type(message.memory_data)
-                importance_score = self.data_manager._get_importance_score(message.memory_data)
-                node_id = self.data_manager._get_node_id(message.memory_data)
-
-                # Format content
-                if content is None or str(content).strip() == "":
-                    content_text = "[dim]No content[/dim]"
-                else:
-                    content_str = str(content)
-                    # Don't truncate content - let users scroll to see everything
-                    content_text = content_str
-
-                # Build comprehensive display
-                key_short = memory_key[-20:] if len(memory_key) > 20 else memory_key
-
-                formatted_content = f"""[bold blue]Memory: ...{key_short}[/bold blue]
-
-[bold green]📄 CONTENT:[/bold green]
-{content_text}
-
-[bold yellow]📋 METADATA:[/bold yellow]
-{metadata_display}
-
-[bold cyan]🏷️ SYSTEM INFO:[/bold cyan]
-[cyan]Type:[/cyan] {memory_type}
-[cyan]Node ID:[/cyan] {node_id}
-[cyan]Importance:[/cyan] {importance_score}"""
-
+                
                 content_widget.update(formatted_content)
             except Exception as e:
                 content_widget.update(f"[red]Error loading content: {e!s}[/red]")
@@ -548,3 +497,75 @@ Retention: 100 points
         from datetime import datetime
 
         return datetime.now().strftime("%H:%M:%S")
+
+
+class HelpScreen(Screen):
+    """Help screen with vintage-style keybinding reference."""
+    
+    BINDINGS = [
+        ("escape", "dismiss", "Close"),
+        ("q", "dismiss", "Close"),
+    ]
+    
+    def compose(self) -> ComposeResult:
+        """Compose the help screen with ASCII art help panel."""
+        help_text = """
+╔═════════════════════════════════════════════════════════╗
+║              ORKA MEMORY MONITOR - HELP                 ║
+║                   QUICK REFERENCE                       ║
+╠═════════════════════════════════════════════════════════╣
+║                                                         ║
+║  [bold cyan]NAVIGATION:[/bold cyan]                                          ║
+║  ┌─────────────────────────────────────────────────┐   ║
+║  │ 1-5        Switch views                         │   ║
+║  │ j/k        Navigate up/down (vim-style)         │   ║
+║  │ g/G        Jump to top/bottom                   │   ║
+║  │ tab        Focus next widget                    │   ║
+║  │ enter      Select/expand item                   │   ║
+║  │ esc        Go back/close                        │   ║
+║  └─────────────────────────────────────────────────┘   ║
+║                                                         ║
+║  [bold cyan]VIEWS:[/bold cyan]                                               ║
+║  ┌─────────────────────────────────────────────────┐   ║
+║  │ 1          Dashboard (overview)                 │   ║
+║  │ 2          Short-term memory                    │   ║
+║  │ 3          Long-term memory                     │   ║
+║  │ 4          Memory logs                          │   ║
+║  │ 5          Health & diagnostics                 │   ║
+║  └─────────────────────────────────────────────────┘   ║
+║                                                         ║
+║  [bold cyan]ACTIONS:[/bold cyan]                                             ║
+║  ┌─────────────────────────────────────────────────┐   ║
+║  │ r          Refresh data                         │   ║
+║  │ ctrl+p     Command palette (change theme, etc.) │   ║
+║  │ e          Export visible data to JSON          │   ║
+║  │ f          Toggle fullscreen                    │   ║
+║  │ ?          Show this help                       │   ║
+║  │ q          Quit application                     │   ║
+║  └─────────────────────────────────────────────────┘   ║
+║                                                         ║
+║  [bold cyan]TIPS:[/bold cyan]                                                ║
+║  ┌─────────────────────────────────────────────────┐   ║
+║  │ • Use vim keys (j/k) for faster navigation      │   ║
+║  │ • Press Ctrl+P to open command palette          │   ║
+║  │ • Type 'theme' in palette to change themes      │   ║
+║  │ • Available: default, orka-vintage, orka-dark   │   ║
+║  │ • Select rows to view full content              │   ║
+║  │ • Export saves current view to JSON file        │   ║
+║  └─────────────────────────────────────────────────┘   ║
+║                                                         ║
+╚═════════════════════════════════════════════════════════╝
+
+[dim]Press ESC or Q to close this help screen...[/dim]
+        """
+        
+        yield Header()
+        yield Container(
+            Static(help_text, classes="help-screen"),
+            classes="help-container"
+        )
+        yield Footer()
+    
+    def action_dismiss(self) -> None:
+        """Close the help screen."""
+        self.app.pop_screen()

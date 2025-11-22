@@ -9,27 +9,36 @@ orchestrator:
 
 agents:
   - id: agent1
-    type: openai-gpt-4o-mini
+    type: local_llm
+    model: "llama3.2:3b"
+    provider: "ollama"
+    url: "http://localhost:11434/api/generate"
+    temperature: 0.7
+    max_tokens: 100
+    timeout: 30.0
     prompt: "Analyze this topic: {{ input }}"
-    params:
-      temperature: 0.7
-      max_tokens: 100
 
   - id: agent2  
-    type: openai-gpt-4o-mini
+    type: local_llm
+    model: "llama3.2:3b"
+    provider: "ollama"
+    url: "http://localhost:11434/api/generate"
+    temperature: 0.7
+    max_tokens: 100
+    timeout: 30.0
     prompt: "Build on this analysis: {{ safe_get_response('agent1', 'No previous analysis') | truncate(150) }}"
-    params:
-      temperature: 0.7
-      max_tokens: 100
 
   - id: final_synthesis
-    type: openai-gpt-4o-mini
+    type: local_llm
+    model: "llama3.2:3b"
+    provider: "ollama"
+    url: "http://localhost:11434/api/generate"
+    temperature: 0.5
+    max_tokens: 200
+    timeout: 30.0
     prompt: |
       Previous responses:
       Agent 1: {{ safe_get_response('agent1', 'No response') | truncate(100) }}
       Agent 2: {{ safe_get_response('agent2', 'No response') | truncate(100) }}
       
       Synthesize these perspectives on: {{ get_input() }}
-    params:
-      temperature: 0.5
-      max_tokens: 200

@@ -48,7 +48,7 @@ DOC_SEQUENCE = [
 
 FOOTER_TEMPLATE = """
 ---
-← [{prev_name}]({prev_path}) | [📚 INDEX](INDEX.md) | [{next_name}]({next_path}) →
+← [{prev_name}]({prev_path}) | [📚 INDEX](index.md) | [{next_name}]({next_path}) →
 """
 
 

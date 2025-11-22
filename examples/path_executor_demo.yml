@@ -49,7 +49,7 @@ agents:
   # Now execute the GraphScout-proposed path
   - id: execute_path
     type: path_executor
-    path_source: path_proposal.target
+    path_source: path_proposal
     on_agent_failure: continue
   
   # Agent definitions - these are discovered by GraphScout and executed by PathExecutor
@@ -69,7 +69,7 @@ agents:
     prompt: |
       Analyze the search results and extract key insights.
       
-      Search results: {{ safe_get(previous_outputs, 'web_search.results', 'No search results') }}
+      Search results: {{ safe_get_response('web_search', 'No search results', previous_outputs) }}
   
   - id: summarizer
     type: local_llm

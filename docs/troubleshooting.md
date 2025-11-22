@@ -1,6 +1,6 @@
 # OrKa Troubleshooting Guide
 
-> **Last Updated:** 16 November 2025  
+> **Last Updated:** 22 November 2025  
 > **Status:** 🟢 Current  
 > **Related:** [Debugging](DEBUGGING.md) | [FAQ](faq.md) | [Observability](observability.md) | [Testing](TESTING.md) | [index](index.md)
 
@@ -493,4 +493,4 @@ Found a bug or have a fix? We welcome contributions!
 
 See our [Contributing Guide](../CONTRIBUTING.md) for more details.
 ---
-← [Debugging](DEBUGGING.md) | [📚 index](index.md) | [FAQ](faq.md) →
+← [Debugging](DEBUGGING.md) | [📚 INDEX](index.md) | [FAQ](faq.md) →

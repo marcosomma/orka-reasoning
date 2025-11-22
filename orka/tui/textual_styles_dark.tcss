@@ -1,0 +1,394 @@
+/* ╔═══════════════════════════════════════════════════════════════════════╗
+   ║                     ORKA DARK THEME - MODERN AESTHETIC                ║
+   ║          Sleek Dark Mode with Cyan Accents (Full Layout)              ║
+   ╚═══════════════════════════════════════════════════════════════════════╝ */
+
+/* Global Screen Styles */
+Screen {
+    background: #0d1117;
+    color: #c9d1d9;
+}
+
+/* Header and Footer */
+Header {
+    background: #58a6ff;
+    color: #c9d1d9;
+    text-style: bold;
+}
+
+Footer {
+    background: #161b22;
+    color: #8b949e;
+}
+
+/* Container Styles */
+.container {
+    background: #0d1117;
+    border: solid #58a6ff;
+    margin: 1;
+    padding: 1;
+}
+
+.container-compact {
+    background: #0d1117;
+    border: solid #58a6ff;
+    margin: 0;
+    padding: 0 1;
+    height: 3;
+    color: #79c0ff;
+    text-style: bold;
+}
+
+.stats-container {
+    background: #3fb950;
+    border: solid #3fb950;
+    color: #c9d1d9;
+}
+
+.memory-container {
+    background: #bc8cff;
+    border: solid #bc8cff;
+    color: #c9d1d9;
+    height: 45%;
+    min-height: 12;
+}
+
+.logs-container {
+    background: #d29922;
+    border: solid #d29922;
+    color: #c9d1d9;
+    height: 50%;
+    min-height: 15;
+}
+
+.health-container {
+    background: #f85149;
+    border: solid #f85149;
+    color: #c9d1d9;
+}
+
+.health-container-compact {
+    background: #f85149;
+    border: solid #f85149;
+    color: #c9d1d9;
+    height: 8;
+    margin: 1;
+    padding: 1;
+}
+
+/* Widget Styles */
+DataTable {
+    background: #0d1117;
+    color: #c9d1d9;
+}
+
+DataTable > .datatable--header {
+    background: #58a6ff;
+    color: #c9d1d9;
+    text-style: bold;
+}
+
+DataTable > .datatable--cursor {
+    background: #79c0ff;
+    color: #c9d1d9;
+}
+
+Static {
+    background: transparent;
+    color: #c9d1d9;
+}
+
+Label {
+    background: transparent;
+    color: #c9d1d9;
+}
+
+/* Progress Bar Styles */
+ProgressBar > .bar--bar {
+    color: #3fb950;
+}
+
+ProgressBar > .bar--complete {
+    color: #3fb950;
+}
+
+ProgressBar > .bar--indeterminate {
+    color: #d29922;
+}
+
+/* Button Styles */
+Button {
+    background: #58a6ff;
+    color: #c9d1d9;
+    border: solid #58a6ff;
+}
+
+Button:hover {
+    background: #58a6ff;
+    color: #c9d1d9;
+}
+
+Button.-primary {
+    background: #58a6ff;
+    color: #c9d1d9;
+}
+
+Button.-success {
+    background: #3fb950;
+    color: #c9d1d9;
+}
+
+Button.-warning {
+    background: #d29922;
+    color: #c9d1d9;
+}
+
+Button.-error {
+    background: #f85149;
+    color: #c9d1d9;
+}
+
+/* Special Layout Classes */
+.dashboard-grid {
+    layout: grid;
+    grid-size: 2 3;
+    grid-gutter: 1;
+    grid-rows: 1fr 2fr 2fr;
+}
+
+.memory-grid {
+    layout: grid;
+    grid-size: 1 2;
+    grid-gutter: 1;
+}
+
+/* Enhanced content panels for better scrolling support */
+.content-panel {
+    height: 40%;
+    border: solid #58a6ff;
+    padding: 0;
+    margin: 1;
+    overflow: hidden;
+}
+
+/* DataTable styling for better space utilization */
+DataTable {
+    height: 100%;
+    min-height: 8;
+    background: #0d1117;
+}
+
+LogsWidget {
+    height: 100%;
+    min-height: 10;
+}
+
+MemoryTableWidget {
+    height: 100%;
+    min-height: 10;
+}
+
+#short-content-panel, #long-content-panel, #logs-content-panel {
+    height: 45%;
+    min-height: 12;
+    display: block;
+    overflow: hidden;
+}
+
+/* Scrollable content containers using overflow auto */
+#short-selected-content, #long-selected-content, #logs-selected-content {
+    padding: 1;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-background: #161b22;
+    scrollbar-color: #58a6ff;
+    scrollbar-color-hover: #79c0ff;
+    scrollbar-color-active: #79c0ff;
+}
+
+/* Static content inside scrollable containers */
+#short-content-text, #long-content-text, #logs-content-text {
+    padding: 0;
+    background: transparent;
+    color: #c9d1d9;
+    height: auto;
+    width: 100%;
+}
+
+.full-width {
+    width: 100%;
+}
+
+.half-width {
+    width: 50%;
+}
+
+.quarter-width {
+    width: 25%;
+}
+
+/* Memory table styling */
+MemoryTableWidget {
+    scrollbar-corner-color: #161b22;
+    scrollbar-color: #58a6ff;
+    scrollbar-color-hover: #79c0ff;
+    scrollbar-color-active: #79c0ff;
+}
+
+MemoryTableWidget > DataTable {
+    scrollbar-corner-color: #161b22;
+}
+
+/* Row highlighting for checkbox interaction */
+MemoryTableWidget DataTable > .datatable--cursor {
+    background: #58a6ff;
+}
+
+MemoryTableWidget DataTable > .datatable--hover {
+    background: #79c0ff;
+}
+
+/* Status Indicators */
+.status-good {
+    color: #3fb950;
+    text-style: bold;
+}
+
+.status-warning {
+    color: #d29922;
+    text-style: bold;
+}
+
+.status-error {
+    color: #f85149;
+    text-style: bold;
+}
+
+.status-info {
+    color: #bc8cff;
+    text-style: bold;
+}
+
+/* Metric Display */
+.metric-value {
+    text-style: bold;
+    color: #79c0ff;
+}
+
+.metric-label {
+    color: #8b949e;
+}
+
+.metric-trend-up {
+    color: #3fb950;
+    text-style: bold;
+}
+
+.metric-trend-down {
+    color: #f85149;
+    text-style: bold;
+}
+
+.metric-trend-stable {
+    color: #bc8cff;
+}
+
+/* Loading and Error States */
+.loading {
+    color: #d29922;
+    text-style: italic;
+}
+
+.error {
+    color: #f85149;
+    text-style: bold;
+}
+
+.success {
+    color: #3fb950;
+    text-style: bold;
+}
+
+/* Memory Type Indicators */
+.memory-short {
+    color: #bc8cff;
+}
+
+.memory-long {
+    color: #3fb950;
+}
+
+.memory-expired {
+    color: #f85149;
+}
+
+.memory-active {
+    color: #79c0ff;
+}
+
+/* Chart and Graph Styles */
+.chart-container {
+    background: #0d1117;
+    border: solid #58a6ff;
+    padding: 1;
+}
+
+/* Memory Logs Screen Specific Layout - 50-50 split */
+#logs-top-section {
+    height: 50%;
+}
+
+#orchestration-logs-table {
+    height: 100%;
+}
+
+/* Short Memory Screen Layout - 10% header, 45% table, 45% content panel */
+#short-memory-header {
+    height: 10%;
+    max-height: 10%;
+}
+
+#short-memory-content {
+    height: 45%;
+    max-height: 45%;
+}
+
+#short-memory-table {
+    height: 100%;
+}
+
+/* Long Memory Screen Layout - 10% header, 45% table, 45% content panel */
+#long-memory-header {
+    height: 10%;
+    max-height: 10%;
+}
+
+#long-memory-content {
+    height: 45%;
+    max-height: 45%;
+}
+
+#long-memory-table {
+    height: 100%;
+}
+
+/* Responsive Design - handled by Textual's built-in responsive system */
+
+/* Add these styles for better metadata display */
+Static#short-selected-content,
+Static#long-selected-content, 
+Static#logs-selected-content {
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-size: 1 1;
+    scrollbar-size-vertical: 1;
+    scrollbar-size-horizontal: 0;
+    scrollbar-background: #161b22;
+    scrollbar-color: #58a6ff;
+    scrollbar-color-hover: #79c0ff;
+    scrollbar-color-active: #79c0ff;
+    height: 100%;
+    padding: 1;
+    margin: 0;
+} 

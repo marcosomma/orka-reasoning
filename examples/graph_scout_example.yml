@@ -130,7 +130,7 @@ agents:
       Classification: {{ safe_get_response('input_classifier', 'Unknown', previous_outputs) }}
       {% endif %}
       {% if previous_outputs.search_agent %}
-      Search Results: {{ safe_get(previous_outputs, 'search_agent.result', 'No search results') }}
+      Search Results: {{ safe_get_response('search_agent', 'No search results', previous_outputs) }}
       {% endif %}
       {% if previous_outputs.analysis_agent %}
       Analysis: {{ safe_get_response('analysis_agent', 'No analysis', previous_outputs) }}

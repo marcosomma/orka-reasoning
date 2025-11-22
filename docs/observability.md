@@ -1,8 +1,8 @@
 # Observability & Logging in OrKa
 
-> **Last Updated:** 16 November 2025  
+> **Last Updated:** 22 November 2025  
 > **Status:** 🟢 Current  
-> **Related:** [Debugging](DEBUGGING.md) | [Best Practices](best-practices.md) | [Architecture](architecture.md) | [INDEX](INDEX.md)
+> **Related:** [Debugging](DEBUGGING.md) | [Best Practices](best-practices.md) | [Architecture](architecture.md) | [INDEX](index.md)
 
 ## Redis Stream Logging
 Every agent logs its input/output via:

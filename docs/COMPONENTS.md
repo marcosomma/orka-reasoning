@@ -1,8 +1,8 @@
 # OrKa V0.9.2 Core Components Guide - Memory Presets
 
-> **Last Updated:** 16 November 2025  
+> **Last Updated:** 22 November 2025  
 > **Status:** 🟢 Current  
-> **Related:** [Architecture](architecture.md) | [Memory Presets](memory-presets.md) | [Memory System](MEMORY_SYSTEM_GUIDE.md) | [INDEX](INDEX.md)
+> **Related:** [Architecture](architecture.md) | [Memory Presets](memory-presets.md) | [Memory System](MEMORY_SYSTEM_GUIDE.md) | [INDEX](index.md)
 
 [📘 Getting Started](./getting-started.md) | [⚙️ Configuration](./CONFIGURATION.md) | [🧠 Memory Presets](./memory-presets.md) | [🧠 Memory Agents](./memory-agents-guide.md) | [🐛 Debugging](./DEBUGGING.md) | [🧠 Memory System](./MEMORY_SYSTEM_GUIDE.md)
 
@@ -1490,4 +1490,4 @@ agents:
 
 This comprehensive component guide provides the detailed documentation needed for effective debugging and development of OrKa workflows, addressing the specific gaps identified in the problem statement.
 ---
-← [Architecture](architecture.md) | [📚 index](index.md) | [Visual Architecture](VISUAL_ARCHITECTURE_GUIDE.md) →
+← [Architecture](architecture.md) | [📚 INDEX](index.md) | [Visual Architecture](VISUAL_ARCHITECTURE_GUIDE.md) →

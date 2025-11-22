@@ -319,11 +319,43 @@ class SimplifiedPromptRenderer:
 
             return f"No response found for {agent_name}"
 
-        def safe_get_response(agent_name, fallback="No response available"):
-            """Safely get an agent response with fallback."""
-            response = get_agent_response(agent_name)
-            if response and not str(response).startswith("No response found"):
-                return response
+        def safe_get_response(agent_name, fallback="No response available", prev_outputs=None):
+            """
+            Safely get an agent response with fallback.
+            
+            Args:
+                agent_name: Name of the agent to retrieve response from
+                fallback: Default value if response not found
+                prev_outputs: Optional previous_outputs dict (for template compatibility)
+            
+            Returns:
+                Agent response string or fallback value
+            """
+            # Use provided prev_outputs if given, otherwise use payload's previous_outputs
+            if prev_outputs is not None:
+                previous_outputs = prev_outputs
+            else:
+                previous_outputs = payload.get("previous_outputs", {})
+            
+            # Direct access to previous_outputs
+            if agent_name in previous_outputs:
+                agent_result = previous_outputs[agent_name]
+                if isinstance(agent_result, dict):
+                    # OrkaResponse format
+                    if "result" in agent_result:
+                        result_str = str(agent_result["result"])
+                        if result_str and not result_str.startswith("No response found"):
+                            return result_str
+                    # Legacy format
+                    elif "response" in agent_result:
+                        result_str = str(agent_result["response"])
+                        if result_str and not result_str.startswith("No response found"):
+                            return result_str
+                else:
+                    result_str = str(agent_result)
+                    if result_str and not result_str.startswith("No response found"):
+                        return result_str
+            
             return fallback
 
         def get_progressive_response():

@@ -220,6 +220,21 @@ class PathExecutorNode(BaseNode):
                     "error": error_msg,
                 }
 
+            # Filter out control flow nodes (PathExecutor, GraphScout, validators) from path
+            original_path_length = len(agent_path)
+            agent_path = [
+                agent_id for agent_id in agent_path
+                if agent_id != self.node_id  # Skip self to prevent recursion
+                and not self._is_control_flow_node(agent_id, context)
+            ]
+            
+            if len(agent_path) < original_path_length:
+                filtered_count = original_path_length - len(agent_path)
+                logger.info(
+                    f"PathExecutor '{self.node_id}': Filtered {filtered_count} control flow node(s) "
+                    f"from path (including self: {self.node_id})"
+                )
+
             logger.info(
                 f"PathExecutor '{self.node_id}': Extracted path with {len(agent_path)} agents: "
                 f"{agent_path}"
@@ -541,6 +556,53 @@ class PathExecutorNode(BaseNode):
         
         agent_id_lower = agent_id.lower()
         return any(pattern in agent_id_lower for pattern in logical_patterns)
+
+    def _is_control_flow_node(self, agent_id: str, context: Dict[str, Any]) -> bool:
+        """
+        Check if an agent is a control flow node (PathExecutor, GraphScout, validators, etc.)
+        that should not be executed by PathExecutor.
+        
+        Args:
+            agent_id: ID of the agent to check
+            context: Execution context with orchestrator reference
+            
+        Returns:
+            True if agent is a control flow node, False otherwise
+        """
+        # Check by agent ID patterns
+        control_patterns = [
+            "path_executor", "pathexecutor",
+            "graph_scout", "graphscout",
+            "validator", "plan_validator",
+            "classifier", "query_classifier"
+        ]
+        
+        agent_id_lower = agent_id.lower()
+        if any(pattern in agent_id_lower for pattern in control_patterns):
+            return True
+        
+        # Check by agent type if available
+        try:
+            orchestrator = context.get("orchestrator")
+            if orchestrator and hasattr(orchestrator, "agents"):
+                agent_obj = orchestrator.agents.get(agent_id)
+                if agent_obj:
+                    agent_type = getattr(agent_obj, "type", "").lower()
+                    agent_class = agent_obj.__class__.__name__
+                    
+                    # Check type string
+                    if any(pattern in agent_type for pattern in control_patterns):
+                        return True
+                    
+                    # Check class name
+                    if any(cls_pattern in agent_class for cls_pattern in [
+                        "PathExecutor", "GraphScout", "Validator", "Classifier"
+                    ]):
+                        return True
+        except Exception:
+            pass  # Fallback to ID-based check only
+        
+        return False
 
     def _validate_execution_context(self, context: Dict[str, Any]) -> Optional[str]:
         """

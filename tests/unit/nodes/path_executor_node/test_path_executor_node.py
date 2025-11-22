@@ -99,3 +99,215 @@ async def test_execute_agent_sequence_handles_missing_and_success():
 
     # bad should have an error recorded
     assert "bad" in results and "error" in results["bad"]
+
+
+def test_is_control_flow_node_detects_by_id_pattern():
+    """Test that _is_control_flow_node detects control flow nodes by ID pattern."""
+    node = make_node()
+    context = {}
+    
+    # PathExecutor patterns
+    assert node._is_control_flow_node("path_executor", context)
+    assert node._is_control_flow_node("PathExecutor", context)
+    assert node._is_control_flow_node("my_pathexecutor", context)
+    
+    # GraphScout patterns
+    assert node._is_control_flow_node("graph_scout", context)
+    assert node._is_control_flow_node("GraphScout_Router", context)
+    assert node._is_control_flow_node("graphscout", context)
+    
+    # Validator patterns
+    assert node._is_control_flow_node("validator", context)
+    assert node._is_control_flow_node("plan_validator", context)
+    assert node._is_control_flow_node("MyValidator", context)
+    
+    # Classifier patterns
+    assert node._is_control_flow_node("classifier", context)
+    assert node._is_control_flow_node("query_classifier", context)
+    
+    # Regular agents should return False
+    assert not node._is_control_flow_node("web_search", context)
+    assert not node._is_control_flow_node("analyzer", context)
+    assert not node._is_control_flow_node("summarizer", context)
+
+
+def test_is_control_flow_node_detects_by_agent_type():
+    """Test that _is_control_flow_node detects control flow nodes by agent type."""
+    node = make_node()
+    
+    # Mock orchestrator with agents
+    class MockAgent:
+        def __init__(self, agent_type, class_name):
+            self.type = agent_type
+            self.__class__.__name__ = class_name
+    
+    class MockOrchestrator:
+        def __init__(self):
+            self.agents = {
+                "custom_executor": MockAgent("path_executor", "CustomExecutor"),
+                "my_scout": MockAgent("graph_scout", "MyScout"),
+                "val": MockAgent("plan_validator", "PlanValidator"),
+                "regular": MockAgent("local_llm", "LocalLLMAgent"),
+            }
+    
+    context = {"orchestrator": MockOrchestrator()}
+    
+    # Should detect by type
+    assert node._is_control_flow_node("custom_executor", context)
+    assert node._is_control_flow_node("my_scout", context)
+    assert node._is_control_flow_node("val", context)
+    
+    # Regular agent should return False
+    assert not node._is_control_flow_node("regular", context)
+
+
+def test_is_control_flow_node_detects_by_class_name():
+    """Test that _is_control_flow_node detects control flow nodes by class name."""
+    node = make_node()
+    
+    # Mock orchestrator with agents
+    class PathExecutorNode:
+        def __init__(self):
+            self.type = "executor"
+    
+    class GraphScoutAgent:
+        def __init__(self):
+            self.type = "router"
+    
+    class PlanValidatorNode:
+        def __init__(self):
+            self.type = "validation"
+    
+    class RegularAgent:
+        def __init__(self):
+            self.type = "local_llm"
+    
+    class MockOrchestrator:
+        def __init__(self):
+            self.agents = {
+                "exec": PathExecutorNode(),
+                "scout": GraphScoutAgent(),
+                "val": PlanValidatorNode(),
+                "regular": RegularAgent(),
+            }
+    
+    context = {"orchestrator": MockOrchestrator()}
+    
+    # Should detect by class name
+    assert node._is_control_flow_node("exec", context)
+    assert node._is_control_flow_node("scout", context)
+    assert node._is_control_flow_node("val", context)
+    
+    # Regular agent should return False
+    assert not node._is_control_flow_node("regular", context)
+
+
+def test_is_control_flow_node_handles_missing_orchestrator():
+    """Test that _is_control_flow_node handles missing orchestrator gracefully."""
+    node = make_node()
+    
+    # Context without orchestrator - should fallback to ID-based check
+    context = {}
+    assert node._is_control_flow_node("path_executor", context)
+    assert not node._is_control_flow_node("web_search", context)
+
+
+def test_is_control_flow_node_handles_exceptions():
+    """Test that _is_control_flow_node handles exceptions gracefully."""
+    node = make_node()
+    
+    # Orchestrator that raises exception
+    class BrokenOrchestrator:
+        @property
+        def agents(self):
+            raise RuntimeError("Boom!")
+    
+    context = {"orchestrator": BrokenOrchestrator()}
+    
+    # Should fallback to ID-based check
+    assert node._is_control_flow_node("path_executor", context)
+    assert not node._is_control_flow_node("web_search", context)
+
+
+@pytest.mark.asyncio
+async def test_run_impl_filters_control_flow_nodes_from_path():
+    """Test that _run_impl filters control flow nodes from extracted path."""
+    node = make_node(path_source="path_proposal")
+    
+    # Mock orchestrator
+    class MockAgent:
+        def __init__(self, agent_type):
+            self.type = agent_type
+            self.__class__.__name__ = "MockAgent"
+    
+    class MockOrchestrator:
+        def __init__(self):
+            self.agents = {
+                "web_search": MockAgent("duckduckgo"),
+                "analyzer": MockAgent("local_llm"),
+                "execute_path": MockAgent("path_executor"),
+            }
+        
+        async def _run_agent_async(self, agent_id, current_input, execution_results, full_payload=None):
+            return None, {"result": f"output_{agent_id}"}
+    
+    context = {
+        "orchestrator": MockOrchestrator(),
+        "input": "test input",
+        "run_id": "test_run",
+        "previous_outputs": {
+            "path_proposal": ["web_search", "execute_path", "analyzer"]
+        }
+    }
+    
+    result = await node._run_impl(context)
+    
+    # Should have filtered out execute_path
+    assert result["status"] == "success"
+    assert "web_search" in result["executed_path"]
+    assert "analyzer" in result["executed_path"]
+    assert "execute_path" not in result["executed_path"]
+    
+    # Should have results for non-control flow nodes only
+    assert "web_search" in result["results"]
+    assert "analyzer" in result["results"]
+    assert "execute_path" not in result["results"]
+
+
+@pytest.mark.asyncio
+async def test_run_impl_filters_self_from_path():
+    """Test that _run_impl filters its own node_id from extracted path."""
+    node = make_node(path_source="path_proposal")
+    node.node_id = "execute_path"
+    
+    # Mock orchestrator
+    class MockAgent:
+        def __init__(self):
+            self.type = "duckduckgo"
+    
+    class MockOrchestrator:
+        def __init__(self):
+            self.agents = {
+                "web_search": MockAgent(),
+                "execute_path": MockAgent(),
+            }
+        
+        async def _run_agent_async(self, agent_id, current_input, execution_results, full_payload=None):
+            return None, {"result": f"output_{agent_id}"}
+    
+    context = {
+        "orchestrator": MockOrchestrator(),
+        "input": "test input",
+        "run_id": "test_run",
+        "previous_outputs": {
+            "path_proposal": ["web_search", "execute_path"]
+        }
+    }
+    
+    result = await node._run_impl(context)
+    
+    # Should have filtered out self (execute_path)
+    assert result["status"] == "success"
+    assert "web_search" in result["executed_path"]
+    assert "execute_path" not in result["executed_path"]
+    assert len(result["executed_path"]) == 1

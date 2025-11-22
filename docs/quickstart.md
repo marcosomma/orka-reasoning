@@ -1,8 +1,8 @@
 # OrKa Quickstart Guide
 
-> **Last Updated:** 16 November 2025  
+> **Last Updated:** 22 November 2025  
 > **Status:** 🟢 Current  
-> **Related:** [Getting Started](getting-started.md) | [Installation Guide](getting-started.md#installation) | [INDEX](INDEX.md)
+> **Related:** [Getting Started](getting-started.md) | [Installation Guide](getting-started.md#installation) | [INDEX](index.md)
 
 Get OrKa running in 5 minutes and create your first AI workflow.
 
@@ -299,4 +299,4 @@ The one-click installer script is served over HTTPS and is digitally signed. You
 curl -sSL https://orkacore.com/quickstart.sh.asc | gpg --verify
 ```
 ---
-← [index](index.md) | [📚 index](index.md) | [Getting Started](getting-started.md) →
+← [INDEX](index.md) | [📚 INDEX](index.md) | [Getting Started](getting-started.md) →

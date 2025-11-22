@@ -480,7 +480,8 @@ RESPONSE FORMAT: You MUST respond with ONLY valid JSON. No explanations, no mark
             raise ValueError("LLM response does not contain valid JSON")
 
         except Exception as e:
-            logger.error(f"Evaluation LLM call failed: {e}")
+            logger.error(f"Evaluation LLM call failed: {e.__class__.__name__}: {e}")
+            logger.warning("LLM evaluation unavailable - will use heuristic fallback scoring")
             raise
 
     async def _call_validation_llm(self, prompt: str) -> str:
@@ -781,8 +782,9 @@ RESPONSE FORMAT: You MUST respond with ONLY valid JSON. No explanations, no mark
             return self._parse_comprehensive_evaluation_response(llm_response)
 
         except Exception as e:
-            logger.error(f"LLM path evaluation failed: {e}")
-            return {"error": str(e), "fallback": True}
+            logger.error(f"LLM path evaluation failed: {e.__class__.__name__}: {e}")
+            logger.info("Switching to deterministic heuristic evaluation mode")
+            return {"error": f"{e.__class__.__name__}: {str(e)}", "fallback": True}
 
     def _build_comprehensive_evaluation_prompt(
         self,
@@ -1391,6 +1393,8 @@ IMPORTANT: Make each evaluation UNIQUE and SPECIFIC to the path and question typ
         try:
             import aiohttp
 
+            logger.debug(f"Calling Ollama: model={model}, url={model_url}, prompt_length={len(prompt)}")
+
             payload = {
                 "model": model,
                 "prompt": prompt,
@@ -1405,8 +1409,17 @@ IMPORTANT: Make each evaluation UNIQUE and SPECIFIC to the path and question typ
                     result = await response.json()
                     return str(result.get("response", "")).strip()
 
+        except asyncio.TimeoutError as e:
+            logger.error(f"Ollama API call timeout after 30s: model={model}, url={model_url}")
+            logger.error(f"Ensure Ollama is running and model '{model}' is available (ollama pull {model})")
+            raise RuntimeError(f"Ollama timeout: model '{model}' did not respond within 30s") from e
+        except aiohttp.ClientError as e:
+            logger.error(f"Ollama API connection failed: {e.__class__.__name__}: {e}")
+            logger.error(f"Check if Ollama is running at {model_url}")
+            raise RuntimeError(f"Ollama connection error: {e}") from e
         except Exception as e:
-            logger.error(f"Ollama API call failed: {e}")
+            logger.error(f"Ollama API call failed: {e.__class__.__name__}: {e}")
+            logger.exception("Full traceback:")
             raise
 
     async def _call_lm_studio_async(

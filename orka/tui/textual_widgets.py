@@ -686,3 +686,38 @@ class LogsWidget(DataTable):
                 details_parts.append(f"cat:{category[:5]}")
 
         return " | ".join(details_parts) if details_parts else "standard"
+
+
+class BreadcrumbWidget(Static):
+    """Widget for displaying navigation breadcrumb path."""
+    
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.path: List[str] = ["ORKA"]
+    
+    def update_path(self, path: List[str]) -> None:
+        """
+        Update the breadcrumb path.
+        
+        Args:
+            path: List of path segments (e.g., ["ORKA", "Memory", "Short-term"])
+        """
+        self.path = ["ORKA"] + path
+        self.refresh()
+    
+    def render(self) -> str:
+        """Render the breadcrumb path."""
+        if not self.path:
+            return "[dim][ORKA][/dim]"
+        
+        # Format breadcrumb with separators
+        formatted_segments = []
+        for i, segment in enumerate(self.path):
+            if i == 0:
+                # First segment (ORKA) - bold and centered
+                formatted_segments.append(f"[bold cyan][{segment.center(8)}][/bold cyan]")
+            else:
+                # Other segments - normal
+                formatted_segments.append(f"[cyan]{segment}[/cyan]")
+        
+        return " [dim]>[/dim] ".join(formatted_segments)

@@ -2,9 +2,9 @@
 
 # Creating Custom Agents in OrKa
 
-> **Last Updated:** 16 November 2025  
+> **Last Updated:** 22 November 2025  
 > **Status:** 🟢 Current  
-> **Related:** [Agents](agents.md) | [Advanced Agents](agents-advanced.md) | [API Reference](api-reference.md) | [INDEX](INDEX.md)
+> **Related:** [Agents](agents.md) | [Advanced Agents](agents-advanced.md) | [API Reference](api-reference.md) | [INDEX](index.md)
 
 ## Modern Async Pattern (Recommended)
 
@@ -105,6 +105,5 @@ registry.register_agent("my_summarizer", MySummarizer)
 - **Structured Output**: Results are automatically wrapped in `Output` objects
 - **Error Handling**: Exceptions are caught and formatted consistently
 - **Resource Management**: Lifecycle hooks for initialization and cleanup
-
 ---
-← [Advanced Agents](agents-advanced.md) | [📚 index](index.md) | [Memory System](MEMORY_SYSTEM_GUIDE.md) →
+← [Advanced Agents](agents-advanced.md) | [📚 INDEX](index.md) | [Memory System](MEMORY_SYSTEM_GUIDE.md) →
