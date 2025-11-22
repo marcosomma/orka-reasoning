@@ -1,13 +1,19 @@
 # OrKa-Reasoning – Un-official CHANGELOG
 
 ---
-## [0.9.8] · 2025-11-22 🧪 (Pre-Release Push)
-OrKa v0.9.8 – Template System & Test Coverage Enhancement
+## [0.9.8] · 2025-11-22 🚀
+OrKa v0.9.8 – Workflow Execution Fixes, PathExecutor Enhancements & Test Coverage
 
 ### Summary
-This pre-release combines template system improvements with major test suite expansion. Enhanced SimplifiedPromptRenderer with better error handling and custom filter support, plus comprehensive unit and integration tests for core orchestrator components. This release significantly improves code quality, reliability, and maintainability.
+This release focuses on fixing critical workflow execution issues, enhancing PathExecutor with recursion prevention, and expanding test coverage. Major fixes include proper agent scoping, PathExecutor integration in GraphScout workflows, and realistic validation criteria for proposal vs execution validation. Test coverage increased to 78.24% with comprehensive PathExecutor tests and improved validation detection in example workflows.
 
 ### Added
+* **🔧 PathExecutor Recursion Prevention**
+  * **Control flow node filtering** - PathExecutor now filters out control flow nodes (GraphScout, PlanValidator, classifiers) from execution paths
+  * **Dual detection strategy** - ID pattern matching + runtime type inspection for robust control flow node detection
+  * **Self-filtering** - PathExecutor automatically excludes itself from extracted paths to prevent infinite recursion
+  * **14 comprehensive tests** - 7 new tests for `_is_control_flow_node()` method with 78.20% coverage
+
 * **🔧 Template System Improvements**
   * **Custom Jinja2 filters** - `safe_get()`, `safe_get_response()`, `truncate_text()`, `format_loop_metadata()`, `get_debate_evolution()`
   * **Improved error handling** - Better template rendering error messages and fallback behavior
@@ -36,7 +42,43 @@ This pre-release combines template system improvements with major test suite exp
   * **Error responses** - Error message formatting, stack traces, recovery actions
   * **Metrics inclusion** - Performance metrics, token counts, execution times
 
+* **🔍 Workflow Execution Validation**
+  * **Semantic validation** - Added 13 failure pattern checks in `run_all_examples.py` to detect workflow failures
+  * **Multi-line output extraction** - Fixed regex to capture complete multi-line outputs (not just first line)
+  * **Fallback buffer increase** - Increased from 500 to 2000 chars to prevent output truncation
+  * **False positive elimination** - Workflows now correctly marked as FAILED when containing "score of 0.0", "not ready for production", etc.
+
+### Fixed
+* **🐛 Critical Workflow Execution Issues**
+  * **#28 plan_validator_with_graphscout.yml** - Added missing PathExecutor to execute validated GraphScout paths
+  * **#27 plan_validator_boolean_scoring.yml** - Moved agents from `internal_workflow` to top-level for PathExecutor accessibility
+  * **#13 graph_scout_validated_loop.yml** - Adjusted validation criteria for proposal validation (not execution)
+  * **Agent scoping rules** - Documented that PathExecutor requires agents in global `orchestrator.agents` registry
+
+* **⚙️ Validation Criteria Optimization**
+  * **Proposal vs Execution validation** - Separated criteria appropriate for text proposals vs actual executions
+  * **Score threshold adjustments** - Increased from 0.05 to 0.20 for realistic proposal validation
+  * **Weight redistribution** - Focus on completeness/coherence (verifiable in proposals), reduced safety/efficiency (unverifiable without execution)
+  * **Preset changes** - Changed from `moderate` to `lenient` for proposal-focused validation
+
+* **📝 Example Workflow Synchronization**
+  * **35 YAML files synced** - All examples synchronized between orka-core and orka-ui-ts
+  * **30 workflows converted** - Changed from `gpt-oss:20b` to `llama3.2:3b` in orka-ui examples for faster execution
+  * **Model preservation** - Kept `gpt-oss:20b` in `multi_model_local_llm_evaluation.yml` for multi-model comparison testing
+
 ### Enhanced
+* **🎨 TUI Theme System**
+  * **BreadcrumbWidget** - New navigation widget for TUI with hierarchical path display
+  * **Dark theme** - Modern dark color scheme for TUI interface
+  * **Vintage theme** - Retro terminal aesthetic with amber/green colors
+  * **Theme switching** - Dynamic theme configuration in memory watch TUI
+
+* **📖 Documentation & Examples**
+  * **Agent scoping guide** - Comprehensive documentation on agent visibility rules for PathExecutor
+  * **Validation pattern guide** - Best practices for proposal vs execution validation with recommended thresholds
+  * **Workflow execution report templates** - Enhanced templates showing execution status, path results, and diagnostic info
+  * **Changelog documentation** - Created `v0.9.8_workflow_execution_fixes.md` with detailed fix analysis
+
 * **Template System Benefits**
   * Eliminates "unknown" values in complex workflow prompts
   * Better debugging with descriptive error messages
@@ -44,22 +86,70 @@ This pre-release combines template system improvements with major test suite exp
   * Support for cognitive society and debate workflows
 
 ### Technical Details
+* **PathExecutor Architecture** - Dual-layer recursion defense with ID patterns (`path_executor`, `graph_scout`, `validator`, `classifier`) + runtime type checking
+* **Control Flow Detection** - Graceful exception handling with fallback to ID-based check when orchestrator unavailable
+* **Agent Scoping Rules** - PathExecutor operates at top-level scope; agents in `internal_workflow` are locally scoped and inaccessible
+* **Validation Strategy** - Proposal validation uses lenient preset (15-35% threshold), execution validation uses strict preset (80-90% threshold)
 * **Template System Architecture** - Enhanced SimplifiedPromptRenderer with custom filter support and improved error handling
 * **Test Coverage Improvements** - SimplifiedPromptRenderer now has custom filters implemented + comprehensive tests
 * **Unit Tests** - Isolated component testing with mocked dependencies for fast CI/CD execution
 * **Integration Tests** - End-to-end workflow validation with real component interaction testing
 * **Test Fixtures** - Reusable test data and mock objects with consistent test environment setup
 
+### Migration Notes
+* **Agent Scoping** - If using PathExecutor, ensure execution agents are at top-level `orchestrator.agents`, not in `internal_workflow`
+* **Validation Configuration** - Review workflows validating proposals before execution; adjust criteria weights and thresholds
+* **GraphScout Workflows** - Add PathExecutor after validation loops to execute validated paths
+* **UI Examples** - orka-ui-ts now uses `llama3.2:3b` for faster performance; orka-core still uses `gpt-oss:20b` for consistency
+
+### Pattern Documentation
+* **Proposal Validation (before execution)**:
+  - ✅ Appropriate: `completeness.has_all_required_steps`, `coherence.logical_agent_sequence` (high weight)
+  - ⚠️ Inappropriate: `safety.validates_inputs`, `efficiency.avoids_redundant_calls` (low weight - unverifiable)
+  - 📊 Thresholds: Lenient 0.15-0.25, Moderate 0.25-0.35
+
+* **Execution Validation (after execution)**:
+  - ✅ All criteria appropriate and verifiable
+  - 📊 Thresholds: Moderate 0.80-0.85, Strict 0.90+
+
+### Compatibility
+* ✅ **No Breaking Changes** - All existing functionality preserved with backward compatibility
+* ✅ **Agent Scoping** - Legacy workflows with correct scoping continue to work
+* ✅ **Validation Presets** - Existing validation configurations remain functional
+* ✅ **Python 3.11+** - Leverages modern async/await patterns
+* ✅ **Test Suite** - 1444 tests passing, 78.24% coverage
+
 ### Benefits
-* **For Developers** - Confidence in changes, tests as documentation, faster debugging, refactoring safety
-* **For Users** - Increased reliability, stable APIs, faster issue resolution, production readiness
+* **For Developers** 
+  - Confidence in changes with comprehensive test coverage
+  - Tests as documentation with clear validation patterns
+  - Faster debugging with semantic failure detection
+  - Refactoring safety with 78.24% test coverage
+  - Clear agent scoping rules prevent runtime errors
+
+* **For Users** 
+  - Increased reliability with PathExecutor recursion prevention
+  - Stable APIs with validated workflow execution
+  - Faster issue resolution with better error detection
+  - Production readiness with execution validation patterns
+  - Consistent behavior across orka-core and orka-ui examples
 
 ### Compatibility
 * ✅ **No Breaking Changes** - All existing functionality preserved
 * ✅ **Backward Compatible** - Tests validate existing behavior
 * ✅ **Python 3.11+** - Leverages modern async/await patterns
 
-> **Quality First**: This pre-release establishes a robust testing foundation with comprehensive coverage of critical components, ensuring reliability and maintainability for future development.
+> **Production Ready**: This release establishes robust workflow execution patterns with comprehensive testing, proper agent scoping, and realistic validation criteria. PathExecutor recursion prevention and semantic failure detection ensure reliable multi-agent orchestration in production environments.
+
+### Files Modified
+* `orka/nodes/path_executor_node.py` - Added control flow filtering and recursion prevention
+* `tests/unit/nodes/path_executor_node/test_path_executor_node.py` - 7 new tests for control flow detection
+* `PRIVATE/scripts/run_all_examples.py` - Enhanced output extraction and semantic validation
+* `examples/plan_validator_with_graphscout.yml` - Added PathExecutor for path execution
+* `examples/plan_validator_boolean_scoring.yml` - Moved agents to top-level scope
+* `examples/graph_scout_validated_loop.yml` - Adjusted validation criteria for proposals
+* `orka-ui-ts/public/examples/*.yml` - 30 workflows converted to llama3.2:3b
+* `changelog/v0.9.8_workflow_execution_fixes.md` - Comprehensive fix documentation
 
 ---
 ## [0.9.7] · 2025-11-20 🚀
