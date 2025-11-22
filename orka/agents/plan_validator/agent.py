@@ -186,23 +186,52 @@ class PlanValidatorAgent(BaseAgent):
         graphscout_keys = [
             "graph_scout",
             "graphscout_planner",
+            "graphscout_router",
             "path_proposer",
+            "plan_proposer",
             "dynamic_router",
         ]
 
         for key in graphscout_keys:
             if key in previous_outputs:
-                logger.debug(f"Found proposed path in '{key}'")
-                return cast(Dict[str, Any], previous_outputs[key])
-
-        # Fallback: look for any agent with path/decision info
-        for agent_id, output in previous_outputs.items():
-            if isinstance(output, dict):
-                if any(k in output for k in ["decision_type", "target", "path"]):
-                    logger.debug(f"Found proposed path in '{agent_id}' (fallback)")
+                output = previous_outputs[key]
+                logger.debug(f"Found GraphScout output in '{key}'")
+                
+                # GraphScout returns structure with nested data in 'result' or 'response'
+                # LoopNode wraps agent outputs in 'response', while direct calls use 'result'
+                for nested_key in ["response", "result"]:
+                    if isinstance(output, dict) and nested_key in output:
+                        nested_data = output[nested_key]
+                        if isinstance(nested_data, dict) and any(k in nested_data for k in ["decision", "decision_type", "target", "path"]):
+                            logger.debug(f"Using nested {nested_key} from '{key}'")
+                            return cast(Dict[str, Any], nested_data)
+                
+                # Otherwise use top-level output
+                if isinstance(output, dict):
                     return cast(Dict[str, Any], output)
 
-        logger.warning("No proposed path found in previous_outputs")
+        # Fallback: look for any agent with path/decision info
+        # Check both top-level and nested 'result' or 'response' fields
+        for agent_id, output in previous_outputs.items():
+            if isinstance(output, dict):
+                # Check nested response or result first
+                for nested_key in ["response", "result"]:
+                    if nested_key in output:
+                        nested_data = output[nested_key]
+                        if isinstance(nested_data, dict) and any(k in nested_data for k in ["decision", "decision_type", "target", "path"]):
+                            logger.debug(f"Found proposed path in '{agent_id}' (fallback, nested {nested_key})")
+                            return cast(Dict[str, Any], nested_data)
+                
+                # Check top-level fields
+                if any(k in output for k in ["decision", "decision_type", "target", "path"]):
+                    logger.debug(f"Found proposed path in '{agent_id}' (fallback, top-level)")
+                    return cast(Dict[str, Any], output)
+
+        logger.warning(
+            f"No proposed path found in previous_outputs. "
+            f"Available keys: {list(previous_outputs.keys())}. "
+            f"Expected GraphScout output with 'decision', 'target', or 'path' fields."
+        )
         return {"error": "No proposed path found", "available_keys": list(previous_outputs.keys())}
 
     def _extract_previous_critiques(self, ctx: Context) -> List[Dict[str, Any]]:

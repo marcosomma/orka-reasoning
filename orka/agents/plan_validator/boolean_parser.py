@@ -23,6 +23,8 @@ import logging
 import re
 from typing import Any, Dict, Optional
 
+from ...utils.json_parser import parse_llm_json
+
 logger = logging.getLogger(__name__)
 
 
@@ -42,11 +44,20 @@ def parse_boolean_evaluation(response: str) -> Dict[str, Dict[str, bool]]:
     """
     logger.debug("Parsing boolean evaluation response")
 
-    json_data = _extract_json_from_text(response)
+    # Use robust JSON parser
+    parsed = parse_llm_json(
+        response,
+        strict=False,
+        coerce_types=True,
+        track_errors=True,
+        agent_id="boolean_parser",
+    )
 
-    if json_data and _is_valid_boolean_structure(json_data):
-        logger.debug("Successfully extracted JSON boolean evaluation")
-        return _normalize_boolean_structure(json_data)
+    # Check if we got valid boolean structure
+    if parsed and not ("error" in parsed and parsed["error"] == "json_parse_failed"):
+        if _is_valid_boolean_structure(parsed):
+            logger.debug("Successfully extracted JSON boolean evaluation")
+            return _normalize_boolean_structure(parsed)
 
     logger.debug("Using fallback text-based boolean extraction")
     return _extract_booleans_from_text(response)

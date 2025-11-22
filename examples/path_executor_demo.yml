@@ -69,7 +69,7 @@ agents:
     prompt: |
       Analyze the search results and extract key insights.
       
-      Search results: {{ previous_outputs.web_search.results }}
+      Search results: {{ safe_get(previous_outputs, 'web_search.results', 'No search results') }}
   
   - id: summarizer
     type: local_llm
@@ -82,7 +82,7 @@ agents:
     prompt: |
       Create a concise summary of the analysis.
       
-      Analysis: {{ previous_outputs.analyzer.response }}
+      Analysis: {{ safe_get_response('analyzer', 'No analysis', previous_outputs) }}
       
       Provide a clear, actionable summary.
 

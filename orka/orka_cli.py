@@ -10,18 +10,32 @@ from orka.cli.utils import setup_logging
 
 logger = logging.getLogger(__name__)
 
+# Version
+__version__ = "0.9.7"
+
 # Re-export run_cli for backward compatibility
 __all__ = ["cli_main", "run_cli"]
 
 
 def create_parser() -> argparse.ArgumentParser:
     """Create argument parser."""
+    epilog = """
+Examples:
+  orka run workflow.yml "your question"     Run a workflow with input
+  orka memory watch                         Monitor memory system in real-time
+  orka-start                                Start Redis backend (required for memory)
+  orka-stop                                 Stop Redis backend
+
+Note: Run 'orka-start' before using workflows that require memory operations.
+"""
     parser = argparse.ArgumentParser(
         description="OrKa - Orchestrator Kit for Agents",
+        epilog=epilog,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
     # Global options
+    parser.add_argument("-V", "--version", action="version", version=f"orka-reasoning {__version__}")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
     parser.add_argument("--json", action="store_true", help="Output in JSON format")
 

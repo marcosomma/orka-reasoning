@@ -619,11 +619,12 @@ agents:
       QUESTION: {{ get_input() }}
       
       LOOP RESULTS SUMMARY:
-      {% if previous_outputs.cognitive_debate_loop %}
-      - Rounds Completed: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'loops_completed', 'Unknown') }}
-      - Final Score: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'final_score', 'Unknown') }}
-      - Score Threshold: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'score_threshold', '0.75') }}
-      - Loop Status: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'status', 'completed') }}
+      {% set loop_output = get_loop_output('cognitive_debate_loop', previous_outputs) %}
+      {% if loop_output %}
+      - Rounds Completed: {{ safe_get(loop_output, 'loops_completed', 'Unknown') }}
+      - Final Score: {{ safe_get(loop_output, 'final_score', 'Unknown') }}
+      - Score Threshold: {{ safe_get(loop_output, 'score_threshold', '0.75') }}
+      - Loop Status: {{ safe_get(loop_output, 'status', 'completed') }}
       {% else %}
       - Loop data not available
       {% endif %}
@@ -679,9 +680,10 @@ agents:
       META-ANALYSIS: {{ safe_get_response('meta_debate_reflection', 'No meta-analysis available') }}
       
       RAW LOOP DATA FOR QUALITY ASSESSMENT:
-      {% if previous_outputs.cognitive_debate_loop %}
-      - Total Rounds: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'loops_completed', 'Unknown') }}
-      - Final Agreement Score: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'final_score', 'Unknown') }}
+      {% set loop_output = get_loop_output('cognitive_debate_loop', previous_outputs) %}
+      {% if loop_output %}
+      - Total Rounds: {{ safe_get(loop_output, 'loops_completed', 'Unknown') }}
+      - Final Agreement Score: {{ safe_get(loop_output, 'final_score', 'Unknown') }}
       {% else %}
       - Loop data not available
       {% endif %}
@@ -730,11 +732,11 @@ agents:
       QUESTION: {{ get_input() }}
       
       COMPLETE DEBATE ANALYSIS:
-      {% set loop_result = safe_get_response('cognitive_debate_loop', '') %}
-      {% if loop_result and previous_outputs.cognitive_debate_loop %}
-      - Total Rounds: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'loops_completed', 'Unknown') }}
-      - Final Agreement Score: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'final_score', 'Unknown') }}
-      - Score Threshold Met: {{ 'YES' if (safe_get(previous_outputs.cognitive_debate_loop.result, 'final_score', 0) | float) >= (safe_get(previous_outputs.cognitive_debate_loop.result, 'score_threshold', 0.75) | float) else 'NO' }}
+      {% set loop_output = get_loop_output('cognitive_debate_loop', previous_outputs) %}
+      {% if loop_output %}
+      - Total Rounds: {{ safe_get(loop_output, 'loops_completed', 'Unknown') }}
+      - Final Agreement Score: {{ safe_get(loop_output, 'final_score', 'Unknown') }}
+      - Score Threshold Met: {{ 'YES' if (safe_get(loop_output, 'final_score', 0) | float) >= (safe_get(loop_output, 'score_threshold', 0.75) | float) else 'NO' }}
       {% else %}
       - Debate data not available
       {% endif %}
@@ -743,7 +745,7 @@ agents:
       {{ safe_get_response('meta_debate_reflection', 'No meta-analysis available') }}
       
       QUALITY ASSESSMENT:
-      {{ safe_get_response('reasoning_quality_extractor', 'No quality assessment available') }}
+      {{ safe_get_response('reasoning_quality_extractor', 'No quality assessment available', previous_outputs) }}
       
       COMPREHENSIVE ROUND DATA:
       {% if has_past_loops() %}

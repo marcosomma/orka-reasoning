@@ -128,7 +128,7 @@ agents:
             Select the optimal execution path using available agents.
             
             Query: {{ input }}
-            Classification: {{ previous_outputs.query_classifier.response }}
+            Classification: {{ safe_get_response('query_classifier', 'Unknown', previous_outputs) }}
             
             {% if has_past_loops() %}
             ## Validation Feedback (Iteration {{ get_loop_number() }})
@@ -298,11 +298,11 @@ agents:
       Query: {{ input }}
       
       {% if previous_outputs.web_search %}
-      Context: {{ previous_outputs.web_search.result }}
+      Context: {{ safe_get(previous_outputs, 'web_search.result', 'No web search results') }}
       {% endif %}
       
       {% if previous_outputs.memory_reader %}
-      Historical Context: {{ previous_outputs.memory_reader }}
+      Historical Context: {{ safe_get_response('memory_reader', 'No historical context', previous_outputs) }}
       {% endif %}
       
       Analyze from:

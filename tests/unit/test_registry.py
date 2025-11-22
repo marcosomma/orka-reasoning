@@ -270,6 +270,35 @@ class TestResourceRegistry:
         mock_resource1.close.assert_called_once()
         mock_resource2.close.assert_called_once()
 
+    @pytest.mark.asyncio
+    async def test_close_with_aexit(self):
+        """Test closing resources with __aexit__ method."""
+        mock_resource = Mock()
+        mock_resource.__aexit__ = AsyncMock()
+        # Remove close method so __aexit__ is used
+        delattr(mock_resource, 'close') if hasattr(mock_resource, 'close') else None
+        
+        registry = ResourceRegistry({})
+        registry._resources = {"resource": mock_resource}
+        registry._initialized = True
+        
+        await registry.close()
+        
+        # Verify __aexit__ was called
+        mock_resource.__aexit__.assert_called_once_with(None, None, None)
+
+    @pytest.mark.asyncio
+    async def test_close_no_cleanup_method(self):
+        """Test closing resources without close or __aexit__."""
+        mock_resource = Mock(spec=[])  # No methods at all
+        
+        registry = ResourceRegistry({})
+        registry._resources = {"resource": mock_resource}
+        registry._initialized = True
+        
+        # Should complete without error
+        await registry.close()
+
 
 class TestInitRegistry:
     """Test suite for init_registry function."""

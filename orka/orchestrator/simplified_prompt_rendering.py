@@ -35,6 +35,14 @@ Key improvements over the original prompt renderer:
 import logging
 from typing import Any, Dict
 
+try:
+    from .template_helpers import register_template_helpers
+    TEMPLATE_HELPERS_AVAILABLE = True
+except ImportError:
+    TEMPLATE_HELPERS_AVAILABLE = False
+    import logging as _logging
+    _logging.getLogger(__name__).warning("template_helpers not available, custom filters disabled")
+
 logger = logging.getLogger(__name__)
 
 
@@ -145,13 +153,29 @@ class SimplifiedPromptRenderer:
             # Import Jinja2 only when needed
             import re
 
-            from jinja2 import Template, TemplateError
+            from jinja2 import Environment, TemplateError
 
             # Enhance payload for template rendering
             enhanced_payload = self._enhance_payload_for_templates(payload)
 
+            # Create Jinja2 environment with custom filters
+            env = Environment()
+            
+            # Register custom template helpers if available
+            if TEMPLATE_HELPERS_AVAILABLE:
+                try:
+                    register_template_helpers(env)
+                    logger.debug("Custom template helpers registered successfully")
+                except Exception as e:
+                    logger.warning(f"Failed to register custom template helpers: {e}")
+            
+            # ✅ FIX: Register internal helper functions to env.globals for direct access
+            helper_functions = self._get_template_helper_functions(enhanced_payload)
+            env.globals.update(helper_functions)
+            logger.debug(f"Registered {len(helper_functions)} internal helper functions to Jinja2 environment")
+            
             # Create and render template
-            jinja_template = Template(template_str)
+            jinja_template = env.from_string(template_str)
             rendered = jinja_template.render(**enhanced_payload)
 
             # ✅ FIX: Replace unresolved variables with empty strings
@@ -602,6 +626,51 @@ class SimplifiedPromptRenderer:
                 return payload["input"].get("score_threshold", 0.8)
             return 0.8
 
+        def get_loop_output(agent_id: str, prev_outputs: Dict[str, Any] = None) -> Dict[str, Any]:
+            """
+            Get the complete output dict from a LoopNode agent.
+            
+            Unlike safe_get_response which returns a string, this returns the full dict
+            so you can access fields like loops_completed, final_score, past_loops, etc.
+            
+            Args:
+                agent_id: ID of the loop agent
+                prev_outputs: Optional dict of previous outputs (for compatibility with template_helpers)
+            
+            Returns:
+                Complete output dict from the loop, or empty dict if not found
+            
+            Example:
+                {% set loop_data = get_loop_output('cognitive_debate_loop', previous_outputs) %}
+                Rounds: {{ loop_data.loops_completed }}
+                Score: {{ loop_data.final_score }}
+            """
+            # Use provided previous_outputs or get from payload
+            previous_outputs = prev_outputs if prev_outputs is not None else payload.get("previous_outputs", {})
+            
+            if not previous_outputs:
+                logger.warning(f"get_loop_output: previous_outputs is empty for agent '{agent_id}'")
+                return {}
+            
+            if agent_id not in previous_outputs:
+                logger.debug(f"get_loop_output: agent '{agent_id}' not found in previous_outputs")
+                return {}
+            
+            output = previous_outputs[agent_id]
+            
+            # LoopNode wraps output in 'response' field
+            if isinstance(output, dict) and 'response' in output:
+                response_value = output['response']
+                if isinstance(response_value, dict):
+                    return response_value
+            
+            # Fallback: return the output dict itself
+            if isinstance(output, dict):
+                return output
+            
+            logger.warning(f"get_loop_output: output for '{agent_id}' is not a dict: {type(output)}")
+            return {}
+
         return {
             # Input helpers
             "get_input": get_input,
@@ -638,6 +707,7 @@ class SimplifiedPromptRenderer:
             "get_loop_rounds": get_loop_rounds,
             "get_final_score": get_final_score,
             "get_loop_status": get_loop_status,
+            "get_loop_output": get_loop_output,
         }
 
     def _add_prompt_to_payload(

@@ -78,3 +78,128 @@ class TestPlanValidatorAgent:
         assert agent.temperature == 0.5
         assert agent.scoring_preset == "strict"
         mock_boolean_score_calculator_class.assert_called_once_with(preset="strict", custom_weights=custom_weights)
+
+    def test_extract_proposed_path_from_graphscout_router(self, plan_validator_agent):
+        """Test extracting GraphScout output from 'graphscout_router' key."""
+        context: Context = {
+            "input": "test query",
+            "previous_outputs": {
+                "graphscout_router": {
+                    "decision": "commit_path",
+                    "target": ["agent1", "agent2"],
+                    "confidence": 0.92,
+                    "reasoning": "Best path selected",
+                    "result": {
+                        "decision": "commit_path",
+                        "target": ["agent1", "agent2"],
+                        "confidence": 0.92,
+                    }
+                }
+            }
+        }
+        result = plan_validator_agent._extract_proposed_path(context)
+        
+        # Should extract nested 'result' when available
+        assert "decision" in result
+        assert result["decision"] == "commit_path"
+        assert result["target"] == ["agent1", "agent2"]
+        assert result["confidence"] == 0.92
+
+    def test_extract_proposed_path_from_nested_result(self, plan_validator_agent):
+        """Test extracting from nested 'result' field in GraphScout output."""
+        context: Context = {
+            "input": "test query",
+            "previous_outputs": {
+                "graph_scout": {
+                    "status": "success",
+                    "metrics": {"time": 1.5},
+                    "result": {
+                        "decision": "shortlist",
+                        "target": [["path1"], ["path2"]],
+                        "confidence": 0.78,
+                        "reasoning": "Multiple good options"
+                    }
+                }
+            }
+        }
+        result = plan_validator_agent._extract_proposed_path(context)
+        
+        assert result["decision"] == "shortlist"
+        assert result["target"] == [["path1"], ["path2"]]
+        assert result["confidence"] == 0.78
+
+    def test_extract_proposed_path_top_level_fields(self, plan_validator_agent):
+        """Test extracting when decision fields are at top level."""
+        context: Context = {
+            "input": "test query",
+            "previous_outputs": {
+                "path_proposer": {
+                    "decision": "commit_next",
+                    "target": "agent3",
+                    "confidence": 0.88
+                }
+            }
+        }
+        result = plan_validator_agent._extract_proposed_path(context)
+        
+        assert result["decision"] == "commit_next"
+        assert result["target"] == "agent3"
+        assert result["confidence"] == 0.88
+
+    def test_extract_proposed_path_fallback_to_any_agent(self, plan_validator_agent):
+        """Test fallback logic finds path in any agent output."""
+        context: Context = {
+            "input": "test query",
+            "previous_outputs": {
+                "some_custom_agent": {
+                    "result": {
+                        "decision_type": "custom",
+                        "path": ["step1", "step2"],
+                        "score": 0.85
+                    }
+                }
+            }
+        }
+        result = plan_validator_agent._extract_proposed_path(context)
+        
+        # Should find in nested result via fallback
+        assert result["decision_type"] == "custom"
+        assert result["path"] == ["step1", "step2"]
+
+    def test_extract_proposed_path_no_valid_output(self, plan_validator_agent):
+        """Test error handling when no valid path is found."""
+        context: Context = {
+            "input": "test query",
+            "previous_outputs": {
+                "unrelated_agent": {"some_data": "value"}
+            }
+        }
+        result = plan_validator_agent._extract_proposed_path(context)
+        
+        assert "error" in result
+        assert result["error"] == "No proposed path found"
+        assert "available_keys" in result
+        assert "unrelated_agent" in result["available_keys"]
+
+    def test_extract_proposed_path_from_response_field(self, plan_validator_agent):
+        """Test extraction from 'response' field used by LoopNode."""
+        context: Context = {
+            "input": "test query",
+            "previous_outputs": {
+                "plan_proposer": {
+                    "response": {
+                        "decision": "shortlist",
+                        "target": [
+                            {"node_id": "agent1", "path": ["agent1"]},
+                            {"node_id": "agent2", "path": ["agent2"]}
+                        ]
+                    }
+                }
+            }
+        }
+        result = plan_validator_agent._extract_proposed_path(context)
+        
+        # Should find in nested response field
+        assert result["decision"] == "shortlist"
+        assert len(result["target"]) == 2
+        assert result["target"][0]["node_id"] == "agent1"

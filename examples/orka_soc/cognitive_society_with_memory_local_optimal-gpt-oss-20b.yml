@@ -449,10 +449,11 @@ agents:
       QUESTION: {{ get_input() }}
       
       DEBATE SUMMARY:
-      {% if previous_outputs.cognitive_debate_loop %}
-      - Rounds: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'loops_completed', 'Unknown') }}
-      - Final Score: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'final_score', 'Unknown') }}
-      - Status: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'status', 'completed') }}
+      {% set loop_output = get_loop_output('cognitive_debate_loop', previous_outputs) %}
+      {% if loop_output %}
+      - Rounds: {{ safe_get(loop_output, 'loops_completed', 'Unknown') }}
+      - Final Score: {{ safe_get(loop_output, 'final_score', 'Unknown') }}
+      - Status: {{ safe_get(loop_output, 'status', 'completed') }}
       {% endif %}
       
       PROGRESSION: [How debate evolved in 2-3 sentences]
@@ -469,9 +470,10 @@ agents:
       QUESTION: {{ get_input() }}
       
       DEBATE RESULTS:
-      {% if previous_outputs.cognitive_debate_loop %}
-      - Rounds: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'loops_completed', 'Unknown') }}
-      - Score: {{ safe_get(previous_outputs.cognitive_debate_loop.result, 'final_score', 'Unknown') }}
+      {% set loop_output = get_loop_output('cognitive_debate_loop', previous_outputs) %}
+      {% if loop_output %}
+      - Rounds: {{ safe_get(loop_output, 'loops_completed', 'Unknown') }}
+      - Score: {{ safe_get(loop_output, 'final_score', 'Unknown') }}
       {% endif %}
       
       META-ANALYSIS: {{ safe_get_response('meta_debate_reflection', 'No analysis') | truncate(200) }}

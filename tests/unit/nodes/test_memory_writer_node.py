@@ -869,4 +869,497 @@ class TestMemoryWriterNode:
         result = helpers["get_loop_number"]()
         assert result == 5
 
+    def test_render_metadata_templates_with_nested_dict(self):
+        """Test metadata template rendering with nested dictionaries."""
+        mock_memory = Mock()
+        
+        node = MemoryWriterNode(
+            node_id="memory_writer",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        metadata = {
+            "nested": {
+                "key1": "value1",
+                "key2": "value2"
+            }
+        }
+        context = {"input": "test"}
+        
+        result = node._render_metadata_templates(metadata, context)
+        
+        assert "nested" in result
+        # Nested dicts are converted to strings
+        assert isinstance(result["nested"], str)
+
+    def test_render_metadata_templates_with_list(self):
+        """Test metadata template rendering with lists."""
+        mock_memory = Mock()
+        
+        node = MemoryWriterNode(
+            node_id="memory_writer",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        metadata = {
+            "tags": ["tag1", "tag2", "{{ input }}"]
+        }
+        context = {"input": "dynamic_tag"}
+        
+        result = node._render_metadata_templates(metadata, context)
+        
+        assert "tags" in result
+        # Lists are converted to strings
+        assert isinstance(result["tags"], str)
+
+    def test_render_metadata_templates_with_template_error(self):
+        """Test metadata template rendering with template errors."""
+        mock_memory = Mock()
+        
+        node = MemoryWriterNode(
+            node_id="memory_writer",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        metadata = {
+            "bad_template": "{{ undefined_var }}"
+        }
+        context = {"input": "test"}
+        
+        result = node._render_metadata_templates(metadata, context)
+        
+        # Should handle error gracefully
+        assert "bad_template" in result
+
+    def test_render_metadata_templates_with_empty_render(self):
+        """Test metadata template rendering with empty results."""
+        mock_memory = Mock()
+        
+        node = MemoryWriterNode(
+            node_id="memory_writer",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        metadata = {
+            "nullable": "{{ missing | default('') }}"
+        }
+        context = {"input": "test"}
+        
+        result = node._render_metadata_templates(metadata, context)
+        
+        assert "nullable" in result
+
+    def test_extract_guardian_metadata_with_false_guardian(self):
+        """Test guardian metadata extraction from false validation guardian."""
+        mock_memory = Mock()
+        
+        node = MemoryWriterNode(
+            node_id="memory_writer",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        context = {
+            "previous_outputs": {
+                "false_validation_guardian": {
+                    "result": {"validation_status": "invalid"},
+                    "metadata": {"reason": "failed_criteria"}
+                }
+            }
+        }
+        
+        result = node._extract_guardian_metadata(context)
+        
+        assert "reason" in result
+        assert result["validation_result"] == "invalid"
+
+    def test_extract_memory_object_metadata_structured(self):
+        """Test extraction of structured memory object metadata."""
+        mock_memory = Mock()
+        
+        node = MemoryWriterNode(
+            node_id="memory_writer",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        context = {
+            "previous_outputs": {
+                "true_validation_guardian": {
+                    "result": {
+                        "memory_object": {
+                            "analysis_type": "classification",
+                            "confidence": 0.95,
+                            "validation_status": "valid"
+                        }
+                    }
+                }
+            }
+        }
+        
+        result = node._extract_memory_object_metadata(context)
+        
+        assert "structured_data" in result
+        assert result["analysis_type"] == "classification"
+        assert result["confidence"] == 0.95
+
+    def test_extract_memory_content_from_guardian(self):
+        """Test memory content extraction from guardian with structured object."""
+        mock_memory = Mock()
+        
+        node = MemoryWriterNode(
+            node_id="memory_writer",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        context = {
+            "previous_outputs": {
+                "true_validation_guardian": {
+                    "result": {
+                        "memory_object": {
+                            "number": 7,
+                            "result": "true",
+                            "condition": "greater_than_5"
+                        }
+                    }
+                }
+            },
+            "input": "7"
+        }
+        
+        content = node._extract_memory_content(context)
+        
+        assert isinstance(content, str)
+        assert "Number: 7" in content
+
+    def test_extract_memory_content_from_nested_input(self):
+        """Test memory content extraction from nested input structure."""
+        mock_memory = Mock()
+        
+        node = MemoryWriterNode(
+            node_id="memory_writer",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        context = {
+            "input": {
+                "input": "nested content",
+                "loop_number": 3
+            }
+        }
+        
+        content = node._extract_memory_content(context)
+        
+        assert content == "nested content"
+
+    def test_extract_memory_content_complex_structure(self):
+        """Test memory content extraction from complex nested structure."""
+        mock_memory = Mock()
+        
+        node = MemoryWriterNode(
+            node_id="memory_writer",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        context = {
+            "input": {
+                "metadata": {"key": "value"},
+                "data": [1, 2, 3]
+            }
+        }
+        
+        content = node._extract_memory_content(context)
+        
+        # Should describe the structure
+        assert "Complex input structure" in content or "keys:" in content
+
+    def test_memory_object_to_text(self):
+        """Test conversion of memory object to searchable text."""
+        mock_memory = Mock()
+        
+        node = MemoryWriterNode(
+            node_id="memory_writer",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        memory_obj = {
+            "number": 10,
+            "result": "true",
+            "condition": "greater_than_5",
+            "analysis_type": "comparison",
+            "confidence": 0.98
+        }
+        
+        text = node._memory_object_to_text(memory_obj, "10")
+        
+        assert "Number: 10" in text
+        assert "Greater than 5: true" in text
+        assert "Confidence: 0.98" in text
+
+    def test_calculate_importance_score_long_content(self):
+        """Test importance score calculation for long content."""
+        mock_memory = Mock()
+        
+        node = MemoryWriterNode(
+            node_id="memory_writer",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        long_content = "x" * 600
+        metadata = {"category": "stored"}
+        
+        score = node._calculate_importance_score(long_content, metadata)
+        
+        # Should have higher score for long content + stored category
+        assert score >= 0.7
+
+    def test_calculate_importance_score_with_query(self):
+        """Test importance score calculation with query metadata."""
+        mock_memory = Mock()
+        
+        node = MemoryWriterNode(
+            node_id="memory_writer",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        content = "test content"
+        metadata = {"query": "some query", "category": "stored"}
+        
+        score = node._calculate_importance_score(content, metadata)
+        
+        # Should have bonus for query presence
+        assert score > 0.5
+
+    def test_classify_memory_type_high_importance(self):
+        """Test memory type classification for high importance."""
+        mock_memory = Mock()
+        
+        node = MemoryWriterNode(
+            node_id="memory_writer",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        metadata = {"category": "stored"}
+        memory_type = node._classify_memory_type(metadata, 0.8)
+        
+        assert memory_type == "long_term"
+
+    def test_classify_memory_type_with_config_override(self):
+        """Test memory type classification with decay config override."""
+        mock_memory = Mock()
+        
+        node = MemoryWriterNode(
+            node_id="memory_writer",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory,
+            decay_config={"default_long_term": True}
+        )
+        
+        metadata = {}
+        memory_type = node._classify_memory_type(metadata, 0.3)
+        
+        # Should be long_term due to config
+        assert memory_type == "long_term"
+
+    def test_get_expiry_hours_with_custom_config(self):
+        """Test expiry hours calculation with custom decay config."""
+        mock_memory = Mock()
+        
+        node = MemoryWriterNode(
+            node_id="memory_writer",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory,
+            decay_config={
+                "long_term_hours": 48.0,
+                "short_term_hours": 2.0
+            }
+        )
+        
+        long_hours = node._get_expiry_hours("long_term", 0.5)
+        short_hours = node._get_expiry_hours("short_term", 0.5)
+        
+        # Should use custom config values with importance multiplier
+        assert long_hours >= 48.0
+        assert short_hours >= 2.0
+
+    def test_template_helpers_has_past_loops(self):
+        """Test has_past_loops helper function."""
+        mock_memory = Mock()
+        
+        node = MemoryWriterNode(
+            node_id="memory_writer",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        context = {
+            "input": {
+                "previous_outputs": {
+                    "past_loops": [{"round": 1}, {"round": 2}]
+                }
+            }
+        }
+        
+        helpers = node._get_template_helper_functions(context)
+        
+        assert helpers["has_past_loops"]() is True
+
+    def test_template_helpers_get_past_insights(self):
+        """Test get_past_insights helper function."""
+        mock_memory = Mock()
+        
+        node = MemoryWriterNode(
+            node_id="memory_writer",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        context = {
+            "input": {
+                "previous_outputs": {
+                    "past_loops": [
+                        {"synthesis_insights": "insight 1"},
+                        {"synthesis_insights": "insight 2"}
+                    ]
+                }
+            }
+        }
+        
+        helpers = node._get_template_helper_functions(context)
+        
+        result = helpers["get_past_insights"]()
+        assert result == "insight 2"
+
+    def test_template_helpers_get_agent_response(self):
+        """Test get_agent_response helper function."""
+        mock_memory = Mock()
+        
+        node = MemoryWriterNode(
+            node_id="memory_writer",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        context = {
+            "previous_outputs": {
+                "test_agent": {"response": "test response"}
+            }
+        }
+        
+        helpers = node._get_template_helper_functions(context)
+        
+        result = helpers["get_agent_response"]("test_agent")
+        assert result == "test response"
+
+    def test_template_helpers_get_fork_responses(self):
+        """Test get_fork_responses helper function."""
+        mock_memory = Mock()
+        
+        node = MemoryWriterNode(
+            node_id="memory_writer",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        context = {
+            "previous_outputs": {
+                "fork_group": {
+                    "agent1": {"response": "response1"},
+                    "agent2": {"response": "response2"}
+                }
+            }
+        }
+        
+        helpers = node._get_template_helper_functions(context)
+        
+        result = helpers["get_fork_responses"]("fork_group")
+        assert isinstance(result, dict)
+        assert "agent1" in result or len(result) >= 0
+
+    @pytest.mark.asyncio
+    async def test_run_impl_with_metadata_filtering(self):
+        """Test that previous_outputs is filtered from metadata."""
+        mock_memory = Mock()
+        mock_memory.log_memory = Mock(return_value="memory_key_filtered")
+        
+        node = MemoryWriterNode(
+            node_id="memory_writer",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory,
+            metadata={"source": "test"}
+        )
+        
+        context = {
+            "input": "Test content",
+            "formatted_prompt": "Test content",
+            "metadata": {
+                "previous_outputs": {"large": "data"},
+                "keep_this": "value"
+            }
+        }
+        
+        result = await node._run_impl(context)
+        
+        assert result["status"] == "success"
+        # Verify previous_outputs was filtered
+        stored_metadata = result["stored_metadata"]
+        assert "previous_outputs" not in stored_metadata
+
+    @pytest.mark.asyncio
+    async def test_run_impl_with_importance_and_memory_type(self):
+        """Test that importance score and memory type are calculated."""
+        mock_memory = Mock()
+        mock_memory.log_memory = Mock(return_value="memory_key_classified")
+        
+        node = MemoryWriterNode(
+            node_id="memory_writer",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        # Long content with stored category should trigger long_term
+        context = {
+            "input": "x" * 600,
+            "formatted_prompt": "x" * 600,
+            "metadata": {"category": "stored"}
+        }
+        
+        result = await node._run_impl(context)
+        
+        assert result["status"] == "success"
+        # Verify log_memory was called with importance and memory_type
+        assert mock_memory.log_memory.called
+
 

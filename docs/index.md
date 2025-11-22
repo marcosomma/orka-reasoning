@@ -91,6 +91,7 @@ Welcome to the OrKa documentation hub. This index provides a comprehensive map o
 | [agents.md](agents.md) | Agent fundamentals | 🟢 Current | 2025-11 |
 | [agents-advanced.md](agents-advanced.md) | Advanced agent patterns | 🟢 Current | 2025-11 |
 | [extending-agents.md](extending-agents.md) | Creating custom agents | 🟢 Current | 2025-11 |
+| [TEMPLATE_FILTERS.md](TEMPLATE_FILTERS.md) | Custom Jinja2 filters & functions | 🟢 Current | 2025-11 |
 | [AGENT_NODE_TOOL_INDEX.md](AGENT_NODE_TOOL_INDEX.md) | Agent/node/tool reference | 🟢 Current | 2025-11 |
 | [AGENT_SCOPING.md](AGENT_SCOPING.md) | Agent isolation/scoping | 🟢 Current | 2025-11 |
 | [GRAPH_SCOUT_AGENT.md](GRAPH_SCOUT_AGENT.md) | GraphScout intelligent routing | 🟢 Current | 2025-11 |

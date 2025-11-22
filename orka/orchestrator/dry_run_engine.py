@@ -21,6 +21,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
+from ..utils.json_parser import parse_llm_json
 from .llm_response_schemas import validate_path_evaluation, validate_path_validation
 
 logger = logging.getLogger(__name__)
@@ -1437,64 +1438,21 @@ IMPORTANT: Make each evaluation UNIQUE and SPECIFIC to the path and question typ
             raise
 
     def _extract_json_from_response(self, response: str) -> Optional[str]:
-        """Extract JSON from LLM response, handling various formats."""
-        import re
-
-        # Clean the response
-        response = response.strip()
-
-        # Try to parse the response directly as JSON
-        try:
-            json.loads(response)
-            return response
-        except json.JSONDecodeError:
-            pass
-
-        # Try to extract JSON from code blocks (```json ... ```)
-        json_match = re.search(r"```json\s*\n(.*?)\n```", response, re.DOTALL | re.IGNORECASE)
-        if json_match:
-            json_content = json_match.group(1).strip()
-            try:
-                json.loads(json_content)
-                return json_content
-            except json.JSONDecodeError:
-                pass
-
-        # Try to extract JSON from code blocks (``` ... ```)
-        json_match = re.search(r"```\s*\n(.*?)\n```", response, re.DOTALL)
-        if json_match:
-            json_content = json_match.group(1).strip()
-            try:
-                json.loads(json_content)
-                return json_content
-            except json.JSONDecodeError:
-                pass
-
-        # Look for { ... } blocks (greedy match for complete JSON)
-        json_match = re.search(r"\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}", response, re.DOTALL)
-        if json_match:
-            json_content = json_match.group(0).strip()
-            try:
-                json.loads(json_content)
-                return json_content
-            except json.JSONDecodeError:
-                pass
-
-        # Try to fix common JSON issues
-        # Remove trailing commas
-        cleaned_response = re.sub(r",\s*}", "}", response)
-        cleaned_response = re.sub(r",\s*]", "]", cleaned_response)
-
-        # Try parsing the cleaned response
-        try:
-            json.loads(cleaned_response)
-            return cleaned_response
-        except json.JSONDecodeError:
-            pass
-
-        # No valid JSON found
-        logger.warning(f"Could not extract valid JSON from response: {response[:200]}...")
-        return None
+        """
+        Extract JSON from LLM response, handling various formats.
+        
+        Uses the robust JSON parser from orka.utils.json_parser.
+        """
+        from ..utils.json_parser import extract_json_from_text, repair_malformed_json
+        
+        # First try to extract
+        extracted = extract_json_from_text(response)
+        if extracted:
+            return extracted
+        
+        # If extraction failed, try repair on the original response
+        repaired = repair_malformed_json(response)
+        return repaired
 
 
 # Keep backward compatibility by aliasing the new class

@@ -63,7 +63,8 @@ def test_parse_llm_output_wrong_format():
     parsed = agent._parse_llm_output(raw_output, "prompt")
     
     assert parsed["valid"] is False
-    assert "LLM returned wrong JSON format" in parsed["reason"]
+    # Updated to match new parser's error message
+    assert "missing 'valid' field" in parsed["reason"]
 
 @pytest.mark.asyncio
 async def test_run_impl(agent_params):

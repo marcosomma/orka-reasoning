@@ -62,6 +62,7 @@ from openai import AsyncOpenAI
 logger = logging.getLogger(__name__)
 
 from ..contracts import Context
+from ..utils.json_parser import parse_llm_json, create_standard_schema
 from .base_agent import BaseAgent
 
 # Load environment variables
@@ -248,37 +249,50 @@ def parse_llm_json_response(
                 "internal_reasoning": "Empty or invalid response",
             }
 
-        cleaned_text = response_text.strip()
+        # Use the new robust JSON parser with schema validation
+        schema = create_standard_schema(
+            required_fields=["response"],
+            optional_fields={
+                "confidence": "number",
+                "internal_reasoning": "string",
+            },
+        )
 
-        # Extract reasoning and clean text
-        reasoning_content, cleaned_text = _extract_reasoning(cleaned_text)
+        result = parse_llm_json(
+            response_text,
+            schema=schema,
+            strict=False,  # Don't raise exceptions, return fallback
+            coerce_types=True,  # Try to fix type mismatches
+            track_errors=True,
+            agent_id=agent_id,
+        )
 
-        # Extract JSON content
-        json_content = _extract_json_content(cleaned_text)
-
-        # Parse JSON safely
-        parsed_json = _parse_json_safely(json_content)
-
-        # Track silent degradation if JSON parsing failed
-        if not parsed_json and error_tracker:
-            error_tracker.record_silent_degradation(
-                agent_id,
-                "json_parsing_failure",
-                f"Failed to parse JSON, falling back to raw text: {json_content[:100]}...",
-            )
-
-        # Build response dictionary
-        result = _build_response_dict(parsed_json, cleaned_text)
-
-        # Add reasoning if extracted from <think> blocks
-        if reasoning_content:
-            if not result.get("internal_reasoning"):
-                result["internal_reasoning"] = f"Reasoning: {reasoning_content[:200]}..."
-            else:
-                current = result["internal_reasoning"]
-                result["internal_reasoning"] = (
-                    f"{current} | Reasoning: {reasoning_content[:200]}..."
+        # Handle parse failures
+        if "error" in result and result.get("error") == "json_parse_failed":
+            if error_tracker:
+                error_tracker.record_silent_degradation(
+                    agent_id,
+                    "json_parsing_failure",
+                    result.get("message", "Unknown parsing error"),
                 )
+            # Return fallback structure
+            return {
+                "response": result.get("original_text", response_text)[:500],
+                "confidence": "0.0",
+                "internal_reasoning": "JSON parsing failed, using raw text",
+            }
+
+        # Ensure required fields exist with proper types
+        if "response" not in result:
+            result["response"] = response_text[:500]
+        if "confidence" not in result:
+            result["confidence"] = "0.5"
+        if "internal_reasoning" not in result:
+            result["internal_reasoning"] = "Parsed from LLM response"
+
+        # Convert confidence to string if it's a number
+        if isinstance(result.get("confidence"), (int, float)):
+            result["confidence"] = str(result["confidence"])
 
         return result
 

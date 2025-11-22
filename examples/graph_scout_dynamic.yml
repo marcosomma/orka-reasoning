@@ -65,7 +65,7 @@ agents:
       Analyze the question and available workflow paths:
       Question: {input}
       {% if previous_outputs.input_classifier %}
-      Classification: {previous_outputs.input_classifier.response}
+      Classification: {{ safe_get_response('input_classifier', 'Unknown', previous_outputs) }}
       {% endif %}
 
       Consider:

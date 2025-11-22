@@ -114,7 +114,7 @@ agents:
             Analyze: {{ input }}
             
             {% if previous_outputs.data_retriever %}
-            Data: {{ previous_outputs.data_retriever.result }}
+            Data: {{ safe_get(previous_outputs, 'data_retriever.result', 'No data available') }}
             {% endif %}
         
         - id: generator

@@ -159,8 +159,9 @@ agents:
       - Threshold (0.85) met: {{ previous_outputs.validation_loop.threshold_met }}
       
       ## Evolution Summary
-      {% if previous_outputs.validation_loop.response.past_loops %}
-      {% for past_loop in previous_outputs.validation_loop.response.past_loops %}
+      {% set loop_result = get_loop_output('validation_loop', previous_outputs) %}
+      {% if loop_result.past_loops %}
+      {% for past_loop in loop_result.past_loops %}
       **Loop {{ past_loop.loop_number }}** (Score: {{ past_loop.score }}):
       - Improvements made: {{ past_loop.improvements }}
       - Remaining issues: {{ past_loop.mistakes }}
@@ -168,7 +169,7 @@ agents:
       {% endif %}
       
       ## Final Path
-      {{ previous_outputs.validation_loop.response.result.path_improver.response }}
+      {{ safe_get(loop_result, 'result.path_improver.response', 'No final path available') }}
       
       {% else %}
       No validation loop results available.

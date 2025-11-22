@@ -361,3 +361,145 @@ class TestGraphAPI:
             "module": "unittest.mock",
             "node_id": "test_node_id",
         }
+
+    @pytest.mark.asyncio
+    async def test_build_edges_dynamic_strategy(self):
+        """Test _build_edges with dynamic orchestrator strategy."""
+        api = GraphAPI()
+
+        mock_orchestrator = Mock()
+        mock_orchestrator.orchestrator_cfg = {
+            "strategy": "dynamic",
+            "agents": ["agent1", "agent2", "agent3"]
+        }
+
+        edges = await api._build_edges(mock_orchestrator)
+
+        # Dynamic strategy creates edges between all pairs (no self-loops)
+        # 3 agents = 3 * 2 = 6 edges
+        assert len(edges) == 6
+        assert all(edge.metadata["type"] == "dynamic" for edge in edges)
+
+    @pytest.mark.asyncio
+    async def test_build_edges_parallel_strategy(self):
+        """Test _build_edges with parallel/fork_join strategy."""
+        api = GraphAPI()
+
+        mock_orchestrator = Mock()
+        mock_orchestrator.orchestrator_cfg = {
+            "strategy": "fork_join",
+            "agents": ["fork", "agent1", "agent2", "join"]
+        }
+
+        edges = await api._build_edges(mock_orchestrator)
+
+        # Sequential edges for fork_join: 3 edges (fork->agent1, agent1->agent2, agent2->join)
+        assert len(edges) == 3
+        assert all(edge.metadata["type"] == "fork_join" for edge in edges)
+
+    @pytest.mark.asyncio
+    async def test_build_edges_unknown_strategy(self):
+        """Test _build_edges with unknown strategy."""
+        api = GraphAPI()
+
+        mock_orchestrator = Mock()
+        mock_orchestrator.orchestrator_cfg = {
+            "strategy": "unknown_strategy",
+            "agents": ["agent1", "agent2", "agent3"]
+        }
+
+        edges = await api._build_edges(mock_orchestrator)
+
+        # Unknown strategy creates single fallback edge (first to last)
+        assert len(edges) == 1
+        assert edges[0].src == "agent1"
+        assert edges[0].dst == "agent3"
+        assert edges[0].metadata["type"] == "fallback"
+
+    @pytest.mark.asyncio
+    async def test_build_edges_no_orchestrator_cfg(self):
+        """Test _build_edges when orchestrator has no config."""
+        api = GraphAPI()
+
+        mock_orchestrator = Mock(spec=[])  # No orchestrator_cfg attribute
+
+        edges = await api._build_edges(mock_orchestrator)
+
+        assert edges == []
+
+    @pytest.mark.asyncio
+    async def test_build_edges_with_exception(self):
+        """Test _build_edges when exception occurs."""
+        api = GraphAPI()
+
+        mock_orchestrator = Mock()
+        mock_orchestrator.orchestrator_cfg = Mock(side_effect=Exception("Config error"))
+
+        edges = await api._build_edges(mock_orchestrator)
+
+        assert edges == []
+
+    @pytest.mark.asyncio
+    async def test_get_current_node_from_queue(self):
+        """Test _get_current_node retrieves from queue."""
+        api = GraphAPI()
+
+        mock_orchestrator = Mock()
+        mock_orchestrator.queue = ["current_agent", "next_agent"]
+        mock_orchestrator.orchestrator_cfg = {"agents": ["agent1", "agent2"]}
+
+        current = await api._get_current_node(mock_orchestrator, "run_123")
+
+        assert current == "current_agent"
+
+    @pytest.mark.asyncio
+    async def test_get_current_node_from_config_fallback(self):
+        """Test _get_current_node falls back to config when queue is empty."""
+        api = GraphAPI()
+
+        mock_orchestrator = Mock()
+        mock_orchestrator.queue = []
+        mock_orchestrator.orchestrator_cfg = {"agents": ["first_agent", "second_agent"]}
+
+        current = await api._get_current_node(mock_orchestrator, "run_123")
+
+        assert current == "first_agent"
+
+    @pytest.mark.asyncio
+    async def test_get_current_node_unknown_fallback(self):
+        """Test _get_current_node returns 'unknown' when no data available."""
+        api = GraphAPI()
+
+        mock_orchestrator = Mock(spec=[])  # No attributes
+
+        current = await api._get_current_node(mock_orchestrator, "run_123")
+
+        assert current == "unknown"
+
+    @pytest.mark.asyncio
+    async def test_build_edges_single_agent(self):
+        """Test _build_edges with single agent (no edges)."""
+        api = GraphAPI()
+
+        mock_orchestrator = Mock()
+        mock_orchestrator.orchestrator_cfg = {
+            "strategy": "sequential",
+            "agents": ["only_agent"]
+        }
+
+        edges = await api._build_edges(mock_orchestrator)
+
+        # Single agent = no edges
+        assert len(edges) == 0
+
+    @pytest.mark.asyncio
+    async def test_extract_nodes_with_exception(self):
+        """Test _extract_nodes handles exceptions gracefully."""
+        api = GraphAPI()
+
+        mock_orchestrator = Mock()
+        mock_orchestrator.agents = Mock(side_effect=Exception("Agent error"))
+
+        nodes = await api._extract_nodes(mock_orchestrator)
+
+        assert nodes == {}

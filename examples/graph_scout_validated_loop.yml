@@ -60,7 +60,7 @@ agents:
             k_beam: 5
             max_depth: 3
             commit_margin: 0.1  # Margin for commitment decision (shortlist when close competition)
-            require_terminal: true  # Prefer paths ending with response builders
+            require_terminal: false  # Prefer paths ending with response builders
             score_weights:
               llm: 0.5
               heuristics: 0.25
@@ -118,7 +118,9 @@ agents:
           timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
           
           # Boolean scoring configuration (lenient for shortlist proposals)
-          scoring_preset: lenient
+          scoring_preset: moderate
+          scoring_params:
+            strict_mode: false  # Lenient validation
           custom_weights:
             completeness.has_all_required_steps: 0.10
             coherence.logical_agent_sequence: 0.02
@@ -154,7 +156,7 @@ agents:
       Analyze the following for: {{ input }}
       
       {% if previous_outputs.search_agent %}
-      Search Results: {{ previous_outputs.search_agent.response }}
+      Search Results: {{ safe_get_response('search_agent', 'No search results', previous_outputs) }}
       {% endif %}
       
       Provide comprehensive analysis.
@@ -200,15 +202,15 @@ agents:
       Create a comprehensive response for: {{ input }}
       
       {% if previous_outputs.memory_reader %}
-      Context: {{ previous_outputs.memory_reader.response }}
+      Context: {{ safe_get_response('memory_reader', 'No context', previous_outputs) }}
       {% endif %}
       
       {% if previous_outputs.search_agent %}
-      Search Results: {{ previous_outputs.search_agent.response }}
+      Search Results: {{ safe_get_response('search_agent', 'No search results', previous_outputs) }}
       {% endif %}
       
       {% if previous_outputs.analysis_agent %}
-      Analysis: {{ previous_outputs.analysis_agent.response }}
+      Analysis: {{ safe_get_response('analysis_agent', 'No analysis', previous_outputs) }}
       {% endif %}
       
       Provide a clear, well-structured response.
@@ -230,7 +232,7 @@ agents:
       # Validated Path Execution Plan
       
       {% if previous_outputs.path_discovery_loop %}
-      {% set loop_result = previous_outputs.path_discovery_loop.response %}
+      {% set loop_result = get_loop_output('path_discovery_loop', previous_outputs) %}
       
       ## Validation Summary
       - Loops Required: {{ previous_outputs.path_discovery_loop.loops_completed | default('N/A') }}
@@ -282,7 +284,7 @@ agents:
       
       ## Execution Results
       {% if previous_outputs.path_executor %}
-      {% set executor = previous_outputs.path_executor.response %}
+      {% set executor = get_loop_output('path_executor', previous_outputs) %}
       - Execution Status: {{ (executor.status | default('unknown')) | upper }}
       - Executed Path: {{ executor.executed_path | default([]) }}
       - Agents Completed: {{ (executor.results | default({})) | length }}

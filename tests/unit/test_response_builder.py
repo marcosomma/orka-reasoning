@@ -166,3 +166,141 @@ class TestResponseBuilder:
         assert "result" in legacy  # "response" mapped to "result"
         assert "memory_entries" in legacy  # "memories" mapped to "memory_entries"
 
+    def test_create_success_response_with_trace_id(self):
+        """Test create_success_response with trace_id."""
+        result = ResponseBuilder.create_success_response(
+            result="test",
+            component_id="test",
+            component_type="agent",
+            trace_id="trace-123",
+        )
+        
+        assert result["trace_id"] == "trace-123"
+
+    def test_create_success_response_with_metadata_and_metrics(self):
+        """Test create_success_response with metadata and metrics."""
+        result = ResponseBuilder.create_success_response(
+            result="test",
+            component_id="test",
+            component_type="agent",
+            metadata={"key1": "value1"},
+            metrics={"duration": 100},
+        )
+        
+        assert result["metadata"]["key1"] == "value1"
+        assert result["metrics"]["duration"] == 100
+
+    def test_create_error_response_with_trace_id(self):
+        """Test create_error_response with trace_id."""
+        result = ResponseBuilder.create_error_response(
+            error="Test error",
+            component_id="test",
+            component_type="agent",
+            trace_id="trace-456",
+        )
+        
+        assert result["trace_id"] == "trace-456"
+
+    def test_create_error_response_with_partial_result(self):
+        """Test create_error_response with partial result."""
+        result = ResponseBuilder.create_error_response(
+            error="Test error",
+            component_id="test",
+            component_type="agent",
+            result="partial output",
+        )
+        
+        assert result["result"] == "partial output"
+        assert result["status"] == "error"
+
+    def test_from_node_response_with_output_field(self):
+        """Test from_node_response when using 'output' field."""
+        legacy_response = {
+            "output": "node output via output field",
+        }
+        
+        result = ResponseBuilder.from_node_response(legacy_response, "node1")
+        
+        assert result["result"] == "node output via output field"
+
+    def test_from_node_response_direct_value(self):
+        """Test from_node_response when response is direct value."""
+        legacy_response = {"some": "data", "without": "result"}
+        
+        result = ResponseBuilder.from_node_response(legacy_response, "node1")
+        
+        # Should use entire response as result when no result/output field
+        assert result["result"] == legacy_response
+
+    def test_extract_legacy_fields_with_answer(self):
+        """Test extract_legacy_fields with 'answer' field."""
+        response = {
+            "answer": "test answer",
+            "content": "test content",
+            "text": "test text",
+            "_metrics": {"token_count": 50},
+        }
+        
+        legacy = ResponseBuilder.extract_legacy_fields(response)
+        
+        # First matching field should be used
+        assert legacy["result"] in ["test answer", "test content", "test text"]
+        assert legacy["metrics"]["token_count"] == 50
+
+    def test_from_llm_agent_response_with_all_fields(self):
+        """Test from_llm_agent_response with all optional fields."""
+        legacy_response = {
+            "response": "LLM output",
+            "confidence": "0.95",
+            "internal_reasoning": "Reasoning process",
+            "formatted_prompt": "Formatted prompt text",
+            "token_usage": 150,
+            "cost_usd": 0.002,
+            "metadata": {"model": "gpt-4"},
+            "_metrics": {"latency_ms": 500},
+        }
+        
+        result = ResponseBuilder.from_llm_agent_response(legacy_response, "agent1")
+        
+        assert result["result"] == "LLM output"
+        assert result["formatted_prompt"] == "Formatted prompt text"
+        assert result["internal_reasoning"] == "Reasoning process"
+        assert result["token_usage"] == 150
+        assert result["cost_usd"] == 0.002
+        assert result["metadata"]["model"] == "gpt-4"
+        assert result["metrics"]["latency_ms"] == 500
+
+    def test_from_memory_agent_response_with_all_fields(self):
+        """Test from_memory_agent_response with all fields."""
+        legacy_response = {
+            "memories": [{"key": "test1"}, {"key": "test2"}],
+            "num_results": 2,
+            "metadata": {"source": "redis"},
+            "_metrics": {"search_time_ms": 50},
+        }
+        
+        result = ResponseBuilder.from_memory_agent_response(legacy_response, "memory1")
+        
+        assert len(result["memory_entries"]) == 2
+        assert result["metadata"]["source"] == "redis"
+        assert result["metrics"]["search_time_ms"] == 50
+
+    def test_create_error_response_with_metadata_and_metrics(self):
+        """Test create_error_response with metadata and metrics."""
+        result = ResponseBuilder.create_error_response(
+            error="Test error",
+            component_id="test",
+            component_type="agent",
+            metadata={"error_code": "E001"},
+            metrics={"retry_count": 3},
+        )
+        
+        assert result["metadata"]["error_code"] == "E001"
+        assert result["metrics"]["retry_count"] == 3
+
+    def test_validate_response_not_dict(self):
+        """Test validate_response with non-dict input."""
+        assert ResponseBuilder.validate_response("not a dict") is False
+        assert ResponseBuilder.validate_response(None) is False
+        assert ResponseBuilder.validate_response([]) is False
+

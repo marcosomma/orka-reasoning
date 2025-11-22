@@ -61,7 +61,7 @@ agents:
       Analyze the following information: {{ input }}
       
       {% if previous_outputs.search_specialist %}
-      Search Results: {{ previous_outputs.search_specialist.response }}
+      Search Results: {{ safe_get_response('search_specialist', 'No search results', previous_outputs) }}
       {% endif %}
       
       Provide comprehensive analysis with reasoning.
@@ -77,10 +77,10 @@ agents:
     prompt: |
       Store: {{ input }}
       {% if previous_outputs.search_specialist %}
-      Search: {{ previous_outputs.search_specialist.response }}
+      Search: {{ safe_get_response('search_specialist', 'No search', previous_outputs) }}
       {% endif %}
       {% if previous_outputs.reasoning_specialist %}
-      Analysis: {{ previous_outputs.reasoning_specialist.response }}
+      Analysis: {{ safe_get_response('reasoning_specialist', 'No analysis', previous_outputs) }}
       {% endif %}
 
   - id: response_specialist
@@ -94,11 +94,11 @@ agents:
       Create a comprehensive response for: {{ input }}
       
       {% if previous_outputs.search_specialist %}
-      Search Results: {{ previous_outputs.search_specialist.response }}
+      Search Results: {{ safe_get_response('search_specialist', 'No search results', previous_outputs) }}
       {% endif %}
       
       {% if previous_outputs.reasoning_specialist %}
-      Analysis: {{ previous_outputs.reasoning_specialist.response }}
+      Analysis: {{ safe_get_response('reasoning_specialist', 'No analysis', previous_outputs) }}
       {% endif %}
       
       Synthesize all information into a clear, well-structured response.

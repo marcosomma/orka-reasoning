@@ -1,0 +1,35 @@
+# Test workflow to verify custom template filters work end-to-end
+orchestrator:
+  id: test_template_filters
+  strategy: sequential
+  agents:
+    - agent1
+    - agent2
+    - final_synthesis
+
+agents:
+  - id: agent1
+    type: openai-gpt-4o-mini
+    prompt: "Analyze this topic: {{ input }}"
+    params:
+      temperature: 0.7
+      max_tokens: 100
+
+  - id: agent2  
+    type: openai-gpt-4o-mini
+    prompt: "Build on this analysis: {{ safe_get_response('agent1', 'No previous analysis') | truncate(150) }}"
+    params:
+      temperature: 0.7
+      max_tokens: 100
+
+  - id: final_synthesis
+    type: openai-gpt-4o-mini
+    prompt: |
+      Previous responses:
+      Agent 1: {{ safe_get_response('agent1', 'No response') | truncate(100) }}
+      Agent 2: {{ safe_get_response('agent2', 'No response') | truncate(100) }}
+      
+      Synthesize these perspectives on: {{ get_input() }}
+    params:
+      temperature: 0.5
+      max_tokens: 200

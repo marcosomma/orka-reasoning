@@ -100,7 +100,7 @@ agents:
       # Boolean Scoring Validation Report
       
       {% if previous_outputs.validation_loop_strict %}
-      {% set loop_result = previous_outputs.validation_loop_strict.response %}
+      {% set loop_result = get_loop_output('validation_loop_strict', previous_outputs) %}
       
       ## Summary
       - Total Iterations: {{ previous_outputs.validation_loop_strict.loops_completed | default(0) }}

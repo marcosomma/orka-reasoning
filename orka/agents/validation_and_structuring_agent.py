@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 from .base_agent import BaseAgent, Context
 from .llm_agents import OpenAIAnswerBuilder
+from ..utils.json_parser import parse_llm_json, create_standard_schema
 
 
 class ValidationAndStructuringAgent(BaseAgent):
@@ -82,6 +83,7 @@ class ValidationAndStructuringAgent(BaseAgent):
         Args:
             raw_llm_output: The raw output from the LLM
             prompt: The prompt used to generate the output
+            formatted_prompt: The formatted prompt (optional)
 
         Returns:
             Dict[str, Any]: The parsed validation result
@@ -93,68 +95,61 @@ class ValidationAndStructuringAgent(BaseAgent):
             "raw_llm_output": raw_llm_output,
         }
 
-        try:
-            # Look for JSON in markdown code blocks first
-            import re
+        # Define schema for validation output
+        schema = create_standard_schema(
+            required_fields=["valid"],
+            optional_fields={
+                "reason": "string",
+                "memory_object": "object",
+            },
+        )
 
-            json_match = re.search(r"```json\s*(.*?)\s*```", raw_llm_output, re.DOTALL)
-            json_text = json_match.group(1) if json_match else raw_llm_output
+        # Use robust JSON parser
+        result = parse_llm_json(
+            raw_llm_output,
+            schema=schema,
+            strict=False,
+            coerce_types=True,
+            track_errors=True,
+            agent_id=self.agent_id,
+        )
 
-            # Clean up the JSON text to handle potential formatting issues
-            json_text = json_text.strip()
-
-            # Try to fix common JSON issues
-            # Replace single quotes with double quotes (if any)
-            json_text = re.sub(r"'([^']*)':", r'"\1":', json_text)
-
-            # Parse JSON
-            result = json.loads(json_text)
-
-            # Handle non-dict responses
-            if not isinstance(result, dict):
-                return {
-                    **base_response,
-                    "valid": False,
-                    "reason": "Invalid JSON structure - not a dictionary",
-                    "memory_object": None,
-                }
-
-            # Handle dict responses based on their content
-            if "valid" in result:
-                # Add common fields to the result
-                result.update(base_response)
-                return result
-
-            if "response" in result:
-                return {
-                    **base_response,
-                    "valid": False,
-                    "reason": f"LLM returned wrong JSON format. Response: {result.get('response', 'Unknown')}",
-                    "memory_object": None,
-                }
-
-            # Handle unknown dict structure
+        # Handle parsing failures
+        if "error" in result and result.get("error") == "json_parse_failed":
+            logger.error(
+                f"[{self.agent_id}] JSON parsing failed: {result.get('message', 'Unknown error')}"
+            )
             return {
                 **base_response,
                 "valid": False,
-                "reason": "Invalid JSON structure - unrecognized format",
+                "reason": f"Failed to parse JSON: {result.get('message', 'Unknown error')}",
                 "memory_object": None,
             }
 
-        except (json.JSONDecodeError, ValueError, AttributeError) as e:
-            return {
-                **base_response,
-                "valid": False,
-                "reason": f"Failed to parse JSON: {e}",
-                "memory_object": None,
-            }
-        except Exception as e:
-            return {
-                **base_response,
-                "valid": False,
-                "reason": f"Unexpected error: {e}",
-                "memory_object": None,
-            }
+        # Ensure 'valid' field is boolean
+        if "valid" in result and not isinstance(result["valid"], bool):
+            # Try to coerce to boolean
+            if isinstance(result["valid"], str):
+                result["valid"] = result["valid"].lower() in ("true", "yes", "1")
+            else:
+                result["valid"] = bool(result["valid"])
+
+        # Ensure required structure
+        if "valid" not in result:
+            logger.warning(f"[{self.agent_id}] Missing 'valid' field in parsed result")
+            result["valid"] = False
+            result["reason"] = "Invalid JSON structure - missing 'valid' field"
+
+        if "reason" not in result:
+            result["reason"] = "No reason provided"
+
+        if "memory_object" not in result:
+            result["memory_object"] = None
+
+        # Add base response fields
+        result.update(base_response)
+
+        return result
 
     async def _run_impl(self, ctx: Context) -> Dict[str, Any]:
         """

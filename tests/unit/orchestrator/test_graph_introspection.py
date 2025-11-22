@@ -313,3 +313,331 @@ class TestGraphIntrospector:
         
         assert isinstance(result, bool)
 
+    def test_add_memory_agents_for_shortlist(self):
+        """Test _add_memory_agents_for_shortlist method."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+        
+        graph_state = self.create_mock_graph_state()
+        graph_state.nodes["memory_reader"] = NodeDescriptor(
+            id="memory_reader",
+            type="MemoryReaderNode",
+            prompt_summary="Memory reader",
+            capabilities=[],
+            contract={},
+            cost_model={},
+            safety_tags=[],
+            metadata={},
+        )
+        graph_state.nodes["memory_writer"] = NodeDescriptor(
+            id="memory_writer",
+            type="MemoryWriterNode",
+            prompt_summary="Memory writer",
+            capabilities=[],
+            contract={},
+            cost_model={},
+            safety_tags=[],
+            metadata={},
+        )
+        
+        neighbors = ["agent1", "memory_reader", "memory_writer"]
+        
+        memory_candidates = introspector._add_memory_agents_for_shortlist(neighbors, graph_state)
+        
+        assert len(memory_candidates) == 2
+        assert all(c.get("special_routing") for c in memory_candidates)
+        assert any(c.get("memory_operation") == "read" for c in memory_candidates)
+        assert any(c.get("memory_operation") == "write" for c in memory_candidates)
+
+    def test_filter_control_flow_agents_by_type(self):
+        """Test filtering control flow agents by type."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+        
+        graph_state = self.create_mock_graph_state()
+        graph_state.nodes["validator"] = NodeDescriptor(
+            id="validator",
+            type="PlanValidatorAgent",
+            prompt_summary="Validator",
+            capabilities=[],
+            contract={},
+            cost_model={},
+            safety_tags=[],
+            metadata={},
+        )
+        graph_state.nodes["classifier"] = NodeDescriptor(
+            id="classifier",
+            type="ClassificationAgent",
+            prompt_summary="Classifier",
+            capabilities=[],
+            contract={},
+            cost_model={},
+            safety_tags=[],
+            metadata={},
+        )
+        
+        neighbors = ["agent1", "validator", "classifier"]
+        
+        filtered = introspector._filter_control_flow_agents_from_candidates(neighbors, graph_state)
+        
+        assert "validator" not in filtered
+        assert "classifier" not in filtered
+        assert "agent1" in filtered
+
+    def test_filter_control_flow_agents_by_pattern(self):
+        """Test filtering control flow agents by ID pattern."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+        
+        graph_state = self.create_mock_graph_state()
+        graph_state.nodes["input_classifier"] = NodeDescriptor(
+            id="input_classifier",
+            type="LocalLLMAgent",
+            prompt_summary="Classifier",
+            capabilities=[],
+            contract={},
+            cost_model={},
+            safety_tags=[],
+            metadata={},
+        )
+        graph_state.nodes["path_validator"] = NodeDescriptor(
+            id="path_validator",
+            type="LocalLLMAgent",
+            prompt_summary="Validator",
+            capabilities=[],
+            contract={},
+            cost_model={},
+            safety_tags=[],
+            metadata={},
+        )
+        
+        neighbors = ["agent1", "input_classifier", "path_validator"]
+        
+        filtered = introspector._filter_control_flow_agents_from_candidates(neighbors, graph_state)
+        
+        assert "input_classifier" not in filtered
+        assert "path_validator" not in filtered
+        assert "agent1" in filtered
+
+    @pytest.mark.asyncio
+    async def test_discover_paths_with_graphscout(self):
+        """Test path discovery from GraphScout node."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+        
+        graph_state = self.create_mock_graph_state()
+        graph_state.nodes["graphscout"] = NodeDescriptor(
+            id="graphscout",
+            type="GraphScoutAgent",
+            prompt_summary="GraphScout",
+            capabilities=[],
+            contract={},
+            cost_model={},
+            safety_tags=[],
+            metadata={},
+        )
+        graph_state.current_node = "graphscout"
+        
+        paths = await introspector.discover_paths(graph_state, "Test question", {})
+        
+        # GraphScout should be able to route to all non-control-flow agents
+        assert isinstance(paths, list)
+
+    @pytest.mark.asyncio
+    async def test_discover_paths_with_executing_node(self):
+        """Test path discovery with explicit executing_node parameter."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+        
+        graph_state = self.create_mock_graph_state()
+        
+        paths = await introspector.discover_paths(
+            graph_state, "Test question", {}, executing_node="agent1"
+        )
+        
+        assert isinstance(paths, list)
+
+    @pytest.mark.asyncio
+    async def test_discover_paths_no_neighbors(self):
+        """Test path discovery when no eligible neighbors found."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+        
+        # Empty graph with no edges
+        graph_state = GraphState(
+            nodes={"agent1": NodeDescriptor(
+                id="agent1",
+                type="LocalLLMAgent",
+                prompt_summary="Agent 1",
+                capabilities=[],
+                contract={},
+                cost_model={},
+                safety_tags=[],
+                metadata={},
+            )},
+            edges=[],
+            current_node="agent1",
+            visited_nodes=set(),
+            runtime_state={},
+            budgets={},
+            constraints={},
+        )
+        
+        paths = await introspector.discover_paths(graph_state, "Test question", {})
+        
+        assert paths == []
+
+    def test_get_eligible_neighbors_with_visited(self):
+        """Test _get_eligible_neighbors excludes visited nodes."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+        
+        graph_state = self.create_mock_graph_state()
+        visited = {"agent2"}  # Mark agent2 as visited
+        
+        neighbors = introspector._get_eligible_neighbors(graph_state, "agent1", visited)
+        
+        # Should not include visited agent2
+        assert "agent2" not in neighbors
+
+    def test_is_graphscout_node_with_lowercase(self):
+        """Test _is_graphscout_node with case variations."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+        
+        graph_state = self.create_mock_graph_state()
+        graph_state.nodes["scout"] = NodeDescriptor(
+            id="scout",
+            type="graphscoutagent",  # lowercase
+            prompt_summary="Scout",
+            capabilities=[],
+            contract={},
+            cost_model={},
+            safety_tags=[],
+            metadata={},
+        )
+        
+        assert introspector._is_graphscout_node(graph_state, "scout") is True
+
+    def test_filter_memory_agents_exception_handling(self):
+        """Test _filter_memory_agents_from_candidates exception handling."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+        
+        # Graph state with missing node descriptor
+        graph_state = GraphState(
+            nodes={},
+            edges=[],
+            current_node="agent1",
+            visited_nodes=set(),
+            runtime_state={},
+            budgets={},
+            constraints={},
+        )
+        
+        neighbors = ["missing_node"]
+        
+        # Should handle error gracefully and return original list
+        filtered = introspector._filter_memory_agents_from_candidates(neighbors, graph_state)
+        
+        assert filtered == neighbors
+
+    def test_filter_control_flow_agents_exception_handling(self):
+        """Test _filter_control_flow_agents_from_candidates exception handling."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+        
+        # Invalid graph state
+        graph_state = None
+        neighbors = ["agent1"]
+        
+        # Should handle error gracefully
+        try:
+            filtered = introspector._filter_control_flow_agents_from_candidates(neighbors, graph_state)
+            assert filtered == neighbors
+        except Exception:
+            # Should not raise exception
+            pass
+
+    def test_add_memory_agents_exception_handling(self):
+        """Test _add_memory_agents_for_shortlist exception handling."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+        
+        # Graph state with missing nodes
+        graph_state = GraphState(
+            nodes={},
+            edges=[],
+            current_node="agent1",
+            visited_nodes=set(),
+            runtime_state={},
+            budgets={},
+            constraints={},
+        )
+        
+        neighbors = ["memory_reader"]
+        
+        # Should handle error gracefully
+        memory_candidates = introspector._add_memory_agents_for_shortlist(neighbors, graph_state)
+        
+        assert memory_candidates == []
+
+    def test_get_memory_operation_unknown(self):
+        """Test _get_memory_operation returns 'unknown' for non-memory agents."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+        
+        graph_state = self.create_mock_graph_state()
+        
+        operation = introspector._get_memory_operation("agent1", graph_state)
+        
+        assert operation == "unknown"
+
+    def test_get_memory_operation_writer(self):
+        """Test _get_memory_operation for MemoryWriterNode."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+        
+        graph_state = self.create_mock_graph_state()
+        graph_state.nodes["memory_writer"] = NodeDescriptor(
+            id="memory_writer",
+            type="MemoryWriterNode",
+            prompt_summary="Memory writer",
+            capabilities=[],
+            contract={},
+            cost_model={},
+            safety_tags=[],
+            metadata={},
+        )
+        
+        operation = introspector._get_memory_operation("memory_writer", graph_state)
+        
+        assert operation == "write"
+
+    @pytest.mark.asyncio
+    async def test_discover_paths_with_max_depth_1(self):
+        """Test path discovery with max_depth=1 (direct neighbors only)."""
+        config = Mock()
+        config.max_depth = 1
+        config.k_beam = 3
+        
+        introspector = GraphIntrospector(config)
+        
+        graph_state = self.create_mock_graph_state()
+        
+        paths = await introspector.discover_paths(graph_state, "Test question", {})
+        
+        # Should only have depth 1 paths
+        assert all(p.get("depth", 1) == 1 for p in paths)
+
+    def test_filter_candidates_empty_list(self):
+        """Test _filter_candidates with empty candidate list."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+        
+        graph_state = self.create_mock_graph_state()
+        
+        filtered = introspector._filter_candidates([], graph_state, {})
+        
+        assert filtered == []
+

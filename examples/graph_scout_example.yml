@@ -64,7 +64,7 @@ agents:
       
       Analyze the question and available workflow paths:
       Question: {{ input }}
-      Classification: {{ previous_outputs.input_classifier.response }}
+      Classification: {{ safe_get_response('input_classifier', 'Unknown', previous_outputs) }}
       
       Consider:
       - Question type and complexity
@@ -127,13 +127,13 @@ agents:
       
       Question: {{ input }}
       {% if previous_outputs.input_classifier %}
-      Classification: {{ previous_outputs.input_classifier.response }}
+      Classification: {{ safe_get_response('input_classifier', 'Unknown', previous_outputs) }}
       {% endif %}
       {% if previous_outputs.search_agent %}
-      Search Results: {{ previous_outputs.search_agent.result }}
+      Search Results: {{ safe_get(previous_outputs, 'search_agent.result', 'No search results') }}
       {% endif %}
       {% if previous_outputs.analysis_agent %}
-      Analysis: {{ previous_outputs.analysis_agent.response }}
+      Analysis: {{ safe_get_response('analysis_agent', 'No analysis', previous_outputs) }}
       {% endif %}
 
   # Final response builder
@@ -149,15 +149,15 @@ agents:
       
       Original Question: {{ input }}
       {% if previous_outputs.input_classifier %}
-      Question Type: {{ previous_outputs.input_classifier.response }}
+      Question Type: {{ safe_get_response('input_classifier', 'Unknown', previous_outputs) }}
       {% endif %}
 
       {% if previous_outputs.search_agent %}
-      Search Information: {{ previous_outputs.search_agent }}
+      Search Information: {{ safe_get_response('search_agent', 'No search info', previous_outputs) }}
       {% endif %}
 
       {% if previous_outputs.analysis_agent %}
-      Analysis: {{ previous_outputs.analysis_agent.response }}
+      Analysis: {{ safe_get_response('analysis_agent', 'No analysis', previous_outputs) }}
       {% endif %}
 
       {% if previous_outputs.memory_writer %}
