@@ -39,6 +39,7 @@ orchestrator:
   strategy: sequential
   agents:
     - routing_validation_loop
+    - path_executor            # Execute the validated path from GraphScout
     - execution_report
 
 agents:
@@ -256,16 +257,55 @@ agents:
       
       ---
       
+      ## Execution Results
+      
+      {% if previous_outputs.path_executor %}
+      {% set executor = previous_outputs.path_executor %}
+      
+      **Execution Status:** {{ 'SUCCESS ✓' if executor.status == 'success' else 'FAILED ✗' }}
+      **Agents Executed:** {{ executor.executed_path | default([]) | length }}
+      
+      {% if executor.executed_path %}
+      **Path Execution:**
+      {% for agent_id in executor.executed_path %}
+      - {{ agent_id }}
+      {% endfor %}
+      
+      **Final Result:**
+      {{ executor.result | default('No result available') }}
+      {% else %}
+      The validated path was not executed (validation threshold not met or execution error).
+      {% endif %}
+      {% else %}
+      PathExecutor did not run (validation loop may have failed).
+      {% endif %}
+      
+      ---
+      
       ## Your Analysis
       
       Provide:
       1. Why this path is optimal for the query
       2. How GraphScout improved across iterations
       3. Key strengths of the final path
-      4. Readiness for production execution
+      4. Whether the path was successfully executed and produced results
+      5. Readiness for production execution
       
       {% else %}
       No validation loop results available.
+      {% endif %}
+
+  # PathExecutor: Execute the validated path from the routing loop
+  - id: path_executor
+    type: path_executor
+    path_source: routing_validation_loop
+    on_agent_failure: continue
+    prompt: |
+      Execute the validated path from GraphScout:
+      
+      {% if previous_outputs.routing_validation_loop %}
+      {% set loop = previous_outputs.routing_validation_loop %}
+      Path to execute: {{ loop.response.result.graphscout_router.response if loop.response.result.graphscout_router else 'No path available' }}
       {% endif %}
 
   # Supporting agents that GraphScout can route to

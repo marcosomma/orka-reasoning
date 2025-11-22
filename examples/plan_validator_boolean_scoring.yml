@@ -96,37 +96,43 @@ agents:
           custom_weights:
             completeness.has_all_required_steps: 0.20
             efficiency.uses_appropriate_agents: 0.12
-        
-        # Supporting agents for GraphScout to route to
-        - id: data_retriever
-          type: duckduckgo
-          capabilities: [data_retrieval, web_search]
-          prompt: |
-            {{ input }}
-        
-        - id: analyzer
-          type: local_llm
-          capabilities: [analysis, reasoning]
-          model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
-          prompt: |
-            Analyze: {{ input }}
-            
-            {% if previous_outputs.data_retriever %}
-            Data: {{ safe_get_response('data_retriever', 'No data available', previous_outputs) }}
-            {% endif %}
-        
-        - id: generator
-          type: local_llm
-          capabilities: [answer_emit, generation, synthesis]
-          model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
-          prompt: |
-            Generate response for: {{ input }}
-            
-            Context: {{ previous_outputs }}
+
+  # ===== EXECUTION AGENTS (Top Level) =====
+  # CRITICAL: These agents MUST be at top-level, NOT inside internal_workflow
+  # - GraphScout discovers agents from orchestrator.agents (global registry)
+  # - PathExecutor can only execute agents in the global registry
+  # - Agents inside internal_workflow are scoped locally and NOT accessible
+  
+  # Supporting agents for GraphScout to route to
+  - id: data_retriever
+    type: duckduckgo
+    capabilities: [data_retrieval, web_search]
+    prompt: |
+      {{ input }}
+  
+  - id: analyzer
+    type: local_llm
+    capabilities: [analysis, reasoning]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Analyze: {{ input }}
+      
+      {% if previous_outputs.data_retriever %}
+      Data: {{ safe_get_response('data_retriever', 'No data available', previous_outputs) }}
+      {% endif %}
+  
+  - id: generator
+    type: local_llm
+    capabilities: [answer_emit, generation, synthesis]
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    prompt: |
+      Generate response for: {{ input }}
+      
+      Context: {{ previous_outputs }}
 
   # Execute the validated path
   - id: path_executor
@@ -180,19 +186,39 @@ agents:
       
       ## Execution Results
       {% if previous_outputs.path_executor %}
-      - Status: {{ previous_outputs.path_executor.status | upper }}
-      - Executed: {{ previous_outputs.path_executor.executed_path }}
-      - Agents Completed: {{ previous_outputs.path_executor.results | length }}
-      {% if previous_outputs.path_executor.errors %}
-      - Errors: {{ previous_outputs.path_executor.errors }}
+      {% set executor = previous_outputs.path_executor %}
+      
+      **Execution Status:** {{ 'SUCCESS ✓' if executor.status == 'success' else 'FAILED ✗' }}
+      **Agents Executed:** {{ executor.executed_path | default([]) | length }}
+      
+      {% if executor.executed_path %}
+      **Path Execution:**
+      {% for agent_id in executor.executed_path %}
+      - {{ agent_id }}
+      {% endfor %}
+      
+      **Final Result:**
+      {{ executor.result | default('No result available') }}
+      {% else %}
+      The validated path was not executed (validation threshold not met or execution error).
       {% endif %}
+      
+      {% if executor.errors %}
+      **Errors During Execution:**
+      {{ executor.errors }}
+      {% endif %}
+      {% else %}
+      PathExecutor did not run (validation loop may have failed).
       {% endif %}
       
       ---
       
       **Analysis:**
-      1. Why this path scored {{ (loop.final_score | default(0)) | round(3) }}
-      2. Execution effectiveness and results quality
+      Provide detailed analysis:
+      1. Why the path scored {{ (loop.final_score | default(0)) | round(3) }}
+      2. Whether validation criteria were appropriate
+      3. Execution effectiveness and results quality
+      4. Whether the final output answers the original query: "{{ input }}"
       3. Any issues or improvements needed
       
       {% else %}

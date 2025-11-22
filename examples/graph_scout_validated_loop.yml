@@ -23,19 +23,20 @@ agents:
   - id: path_discovery_loop
     type: loop
     max_loops: 3
-    score_threshold: 0.05  # Path must score 5% to proceed (lenient threshold)
+    score_threshold: 0.20  # Path must score 20% to proceed (realistic for proposal validation)
     persist_across_runs: false  # Prevent accumulation across runs
-    fallback_score: 0.03  # Score to use when validation agent times out
-    timeout_score: 0.02  # Score to use when validation explicitly times out
+    fallback_score: 0.10  # Score to use when validation agent times out
+    timeout_score: 0.05  # Score to use when validation explicitly times out
     
     # Boolean scoring for deterministic validation
     scoring:
-      preset: lenient  # Use lenient preset for less strict validation
+      preset: lenient  # Use lenient preset for proposal validation (not execution)
       custom_weights:
-        # Reduce emphasis on strict criteria
-        completeness.has_all_required_steps: 0.10
-        coherence.logical_agent_sequence: 0.02
-        coherence.proper_data_flow: 0.01
+        # Focus on proposal structure, not execution details
+        completeness.has_all_required_steps: 0.15
+        completeness.addresses_all_query_aspects: 0.15
+        coherence.logical_agent_sequence: 0.10
+        coherence.proper_data_flow: 0.05
     
     # Track validation feedback across loops
     past_loops_metadata:
@@ -78,7 +79,7 @@ agents:
             ## Validation Feedback (Loop {{ get_loop_number() }})
             
             {% set last_loop = get_past_loops()[-1] %}
-            Previous attempt scored: {{ last_loop.score }} (need 0.05 to pass)
+            Previous attempt scored: {{ last_loop.score }} (need 0.20 to pass)
             
             **Failed Criteria to Address:**
             {% if "has_all_required_steps" in last_loop.mistakes %}
@@ -118,13 +119,20 @@ agents:
           timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
           
           # Boolean scoring configuration (lenient for shortlist proposals)
-          scoring_preset: moderate
+          scoring_preset: lenient  # Changed from moderate to lenient
           scoring_params:
-            strict_mode: false  # Lenient validation
+            strict_mode: false  # Lenient validation for proposals (not executions)
           custom_weights:
-            completeness.has_all_required_steps: 0.10
-            coherence.logical_agent_sequence: 0.02
-            coherence.proper_data_flow: 0.01
+            # Focus on proposal quality, not execution details
+            completeness.has_all_required_steps: 0.15  # Can proposal include all steps?
+            completeness.addresses_all_query_aspects: 0.15  # Does it address the query?
+            coherence.logical_agent_sequence: 0.10  # Is agent order logical?
+            coherence.proper_data_flow: 0.05  # Does data flow make sense?
+            # Reduce safety/efficiency checks (can't validate without execution)
+            safety.validates_inputs: 0.01  # Low weight - can't verify without execution
+            safety.handles_timeouts: 0.01
+            efficiency.uses_appropriate_agents: 0.05
+            efficiency.avoids_redundant_calls: 0.03
 
   # ===== EXECUTION AGENTS (Top Level) =====
   # CRITICAL: These agents MUST be at top-level, NOT inside internal_workflow
