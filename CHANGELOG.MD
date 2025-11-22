@@ -1,6 +1,67 @@
 # OrKa-Reasoning – Un-official CHANGELOG
 
 ---
+## [0.9.8] · 2025-11-22 🧪 (Pre-Release Push)
+OrKa v0.9.8 – Template System & Test Coverage Enhancement
+
+### Summary
+This pre-release combines template system improvements with major test suite expansion. Enhanced SimplifiedPromptRenderer with better error handling and custom filter support, plus comprehensive unit and integration tests for core orchestrator components. This release significantly improves code quality, reliability, and maintainability.
+
+### Added
+* **🔧 Template System Improvements**
+  * **Custom Jinja2 filters** - `safe_get()`, `safe_get_response()`, `truncate_text()`, `format_loop_metadata()`, `get_debate_evolution()`
+  * **Improved error handling** - Better template rendering error messages and fallback behavior
+  * **Loop metadata support** - Enhanced support for past_loops tracking and formatting
+  * **Agent response retrieval** - Multi-strategy response fetching with nested structure support
+  * **Template helper registration** - Centralized filter registration for Jinja2 environment
+
+* **🧪 SimplifiedPromptRenderer Test Suite**
+  * **Comprehensive unit tests** for template rendering helper functions covering input retrieval, loop handling, and agent response fetching
+  * **Integration tests** for custom Jinja2 filters with error handling and edge cases
+  * **End-to-end template rendering** with Jinja2 context variables
+
+* **🔍 JSON Parser Utilities Test Suite**
+  * **Malformed JSON handling** - Recovery from syntax errors, missing quotes, trailing commas
+  * **Schema validation** - Type checking, required fields, nested structure validation
+  * **Type coercion** - String-to-number conversion, boolean parsing, array/object handling
+  * **Edge cases** - Empty inputs, null values, deeply nested structures, special characters
+
+* **🔄 ResourceRegistry Test Enhancements**
+  * **Async close behavior** - Proper async resource cleanup verification
+  * **Error handling** - Exception handling during resource cleanup
+  * **Resource lifecycle** - Registration, retrieval, and disposal patterns
+
+* **📊 ResponseBuilder Test Expansion**
+  * **Success responses** - Proper structure with trace IDs, metadata, and agent outputs
+  * **Error responses** - Error message formatting, stack traces, recovery actions
+  * **Metrics inclusion** - Performance metrics, token counts, execution times
+
+### Enhanced
+* **Template System Benefits**
+  * Eliminates "unknown" values in complex workflow prompts
+  * Better debugging with descriptive error messages
+  * Safer template rendering with graceful fallbacks
+  * Support for cognitive society and debate workflows
+
+### Technical Details
+* **Template System Architecture** - Enhanced SimplifiedPromptRenderer with custom filter support and improved error handling
+* **Test Coverage Improvements** - SimplifiedPromptRenderer now has custom filters implemented + comprehensive tests
+* **Unit Tests** - Isolated component testing with mocked dependencies for fast CI/CD execution
+* **Integration Tests** - End-to-end workflow validation with real component interaction testing
+* **Test Fixtures** - Reusable test data and mock objects with consistent test environment setup
+
+### Benefits
+* **For Developers** - Confidence in changes, tests as documentation, faster debugging, refactoring safety
+* **For Users** - Increased reliability, stable APIs, faster issue resolution, production readiness
+
+### Compatibility
+* ✅ **No Breaking Changes** - All existing functionality preserved
+* ✅ **Backward Compatible** - Tests validate existing behavior
+* ✅ **Python 3.11+** - Leverages modern async/await patterns
+
+> **Quality First**: This pre-release establishes a robust testing foundation with comprehensive coverage of critical components, ensuring reliability and maintainability for future development.
+
+---
 ## [0.9.7] · 2025-11-20 🚀
 OrKa v0.9.7 – Integrated UI & Local-First Standardization
 
