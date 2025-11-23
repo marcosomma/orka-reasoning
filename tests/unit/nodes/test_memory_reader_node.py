@@ -605,3 +605,479 @@ class TestMemoryReaderNode:
         # Should handle missing method gracefully
         assert isinstance(result, dict)
 
+
+    def test_enhance_with_context_scoring_with_valid_context(self):
+        """Test _enhance_with_context_scoring with valid conversation context."""
+        mock_memory = Mock()
+        node = MemoryReaderNode(
+            node_id="memory_reader",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        node.context_weight = 0.3
+        
+        conversation_context = [
+            {"content": "machine learning algorithms neural networks"},
+            {"content": "deep learning training data"}
+        ]
+        
+        results = [
+            {"content": "machine learning tutorial", "similarity_score": 0.7},
+            {"content": "unrelated topic", "similarity_score": 0.5},
+            {"content": "neural networks deep learning", "similarity_score": 0.6}
+        ]
+        
+        enhanced = node._enhance_with_context_scoring(results.copy(), conversation_context)
+        
+        # Verify context scores were added
+        assert all("context_score" in r for r in enhanced)
+        assert all("original_similarity" in r for r in enhanced)
+        
+        # Results with context overlap should have higher scores
+        assert enhanced[0]["similarity_score"] > enhanced[0]["original_similarity"]
+        
+        # Results should be re-sorted by enhanced similarity
+        scores = [r["similarity_score"] for r in enhanced]
+        assert scores == sorted(scores, reverse=True)
+
+
+    def test_enhance_with_context_scoring_with_empty_context(self):
+        """Test _enhance_with_context_scoring with empty context."""
+        mock_memory = Mock()
+        node = MemoryReaderNode(
+            node_id="memory_reader",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        results = [
+            {"content": "test content", "similarity_score": 0.7},
+            {"content": "another test", "similarity_score": 0.5}
+        ]
+        
+        # Test with None
+        enhanced = node._enhance_with_context_scoring(results.copy(), None)
+        assert enhanced == results
+        
+        # Test with empty list
+        enhanced = node._enhance_with_context_scoring(results.copy(), [])
+        assert enhanced == results
+
+
+    def test_enhance_with_context_scoring_with_multiple_context_items(self):
+        """Test _enhance_with_context_scoring with multiple context items."""
+        mock_memory = Mock()
+        node = MemoryReaderNode(
+            node_id="memory_reader",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        node.context_weight = 0.2
+        
+        conversation_context = [
+            {"content": "python programming language coding"},
+            {"content": "software development testing debugging"},
+            {"content": "artificial intelligence machine learning"}
+        ]
+        
+        results = [
+            {"content": "python programming tutorial", "similarity_score": 0.8},
+            {"content": "java programming guide", "similarity_score": 0.7}
+        ]
+        
+        enhanced = node._enhance_with_context_scoring(results.copy(), conversation_context)
+        
+        # Verify context keywords were extracted from all context items
+        assert enhanced[0]["context_score"] > 0
+        assert enhanced[0]["similarity_score"] > enhanced[0]["original_similarity"]
+
+
+    def test_enhance_with_context_scoring_error_handling(self):
+        """Test _enhance_with_context_scoring handles errors gracefully."""
+        mock_memory = Mock()
+        node = MemoryReaderNode(
+            node_id="memory_reader",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        # Malformed context that could cause errors
+        conversation_context = [
+            {"content": None},  # None content
+            {},  # Missing content field
+        ]
+        
+        results = [
+            {"content": "test content", "similarity_score": 0.7}
+        ]
+        
+        # Should handle errors and return original results
+        enhanced = node._enhance_with_context_scoring(results.copy(), conversation_context)
+        assert isinstance(enhanced, list)
+        assert len(enhanced) == 1
+
+
+    def test_extract_conversation_context_from_previous_outputs(self):
+        """Test _extract_conversation_context extracts from previous_outputs."""
+        mock_memory = Mock()
+        node = MemoryReaderNode(
+            node_id="memory_reader",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        context = {
+            "input": "test query",
+            "previous_outputs": {
+                "agent1": {"response": "First agent response"},
+                "agent2": {"answer": "Second agent answer"},
+                "agent3": {"result": "Third agent result"}
+            }
+        }
+        
+        conversation_context = node._extract_conversation_context(context)
+        
+        assert len(conversation_context) == 3
+        assert conversation_context[0]["agent_id"] == "agent1"
+        assert conversation_context[0]["content"] == "First agent response"
+        assert conversation_context[0]["field"] == "response"
+        assert conversation_context[1]["field"] == "answer"
+        assert conversation_context[2]["field"] == "result"
+        
+        # Verify timestamps were added
+        assert all("timestamp" in ctx for ctx in conversation_context)
+
+
+    def test_extract_conversation_context_multiple_content_fields(self):
+        """Test _extract_conversation_context with various content field patterns."""
+        mock_memory = Mock()
+        node = MemoryReaderNode(
+            node_id="memory_reader",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        context = {
+            "previous_outputs": {
+                "agent1": {"output": "Output content"},
+                "agent2": {"content": "Content field"},
+                "agent3": {"message": "Message field"},
+                "agent4": {"text": "Text field"},
+                "agent5": {"summary": "Summary field"}
+            }
+        }
+        
+        conversation_context = node._extract_conversation_context(context)
+        
+        assert len(conversation_context) == 5
+        fields = [ctx["field"] for ctx in conversation_context]
+        assert "output" in fields
+        assert "content" in fields
+        assert "message" in fields
+        assert "text" in fields
+        assert "summary" in fields
+
+
+    def test_extract_conversation_context_from_direct_values(self):
+        """Test _extract_conversation_context with direct string/number outputs."""
+        mock_memory = Mock()
+        node = MemoryReaderNode(
+            node_id="memory_reader",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        context = {
+            "previous_outputs": {
+                "agent1": "Simple string output",
+                "agent2": 42,
+                "agent3": 3.14
+            }
+        }
+        
+        conversation_context = node._extract_conversation_context(context)
+        
+        assert len(conversation_context) == 3
+        assert conversation_context[0]["content"] == "Simple string output"
+        assert conversation_context[1]["content"] == "42"
+        assert conversation_context[2]["content"] == "3.14"
+        assert all(ctx["field"] == "direct_output" for ctx in conversation_context)
+
+
+    def test_extract_conversation_context_from_context_fields(self):
+        """Test _extract_conversation_context extracts from context fields."""
+        mock_memory = Mock()
+        node = MemoryReaderNode(
+            node_id="memory_reader",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        context = {
+            "conversation": [
+                {"content": "First message", "timestamp": 100},
+                {"content": "Second message", "timestamp": 200}
+            ],
+            "history": [
+                {"content": "History item", "timestamp": 300}
+            ],
+            "context": "Direct context string",
+            "previous_messages": "Previous messages string"
+        }
+        
+        conversation_context = node._extract_conversation_context(context)
+        
+        assert len(conversation_context) >= 5  # At least 5 items extracted
+        
+        # Verify conversation list items
+        conv_items = [ctx for ctx in conversation_context if ctx.get("source") == "conversation"]
+        assert len(conv_items) == 2
+        
+        # Verify timestamps were preserved
+        assert conv_items[0]["timestamp"] == 100
+        assert conv_items[1]["timestamp"] == 200
+
+
+    def test_extract_conversation_context_window_sizing(self):
+        """Test _extract_conversation_context limits to context_window_size."""
+        mock_memory = Mock()
+        node = MemoryReaderNode(
+            node_id="memory_reader",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        node.context_window_size = 3
+        
+        context = {
+            "previous_outputs": {
+                f"agent{i}": {"response": f"Response {i}"} for i in range(10)
+            }
+        }
+        
+        conversation_context = node._extract_conversation_context(context)
+        
+        # Should be limited to context_window_size
+        assert len(conversation_context) == 3
+        
+        # Should return most recent items (sorted by timestamp descending)
+        # Since all timestamps are created at same time, we just verify size limit works
+        assert all("timestamp" in ctx for ctx in conversation_context)
+
+
+    def test_extract_conversation_context_empty_context(self):
+        """Test _extract_conversation_context with empty/missing context."""
+        mock_memory = Mock()
+        node = MemoryReaderNode(
+            node_id="memory_reader",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        # Empty context
+        context = {"input": "test query"}
+        conversation_context = node._extract_conversation_context(context)
+        assert conversation_context == []
+        
+        # Context with empty previous_outputs
+        context = {"previous_outputs": {}}
+        conversation_context = node._extract_conversation_context(context)
+        assert conversation_context == []
+
+
+    def test_generate_enhanced_query_variations_with_context(self):
+        """Test _generate_enhanced_query_variations with conversation context."""
+        mock_memory = Mock()
+        node = MemoryReaderNode(
+            node_id="memory_reader",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        query = "machine learning"
+        conversation_context = [
+            {"content": "neural networks deep learning algorithms"},
+            {"content": "training data optimization techniques"}
+        ]
+        
+        variations = node._generate_enhanced_query_variations(query, conversation_context)
+        
+        # Should include original query
+        assert query in variations
+        
+        # Should include context-enhanced variations
+        assert len(variations) > 1
+        assert len(variations) <= 8  # Max 8 variations
+        
+        # Should have more variations with context than without
+        variations_without_context = node._generate_enhanced_query_variations(query, [])
+        assert len(variations) >= len(variations_without_context)
+
+
+    def test_generate_enhanced_query_variations_without_context(self):
+        """Test _generate_enhanced_query_variations without context."""
+        mock_memory = Mock()
+        node = MemoryReaderNode(
+            node_id="memory_reader",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        query = "python programming"
+        conversation_context = []
+        
+        variations = node._generate_enhanced_query_variations(query, conversation_context)
+        
+        # Should include original query
+        assert query in variations
+        
+        # Should include basic variations
+        assert len(variations) > 1
+        
+        # Without context, should only have basic variations
+        assert all(not v.startswith("related to") for v in variations if v != query)
+
+
+    def test_generate_enhanced_query_variations_empty_query(self):
+        """Test _generate_enhanced_query_variations with empty query."""
+        mock_memory = Mock()
+        node = MemoryReaderNode(
+            node_id="memory_reader",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        conversation_context = [{"content": "some context"}]
+        
+        # Empty string
+        variations = node._generate_enhanced_query_variations("", conversation_context)
+        assert variations == [""]
+        
+        # Whitespace only
+        variations = node._generate_enhanced_query_variations("  ", conversation_context)
+        assert len(variations) == 1
+
+
+    def test_generate_enhanced_query_variations_max_limit(self):
+        """Test _generate_enhanced_query_variations respects max limit."""
+        mock_memory = Mock()
+        node = MemoryReaderNode(
+            node_id="memory_reader",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        query = "artificial intelligence"
+        conversation_context = [
+            {"content": "machine learning neural networks deep learning"},
+            {"content": "algorithms training optimization techniques"}
+        ]
+        
+        variations = node._generate_enhanced_query_variations(query, conversation_context)
+        
+        # Should not exceed max limit of 8
+        assert len(variations) <= 8
+
+
+    def test_generate_query_variations_single_word(self):
+        """Test _generate_query_variations with single word query."""
+        mock_memory = Mock()
+        node = MemoryReaderNode(
+            node_id="memory_reader",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        variations = node._generate_query_variations("python")
+        
+        assert len(variations) > 0
+        assert "python" in variations
+        assert any("about" in v for v in variations)
+        assert any("information" in v for v in variations)
+
+
+    def test_generate_query_variations_two_words(self):
+        """Test _generate_query_variations with two word query."""
+        mock_memory = Mock()
+        node = MemoryReaderNode(
+            node_id="memory_reader",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        variations = node._generate_query_variations("machine learning")
+        
+        assert len(variations) > 0
+        assert "machine learning" in variations
+        # Should include reversed
+        assert any("learning machine" in v for v in variations)
+
+
+    def test_generate_query_variations_multiple_words(self):
+        """Test _generate_query_variations with multi-word query."""
+        mock_memory = Mock()
+        node = MemoryReaderNode(
+            node_id="memory_reader",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        query = "deep learning neural networks"
+        variations = node._generate_query_variations(query)
+        
+        assert len(variations) > 0
+        assert query in variations
+        # Should include first and last words
+        assert any("deep networks" in v for v in variations)
+        # Should include first two words
+        assert any("deep learning" in v for v in variations)
+
+
+    def test_generate_query_variations_empty_query(self):
+        """Test _generate_query_variations with empty query."""
+        mock_memory = Mock()
+        node = MemoryReaderNode(
+            node_id="memory_reader",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        variations = node._generate_query_variations("")
+        assert variations == []
+        
+        variations = node._generate_query_variations("  ")
+        assert variations == []
+
+
+    def test_generate_query_variations_deduplication(self):
+        """Test _generate_query_variations removes duplicates."""
+        mock_memory = Mock()
+        node = MemoryReaderNode(
+            node_id="memory_reader",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory
+        )
+        
+        variations = node._generate_query_variations("ai")
+        
+        # Should not have duplicates
+        assert len(variations) == len(set(variations))
+
