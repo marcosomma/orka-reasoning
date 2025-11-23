@@ -1152,11 +1152,12 @@ class TestSmartPathEvaluator:
 
         mock_response = json.dumps({"evaluation": "test"})
 
-        # Mock at async method level to prevent real connection attempts
-        with patch.object(evaluator, "_call_lm_studio_async", new_callable=AsyncMock, return_value=mock_response):
-            with patch.object(evaluator, "_extract_json_from_response", return_value=mock_response):
-                result = await evaluator._call_evaluation_llm("test prompt")
-                assert result == mock_response
+        # Mock both methods to prevent any real connection attempts
+        with patch.object(evaluator, "_call_ollama_async", new_callable=AsyncMock, return_value=mock_response):
+            with patch.object(evaluator, "_call_lm_studio_async", new_callable=AsyncMock, return_value=mock_response):
+                with patch.object(evaluator, "_extract_json_from_response", return_value=mock_response):
+                    result = await evaluator._call_evaluation_llm("test prompt")
+                    assert result == mock_response
 
     @pytest.mark.asyncio
     async def test_call_evaluation_llm_no_json_in_response(self):
@@ -1201,11 +1202,12 @@ class TestSmartPathEvaluator:
 
         mock_response = json.dumps({"validation": "test"})
 
-        # Mock at async method level to prevent real connection attempts
-        with patch.object(evaluator, "_call_lm_studio_async", new_callable=AsyncMock, return_value=mock_response):
-            with patch.object(evaluator, "_extract_json_from_response", return_value=mock_response):
-                result = await evaluator._call_validation_llm("test prompt")
-                assert result == mock_response
+        # Mock both methods to prevent any real connection attempts
+        with patch.object(evaluator, "_call_ollama_async", new_callable=AsyncMock, return_value=mock_response):
+            with patch.object(evaluator, "_call_lm_studio_async", new_callable=AsyncMock, return_value=mock_response):
+                with patch.object(evaluator, "_extract_json_from_response", return_value=mock_response):
+                    result = await evaluator._call_validation_llm("test prompt")
+                    assert result == mock_response
 
     @pytest.mark.asyncio
     async def test_call_validation_llm_no_json(self):
