@@ -1,6 +1,6 @@
 # OrKa UI - Visual Workflow Builder
 
-> **Last Updated:** 22 November 2025  
+> **Last Updated:** 29 November 2025  
 > **Version:** 0.9.6  
 > **Status:** 🟢 Current  
 > **Related:** [Getting Started](getting-started.md) | [YAML Configuration](YAML_CONFIGURATION.md) | [Architecture](architecture.md)

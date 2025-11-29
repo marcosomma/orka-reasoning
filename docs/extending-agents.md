@@ -2,7 +2,7 @@
 
 # Creating Custom Agents in OrKa
 
-> **Last Updated:** 22 November 2025  
+> **Last Updated:** 29 November 2025  
 > **Status:** 🟢 Current  
 > **Related:** [Agents](agents.md) | [Advanced Agents](agents-advanced.md) | [API Reference](api-reference.md) | [INDEX](index.md)
 

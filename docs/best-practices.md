@@ -1,6 +1,6 @@
 # OrKa Production Best Practices
 
-> **Last Updated:** 22 November 2025  
+> **Last Updated:** 29 November 2025  
 > **Status:** 🟢 Current  
 > **Related:** [Security](security.md) | [Observability](observability.md) | [Runtime Modes](runtime-modes.md) | [Architecture](architecture.md) | [INDEX](index.md)
 

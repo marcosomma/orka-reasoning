@@ -1,6 +1,6 @@
 # Getting Started with OrKa
 
-> **Last Updated:** 22 November 2025  
+> **Last Updated:** 29 November 2025  
 > **Status:** 🟢 Current  
 > **Related:** [Quickstart](quickstart.md) | [Architecture](architecture.md) | [Agents](agents.md) | [INDEX](index.md)
 

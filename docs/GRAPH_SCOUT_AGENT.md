@@ -1,6 +1,6 @@
 # GraphScout Agent - Workflow Path Discovery
 
-> **Last Updated:** 22 November 2025  
+> **Last Updated:** 29 November 2025  
 > **Status:** 🆕 New in v0.9.3  
 > **Related:** [GraphScout Execution Modes](GRAPHSCOUT_EXECUTION_MODES.md) | [Router Agent](agents.md#router) | [Architecture](architecture.md) | [INDEX](index.md)
 

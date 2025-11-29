@@ -1,6 +1,6 @@
 # OrKa Quickstart Guide
 
-> **Last Updated:** 22 November 2025  
+> **Last Updated:** 29 November 2025  
 > **Status:** 🟢 Current  
 > **Related:** [Getting Started](getting-started.md) | [Installation Guide](getting-started.md#installation) | [INDEX](index.md)
 

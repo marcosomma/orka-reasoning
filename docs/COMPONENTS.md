@@ -1,6 +1,6 @@
 # OrKa V0.9.2 Core Components Guide - Memory Presets
 
-> **Last Updated:** 22 November 2025  
+> **Last Updated:** 29 November 2025  
 > **Status:** 🟢 Current  
 > **Related:** [Architecture](architecture.md) | [Memory Presets](memory-presets.md) | [Memory System](MEMORY_SYSTEM_GUIDE.md) | [INDEX](index.md)
 

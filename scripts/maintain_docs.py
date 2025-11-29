@@ -33,6 +33,7 @@ DOC_SEQUENCE = [
     ("docs/COMPONENTS.md", "Components"),
     ("docs/VISUAL_ARCHITECTURE_GUIDE.md", "Visual Architecture"),
     ("docs/YAML_CONFIGURATION.md", "YAML Configuration"),
+    ("docs/JSON_INPUTS.md", "Json Inputs Guide"),
     ("docs/agents.md", "Agents"),
     ("docs/agents-advanced.md", "Advanced Agents"),
     ("docs/extending-agents.md", "Extending Agents"),
@@ -188,7 +189,10 @@ def consolidate_yaml_guides():
     files_to_consolidate = [
         "yaml-configuration-guide.md",
         "orka.yaml-schema.md",
-        "CONFIGURATION.md"
+        "CONFIGURATION.md",
+        "advanced-configuration.md",
+        "orka-cli-configuration.md",
+        "JSON_INPUTS.md"
     ]
     
     primary_file = "YAML_CONFIGURATION.md"
@@ -205,7 +209,7 @@ def consolidate_yaml_guides():
             print(f"      - {filename} ({lines} lines)")
     
     print(f"\n   Action: Run consolidation manually or use `--execute-consolidation` flag")
-    print(f"   Timeline: Target v0.9.7 release")
+    print(f"   Timeline: Target v0.9.9 release")
 
 
 def generate_status_report():

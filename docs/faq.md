@@ -2,7 +2,7 @@
 
 # OrKa FAQ
 
-> **Last Updated:** 22 November 2025  
+> **Last Updated:** 29 November 2025  
 > **Status:** 🟢 Current  
 > **Related:** [Troubleshooting](troubleshooting.md) | [Debugging](DEBUGGING.md) | [Getting Started](getting-started.md) | [INDEX](index.md)
 
@@ -150,4 +150,5 @@ A: Yes, use `fork` nodes to split execution into parallel branches, then `join` 
 
 **Q: How do I debug complex workflows?**
 A: Enable verbose logging (`--verbose`), use the OrKa UI for visualization, and check Redis streams for detailed execution traces.
-
+---
+← [Troubleshooting](troubleshooting.md) | [📚 INDEX](index.md) | [Json Inputs Guide](JSON_INPUTS.md) →

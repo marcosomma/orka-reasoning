@@ -1,6 +1,6 @@
 # OrKa Architecture V0.7.0
 
-> **Last Updated:** 22 November 2025  
+> **Last Updated:** 29 November 2025  
 > **Status:** 🟢 Current  
 > **Related:** [Components](COMPONENTS.md) | [Visual Architecture](VISUAL_ARCHITECTURE_GUIDE.md) | [Ontology](ONTOLOGY.md) | [INDEX](index.md)
 

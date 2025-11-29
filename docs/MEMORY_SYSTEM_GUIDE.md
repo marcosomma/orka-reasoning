@@ -1,6 +1,6 @@
 # OrKa Memory System - Complete Guide
 
-> **Last Updated:** 22 November 2025  
+> **Last Updated:** 29 November 2025  
 > **Status:** 🟢 Current  
 > **Related:** [Memory Agents Guide](memory-agents-guide.md) | [Memory Presets](memory-presets.md) | [Memory Backends](MEMORY_BACKENDS.md) | [index](index.md)
 

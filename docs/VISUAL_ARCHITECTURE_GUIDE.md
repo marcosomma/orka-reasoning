@@ -1,6 +1,6 @@
 # OrKa Visual Architecture Guide
 
-> **Last Updated:** 22 November 2025  
+> **Last Updated:** 29 November 2025  
 > **Status:** 🆕 New in v0.9.6  
 > **Related:** [Architecture](architecture.md) | [Components](COMPONENTS.md) | [index](index.md)
 

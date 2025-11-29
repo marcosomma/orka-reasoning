@@ -1,6 +1,6 @@
 # OrKa Documentation Index
 
-> **Last Updated:** 22 November 2025  
+> **Last Updated:** 29 November 2025  
 > **Version:** 0.9.6  
 > **Status:** 🟢 Current
 
