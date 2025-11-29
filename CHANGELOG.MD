@@ -1,4 +1,35 @@
-# OrKa-Reasoning – Un-official CHANGELOG
+
+# [0.9.9] · 2025-11-29 🆕
+OrKa v0.9.9 – Robust JSON Input & Parser Enhancements
+
+### Summary
+This release introduces official support for structured JSON input via CLI and new parsing functions for robust error handling and better integration in YAML workflows. The goal is to ensure workflows can receive, validate, and propagate complex JSON data reliably, with clear error messages and automatic fallback.
+
+### Added
+* **🆕 JSON Input Support**
+  * The CLI now accepts JSON files and strings as input, allowing direct access to fields via `{{ input.field }}` in YAML prompts.
+  * Realistic JSON input examples provided in `examples/inputs/` for testing and validation.
+* **🔧 JSON Parser Functions**
+  * New parsing utilities with advanced error handling: detailed messages for malformed input, fallback to text input, and improved logging.
+  * Extended unit tests for error cases: invalid syntax, missing quotes, trailing comma, null values, nested structures.
+* **📝 Improved Prompt Engineering**
+  * YAML prompts updated to leverage structured JSON input and robustly propagate data between agents.
+
+### Fixed
+* **🐛 Error Handling**
+  * CLI error messages are now clearer and more consistent for invalid JSON input (e.g., "Could not parse input: ... as JSON").
+  * Tests updated to accept new error message formats and ensure robustness against future changes.
+
+### Enhanced
+* **📊 Test Coverage**
+  * Increased test coverage for JSON parsing, error handling, and CLI input.
+  * YAML examples and input synchronized between orka-core and orka-ui-ts.
+
+### Migration Notes
+* **For users**: you can now pass JSON files or strings directly as input to workflows. Update YAML prompts to leverage the new available fields.
+* **For developers**: use the new parsing functions for every user input and always handle error cases explicitly.
+
+> **Structured Input Ready**: OrKa now natively handles complex JSON input, enabling clinical, scientific, and advanced automation workflows with structured data and robust validation.
 
 ---
 ## [0.9.8] · 2025-11-22 🚀

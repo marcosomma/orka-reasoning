@@ -1195,6 +1195,7 @@ This comprehensive guide covers all the major agent types, configuration pattern
 
  
 
+
 ### Running Your Configuration
 
 ```bash
@@ -1204,9 +1205,39 @@ orka-start
 # Start OrKa with RedisStack (production)
 orka-start
 
-# Run your workflow
+# Run your workflow (Linux/macOS/Bash)
 orka run ./my-workflow.yml "Your input here"
+```
 
+#### 💡 PowerShell: Passare input JSON robustamente
+
+
+> ⚠️ **ATTENZIONE PowerShell:**
+> Non usare mai `$input` come nome di variabile per il JSON! `$input` è una variabile automatica riservata di PowerShell e causerà sempre comportamenti anomali o errori. Usa invece `$jsonInput` o un altro nome.
+
+Quando usi OrKa da PowerShell e vuoi passare un oggetto JSON come input (ad esempio per workflow che usano `--json-input`), **definisci sempre la variabile su una riga separata** e usa i doppi apici:
+
+```powershell
+$jsonInput = '{"species":"dog","breed":"Labrador Retriever","age":5,"sex":"male","weight_kg":32,"symptoms":[{"name":"vomiting","duration_days":2,"severity":"moderate"},{"name":"lethargy","duration_days":1,"severity":"mild"}],"history":{"chronic_conditions":["hip dysplasia"],"allergies":[],"previous_treatments":["NSAIDs"]},"environment":{"living":"indoor/outdoor","recent_changes":"none"},"owner_notes":"No foreign body seen, appetite reduced."}'
+orka --json-input run examples/diagnosis_vetting_chatbot_json.yml "$jsonInput"
+```
+
+
+**Attenzione:**
+- Non mettere la definizione della variabile sulla stessa riga del comando.
+- Usa sempre i doppi apici intorno a `$jsonInput` nel comando, così PowerShell passerà tutto il JSON come un unico argomento.
+- **Non usare mai `$input` come variabile utente!**
+- Se `$jsonInput` è vuota o non definita, la CLI mostrerà l'errore "the following arguments are required: input".
+
+Per input multi-linea, puoi anche usare:
+
+```powershell
+$jsonObj = @{ species = "dog"; breed = "Labrador Retriever"; age = 5; ... }
+$jsonInput = $jsonObj | ConvertTo-Json -Compress
+orka --json-input run examples/diagnosis_vetting_chatbot_json.yml "$jsonInput"
+```
+
+```bash
 # Monitor memory performance
 orka memory watch
 
@@ -1215,4 +1246,52 @@ orka memory stats
 
 # Clean up expired memories
 orka memory cleanup --dry-run
-``` 
+
+---
+
+### 🛠️ Troubleshooting PowerShell: Errore System.Collections.ArrayList+ArrayListEnumeratorSimple
+
+**Problema:**
+Se quando esegui `$jsonInput.GetType().FullName` ottieni:
+
+```
+System.Collections.ArrayList+ArrayListEnumeratorSimple
+```
+significa che la variabile è stata definita male (di solito perché hai usato `$input` oppure hai fatto la definizione su più righe o con errori di copia/incolla).
+
+**Soluzione definitiva:**
+
+1. Elimina la variabile se esiste:
+  ```powershell
+  Remove-Variable jsonInput -ErrorAction SilentlyContinue
+  ```
+2. Definisci la variabile su UNA SOLA riga, senza andare a capo, e NON usare `$input`:
+  ```powershell
+  $jsonInput = '{"species":"dog","breed":"Labrador Retriever","age":5,"sex":"male","weight_kg":32,"symptoms":[{"name":"vomiting","duration_days":2,"severity":"moderate"},{"name":"lethargy","duration_days":1,"severity":"mild"}],"history":{"chronic_conditions":["hip dysplasia"],"allergies":[],"previous_treatments":["NSAIDs"]},"environment":{"living":"indoor/outdoor","recent_changes":"none"},"owner_notes":"No foreign body seen, appetite reduced."}'
+  ```
+3. Verifica che sia una stringa:
+  ```powershell
+  $jsonInput.GetType().FullName
+  ```
+  Deve restituire:
+  ```
+  System.String
+  ```
+4. Ora puoi lanciare il comando OrKa:
+  ```powershell
+  orka --json-input run examples/diagnosis_vetting_chatbot_json.yml "$jsonInput"
+  ```
+
+**Nota:**
+- Se la variabile è definita su più righe (ad esempio con backtick o concatenazione), PowerShell la trasforma in un array e la CLI non riceverà il JSON correttamente.
+- Se copi da editor o da web, assicurati che la definizione sia tutta su una riga.
+- Se vuoi generare JSON da oggetto PowerShell:
+  ```powershell
+  $jsonObj = @{ species = "dog"; breed = "Labrador Retriever"; age = 5 }
+  $jsonInput = $jsonObj | ConvertTo-Json -Compress
+  orka --json-input run examples/diagnosis_vetting_chatbot_json.yml "$jsonInput"
+  ```
+
+**Riferimento errore:**
+Se vedi l'errore `the following arguments are required: input`, controlla sempre che la variabile sia una stringa e non un array, e che non si chiami `$input`.
+```

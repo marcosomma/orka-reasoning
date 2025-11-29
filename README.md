@@ -122,6 +122,47 @@ export ORKA_UI_SKIP_PULL=true
 orka-start
 ```
 
+## 🆕 JSON Input Support
+
+OrKa now supports JSON input for advanced workflows and structured use cases!
+
+### Why use JSON input?
+- Pass complex data (objects, arrays, clinical records, etc.) as input to your workflow.
+- Enable dynamic prompts and agents that access specific input fields via `{{ input.field }}`.
+- Perfect for use cases like: medical assistants, document automation, multi-step workflows with structured data.
+
+### How to use
+1. Prepare a JSON file, e.g. `input.json`:
+   ```json
+   {
+     "patient": {
+       "name": "Fido",
+       "species": "dog",
+       "symptoms": ["vomiting", "lethargy"],
+       "age": 7
+     },
+     "history": "No previous major illnesses."
+   }
+   ```
+2. Pass the file as input to the workflow using the `--json-input` flag **before** the `run` command:
+   ```bash
+   orka --json-input run my-workflow.yml input.json
+   ```
+   Or pass inline JSON:
+   ```bash
+   orka --json-input run my-workflow.yml '{"foo": 123, "bar": "baz"}' 
+   ```
+3. In your YAML, access fields using Jinja2 syntax:
+   ```yaml
+   prompt: "Patient: {{ input.patient.name }}, Symptoms: {{ input.patient.symptoms }}"
+   ```
+
+**Note:** If you use the `--json-input` flag, the plain text input is ignored and only the JSON is used.
+
+For real-world examples, see the `examples/` folder and the documentation.
+
+---
+
 **Features:**
 - 🎨 Drag-and-drop workflow builder
 - 🔧 Visual node configuration

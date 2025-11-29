@@ -47,6 +47,17 @@ logger = logging.getLogger(__name__)
 
 
 class SimplifiedPromptRenderer:
+
+    @staticmethod
+    def get_input_field(input_obj, field, default=None):
+        """
+        Helper to extract a field from input (dict or JSON) in Jinja2 templates.
+        Usage: {{ get_input_field(input, 'fieldname') }}
+        """
+        if isinstance(input_obj, dict):
+            return input_obj.get(field, default)
+        return default
+
     """
     Simplified prompt renderer that uses OrkaResponse structure for template variables.
 
@@ -160,7 +171,6 @@ class SimplifiedPromptRenderer:
 
             # Create Jinja2 environment with custom filters
             env = Environment()
-            
             # Register custom template helpers if available
             if TEMPLATE_HELPERS_AVAILABLE:
                 try:
@@ -168,12 +178,11 @@ class SimplifiedPromptRenderer:
                     logger.debug("Custom template helpers registered successfully")
                 except Exception as e:
                     logger.warning(f"Failed to register custom template helpers: {e}")
-            
-            # ✅ FIX: Register internal helper functions to env.globals for direct access
+            # Register internal helper functions and get_input_field
             helper_functions = self._get_template_helper_functions(enhanced_payload)
             env.globals.update(helper_functions)
-            logger.debug(f"Registered {len(helper_functions)} internal helper functions to Jinja2 environment")
-            
+            env.globals['get_input_field'] = SimplifiedPromptRenderer.get_input_field
+            logger.debug(f"Registered {len(helper_functions)+1} internal helper functions to Jinja2 environment (including get_input_field)")
             # Create and render template
             jinja_template = env.from_string(template_str)
             rendered = jinja_template.render(**enhanced_payload)

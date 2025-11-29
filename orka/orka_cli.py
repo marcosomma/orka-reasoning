@@ -3,6 +3,7 @@
 import argparse
 import logging
 import sys
+import json as _json
 
 from orka.cli.core import run_cli, sanitize_for_console
 from orka.cli.memory.watch import memory_watch
@@ -38,6 +39,7 @@ Note: Run 'orka-start' before using workflows that require memory operations.
     parser.add_argument("-V", "--version", action="version", version=f"orka-reasoning {__version__}")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
     parser.add_argument("--json", action="store_true", help="Output in JSON format")
+    parser.add_argument("--json-input", action="store_true", help="Interpret input as JSON object for granular field access (enables {{ input.field }} in prompts)")
 
     # Subcommands
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -74,9 +76,24 @@ Note: Run 'orka-start' before using workflows that require memory operations.
 
 def main(argv: list[str] | None = None) -> int:
     """Main entry point."""
+
     try:
         parser = create_parser()
         args = parser.parse_args(argv or sys.argv[1:])
+        logger.debug(f"[OrKa][DEBUG] Parsed CLI args: {args}")
+        # Patch: parse input as JSON if --json-input is set
+        if hasattr(args, "json_input") and args.json_input:
+            import json
+            # Normalizza input: rimuove a capo e spazi superflui
+            if isinstance(args.input, str):
+                normalized = args.input.replace("\r\n", "").replace("\n", "").replace("\r", "").strip()
+                try:
+                    args.input = json.loads(normalized)
+                    print(f"[OrKa] Parsed input as JSON object. {args.input}", file=sys.stderr)
+                except Exception as e:
+                    print(f"[OrKa] Error: Could not parse input: \"{args.input}\" as JSON: {e}", file=sys.stderr)
+                    logger.error(f"[OrKa][ERROR] JSON parsing failed: {e}")
+                    sys.exit(2)
 
         # Set up logging
         setup_logging(args.verbose)
@@ -99,7 +116,9 @@ def main(argv: list[str] | None = None) -> int:
 
             # Execute memory command
             if hasattr(args, "func"):
+                logger.debug(f"[OrKa][DEBUG] Executing memory command: {args.memory_command}")
                 _attr_memory: int = args.func(args)
+                logger.debug(f"[OrKa][DEBUG] Memory command returned: {_attr_memory}")
                 return _attr_memory
 
         # Handle run command
@@ -109,18 +128,33 @@ def main(argv: list[str] | None = None) -> int:
                 parser.print_help()
                 return 1
             # Convert Namespace to list of arguments for run_cli
-            run_args = ["run", args.config, args.input]
+            # Solo se --json-input è attivo e input è dict, serializza in JSON
+            if hasattr(args, "json_input") and args.json_input and isinstance(args.input, dict):
+                input_arg = _json.dumps(args.input)
+            else:
+                input_arg = str(args.input)
+            run_args = ["run", args.config, input_arg]
             if args.log_to_file:
                 run_args.append("--log-to-file")
             if args.verbose:
                 run_args.append("--verbose")
-            return run_cli(run_args)
+            logger.debug(f"[OrKa][DEBUG] Calling run_cli with args: {run_args}")
+            try:
+                result = run_cli(run_args)
+                logger.debug(f"[OrKa][DEBUG] run_cli returned: {result}")
+                return result
+            except Exception as run_exc:
+                logger.error(f"[OrKa][ERROR] Exception in run_cli: {run_exc}", exc_info=True)
+                raise
 
         # Execute other commands
         if hasattr(args, "func"):
+            logger.debug(f"[OrKa][DEBUG] Executing generic func: {args.func}")
             _attr_run: int = args.func(args)
+            logger.debug(f"[OrKa][DEBUG] Generic func returned: {_attr_run}")
             return _attr_run
 
+        logger.error("[OrKa][ERROR] No valid command matched.")
         return 1
 
     except Exception as e:
@@ -133,7 +167,7 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
             # Otherwise sanitize and log the error
             error_msg = error_msg.encode("ascii", errors="replace").decode("ascii")
-            logger.error(f"Error: {error_msg}")
+            logger.error(f"[OrKa][FATAL] Error: {error_msg}", exc_info=True)
         except Exception:
             logger.info("Workflow completed successfully")
             return 0
