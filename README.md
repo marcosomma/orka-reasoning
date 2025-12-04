@@ -1,8 +1,6 @@
-# OrKa - AI Agent Orchestration
-
 <p align="center">
 
-<img src="https://orkacore.com/assets/ORKA_logo.png" alt="OrKa Logo" style="border-radius: 25px; width: 400px; height:400px" />
+<img src="https://orkacore.com/assets/orka_logo_white.png" alt="OrKa Logo" style="border-radius: 25px; width: 400px; height:400px" />
 
 [![GitHub Tag](https://img.shields.io/github/v/tag/marcosomma/orka-reasoning?color=blue)](https://github.com/marcosomma/orka-reasoning/tags)
 [![PyPI - License](https://img.shields.io/pypi/l/orka-reasoning?color=blue)](https://pypi.org/project/orka-reasoning/)
