@@ -81,9 +81,9 @@ async def test_router_node_prepend_queue_and_executes_new_agents(temp_config_fil
     engine.memory = mem
 
     async def runner(agent_id, input_data, previous_outputs, full_payload=None):
-        # Router returns a list that should be added to the front of the queue
+        # Router returns OrkaResponse with result field containing the list
         if agent_id == "router_agent":
-            return agent_id, ["new_agent"]
+            return agent_id, {"result": ["new_agent"], "status": "success"}
         return agent_id, {"result": "ok"}
 
     monkeypatch.setattr(engine, "_run_agent_async", AsyncMock(side_effect=runner))

@@ -386,9 +386,20 @@ class ExecutionEngine(
                     if agent_result is not None:
                         # Special handling for router nodes
                         if agent_type == "routernode":
-                            if isinstance(agent_result, list):
-                                queue = agent_result + queue
+                            # Extract routing decision from OrkaResponse format
+                            router_result = (
+                                agent_result.get("result", [])
+                                if isinstance(agent_result, dict)
+                                else []
+                            )
+                            if isinstance(router_result, list) and router_result:
+                                queue = router_result + queue
+                                logger.info(f"Router '{agent_id}' routed to: {router_result}")
                                 continue  # Skip to the next agent in the new queue
+                            else:
+                                logger.warning(
+                                    f"Router '{agent_id}' returned empty or invalid result: {router_result}"
+                                )
 
                         # Special handling for GraphScout decisions
                         if agent_type == "graphscoutagent":
@@ -600,21 +611,27 @@ class ExecutionEngine(
                                 f"has_final_score={('final_score' in agent_result)}, "
                                 f"top_level_keys={list(agent_result.keys())[:10]}"
                             )
-                            if agent_type == "loopnode" and all(
-                                k in agent_result
+                            # Check if agent_result is already in OrkaResponse format
+                            loop_data = (
+                                agent_result.get("result", agent_result)
+                                if isinstance(agent_result, dict) and "result" in agent_result
+                                else agent_result
+                            )
+                            if agent_type == "loopnode" and isinstance(loop_data, dict) and all(
+                                k in loop_data
                                 for k in ["result", "loops_completed", "final_score"]
                             ):
                                 # LoopNode: Preserve complete structure with metadata
                                 payload_out.update(
                                     {
-                                        "response": agent_result,  # Complete LoopNode result
-                                        "result": agent_result.get(
+                                        "response": loop_data,  # Complete LoopNode result
+                                        "result": loop_data.get(
                                             "result"
                                         ),  # Also at result for compatibility
-                                        "loops_completed": agent_result.get("loops_completed"),
-                                        "final_score": agent_result.get("final_score"),
-                                        "threshold_met": agent_result.get("threshold_met"),
-                                        "past_loops": agent_result.get("past_loops", []),
+                                        "loops_completed": loop_data.get("loops_completed"),
+                                        "final_score": loop_data.get("final_score"),
+                                        "threshold_met": loop_data.get("threshold_met"),
+                                        "past_loops": loop_data.get("past_loops", []),
                                         "status": "success",
                                         "confidence": "1.0",
                                         "internal_reasoning": "",

@@ -137,9 +137,21 @@ class RouterNode(BaseNode):
 
         decision_value = previous_outputs.get(decision_key)
 
-        # Handle dictionary decision values FIRST before using as hash key
+        # Handle nested dictionary decision values (e.g., from agents wrapping responses)
         if isinstance(decision_value, dict):
-            decision_value = decision_value.get("response")
+            # Try to extract the actual decision from nested structure
+            # Pattern 1: {"response": {"response": "true", ...}, ...}
+            if "response" in decision_value and isinstance(decision_value["response"], dict):
+                if "response" in decision_value["response"]:
+                    decision_value = decision_value["response"]["response"]
+                else:
+                    decision_value = decision_value["response"]
+            # Pattern 2: {"response": "true", ...}
+            elif "response" in decision_value:
+                decision_value = decision_value["response"]
+            # Pattern 3: {"result": "true", ...} (OrkaResponse format)
+            elif "result" in decision_value:
+                decision_value = decision_value["result"]
 
         # Normalize decision value for flexible matching
         decision_value_str = str(decision_value).strip().lower()

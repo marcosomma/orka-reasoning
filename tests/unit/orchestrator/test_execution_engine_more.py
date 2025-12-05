@@ -40,8 +40,8 @@ async def test_execution_engine_router_inserts_new_agents(temp_config_file, monk
     # agent id 'test_agent2' which the router will insert into the queue.
     engine.agents = {"test_agent": router, "test_agent2": processor}
 
-    # When router runs it returns a queue replacement (new agents to run next)
-    async_runner = AsyncMock(side_effect=[(None, ["test_agent2"]), (None, {"final": "ok"})])
+    # When router runs it returns OrkaResponse with result field containing new agents
+    async_runner = AsyncMock(side_effect=[(None, {"result": ["test_agent2"], "status": "success"}), (None, {"final": "ok"})])
     monkeypatch.setattr(engine, "_run_agent_async", async_runner)
 
     logs = []

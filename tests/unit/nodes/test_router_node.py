@@ -142,3 +142,80 @@ class TestRouterNode:
         assert node._bool_key("maybe") == "maybe"
         assert node._bool_key("unknown") == "unknown"
 
+    @pytest.mark.asyncio
+    async def test_run_returns_orka_response(self):
+        """Test that run() returns OrkaResponse with list in result field."""
+        params = {
+            "decision_key": "classifier",
+            "routing_map": {
+                "true": ["agent1", "agent2"],
+            }
+        }
+        node = RouterNode(node_id="router", params=params)
+        
+        input_data = {
+            "previous_outputs": {
+                "classifier": "true"
+            }
+        }
+        
+        # Call run() instead of _run_impl() to test the full response wrapping
+        response = await node.run(input_data)
+        
+        # Verify OrkaResponse structure
+        assert isinstance(response, dict)
+        assert response["status"] == "success"
+        assert response["component_id"] == "router"
+        assert response["component_type"] == "node"
+        assert "timestamp" in response
+        
+        # Verify the result contains the routed agents
+        assert isinstance(response["result"], list)
+        assert response["result"] == ["agent1", "agent2"]
+
+    @pytest.mark.asyncio
+    async def test_run_with_dict_decision_returns_orka_response(self):
+        """Test run() with dict decision value returns proper OrkaResponse."""
+        params = {
+            "decision_key": "classifier",
+            "routing_map": {
+                "true": ["agent1"],
+            }
+        }
+        node = RouterNode(node_id="router", params=params)
+        
+        input_data = {
+            "previous_outputs": {
+                "classifier": {"response": "true", "confidence": "0.95"}
+            }
+        }
+        
+        response = await node.run(input_data)
+        
+        assert isinstance(response, dict)
+        assert response["status"] == "success"
+        assert response["result"] == ["agent1"]
+
+    @pytest.mark.asyncio
+    async def test_run_no_match_returns_empty_list_in_orka_response(self):
+        """Test run() with no matching route returns OrkaResponse with empty list."""
+        params = {
+            "decision_key": "classifier",
+            "routing_map": {
+                "true": ["agent1"],
+            }
+        }
+        node = RouterNode(node_id="router", params=params)
+        
+        input_data = {
+            "previous_outputs": {
+                "classifier": "unknown"
+            }
+        }
+        
+        response = await node.run(input_data)
+        
+        assert isinstance(response, dict)
+        assert response["status"] == "success"
+        assert response["result"] == []
+
