@@ -38,6 +38,7 @@ from orka.startup import (  # Main orchestration functions
     run_startup,
     wait_for_redis,
 )
+from orka.startup.banner import display_banner
 
 # The _wait_for_redis function is now wait_for_redis (removed underscore)
 # Provide backward compatibility alias
@@ -52,13 +53,6 @@ __all__ = [
     "wait_for_redis",
 ]
 
-backend = os.environ["ORKA_MEMORY_BACKEND"]
-print(f"🚀 Starting OrKa with {backend.upper()} Backend...")
-print("📋 Configuration:")
-print(f"   • Memory Backend: {backend}")
-print(f"   • Redis URL: {os.environ['REDIS_URL']}")
-print(f"   • LOG_LEVEL: {os.getenv('ORKA_LOG_LEVEL', 'INFO')}")
-
 
 def cli_main():
     """
@@ -66,6 +60,16 @@ def cli_main():
     This function is referenced in pyproject.toml's console_scripts.
     """
     import asyncio
+
+    # Display cool banner at startup
+    display_banner()
+
+    backend = os.environ["ORKA_MEMORY_BACKEND"]
+    print(f"🚀 Starting OrKa with {backend.upper()} Backend...")
+    print("📋 Configuration:")
+    print(f"   • Memory Backend: {backend}")
+    print(f"   • Redis URL: {os.environ['REDIS_URL']}")
+    print(f"   • LOG_LEVEL: {os.getenv('ORKA_LOG_LEVEL', 'INFO')}\n")
 
     try:
         asyncio.run(main())

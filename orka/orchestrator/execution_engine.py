@@ -163,6 +163,27 @@ def json_serializer(obj):
     raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
 
+def sanitize_for_json(obj: Any) -> Any:
+    """
+    Recursively convert datetime objects to ISO strings in nested structures.
+    Ensures all data can be JSON serialized without errors.
+    """
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    elif isinstance(obj, dict):
+        return {k: sanitize_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [sanitize_for_json(item) for item in obj]
+    elif isinstance(obj, (str, int, float, bool, type(None))):
+        return obj
+    else:
+        # For unknown types, try to convert to string
+        try:
+            return str(obj)
+        except Exception:
+            return f"<{type(obj).__name__}>"
+
+
 from .error_handling import ErrorHandler as OrchestratorErrorHandling
 from .metrics import MetricsCollector as OrchestratorMetricsCollector
 from .simplified_prompt_rendering import SimplifiedPromptRenderer
@@ -289,6 +310,9 @@ class ExecutionEngine(
 
             while queue:
                 agent_id = queue.pop(0)
+                
+                # 🔍 DEBUG: Log queue state at each iteration
+                logger.info(f"📋 QUEUE STATE - Processing: {agent_id}, Remaining: {queue[:5]}")
 
                 try:
                     agent = self.agents[agent_id]
@@ -314,10 +338,21 @@ class ExecutionEngine(
 
                     freezed_payload = json.dumps(
                         {k: v for k, v in payload.items() if k != "orchestrator"},
+                        default=json_serializer,
                     )  # Freeze the payload as a string for logging/debug, excluding orchestrator
                     logger.info(
                         f"Running agent '{agent_id}' of type '{agent_type}', payload: {freezed_payload}",
                     )
+                    
+                    # 🔍 DEBUG: Extra logging for join and post-join agents
+                    if agent_type == "joinnode":
+                        logger.info(f"🔗 BEFORE JOIN EXECUTION: {agent_id}")
+                        logger.info(f"🔗 Queue after this join: {queue}")
+                    elif "join" in logs and len(logs) > 0:
+                        last_join = [log for log in logs if log.get("event_type") == "JoinNode"]
+                        if last_join:
+                            logger.info(f"🔍 POST-JOIN AGENT: {agent_id} (last join: {last_join[-1].get('agent_id')})")
+                    
                     log_entry = {
                         "agent_id": agent_id,
                         "event_type": agent.__class__.__name__,
@@ -350,8 +385,19 @@ class ExecutionEngine(
                                 logger.info(
                                     f"Agent '{agent_id}' returned waiting status: {agent_result}",
                                 )
+                                # 🔍 DEBUG: Extra logging for join waiting status
+                                if agent_type == "joinnode":
+                                    logger.info(f"🔗 JOIN WAITING - Re-queuing {agent_id}")
+                                    logger.info(f"🔗 JOIN WAITING - Pending: {agent_result.get('pending')}")
+                                    logger.info(f"🔗 JOIN WAITING - Retry: {agent_result.get('retry_count')}/{agent_result.get('max_retries')}")
+                                    logger.info(f"🔗 JOIN WAITING - Current queue before re-queue: {queue}")
+                                
                                 # Put agent back in queue to retry later
                                 queue.append(agent_id)
+                                
+                                if agent_type == "joinnode":
+                                    logger.info(f"🔗 JOIN WAITING - Queue after re-queue: {queue}")
+                                
                                 break
 
                             # If we got a result, break retry loop
@@ -400,6 +446,8 @@ class ExecutionEngine(
                                 logger.warning(
                                     f"Router '{agent_id}' returned empty or invalid result: {router_result}"
                                 )
+                                # Skip normal processing for empty router results
+                                continue
 
                         # Special handling for GraphScout decisions
                         if agent_type == "graphscoutagent":
@@ -776,16 +824,23 @@ class ExecutionEngine(
                         elif agent_type == "joinnode":
                             # Join nodes handle their own coordination internally
                             # No special handling needed here - let the join node do its work
+                            logger.info(f"🔗 JOIN NODE DETECTED: {agent_id}")
+                            logger.info(f"🔗 JOIN - Agent result type: {type(agent_result)}")
+                            logger.info(f"🔗 JOIN - Agent result: {agent_result}")
+                            logger.info(f"🔗 JOIN - Remaining queue length: {len(queue)}")
+                            if queue:
+                                logger.info(f"🔗 JOIN - Next agents in queue: {queue[:3]}")
+                            logger.info(f"🔗 JOIN - Previous outputs keys: {list(self.build_previous_outputs(logs).keys())}")
                             pass
 
                         # Store the result in memory
                         result_key = f"agent_result:{agent_id}"
-                        self.memory.set(result_key, json.dumps(payload_out))
+                        self.memory.set(result_key, json.dumps(payload_out, default=json_serializer))
                         logger.debug(f"- Stored result for agent {agent_id}")
 
                         # Store in Redis hash for group tracking
                         group_key = "agent_results"
-                        self.memory.hset(group_key, agent_id, json.dumps(payload_out))
+                        self.memory.hset(group_key, agent_id, json.dumps(payload_out, default=json_serializer))
                         logger.debug(f"- Stored result in group for agent {agent_id}")
 
                         # Add to logs
@@ -1164,10 +1219,13 @@ class ExecutionEngine(
                 for agent_id, result in branch_result.items():
                     step_index = f"{self.step_index}[{len(result_logs)}]"
 
+                    # Sanitize result to remove any datetime objects before storing
+                    sanitized_result = sanitize_for_json(result)
+
                     # Store result in Redis for JoinNode
                     join_state_key = "waitfor:join_parallel_checks:inputs"
                     self.memory.hset(
-                        join_state_key, agent_id, json.dumps(result, default=json_serializer)
+                        join_state_key, agent_id, json.dumps(sanitized_result, default=json_serializer)
                     )
 
                     # Create log entry
@@ -1219,8 +1277,8 @@ class ExecutionEngine(
                         previous_outputs=updated_previous_outputs.copy(),
                     )
 
-                    # Update context for next agents
-                    updated_previous_outputs[agent_id] = result
+                    # Update context for next agents - use sanitized result
+                    updated_previous_outputs[agent_id] = sanitized_result
 
             # Check if we have any successful branches
             successful_branches = [r for r in branch_results if not isinstance(r, BaseException)]

@@ -31,6 +31,8 @@ sophisticated branching logic based on dynamic conditions and previous outputs.
 - A/B testing with random or criteria-based routing
 """
 
+import re
+
 from .base_node import BaseNode
 
 
@@ -168,7 +170,25 @@ class RouterNode(BaseNode):
 
         if route is None:
             # Try string-based matching as fallback
-            route = routing_map.get(decision_value_str) or []
+            route = routing_map.get(decision_value_str)
+            
+        if route is None or (isinstance(route, list) and len(route) == 0):
+            # ENHANCED: Try to extract boolean keywords from longer responses
+            # LLMs sometimes ignore instructions and generate explanations
+            # Look for true/false keywords in the response text
+            # Search for standalone true/false words (not part of other words)
+            true_match = re.search(r'\b(true|yes)\b', decision_value_str)
+            false_match = re.search(r'\b(false|no)\b', decision_value_str)
+            
+            if true_match and not false_match:
+                # Found only "true", route accordingly
+                route = routing_map.get("true") or routing_map.get(True) or []
+            elif false_match and not true_match:
+                # Found only "false", route accordingly
+                route = routing_map.get("false") or routing_map.get(False) or []
+            elif not route:
+                # No match found at all
+                route = []
 
         return route
 

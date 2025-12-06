@@ -14,12 +14,20 @@
 
 import json
 import logging
+from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional
 
 from ..memory.redisstack_logger import RedisStackMemoryLogger
 from .base_node import BaseNode
 
 logger = logging.getLogger(__name__)
+
+
+def json_serializer(obj):
+    """JSON serializer for objects not serializable by default json code"""
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
 
 class JoinNode(BaseNode):
@@ -40,8 +48,12 @@ class JoinNode(BaseNode):
         """
         Run the join operation by collecting and merging results from forked agents.
         """
+        logger.info(f"🔗 JOIN NODE START: {self.node_id}")
+        logger.info(f"🔗 JOIN - Input data: {input_data}")
+        
         # Try to get fork_group_id from input, fallback to finding by pattern
         fork_group_id = input_data.get("fork_group_id")
+        logger.info(f"🔗 JOIN - Fork group ID from input: {fork_group_id}")
 
         if not fork_group_id and self.group_id:
             # Look for fork groups that match our pattern (e.g., "opening_positions_*")
@@ -76,6 +88,8 @@ class JoinNode(BaseNode):
         if not fork_group_id:
             fork_group_id = self.group_id
 
+        logger.info(f"🔗 JOIN - Final fork_group_id: {fork_group_id}")
+
         state_key = "waitfor:join_parallel_checks:inputs"
 
         # Get or increment retry count using backend-agnostic hash operations
@@ -86,6 +100,8 @@ class JoinNode(BaseNode):
             retry_count = int(retry_count_str) + 1
         self.memory_logger.hset("join_retry_counts", self._retry_key, str(retry_count))
 
+        logger.info(f"🔗 JOIN - Retry count: {retry_count}/{self.max_retries}")
+
         # Get list of received inputs and expected targets
         inputs_received = self.memory_logger.hkeys(state_key)
         received = [i.decode() if isinstance(i, bytes) else i for i in inputs_received]
@@ -93,13 +109,19 @@ class JoinNode(BaseNode):
         fork_targets = [i.decode() if isinstance(i, bytes) else i for i in fork_targets]
         pending = [agent for agent in fork_targets if agent not in received]
 
+        logger.info(f"🔗 JOIN - Expected agents (fork_targets): {fork_targets}")
+        logger.info(f"🔗 JOIN - Received agents: {received}")
+        logger.info(f"🔗 JOIN - Pending agents: {pending}")
+
         # Check if all expected agents have completed
         if not pending:
+            logger.info(f"🔗 JOIN - All agents completed! Proceeding to merge results.")
             self.memory_logger.hdel("join_retry_counts", self._retry_key)
             return self._complete(fork_targets, state_key)
 
         # Check for max retries
         if retry_count >= self.max_retries:
+            logger.error(f"🔗 JOIN - TIMEOUT! Max retries reached.")
             self.memory_logger.hdel("join_retry_counts", self._retry_key)
             logger.error(
                 f"[ORKA][NODE][JOIN][TIMEOUT] Join node '{self.node_id}' timed out after {self.max_retries} retries. "
@@ -118,6 +140,7 @@ class JoinNode(BaseNode):
             }
 
         # Return waiting status if not all agents have completed
+        logger.info(f"🔗 JOIN - Still waiting for {len(pending)} agents: {pending}")
         return {
             "status": "waiting",
             "pending": pending,
@@ -137,6 +160,7 @@ class JoinNode(BaseNode):
         Returns:
             dict: Merged results from all agents
         """
+        logger.info(f"🔗 JOIN COMPLETE - Starting merge for {len(fork_targets)} agents")
 
         # Get all results from Redis
         merged = {}
@@ -176,12 +200,12 @@ class JoinNode(BaseNode):
                     # Store the result in Redis key for direct access
                     fork_group_id = result.get("fork_group", "unknown")
                     agent_key = f"agent_result:{fork_group_id}:{agent_id}"
-                    self.memory_logger.set(agent_key, json.dumps(merged[agent_id]))
+                    self.memory_logger.set(agent_key, json.dumps(merged[agent_id], default=json_serializer))
                     logger.debug(f"- Stored result for agent {agent_id}")
 
                     # Store in Redis hash for group tracking
                     group_key = f"fork_group_results:{fork_group_id}"
-                    self.memory_logger.hset(group_key, agent_id, json.dumps(merged[agent_id]))
+                    self.memory_logger.hset(group_key, agent_id, json.dumps(merged[agent_id], default=json_serializer))
                     logger.debug(f"- Stored result in group for agent {agent_id}")
                 else:
                     logger.warning(
@@ -195,7 +219,7 @@ class JoinNode(BaseNode):
                 merged[agent_id] = {"error": str(e), "error_type": type(e).__name__}
 
         # Store output using hash operations
-        self.memory_logger.hset("join_outputs", self.output_key, json.dumps(merged))
+        self.memory_logger.hset("join_outputs", self.output_key, json.dumps(merged, default=json_serializer))
 
         # Clean up state using hash operations
         if fork_targets:  # Only call hdel (hash delete) if there are keys to delete
@@ -208,14 +232,18 @@ class JoinNode(BaseNode):
             **merged,  # Expose individual agent results at top level
         }
 
+        logger.info(f"🔗 JOIN COMPLETE - Merged {len(merged)} results")
+        logger.info(f"🔗 JOIN COMPLETE - Result keys: {list(result.keys())}")
+        logger.info(f"🔗 JOIN COMPLETE - Status: {result['status']}")
+
         # Store the final result in Redis
         join_key = f"join_result:{self.node_id}"
-        self.memory_logger.set(join_key, json.dumps(result))
+        self.memory_logger.set(join_key, json.dumps(result, default=json_serializer))
         logger.debug(f"- Stored final join result: {join_key}")
 
         # Store in Redis hash for group tracking
         group_key = f"join_results:{self.node_id}"
-        self.memory_logger.hset(group_key, "result", json.dumps(result))
+        self.memory_logger.hset(group_key, "result", json.dumps(result, default=json_serializer))
         logger.debug(f"- Stored final result in group")
 
         return result

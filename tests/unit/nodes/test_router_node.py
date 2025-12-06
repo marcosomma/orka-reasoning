@@ -219,3 +219,169 @@ class TestRouterNode:
         assert response["status"] == "success"
         assert response["result"] == []
 
+    @pytest.mark.asyncio
+    async def test_run_impl_verbose_response_with_true(self):
+        """Test _run_impl extracts 'true' from verbose LLM response."""
+        params = {
+            "decision_key": "classifier",
+            "routing_map": {
+                "true": ["agent1"],
+                "false": ["agent2"],
+            }
+        }
+        node = RouterNode(node_id="router", params=params)
+        
+        input_data = {
+            "previous_outputs": {
+                "classifier": "Based on the analysis, the answer is true because the data is coherent."
+            }
+        }
+        
+        result = await node._run_impl(input_data)
+        
+        assert result == ["agent1"]
+
+    @pytest.mark.asyncio
+    async def test_run_impl_verbose_response_with_false(self):
+        """Test _run_impl extracts 'false' from verbose LLM response."""
+        params = {
+            "decision_key": "classifier",
+            "routing_map": {
+                "true": ["agent1"],
+                "false": ["agent2"],
+            }
+        }
+        node = RouterNode(node_id="router", params=params)
+        
+        input_data = {
+            "previous_outputs": {
+                "classifier": "The provided information is not coherent and complete.\n\nHere's why:\n1. Missing context\n2. Incomplete data\n\nTherefore, the answer is false."
+            }
+        }
+        
+        result = await node._run_impl(input_data)
+        
+        assert result == ["agent2"]
+
+    @pytest.mark.asyncio
+    async def test_run_impl_verbose_response_with_yes(self):
+        """Test _run_impl extracts 'yes' from verbose response and maps to true."""
+        params = {
+            "decision_key": "classifier",
+            "routing_map": {
+                "true": ["agent1"],
+                "false": ["agent2"],
+            }
+        }
+        node = RouterNode(node_id="router", params=params)
+        
+        input_data = {
+            "previous_outputs": {
+                "classifier": "After careful consideration, yes, this is correct."
+            }
+        }
+        
+        result = await node._run_impl(input_data)
+        
+        assert result == ["agent1"]
+
+    @pytest.mark.asyncio
+    async def test_run_impl_verbose_response_with_no(self):
+        """Test _run_impl extracts 'no' from verbose response and maps to false."""
+        params = {
+            "decision_key": "classifier",
+            "routing_map": {
+                "true": ["agent1"],
+                "false": ["agent2"],
+            }
+        }
+        node = RouterNode(node_id="router", params=params)
+        
+        input_data = {
+            "previous_outputs": {
+                "classifier": "Upon review, no, this doesn't meet the criteria."
+            }
+        }
+        
+        result = await node._run_impl(input_data)
+        
+        assert result == ["agent2"]
+
+    @pytest.mark.asyncio
+    async def test_run_impl_verbose_response_with_both_keywords(self):
+        """Test _run_impl returns empty list when both true and false appear in response."""
+        params = {
+            "decision_key": "classifier",
+            "routing_map": {
+                "true": ["agent1"],
+                "false": ["agent2"],
+            }
+        }
+        node = RouterNode(node_id="router", params=params)
+        
+        input_data = {
+            "previous_outputs": {
+                "classifier": "It's true that we have data, but false that it's complete."
+            }
+        }
+        
+        result = await node._run_impl(input_data)
+        
+        # When both keywords present, should not match either route
+        assert result == []
+
+    @pytest.mark.asyncio
+    async def test_run_impl_case_insensitive_keyword_extraction(self):
+        """Test _run_impl keyword extraction is case-insensitive."""
+        params = {
+            "decision_key": "classifier",
+            "routing_map": {
+                "true": ["agent1"],
+                "false": ["agent2"],
+            }
+        }
+        node = RouterNode(node_id="router", params=params)
+        
+        # Test various case combinations
+        test_cases = [
+            ("The answer is TRUE", ["agent1"]),
+            ("Response: FALSE", ["agent2"]),
+            ("Yes, that's correct", ["agent1"]),
+            ("No way!", ["agent2"]),
+        ]
+        
+        for response_text, expected_route in test_cases:
+            input_data = {
+                "previous_outputs": {
+                    "classifier": response_text
+                }
+            }
+            result = await node._run_impl(input_data)
+            assert result == expected_route, f"Failed for: {response_text}"
+
+    @pytest.mark.asyncio
+    async def test_run_impl_dict_with_verbose_response(self):
+        """Test _run_impl extracts keyword from dict response field."""
+        params = {
+            "decision_key": "classifier",
+            "routing_map": {
+                "true": ["agent1"],
+                "false": ["agent2"],
+            }
+        }
+        node = RouterNode(node_id="router", params=params)
+        
+        input_data = {
+            "previous_outputs": {
+                "classifier": {
+                    "response": "After analysis, the result is true.",
+                    "confidence": "0.9"
+                }
+            }
+        }
+        
+        result = await node._run_impl(input_data)
+        
+        assert result == ["agent1"]
+
+

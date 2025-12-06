@@ -1,0 +1,161 @@
+orchestrator:
+  id: memory-preset-demo
+  strategy: parallel
+  agents:
+    - memory-read_0
+    - openai-answer_2
+    - fork_3
+    - join_9
+    - openai-binary_10
+    - router_11
+    - openai-answer_14
+    - openai-answer_15
+    - memory-write_final
+    - final_summary
+  queue: orka:preset-demo
+  memory_preset: semantic
+agents:
+  - id: memory-read_0
+    type: memory
+    prompt: Retrieve any stored memories about how the subject '{{ get_input() }}' was classified or understood in the past. Return "NONE" if nothing matches.
+    namespace: fact_validator
+  - id: openai-answer_2
+    type: local_llm
+    prompt: Given previous context {{ get_agent_response('memory-read_0') }}, provide an initial detailed answer to {{ get_input() }}. Be comprehensive and informative.
+    model: llama3.2:3b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    depends_on: memory-read_0
+  - id: fork_3
+    type: fork
+    targets:
+      - - openai-binary_4
+        - openai-classification_5
+        - openai-answer_6
+      - - openai-answer_7
+        - failover_11
+    depends_on: openai-answer_2
+  - id: openai-binary_4
+    type: local_llm
+    prompt: Does the question {{ get_input() }} require factual validation? Answer with exactly 'true' or 'false' only.
+    model: llama3.2:3b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.1
+  - id: openai-answer_7
+    type: local_llm
+    prompt: Provide a concise summary for the question {{ get_input() }}. Be clear and to the point.
+    model: llama3.2:3b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.5
+  - id: openai-classification_5
+    type: local_llm
+    prompt: "Classify the domain of the question {{ get_input() }}. Choose exactly one from: science, history, technology, geography, culture, general. Answer with only the domain name."
+    model: llama3.2:3b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.2
+  - id: failover_11
+    type: failover
+    children:
+      - id: duckduckgo_12
+        type: duckduckgo
+        queue: orka:duckduckgo_12
+        prompt: "{{ get_input() }}"
+      - id: duckduckgo_13
+        type: duckduckgo
+        queue: orka:duckduckgo_13
+        prompt: "{{ get_input() }}"
+  - id: openai-answer_6
+    type: local_llm
+    prompt: "Provide an alternative perspective or deeper insight into the question {{ get_input() }} considering domain: {{ get_agent_response('openai-classification_5') }}. Be creative and thoughtful."
+    model: llama3.2:3b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.8
+  - id: join_9
+    type: join
+    group: fork_3
+  - id: openai-binary_10
+    type: local_llm
+    prompt: "Is the provided information coherent and complete based on outputs: {{ get_agent_response('join_9') }}? Answer with exactly 'true' or 'false' only."
+    model: llama3.2:3b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.1
+    depends_on: join_9
+  - id: router_11
+    type: router
+    params:
+      decision_key: openai-binary_10
+      routing_map:
+        "true":
+          - openai-answer_14
+          - memory-write_final
+        "false":
+          - openai-answer_15
+          - memory-write_final
+    depends_on: openai-binary_10
+  - id: openai-answer_14
+    type: local_llm
+    prompt: Given confirmed coherent inputs {{ get_agent_response('join_9') }}, provide a polished final response to {{ get_input() }}. Be professional and comprehensive.
+    model: llama3.2:3b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.6
+  - id: openai-answer_15
+    type: local_llm
+    prompt: Given identified gaps in coherence or completeness in {{ get_agent_response('join_9') }}, clarify or complete the information to fully answer {{ get_input() }}. Fill in the missing pieces.
+    model: llama3.2:3b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+  - id: memory-write_final
+    type: memory
+    prompt: "{{ safe_get_response('openai-answer_14', get_agent_response('openai-answer_15')) }}"
+    metadata:
+      source: "{{ \"openai-answer_14\" if get_agent_response(\"openai-answer_14\") else \"openai-answer_15\" }}"
+      result: "{{ safe_get_response('openai-answer_14', get_agent_response('openai-answer_15')) }}"
+      category: stored
+    namespace: fact_validator
+    key_template: "{{ get_input() }}"
+    depends_on: openai-answer_15
+  - id: final_summary
+    type: local_llm
+    prompt: |-
+      Based on the question "{{ get_input() }}", provide a comprehensive response using the available information:
+
+      {% set memory_info = get_agent_response('memory-read_0') %}
+      {% if memory_info %}
+      Retrieved information: {{ memory_info }}
+      {% endif %}
+
+      {% set analysis = get_agent_response('openai-answer_2') %}
+      {% if analysis %}
+      Analysis: {{ analysis }}
+      {% endif %}
+
+      {% set validation = get_agent_response('openai-binary_4') %}
+      {% set classification = get_agent_response('openai-classification_5') %}
+      {% set alternative = get_agent_response('openai-answer_6') %}
+      {% set coherence = get_agent_response('openai-binary_10') %}
+      {% set final_answer = get_agent_response('openai-answer_14') or get_agent_response('openai-answer_15') %}
+
+      {% if final_answer %}
+      {{ final_answer }}
+      {% endif %}
+
+      Synthesize all available information to provide the most accurate and helpful response to the user's question.
+    model: llama3.2:3b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.7
+    depends_on: memory-write_final
+  - id: duckduckgo_12
+    type: duckduckgo
+    prompt: "{{ get_input() }}"
+  - id: duckduckgo_13
+    type: duckduckgo
+    prompt: "{{ get_input() }}"
