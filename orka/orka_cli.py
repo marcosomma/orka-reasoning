@@ -3,6 +3,7 @@
 import argparse
 import json
 import json as _json
+import importlib.metadata
 import logging
 import sys
 from pathlib import Path
@@ -14,7 +15,30 @@ from orka.cli.utils import setup_logging
 logger = logging.getLogger(__name__)
 
 # Version
-__version__ = "0.9.7"
+def _get_version() -> str:
+    # 1) Installed package metadata (best for wheels/sdist installs)
+    try:
+        return importlib.metadata.version("orka-reasoning")
+    except Exception:
+        pass
+
+    # 2) Dev fallback: read version from repo pyproject.toml (editable/worktree)
+    try:
+        pyproject_path = Path(__file__).resolve().parents[1] / "pyproject.toml"
+        if pyproject_path.exists():
+            import tomllib
+
+            data = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
+            version = data.get("project", {}).get("version")
+            if isinstance(version, str) and version.strip():
+                return version.strip()
+    except Exception:
+        pass
+
+    return "0.9.11"
+
+
+__version__ = _get_version()
 
 # Re-export run_cli for backward compatibility
 __all__ = ["cli_main", "run_cli"]

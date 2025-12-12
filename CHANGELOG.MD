@@ -1,4 +1,26 @@
 
+# [0.9.11] · 2025-12-12 🧪
+OrKa v0.9.11 – Test Strictness, Warning Hardening & Reliability
+
+### Summary
+This release strengthens test reliability by making un-awaited coroutine warnings fail fast, reducing reliance on broad/global mocks, and fixing test correctness issues where mocks did not match production behavior.
+
+### Fixed
+* **🧵 Async correctness in tests**
+  * Treats `RuntimeWarning: coroutine ... was never awaited` as a test error (with a narrow allowlist for a known external shutdown warning).
+  * Adjusted MemoryReaderNode tests to match production sync call paths (no silent coroutine leaks).
+
+* **🧰 Strict-mode test wiring**
+  * Added opt-out controls for global autouse mocks (env var + marker) to validate wiring without the safety net.
+
+* **🧹 Test noise reduction**
+  * Removed ineffective `usefixtures()` usage without arguments and replaced it with the correct marker.
+
+### Notes
+* Coverage gate remains enforced via pytest configuration.
+
+---
+
 # [0.9.10] · 2025-12-06 🧹
 OrKa v0.9.10 – Test Suite Cleanup & Router YAML Generation Fixes
 
