@@ -41,14 +41,15 @@ agents:
     max_loops: 3
     score_threshold: 0.25  # Lowered from 0.8 to realistic cognitive convergence thresholds
     
-    # Boolean scoring configuration for debate quality
+    # Boolean scoring configuration for debate convergence
     scoring:
       preset: moderate
+      context: loop_convergence  # Track debate convergence, not agent paths
       custom_weights:
-        completeness.has_all_required_steps: 0.15
-        completeness.addresses_all_query_aspects: 0.15
-        coherence.logical_agent_sequence: 0.12
-        coherence.proper_data_flow: 0.10
+        improvement.shows_progress: 0.25
+        improvement.approaches_goal: 0.20
+        stability.consistent_direction: 0.20
+        convergence.approaching_threshold: 0.15
     
     past_loops_metadata:
       round: "{{ get_loop_number() }}"

@@ -1,0 +1,448 @@
+orchestrator:
+  id: system-self-assessment
+  strategy: parallel
+  agents:
+    - data_preparation
+    - fork_parallel_analysis
+    - join_results
+    - routing_decision
+    - loop_processor
+    - validation_check
+    - final_assessment
+
+agents:
+  # Phase 1: Prepare test data
+  - id: data_preparation
+    type: local_llm
+    prompt: |
+      Generate a structured dataset for system evaluation containing:
+      1. Three different computational scenarios (simple, moderate, complex)
+      2. Expected outcomes for each scenario
+      3. Performance metrics to track (accuracy, consistency, completeness)
+      
+      Return as JSON with format:
+      {
+        "scenarios": [
+          {"id": 1, "complexity": "simple", "input": "...", "expected": "..."},
+          {"id": 2, "complexity": "moderate", "input": "...", "expected": "..."},
+          {"id": 3, "complexity": "complex", "input": "...", "expected": "..."}
+        ],
+        "metrics": ["accuracy", "consistency", "completeness"]
+      }
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+
+  # Phase 2: Fork - Parallel processing paths
+  - id: fork_parallel_analysis
+    type: fork
+    targets:
+      - - path_a_processor
+        - path_a_validator
+      - - path_b_processor
+        - path_b_validator
+      - - path_c_processor
+    depends_on: data_preparation
+
+  # Path A: Simple processing
+  - id: path_a_processor
+    type: local_llm
+    prompt: |
+      Validate and process the dataset structure from data preparation:
+      {{ get_agent_response('data_preparation') }}
+      
+      Analyze all scenarios and return the complete dataset with:
+      1. Verification that all scenarios are present
+      2. Validation of expected outputs format
+      3. Completeness check of metrics array
+      4. Return the FULL JSON dataset as-is (do not solve the math problems)
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.5
+
+  - id: path_a_validator
+    type: local_llm
+    prompt: |
+      Validate the processing result from path A:
+      Input: {{ get_agent_response('path_a_processor') }}
+      Expected from dataset: {{ get_agent_response('data_preparation') }}
+      
+      Compare actual vs expected and rate:
+      - Accuracy score (0-100%)
+      - Deviation analysis
+      - Pass/Fail determination
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.2
+
+  # Path B: Moderate processing
+  - id: path_b_processor
+    type: local_llm
+    prompt: |
+      Validate dataset structure and consistency from data preparation:
+      {{ get_agent_response('data_preparation') }}
+      
+      Perform structural validation:
+      1. Parse and verify JSON syntax
+      2. Check scenarios array completeness
+      3. Verify metrics array presence
+      4. Return the FULL JSON dataset with all scenarios intact (do not compute results)
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.5
+
+  - id: path_b_validator
+    type: local_llm
+    prompt: |
+      Validate the processing result from path B:
+      Input: {{ get_agent_response('path_b_processor') }}
+      Expected from dataset: {{ get_agent_response('data_preparation') }}
+      
+      Perform deep validation:
+      - Step-by-step correctness
+      - Logical consistency
+      - Accuracy score (0-100%)
+      - Error analysis if any
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.2
+
+  # Path C: Complex processing
+  - id: path_c_processor
+    type: local_llm
+    prompt: |
+      Analyze dataset completeness and quality from data preparation:
+      {{ get_agent_response('data_preparation') }}
+      
+      Perform comprehensive structural analysis:
+      1. Multi-level JSON structure validation
+      2. Cross-reference scenario complexity levels
+      3. Verify expected output field consistency
+      4. Validate metrics array integrity
+      5. Return the COMPLETE JSON dataset unchanged (preserve all scenarios)
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.5
+
+  # Phase 3: Join all parallel paths
+  - id: join_results
+    type: join
+    group: fork_parallel_analysis
+
+  # Phase 4: Router - Decide next action based on results
+  - id: routing_decision
+    type: local_llm
+    prompt: |
+      Analyze all validation results from the three paths:
+      {{ get_agent_response('join_results') }}
+      
+      Determine if reprocessing is needed.
+      Answer ONLY with "true" or "false":
+      - "true" if any path has accuracy < 70% or failed validation
+      - "false" if all paths passed with accuracy >= 70%
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.1
+    depends_on: join_results
+
+  - id: router_reprocess
+    type: router
+    params:
+      decision_key: routing_decision
+      routing_map:
+        "true": 
+          - reprocess_failed
+          - reprocess_validator
+        "false": aggregation_analyzer
+    depends_on: routing_decision
+
+  # Router path - Reprocessing if needed
+  - id: reprocess_failed
+    type: local_llm
+    prompt: |
+      Identify and reprocess failed scenarios:
+      Original results: {{ get_agent_response('join_results') }}
+      Validation decision: {{ get_agent_response('routing_decision') }}
+      
+      Reanalyze failed scenarios with corrective measures:
+      1. Identify failure points
+      2. Apply corrections
+      3. Recompute results
+      4. Provide new confidence scores
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.4
+
+  - id: reprocess_validator
+    type: local_llm
+    prompt: |
+      Validate reprocessed results:
+      Reprocessed: {{ get_agent_response('reprocess_failed') }}
+      
+      Check if improvements were made:
+      - New accuracy scores
+      - Improvement delta
+      - Final pass/fail status
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.2
+
+  # Router path - Direct aggregation if all passed
+  - id: aggregation_analyzer
+    type: local_llm
+    prompt: |
+      Aggregate successful results from all paths:
+      {{ get_agent_response('join_results') }}
+      
+      Synthesize findings:
+      1. Overall accuracy across all paths
+      2. Consistency patterns
+      3. Performance highlights
+      4. Readiness for next phase
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+
+  # Phase 5: Loop processor - Iterative refinement
+  - id: loop_processor
+    type: loop
+    max_loops: 3
+    score_threshold: 0.7
+    
+    # Boolean scoring for iterative refinement convergence
+    scoring:
+      preset: lenient
+      context: loop_convergence  # Track refinement convergence
+    
+    # Depends on BOTH possible router paths (at least one will execute)
+    depends_on:
+      - reprocess_validator
+      - aggregation_analyzer
+    
+    # Pass external data to internal workflow as input
+    prompt: |
+      {
+        "routing_decision": {{ get_agent_response('routing_decision') | tojson }},
+        "join_results": {{ get_agent_response('join_results') | tojson }},
+        "reprocess_validator": {{ get_agent_response('reprocess_validator') | tojson }},
+        "aggregation_analyzer": {{ get_agent_response('aggregation_analyzer') | tojson }}
+      }
+    
+    internal_workflow:
+      orchestrator:
+        id: loop-refinement-workflow
+        strategy: sequential
+        agents:
+          - iteration_analyzer
+          - synthesis
+          - loop_convergence_validator
+      
+      agents:
+        - id: iteration_analyzer
+          type: local_llm
+          prompt: |
+            ITERATION {{ get_loop_number() }} - Refinement Analysis
+            
+            == DATA TO ANALYZE ==
+            Routing Decision: {{ input.routing_decision }}
+            Join Results: {{ input.join_results }}
+            
+            {% if input.reprocess_validator %}
+            Reprocessed Results: {{ input.reprocess_validator }}
+            {% endif %}
+            
+            {% if input.aggregation_analyzer %}
+            Aggregated Results: {{ input.aggregation_analyzer }}
+            {% endif %}
+            
+            {% if get_loop_number() > 1 %}
+            == PREVIOUS ITERATION ANALYSIS ==
+            {{ get_past_loops() }}
+            {% endif %}
+            
+            == REFINEMENT TASK ==
+            Analyze the execution flow and identify:
+            1. Accuracy gaps between expected vs actual results
+            2. Error patterns across parallel paths
+            3. Validation effectiveness (what passed/failed and why)
+            4. Convergence metrics (are results improving?)
+            
+            Return JSON: {"iteration": {{ get_loop_number() }}, "accuracy_delta": X, "error_count": Y, "improvements": [...], "convergence_score": 0-100}
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.4
+
+        - id: synthesis
+          type: local_llm
+          prompt: |
+            SYNTHESIS - Iteration {{ get_loop_number() }}
+            
+            Analysis: {{ get_agent_response('iteration_analyzer') }}
+            
+            {% if get_loop_number() > 1 %}
+            Previous Synthesis: {{ get_past_loops() }}
+            
+            Compare current vs previous iteration:
+            - Did accuracy improve?
+            - Are errors decreasing?
+            - Is convergence score increasing?
+            {% endif %}
+            
+            Provide comprehensive assessment:
+            1. **Convergence Score (0-100%)**: How close to optimal solution?
+            2. **Iteration Delta**: Improvement from last iteration (if iteration > 1)
+            3. **Key Improvements**: What got better this iteration?
+            4. **Remaining Issues**: What still needs work?
+            5. **Recommendation**: Continue iterating or stop?
+            
+            Return JSON: {"convergence_score": X, "delta_from_previous": Y, "improvements": [...], "issues": [...], "should_continue": boolean}
+          model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          temperature: 0.3
+
+        - id: loop_convergence_validator
+          type: loop_validator
+          llm_model: gpt-oss:20b
+          model_url: http://localhost:11434/api/generate
+          provider: ollama
+          scoring_preset: lenient
+          scoring_context: loop_convergence  # Evaluate refinement convergence
+          evaluation_target: synthesis
+          temperature: 0.1
+          prompt: |
+            Evaluate convergence of iteration {{ get_loop_number() }}:
+            
+            Current Synthesis: {{ get_agent_response('synthesis') }}
+            
+            {% if get_loop_number() > 1 %}
+            Previous Iterations: {{ get_past_loops() }}
+            {% endif %}
+            
+            Assess these convergence criteria:
+            1. **Improvement**: Is this iteration better than the previous?
+            2. **Stability**: Are results consistent and not degrading?
+            3. **Delta Trend**: Is the rate of improvement decreasing (approaching limit)?
+            4. **Target Proximity**: Are we close to the 85% threshold?
+            
+            Determine if loop should continue or converge.  # Phase 6: Final validation check
+  - id: validation_check
+    type: local_llm
+    prompt: |
+      Perform comprehensive validation of all processing stages:
+      
+      1. Initial data prep: {{ get_agent_response('data_preparation') }}
+      2. Parallel processing: {{ get_agent_response('join_results') }}
+      3. Routing decision: {{ get_agent_response('routing_decision') }}
+      4. Loop refinements: {{ get_agent_response('loop_processor') }}
+      
+      Validate:
+      - Data integrity through all stages
+      - Logic consistency
+      - Result reliability
+      - Error handling effectiveness
+      
+      Provide validation report with pass/fail for each stage.
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.2
+    depends_on: loop_processor
+
+  # Phase 7: Comprehensive final assessment
+  - id: final_assessment
+    type: local_llm
+    prompt: |
+      COMPREHENSIVE SYSTEM SELF-ASSESSMENT REPORT
+      
+      Analyze the complete execution flow and provide detailed evaluation:
+      
+      == EXECUTION DATA ==
+      Phase 1 - Data Preparation:
+      {{ get_agent_response('data_preparation') }}
+      
+      Phase 2 - Parallel Processing (Fork/Join):
+      Path A: {{ get_agent_response('path_a_validator') }}
+      Path B: {{ get_agent_response('path_b_validator') }}
+      Path C: {{ get_agent_response('path_c_processor') }}
+      Joined: {{ get_agent_response('join_results') }}
+      
+      Phase 3 - Conditional Routing:
+      Decision: {{ get_agent_response('routing_decision') }}
+      {% if get_agent_response('reprocess_validator') %}
+      Reprocessing: {{ get_agent_response('reprocess_validator') }}
+      {% else %}
+      Aggregation: {{ get_agent_response('aggregation_analyzer') }}
+      {% endif %}
+      
+      Phase 4 - Iterative Refinement (Loop):
+      {{ get_agent_response('loop_processor') }}
+      
+      Phase 5 - Final Validation:
+      {{ get_agent_response('validation_check') }}
+      
+      == ASSESSMENT REQUIREMENTS ==
+      Evaluate the following aspects with scores (0-100) and detailed analysis:
+      
+      1. **PARALLEL PROCESSING PERFORMANCE**
+         - Fork operation: Did all paths execute correctly?
+         - Join operation: Were results properly aggregated?
+         - Path independence: Were paths truly parallel?
+         - Resource efficiency: Execution time and consistency
+      
+      2. **CONDITIONAL ROUTING EFFECTIVENESS**
+         - Decision accuracy: Was routing decision correct?
+         - Path execution: Did routed path execute properly?
+         - Error handling: How were failures managed?
+         - Alternative paths: Were unused paths properly skipped?
+      
+      3. **LOOP CONVERGENCE QUALITY**
+         - Iteration progression: Did quality improve each iteration?
+         - Convergence detection: Was stopping point appropriate?
+         - Resource usage: Number of iterations vs improvement
+         - Stability: Were results consistent and reproducible?
+      
+      4. **VALIDATION ROBUSTNESS**
+         - Accuracy verification: Were results accurate?
+         - Consistency checks: Were outputs consistent?
+         - Error detection: Were anomalies identified?
+         - Recovery mechanisms: How were errors handled?
+      
+      5. **OVERALL SYSTEM INTEGRITY**
+         - Data flow: Was data properly propagated through all stages?
+         - Logic coherence: Were decisions logical and justified?
+         - Error resilience: How did system handle edge cases?
+         - Output quality: Are final results trustworthy?
+      
+      6. **ANOMALY DETECTION**
+         - Identify any unexpected behaviors
+         - Flag potential issues or edge cases
+         - Suggest improvements
+      
+      == REPORT FORMAT ==
+      Provide a comprehensive assessment report with:
+      - Executive summary (3-4 sentences)
+      - Detailed scores for each aspect (1-6 above)
+      - Strengths identified
+      - Weaknesses or concerns found
+      - Specific recommendations for improvement
+      - Overall system health rating (Excellent/Good/Fair/Poor)
+      - Confidence level in this assessment (0-100%)
+      
+      Be thorough, objective, and specific in your evaluation.
+    model: gpt-oss:20b
+    model_url: http://localhost:11434/api/generate
+    provider: ollama
+    temperature: 0.3
+    depends_on: validation_check

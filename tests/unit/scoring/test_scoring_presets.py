@@ -13,14 +13,24 @@ class TestPresets:
 
     def test_presets_structure(self):
         """Test that PRESETS dictionary has expected structure."""
-        assert "strict" in PRESETS
-        assert "moderate" in PRESETS
-        assert "lenient" in PRESETS
+        # After refactoring, PRESETS is now context-based
+        assert "graphscout" in PRESETS
+        assert "quality" in PRESETS
+        assert "loop_convergence" in PRESETS
+        assert "validation" in PRESETS
         
-        for preset_name, preset_data in PRESETS.items():
-            assert "description" in preset_data
-            assert "weights" in preset_data
-            assert "thresholds" in preset_data
+        # Each context should have severity levels
+        for context_name, context_data in PRESETS.items():
+            assert "strict" in context_data
+            assert "moderate" in context_data
+            assert "lenient" in context_data
+            
+            # Each severity level should have expected structure
+            for severity, preset_data in context_data.items():
+                assert "description" in preset_data
+                assert "weights" in preset_data
+                assert "thresholds" in preset_data
+                assert "context" in preset_data
 
     def test_load_preset_strict(self):
         """Test load_preset with strict preset."""
@@ -60,14 +70,16 @@ class TestPresets:
 
     def test_preset_weights_sum_to_one(self):
         """Test that preset weights approximately sum to 1.0."""
-        for preset_name in PRESETS:
-            preset = load_preset(preset_name)
-            weights = preset["weights"]
-            
-            total = sum(
-                sum(criteria.values()) for criteria in weights.values()
-            )
-            
-            # Should be approximately 1.0 (allowing small floating point errors)
-            assert abs(total - 1.0) < 0.01, f"Preset {preset_name} weights sum to {total}, not 1.0"
+        # Test all contexts and severity levels
+        for context_name in PRESETS:
+            for preset_name in ["strict", "moderate", "lenient"]:
+                preset = load_preset(preset_name, context=context_name)
+                weights = preset["weights"]
+                
+                total = sum(
+                    sum(criteria.values()) for criteria in weights.values()
+                )
+                
+                # Should be approximately 1.0 (allowing small floating point errors)
+                assert abs(total - 1.0) < 0.01, f"Preset {preset_name} (context {context_name}) weights sum to {total}, not 1.0"
 

@@ -26,15 +26,14 @@ agents:
     # Boolean scoring configuration for deterministic agreement evaluation
     scoring:
       preset: strict  # High standards for consensus building
+      context: loop_convergence  # Track debate convergence
       custom_weights:
-        # Completeness ensures all viewpoints are considered
-        completeness.has_all_required_steps: 0.20
-        completeness.addresses_all_query_aspects: 0.15
-        # Coherence ensures logical synthesis
-        coherence.logical_agent_sequence: 0.12
-        coherence.no_conflicting_actions: 0.10
-        # Safety for respectful deliberation
-        safety.handles_errors_gracefully: 0.08
+        # Convergence criteria for collaborative debate
+        improvement.shows_progress: 0.25
+        improvement.approaches_goal: 0.20
+        stability.consistent_direction: 0.20
+        stability.no_oscillation: 0.15
+        convergence.approaching_threshold: 0.15
     
     # 🔧 OPTIMIZED: Reduced extraction patterns and length
     cognitive_extraction:
@@ -79,33 +78,15 @@ agents:
           type: memory
           memory_preset: "episodic"  # Personal experiences and conversations (7 days)
           queue: orka:shared-debate-memory
+          namespace: society_memory
           config:
             operation: read
-            # 🎯 Preset provides: limit=8, similarity_threshold=0.6, vector_weight=0.7,
-            # text_weight=0.3, enable_hybrid_search=true, temporal_weight=0.3, etc.
-            limit: 5                   # Override preset default of 8
-            similarity_threshold: 0.2  # Override for broader matching
-            temporal_weight: 0.4       # Override preset default of 0.3
-            memory_category_filter: store
-            memory_type_filter: "all"
-            # Custom vector field configuration
-            search_field: "embedded_content"
+            # 🎯 Episodic preset provides: limit=8, similarity_threshold=0.6, vector_weight=0.7,
+            # text_weight=0.3, enable_hybrid_search=true, temporal_weight=0.3, ef_runtime=10
+            limit: 5  # Override for less context noise
+            similarity_threshold: 0.2  # Broader matching for diverse perspectives
             vector_field: "embedded_vector"
-            text_weight: 0.3
-            enable_hybrid_search: true
-            ef_runtime: 10
-            # Format handling
-            format_response: true
-            preserve_newlines: false
-            format_filters:
-              - type: "replace"
-                pattern: "\n"
-                replacement: " "
-          namespace: society_memory
-          decay:
-            enabled: true
-            short_term_hours: 2.0
-            long_term_hours: 24.0
+            search_field: "embedded_content"
           prompt: |
             Context for: {{ get_input() }}
         
@@ -399,6 +380,7 @@ agents:
           model_url: http://localhost:11434/api/generate
           provider: ollama
           scoring_preset: moderate
+          scoring_context: quality  # Evaluate debate quality/synthesis
           evaluation_target: synthesis_attempt  # Evaluate the synthesis quality
           temperature: 0.1
 
@@ -407,25 +389,13 @@ agents:
           type: memory
           memory_preset: "episodic"  # Personal experiences and conversations (7 days)
           queue: orka:shared-debate-writer
+          namespace: society_memory
           config:
             operation: write
-            # memory_type replaced by memory_preset
-            vector: true
-            vector_field: "embedded_vector"  # Use dedicated vector field for embedded content
-            # Enhanced vector configuration
-            force_recreate_index: false
-            vector_params:
-              type: "FLOAT32"
-              distance_metric: "COSINE"
-              ef_construction: 200
-              m: 16
-              # Configure which content gets embedded
-              embed_field: "embedded_content"
-          namespace: society_memory
-          decay:
-            enabled: true
-            short_term_hours: 2.0
-            long_term_hours: 24.0
+            # 🎯 Episodic preset provides: vector=true, vector_field, vector_params,
+            # decay settings (7 days retention), importance_threshold=0.5
+            vector_field: "embedded_vector"
+            embed_field: "embedded_content"
           # Configure what content gets embedded - with proper formatting
           embed_content: |
             {{ safe_get_response('agreement_finder', '') | truncate(200) | replace('\n', ' ') }}

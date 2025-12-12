@@ -16,6 +16,7 @@ agents:
     # Boolean scoring - just specify the preset!
     scoring:
       preset: moderate  # Options: strict (0.90), moderate (0.85), lenient (0.80)
+      context: loop_convergence  # Evaluate iterative improvement, not agent paths
     
     internal_workflow:
       orchestrator:
@@ -47,6 +48,7 @@ agents:
           model_url: http://localhost:11434/api/generate
           provider: ollama
           scoring_preset: moderate
+          scoring_context: quality  # Evaluate response quality
           evaluation_target: analyzer  # Evaluate the analyzer's output
           temperature: 0.1
 

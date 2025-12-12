@@ -28,15 +28,14 @@ agents:
     # Boolean scoring configuration for deterministic agreement evaluation
     scoring:
       preset: strict  # High standards for consensus building
+      context: loop_convergence  # Track debate convergence
       custom_weights:
-        # Completeness ensures all viewpoints are considered
-        completeness.has_all_required_steps: 0.20
-        completeness.addresses_all_query_aspects: 0.15
-        # Coherence ensures logical synthesis
-        coherence.logical_agent_sequence: 0.12
-        coherence.no_conflicting_actions: 0.10
-        # Safety for respectful deliberation
-        safety.handles_errors_gracefully: 0.08
+        # Convergence criteria for collaborative debate
+        improvement.shows_progress: 0.25
+        improvement.approaches_goal: 0.20
+        stability.consistent_direction: 0.20
+        stability.no_oscillation: 0.15
+        convergence.approaching_threshold: 0.15
     
     # 🔧 OPTIMIZED: Reduced extraction patterns and length
     cognitive_extraction:
@@ -126,7 +125,7 @@ agents:
         # 🔧 OPTIMIZED: Condensed progressive agent
         - id: radical_progressive
           type: local_llm
-          model: llama3.2:3b
+          model: deepseek-r1:7b
           model_url: http://localhost:11434/api/generate
           provider: ollama
           temperature: 0.3
@@ -153,7 +152,7 @@ agents:
         # 🔧 OPTIMIZED: Condensed conservative agent
         - id: traditional_conservative
           type: local_llm
-          model: llama3.2:3b
+          model: deepseek-r1:7b
           model_url: http://localhost:11434/api/generate
           provider: ollama
           temperature: 0.3
@@ -180,7 +179,7 @@ agents:
         # 🔧 OPTIMIZED: Condensed realist agent
         - id: pragmatic_realist
           type: local_llm
-          model: llama3.2:3b
+          model: deepseek-r1:7b
           model_url: http://localhost:11434/api/generate
           provider: ollama
           temperature: 0.2
@@ -207,7 +206,7 @@ agents:
         # 🔧 OPTIMIZED: Condensed purist agent
         - id: ethical_purist
           type: local_llm
-          model: llama3.2:3b
+          model: deepseek-r1:7b
           model_url: http://localhost:11434/api/generate
           provider: ollama
           temperature: 0.4
@@ -238,7 +237,7 @@ agents:
         # 🔧 OPTIMIZED: Simple agreement finder
         - id: agreement_finder
           type: local_llm
-          model: llama3.2:3b
+          model: deepseek-r1:7b
           model_url: http://localhost:11434/api/generate
           provider: ollama
           temperature: 0.2
@@ -267,7 +266,7 @@ agents:
         # 🔧 OPTIMIZED: Condensed progressive refinement
         - id: progressive_refinement
           type: local_llm
-          model: llama3.2:3b
+          model: deepseek-r1:7b
           model_url: http://localhost:11434/api/generate
           provider: ollama
           temperature: 0.4
@@ -294,7 +293,7 @@ agents:
         # 🔧 OPTIMIZED: Condensed conservative refinement
         - id: conservative_refinement
           type: local_llm
-          model: llama3.2:3b
+          model: deepseek-r1:7b
           model_url: http://localhost:11434/api/generate
           provider: ollama
           temperature: 0.4
@@ -321,7 +320,7 @@ agents:
         # 🔧 OPTIMIZED: Condensed realist refinement
         - id: realist_refinement
           type: local_llm
-          model: llama3.2:3b
+          model: deepseek-r1:7b
           model_url: http://localhost:11434/api/generate
           provider: ollama
           temperature: 0.3
@@ -348,7 +347,7 @@ agents:
         # 🔧 OPTIMIZED: Condensed purist refinement
         - id: purist_refinement
           type: local_llm
-          model: llama3.2:3b
+          model: deepseek-r1:7b
           model_url: http://localhost:11434/api/generate
           provider: ollama
           temperature: 0.5
@@ -379,7 +378,7 @@ agents:
         # 🔧 OPTIMIZED: Simplified synthesis
         - id: synthesis_attempt
           type: local_llm
-          model: llama3.2:3b
+          model: deepseek-r1:7b
           model_url: http://localhost:11434/api/generate
           provider: ollama
           temperature: 0.4
@@ -400,10 +399,11 @@ agents:
         # 🔧 OPTIMIZED: Loop Validator Node - Robust boolean evaluation
         - id: agreement_moderator
           type: loop_validator
-          llm_model: llama3.2:3b
+          llm_model: deepseek-r1:7b
           model_url: http://localhost:11434/api/generate
           provider: ollama
           scoring_preset: moderate
+          scoring_context: quality  # Evaluate synthesis quality
           evaluation_target: synthesis_attempt  # Evaluate the synthesis quality
           temperature: 0.1
 
@@ -412,23 +412,12 @@ agents:
           type: memory
           memory_preset: "episodic"  # Personal experiences and conversations (7 days)
           queue: orka:shared-debate-writer
+          namespace: society_memory
           config:
             operation: write
-            # memory_type replaced by memory_preset
-            vector: true
-            vector_field: "content_vector"  # Ensure proper vector field for RedisStack
-            # Enhanced vector configuration
-            force_recreate_index: false
-            vector_params:
-              type: "FLOAT32"
-              distance_metric: "COSINE"
-              ef_construction: 200
-              m: 16
-          namespace: society_memory
-          decay:
-            enabled: true
-            short_term_hours: 2.0
-            long_term_hours: 24.0
+            # 🎯 Episodic preset provides: vector=true, vector_params, decay (7 days)
+            vector_field: "content_vector"
+            embed_field: "embedded_content"
           # Configure what content gets embedded - with proper formatting
           embed_content: |
             {{ safe_get_response('agreement_finder', '') | truncate(200) | replace('\n', ' ') }}
@@ -444,7 +433,7 @@ agents:
   # 🔧 OPTIMIZED: Simplified meta-analysis
   - id: meta_debate_reflection
     type: local_llm
-    model: llama3.2:3b
+    model: deepseek-r1:7b
     model_url: http://localhost:11434/api/generate
     provider: ollama
     temperature: 0.3
@@ -465,7 +454,7 @@ agents:
   # 🔧 OPTIMIZED: Essential final synthesis only
   - id: final_synthesis_processor
     type: local_llm
-    model: llama3.2:3b
+    model: deepseek-r1:7b
     model_url: http://localhost:11434/api/generate
     provider: ollama
     temperature: 0.3

@@ -30,13 +30,16 @@ agents:
     
     # Boolean scoring for deterministic validation
     scoring:
-      preset: lenient  # Use lenient preset for proposal validation (not execution)
+      preset: lenient  # Use lenient preset for iterative improvement tracking
+      context: loop_convergence  # Evaluate loop convergence, not agent paths
       custom_weights:
-        # Focus on proposal structure, not execution details
-        completeness.has_all_required_steps: 0.15
-        completeness.addresses_all_query_aspects: 0.15
-        coherence.logical_agent_sequence: 0.10
-        coherence.proper_data_flow: 0.05
+        # Loop convergence criteria (not agent path criteria)
+        improvement.shows_progress: 0.25
+        improvement.reduces_errors: 0.20
+        stability.consistent_direction: 0.15
+        stability.no_oscillation: 0.10
+        convergence.approaching_threshold: 0.20
+        convergence.diminishing_changes: 0.10
     
     # Track validation feedback across loops
     past_loops_metadata:
@@ -118,21 +121,22 @@ agents:
           temperature: 0.2
           timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
           
-          # Boolean scoring configuration (lenient for shortlist proposals)
-          scoring_preset: lenient  # Changed from moderate to lenient
+          # Boolean scoring configuration (graphscout context for path evaluation)
+          scoring_preset: lenient  # Lenient for proposals (not execution)
+          scoring_context: graphscout  # Evaluate agent path quality
           scoring_params:
-            strict_mode: false  # Lenient validation for proposals (not executions)
+            strict_mode: false  # Lenient validation for proposals
           custom_weights:
-            # Focus on proposal quality, not execution details
-            completeness.has_all_required_steps: 0.15  # Can proposal include all steps?
-            completeness.addresses_all_query_aspects: 0.15  # Does it address the query?
-            coherence.logical_agent_sequence: 0.10  # Is agent order logical?
-            coherence.proper_data_flow: 0.05  # Does data flow make sense?
-            # Reduce safety/efficiency checks (can't validate without execution)
-            safety.validates_inputs: 0.01  # Low weight - can't verify without execution
-            safety.handles_timeouts: 0.01
-            efficiency.uses_appropriate_agents: 0.05
-            efficiency.avoids_redundant_calls: 0.03
+            # GraphScout agent path evaluation criteria
+            completeness.has_all_required_steps: 0.20
+            completeness.addresses_all_query_aspects: 0.15
+            completeness.includes_fallback_path: 0.05
+            coherence.logical_agent_sequence: 0.15
+            coherence.proper_data_flow: 0.10
+            safety.validates_inputs: 0.10
+            safety.handles_errors_gracefully: 0.10
+            efficiency.uses_appropriate_agents: 0.10
+            efficiency.minimizes_redundant_calls: 0.05
 
   # ===== EXECUTION AGENTS (Top Level) =====
   # CRITICAL: These agents MUST be at top-level, NOT inside internal_workflow

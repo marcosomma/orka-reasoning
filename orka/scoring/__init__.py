@@ -19,7 +19,20 @@ Provides deterministic, auditable scoring based on boolean evaluation criteria.
 """
 
 from .calculator import BooleanScoreCalculator
-from .presets import PRESETS, load_preset
+from .presets import (
+    PRESETS,
+    load_preset,
+    get_available_contexts,
+    get_available_presets,
+    get_criteria_description,
+)
 
-__all__ = ["BooleanScoreCalculator", "PRESETS", "load_preset"]
+__all__ = [
+    "BooleanScoreCalculator",
+    "PRESETS",
+    "load_preset",
+    "get_available_contexts",
+    "get_available_presets",
+    "get_criteria_description",
+]
 

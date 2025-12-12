@@ -111,15 +111,15 @@ agents:
     # Boolean scoring configuration for deterministic convergence evaluation
     scoring:
       preset: moderate  # Balanced approach for creative convergence
+      context: loop_convergence  # Track genius minds convergence
       custom_weights:
-        # Completeness ensures all perspectives are considered
-        completeness.has_all_required_steps: 0.20
-        completeness.addresses_all_query_aspects: 0.15
-        # Coherence ensures logical synthesis
-        coherence.logical_agent_sequence: 0.10
-        coherence.no_conflicting_actions: 0.08
-        # Efficiency for quality insights
-        efficiency.uses_appropriate_agents: 0.12
+        # Convergence criteria for multi-perspective synthesis
+        improvement.shows_progress: 0.25
+        improvement.approaches_goal: 0.20
+        stability.consistent_direction: 0.15
+        stability.no_oscillation: 0.10
+        convergence.approaching_threshold: 0.15
+        convergence.diminishing_changes: 0.10
     
     cognitive_extraction:
       enabled: true

@@ -37,16 +37,20 @@ class BooleanScoreCalculator:
 
     Args:
         preset: Name of scoring preset ('strict', 'moderate', 'lenient')
+        context: Scoring context ('graphscout', 'quality', 'loop_convergence', 'validation')
+                 Defaults to 'graphscout' for backward compatibility
         custom_weights: Optional custom weight overrides
     """
 
     def __init__(
         self,
         preset: str = "moderate",
+        context: str = "graphscout",
         custom_weights: Optional[Dict[str, Any]] = None,
     ):
         self.preset_name = preset
-        preset_config = load_preset(preset)
+        self.context = context
+        preset_config = load_preset(preset, context=context)
 
         # Deep copy weights to avoid modifying shared preset data
         import copy
@@ -63,7 +67,8 @@ class BooleanScoreCalculator:
         total_weight = sum(self.flat_weights.values())
         logger.debug(
             f"BooleanScoreCalculator initialized with preset '{preset}' "
-            f"({len(self.flat_weights)} criteria, total_weight={total_weight:.4f})"
+            f"in context '{context}' ({len(self.flat_weights)} criteria, "
+            f"total_weight={total_weight:.4f})"
         )
 
     def _apply_custom_weights(self, custom_weights: Dict[str, Any]) -> None:

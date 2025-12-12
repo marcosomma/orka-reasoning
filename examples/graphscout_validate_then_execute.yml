@@ -48,9 +48,10 @@ agents:
     
     scoring:
       preset: lenient
+      context: loop_convergence  # Track plan validation iterations
       custom_weights:
-        completeness.has_all_required_steps: 0.20
-        efficiency.uses_appropriate_agents: 0.15
+        improvement.shows_progress: 0.35
+        convergence.approaching_threshold: 0.30
     
     past_loops_metadata:
       loop_number: "{{ get_loop_number() }}"
@@ -108,6 +109,7 @@ agents:
           temperature: 0.2
           timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
           scoring_preset: lenient
+          scoring_context: graphscout  # Evaluate agent path quality
           custom_weights:
             completeness.has_all_required_steps: 0.20
             efficiency.uses_appropriate_agents: 0.15

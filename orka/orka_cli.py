@@ -1,9 +1,11 @@
 """OrKa CLI - Command line interface for OrKa."""
 
 import argparse
+import json
+import json as _json
 import logging
 import sys
-import json as _json
+from pathlib import Path
 
 from orka.cli.core import run_cli, sanitize_for_console
 from orka.cli.memory.watch import memory_watch
@@ -83,17 +85,30 @@ def main(argv: list[str] | None = None) -> int:
         logger.debug(f"[OrKa][DEBUG] Parsed CLI args: {args}")
         # Patch: parse input as JSON if --json-input is set
         if hasattr(args, "json_input") and args.json_input:
-            import json
-            # Normalizza input: rimuove a capo e spazi superflui
             if isinstance(args.input, str):
-                normalized = args.input.replace("\r\n", "").replace("\n", "").replace("\r", "").strip()
-                try:
-                    args.input = json.loads(normalized)
-                    print(f"[OrKa] Parsed input as JSON object. {args.input}", file=sys.stderr)
-                except Exception as e:
-                    print(f"[OrKa] Error: Could not parse input: \"{args.input}\" as JSON: {e}", file=sys.stderr)
-                    logger.error(f"[OrKa][ERROR] JSON parsing failed: {e}")
-                    sys.exit(2)
+                # Check if input is a file path
+                input_path = Path(args.input)
+                if input_path.exists() and input_path.is_file():
+                    # Read file content
+                    try:
+                        with open(input_path, 'r', encoding='utf-8') as f:
+                            content = f.read()
+                        args.input = json.loads(content)
+                        print(f"[OrKa] Loaded and parsed JSON from file: {input_path}", file=sys.stderr)
+                    except Exception as e:
+                        print(f"[OrKa] Error: Could not read/parse JSON file \"{args.input}\": {e}", file=sys.stderr)
+                        logger.error(f"[OrKa][ERROR] JSON file parsing failed: {e}")
+                        sys.exit(2)
+                else:
+                    # Treat as inline JSON string
+                    normalized = args.input.replace("\r\n", "").replace("\n", "").replace("\r", "").strip()
+                    try:
+                        args.input = json.loads(normalized)
+                        print(f"[OrKa] Parsed input as JSON object.", file=sys.stderr)
+                    except Exception as e:
+                        print(f"[OrKa] Error: Could not parse input: \"{args.input}\" as JSON: {e}", file=sys.stderr)
+                        logger.error(f"[OrKa][ERROR] JSON parsing failed: {e}")
+                        sys.exit(2)
 
         # Set up logging
         setup_logging(args.verbose)

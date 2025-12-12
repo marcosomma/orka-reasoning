@@ -151,27 +151,29 @@ orka = [
 ]
 
 [tool.pytest.ini_options]
+addopts = "--cov=orka --cov-report=term-missing --cov-report=xml --cov-fail-under=80.0"
+testpaths = ["tests/unit", "tests/integration"]
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
-testpaths = ["tests"]
 python_files = "test_*.py"
 python_functions = "test_*"
 pythonpath = ["."]
-addopts = "--cov=orka --cov-report=xml:coverage.xml --cov-report=term --no-cov-on-fail"
-filterwarnings = [
-    "ignore::RuntimeWarning:unittest.mock",
-    "ignore::DeprecationWarning:datetime",
-]
 markers = [
+    "unit: Unit tests with mocked external services",
+    "integration: Integration tests with real services (local only)",
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "integration: marks tests as integration tests",
-    "unit: marks tests as unit tests",
     "performance: marks tests as performance tests",
     "redis: marks tests that require Redis",
     "llm: marks tests that require LLM APIs",
     "asyncio: marks tests as async",
 ]
-
+filterwarnings = [
+    "ignore::DeprecationWarning:litellm.*",
+    "ignore::pydantic.warnings.PydanticDeprecatedSince20",
+    "ignore:.*class-based.*config.*deprecated.*",
+    "ignore::RuntimeWarning:unittest.mock",
+    "ignore::DeprecationWarning:datetime",
+]
 
 [tool.coverage.run]
 source = ["orka"]

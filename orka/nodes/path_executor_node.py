@@ -509,19 +509,27 @@ class PathExecutorNode(BaseNode):
                 # Simple list of agent ID strings
                 return [str(agent_id) for agent_id in data if not self._is_logical_agent(str(agent_id))]
 
-        # Case 2: Dict with 'target' field (GraphScout format)
+        # Case 2: Dict with 'target' field (GraphScout format) - ENHANCED
         if isinstance(data, dict):
             if "target" in data:
                 target = data["target"]
                 if isinstance(target, list):
                     # Recursively parse the list (handles both dict and string formats)
-                    return self._parse_agent_list(target)
+                    parsed = self._parse_agent_list(target)
+                    if parsed:
+                        return parsed
+                # NEW: Handle single agent string in target
+                elif isinstance(target, str) and not self._is_logical_agent(target):
+                    return [target]
 
             # Case 3: Dict with 'path' field (alternative format)
             if "path" in data:
                 path = data["path"]
                 if isinstance(path, list):
                     return [str(agent_id) for agent_id in path if not self._is_logical_agent(str(agent_id))]
+                # NEW: Handle single agent string in path
+                elif isinstance(path, str) and not self._is_logical_agent(path):
+                    return [path]
 
         return None
     

@@ -26,10 +26,11 @@ agents:
     # Boolean scoring configuration
     scoring:
       preset: lenient
+      context: loop_convergence  # Track path improvement iterations
       custom_weights:
-        completeness.has_all_required_steps: 0.22
-        efficiency.uses_appropriate_agents: 0.12
-        coherence.logical_agent_sequence: 0.05
+        improvement.shows_progress: 0.30
+        convergence.approaching_threshold: 0.25
+        stability.consistent_direction: 0.20
     
     past_loops_metadata:
       loop_number: "{{ get_loop_number() }}"
@@ -159,6 +160,7 @@ agents:
           temperature: 0.2
           timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
           scoring_preset: lenient
+          scoring_context: graphscout  # Evaluate agent path quality
           custom_weights:
             completeness.has_all_required_steps: 0.22
             efficiency.uses_appropriate_agents: 0.12

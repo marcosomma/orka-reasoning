@@ -610,10 +610,23 @@ class ExecutionEngine(
 
                                             # 🔍 CRITICAL FIX: Append remaining queue to preserve sequential workflow
                                             # GraphScout provides routing suggestions, but shouldn't override the workflow structure
-                                            queue = agent_sequence + remaining_queue
+                                            # NEW: Deduplicate queue to prevent repeated execution of same agents
+                                            seen_agents = set(agent_sequence)
+                                            deduped_remaining = [
+                                                agent for agent in remaining_queue 
+                                                if agent not in seen_agents
+                                            ]
+                                            queue = agent_sequence + deduped_remaining
+                                            
+                                            if len(deduped_remaining) < len(remaining_queue):
+                                                removed_count = len(remaining_queue) - len(deduped_remaining)
+                                                logger.info(
+                                                    f"🔄 Deduplication: Removed {removed_count} duplicate agent(s) from queue"
+                                                )
+                                            
                                             logger.info(
                                                 f"GraphScout routing sequence: {' → '.join(agent_sequence)} ({len(agent_sequence)} agents), "
-                                                f"then continuing with {len(remaining_queue)} remaining agents: {remaining_queue}"
+                                                f"then continuing with {len(deduped_remaining)} remaining agents: {deduped_remaining}"
                                             )
                                             continue
                                     # For fallback or other decisions, continue normal execution

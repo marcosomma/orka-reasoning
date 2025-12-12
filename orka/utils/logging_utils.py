@@ -13,6 +13,34 @@ from datetime import datetime
 
 DEFAULT_LOG_LEVEL: str = "INFO"
 
+# ANSI color codes for terminal output
+class Colors:
+    """ANSI color codes for colored terminal output."""
+    # Basic colors
+    RESET = "\033[0m"
+    BOLD = "\033[1m"
+    DIM = "\033[2m"
+    
+    # Foreground colors
+    BLACK = "\033[30m"
+    RED = "\033[31m"
+    GREEN = "\033[32m"
+    YELLOW = "\033[33m"
+    BLUE = "\033[34m"
+    MAGENTA = "\033[35m"
+    CYAN = "\033[36m"
+    WHITE = "\033[37m"
+    
+    # Bright colors
+    BRIGHT_BLACK = "\033[90m"
+    BRIGHT_RED = "\033[91m"
+    BRIGHT_GREEN = "\033[92m"
+    BRIGHT_YELLOW = "\033[93m"
+    BRIGHT_BLUE = "\033[94m"
+    BRIGHT_MAGENTA = "\033[95m"
+    BRIGHT_CYAN = "\033[96m"
+    BRIGHT_WHITE = "\033[97m"
+
 
 def _needs_sanitization() -> bool:
     """Check if we're in an environment that needs Unicode sanitization."""
@@ -31,7 +59,63 @@ def _needs_sanitization() -> bool:
 
 
 class SafeFormatter(logging.Formatter):
-    """Formatter that handles encoding errors for console output."""
+    """Formatter that handles encoding errors for console output and adds colors."""
+    
+    def __init__(self, *args, use_colors: bool = True, **kwargs):
+        """
+        Initialize formatter with optional color support.
+        
+        Args:
+            use_colors: Enable ANSI color codes (default: True, auto-disabled for non-TTY)
+        """
+        super().__init__(*args, **kwargs)
+        # Auto-detect if we should use colors (only for TTY terminals)
+        self.use_colors = use_colors and (
+            hasattr(sys.stdout, 'isatty') and sys.stdout.isatty()
+        ) and not os.getenv("NO_COLOR")  # Respect NO_COLOR environment variable
+    
+    def colorize_log(self, formatted: str, levelname: str) -> str:
+        """
+        Apply ANSI colors to log sections separated by ' - '.
+        
+        Format: timestamp - logger_name - level - message
+        Each section gets a distinct color for easy visual parsing.
+        """
+        if not self.use_colors:
+            return formatted
+        
+        # Define level-specific color schemes
+        level_colors = {
+            "DEBUG": Colors.BRIGHT_BLACK,
+            "INFO": Colors.BRIGHT_CYAN,
+            "WARNING": Colors.BRIGHT_YELLOW,
+            "ERROR": Colors.BRIGHT_RED,
+            "CRITICAL": Colors.BOLD + Colors.BRIGHT_RED,
+        }
+        
+        # Split by ' - ' delimiter
+        parts = formatted.split(' - ', 3)  # Max 4 parts: timestamp, name, level, message
+        
+        if len(parts) >= 4:
+            timestamp, logger_name, level, message = parts[0], parts[1], parts[2], parts[3]
+            
+            # Apply distinct colors to each section
+            colored = (
+                f"{Colors.BRIGHT_BLACK}{timestamp}{Colors.RESET}"  # Timestamp: dim gray
+                f" {Colors.DIM}-{Colors.RESET} "
+                f"{Colors.CYAN}{logger_name}{Colors.RESET}"  # Logger: cyan
+                f" {Colors.DIM}-{Colors.RESET} "
+                f"{level_colors.get(levelname, Colors.WHITE)}{level}{Colors.RESET}"  # Level: level-based
+                f" {Colors.DIM}-{Colors.RESET} "
+                f"{Colors.WHITE}{message}{Colors.RESET}"  # Message: white
+            )
+            return colored
+        
+        # Fallback: just color the level name if parsing fails
+        return formatted.replace(
+            levelname,
+            f"{level_colors.get(levelname, Colors.WHITE)}{levelname}{Colors.RESET}"
+        )
 
     def format(self, record):
         try:
@@ -39,6 +123,9 @@ class SafeFormatter(logging.Formatter):
         except (UnicodeEncodeError, UnicodeDecodeError):
             # If formatting fails due to encoding, create a basic safe message
             formatted = f"{record.levelname}: {str(record.msg)}"
+
+        # Apply colors before sanitization
+        formatted = self.colorize_log(formatted, record.levelname)
 
         # Only sanitize if we're in a problematic environment
         if not _needs_sanitization():

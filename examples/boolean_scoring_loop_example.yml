@@ -37,10 +37,12 @@ agents:
     # Boolean scoring configuration (NEW!)
     scoring:
       preset: moderate  # Options: strict, moderate, lenient
+      context: loop_convergence  # Evaluate iterative improvement
       custom_weights:
-        # Optional: Override specific criteria weights
-        # completeness.has_all_required_steps: 0.25
-        # safety.validates_inputs: 0.15
+        # Loop convergence criteria
+        improvement.shows_progress: 0.30
+        stability.consistent_direction: 0.25
+        convergence.approaching_threshold: 0.20
     
     # Extract insights from boolean evaluations
     cognitive_extraction:

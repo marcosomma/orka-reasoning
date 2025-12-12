@@ -47,27 +47,52 @@ OrKa calculates: 0.18 + 0.08 = 0.75 (always the same!)
 ```
 orka/scoring/
 ├── __init__.py           # Exports main classes
-├── presets.py            # Predefined scoring configurations
+├── presets.py            # Context-aware scoring configurations
 └── calculator.py         # BooleanScoreCalculator class
+```
+
+### Context-Aware Scoring (v0.9.10+)
+
+OrKa's scoring system now supports **context-specific evaluation criteria**. Different evaluation scenarios need different criteria:
+
+- **graphscout**: Agent path evaluation (efficiency, completeness, safety, coherence)
+- **quality**: Response quality assessment (accuracy, clarity, relevance)
+- **loop_convergence**: Iterative improvement tracking (progress, stability, convergence)
+- **validation**: Schema/constraint compliance (schema_compliance, format, constraints)
+
+```python
+# Different contexts use different criteria
+from orka.scoring import BooleanScoreCalculator
+
+# For validating agent paths
+path_calc = BooleanScoreCalculator(preset="strict", context="graphscout")
+
+# For evaluating response quality
+quality_calc = BooleanScoreCalculator(preset="moderate", context="quality")
+
+# For tracking loop convergence
+loop_calc = BooleanScoreCalculator(preset="lenient", context="loop_convergence")
 ```
 
 ### Scoring Presets
 
-OrKa includes three built-in presets:
+OrKa includes three built-in presets for each evaluation context:
 
 #### Strict (Production-Critical Paths)
-- **Approval Threshold**: 0.90
-- **Needs Improvement**: 0.75-0.89
+- **Approval Threshold**: 0.90-0.95 (varies by context)
+- **Needs Improvement**: 0.75-0.90
 - **Use Case**: Mission-critical production workflows
 - **Emphasis**: High standards across all dimensions
 
 #### Moderate (General-Purpose)
-- **Approval Threshold**: 0.85
-- **Needs Improvement**: 0.70-0.84
+- **Approval Threshold**: 0.85-0.90 (varies by context)
+- **Needs Improvement**: 0.70-0.85
 - **Use Case**: Standard workflows, balanced evaluation
 - **Emphasis**: Balanced across completeness, efficiency, safety
 
 #### Lenient (Exploratory Workflows)
+- **Approval Threshold**: 0.80-0.85 (varies by context)
+- **Needs Improvement**: 0.65-0.80
 - **Approval Threshold**: 0.80
 - **Needs Improvement**: 0.65-0.79
 - **Use Case**: Experimental features, rapid prototyping
@@ -140,7 +165,8 @@ agents:
     
     # Boolean scoring configuration
     scoring:
-      preset: strict  # Use strict preset for loop termination
+      preset: strict  # Use strict preset
+      context: loop_convergence  # Track iterative improvement
     
     internal_workflow:
       # ... workflow that returns boolean evaluations
@@ -157,9 +183,10 @@ agents:
     
     scoring:
       preset: moderate
+      context: loop_convergence  # Evaluate convergence, not agent paths
       custom_weights:
-        completeness.has_all_required_steps: 0.30
-        safety.validates_inputs: 0.20
+        improvement.shows_progress: 0.30
+        convergence.approaching_threshold: 0.25
 ```
 
 ## Response Structure
@@ -244,11 +271,13 @@ coherence: 100.0% (0.05/0.05)
 ```python
 from orka.scoring import BooleanScoreCalculator
 
+# For loop convergence evaluation
 calculator = BooleanScoreCalculator(
     preset="moderate",
+    context="loop_convergence",  # Specify evaluation context
     custom_weights={
-        "completeness.has_all_required_steps": 0.30,
-        "safety.validates_inputs": 0.20,
+        "improvement.shows_progress": 0.30,
+        "convergence.approaching_threshold": 0.25,
         # ... other overrides
     }
 )
@@ -257,26 +286,33 @@ result = calculator.calculate(boolean_evaluations)
 print(f"Score: {result['score']:.4f}")
 ```
 
-### Programmatically
+### For Different Contexts
 
 ```python
-from orka.scoring.calculator import BooleanScoreCalculator
+from orka.scoring import BooleanScoreCalculator, get_available_contexts
 
-# Define completely custom weights
-custom_calculator = BooleanScoreCalculator(
-    preset="moderate",  # Start from base preset
+# Discover available contexts
+contexts = get_available_contexts()  # ["graphscout", "quality", "loop_convergence", "validation"]
+
+# Agent path validation (graphscout context)
+path_calc = BooleanScoreCalculator(
+    preset="strict",
+    context="graphscout",  # Default context if omitted
     custom_weights={
-        # Completeness (50% total)
         "completeness.has_all_required_steps": 0.30,
-        "completeness.addresses_all_query_aspects": 0.10,
-        "completeness.handles_edge_cases": 0.05,
-        "completeness.includes_fallback_path": 0.05,
-        
-        # Safety (30% total)
-        "safety.validates_inputs": 0.15,
-        "safety.handles_errors_gracefully": 0.10,
-        "safety.has_timeout_protection": 0.03,
-        "safety.avoids_risky_combinations": 0.02,
+        "safety.validates_inputs": 0.20,
+    }
+)
+
+# Response quality evaluation (quality context)
+quality_calc = BooleanScoreCalculator(
+    preset="moderate",
+    context="quality",
+    custom_weights={
+        "accuracy.factually_correct": 0.35,
+        "clarity.well_structured": 0.25,
+    }
+)
         
         # ... must sum to ~1.0
     }

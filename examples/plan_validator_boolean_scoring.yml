@@ -29,11 +29,12 @@ agents:
     # Boolean scoring configuration
     scoring:
       preset: moderate  # Options: strict (0.90+), moderate (0.85+), lenient (0.80+)
+      context: loop_convergence  # Evaluate iterative improvement
       
       # Optional: Emphasize specific criteria
       custom_weights:
-        completeness.has_all_required_steps: 0.20
-        efficiency.uses_appropriate_agents: 0.12
+        improvement.shows_progress: 0.30
+        convergence.approaching_threshold: 0.25
     
     past_loops_metadata:
       loop_number: "{{ get_loop_number() }}"

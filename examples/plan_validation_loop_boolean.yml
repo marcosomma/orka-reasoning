@@ -19,11 +19,13 @@ agents:
     # Boolean scoring configuration
     scoring:
       preset: strict  # Highest standards for production paths
+      context: loop_convergence  # Track iterative improvement
       custom_weights:
-        # Emphasize safety and completeness for production
-        completeness.has_all_required_steps: 0.25
-        safety.validates_inputs: 0.10
-        safety.handles_errors_gracefully: 0.08
+        # Emphasize convergence for production readiness
+        improvement.shows_progress: 0.30
+        improvement.approaches_goal: 0.25
+        convergence.approaching_threshold: 0.20
+        stability.consistent_direction: 0.15
     
     # Track which criteria failed in each loop
     past_loops_metadata:
@@ -84,6 +86,7 @@ agents:
           
           # Boolean scoring configuration
           scoring_preset: strict
+          scoring_context: graphscout  # Validate agent path quality
           custom_weights:
             completeness.has_all_required_steps: 0.25
             safety.validates_inputs: 0.10

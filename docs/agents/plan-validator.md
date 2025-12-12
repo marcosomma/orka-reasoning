@@ -31,6 +31,7 @@ agents:
     llm_url: http://localhost:11434/api/generate
     temperature: 0.2
     scoring_preset: moderate  # strict | moderate | lenient
+    scoring_context: graphscout  # Evaluate agent path quality (default)
 ```
 
 ### With Custom Weights
@@ -42,10 +43,28 @@ agents:
     llm_model: gpt-oss:20b
     llm_provider: ollama
     scoring_preset: moderate
+    scoring_context: graphscout  # Agent path evaluation
     custom_weights:
-      # Override specific criteria weights
+      # Override specific criteria weights for agent paths
       completeness.has_all_required_steps: 0.25
       safety.validates_inputs: 0.15
+      efficiency.uses_appropriate_agents: 0.12
+```
+
+### For Response Quality Validation
+
+```yaml
+agents:
+  - id: quality_validator
+    type: plan_validator
+    llm_model: gpt-oss:20b
+    llm_provider: ollama
+    scoring_preset: moderate
+    scoring_context: quality  # Response quality assessment
+    custom_weights:
+      accuracy.factually_correct: 0.30
+      clarity.well_structured: 0.25
+      completeness.provides_comprehensive_answer: 0.20
 ```
 
 ### Configuration Parameters
