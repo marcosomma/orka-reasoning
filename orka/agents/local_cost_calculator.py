@@ -12,13 +12,10 @@ No more fantasy $0.00 costs - local models have real expenses.
 
 import logging
 import os
+import shutil
+import subprocess
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
-
-try:
-    import GPUtil
-except ImportError:
-    GPUtil = None
 import psutil
 
 logger = logging.getLogger(__name__)
@@ -81,6 +78,54 @@ class LocalCostCalculator:
             f"hardware=${self.hardware_cost:,.0f}, "
             f"gpu={self.gpu_tdp}W, cpu={self.cpu_tdp}W",
         )
+
+    _gpu_name_checked: bool = False
+    _cached_gpu_name: str | None = None
+
+    def _detect_gpu_name(self) -> str | None:
+        """Best-effort GPU name detection without importing GPUtil.
+
+        Notes:
+        - Uses `nvidia-smi` if available.
+        - Skips probing during pytest runs for speed and determinism.
+        """
+        if LocalCostCalculator._gpu_name_checked:
+            return LocalCostCalculator._cached_gpu_name
+
+        LocalCostCalculator._gpu_name_checked = True
+
+        if os.environ.get("PYTEST_RUNNING", "").lower() == "true":
+            LocalCostCalculator._cached_gpu_name = None
+            return None
+
+        nvidia_smi = shutil.which("nvidia-smi")
+        if not nvidia_smi:
+            LocalCostCalculator._cached_gpu_name = None
+            return None
+
+        try:
+            result = subprocess.run(
+                [
+                    nvidia_smi,
+                    "--query-gpu=name",
+                    "--format=csv,noheader",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=1,
+                check=False,
+            )
+
+            if result.returncode != 0:
+                LocalCostCalculator._cached_gpu_name = None
+                return None
+
+            lines = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+            LocalCostCalculator._cached_gpu_name = lines[0] if lines else None
+            return LocalCostCalculator._cached_gpu_name
+        except Exception:
+            LocalCostCalculator._cached_gpu_name = None
+            return None
 
     def calculate_inference_cost(
         self,
@@ -183,38 +228,28 @@ class LocalCostCalculator:
             except ValueError:
                 pass
 
-        # Estimate based on detected GPU
-        try:
-            if GPUtil is None:
-                raise ImportError("GPUtil not available")
+        gpu_name = (self._detect_gpu_name() or "").lower()
+        if gpu_name:
+            # Hardware cost estimates (USD, 2025 prices)
+            gpu_costs = {
+                "rtx 4090": 1800,
+                "rtx 4080": 1200,
+                "rtx 4070": 800,
+                "rtx 3090": 1000,
+                "rtx 3080": 700,
+                "a100": 15000,
+                "h100": 30000,
+                "v100": 8000,
+                "a6000": 5000,
+                "a5000": 2500,
+                "titan": 2500,
+            }
 
-            gpus = GPUtil.getGPUs()
-            if gpus:
-                gpu_name = gpus[0].name.lower()
-
-                # Hardware cost estimates (USD, 2025 prices)
-                gpu_costs = {
-                    "rtx 4090": 1800,
-                    "rtx 4080": 1200,
-                    "rtx 4070": 800,
-                    "rtx 3090": 1000,
-                    "rtx 3080": 700,
-                    "a100": 15000,
-                    "h100": 30000,
-                    "v100": 8000,
-                    "a6000": 5000,
-                    "a5000": 2500,
-                    "titan": 2500,
-                }
-
-                for name_pattern, gpu_cost in gpu_costs.items():
-                    if name_pattern in gpu_name:
-                        # Add estimated system cost (CPU, RAM, storage, etc.)
-                        system_cost = gpu_cost * 0.5  # System typically 50% of GPU cost
-                        return gpu_cost + system_cost
-
-        except ImportError:
-            pass
+            for name_pattern, gpu_cost in gpu_costs.items():
+                if name_pattern in gpu_name:
+                    # Add estimated system cost (CPU, RAM, storage, etc.)
+                    system_cost = gpu_cost * 0.5  # System typically 50% of GPU cost
+                    return gpu_cost + system_cost
 
         # Conservative default for unknown hardware
         return 2000  # ~$2K total system cost
@@ -229,36 +264,26 @@ class LocalCostCalculator:
             except ValueError:
                 pass
 
-        # Try to detect GPU and estimate TDP
-        try:
-            if GPUtil is None:
-                raise ImportError("GPUtil not available")
+        gpu_name = (self._detect_gpu_name() or "").lower()
+        if gpu_name:
+            # TDP estimates for common GPUs (watts)
+            gpu_tdp = {
+                "rtx 4090": 450,
+                "rtx 4080": 320,
+                "rtx 4070": 200,
+                "rtx 3090": 350,
+                "rtx 3080": 320,
+                "a100": 400,
+                "h100": 700,
+                "v100": 300,
+                "a6000": 300,
+                "a5000": 230,
+                "titan": 250,
+            }
 
-            gpus = GPUtil.getGPUs()
-            if gpus:
-                gpu_name = gpus[0].name.lower()
-
-                # TDP estimates for common GPUs (watts)
-                gpu_tdp = {
-                    "rtx 4090": 450,
-                    "rtx 4080": 320,
-                    "rtx 4070": 200,
-                    "rtx 3090": 350,
-                    "rtx 3080": 320,
-                    "a100": 400,
-                    "h100": 700,
-                    "v100": 300,
-                    "a6000": 300,
-                    "a5000": 230,
-                    "titan": 250,
-                }
-
-                for name_pattern, tdp in gpu_tdp.items():
-                    if name_pattern in gpu_name:
-                        return tdp
-
-        except ImportError:
-            pass
+            for name_pattern, tdp in gpu_tdp.items():
+                if name_pattern in gpu_name:
+                    return tdp
 
         # Conservative default
         return 250  # Typical high-end GPU

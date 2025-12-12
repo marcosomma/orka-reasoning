@@ -24,8 +24,8 @@ get_debate_evolution = template_helpers.get_debate_evolution
 register_template_helpers = template_helpers.register_template_helpers
 
 
-# Mark all tests to not use the mock_external_services fixture
-pytestmark = pytest.mark.usefixtures()
+# Mark all tests to not use the mock_external_services autouse fixture
+pytestmark = pytest.mark.no_auto_mock
 
 
 class TestSafeGet:

@@ -29,7 +29,6 @@ except ImportError:
 from .components import ComponentBuilder
 from .data_manager import DataManager
 from .fallback import FallbackInterface
-from .layouts import LayoutManager
 
 
 class ModernTUIInterface:
@@ -46,7 +45,10 @@ class ModernTUIInterface:
         # Initialize components
         self.data_manager = DataManager()
         self.components = ComponentBuilder(self.data_manager)
-        self.layouts = LayoutManager(self.components)
+        # LayoutManager is a deprecated Rich-only fallback. Instantiate lazily only
+        # if we actually run the Rich fallback path, to avoid emitting deprecation
+        # warnings for the default Textual path.
+        self.layouts = None
         self.fallback = FallbackInterface()
 
         # Share running state with data manager
@@ -111,6 +113,11 @@ class ModernTUIInterface:
     def _run_rich_interface(self, args: Any) -> int:
         """Run the rich-based interface with live updates."""
         try:
+            if self.layouts is None:
+                from .layouts import LayoutManager
+
+                self.layouts = LayoutManager(self.components)
+
             with Live(
                 self.layouts.get_view(self.current_view),
                 console=self.console,

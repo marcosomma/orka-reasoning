@@ -68,13 +68,13 @@ def display_service_endpoints(backend: str) -> None:
         backend: The backend type ('redis' or 'redisstack')
     """
     logger.info(f"🚀 Starting OrKa with {backend.upper()} backend...")
-    logger.info("=" * 80)
+    logger.info("=============================================")
 
     logger.info("📍 Service Endpoints:")
     logger.info("   • Orka API: http://localhost:8000")
     logger.info("   • Redis:    localhost:6380 (native)")
 
-    logger.info("=" * 80)
+    logger.info("=============================================")
 
 
 def display_startup_success() -> None:

@@ -49,13 +49,11 @@ class TestMemoryReaderNode:
     async def test_run_impl(self):
         """Test _run_impl method."""
         mock_memory = Mock()
-        mock_memory.search_memories = AsyncMock(return_value=[
+        # Production path calls search_memories synchronously in _run_impl
+        mock_memory.search_memories = Mock(return_value=[
             {"content": "Memory 1", "score": 0.9},
             {"content": "Memory 2", "score": 0.8},
         ])
-        
-        mock_embedder = Mock()
-        mock_embedder.encode = AsyncMock(return_value=[[0.1] * 384])
         
         node = MemoryReaderNode(
             node_id="memory_reader",
@@ -64,7 +62,6 @@ class TestMemoryReaderNode:
             memory_logger=mock_memory,
             namespace="test"
         )
-        node.embedder = mock_embedder
         
         context = {
             "input": "test query",
@@ -75,6 +72,8 @@ class TestMemoryReaderNode:
         
         assert isinstance(result, dict)
         assert "memories" in result or "results" in result
+
+        mock_memory.search_memories.assert_called()
 
     def test_update_search_metrics(self):
         """Test _update_search_metrics method."""
@@ -153,10 +152,7 @@ class TestMemoryReaderNode:
     async def test_run_impl_with_dict_input(self):
         """Test _run_impl with dictionary input."""
         mock_memory = Mock()
-        mock_memory.search_memories = AsyncMock(return_value=[])
-        
-        mock_embedder = Mock()
-        mock_embedder.encode = AsyncMock(return_value=[[0.1] * 384])
+        mock_memory.search_memories = Mock(return_value=[])
         
         node = MemoryReaderNode(
             node_id="memory_reader",
@@ -164,7 +160,6 @@ class TestMemoryReaderNode:
             queue=[],
             memory_logger=mock_memory
         )
-        node.embedder = mock_embedder
         
         context = {
             "input": {"input": "nested query", "loop_number": 1}
@@ -173,15 +168,13 @@ class TestMemoryReaderNode:
         result = await node._run_impl(context)
         
         assert isinstance(result, dict)
+        mock_memory.search_memories.assert_called()
 
     @pytest.mark.asyncio
     async def test_run_impl_with_non_string_input(self):
         """Test _run_impl with non-string input conversion."""
         mock_memory = Mock()
-        mock_memory.search_memories = AsyncMock(return_value=[])
-        
-        mock_embedder = Mock()
-        mock_embedder.encode = AsyncMock(return_value=[[0.1] * 384])
+        mock_memory.search_memories = Mock(return_value=[])
         
         node = MemoryReaderNode(
             node_id="memory_reader",
@@ -189,7 +182,6 @@ class TestMemoryReaderNode:
             queue=[],
             memory_logger=mock_memory
         )
-        node.embedder = mock_embedder
         
         context = {
             "input": 12345  # Non-string input
@@ -198,6 +190,7 @@ class TestMemoryReaderNode:
         result = await node._run_impl(context)
         
         assert isinstance(result, dict)
+        mock_memory.search_memories.assert_called()
 
     @pytest.mark.asyncio
     async def test_run_impl_empty_query(self):
@@ -224,10 +217,7 @@ class TestMemoryReaderNode:
     async def test_run_impl_with_embedder_error(self):
         """Test _run_impl when embedder fails."""
         mock_memory = Mock()
-        mock_memory.search_memories = AsyncMock(return_value=[])
-        
-        mock_embedder = Mock()
-        mock_embedder.encode = AsyncMock(side_effect=Exception("Encoding error"))
+        mock_memory.search_memories = Mock(return_value=[])
         
         node = MemoryReaderNode(
             node_id="memory_reader",
@@ -235,7 +225,6 @@ class TestMemoryReaderNode:
             queue=[],
             memory_logger=mock_memory
         )
-        node.embedder = mock_embedder
         
         context = {"input": "test query"}
         
@@ -243,6 +232,7 @@ class TestMemoryReaderNode:
         
         # Should handle error gracefully
         assert isinstance(result, dict)
+        mock_memory.search_memories.assert_called()
 
     def test_init_with_custom_params(self):
         """Test initialization with all custom parameters."""

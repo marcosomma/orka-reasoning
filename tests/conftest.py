@@ -1,10 +1,29 @@
+import asyncio
+import os
 import sys
+import tempfile
+import warnings
+from pathlib import Path
 from types import ModuleType
-from unittest.mock import MagicMock
+from typing import Any, Dict, Generator, List
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
+import pytest
+import yaml
 
 
 # Minimal test-time shim for redis to avoid network/ConnectionPool side-effects.
 def _ensure_redis_shim():
+    # Prefer the real redis package if it's installed.
+    try:
+        import importlib.util
+
+        if importlib.util.find_spec("redis") is not None:
+            return
+    except Exception:
+        # If introspection fails, fall back to shim logic below.
+        pass
+
     if "redis" in sys.modules:
         return
     redis_mod = ModuleType("redis")
@@ -39,6 +58,11 @@ def _ensure_redis_shim():
 
     redis_mod.Redis = RedisShim
     redis_mod.ConnectionPool = ConnectionPoolShim
+
+    def from_url(*args, **kwargs):
+        return RedisShim(*args, **kwargs)
+
+    redis_mod.from_url = from_url
     # Common exceptions referenced
     class RedisError(Exception):
         pass
@@ -48,6 +72,7 @@ def _ensure_redis_shim():
     # Provide a minimal `redis.asyncio` module used by some fixtures
     try:
         import types as _types
+
         asyncio_mod = _types.ModuleType("redis.asyncio")
 
         class AsyncRedisShim(RedisShim):
@@ -56,44 +81,51 @@ def _ensure_redis_shim():
 
         asyncio_mod.Redis = AsyncRedisShim
         asyncio_mod.ConnectionPool = ConnectionPoolShim
+
+        async def async_from_url(*args, **kwargs):
+            return AsyncRedisShim(*args, **kwargs)
+
+        asyncio_mod.from_url = async_from_url
+        sys.modules["redis.asyncio"] = asyncio_mod
         redis_mod.asyncio = asyncio_mod
     except Exception:
         # best-effort; not critical
         pass
 
-        # Also provide submodules expected by production imports (e.g. redis.client)
-        client_mod = ModuleType("redis.client")
-        client_mod.Redis = RedisShim
-        sys.modules["redis.client"] = client_mod
-        redis_mod.client = client_mod
+    # Also provide submodules expected by production imports (e.g. redis.client)
+    client_mod = ModuleType("redis.client")
+    client_mod.Redis = RedisShim
+    sys.modules["redis.client"] = client_mod
+    redis_mod.client = client_mod
 
-        connection_mod = ModuleType("redis.connection")
-        connection_mod.ConnectionPool = ConnectionPoolShim
-        sys.modules["redis.connection"] = connection_mod
-        redis_mod.connection = connection_mod
+    connection_mod = ModuleType("redis.connection")
+    connection_mod.ConnectionPool = ConnectionPoolShim
+    sys.modules["redis.connection"] = connection_mod
+    redis_mod.connection = connection_mod
 
-        sys.modules["redis"] = redis_mod
+    sys.modules["redis"] = redis_mod
 
 
 _ensure_redis_shim()
 
-def pytest_configure(config):
-    # Silence or configure pytest options if needed
-    pass
-import os
-from unittest.mock import MagicMock, patch
-
-import pytest
-
 
 @pytest.fixture(autouse=True)
-def global_test_mocks(monkeypatch):
+def global_test_mocks(request, monkeypatch):
     """
     Global test fixtures to mock heavy external dependencies so unit tests
     run deterministically in CI (no Redis, no model downloads, no network).
 
     This fixture is autouse and applies to all tests.
     """
+    # Allow opting out (for "strict" runs that validate real wiring)
+    if os.environ.get("ORKA_TEST_DISABLE_GLOBAL_MOCKS", "").strip().lower() in {"1", "true", "yes"}:
+        yield
+        return
+
+    if hasattr(request, "node") and request.node.get_closest_marker("no_global_mocks"):
+        yield
+        return
+
     # Mock the memory logger factory to return a lightweight mock object
     try:
         import orka.memory_logger as memory_logger_mod
@@ -134,22 +166,24 @@ def global_test_mocks(monkeypatch):
         pass
 
     yield
-"""Test configuration and fixtures for OrKa test suite."""
-
-import asyncio
-import os
-import tempfile
-import warnings
-from pathlib import Path
-from typing import Any, Dict, Generator, List
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
-
-import pytest
-import yaml
 
 # Set test environment
 os.environ["PYTEST_RUNNING"] = "true"
 os.environ["ORKA_ENV"] = "test"
+
+# LiteLLM registers an async-client cleanup that can emit a
+# "coroutine ... was never awaited" RuntimeWarning at interpreter shutdown
+# (after pytest has already finished).
+# We neutralize that cleanup in tests to keep warning policy strict for OrKa code.
+try:
+    import litellm.llms.custom_httpx.async_client_cleanup as _litellm_async_cleanup
+
+    def _orka__noop_close_litellm_async_clients(*args, **kwargs):
+        return None
+
+    _litellm_async_cleanup.close_litellm_async_clients = _orka__noop_close_litellm_async_clients
+except Exception:
+    pass
 
 # Mock external services that should not run in unit tests
 MOCK_EXTERNAL_SERVICES = [
@@ -418,6 +452,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "integration: Integration tests with real services")
     config.addinivalue_line("markers", "slow: Slow running tests")
     config.addinivalue_line("markers", "no_auto_mock: Skip automatic mocking of external services")
+    config.addinivalue_line("markers", "no_global_mocks: Skip global test-time mocks (strict wiring)")
 
 
 def pytest_collection_modifyitems(config, items):
