@@ -44,7 +44,7 @@ OrKa will automatically detect and use whichever is available.
 ### How do I set up local LLMs?
 1. Install Ollama from https://ollama.ai
 2. Pull a model: `ollama pull llama3.2`
-3. Use `provider: ollama` in your YAML configuration
+3. Use `provider: lm_studio` in your YAML configuration
 
 ### What if I get Redis connection errors?
 **Check if RedisStack is running:**
@@ -132,7 +132,7 @@ A: Vector-enabled memory supports semantic search using embeddings, while non-ve
 A: OrKa supports Ollama, LM Studio, and any OpenAI-compatible API endpoint. Popular models include Llama 3.2, Mistral, DeepSeek, and Qwen.
 
 **Q: How do I set up Ollama with OrKa?**
-A: Install Ollama, pull a model (`ollama pull llama3.2`), then configure your agent with `provider: "ollama"` and `model_url: "http://localhost:11434/api/generate"`.
+A: Install Ollama, pull a model (`ollama pull llama3.2`), then configure your agent with `provider: "ollama"` and `model_url: "http://localhost:1234"`.
 
 **Q: Can I mix local and cloud LLMs in one workflow?**
 A: Absolutely! You can use local LLMs for privacy-sensitive tasks and cloud LLMs for complex reasoning in the same workflow.

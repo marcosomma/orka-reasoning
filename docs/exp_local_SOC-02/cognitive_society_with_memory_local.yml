@@ -147,9 +147,9 @@ agents:
         # Progressive agent with integrated memory and context
         - id: radical_progressive
           type: local_llm
-          model: deepseek-r1:32b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: deepseek-r1-distill-qwen-32b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.3
           memory_config:
             operation: write
@@ -180,9 +180,9 @@ agents:
         # Conservative agent with integrated memory and context
         - id: traditional_conservative
           type: local_llm
-          model: deepseek-r1:32b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: deepseek-r1-distill-qwen-32b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.3
           memory_config:
             operation: write
@@ -213,9 +213,9 @@ agents:
         # Realist agent with integrated memory and context
         - id: pragmatic_realist
           type: local_llm
-          model: deepseek-r1:32b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: deepseek-r1-distill-qwen-32b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.2
           memory_config:
             operation: write
@@ -246,9 +246,9 @@ agents:
         # Purist agent with integrated memory and context
         - id: ethical_purist
           type: local_llm
-          model: deepseek-r1:32b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: deepseek-r1-distill-qwen-32b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.4
           memory_config:
             operation: write
@@ -286,9 +286,9 @@ agents:
         # 🔧 SIMPLIFIED: Agreement finder with clear format
         - id: agreement_finder
           type: local_llm
-          model: deepseek-r1:32b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: deepseek-r1-distill-qwen-32b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.2  # Very low for consistency
           prompt: |
             TOPIC: {{ get_input() }}
@@ -305,9 +305,9 @@ agents:
         # 🔧 SIMPLIFIED: Cross-examination with clear format
         - id: cross_examination
           type: local_llm
-          model: deepseek-r1:32b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: deepseek-r1-distill-qwen-32b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.5
           prompt: |
             TOPIC: {{ get_input() }}
@@ -337,9 +337,9 @@ agents:
         # Progressive refinement through collaboration
         - id: progressive_refinement
           type: local_llm
-          model: deepseek-r1:32b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: deepseek-r1-distill-qwen-32b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.4
           memory_config:
             operation: write
@@ -375,9 +375,9 @@ agents:
         # Conservative refinement through collaboration
         - id: conservative_refinement
           type: local_llm
-          model: deepseek-r1:32b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: deepseek-r1-distill-qwen-32b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.4
           memory_config:
             operation: write
@@ -413,9 +413,9 @@ agents:
         # Realist refinement through collaboration
         - id: realist_refinement
           type: local_llm
-          model: deepseek-r1:32b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: deepseek-r1-distill-qwen-32b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.3
           memory_config:
             operation: write
@@ -451,9 +451,9 @@ agents:
         # Purist refinement through collaboration
         - id: purist_refinement
           type: local_llm
-          model: deepseek-r1:32b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: deepseek-r1-distill-qwen-32b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.5
           memory_config:
             operation: write
@@ -494,9 +494,9 @@ agents:
         # 🔧 NEW: Position bridging - find concrete bridges between perspectives  
         - id: position_bridging
           type: local_llm
-          model: deepseek-r1:32b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: deepseek-r1-distill-qwen-32b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.3
           prompt: |
             TOPIC: {{ get_input() }} - Round {{ get_loop_number() }}
@@ -515,9 +515,9 @@ agents:
         # 🔧 ENHANCED: Collaborative synthesis attempt
         - id: synthesis_attempt
           type: local_llm
-          model: deepseek-r1:32b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: deepseek-r1-distill-qwen-32b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.4
           prompt: |
             TOPIC: {{ get_input() }} - ROUND {{ get_loop_number() }}
@@ -544,9 +544,9 @@ agents:
         # 🔧 RESTORED: Quality moderator - LOCAL LLM VERSION
         - id: quality_moderator
           type: local_llm
-          model: deepseek-r1:32b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: deepseek-r1-distill-qwen-32b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.2  # Very low for consistent scoring
           prompt: |
             TOPIC: {{ get_input() }} - Round {{ get_loop_number() }}
@@ -565,9 +565,9 @@ agents:
         # 🔧 COMPLETELY REDESIGNED: Ultra-simple agreement moderator
         - id: agreement_moderator
           type: local_llm
-          model: deepseek-r1:32b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: deepseek-r1-distill-qwen-32b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.1  # Ultra-low for scoring consistency
           prompt: |
             TOPIC: {{ get_input() }} - Round {{ get_loop_number() }}
@@ -615,9 +615,9 @@ agents:
   # 🔧 SIMPLIFIED: Meta-analysis agents
   - id: meta_debate_reflection
     type: local_llm
-    model: deepseek-r1:32b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: deepseek-r1-distill-qwen-32b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
     prompt: |
       QUESTION: {{ get_input() }}
@@ -633,9 +633,9 @@ agents:
 
   - id: reasoning_quality_extractor
     type: local_llm
-    model: deepseek-r1:32b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: deepseek-r1-distill-qwen-32b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.2
     prompt: |
       ANALYSIS: {{ previous_outputs.meta_debate_reflection.response }}
@@ -649,9 +649,9 @@ agents:
 
   - id: final_synthesis_processor
     type: local_llm
-    model: deepseek-r1:32b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: deepseek-r1-distill-qwen-32b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
     prompt: |
       QUESTION: {{ get_input() }}

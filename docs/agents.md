@@ -137,7 +137,7 @@ Interfaces with locally running large language models (Ollama, LM Studio, etc.) 
   type: local_llm
   prompt: "Summarize this text: {{ input }}"
   model: "llama3.2:latest"
-  model_url: "http://localhost:11434/api/generate"
+  model_url: "http://localhost:1234"
   provider: "ollama"
   temperature: 0.7
   queue: orka:local

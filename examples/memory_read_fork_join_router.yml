@@ -27,9 +27,9 @@ agents:
     prompt: Retrieve any stored memories about how the subject '{{ get_input() }}' was classified or understood in the past. Return "NONE" if nothing matches.
   - id: openai-answer_2
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.7
     queue: orka:openai-answer_2
     prompt: Given previous context {{ get_agent_response('memory-read_0') }}, provide an initial detailed answer to {{ get_input() }}. Be comprehensive and informative.
@@ -42,9 +42,9 @@ agents:
       - openai-answer_2
   - id: openai-binary_4
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.1
     queue: orka:openai-binary_4
     prompt: Does the question {{ get_input() }} require factual validation? Answer with exactly 'true' or 'false' only.
@@ -52,9 +52,9 @@ agents:
       - fork_3
   - id: openai-answer_7
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.5
     queue: orka:openai-answer_7
     prompt: Provide a concise summary for the question {{ get_input() }}. Be clear and to the point.
@@ -62,9 +62,9 @@ agents:
       - fork_3
   - id: openai-classification_5
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.2
     queue: orka:openai-classification_5
     prompt: | 
@@ -89,9 +89,9 @@ agents:
       - duckduckgo_13
   - id: openai-answer_6
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.8
     queue: orka:openai-answer_6
     prompt: "Provide an alternative perspective or deeper insight into the question {{ get_input() }} considering domain: {{ get_agent_response('openai-classification_5') }}. Be creative and thoughtful."
@@ -102,9 +102,9 @@ agents:
     group: fork_3
   - id: openai-binary_10
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.1
     queue: orka:openai-binary_10
     prompt: "Is the provided information coherent and complete based on outputs: {{ get_agent_response('join_9') }}? Answer with exactly 'true' or 'false' only."
@@ -125,9 +125,9 @@ agents:
       - openai-binary_10
   - id: openai-answer_14
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.6
     queue: orka:openai-answer_14
     prompt: Given confirmed coherent inputs {{ get_agent_response('join_9') }}, provide a polished final response to {{ get_input() }}. Be professional and comprehensive.
@@ -135,9 +135,9 @@ agents:
       - router_11
   - id: openai-answer_15
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.7
     queue: orka:openai-answer_15
     prompt: "Given identified gaps in coherence or completeness in {{ get_agent_response('join_9') }}, clarify or complete the information to fully answer {{ get_input() }}. Fill in the missing pieces."
@@ -164,9 +164,9 @@ agents:
   
   - id: final_summary
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.7
     prompt: |
       Based on the question "{{ get_input() }}", provide a comprehensive response using the available information:

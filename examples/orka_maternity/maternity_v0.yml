@@ -52,9 +52,9 @@ agents:
 
   - id: risk_predictor
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
     prompt: |
       Predict harm score H ∈ [0,1] for the request using context.
@@ -65,9 +65,9 @@ agents:
 
   - id: vulnerability_analyzer
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
     prompt: |
       Infer vulnerability V ∈ [0,1] from the request and prior incidents.
@@ -79,9 +79,9 @@ agents:
 
   - id: reversibility_estimator
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
     prompt: |
       Estimate reversibility R ∈ [0,1]; 1 = fully reversible.
@@ -91,9 +91,9 @@ agents:
 
   - id: consent_checker
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.2
     prompt: |
       Is explicit informed consent present for the risky action?
@@ -116,7 +116,7 @@ agents:
 
   - id: route_determiner
     type: local_llm
-    model: gpt-oss:20b
+    model: openai/gpt-oss-20b
     prompt: |
       Analyze the metrics and determine the appropriate safety route.
       
@@ -143,7 +143,7 @@ agents:
 
   - id: safe_alternative_builder
     type: local_llm
-    model: gpt-oss:20b
+    model: openai/gpt-oss-20b
     prompt: |
       Suggest a safer, reversible alternative based on policies and the request.
       
@@ -152,7 +152,7 @@ agents:
 
   - id: responder_block
     type: local_llm
-    model: gpt-oss:20b
+    model: openai/gpt-oss-20b
     prompt: |
       Block the risky request. Provide protective rationale, reassurance, and a safer alternative.
       
@@ -161,7 +161,7 @@ agents:
 
   - id: responder_caution
     type: local_llm
-    model: gpt-oss:20b
+    model: openai/gpt-oss-20b
     prompt: |
       Decline risky portion and propose the safer alternative while maintaining rapport.
       
@@ -170,7 +170,7 @@ agents:
 
   - id: responder_normal
     type: local_llm
-    model: gpt-oss:20b
+    model: openai/gpt-oss-20b
     prompt: |
       Proceed safely with clarity and boundary reminders.
       
@@ -179,7 +179,7 @@ agents:
 
   - id: empathy_scorer
     type: local_llm
-    model: gpt-oss:20b
+    model: openai/gpt-oss-20b
     prompt: |
       Score comfort/clarity (K) of the final response in [0,1].
       
@@ -212,9 +212,9 @@ agents:
 
   - id: explainer
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.7
     prompt: |
       Summarize rationale with metrics and chosen route.
@@ -226,9 +226,9 @@ agents:
 
   - id: final_summary
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.7
     prompt: |
       Provide a comprehensive final summary of the maternal safety analysis:

@@ -182,9 +182,9 @@ agents:
       agents:
         - id: progressive_agent
           type: local_llm
-          model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.7
           prompt: |
             ROLE: Progressive
@@ -192,9 +192,9 @@ agents:
             INPUT: {{ get_input() }}
         - id: conservative_agent
           type: local_llm
-          model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.7
           prompt: |
             ROLE: Conservative
@@ -202,9 +202,9 @@ agents:
             INPUT: {{ get_input() }}
         - id: agreement_check
           type: local_llm
-          model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.2
           prompt: |
             Evaluate agreement between these positions.
@@ -214,9 +214,9 @@ agents:
             Return AGREEMENT_SCORE: <0.0-1.0>
   - id: final_answer
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
     prompt: |
       USER_ASKED: {{ get_input() }}

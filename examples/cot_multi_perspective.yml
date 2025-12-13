@@ -45,7 +45,9 @@ agents:
       agents:
         - id: perspective_handler
           type: local_llm
-          model: gpt-oss:20b
+          model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           prompt: |
             {% set perspectives = ['Analytical', 'Empathetic', 'Creative'] %}
             {% set current_perspective = perspectives[get_loop_number() - 1] %}
@@ -102,7 +104,9 @@ agents:
 
         - id: synthesizer
           type: local_llm
-          model: gpt-oss:20b
+          model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           prompt: |
             Current perspective's analysis:
             {{ get_agent_response('perspective_handler') }}
@@ -126,7 +130,9 @@ agents:
 
         - id: quality_scorer
           type: local_llm
-          model: gpt-oss:20b
+          model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           prompt: |
             Evaluate the quality of this perspective's contribution:
             {{ get_agent_response('synthesizer') }}
@@ -156,7 +162,9 @@ agents:
 
   - id: final_answer_builder
     type: local_llm
-    model: gpt-oss:20b
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Original query: {{ get_input() }}
       

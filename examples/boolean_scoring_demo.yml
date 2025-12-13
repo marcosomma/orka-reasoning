@@ -38,9 +38,9 @@ agents:
   # Step 1: Propose a path
   - id: path_proposer
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.5
     prompt: |
       Propose an agent execution path for this query: {{ input }}
@@ -53,9 +53,9 @@ agents:
   # Step 2: Validate with STRICT preset (production-critical)
   - id: path_validator_strict
     type: plan_validator
-    llm_model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.2
     scoring_preset: strict  # High standards: approved at 0.90+
     # Note: Removed old numeric validation_score, now using boolean criteria
@@ -63,9 +63,9 @@ agents:
   # Step 3: Validate with MODERATE preset (balanced)
   - id: path_validator_moderate
     type: plan_validator
-    llm_model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.2
     scoring_preset: moderate  # Balanced: approved at 0.85+
 
@@ -92,9 +92,9 @@ agents:
       agents:
         - id: improver
           type: local_llm
-          model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.6
           prompt: |
             Improve the proposed path based on feedback:
@@ -112,9 +112,9 @@ agents:
         # NEW: Loop Validator Node - Robust boolean evaluation with built-in parsing
         - id: boolean_evaluator
           type: loop_validator
-          llm_model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           scoring_preset: moderate  # strict/moderate/lenient
           evaluation_target: improver  # Evaluate the improver's output
           temperature: 0.1

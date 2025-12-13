@@ -76,9 +76,9 @@ agents:
         # Classify the query to help GraphScout
         - id: query_classifier
           type: local_llm
-          model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.3
           prompt: |
             Classify the query to guide intelligent routing:
@@ -120,9 +120,9 @@ agents:
             latency_budget_ms: 8000
             max_preview_tokens: 250
             evaluation_model: "local_llm"
-            evaluation_model_name: "gpt-oss:20b"
+            evaluation_model_name: "openai/gpt-oss-20b"
             validation_model: "local_llm"
-            validation_model_name: "gpt-oss:20b"
+            validation_model_name: "openai/gpt-oss-20b"
             llm_evaluation_enabled: true
             fallback_to_heuristics: true
           prompt: |
@@ -188,9 +188,9 @@ agents:
         # Validate GraphScout's path with boolean scoring
         - id: path_validator_moderate
           type: plan_validator
-          llm_model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model:  openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.2
           scoring_preset: moderate
           custom_weights:
@@ -201,9 +201,9 @@ agents:
   # Generate execution report
   - id: execution_report
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
     prompt: |
       # GraphScout Validated Routing Report
@@ -329,9 +329,9 @@ agents:
   - id: deep_analyzer
     type: local_llm
     capabilities: [reasoning, analysis, critical_thinking]
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Provide deep multi-perspective analysis:
       
@@ -354,9 +354,9 @@ agents:
   - id: technical_specialist
     type: local_llm
     capabilities: [technical_analysis, architecture, implementation]
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Provide technical specialist analysis:
       
@@ -375,9 +375,9 @@ agents:
   - id: business_analyst
     type: local_llm
     capabilities: [business_analysis, requirements, strategy]
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Business analysis for:
       
@@ -402,9 +402,9 @@ agents:
   - id: content_synthesizer
     type: local_llm
     capabilities: [answer_emit, synthesis, response_generation]
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Synthesize comprehensive response:
       
@@ -418,9 +418,9 @@ agents:
   - id: report_generator
     type: local_llm
     capabilities: [answer_emit, reporting, documentation]
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Generate structured report for:
       
@@ -433,9 +433,9 @@ agents:
   - id: fact_checker
     type: local_llm
     capabilities: [validation, verification]
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Fact-check and validate:
       
@@ -446,9 +446,9 @@ agents:
   - id: quality_reviewer
     type: local_llm
     capabilities: [quality_control, review]
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Review for quality:
       

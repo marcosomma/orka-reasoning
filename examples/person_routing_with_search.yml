@@ -22,9 +22,9 @@ agents:
       {{ get_input() }}
   - id: openai-classification_5
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.2
     queue: orka:openai-classification_5
     prompt: |-
@@ -38,9 +38,9 @@ agents:
     group: fork_2
   - id: openai-binary_6
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.1
     queue: orka:openai-binary_6
     prompt: |-
@@ -62,9 +62,9 @@ agents:
           - openai-answer_11
   - id: openai-answer_10
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.2
     queue: orka:openai-answer_10
     prompt: |-
@@ -80,9 +80,9 @@ agents:
     prompt: '{{ get_agent_response("openai-answer_10") }}'
   - id: openai-answer_9
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.7
     queue: orka:openai-answer_9
     prompt: |-
@@ -94,9 +94,9 @@ agents:
       Provide a comprehensive and engaging response.
   - id: openai-answer_11
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.7
     queue: orka:openai-answer_11
     prompt: |-
@@ -108,9 +108,9 @@ agents:
       Provide a detailed and informative response.
   - id: answer-final
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.6
     queue: orka:answer-final
     prompt: |-

@@ -222,7 +222,7 @@ When you run `orka run workflow.yml "input"`, OrKa:
 
 ### 4. Local LLM Support
 OrKa works with local models through:
-- **Ollama** - `ollama pull llama3.2` then use `provider: ollama`
+- **Ollama** - `ollama pull llama3.2` then use `provider: lm_studio`
 - **LM Studio** - Point to your local API endpoint
 - **Any LLM-compatible API**
 

@@ -43,7 +43,7 @@ class PlanValidatorAgent(BaseAgent):
 
     Args:
         agent_id: Unique identifier for the agent
-        llm_model: LLM model name (default: "gpt-oss:20b")
+        model:  LLM model name (default: "gpt-oss:20b")
         llm_provider: Provider type ("ollama" or "openai_compatible")
         llm_url: LLM API endpoint URL
         temperature: Temperature for LLM generation
@@ -57,7 +57,7 @@ class PlanValidatorAgent(BaseAgent):
         agent_id: str,
         llm_model: str = "gpt-oss:20b",
         llm_provider: str = "ollama",
-        llm_url: str = "http://localhost:11434/api/generate",
+        llm_url: str = "http://localhost:1234",
         temperature: float = 0.2,
         scoring_preset: str = "moderate",
         custom_weights: Optional[Dict[str, float]] = None,

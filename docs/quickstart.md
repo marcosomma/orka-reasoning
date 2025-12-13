@@ -133,9 +133,9 @@ agents:
     
   - id: answer_builder
     type: local_llm                 # Local LLM first (privacy-focused)
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.7
     prompt: |
       Based on the memory search results: {{ get_agent_response('memory_search') }}

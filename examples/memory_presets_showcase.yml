@@ -25,9 +25,9 @@ agents:
   # 1. Sensory Memory - Immediate input processing
   - id: sensor_input
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.1  # Low temperature for consistent processing
     memory_preset: "sensory"  # Very short-term, high-throughput
     prompt: "Process this raw input: {{ input }}"
@@ -35,9 +35,9 @@ agents:
   # 2. Working Memory - Active processing
   - id: working_processor
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3  # Moderate temperature for reasoning
     memory_preset: "working"  # Temporary calculations and context
     prompt: |
@@ -61,9 +61,9 @@ agents:
   # 4. Procedural Memory - Skills and processes  
   - id: process_optimizer
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.2  # Low temperature for consistent procedures
     memory_preset: "procedural"  # Process knowledge and patterns
     prompt: |

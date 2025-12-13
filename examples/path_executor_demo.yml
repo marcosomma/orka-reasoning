@@ -33,7 +33,7 @@ agents:
         cost: 0.025
         latency: 0.025
       evaluation_model: "local_llm"
-      evaluation_model_name: "gpt-oss:20b"
+      evaluation_model_name: "openai/gpt-oss-20b"
       llm_evaluation_enabled: true
       fallback_to_heuristics: true
     prompt: |
@@ -61,9 +61,9 @@ agents:
   - id: analyzer
     type: local_llm
     capabilities: [analysis, reasoning]
-    model: "gpt-oss:20b"
-    provider: "ollama"
-    url: "http://localhost:11434/api/generate"
+    model: "openai/gpt-oss-20b"
+    provider: "lm_studio"
+    model_url: "http://localhost:1234"
     temperature: 0.4
     timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
     prompt: |
@@ -74,9 +74,9 @@ agents:
   - id: summarizer
     type: local_llm
     capabilities: [answer_emit, summarization]
-    model: "gpt-oss:20b"
-    provider: "ollama"
-    url: "http://localhost:11434/api/generate"
+    model: "openai/gpt-oss-20b"
+    provider: "lm_studio"
+    model_url: "http://localhost:1234"
     temperature: 0.3
     timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
     prompt: |
@@ -87,9 +87,9 @@ agents:
       Provide a clear, actionable summary.
 
 llm:
-  provider: "ollama"
-  model: "gpt-oss:20b"
-  url: "http://localhost:11434/api/generate"
+  provider: "lm_studio"
+  model: "openai/gpt-oss-20b"
+  url: "http://localhost:1234"
   temperature: 0.3
   max_tokens: 2000
 

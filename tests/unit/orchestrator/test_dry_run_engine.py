@@ -160,7 +160,7 @@ class TestSmartPathEvaluator:
         config.evaluation_model_name = "llama3.2:latest"
         config.validation_model = "local_llm"
         config.validation_model_name = "llama3.2:latest"
-        config.model_url = "http://localhost:11434/api/generate"
+        config.model_url = "http://localhost:1234"
         config.provider = "ollama"
         return config
 
@@ -917,7 +917,7 @@ class TestSmartPathEvaluator:
             mock_call.return_value = "test response"
 
             result = await evaluator._call_ollama_async(
-                "http://localhost:11434/api/generate", "llama3.2:latest", "test prompt", 0.1
+                "http://localhost:1234", "llama3.2:latest", "test prompt", 0.1
             )
 
             assert result == "test response"

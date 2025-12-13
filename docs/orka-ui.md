@@ -308,7 +308,7 @@ Open `http://localhost:8080` in your browser. You'll see:
        type: local_llm
        queue: orka:answer_agent
        model: llama3:8b
-       provider: ollama
+       provider: lm_studio
        prompt: |
          Answer this question using the search results:
          
@@ -375,7 +375,7 @@ Open `http://localhost:8080` in your browser. You'll see:
 - **Purpose**: Run local models via Ollama, LM Studio, or OpenAI-compatible APIs
 - **Configuration**:
   - `model`: Model name (e.g., `llama3:8b`, `deepseek-r1:8b`)
-  - `model_url`: API endpoint (default: `http://localhost:11434/api/generate`)
+  - `model_url`: API endpoint (default: `http://localhost:1234`)
   - `provider`: `ollama` or `openai-compatible`
   - `temperature`: 0.0-2.0 (creativity control)
 

@@ -133,8 +133,8 @@ All presets evaluate across four dimensions:
 agents:
   - id: path_validator
     type: plan_validator
-    llm_model: gpt-oss:20b
-    provider: ollama
+    model: openai/gpt-oss-20b
+    provider: lm_studio
     scoring_preset: moderate  # strict | moderate | lenient
 ```
 
@@ -144,8 +144,8 @@ agents:
 agents:
   - id: path_validator
     type: plan_validator
-    llm_model: gpt-oss:20b
-    provider: ollama
+    model: openai/gpt-oss-20b
+    provider: lm_studio
     scoring_preset: moderate
     custom_weights:
       # Override specific criteria

@@ -125,9 +125,9 @@ agents:
         # 🔧 OPTIMIZED: Condensed progressive agent
         - id: radical_progressive
           type: local_llm
-          model: deepseek-r1:7b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: deepseek/deepseek-r1-0528-qwen3-8b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.3
           memory_config:
             operation: write
@@ -152,9 +152,9 @@ agents:
         # 🔧 OPTIMIZED: Condensed conservative agent
         - id: traditional_conservative
           type: local_llm
-          model: deepseek-r1:7b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: deepseek/deepseek-r1-0528-qwen3-8b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.3
           memory_config:
             operation: write
@@ -179,9 +179,9 @@ agents:
         # 🔧 OPTIMIZED: Condensed realist agent
         - id: pragmatic_realist
           type: local_llm
-          model: deepseek-r1:7b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: deepseek/deepseek-r1-0528-qwen3-8b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.2
           memory_config:
             operation: write
@@ -206,9 +206,9 @@ agents:
         # 🔧 OPTIMIZED: Condensed purist agent
         - id: ethical_purist
           type: local_llm
-          model: deepseek-r1:7b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: deepseek/deepseek-r1-0528-qwen3-8b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.4
           memory_config:
             operation: write
@@ -237,9 +237,9 @@ agents:
         # 🔧 OPTIMIZED: Simple agreement finder
         - id: agreement_finder
           type: local_llm
-          model: deepseek-r1:7b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: deepseek/deepseek-r1-0528-qwen3-8b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.2
           prompt: |
             TOPIC: {{ get_input() }}
@@ -266,9 +266,9 @@ agents:
         # 🔧 OPTIMIZED: Condensed progressive refinement
         - id: progressive_refinement
           type: local_llm
-          model: deepseek-r1:7b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: deepseek/deepseek-r1-0528-qwen3-8b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.4
           memory_config:
             operation: write
@@ -293,9 +293,9 @@ agents:
         # 🔧 OPTIMIZED: Condensed conservative refinement
         - id: conservative_refinement
           type: local_llm
-          model: deepseek-r1:7b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: deepseek/deepseek-r1-0528-qwen3-8b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.4
           memory_config:
             operation: write
@@ -320,9 +320,9 @@ agents:
         # 🔧 OPTIMIZED: Condensed realist refinement
         - id: realist_refinement
           type: local_llm
-          model: deepseek-r1:7b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: deepseek/deepseek-r1-0528-qwen3-8b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.3
           memory_config:
             operation: write
@@ -347,9 +347,9 @@ agents:
         # 🔧 OPTIMIZED: Condensed purist refinement
         - id: purist_refinement
           type: local_llm
-          model: deepseek-r1:7b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: deepseek/deepseek-r1-0528-qwen3-8b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.5
           memory_config:
             operation: write
@@ -378,9 +378,9 @@ agents:
         # 🔧 OPTIMIZED: Simplified synthesis
         - id: synthesis_attempt
           type: local_llm
-          model: deepseek-r1:7b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: deepseek/deepseek-r1-0528-qwen3-8b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.4
           prompt: |
             SYNTHESIS - Round {{ get_loop_number() }}
@@ -399,9 +399,9 @@ agents:
         # 🔧 OPTIMIZED: Loop Validator Node - Robust boolean evaluation
         - id: agreement_moderator
           type: loop_validator
-          llm_model: deepseek-r1:7b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model:  deepseek-r1-distill-llama-8b
+          model_url: http://localhost:1234
+          provider: lm_studio
           scoring_preset: moderate
           scoring_context: quality  # Evaluate synthesis quality
           evaluation_target: synthesis_attempt  # Evaluate the synthesis quality
@@ -433,9 +433,9 @@ agents:
   # 🔧 OPTIMIZED: Simplified meta-analysis
   - id: meta_debate_reflection
     type: local_llm
-    model: deepseek-r1:7b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: deepseek/deepseek-r1-0528-qwen3-8b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
     prompt: |
       QUESTION: {{ get_input() }}
@@ -454,9 +454,9 @@ agents:
   # 🔧 OPTIMIZED: Essential final synthesis only
   - id: final_synthesis_processor
     type: local_llm
-    model: deepseek-r1:7b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: deepseek/deepseek-r1-0528-qwen3-8b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
     prompt: |
       QUESTION: {{ get_input() }}

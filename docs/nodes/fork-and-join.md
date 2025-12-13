@@ -149,16 +149,16 @@ Fork and Join nodes enable parallel processing in workflows. Fork splits executi
 
 - id: llama_model
   type: local_llm
-  provider: ollama
+  provider: lm_studio
   model: "llama3:8b"
-  model_url: "http://localhost:11434/api/generate"
+  model_url: "http://localhost:1234"
   prompt: "{{ input }}"
 
 - id: mistral_model
   type: local_llm
-  provider: ollama
+  provider: lm_studio
   model: "mistral:7b"
-  model_url: "http://localhost:11434/api/generate"
+  model_url: "http://localhost:1234"
   prompt: "{{ input }}"
 
 - id: gpt_model

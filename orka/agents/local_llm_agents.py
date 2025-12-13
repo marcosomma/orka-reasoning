@@ -111,7 +111,7 @@ class LocalLLMAgent(BaseAgent):
           type: local_llm
           prompt: "Summarize this: {{ input }}"
           model: "mistral"
-          model_url: "http://localhost:11434/api/generate"
+          model_url: "http://localhost:1234"
           provider: "ollama"
           temperature: 0.7
     """
@@ -152,6 +152,19 @@ class LocalLLMAgent(BaseAgent):
             temperature = float(str(temp_val)) if temp_val is not None else 0.7
         except (ValueError, TypeError):
             temperature = 0.7
+
+        # Optional max token cap (completion tokens)
+        max_tokens_val = ctx.get("max_tokens", self.params.get("max_tokens"))
+        max_tokens: Optional[int]
+        if max_tokens_val is None or max_tokens_val == "":
+            max_tokens = None
+        else:
+            try:
+                max_tokens = int(str(max_tokens_val))
+                if max_tokens <= 0:
+                    max_tokens = None
+            except (ValueError, TypeError):
+                max_tokens = None
 
         # Build the full prompt using template replacement
         # Convert ctx to dict if it's not already
@@ -205,7 +218,7 @@ class LocalLLMAgent(BaseAgent):
         full_prompt = f"{render_prompt}\n\n{self_evaluation}"
 
         # Get model endpoint configuration
-        model_url = self.params.get("model_url", "http://localhost:11434/api/generate")
+        model_url = self.params.get("model_url", "http://localhost:1234")
         provider = self.params.get("provider", "ollama")
 
         try:
@@ -216,15 +229,28 @@ class LocalLLMAgent(BaseAgent):
 
             # Get raw response from the LLM
             if provider.lower() == "ollama":
-                raw_response = self._call_ollama(model_url, model, full_prompt, temperature)
+                raw_response = self._call_ollama(
+                    model_url,
+                    model,
+                    full_prompt,
+                    temperature,
+                    max_tokens=max_tokens,
+                )
             elif provider.lower() in ["lm_studio", "lmstudio"]:
-                raw_response = self._call_lm_studio(model_url, model, full_prompt, temperature)
+                raw_response = self._call_lm_studio(
+                    model_url,
+                    model,
+                    full_prompt,
+                    temperature,
+                    max_tokens=max_tokens,
+                )
             elif provider.lower() == "openai_compatible":
                 raw_response = self._call_openai_compatible(
                     model_url,
                     model,
                     full_prompt,
                     temperature,
+                    max_tokens=max_tokens,
                 )
             else:
                 # Default to Ollama format
@@ -402,7 +428,14 @@ class LocalLLMAgent(BaseAgent):
 
         return rendered
 
-    def _call_ollama(self, model_url: str, model: str, prompt: str, temperature: float) -> str:
+    def _call_ollama(
+        self,
+        model_url: str,
+        model: str,
+        prompt: str,
+        temperature: float,
+        max_tokens: Optional[int] = None,
+    ) -> str:
         """
         Call Ollama API endpoint.
 
@@ -418,12 +451,31 @@ class LocalLLMAgent(BaseAgent):
             "options": {"temperature": temperature},
         }
 
-        response = requests.post(model_url, json=payload)
-        response.raise_for_status()
+        if max_tokens is not None:
+            # Ollama uses num_predict to cap completion tokens
+            payload["options"]["num_predict"] = max_tokens
+
+        response = requests.post(model_url, json=payload, timeout=30)
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as e:
+            body = (response.text or "").strip()
+            if len(body) > 1200:
+                body = body[:1200] + "..."
+            raise RuntimeError(
+                f"Ollama HTTP {response.status_code} for url {response.url}: {body}"
+            ) from e
         result = response.json()
         return str(result.get("response", "")).strip()
 
-    def _call_lm_studio(self, model_url: str, model: str, prompt: str, temperature: float) -> str:
+    def _call_lm_studio(
+        self,
+        model_url: str,
+        model: str,
+        prompt: str,
+        temperature: float,
+        max_tokens: Optional[int] = None,
+    ) -> str:
         """
         Call LM Studio API endpoint (OpenAI-compatible).
 
@@ -440,6 +492,9 @@ class LocalLLMAgent(BaseAgent):
             "stream": False,
         }
 
+        if max_tokens is not None:
+            payload["max_tokens"] = max_tokens
+
         # Ensure URL ends with /chat/completions for OpenAI compatibility
         if not model_url.endswith("/chat/completions"):
             if model_url.endswith("/"):
@@ -447,13 +502,26 @@ class LocalLLMAgent(BaseAgent):
             else:
                 model_url = model_url + "/v1/chat/completions"
 
-        response = requests.post(model_url, json=payload)
-        response.raise_for_status()
+        response = requests.post(model_url, json=payload, timeout=60)
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as e:
+            body = (response.text or "").strip()
+            if len(body) > 1200:
+                body = body[:1200] + "..."
+            raise RuntimeError(
+                f"LM Studio HTTP {response.status_code} for url {response.url}: {body}"
+            ) from e
         result = response.json()
         return str(result["choices"][0]["message"]["content"]).strip()
 
     def _call_openai_compatible(
-        self, model_url: str, model: str, prompt: str, temperature: float
+        self,
+        model_url: str,
+        model: str,
+        prompt: str,
+        temperature: float,
+        max_tokens: Optional[int] = None,
     ) -> str:
         """
         Call any OpenAI-compatible API endpoint.
@@ -470,7 +538,18 @@ class LocalLLMAgent(BaseAgent):
             "stream": False,
         }
 
-        response = requests.post(model_url, json=payload)
-        response.raise_for_status()
+        if max_tokens is not None:
+            payload["max_tokens"] = max_tokens
+
+        response = requests.post(model_url, json=payload, timeout=60)
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as e:
+            body = (response.text or "").strip()
+            if len(body) > 1200:
+                body = body[:1200] + "..."
+            raise RuntimeError(
+                f"OpenAI-compatible HTTP {response.status_code} for url {response.url}: {body}"
+            ) from e
         result = response.json()
         return str(result["choices"][0]["message"]["content"]).strip()

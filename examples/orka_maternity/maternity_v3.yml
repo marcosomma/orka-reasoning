@@ -163,7 +163,7 @@ agents:
         # Risk predictor
         - id: risk_predictor
           type: local_llm
-          model: gpt-oss:20b
+          model: openai/gpt-oss-20b
           prompt: |
             Predict harm score H ∈ [0,1] for the request using context.
             Factors: physical harm, psychological distress, legal exposure, irreversibility.
@@ -177,7 +177,7 @@ agents:
         # Vulnerability analyzer
         - id: vulnerability_analyzer
           type: local_llm
-          model: gpt-oss:20b
+          model: openai/gpt-oss-20b
           prompt: |
             Infer vulnerability V ∈ [0,1] from the request and prior incidents.
             Consider minors, dependency, coercion, crisis cues.
@@ -192,7 +192,7 @@ agents:
         # Reversibility estimator
         - id: reversibility_estimator
           type: local_llm
-          model: gpt-oss:20b
+          model: openai/gpt-oss-20b
           prompt: |
             Estimate reversibility R ∈ [0,1]; 1 = fully reversible.
             Return JSON: {"R": float, "notes": "..."}.
@@ -205,7 +205,7 @@ agents:
         # Consent checker
         - id: consent_checker
           type: local_llm
-          model: gpt-oss:20b
+          model: openai/gpt-oss-20b
           prompt: |
             Is explicit informed consent present for the risky action?
             Return JSON: {"C": "verified" | "unclear" | "denied", "evidence": "..."}.
@@ -271,7 +271,7 @@ agents:
         # Metrics validator - ensures metrics are present before routing
         - id: metrics_validator
           type: local_llm
-          model: gpt-oss:20b
+          model: openai/gpt-oss-20b
           prompt: |
             Validate that all required metrics are present:
             
@@ -300,7 +300,7 @@ agents:
         # Route determiner
         - id: route_determiner
           type: local_llm
-          model: gpt-oss:20b
+          model: openai/gpt-oss-20b
           prompt: |
             Analyze the metrics and determine the appropriate safety route.
             
@@ -345,7 +345,7 @@ agents:
         # Safe alternative builder
         - id: safe_alternative_builder
           type: local_llm
-          model: gpt-oss:20b
+          model: openai/gpt-oss-20b
           prompt: |
             Suggest a safer, reversible alternative based on policies and the request.
             
@@ -358,7 +358,7 @@ agents:
         # Responder for high-risk cases
         - id: responder_block
           type: local_llm
-          model: gpt-oss:20b
+          model: openai/gpt-oss-20b
           prompt: |
             Block the risky request. Provide protective rationale, reassurance, and a safer alternative.
             
@@ -376,7 +376,7 @@ agents:
         # Responder for medium-risk cases
         - id: responder_caution
           type: local_llm
-          model: gpt-oss:20b
+          model: openai/gpt-oss-20b
           prompt: |
             Decline risky portion and propose the safer alternative while maintaining rapport.
             
@@ -394,7 +394,7 @@ agents:
         # Responder for low-risk cases
         - id: responder_normal
           type: local_llm
-          model: gpt-oss:20b
+          model: openai/gpt-oss-20b
           prompt: |
             Proceed safely with clarity and boundary reminders.
             
@@ -412,7 +412,7 @@ agents:
         # Multi-perspective synthesis
         - id: perspective_synthesis
           type: local_llm
-          model: gpt-oss:20b
+          model: openai/gpt-oss-20b
           prompt: |
             Integrate multiple perspectives to create a balanced final assessment.
             
@@ -441,7 +441,7 @@ agents:
         # Response quality checker
         - id: response_quality_checker
           type: local_llm
-          model: gpt-oss:20b
+          model: openai/gpt-oss-20b
           prompt: |
             Analyze the quality of the response for:
             1. Emotional support (warmth, empathy, reassurance)
@@ -466,7 +466,7 @@ agents:
         # Safety scorer - determines if loop should continue
         - id: safety_scorer
           type: local_llm
-          model: gpt-oss:20b
+          model: openai/gpt-oss-20b
           prompt: |
             Score the overall safety of the response considering:
             1. Risk mitigation effectiveness
@@ -493,7 +493,7 @@ agents:
   # Final response builder that integrates the loop results into a polished response
   - id: final_response_builder
     type: local_llm
-    model: gpt-oss:20b
+    model: openai/gpt-oss-20b
     prompt: |
       Build a final, polished response based on the maternal safety loop results.
       
@@ -517,7 +517,7 @@ agents:
   # Final explainer that provides reasoning about the decision process
   - id: final_explainer
     type: local_llm
-    model: gpt-oss:20b
+    model: openai/gpt-oss-20b
     prompt: |
       Explain the maternal safety decision process and rationale.
       

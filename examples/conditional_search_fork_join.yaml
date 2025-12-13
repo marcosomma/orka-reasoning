@@ -13,9 +13,9 @@ orchestrator:
 agents:
   - id: initial_classify
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.2
     queue: orka:domain
     prompt: >
@@ -24,9 +24,9 @@ agents:
       Answer with only the category name.
   - id: search_required
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.1
     queue: orka:need_search
     prompt: Is "{{ get_input() }}" a question that requires deep internet research? Answer with exactly 'true' or 'false' only.
@@ -41,9 +41,9 @@ agents:
       - search_required
   - id: topic_validity_check
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.1
     queue: orka:topic_check
     prompt: Is "{{ get_input() }}" a valid, meaningful topic to investigate? Answer with exactly 'true' or 'false' only.
@@ -51,9 +51,9 @@ agents:
       - fork_parallel_checks
   - id: summary_category_check
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.2
     queue: orka:summary_check
     prompt: 'Classify the input "{{ get_input() }}" into one of: [summary, detailed, none]. Choose exactly one from: summary, detailed, none. Answer with only the classification.'
@@ -93,9 +93,9 @@ agents:
       - backup_duck_search
   - id: info_completed
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.1
     queue: orka:info_completed
     prompt: Did we retrieve extra data for this input "{{ get_input() }}"? {{ get_fork_responses() }} Answer with exactly 'true' or 'false' only.
@@ -114,9 +114,9 @@ agents:
       - failover_search
   - id: final_builder_true
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.7
     queue: orka:final_output
     prompt: "Build a detailed answer combining:- Classification result: {{ get_agent_response('initial_classify') }}- Search result: {{ get_agent_response('failover_search') }}. Provide a comprehensive and informative response."
@@ -124,9 +124,9 @@ agents:
       - final_router
   - id: final_builder_false
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.6
     queue: orka:final_output
     prompt: "Build a detailed answer based on the classification result:- Classification result: {{ get_agent_response('initial_classify') }}. Provide the best possible response given the available information."
@@ -134,9 +134,9 @@ agents:
       - final_router
   - id: final_summary
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.7
     prompt: |
       Regarding "{{ get_input() }}", here's what I found:

@@ -615,7 +615,7 @@ For privacy-preserving local processing:
     
     Please provide a detailed response with reasoning.
   model: "llama3.2:latest"
-  model_url: "http://localhost:11434/api/generate"
+  model_url: "http://localhost:1234"
   provider: "ollama"
   temperature: 0.7
   timeout: 60.0

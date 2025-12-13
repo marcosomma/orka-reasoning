@@ -279,14 +279,14 @@ agents:
     
   - id: analyzer
     type: local_llm
-    model: gpt-oss:20b
-    provider: ollama
+    model: openai/gpt-oss-20b
+    provider: lm_studio
     prompt: "Analyze: {{ input }}"
     
   - id: response_builder
     type: local_llm
-    model: gpt-oss:20b
-    provider: ollama
+    model: openai/gpt-oss-20b
+    provider: lm_studio
     prompt: "Generate response: {{ input }}"
 ```
 
@@ -325,8 +325,8 @@ agents:
     
   - id: analyzer
     type: local_llm
-    model: gpt-oss:20b
-    provider: ollama
+    model: openai/gpt-oss-20b
+    provider: lm_studio
     temperature: 0.3
     prompt: |
       Analyze the following information:
@@ -345,8 +345,8 @@ agents:
     
   - id: response_builder
     type: local_llm
-    model: gpt-oss:20b
-    provider: ollama
+    model: openai/gpt-oss-20b
+    provider: lm_studio
     temperature: 0.7
     prompt: |
       Generate a comprehensive response based on:
@@ -385,20 +385,20 @@ agents:
     
   - id: fact_checker
     type: local_llm
-    model: gpt-oss:20b
-    provider: ollama
+    model: openai/gpt-oss-20b
+    provider: lm_studio
     prompt: "Fact-check: {{ input }}"
     
   - id: sentiment_analyzer
     type: local_llm
-    model: gpt-oss:20b
-    provider: ollama
+    model: openai/gpt-oss-20b
+    provider: lm_studio
     prompt: "Analyze sentiment: {{ input }}"
     
   - id: summarizer
     type: local_llm
-    model: gpt-oss:20b
-    provider: ollama
+    model: openai/gpt-oss-20b
+    provider: lm_studio
     prompt: "Summarize: {{ input }}"
 ```
 

@@ -137,6 +137,54 @@ class AgentFactory:
             clean_cfg.pop("prompt", None)
             clean_cfg.pop("queue", None)
 
+            # Backward/forward compatibility: allow agents to be configured either
+            # with top-level fields or nested under a `params:` dict.
+            # This is especially important for `local_llm`, where provider/model_url
+            # are read from self.params (kwargs passed at construction time).
+            if agent_type == "local_llm":
+                nested_params = clean_cfg.pop("params", None)
+                if isinstance(nested_params, dict):
+                    # Support older examples that used `url:` instead of `model_url:`
+                    if "model_url" not in nested_params and "url" in nested_params:
+                        nested_params["model_url"] = nested_params.get("url")
+                    for key, value in nested_params.items():
+                        clean_cfg.setdefault(key, value)
+
+            # PlanValidatorAgent uses a different naming convention (llm_*).
+            # Accept workflow configs that specify OpenAI-style keys.
+            if agent_type == "plan_validator":
+                nested_params = clean_cfg.pop("params", None)
+                if isinstance(nested_params, dict):
+                    for key, value in nested_params.items():
+                        clean_cfg.setdefault(key, value)
+
+                # Map common keys -> expected constructor args
+                if "llm_model" not in clean_cfg and "model" in clean_cfg:
+                    clean_cfg["llm_model"] = clean_cfg.pop("model")
+                if "llm_provider" not in clean_cfg and "provider" in clean_cfg:
+                    clean_cfg["llm_provider"] = clean_cfg.pop("provider")
+                if "llm_url" not in clean_cfg:
+                    if "model_url" in clean_cfg:
+                        clean_cfg["llm_url"] = clean_cfg.pop("model_url")
+                    elif "url" in clean_cfg:
+                        clean_cfg["llm_url"] = clean_cfg.pop("url")
+
+                # Normalize provider aliases
+                provider_val = str(clean_cfg.get("llm_provider", "ollama")).lower()
+                if provider_val in {"lm_studio", "lmstudio"}:
+                    provider_val = "openai_compatible"
+                    clean_cfg["llm_provider"] = provider_val
+
+                # For OpenAI-compatible endpoints, ensure we hit chat completions.
+                if provider_val != "ollama":
+                    llm_url_val = str(clean_cfg.get("llm_url", ""))
+                    if llm_url_val and not llm_url_val.endswith("/chat/completions"):
+                        if llm_url_val.endswith("/"):
+                            llm_url_val = llm_url_val + "v1/chat/completions"
+                        else:
+                            llm_url_val = llm_url_val + "/v1/chat/completions"
+                        clean_cfg["llm_url"] = llm_url_val
+
             logger.info(
                 f"Instantiating agent {agent_id} of type {agent_type}",
             )

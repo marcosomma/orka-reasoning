@@ -331,7 +331,7 @@ scores = await scorer.score_candidates(candidates, question, context)
 ```yaml
 - id: path_validator
   type: plan_validator
-  llm_model: gpt-oss:20b
+  model: openai/gpt-oss-20b
   scoring_preset: moderate
   custom_weights:
     completeness.has_all_required_steps: 0.20

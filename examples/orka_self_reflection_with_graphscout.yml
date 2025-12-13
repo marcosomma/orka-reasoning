@@ -17,9 +17,9 @@ agents:
   # Initial assessment to understand what Orka should examine about itself
   - id: initial_self_assessment
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
     memory_config:
       operation: write
@@ -111,9 +111,9 @@ agents:
         # Analyze execution traces and patterns
         - id: execution_trace_analyzer
           type: local_llm
-          model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.2
           capabilities: [execution_analysis, trace_examination]
           memory_config:
@@ -145,9 +145,9 @@ agents:
         # Investigate memory systems and persistence
         - id: memory_system_investigator
           type: local_llm
-          model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.3
           capabilities: [memory_analysis, persistence_examination]
           memory_config:
@@ -179,9 +179,9 @@ agents:
         # Observe agent coordination and interaction patterns
         - id: agent_coordination_observer
           type: local_llm
-          model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.4
           capabilities: [coordination_analysis, interaction_patterns]
           memory_config:
@@ -213,9 +213,9 @@ agents:
         # Detect workflow and execution patterns
         - id: workflow_pattern_detector
           type: local_llm
-          model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.3
           capabilities: [pattern_detection, workflow_analysis]
           memory_config:
@@ -247,9 +247,9 @@ agents:
         # Analyze emergent behaviors and capabilities
         - id: emergent_behavior_analyzer
           type: local_llm
-          model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.5
           capabilities: [emergence_analysis, behavior_observation]
           memory_config:
@@ -281,9 +281,9 @@ agents:
         # Moderate and assess the completeness of self-understanding
         - id: self_awareness_moderator
           type: local_llm
-          model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.1
           memory_config:
             operation: write
@@ -363,9 +363,9 @@ agents:
       latency_budget_ms: 10000
       max_preview_tokens: 400
       evaluation_model: "local_llm"
-      evaluation_model_name: "gpt-oss:20b"
+      evaluation_model_name: "openai/gpt-oss-20b"
       validation_model: "local_llm"
-      validation_model_name: "gpt-oss:20b"
+      validation_model_name: "openai/gpt-oss-20b"
       llm_evaluation_enabled: true
       fallback_to_heuristics: true
     prompt: |
@@ -393,9 +393,9 @@ agents:
   # Technical Report Formatter
   - id: technical_report_formatter
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.2
     capabilities: [technical_analysis, structured_reporting, detailed_documentation]
     prompt: |
@@ -413,9 +413,9 @@ agents:
   # Narrative Storyteller
   - id: narrative_storyteller
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.5
     capabilities: [narrative_writing, storytelling, engaging_presentation]
     prompt: |
@@ -433,9 +433,9 @@ agents:
   # Philosophical Analyzer
   - id: philosophical_analyzer
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.4
     capabilities: [philosophical_analysis, consciousness_examination, deep_reflection]
     prompt: |
@@ -453,9 +453,9 @@ agents:
   # Executive Summarizer
   - id: executive_summarizer
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.1
     capabilities: [executive_summary, concise_analysis, key_insights]
     prompt: |
@@ -473,9 +473,9 @@ agents:
   # Final Synthesis
   - id: final_synthesis
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
     memory_config:
       operation: write

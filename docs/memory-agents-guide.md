@@ -170,9 +170,9 @@ agents:
   # Generate contextual response
   - id: response_generator
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.7
     prompt: |
       Previous conversation: {{ previous_outputs.conversation_search }}
@@ -200,9 +200,9 @@ agents:
   # Extract knowledge from input
   - id: knowledge_extractor
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
     prompt: "Extract key facts and knowledge from: {{ input }}"
 
@@ -239,9 +239,9 @@ agents:
   # Monitor system performance
   - id: performance_analyzer
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.2
     prompt: |
       Analyze system performance:
@@ -278,9 +278,9 @@ All examples use **local LLM models** for privacy and cost-effectiveness. The st
 ```yaml
 - id: my_agent
   type: local_llm
-  model: gpt-oss:20b              # Model name in Ollama
-  model_url: http://localhost:11434/api/generate  # Ollama API endpoint
-  provider: ollama                # LLM provider
+  model: openai/gpt-oss-20b              # Model name in Ollama
+  model_url: http://localhost:1234  # Ollama API endpoint
+  provider: lm_studio                # LLM provider
   temperature: 0.7               # Creativity level (0.0-1.0)
   prompt: "Your prompt here"
 ```

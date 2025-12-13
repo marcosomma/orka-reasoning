@@ -210,7 +210,7 @@ agents:
   - id: answer_builder  
     type: local_llm              # Local model for privacy
     model: llama3.2:3b          # Default model used in all examples
-    provider: ollama
+    provider: lm_studio
     temperature: 0.7
     
   - id: memory_writer

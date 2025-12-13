@@ -21,9 +21,9 @@ agents:
     prompt: Retrieve any stored memories about {{ get_input() }}. Return "NONE" if nothing matches.
   - id: memory-check
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.1
     queue: orka:memory-check
     prompt: |
@@ -45,9 +45,9 @@ agents:
       - memory-check
   - id: memory-path
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
     queue: orka:memory-path
     prompt: Format the stored memory information about the {{ get_input() }} into a clear answer:{{ get_agent_response('memory-reader') if get_agent_response('memory-reader') else 'NONE' }}. Provide a well-structured response.
@@ -55,9 +55,9 @@ agents:
       - router
   - id: context-collector
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.5
     queue: orka:context-collector
     prompt: Based on the question "{{ get_input() }}", collect relevant context and background information. Focus on gathering factual information that will help validate the answer. If no specific information is available, explain what type of information would be needed and suggest research directions. Do not return just "NONE" - provide a meaningful response about the information availability.
@@ -65,9 +65,9 @@ agents:
       - router
   - id: answer-builder
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.7
     queue: orka:answer-builder
     prompt: "Using the context: {{ get_agent_response('context-collector') }} Provide a detailed answer to: {{ get_input() }}. If the context indicates no information is available, explain what is known and what would need to be researched. Do not return just 'NONE'. Be comprehensive and helpful."
@@ -102,9 +102,9 @@ agents:
     
   - id: final_summary
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.7
     prompt: |
       Answer this question: "{{ get_input() }}"

@@ -15,9 +15,9 @@ agents:
   # Analyze what kind of self-examination is needed
   - id: initial_question_analysis
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
     capabilities: [question_analysis, self_reflection]
     prompt: |
@@ -47,9 +47,9 @@ agents:
       latency_budget_ms: 10000
       max_preview_tokens: 400
       evaluation_model: "local_llm"
-      evaluation_model_name: "gpt-oss:20b"
+      evaluation_model_name: "openai/gpt-oss-20b"
       validation_model: "local_llm"
-      validation_model_name: "gpt-oss:20b"
+      validation_model_name: "openai/gpt-oss-20b"
       llm_evaluation_enabled: true
       fallback_to_heuristics: true
     prompt: |
@@ -72,9 +72,9 @@ agents:
   # Architectural Deep Dive Agent
   - id: architectural_deep_dive
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
     capabilities: [architectural_analysis, system_design, component_analysis]
     prompt: |
@@ -88,9 +88,9 @@ agents:
   # Behavioral Observer Agent  
   - id: behavioral_observer
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.4
     capabilities: [behavioral_analysis, pattern_recognition, execution_tracing]
     prompt: |
@@ -104,9 +104,9 @@ agents:
   # Cognitive Examiner Agent
   - id: cognitive_examiner
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.5
     capabilities: [cognitive_analysis, reasoning_examination, decision_analysis]
     prompt: |
@@ -120,9 +120,9 @@ agents:
   # Emergence Detector Agent
   - id: emergence_detector
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.6
     capabilities: [emergence_detection, complexity_analysis, system_behavior]
     prompt: |
@@ -136,9 +136,9 @@ agents:
   # Synthesize discoveries and evaluate GraphScout's performance
   - id: discovery_synthesis
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
     prompt: |
       You have just completed a self-analysis of the Orka multi-agent orchestration system.

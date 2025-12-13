@@ -12,9 +12,9 @@ orchestrator:
 agents:
   - id: answer_9
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.5
     queue: orka:answer_9
     prompt: >
@@ -36,9 +36,9 @@ agents:
       - answer_9
   - id: need_answer
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.1
     queue: orka:is_fact
     prompt: "Does '{{ get_input() }}' ask a question that requires an answer, or is it an assertion that requires fact validation? Return true if it is a question, false if it is an assertion. Answer with exactly 'true' or 'false' only."
@@ -64,9 +64,9 @@ agents:
         queue: orka:failing_test_agent2
       - id: build_answer
         type: local_llm
-        model: gpt-oss:20b
-        model_url: http://localhost:11434/api/generate
-        provider: ollama
+        model: openai/gpt-oss-20b
+        model_url: http://localhost:1234
+        provider: lm_studio
         temperature: 0.7
         queue: orka:validation_queue
         prompt: |
@@ -85,9 +85,9 @@ agents:
       - build_answer
   - id: validate_fact
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
     queue: orka:validation_queue
     prompt: |
@@ -109,9 +109,9 @@ agents:
       
   - id: final_summary
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.7
     prompt: |
       Provide a final summary based on the workflow results:

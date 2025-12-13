@@ -66,7 +66,7 @@ agents:
               cost: 0.05
               latency: 0.05
             evaluation_model: "local_llm"
-            evaluation_model_name: "gpt-oss:20b"
+            evaluation_model_name: "openai/gpt-oss-20b"
             llm_evaluation_enabled: true
             fallback_to_heuristics: true
           prompt: |
@@ -89,9 +89,9 @@ agents:
         # PlanValidator with boolean scoring
         - id: path_validator
           type: plan_validator
-          llm_model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model:  openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.2
           scoring_preset: moderate
           custom_weights:
@@ -114,9 +114,9 @@ agents:
   - id: analyzer
     type: local_llm
     capabilities: [analysis, reasoning]
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Analyze: {{ input }}
       
@@ -127,9 +127,9 @@ agents:
   - id: generator
     type: local_llm
     capabilities: [answer_emit, generation, synthesis]
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Generate response for: {{ input }}
       
@@ -144,9 +144,9 @@ agents:
   # Execution summary
   - id: execution_summary
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
     prompt: |
       # Boolean Scoring & Execution Results

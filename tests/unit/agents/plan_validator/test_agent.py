@@ -55,7 +55,7 @@ class TestPlanValidatorAgent:
         assert agent.agent_id == "test_agent"
         assert agent.llm_model == "gpt-oss:20b"
         assert agent.llm_provider == "ollama"
-        assert agent.llm_url == "http://localhost:11434/api/generate"
+        assert agent.llm_url == "http://localhost:1234"
         assert agent.temperature == 0.2
         assert agent.scoring_preset == "moderate"
         mock_boolean_score_calculator_class.assert_called_once_with(preset="moderate", custom_weights=None)

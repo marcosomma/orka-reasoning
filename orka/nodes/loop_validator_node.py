@@ -39,8 +39,8 @@ class LoopValidatorNode(BaseNode):
         ```yaml
         - id: validator
           type: loop_validator
-          llm_model: gpt-oss:20b
-          provider: ollama
+          model:  openai/gpt-oss-20b
+          provider: lm_studio
           scoring_preset: moderate
           evaluation_target: improver
         ```

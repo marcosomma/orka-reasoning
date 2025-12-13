@@ -64,9 +64,9 @@ agents:
       agents:
         - id: analyzer
           type: local_llm
-          model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.7
           prompt: |
             Analyze this question: {{ get_input() }}
@@ -92,9 +92,9 @@ agents:
             
         - id: scorer
           type: local_llm
-          model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.2
           prompt: |
             Rate the quality of this analysis (0.0 to 1.0):
@@ -113,9 +113,9 @@ agents:
 
   - id: final_processor
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.5
     prompt: |
       Process the final result from the cognitive loop:

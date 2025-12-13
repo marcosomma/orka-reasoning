@@ -452,7 +452,7 @@ RESPONSE FORMAT: You MUST respond with ONLY valid JSON. No explanations, no mark
             # Get LLM configuration
             model = getattr(self.config, "evaluation_model", "local_llm")
             model_name = getattr(self.config, "evaluation_model_name", "llama3.2:latest")
-            model_url = getattr(self.config, "model_url", "http://localhost:11434/api/generate")
+            model_url = getattr(self.config, "model_url", "http://localhost:1234")
             provider = getattr(self.config, "provider", "ollama")
             temperature = 0.1  # Low temperature for consistent evaluation
 
@@ -495,7 +495,7 @@ RESPONSE FORMAT: You MUST respond with ONLY valid JSON. No explanations, no mark
             # Get LLM configuration
             model = getattr(self.config, "validation_model", "local_llm")
             model_name = getattr(self.config, "validation_model_name", "llama3.2:latest")
-            model_url = getattr(self.config, "model_url", "http://localhost:11434/api/generate")
+            model_url = getattr(self.config, "model_url", "http://localhost:1234")
             provider = getattr(self.config, "provider", "ollama")
             temperature = 0.0  # Deterministic validation
 
@@ -1442,7 +1442,14 @@ IMPORTANT: Make each evaluation UNIQUE and SPECIFIC to the path and question typ
                 async with session.post(
                     f"{model_url}/v1/chat/completions", json=payload
                 ) as response:
-                    response.raise_for_status()
+                    if response.status >= 400:
+                        body = (await response.text() or "").strip()
+                        if len(body) > 1200:
+                            body = body[:1200] + "..."
+                        raise RuntimeError(
+                            f"LM Studio HTTP {response.status} for url {response.url}: {body}"
+                        )
+
                     result = await response.json()
                     return str(result["choices"][0]["message"]["content"]).strip()
 

@@ -26,9 +26,9 @@ The PlanValidator agent validates and critiques proposed agent execution paths f
 agents:
   - id: path_validator
     type: plan_validator
-    llm_model: gpt-oss:20b
-    llm_provider: ollama
-    llm_url: http://localhost:11434/api/generate
+    model:  openai/gpt-oss-20b
+    llm_provider: lm_studio
+    llm_url: http://localhost:1234
     temperature: 0.2
     scoring_preset: moderate  # strict | moderate | lenient
     scoring_context: graphscout  # Evaluate agent path quality (default)
@@ -40,8 +40,8 @@ agents:
 agents:
   - id: path_validator
     type: plan_validator
-    llm_model: gpt-oss:20b
-    llm_provider: ollama
+    model:  openai/gpt-oss-20b
+    llm_provider: lm_studio
     scoring_preset: moderate
     scoring_context: graphscout  # Agent path evaluation
     custom_weights:
@@ -57,8 +57,8 @@ agents:
 agents:
   - id: quality_validator
     type: plan_validator
-    llm_model: gpt-oss:20b
-    llm_provider: ollama
+    model:  openai/gpt-oss-20b
+    llm_provider: lm_studio
     scoring_preset: moderate
     scoring_context: quality  # Response quality assessment
     custom_weights:
@@ -73,7 +73,7 @@ agents:
 |-----------|------|---------|-------------|
 | `llm_model` | string | `gpt-oss:20b` | LLM model name for boolean evaluation |
 | `llm_provider` | string | `ollama` | Provider type: `ollama` or `openai_compatible` |
-| `llm_url` | string | `http://localhost:11434/api/generate` | LLM API endpoint URL |
+| `llm_url` | string | `http://localhost:1234` | LLM API endpoint URL |
 | `temperature` | float | `0.2` | LLM temperature (lower for consistent evaluations) |
 | `scoring_preset` | string | `moderate` | Scoring preset: `strict`, `moderate`, or `lenient` |
 | `custom_weights` | dict | None | Optional weight overrides (e.g., `dimension.criterion: weight`) |
@@ -225,7 +225,7 @@ orchestrator:
 agents:
   - id: requirements_analyst
     type: local_llm
-    model: gpt-oss:20b
+    model: openai/gpt-oss-20b
     prompt: "Analyze requirements for: {{ input }}"
 
   - id: design_loop
@@ -255,7 +255,7 @@ agents:
 
         - id: plan_validator
           type: plan_validator
-          llm_model: gpt-oss:20b
+          model:  openai/gpt-oss-20b
           prompt: |
             Validate workflow design (Round {{ get_loop_number() }})
             Target Score: {{ get_score_threshold() }}+
@@ -302,7 +302,7 @@ agents:
       agents:
         - id: graph_scout
           type: graph-scout
-          llm_model: gpt-oss:20b
+          model:  openai/gpt-oss-20b
           max_depth: 5
           prompt: |
             Round {{ get_loop_number() }}: Propose optimal agent path
@@ -317,7 +317,7 @@ agents:
 
         - id: plan_validator
           type: plan_validator
-          llm_model: gpt-oss:20b
+          model:  openai/gpt-oss-20b
           temperature: 0.2
           prompt: |
             Validate GraphScout path (Round {{ get_loop_number() }})

@@ -54,9 +54,9 @@ agents:
       max_preview_tokens: 200
       # Two-stage LLM evaluation configuration (now configurable instead of hardcoded)
       evaluation_model: "local_llm"                # Fast local model for Stage 1
-      evaluation_model_name: "gpt-oss:20b"     # Configurable model name for evaluation
+      evaluation_model_name: "openai/gpt-oss-20b"     # LM Studio model id
       validation_model: "local_llm"                # Fast local model for Stage 2
-      validation_model_name: "gpt-oss:20b"     # Configurable model name for validation
+      validation_model_name: "openai/gpt-oss-20b"     # LM Studio model id
       llm_evaluation_enabled: true                 # Enable LLM-powered evaluation
       fallback_to_heuristics: true                 # Fallback if LLM fails
     prompt: |
@@ -104,9 +104,9 @@ agents:
   - id: analysis_agent
     type: local_llm
     capabilities: [reasoning, analysis]
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
     prompt: |
       Provide a detailed analysis of this question:
@@ -140,9 +140,9 @@ agents:
   - id: response_builder
     type: local_llm
     capabilities: [answer_emit, response_generation]
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
     prompt: |
       Create a comprehensive response based on the available information:

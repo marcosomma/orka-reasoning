@@ -666,6 +666,186 @@ class TestAgentFactory:
             assert call_kwargs["queue"] == ["agent1", "agent2"]
             assert call_kwargs["model"] == "llama"
 
+    def test_local_llm_params_are_flattened(self):
+        """Test that local_llm agent supports nested `params:` configuration."""
+        orchestrator_cfg = {"id": "test_orchestrator"}
+        agent_cfgs = [
+            {
+                "id": "test_agent",
+                "type": "local_llm",
+                "prompt": "Test prompt",
+                "params": {
+                    "model": "openai/gpt-oss-20b",
+                    "provider": "lm_studio",
+                    "model_url": "http://localhost:1234",
+                    "temperature": 0.3,
+                },
+            }
+        ]
+        memory = self.create_mock_memory()
+
+        mock_agent_class = Mock()
+        mock_agent_instance = Mock()
+        mock_agent_class.return_value = mock_agent_instance
+        mock_agent_class.__name__ = "LocalLLMAgent"
+
+        with patch.dict(
+            "orka.orchestrator.agent_factory.AGENT_TYPES",
+            {"local_llm": mock_agent_class},
+        ):
+            factory = AgentFactory(orchestrator_cfg, agent_cfgs, memory)
+            instances = factory._init_agents()
+
+            assert instances["test_agent"] == mock_agent_instance
+            call_kwargs = mock_agent_class.call_args[1]
+
+            # Flattened keys should be present at top level
+            assert call_kwargs["model"] == "openai/gpt-oss-20b"
+            assert call_kwargs["provider"] == "lm_studio"
+            assert call_kwargs["model_url"] == "http://localhost:1234"
+            assert call_kwargs["temperature"] == 0.3
+
+            # The nested `params` key should not be passed through
+            assert "params" not in call_kwargs
+
+    def test_local_llm_params_url_alias_is_supported(self):
+        """Test that local_llm supports `params.url` as alias for `model_url`."""
+        orchestrator_cfg = {"id": "test_orchestrator"}
+        agent_cfgs = [
+            {
+                "id": "test_agent",
+                "type": "local_llm",
+                "prompt": "Test prompt",
+                "params": {
+                    "model": "openai/gpt-oss-20b",
+                    "provider": "lm_studio",
+                    "url": "http://localhost:1234",
+                },
+            }
+        ]
+        memory = self.create_mock_memory()
+
+        mock_agent_class = Mock()
+        mock_agent_instance = Mock()
+        mock_agent_class.return_value = mock_agent_instance
+        mock_agent_class.__name__ = "LocalLLMAgent"
+
+        with patch.dict(
+            "orka.orchestrator.agent_factory.AGENT_TYPES",
+            {"local_llm": mock_agent_class},
+        ):
+            factory = AgentFactory(orchestrator_cfg, agent_cfgs, memory)
+            instances = factory._init_agents()
+            assert instances["test_agent"] == mock_agent_instance
+
+            call_kwargs = mock_agent_class.call_args[1]
+            assert call_kwargs["model_url"] == "http://localhost:1234"
+
+    def test_plan_validator_llm_fields_are_mapped(self):
+        """Test that plan_validator supports model/provider/model_url aliases (LM Studio)."""
+        orchestrator_cfg = {"id": "test_orchestrator"}
+        agent_cfgs = [
+            {
+                "id": "validator",
+                "type": "plan_validator",
+                "prompt": "Validate",
+                "model": "openai/gpt-oss-20b",
+                "provider": "lm_studio",
+                "model_url": "http://localhost:1234",
+                "temperature": 0.2,
+            }
+        ]
+        memory = self.create_mock_memory()
+
+        mock_agent_class = Mock()
+        mock_agent_instance = Mock()
+        mock_agent_class.return_value = mock_agent_instance
+        mock_agent_class.__name__ = "PlanValidatorAgent"
+
+        with patch.dict(
+            "orka.orchestrator.agent_factory.AGENT_TYPES",
+            {"plan_validator": mock_agent_class},
+        ):
+            factory = AgentFactory(orchestrator_cfg, agent_cfgs, memory)
+            instances = factory._init_agents()
+
+            assert instances["validator"] == mock_agent_instance
+            call_kwargs = mock_agent_class.call_args[1]
+
+            assert call_kwargs["llm_model"] == "openai/gpt-oss-20b"
+            assert call_kwargs["llm_provider"] == "openai_compatible"
+            assert call_kwargs["llm_url"].endswith("/v1/chat/completions")
+            assert call_kwargs["llm_url"].startswith("http://localhost:1234")
+
+    def test_plan_validator_supports_nested_params(self):
+        """Test that plan_validator also supports nested `params:` like other agents."""
+        orchestrator_cfg = {"id": "test_orchestrator"}
+        agent_cfgs = [
+            {
+                "id": "validator",
+                "type": "plan_validator",
+                "prompt": "Validate",
+                "params": {
+                    "model": "openai/gpt-oss-20b",
+                    "provider": "lm_studio",
+                    "model_url": "http://localhost:1234/",
+                    "temperature": 0.2,
+                },
+            }
+        ]
+        memory = self.create_mock_memory()
+
+        mock_agent_class = Mock()
+        mock_agent_instance = Mock()
+        mock_agent_class.return_value = mock_agent_instance
+        mock_agent_class.__name__ = "PlanValidatorAgent"
+
+        with patch.dict(
+            "orka.orchestrator.agent_factory.AGENT_TYPES",
+            {"plan_validator": mock_agent_class},
+        ):
+            factory = AgentFactory(orchestrator_cfg, agent_cfgs, memory)
+            instances = factory._init_agents()
+            assert instances["validator"] == mock_agent_instance
+
+            call_kwargs = mock_agent_class.call_args[1]
+            assert call_kwargs["llm_model"] == "openai/gpt-oss-20b"
+            assert call_kwargs["llm_provider"] == "openai_compatible"
+            assert call_kwargs["llm_url"].startswith("http://localhost:1234/")
+            assert call_kwargs["llm_url"].endswith("v1/chat/completions")
+
+    def test_plan_validator_does_not_duplicate_chat_completions_path(self):
+        """Test that chat completion path is not appended twice."""
+        orchestrator_cfg = {"id": "test_orchestrator"}
+        agent_cfgs = [
+            {
+                "id": "validator",
+                "type": "plan_validator",
+                "prompt": "Validate",
+                "model": "openai/gpt-oss-20b",
+                "provider": "lm_studio",
+                "model_url": "http://localhost:1234/v1/chat/completions",
+            }
+        ]
+        memory = self.create_mock_memory()
+
+        mock_agent_class = Mock()
+        mock_agent_instance = Mock()
+        mock_agent_class.return_value = mock_agent_instance
+        mock_agent_class.__name__ = "PlanValidatorAgent"
+
+        with patch.dict(
+            "orka.orchestrator.agent_factory.AGENT_TYPES",
+            {"plan_validator": mock_agent_class},
+        ):
+            factory = AgentFactory(orchestrator_cfg, agent_cfgs, memory)
+            instances = factory._init_agents()
+            assert instances["validator"] == mock_agent_instance
+
+            call_kwargs = mock_agent_class.call_args[1]
+            assert call_kwargs["llm_provider"] == "openai_compatible"
+            assert call_kwargs["llm_url"] == "http://localhost:1234/v1/chat/completions"
+
     def test_default_agent_with_string_queue(self):
         """Test default agent instantiation with string queue parameter."""
         orchestrator_cfg = {"id": "test_orchestrator"}

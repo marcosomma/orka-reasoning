@@ -18,9 +18,9 @@ agents:
       - [detect_change]  # Fixed: targets must be a list of lists (each branch is a list)
   - id: detect_change
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
     timeout: 60.0
     queue: orka:detect_change
@@ -39,9 +39,9 @@ agents:
       - join_detect
   - id: generate_before_query
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.4
     timeout: 60.0
     queue: orka:generate_before_query
@@ -51,9 +51,9 @@ agents:
       - fork_temporal
   - id: generate_after_query
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.4
     timeout: 60.0
     queue: orka:generate_after_query
@@ -78,9 +78,9 @@ agents:
     group: fork_temporal
   - id: synthesize_timeline_answer
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.7
     timeout: 60.0
     queue: orka:synthesize_timeline_answer

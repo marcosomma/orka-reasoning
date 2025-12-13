@@ -13,9 +13,9 @@ The Local LLM Agent integrates with locally running large language models, provi
 ```yaml
 - id: local_processor
   type: local_llm
-  provider: ollama
+  provider: lm_studio
   model: llama3.2:latest
-  model_url: http://localhost:11434/api/generate
+  model_url: http://localhost:1234
   temperature: 0.7
   prompt: "{{ input }}"
 ```
@@ -53,9 +53,9 @@ The Local LLM Agent integrates with locally running large language models, provi
 ```yaml
 - id: ollama_agent
   type: local_llm
-  provider: ollama
+  provider: lm_studio
   model: "llama3.2:latest"
-  model_url: "http://localhost:11434/api/generate"
+  model_url: "http://localhost:1234"
   temperature: 0.7
   prompt: "{{ input }}"
 ```
@@ -100,9 +100,9 @@ The Local LLM Agent integrates with locally running large language models, provi
 ```yaml
 - id: private_analyzer
   type: local_llm
-  provider: ollama
+  provider: lm_studio
   model: "llama3:8b"
-  model_url: "http://localhost:11434/api/generate"
+  model_url: "http://localhost:1234"
   temperature: 0.3
   prompt: |
     Analyze this confidential data (stays on local machine):
@@ -116,9 +116,9 @@ The Local LLM Agent integrates with locally running large language models, provi
 ```yaml
 - id: code_helper
   type: local_llm
-  provider: ollama
+  provider: lm_studio
   model: "codellama:13b"
-  model_url: "http://localhost:11434/api/generate"
+  model_url: "http://localhost:1234"
   temperature: 0.2
   system_prompt: "You are an expert programmer."
   prompt: |
@@ -133,16 +133,16 @@ The Local LLM Agent integrates with locally running large language models, provi
 ```yaml
 - id: llama_answer
   type: local_llm
-  provider: ollama
+  provider: lm_studio
   model: "llama3:8b"
-  model_url: "http://localhost:11434/api/generate"
+  model_url: "http://localhost:1234"
   prompt: "{{ input }}"
 
 - id: mistral_answer
   type: local_llm
-  provider: ollama
+  provider: lm_studio
   model: "mistral:7b"
-  model_url: "http://localhost:11434/api/generate"
+  model_url: "http://localhost:1234"
   prompt: "{{ input }}"
 
 - id: compare_results
@@ -162,9 +162,9 @@ The Local LLM Agent integrates with locally running large language models, provi
   children:
     - id: try_local
       type: local_llm
-      provider: ollama
+      provider: lm_studio
       model: "llama3:8b"
-      model_url: "http://localhost:11434/api/generate"
+      model_url: "http://localhost:1234"
       timeout: 30.0
       prompt: "{{ input }}"
     
@@ -180,9 +180,9 @@ The Local LLM Agent integrates with locally running large language models, provi
 # Translation
 - id: translator
   type: local_llm
-  provider: ollama
+  provider: lm_studio
   model: "aya:8b"  # Multilingual model
-  model_url: "http://localhost:11434/api/generate"
+  model_url: "http://localhost:1234"
   temperature: 0.3
   prompt: |
     Translate to {{ target_language }}:
@@ -191,9 +191,9 @@ The Local LLM Agent integrates with locally running large language models, provi
 # Summarization
 - id: summarizer
   type: local_llm
-  provider: ollama
+  provider: lm_studio
   model: "mistral:7b"
-  model_url: "http://localhost:11434/api/generate"
+  model_url: "http://localhost:1234"
   temperature: 0.5
   prompt: |
     Summarize in 3 bullet points:
@@ -202,9 +202,9 @@ The Local LLM Agent integrates with locally running large language models, provi
 # SQL Generation
 - id: sql_generator
   type: local_llm
-  provider: ollama
+  provider: lm_studio
   model: "sqlcoder:7b"
-  model_url: "http://localhost:11434/api/generate"
+  model_url: "http://localhost:1234"
   temperature: 0.1
   prompt: |
     Generate SQL query for:
@@ -260,7 +260,7 @@ ollama serve
 # Fast responses (3-7B models)
 - id: quick_response
   type: local_llm
-  provider: ollama
+  provider: lm_studio
   model: "llama3.2:3b"  # Smallest, fastest
   temperature: 0.7
   prompt: "{{ input }}"
@@ -268,7 +268,7 @@ ollama serve
 # Quality responses (13B+ models)
 - id: quality_response
   type: local_llm
-  provider: ollama
+  provider: lm_studio
   model: "llama3:70b"  # Largest, best quality
   temperature: 0.7
   prompt: "{{ input }}"
@@ -308,9 +308,9 @@ export OLLAMA_GPU_OVERHEAD=0
 
 - id: compute_llm
   type: local_llm
-  provider: ollama
+  provider: lm_studio
   model: "llama3:8b"
-  model_url: "http://localhost:11434/api/generate"
+  model_url: "http://localhost:1234"
   prompt: "{{ input }}"
 
 - id: cache_response
@@ -337,9 +337,9 @@ export OLLAMA_GPU_OVERHEAD=0
 
 - id: process_item_1
   type: local_llm
-  provider: ollama
+  provider: lm_studio
   model: "llama3:8b"
-  model_url: "http://localhost:11434/api/generate"
+  model_url: "http://localhost:1234"
   prompt: "Process: {{ item_1 }}"
 ```
 
@@ -373,7 +373,7 @@ temperature: 0.8-1.2
 # Larger models need more time
 - id: large_model
   type: local_llm
-  provider: ollama
+  provider: lm_studio
   model: "llama3:70b"
   timeout: 300.0  # 5 minutes
   prompt: "{{ input }}"
@@ -381,7 +381,7 @@ temperature: 0.8-1.2
 # Smaller models are faster
 - id: small_model
   type: local_llm
-  provider: ollama
+  provider: lm_studio
   model: "llama3.2:3b"
   timeout: 30.0  # 30 seconds
   prompt: "{{ input }}"
@@ -392,9 +392,9 @@ temperature: 0.8-1.2
 ```yaml
 - id: specialized_agent
   type: local_llm
-  provider: ollama
+  provider: lm_studio
   model: "llama3:8b"
-  model_url: "http://localhost:11434/api/generate"
+  model_url: "http://localhost:1234"
   system_prompt: |
     You are an expert {{ domain }} consultant with 20 years of experience.
     You provide practical, actionable advice with real-world examples.
@@ -434,9 +434,9 @@ agents:
   # Stage 1: Fast initial analysis
   - id: initial_analysis
     type: local_llm
-    provider: ollama
+    provider: lm_studio
     model: "llama3.2:3b"  # Fast, lightweight
-    model_url: "http://localhost:11434/api/generate"
+    model_url: "http://localhost:1234"
     temperature: 0.7
     prompt: |
       Quick analysis of: {{ input }}
@@ -445,9 +445,9 @@ agents:
   # Stage 2: Detailed refinement
   - id: refinement
     type: local_llm
-    provider: ollama
+    provider: lm_studio
     model: "llama3:8b"  # More capable
-    model_url: "http://localhost:11434/api/generate"
+    model_url: "http://localhost:1234"
     temperature: 0.5
     prompt: |
       Refine this analysis: {{ previous_outputs.initial_analysis }}
@@ -458,9 +458,9 @@ agents:
   # Stage 3: Quality check
   - id: quality_check
     type: local_llm
-    provider: ollama
+    provider: lm_studio
     model: "mistral:7b"  # Different perspective
-    model_url: "http://localhost:11434/api/generate"
+    model_url: "http://localhost:1234"
     temperature: 0.2
     prompt: |
       Verify quality of this analysis:
@@ -477,9 +477,9 @@ agents:
   # Stage 4: Final output
   - id: final_output
     type: local_llm
-    provider: ollama
+    provider: lm_studio
     model: "llama3:8b"
-    model_url: "http://localhost:11434/api/generate"
+    model_url: "http://localhost:1234"
     temperature: 0.3
     prompt: |
       Create final polished response:

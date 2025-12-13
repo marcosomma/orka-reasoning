@@ -28,9 +28,9 @@ agents:
         # Generate analysis
         - id: analyzer
           type: local_llm
-          model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.7
           prompt: |
             Analyze: {{ get_input() }}
@@ -44,9 +44,9 @@ agents:
         # Evaluate using loop_validator node - robust boolean evaluation
         - id: boolean_evaluator
           type: loop_validator
-          llm_model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model:  openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           scoring_preset: moderate
           scoring_context: quality  # Evaluate response quality
           evaluation_target: analyzer  # Evaluate the analyzer's output

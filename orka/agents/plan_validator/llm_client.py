@@ -52,8 +52,12 @@ async def call_llm(
     try:
         import requests
 
+        provider_norm = provider.lower().strip() if isinstance(provider, str) else "ollama"
+        if provider_norm in {"lm_studio", "lmstudio"}:
+            provider_norm = "openai_compatible"
+
         # Build request payload based on provider
-        if provider == "ollama":
+        if provider_norm == "ollama":
             payload = _build_ollama_payload(prompt, model, temperature)
         else:
             payload = _build_openai_compatible_payload(prompt, model, temperature)
@@ -72,7 +76,7 @@ async def call_llm(
         response_data = response.json()
 
         # Extract response text based on provider
-        if provider == "ollama":
+        if provider_norm == "ollama":
             return _extract_ollama_response(response_data)
         else:
             return _extract_openai_compatible_response(response_data)

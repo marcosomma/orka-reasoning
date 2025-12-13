@@ -72,7 +72,7 @@ agents:
               cost: 0.05
               latency: 0.05
             evaluation_model: "local_llm"
-            evaluation_model_name: "gpt-oss:20b"
+            evaluation_model_name: "openai/gpt-oss-20b"
             llm_evaluation_enabled: true
             fallback_to_heuristics: true
           prompt: |
@@ -115,9 +115,9 @@ agents:
         # Validate the PROPOSAL with boolean scoring
         - id: path_validator_moderate
           type: plan_validator
-          llm_model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model:  openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.2
           timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
           
@@ -160,9 +160,9 @@ agents:
   - id: analysis_agent
     type: local_llm
     capabilities: [reasoning, analysis]
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
     prompt: |
       Analyze the following for: {{ input }}
@@ -206,9 +206,9 @@ agents:
   - id: response_builder
     type: local_llm
     capabilities: [answer_emit, response_generation]
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
     prompt: |
       Create a comprehensive response for: {{ input }}
@@ -236,9 +236,9 @@ agents:
   # Report on validation and execution
   - id: final_execution
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
     prompt: |
       # Validated Path Execution Plan

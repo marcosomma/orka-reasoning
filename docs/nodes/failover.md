@@ -80,9 +80,9 @@ The Failover Node executes child agents sequentially until one succeeds, providi
   children:
     - id: try_local
       type: local_llm
-      provider: ollama
+      provider: lm_studio
       model: "llama3:8b"
-      model_url: "http://localhost:11434/api/generate"
+      model_url: "http://localhost:1234"
       prompt: "{{ input }}"
       timeout: 30.0
     

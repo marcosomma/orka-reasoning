@@ -50,9 +50,9 @@ agents:
         # Classify input to guide GraphScout
         - id: input_classifier
           type: local_llm
-          model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.3
           prompt: |
             Classify this query into categories:
@@ -95,9 +95,9 @@ agents:
             latency_budget_ms: 5000
             max_preview_tokens: 200
             evaluation_model: "local_llm"
-            evaluation_model_name: "gpt-oss:20b"
+            evaluation_model_name: "openai/gpt-oss-20b"
             validation_model: "local_llm"
-            validation_model_name: "gpt-oss:20b"
+            validation_model_name: "openai/gpt-oss-20b"
             llm_evaluation_enabled: true
             fallback_to_heuristics: true
           prompt: |
@@ -154,9 +154,9 @@ agents:
         # Validate GraphScout's selection with boolean scoring
         - id: path_validator_moderate
           type: plan_validator
-          llm_model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model:  openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.2
           timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
           scoring_preset: lenient
@@ -188,9 +188,9 @@ agents:
   - id: analysis_agent
     type: local_llm
     capabilities: [reasoning, analysis]
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Analyze: {{ input }}
       
@@ -224,9 +224,9 @@ agents:
   - id: response_builder
     type: local_llm
     capabilities: [answer_emit, response_generation]
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Create final response for: {{ input }}
       
@@ -249,9 +249,9 @@ agents:
   # Report on validation and execution
   - id: execute_validated_path
     type: local_llm
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
     prompt: |
       # GraphScout Validation Report

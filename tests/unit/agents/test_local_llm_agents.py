@@ -27,7 +27,7 @@ def test_count_tokens_without_tiktoken():
 def local_llm_agent():
     params = {
         "model": "test_model",
-        "model_url": "http://localhost:11434/api/generate",
+        "model_url": "http://localhost:1234",
         "provider": "ollama",
     }
     return LocalLLMAgent(agent_id="test_llm_agent", **params)

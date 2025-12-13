@@ -29,9 +29,9 @@ agents:
         ],
         "metrics": ["accuracy", "consistency", "completeness"]
       }
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
 
   # Phase 2: Fork - Parallel processing paths
@@ -57,9 +57,9 @@ agents:
       2. Validation of expected outputs format
       3. Completeness check of metrics array
       4. Return the FULL JSON dataset as-is (do not solve the math problems)
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.5
 
   - id: path_a_validator
@@ -73,9 +73,9 @@ agents:
       - Accuracy score (0-100%)
       - Deviation analysis
       - Pass/Fail determination
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.2
 
   # Path B: Moderate processing
@@ -90,9 +90,9 @@ agents:
       2. Check scenarios array completeness
       3. Verify metrics array presence
       4. Return the FULL JSON dataset with all scenarios intact (do not compute results)
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.5
 
   - id: path_b_validator
@@ -107,9 +107,9 @@ agents:
       - Logical consistency
       - Accuracy score (0-100%)
       - Error analysis if any
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.2
 
   # Path C: Complex processing
@@ -125,9 +125,9 @@ agents:
       3. Verify expected output field consistency
       4. Validate metrics array integrity
       5. Return the COMPLETE JSON dataset unchanged (preserve all scenarios)
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.5
 
   # Phase 3: Join all parallel paths
@@ -146,9 +146,9 @@ agents:
       Answer ONLY with "true" or "false":
       - "true" if any path has accuracy < 70% or failed validation
       - "false" if all paths passed with accuracy >= 70%
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.1
     depends_on: join_results
 
@@ -176,9 +176,9 @@ agents:
       2. Apply corrections
       3. Recompute results
       4. Provide new confidence scores
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.4
 
   - id: reprocess_validator
@@ -191,9 +191,9 @@ agents:
       - New accuracy scores
       - Improvement delta
       - Final pass/fail status
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.2
 
   # Router path - Direct aggregation if all passed
@@ -208,9 +208,9 @@ agents:
       2. Consistency patterns
       3. Performance highlights
       4. Readiness for next phase
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
 
   # Phase 5: Loop processor - Iterative refinement
@@ -278,9 +278,9 @@ agents:
             4. Convergence metrics (are results improving?)
             
             Return JSON: {"iteration": {{ get_loop_number() }}, "accuracy_delta": X, "error_count": Y, "improvements": [...], "convergence_score": 0-100}
-          model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.4
 
         - id: synthesis
@@ -307,16 +307,16 @@ agents:
             5. **Recommendation**: Continue iterating or stop?
             
             Return JSON: {"convergence_score": X, "delta_from_previous": Y, "improvements": [...], "issues": [...], "should_continue": boolean}
-          model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           temperature: 0.3
 
         - id: loop_convergence_validator
           type: loop_validator
-          llm_model: gpt-oss:20b
-          model_url: http://localhost:11434/api/generate
-          provider: ollama
+          model:  openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           scoring_preset: lenient
           scoring_context: loop_convergence  # Evaluate refinement convergence
           evaluation_target: synthesis
@@ -354,9 +354,9 @@ agents:
       - Error handling effectiveness
       
       Provide validation report with pass/fail for each stage.
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.2
     depends_on: loop_processor
 
@@ -441,8 +441,8 @@ agents:
       - Confidence level in this assessment (0-100%)
       
       Be thorough, objective, and specific in your evaluation.
-    model: gpt-oss:20b
-    model_url: http://localhost:11434/api/generate
-    provider: ollama
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     temperature: 0.3
     depends_on: validation_check
