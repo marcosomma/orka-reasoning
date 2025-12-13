@@ -377,7 +377,14 @@ class TestRunStartup:
     @patch("orka.startup.orchestrator.asyncio.run")
     def test_run_startup_success(self, mock_asyncio_run):
         """Test successful run_startup execution."""
-        mock_asyncio_run.return_value = None
+        def _fake_run(coro):
+            # run_startup passes a coroutine (main()) into asyncio.run.
+            # When asyncio.run is mocked, we must close it to avoid
+            # "coroutine was never awaited" warnings.
+            coro.close()
+            return None
+
+        mock_asyncio_run.side_effect = _fake_run
 
         run_startup()
 
@@ -386,7 +393,11 @@ class TestRunStartup:
     @patch("orka.startup.orchestrator.asyncio.run")
     def test_run_startup_keyboard_interrupt(self, mock_asyncio_run):
         """Test run_startup handles KeyboardInterrupt."""
-        mock_asyncio_run.side_effect = KeyboardInterrupt()
+        def _fake_run(coro):
+            coro.close()
+            raise KeyboardInterrupt()
+
+        mock_asyncio_run.side_effect = _fake_run
 
         # Should not raise exception
         run_startup()
@@ -396,7 +407,11 @@ class TestRunStartup:
     @patch("orka.startup.orchestrator.asyncio.run")
     def test_run_startup_unexpected_error(self, mock_asyncio_run):
         """Test run_startup handles unexpected errors."""
-        mock_asyncio_run.side_effect = RuntimeError("Unexpected error")
+        def _fake_run(coro):
+            coro.close()
+            raise RuntimeError("Unexpected error")
+
+        mock_asyncio_run.side_effect = _fake_run
 
         with pytest.raises(SystemExit) as exc_info:
             run_startup()

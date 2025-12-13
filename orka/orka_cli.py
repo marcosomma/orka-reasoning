@@ -7,8 +7,9 @@ import importlib.metadata
 import logging
 import sys
 from pathlib import Path
+import asyncio
 
-from orka.cli.core import run_cli, sanitize_for_console
+from orka.cli.core import deep_sanitize_result, run_cli, run_cli_entrypoint, sanitize_for_console
 from orka.cli.memory.watch import memory_watch
 from orka.cli.utils import setup_logging
 
@@ -166,12 +167,35 @@ def main(argv: list[str] | None = None) -> int:
             if not hasattr(args, "config") or not args.config:
                 parser.print_help()
                 return 1
-            # Convert Namespace to list of arguments for run_cli
-            # Solo se --json-input è attivo e input è dict, serializza in JSON
-            if hasattr(args, "json_input") and args.json_input and isinstance(args.input, dict):
-                input_arg = _json.dumps(args.input)
-            else:
-                input_arg = str(args.input)
+
+            # If --json-input was used and the input was successfully parsed into a structured
+            # object, run the orchestrator directly so templates and logs see a real object
+            # (avoids JSON-in-JSON escaping).
+            if hasattr(args, "json_input") and args.json_input and isinstance(args.input, (dict, list)):
+                try:
+                    raw_result = asyncio.run(
+                        run_cli_entrypoint(
+                            args.config,
+                            args.input,
+                            log_to_file=args.log_to_file,
+                            verbose=args.verbose,
+                        )
+                    )
+                    raw_result = deep_sanitize_result(raw_result)
+                    if isinstance(raw_result, dict):
+                        logger.info(_json.dumps(raw_result, indent=4))
+                    elif isinstance(raw_result, list):
+                        for item in raw_result:
+                            logger.info(_json.dumps(item, indent=4))
+                    else:
+                        logger.info(str(raw_result))
+                    return 0
+                except Exception as run_exc:
+                    logger.error(f"[OrKa][ERROR] Exception in run_cli_entrypoint: {run_exc}", exc_info=True)
+                    raise
+
+            # Otherwise, fall back to legacy string-based CLI path
+            input_arg = str(args.input)
             run_args = ["run", args.config, input_arg]
             if args.log_to_file:
                 run_args.append("--log-to-file")

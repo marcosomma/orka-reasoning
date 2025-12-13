@@ -83,7 +83,7 @@ def deep_sanitize_result(obj: Any) -> Any:
 
 async def run_cli_entrypoint(
     config_path: str,
-    input_text: str,
+    input_text: Any,
     log_to_file: bool = False,
     verbose: bool = False,
 ) -> dict[str, Any] | list[Event] | str:

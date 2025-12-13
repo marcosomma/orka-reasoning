@@ -47,25 +47,24 @@ def mock_prompt_builder():
 @pytest.fixture
 def plan_validator_agent(mock_boolean_score_calculator_class):
     """Fixture for a PlanValidatorAgent instance with a mocked score calculator."""
-    return PlanValidatorAgent(agent_id="test_validator")
+    return PlanValidatorAgent(
+        agent_id="test_validator",
+        llm_model="test-model",
+        llm_provider="openai_compatible",
+        llm_url="http://test.local/v1/chat/completions",
+    )
 
 class TestPlanValidatorAgent:
     def test_init_default_params(self, mock_boolean_score_calculator_class):
-        agent = PlanValidatorAgent(agent_id="test_agent")
-        assert agent.agent_id == "test_agent"
-        assert agent.llm_model == "gpt-oss:20b"
-        assert agent.llm_provider == "ollama"
-        assert agent.llm_url == "http://localhost:1234"
-        assert agent.temperature == 0.2
-        assert agent.scoring_preset == "moderate"
-        mock_boolean_score_calculator_class.assert_called_once_with(preset="moderate", custom_weights=None)
+        with pytest.raises(ValueError):
+            PlanValidatorAgent(agent_id="test_agent")
 
     def test_init_custom_params(self, mock_boolean_score_calculator_class):
         custom_weights = {"completeness": 0.5}
         agent = PlanValidatorAgent(
             agent_id="custom_agent",
             llm_model="custom_model",
-            llm_provider="openai",
+            llm_provider="openai_compatible",
             llm_url="http://custom_url",
             temperature=0.5,
             scoring_preset="strict",
@@ -73,7 +72,7 @@ class TestPlanValidatorAgent:
         )
         assert agent.agent_id == "custom_agent"
         assert agent.llm_model == "custom_model"
-        assert agent.llm_provider == "openai"
+        assert agent.llm_provider == "openai_compatible"
         assert agent.llm_url == "http://custom_url"
         assert agent.temperature == 0.5
         assert agent.scoring_preset == "strict"

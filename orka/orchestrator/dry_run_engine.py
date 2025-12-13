@@ -180,18 +180,18 @@ class SmartPathEvaluator:
 
         # LLM configuration for two-stage evaluation
         self.evaluation_llm_config = {
-            "model": getattr(config, "evaluation_model", "local_llm"),  # Fast local model
+            "model": getattr(config, "evaluation_model", "MISSING_EVALUATION_MODEL"),  # Fast local model
             "model_name": getattr(
-                config, "evaluation_model_name", "llama3.2:latest"
+                config, "evaluation_model_name", "MISSING_EVALUATION_MODEL_NAME"
             ),  # Configurable model name
             "max_tokens": 500,
             "temperature": 0.1,  # Low temperature for consistent reasoning
         }
 
         self.validation_llm_config = {
-            "model": getattr(config, "validation_model", "local_llm"),  # Fast local model
+            "model": getattr(config, "validation_model", "MISSING_VALIDATION_MODEL"),  # Fast local model
             "model_name": getattr(
-                config, "validation_model_name", "llama3.2:latest"
+                config, "validation_model_name", "MISSING_VALIDATION_MODEL_NAME"
             ),  # Configurable model name
             "max_tokens": 300,
             "temperature": 0.0,  # Deterministic validation
@@ -450,14 +450,28 @@ RESPONSE FORMAT: You MUST respond with ONLY valid JSON. No explanations, no mark
                 raise ValueError("LLM evaluation is required but disabled")
 
             # Get LLM configuration
-            model = getattr(self.config, "evaluation_model", "local_llm")
-            model_name = getattr(self.config, "evaluation_model_name", "llama3.2:latest")
-            model_url = getattr(self.config, "model_url", "http://localhost:1234")
-            provider = getattr(self.config, "provider", "ollama")
+            model = getattr(self.config, "evaluation_model", "MISSING_EVALUATION_MODEL")
+            model_name = getattr(self.config, "evaluation_model_name", "MISSING_EVALUATION_MODEL_NAME")
+            model_url = getattr(self.config, "model_url", "MISSING_MODEL_URL")
+            provider = getattr(self.config, "provider", "MISSING_PROVIDER")
             temperature = 0.1  # Low temperature for consistent evaluation
 
+            missing_fields = []
+            if not isinstance(provider, str) or not provider.strip() or str(provider).startswith("MISSING_"):
+                missing_fields.append("provider")
+            if not isinstance(model_url, str) or not model_url.strip() or str(model_url).startswith("MISSING_"):
+                missing_fields.append("model_url")
+            if not isinstance(model_name, str) or not model_name.strip() or str(model_name).startswith("MISSING_"):
+                missing_fields.append("evaluation_model_name")
+            if missing_fields:
+                raise ValueError(
+                    "Missing LLM configuration for SmartPathEvaluator evaluation stage: "
+                    + ", ".join(missing_fields)
+                )
+
             # Make actual LLM call
-            if model == "local_llm" or provider.lower() == "ollama":
+            provider_norm = str(provider).lower().strip()
+            if provider_norm == "ollama":
                 raw_response = await self._call_ollama_async(
                     model_url, model_name, prompt, temperature
                 )
@@ -493,14 +507,28 @@ RESPONSE FORMAT: You MUST respond with ONLY valid JSON. No explanations, no mark
                 raise ValueError("LLM validation is required but disabled")
 
             # Get LLM configuration
-            model = getattr(self.config, "validation_model", "local_llm")
-            model_name = getattr(self.config, "validation_model_name", "llama3.2:latest")
-            model_url = getattr(self.config, "model_url", "http://localhost:1234")
-            provider = getattr(self.config, "provider", "ollama")
+            model = getattr(self.config, "validation_model", "MISSING_VALIDATION_MODEL")
+            model_name = getattr(self.config, "validation_model_name", "MISSING_VALIDATION_MODEL_NAME")
+            model_url = getattr(self.config, "model_url", "MISSING_MODEL_URL")
+            provider = getattr(self.config, "provider", "MISSING_PROVIDER")
             temperature = 0.0  # Deterministic validation
 
+            missing_fields = []
+            if not isinstance(provider, str) or not provider.strip() or str(provider).startswith("MISSING_"):
+                missing_fields.append("provider")
+            if not isinstance(model_url, str) or not model_url.strip() or str(model_url).startswith("MISSING_"):
+                missing_fields.append("model_url")
+            if not isinstance(model_name, str) or not model_name.strip() or str(model_name).startswith("MISSING_"):
+                missing_fields.append("validation_model_name")
+            if missing_fields:
+                raise ValueError(
+                    "Missing LLM configuration for SmartPathEvaluator validation stage: "
+                    + ", ".join(missing_fields)
+                )
+
             # Make actual LLM call
-            if model == "local_llm" or provider.lower() == "ollama":
+            provider_norm = str(provider).lower().strip()
+            if provider_norm == "ollama":
                 raw_response = await self._call_ollama_async(
                     model_url, model_name, prompt, temperature
                 )

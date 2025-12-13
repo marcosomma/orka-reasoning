@@ -55,15 +55,32 @@ class PlanValidatorAgent(BaseAgent):
     def __init__(
         self,
         agent_id: str,
-        llm_model: str = "gpt-oss:20b",
-        llm_provider: str = "ollama",
-        llm_url: str = "http://localhost:1234",
+        llm_model: str = "MISSING_LLM_MODEL",
+        llm_provider: str = "MISSING_LLM_PROVIDER",
+        llm_url: str = "MISSING_LLM_URL",
         temperature: float = 0.2,
         scoring_preset: str = "moderate",
         custom_weights: Optional[Dict[str, float]] = None,
         **kwargs: Any,
     ):
         super().__init__(agent_id, **kwargs)
+
+        missing: List[str] = []
+        if not isinstance(llm_model, str) or not llm_model.strip() or llm_model.startswith("MISSING_"):
+            missing.append("llm_model (or model)")
+        if (
+            not isinstance(llm_provider, str)
+            or not llm_provider.strip()
+            or llm_provider.startswith("MISSING_")
+        ):
+            missing.append("llm_provider (or provider)")
+        if not isinstance(llm_url, str) or not llm_url.strip() or llm_url.startswith("MISSING_"):
+            missing.append("llm_url (or model_url/url)")
+        if missing:
+            raise ValueError(
+                "PlanValidatorAgent requires explicit LLM configuration; missing: "
+                + ", ".join(missing)
+            )
 
         self.llm_model = llm_model
         self.llm_provider = llm_provider

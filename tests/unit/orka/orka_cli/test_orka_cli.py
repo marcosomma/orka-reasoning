@@ -85,6 +85,28 @@ def test_main_run_success_passes_args_to_run_cli(monkeypatch):
     assert "cfg.yaml" in received["args"]
 
 
+def test_main_run_json_input_calls_entrypoint_with_object(monkeypatch):
+    monkeypatch.setattr("orka.orka_cli.setup_logging", lambda v: None)
+
+    called = {"input": None, "config": None}
+
+    async def fake_run_cli_entrypoint(config_path, input_text, log_to_file=False, verbose=False):
+        called["config"] = config_path
+        called["input"] = input_text
+        return {"ok": True}
+
+    def run_cli_should_not_be_called(args):
+        raise AssertionError("run_cli should not be called for --json-input structured input")
+
+    monkeypatch.setattr(oc, "run_cli_entrypoint", fake_run_cli_entrypoint)
+    monkeypatch.setattr(oc, "run_cli", run_cli_should_not_be_called)
+
+    rc = oc.main(["--json-input", "run", "cfg.yaml", '{"foo": 123}'])
+    assert rc == 0
+    assert called["config"] == "cfg.yaml"
+    assert called["input"] == {"foo": 123}
+
+
 def test_main_run_handles_unicode_exception(monkeypatch):
     monkeypatch.setattr("orka.orka_cli.setup_logging", lambda v: None)
 

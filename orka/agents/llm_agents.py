@@ -70,7 +70,7 @@ load_dotenv()
 
 # OpenAI configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_MODEL = os.getenv("BASE_OPENAI_MODEL", "gpt-3.5-turbo")
+OPENAI_MODEL = os.getenv("BASE_OPENAI_MODEL", "MISSING_OPENAI_MODEL")
 
 # Check if we're running in test mode
 PYTEST_RUNNING = os.getenv("PYTEST_RUNNING", "").lower() in ("true", "1", "yes")

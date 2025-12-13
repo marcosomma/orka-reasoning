@@ -175,6 +175,17 @@ class TestParseLlmJson:
         assert result["response"] == "Hello"
         assert isinstance(result["confidence"], (int, float))
 
+    def test_parse_json_with_schema_allows_object_response(self):
+        """Test schema validation accepts structured response payloads."""
+        text = '{"response": {"TESTS": ["a"], "ISOLATION": []}, "confidence": 0.95}'
+        schema = create_standard_schema(
+            required_fields=["response"], optional_fields={"confidence": "number"}
+        )
+        result = parse_llm_json(text, schema=schema)
+        assert isinstance(result["response"], dict)
+        assert result["response"]["TESTS"] == ["a"]
+        assert isinstance(result["confidence"], (int, float))
+
     def test_parse_malformed_json_with_repair(self):
         """Test automatic repair of malformed JSON."""
         text = """

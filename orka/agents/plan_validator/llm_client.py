@@ -30,7 +30,7 @@ async def call_llm(
     prompt: str,
     model: str,
     url: str,
-    provider: str = "ollama",
+    provider: str,
     temperature: float = 0.2,
 ) -> str:
     """
@@ -52,9 +52,30 @@ async def call_llm(
     try:
         import requests
 
-        provider_norm = provider.lower().strip() if isinstance(provider, str) else "ollama"
+        if not isinstance(provider, str) or not provider.strip() or provider.startswith("MISSING_"):
+            raise RuntimeError(
+                "Missing/invalid LLM provider for PlanValidator call. "
+                "Set provider/llm_provider explicitly (e.g. 'ollama' or 'openai_compatible')."
+            )
+        if not isinstance(url, str) or not url.strip() or url.startswith("MISSING_"):
+            raise RuntimeError(
+                "Missing/invalid LLM url for PlanValidator call. "
+                "Set url/llm_url explicitly (e.g. an Ollama endpoint or an OpenAI-compatible chat completions URL)."
+            )
+        if not isinstance(model, str) or not model.strip() or model.startswith("MISSING_"):
+            raise RuntimeError(
+                "Missing/invalid LLM model for PlanValidator call. "
+                "Set model/llm_model explicitly."
+            )
+
+        provider_norm = provider.lower().strip()
         if provider_norm in {"lm_studio", "lmstudio"}:
             provider_norm = "openai_compatible"
+
+        if provider_norm not in {"ollama", "openai_compatible"}:
+            raise RuntimeError(
+                f"Unsupported provider '{provider}'. Supported: 'ollama', 'openai_compatible' (incl. lm_studio/lmstudio aliases)."
+            )
 
         # Build request payload based on provider
         if provider_norm == "ollama":

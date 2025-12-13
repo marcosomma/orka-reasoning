@@ -132,7 +132,7 @@ class LocalCostCalculator:
         latency_ms: float,
         tokens: int,
         model: str,
-        provider: str = "ollama",
+        provider: str = "unknown",
     ) -> Optional[float]:
         """
         Calculate the real cost of local LLM inference.
@@ -379,7 +379,7 @@ def calculate_local_llm_cost(
     latency_ms: float,
     tokens: int,
     model: str,
-    provider: str = "ollama",
+    provider: str = "unknown",
 ) -> Optional[float]:
     """
     Calculate local LLM inference cost.

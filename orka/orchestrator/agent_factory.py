@@ -169,11 +169,26 @@ class AgentFactory:
                     elif "url" in clean_cfg:
                         clean_cfg["llm_url"] = clean_cfg.pop("url")
 
+                # Require explicit LLM config (no vendor defaults)
+                missing_fields: list[str] = []
+                if not clean_cfg.get("llm_model"):
+                    missing_fields.append("llm_model (or model)")
+                if not clean_cfg.get("llm_provider"):
+                    missing_fields.append("llm_provider (or provider)")
+                if not clean_cfg.get("llm_url"):
+                    missing_fields.append("llm_url (or model_url/url)")
+                if missing_fields:
+                    raise ValueError(
+                        f"plan_validator agent '{agent_id}' requires explicit LLM configuration; missing: {', '.join(missing_fields)}"
+                    )
+
                 # Normalize provider aliases
-                provider_val = str(clean_cfg.get("llm_provider", "ollama")).lower()
-                if provider_val in {"lm_studio", "lmstudio"}:
+                provider_val_raw = str(clean_cfg.get("llm_provider", "")).strip().lower()
+                if provider_val_raw in {"lm_studio", "lmstudio", "openai", "openai_compatible"}:
                     provider_val = "openai_compatible"
-                    clean_cfg["llm_provider"] = provider_val
+                else:
+                    provider_val = provider_val_raw
+                clean_cfg["llm_provider"] = provider_val
 
                 # For OpenAI-compatible endpoints, ensure we hit chat completions.
                 if provider_val != "ollama":

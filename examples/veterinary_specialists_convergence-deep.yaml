@@ -45,6 +45,8 @@ agents:
         - id: internal_medicine_history
           type: local_llm
           model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           prompt: |
             Act as a veterinary internal medicine specialist. Focus ONLY on collecting and interpreting the patient's history and clinical signs.
             Patient data: {{ get_input() }}
@@ -57,6 +59,8 @@ agents:
         - id: internal_medicine_diagnostics
           type: local_llm
           model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           prompt: |
             Based on the history and signs: {{ previous_outputs.internal_medicine_history }}, and available test results:
             CBC: {{ get_input().test_results.cbc if get_input().test_results and get_input().test_results.cbc else "Non disponibile" }}
@@ -68,6 +72,8 @@ agents:
         - id: internal_medicine_management
           type: local_llm
           model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           prompt: |
             Given diagnostics: {{ previous_outputs.internal_medicine_diagnostics }}, and all available test results:
             CBC: {{ get_input().test_results.cbc if get_input().test_results and get_input().test_results.cbc else "Non disponibile" }}
@@ -80,6 +86,8 @@ agents:
         - id: surgery_assessment
           type: local_llm
           model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           prompt: |
             Act as a veterinary surgeon. Assess for surgical/traumatic causes based on history: {{ get_input() }}.
             CBC: {{ get_input().test_results.cbc if get_input().test_results and get_input().test_results.cbc else "Non disponibile" }}
@@ -91,6 +99,8 @@ agents:
         - id: surgery_risk
           type: local_llm
           model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           prompt: |
             For each differential: {{ previous_outputs.surgery_assessment }}, and available test results:
             CBC: {{ get_input().test_results.cbc if get_input().test_results and get_input().test_results.cbc else "Non disponibile" }}
@@ -102,6 +112,8 @@ agents:
         - id: surgery_plan
           type: local_llm
           model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           prompt: |
             Propose a surgical or non-surgical plan, including post-op care, based on risk: {{ previous_outputs.surgery_risk }}.
             CBC: {{ get_input().test_results.cbc if get_input().test_results and get_input().test_results.cbc else "Non disponibile" }}
@@ -113,6 +125,8 @@ agents:
         - id: infectious_disease_screening
           type: local_llm
           model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           prompt: |
             Act as an infectious disease specialist. List all possible infectious/parasitic causes and relevant risk factors.
             Patient data: {{ get_input() }}
@@ -124,6 +138,8 @@ agents:
         - id: infectious_disease_tests
           type: local_llm
           model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           prompt: |
             For each differential: {{ previous_outputs.infectious_disease_screening }}, and available test results:
             CBC: {{ get_input().test_results.cbc if get_input().test_results and get_input().test_results.cbc else "Non disponibile" }}
@@ -135,6 +151,8 @@ agents:
         - id: infectious_disease_plan
           type: local_llm
           model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           prompt: |
             Based on test results and protocols: {{ previous_outputs.infectious_disease_tests }}, and all available test results:
             CBC: {{ get_input().test_results.cbc if get_input().test_results and get_input().test_results.cbc else "Non disponibile" }}
@@ -147,6 +165,8 @@ agents:
         - id: dermatology_history
           type: local_llm
           model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           prompt: |
             Act as a veterinary dermatologist. Focus on history and lesion description.
             Patient data: {{ get_input() }}
@@ -157,6 +177,8 @@ agents:
         - id: dermatology_tests
           type: local_llm
           model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           prompt: |
             Propose dermatological diagnostics based on: {{ previous_outputs.dermatology_history }}.
             Skin cytology: {{ get_input().test_results.skin_cytology if get_input().test_results and get_input().test_results.skin_cytology else "Non disponibile" }}
@@ -166,6 +188,8 @@ agents:
         - id: dermatology_plan
           type: local_llm
           model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           prompt: |
             Suggest a treatment and follow-up plan based on: {{ previous_outputs.dermatology_tests }}.
             Skin cytology: {{ get_input().test_results.skin_cytology if get_input().test_results and get_input().test_results.skin_cytology else "Non disponibile" }}
@@ -206,6 +230,8 @@ agents:
   - id: actionable_plan_builder
     type: local_llm
     model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Build a step-by-step actionable plan for the vet and owner, integrating all specialist recommendations.
       Patient data: {{ get_input() }}
@@ -230,6 +256,8 @@ agents:
   - id: explanation_builder
     type: local_llm
     model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       # TASK
       Compose a comprehensive, actionable explanation for the owner and vet.

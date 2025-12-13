@@ -496,7 +496,8 @@ def _format_validation_error(error: ValidationError) -> str:
 
 def create_standard_schema(
     required_fields: Optional[List[str]] = None,
-    optional_fields: Optional[Dict[str, str]] = None,
+    optional_fields: Optional[Dict[str, Union[str, List[str]]]] = None,
+    required_field_types: Optional[Dict[str, Union[str, List[str]]]] = None,
 ) -> Dict[str, Any]:
     """
     Create a standard JSONSchema for common LLM response patterns.
@@ -505,6 +506,10 @@ def create_standard_schema(
         required_fields: List of required field names (default: ["response"])
         optional_fields: Dict of optional field names to types
                         (default: {"confidence": "number", "reasoning": "string"})
+        required_field_types: Optional mapping of required field names to JSONSchema
+                             type(s). If not provided, required fields default to
+                             "string" except for "response" which defaults to
+                             ["string", "object", "array"].
 
     Returns:
         JSONSchema dictionary
@@ -521,11 +526,18 @@ def create_standard_schema(
         "internal_reasoning": "string",
     }
 
+    required_field_types = required_field_types or {}
+
+    # Default: response can be structured (dict/list) or plain text.
+    if "response" not in required_field_types:
+        required_field_types["response"] = ["string", "object", "array"]
+
     properties = {}
 
     # Add required fields (default to string type)
     for field in required_fields:
-        properties[field] = {"type": "string"}
+        field_type = required_field_types.get(field, "string")
+        properties[field] = {"type": field_type}
 
     # Add optional fields with specified types
     for field, field_type in optional_fields.items():

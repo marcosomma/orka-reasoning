@@ -218,17 +218,42 @@ class LocalLLMAgent(BaseAgent):
         full_prompt = f"{render_prompt}\n\n{self_evaluation}"
 
         # Get model endpoint configuration
-        model_url = self.params.get("model_url", "http://localhost:1234")
-        provider = self.params.get("provider", "ollama")
+        model_url = self.params.get("model_url", "MISSING_MODEL_URL")
+        provider = self.params.get("provider", "MISSING_PROVIDER")
 
         try:
+            # Fail-fast validation: ensure workflow explicitly configures provider + model_url
+            missing_fields = []
+            if not isinstance(provider, str) or not provider.strip() or provider.startswith("MISSING_"):
+                missing_fields.append("provider")
+            if not isinstance(model_url, str) or not model_url.strip() or model_url.startswith("MISSING_"):
+                missing_fields.append("model_url")
+            if missing_fields:
+                raise ValueError(
+                    f"LocalLLMAgent '{self.agent_id}' missing required LLM config: {', '.join(missing_fields)}. "
+                    "Provide them in the workflow under this agent. Example: "
+                    "type: local_llm, params: { provider: <ollama|lm_studio|openai_compatible>, model_url: <http(s)://host:port/...>, model: <model_name> }"
+                )
+
+            # Validate URL shape early to avoid requests' generic "Invalid URL" message
+            from urllib.parse import urlparse
+
+            parsed_url = urlparse(model_url)
+            if not parsed_url.scheme or not parsed_url.netloc:
+                raise ValueError(
+                    f"LocalLLMAgent '{self.agent_id}' has invalid model_url='{model_url}'. "
+                    "Expected a full URL including scheme, e.g. 'http://localhost:1234/...'."
+                )
+
             # Track timing for local LLM calls
             import time
 
             start_time = time.time()
 
             # Get raw response from the LLM
-            if provider.lower() == "ollama":
+            provider_norm = provider.lower().strip()
+
+            if provider_norm == "ollama":
                 raw_response = self._call_ollama(
                     model_url,
                     model,
@@ -236,7 +261,7 @@ class LocalLLMAgent(BaseAgent):
                     temperature,
                     max_tokens=max_tokens,
                 )
-            elif provider.lower() in ["lm_studio", "lmstudio"]:
+            elif provider_norm in ["lm_studio", "lmstudio"]:
                 raw_response = self._call_lm_studio(
                     model_url,
                     model,
@@ -244,7 +269,7 @@ class LocalLLMAgent(BaseAgent):
                     temperature,
                     max_tokens=max_tokens,
                 )
-            elif provider.lower() == "openai_compatible":
+            elif provider_norm == "openai_compatible":
                 raw_response = self._call_openai_compatible(
                     model_url,
                     model,
@@ -253,8 +278,10 @@ class LocalLLMAgent(BaseAgent):
                     max_tokens=max_tokens,
                 )
             else:
-                # Default to Ollama format
-                raw_response = self._call_ollama(model_url, model, full_prompt, temperature)
+                raise ValueError(
+                    f"LocalLLMAgent '{self.agent_id}' has unsupported provider='{provider}'. "
+                    "Supported: ollama, lm_studio (lmstudio), openai_compatible."
+                )
 
             # Calculate latency
             latency_ms = round((time.time() - start_time) * 1000, 2)
