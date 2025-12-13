@@ -1,22 +1,48 @@
-
 # [0.9.11] · 2025-12-12 🧪
 OrKa v0.9.11 – Test Strictness, Warning Hardening & Reliability
 
 ### Summary
-This release strengthens test reliability by making un-awaited coroutine warnings fail fast, reducing reliance on broad/global mocks, and fixing test correctness issues where mocks did not match production behavior.
+This release strengthens test reliability by making un-awaited coroutine warnings fail fast, reducing reliance on broad/global mocks, and fixing test correctness issues where mocks did not match production behavior. It also improves local cost estimation, makes version detection more robust, and standardizes local LLM configuration for easier provider integration (e.g. LM Studio).
 
 ### Fixed
 * **🧵 Async correctness in tests**
-  * Treats `RuntimeWarning: coroutine ... was never awaited` as a test error (with a narrow allowlist for a known external shutdown warning).
+  * Treats `RuntimeWarning: coroutine ... was never awaited` as a test error (with a narrow allowlist for `close_litellm_async_clients` shutdown warnings).
   * Adjusted MemoryReaderNode tests to match production sync call paths (no silent coroutine leaks).
 
 * **🧰 Strict-mode test wiring**
-  * Added opt-out controls for global autouse mocks (env var + marker) to validate wiring without the safety net.
+  * Added opt-out controls for global autouse mocks to validate wiring without the safety net:
+    * Env var: `ORKA_TEST_DISABLE_GLOBAL_MOCKS=1|true|yes`
+    * Marker: `@pytest.mark.no_global_mocks`
+  * Standardized the “skip auto-mocking” pattern via `@pytest.mark.no_auto_mock` where tests need precise, non-global mocks.
 
 * **🧹 Test noise reduction**
   * Removed ineffective `usefixtures()` usage without arguments and replaced it with the correct marker.
 
+* **🧾 Version reporting**
+  * Improved CLI version retrieval: prefers installed package metadata and falls back to `pyproject.toml`.
+
+* **💻 LocalCostCalculator robustness**
+  * Removed `GPUtil` dependency and switched GPU detection to `nvidia-smi` for more predictable local environments.
+  * Hardened logging and error handling during GPU detection/cost estimation.
+
+* **🖥️ TUI warning hardening**
+  * Avoids unnecessary deprecation warnings by lazy-loading deprecated `LayoutManager` only when needed.
+
+* **🩺 Health logging formatting**
+  * Normalized service endpoint logging format for consistent line lengths.
+
+### Enhanced
+* **📊 Coverage & test depth**
+  * Added new unit tests across LoopNode, ExecutionEngine internal branches, scoring presets/context, and metrics collection.
+  * Expanded metrics aggregation tests to validate runtime metric reporting behavior.
+
+* **🔌 Local LLM provider-agnostic configuration**
+  * Reduced implicit coupling to Ollama by requiring explicit `provider` + `model_url` for local LLM agents.
+  * Added/standardized provider options and aliases (e.g. `lm_studio` / `lmstudio`, and `openai_compatible`) to make it easier to plug in different OpenAI-compatible backends (LM Studio, etc.).
+  * Updated examples and documentation to prefer LM Studio style endpoints (defaulting many examples to `http://localhost:1234`).
+
 ### Notes
+* Deprecated debug/util scripts were removed as part of cleanup.
 * Coverage gate remains enforced via pytest configuration.
 
 ---
