@@ -1,6 +1,6 @@
 # OrKa Agent, Node & Tool Documentation Index
 
-Complete reference for all agent types, control flow nodes, and tools in OrKa v0.9.5.
+Complete reference for all agent types, control flow nodes, and tools supported by the current OrKa codebase.
 
 ## 🤖 LLM Agents
 
@@ -22,8 +22,7 @@ Intelligent memory storage and retrieval with RedisStack HNSW (100x faster).
 
 | Agent | Purpose | Documentation |
 |-------|---------|---------------|
-| **memory-reader** | Semantic search (0.5-5ms latency) | [📖 View](./nodes/memory-reader.md) |
-| **memory-writer** | Storage with HNSW indexing (50k/sec) | [📖 View](./nodes/memory-writer.md) |
+| **memory** | Read/write memory (operation selected via `config.operation`) | [📖 View](./MEMORY_SYSTEM_GUIDE.md) |
 
 **Features:**
 - ⚡ 100x faster vector search with HNSW
@@ -42,8 +41,10 @@ Nodes that control workflow execution and logic.
 | **join** | Combine results from parallel branches | [📖 View](./nodes/fork-and-join.md) |
 | **loop** | Iterative improvement with cognitive extraction | [📖 View](./nodes/loop.md) |
 | **failover** | Resilient execution with fallbacks | [📖 View](./nodes/failover.md) |
-| **graph-scout** | 🆕 Intelligent path discovery (v0.9.3+) | [📖 View](./nodes/graph-scout.md) |
-| **plan-validator** | 🆕 Path validation and critique (v0.9.5+) | [📖 View](./agents/plan-validator.md) |
+| **graph-scout** | Intelligent path discovery | [📖 View](./GRAPH_SCOUT_AGENT.md) |
+| **loop_validator** | Validate loop convergence | [📖 View](./nodes/loop.md) |
+| **failing** | Intentionally fail (testing) | [📖 View](./nodes/failover.md) |
+| **path_executor** | Execute a planned path | [📖 View](./nodes/path-executor.md) |
 
 ## 🔧 Tools
 
@@ -52,13 +53,13 @@ External tools and integrations.
 | Tool | Purpose | Documentation |
 |------|---------|---------------|
 | **duckduckgo** | Web search | [📖 View](./tools/duckduckgo.md) |
-| **rag** | Retrieval-Augmented Generation | [📖 View](./tools/rag.md) |
+| **rag** | Retrieval-Augmented Generation node | [📖 View](./tools/rag.md) |
 
 ## Quick Reference by Use Case
 
 ### Question Answering
 - `openai-answer` - Generate answers
-- `memory-reader` - Search knowledge base
+- `memory` (read) - Search knowledge base
 - `duckduckgo` - Web search
 - `rag` - Knowledge base Q&A
 
@@ -84,14 +85,14 @@ External tools and integrations.
 - `plan_validator` - Path validation and critique
 
 ### Memory & Storage
-- `memory-reader` - Semantic search
-- `memory-writer` - Store with HNSW
+- `memory` (read) - Semantic search
+- `memory` (write) - Store memories
 - Memory presets - Pre-configured settings
 
 ### Search & Retrieval
 - `duckduckgo` - Real-time web search
 - `rag` - Document Q&A
-- `memory-reader` - Semantic memory search
+- `memory` (read) - Semantic memory search
 
 ## Quick Start Examples
 
@@ -118,9 +119,10 @@ orchestrator:
 
 agents:
   - id: memory_search
-    type: memory-reader
+    type: memory
     namespace: knowledge
-    params:
+    config:
+      operation: read
       limit: 10
       similarity_threshold: 0.8
     prompt: "{{ input }}"
@@ -323,19 +325,11 @@ orka memory cleanup --dry-run
 
 - [Getting Started Guide](./getting-started.md)
 - [Memory System Guide](./MEMORY_SYSTEM_GUIDE.md)
-- [YAML Configuration Guide](./yaml-configuration-guide.md)
+- [YAML Configuration Guide](./YAML_CONFIGURATION.md)
 - [Architecture Overview](./architecture.md)
 - [Best Practices](./best-practices.md)
 - [Troubleshooting](./troubleshooting.md)
 - [Example Workflows](../examples/README.md)
-
-## Version Information
-
-**Documentation Version:** v0.9.5  
-**Last Updated:** October 2025  
-**Compatibility:** OrKa-Reasoning v0.9.5+
-
----
 
 **Need Help?**
 - 📖 [Full Documentation](https://orkacore.com/docs)

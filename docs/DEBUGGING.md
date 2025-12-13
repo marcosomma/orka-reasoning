@@ -4,7 +4,7 @@
 > **Status:** 🟢 Current  
 > **Related:** [Troubleshooting](troubleshooting.md) | [FAQ](faq.md) | [Observability](observability.md) | [Testing](TESTING.md) | [INDEX](index.md)
 
-[📘 Getting Started](./getting-started.md) | [⚙️ Configuration](./CONFIGURATION.md) | [🧠 Memory System](./MEMORY_SYSTEM_GUIDE.md) | [🤖 Agent Types](./agents.md)
+[📘 Getting Started](./getting-started.md) | [📝 YAML Configuration](./YAML_CONFIGURATION.md) | [🧠 Memory System](./MEMORY_SYSTEM_GUIDE.md) | [🤖 Agent Types](./agents.md)
 
 ## Overview
 

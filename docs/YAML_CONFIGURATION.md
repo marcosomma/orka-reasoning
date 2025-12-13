@@ -2,22 +2,37 @@
 
 > **Last Updated:** 29 November 2025  
 > **Status:** 🟢 Primary Configuration Guide  
-> **Related:** [Getting Started](getting-started.md) | [YAML Schema](orka.yaml-schema.md) | [Runtime Modes](runtime-modes.md) | [index](index.md)
+> **Related:** [Getting Started](getting-started.md) | [Runtime Modes](runtime-modes.md) | [index](index.md)
 
 ## Orchestrator Configuration
 
-The Orchestrator is the core engine of Orka that coordinates all components. It uses a modular architecture with the following key components:
+OrKa workflows are defined as YAML with **two top-level sections**:
+
+- `orchestrator`: workflow settings (execution strategy and agent order)
+- `agents`: all runnable units (agents, nodes, tools) declared in one list
 
 ### Core Components
 
-1. **Base Configuration (OrchestratorBase)**
+1. **Base Configuration**
    ```yaml
    orchestrator:
-     name: "workflow_name"
-     description: "Workflow description"
-     version: "1.0"
-     strategy: "sequential"  # or "parallel"
+     id: "workflow_name"
+     strategy: sequential   # sequential | parallel
+     agents: [agent_1, agent_2]
+
+   agents:
+     - id: agent_1
+       type: openai-answer
+       prompt: "{{ input }}"
+
+     - id: agent_2
+       type: openai-answer
+       prompt: "Refine: {{ previous_outputs.agent_1 }}"
    ```
+
+**Notes**
+- `orchestrator.queue` is optional (legacy).
+- The orchestrator executes agents in the order listed in `orchestrator.agents`.
 
 ## Agent Configurations
 
@@ -40,9 +55,7 @@ Orka supports various types of agents that can be configured in the YAML workflo
    agents:
      - id: "classifier"
        type: "classification"
-       prompt: "Classify this input: {{ input }}"
-       options: ["positive", "negative", "neutral"]
-       timeout: 30.0
+       prompt: "(deprecated)"
    ```
 
 ### LLM Integration Agents
@@ -86,9 +99,9 @@ Orka supports various types of agents that can be configured in the YAML workflo
    agents:
      - id: "local_llm"
        type: "local_llm"
-       provider: "ollama"  # or "lm_studio"
        model: "llama2"
-       endpoint: "http://localhost:11434"
+       provider: "ollama"  # ollama | lm_studio | openai_compatible
+       model_url: "http://localhost:11434"
        prompt: "Process this input: {{ input }}"
    ```
 
@@ -99,158 +112,123 @@ Orka supports various types of agents that can be configured in the YAML workflo
    agents:
      - id: "validator"
        type: "validate_and_structure"
-       schema: "schemas/response.json"
-       validation_rules:
-         required_fields: ["title", "content"]
-         max_length: 1000
-       error_handling:
-         strict: true
-         return_partial: false
+       prompt: |
+         Validate the latest answer and return JSON with:
+         - valid: boolean
+         - reason: string
+         - memory_object: object|null
+       store_structure: |
+         {
+           "topic": "extracted topic",
+           "confidence": "0.0-1.0",
+           "key_points": ["..."]
+         }
    ```
 
-## Node Configurations
+## Workflow Nodes (configured as agents)
 
-Orka provides various specialized nodes for workflow control and data management. Here are the available node types and their configurations:
+OrKa uses a single `agents:` list. **Control-flow nodes** (router/fork/join/loop/…) are declared there too.
 
-### Flow Control Nodes
+### Router Node (`type: router`)
 
-1. **Router Node**
-   ```yaml
-   nodes:
-     - id: "content_router"
-       type: "router"
-       params:
-         decision_key: "classification"
-         routing_map:
-           "urgent": ["urgent_handler", "notify_admin"]
-           "normal": ["standard_processor"]
-           "low": ["batch_processor"]
-   ```
+```yaml
+agents:
+  - id: content_router
+    type: router
+    params:
+      decision_key: safety_check
+      routing_map:
+        "true": [content_processor]
+        "false": [human_review]
+```
 
-2. **Fork Node**
-   ```yaml
-   nodes:
-     - id: "parallel_processor"
-       type: "fork"
-       params:
-         parallel_agents: ["validator_1", "validator_2", "validator_3"]
-         join_node: "results_aggregator"
-         max_parallel: 5
-   ```
+See: [Router node](./nodes/router.md)
 
-3. **Join Node**
-   ```yaml
-   nodes:
-     - id: "results_aggregator"
-       type: "join"
-       params:
-         aggregation_strategy: "merge"  # or "first_success", "all_required"
-         timeout: 30.0
-         error_handling:
-           partial_results: true
-   ```
+### Fork + Join (`type: fork`, `type: join`)
 
-4. **Loop Node**
-   ```yaml
-   nodes:
-     - id: "iteration_handler"
-       type: "loop"
-       params:
-         max_iterations: 5
-         condition_key: "continue_processing"
-         exit_on_error: true
-         iteration_data: "items"
-   ```
+```yaml
+agents:
+  - id: fanout
+    type: fork
+    mode: sequential
+    targets:
+      - [branch_a_1, branch_a_2]
+      - [branch_b_1]
 
-### Error Handling Nodes
+  - id: join_results
+    type: join
+    group: fanout
+    max_retries: 30
+```
 
-1. **Failover Node**
-   ```yaml
-   nodes:
-     - id: "error_handler"
-       type: "failover"
-       params:
-         fallback_agents: ["backup_processor", "human_review"]
-         retry_original: true
-         max_retries: 3
-   ```
+See: [Fork/Join](./nodes/fork-and-join.md)
 
-2. **Failing Node**
-   ```yaml
-   nodes:
-     - id: "validation_gate"
-       type: "failing"
-       params:
-         failure_conditions:
-           - "quality_score < 0.8"
-           - "error_count > 0"
-         error_message: "Quality check failed"
-   ```
+### Failover (`type: failover`)
 
-### Memory Management Nodes (Operation-Aware)
+Failover is configured with **inline `children:`** (nested agents) and tries them in order.
 
-**NEW in v0.9.2**: Memory agents now use operation-aware presets that automatically provide optimized defaults.
+```yaml
+agents:
+  - id: answer_with_fallback
+    type: failover
+    children:
+      - id: try_memory
+        type: memory
+        namespace: knowledge_base
+        config:
+          operation: read
+          limit: 8
+          similarity_threshold: 0.6
+        prompt: "Find context for: {{ input }}"
 
-1. **Memory Reader Node** (Enhanced with Smart Defaults)
-   ```yaml
-   nodes:
-     - id: "context_loader"
-       type: "memory"
-       memory_preset: "episodic"  # 🎯 Auto-applies READ defaults!
-       config:
-         operation: read           # (limit=8, similarity_threshold=0.6, etc.)
-         namespace: conversations
-       # Most parameters now provided automatically by preset
-   ```
+      - id: try_web
+        type: duckduckgo
+        prompt: "Search the web for: {{ input }}"
 
-2. **Memory Writer Node** (Enhanced with Smart Defaults)
-   ```yaml
-   nodes:
-     - id: "memory_saver"
-       type: "memory"
-       memory_preset: "working"   # 🎯 Auto-applies WRITE defaults!
-       config:
-         operation: write          # (vector=true, optimized indexing, etc.)
-         namespace: session_data
-       # Indexing and storage parameters provided by preset
-   ```
+      - id: final_answer
+        type: openai-answer
+        prompt: |
+          Use memory: {{ previous_outputs.try_memory }}
+          Use web: {{ previous_outputs.try_web }}
+          Answer: {{ input }}
+```
 
-3. **RAG Node** (Coming Soon)
-   ```yaml
-   # Note: RAG node is under development and not yet available in the current release
-   nodes:
-     - id: "knowledge_augmenter"
-       type: "rag"
-       params:
-         retrieval:
-           strategy: "hybrid"  # semantic + keyword
-           top_k: 3
-           reranking: true
-         augmentation:
-           template: "Consider this context: {context}\nNow answer: {query}"
-           max_tokens: 2000
-   ```
+See: [Failover node](./nodes/failover.md)
 
-### Advanced Routing Nodes
+### Memory (`type: memory`)
 
-1. **Graph Scout Agent** (NEW in v0.9.3)
-   ```yaml
-   nodes:
-     - id: "intelligent_router"
-       type: "graph-scout"
-       params:
-         max_path_length: 3
-         budget_constraints:
-           max_tokens: 1000
-           max_latency_ms: 5000
-         safety_config:
-           risk_threshold: 0.7
-           enable_guardrails: true
-         evaluation_criteria:
-           - "relevance"
-           - "cost_efficiency"
-           - "safety"
-   ```
+Memory uses a single agent type and selects read vs write via `config.operation`.
+
+```yaml
+agents:
+  - id: memory_read
+    type: memory
+    namespace: conversations
+    memory_preset: episodic
+    config:
+      operation: read
+      limit: 8
+      similarity_threshold: 0.6
+      enable_context_search: false
+      enable_temporal_ranking: false
+    prompt: "Find memories about: {{ input }}"
+
+  - id: memory_write
+    type: memory
+    namespace: conversations
+    memory_preset: working
+    config:
+      operation: write
+    metadata:
+      source: user
+    prompt: "Store: {{ input }}"
+```
+
+See: [Memory System](MEMORY_SYSTEM_GUIDE.md)
+
+### GraphScout (`type: graph-scout`)
+
+See: [GraphScout](GRAPH_SCOUT_AGENT.md)
 
 ## Tool Configurations
 
@@ -264,11 +242,6 @@ Orka provides various tools that can be used within workflows. Here are the avai
      - id: "web_search"
        type: "duckduckgo"
        prompt: "Search for: {{ input }}"
-       params:
-         max_results: 5
-         search_type: "text"  # or "news"
-         timeout: 30.0
-         fallback_enabled: true
    ```
 
 **Note**: Tools are configured as agents in the YAML configuration. The DuckDuckGo tool supports intelligent query handling with fallback mechanisms for both text and news searches.

@@ -404,6 +404,6 @@ memory_preset: "episodic"
 ## 📚 See Also
 
 - [Memory System Guide](./MEMORY_SYSTEM_GUIDE.md) - Complete memory documentation
-- [YAML Configuration Guide](./yaml-configuration-guide.md) - Full YAML reference  
+- [YAML Configuration Guide](./YAML_CONFIGURATION.md) - Full YAML reference  
 - [Examples](../examples/) - Working examples with presets
 - [Getting Started](./getting-started.md) - Quick start guide

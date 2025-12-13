@@ -279,8 +279,10 @@ params:
 
 ```yaml
 - id: memory_search
-  type: memory-reader
+  type: memory
   namespace: knowledge
+  config:
+    operation: read
   prompt: "{{ input }}"
 
 - id: memory_validator

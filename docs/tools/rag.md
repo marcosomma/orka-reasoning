@@ -1,42 +1,34 @@
-# RAG (Retrieval-Augmented Generation) Tool
+# RAG (Retrieval-Augmented Generation)
 
-**Type:** `rag`  
-**Category:** Search Tool  
-**Version:** v0.9.4+
+**Type:** `rag`
 
 ## Overview
 
-The RAG Tool combines retrieval from a knowledge base with generation, enabling question answering grounded in your documents and data.
+RAG is implemented by `RAGNode` and is configured via **top-level fields** on the agent entry.
+
+Older examples that put RAG settings under `params:` are not compatible with the current `AgentFactory` wiring.
 
 ## Basic Configuration
 
 ```yaml
 - id: knowledge_qa
   type: rag
-  params:
-    top_k: 10
-    score_threshold: 0.75
+  top_k: 10
+  score_threshold: 0.75
+  timeout: 30.0
   prompt: "Answer: {{ input }}"
 ```
 
-## Parameters
+Supported fields (non-exhaustive):
+- `top_k` (default `5`)
+- `score_threshold` (default `0.7`)
+- `timeout` (default `30.0`)
+- `max_concurrency` (default `10`)
 
-### Required Parameters
+See also:
+- [YAML Configuration](../YAML_CONFIGURATION.md)
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `id` | string | Unique identifier |
-| `type` | string | Must be `rag` |
-| `prompt` | string | Query and instructions |
-
-### Optional Parameters (in `params`)
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `top_k` | int | `10` | Number of documents to retrieve |
-| `score_threshold` | float | `0.7` | Minimum relevance score (0.0-1.0) |
-| `rerank` | bool | `false` | Re-rank results for better relevance |
-| `timeout` | float | `40.0` | Processing timeout |
+<!--
 
 ## Usage Examples
 
@@ -408,7 +400,7 @@ agents:
 
 ## Related Documentation
 
-- [Memory Reader Node](../nodes/memory-reader.md)
+- [Memory (Agent)](../nodes/memory.md)
 - [DuckDuckGo Tool](./duckduckgo.md)
 - [OpenAI Answer Agent](../agents/openai-answer.md)
 
@@ -417,4 +409,6 @@ agents:
 - **v0.9.4**: Current stable version
 - **v0.8.0**: Added re-ranking support
 - **v0.7.0**: Initial release
+
+-->
 

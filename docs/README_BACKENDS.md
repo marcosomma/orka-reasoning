@@ -204,6 +204,6 @@ python -m orka.orka_start
 ## 📚 **Additional Resources**
 
 - [Memory System Guide](MEMORY_SYSTEM_GUIDE.md)
-- [Configuration Guide](CONFIGURATION.md)
+- [YAML Configuration](YAML_CONFIGURATION.md)
 - [Troubleshooting Guide](troubleshooting.md)
 - [Performance Tuning](best-practices.md)

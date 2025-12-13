@@ -532,6 +532,6 @@ prompt: "{{ safe_get_response('agent1') }}"
 ## See Also
 
 - [Agents Guide](agents.md) - Agent configuration and types
-- [Workflow Configuration](CONFIGURATION.md) - YAML workflow structure
+- [Workflow Configuration](YAML_CONFIGURATION.md) - YAML workflow structure
 - [Memory System Guide](MEMORY_SYSTEM_GUIDE.md) - Memory agent integration
 - [Loop Nodes](agents-advanced.md#loop-node) - Loop execution patterns

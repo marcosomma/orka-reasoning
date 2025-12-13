@@ -160,7 +160,7 @@ Returns structured JSON matching the schema:
 
 ## Related Documentation
 
-- [Memory Writer Node](../nodes/memory-writer.md)
+- [Memory (Agent)](../nodes/memory.md)
 - [OpenAI Answer Agent](./openai-answer.md)
 
 ## Version History

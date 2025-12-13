@@ -435,7 +435,7 @@ See complete working examples in:
 ## Related Documentation
 
 - **[Boolean Scoring Guide](../BOOLEAN_SCORING_GUIDE.md)** - Comprehensive guide to deterministic scoring
-- [GraphScout Agent](../nodes/graph-scout.md) - Intelligent path discovery
+- [GraphScout Agent](../GRAPH_SCOUT_AGENT.md) - Intelligent path discovery
 - [Loop Node](../nodes/loop.md) - Iterative execution
 - [Template Rendering](../YAML_CONFIGURATION.md) - Jinja2 helpers
 - [Memory System](../MEMORY_SYSTEM_GUIDE.md) - Context passing

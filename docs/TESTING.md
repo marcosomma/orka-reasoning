@@ -2,9 +2,9 @@
 
 > **Last Updated:** 29 November 2025  
 > **Status:** 🟢 Current  
-> **Related:** [Test Coverage Strategy](TEST_COVERAGE_ENHANCEMENT_STRATEGY.md) | [Testing Roadmap](TESTING_IMPROVEMENTS_ROADMAP.md) | [Debugging](DEBUGGING.md) | [index](index.md)
+> **Related:** [Debugging](DEBUGGING.md) | [index](index.md)
 
-[📘 Getting Started](./getting-started.md) | [⚙️ Configuration](./CONFIGURATION.md) | [🐛 Debugging](./DEBUGGING.md) | [🧩 Core Components](./COMPONENTS.md)
+[📘 Getting Started](./getting-started.md) | [📝 YAML Configuration](./YAML_CONFIGURATION.md) | [🐛 Debugging](./DEBUGGING.md)
 
 ## Overview
 

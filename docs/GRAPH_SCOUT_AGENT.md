@@ -1,12 +1,32 @@
-# GraphScout Agent - Workflow Path Discovery
+# GraphScout Agent
 
-> **Last Updated:** 29 November 2025  
-> **Status:** 🆕 New in v0.9.3  
-> **Related:** [GraphScout Execution Modes](GRAPHSCOUT_EXECUTION_MODES.md) | [Router Agent](agents.md#router) | [Architecture](architecture.md) | [INDEX](index.md)
+GraphScout is OrKa's dynamic routing agent.
 
-**NEW in OrKa v0.9.3** 🧭
+In YAML, configure it as `type: graph-scout` (hyphen) and pass its settings as **top-level fields** on the agent (not nested under `config`).
 
-The GraphScout Agent is OrKa's dynamic routing system that discovers, evaluates, and executes paths through your workflow graph. Instead of manually defining static routing rules, GraphScout inspects your workflow graph at runtime and selects agent sequences based on LLM evaluation.
+## Basic Configuration
+
+```yaml
+orchestrator:
+  id: my_workflow
+  strategy: sequential
+  agents: [graph_scout]
+
+agents:
+  - id: graph_scout
+    type: graph-scout
+    k_beam: 5
+    max_depth: 3
+    commit_margin: 0.15
+    prompt: "Find the best path to handle: {{ input }}"
+```
+
+See also:
+- [YAML Configuration](YAML_CONFIGURATION.md)
+- [GraphScout Execution Modes](GRAPHSCOUT_EXECUTION_MODES.md)
+- Examples: [examples/graph_scout_example.yml](../examples/graph_scout_example.yml), [examples/graph_scout_dynamic.yml](../examples/graph_scout_dynamic.yml)
+
+<!--
 
 ---
 
@@ -754,3 +774,5 @@ Start with the basic examples and gradually explore advanced features as your wo
 - Join the [OrKa community](https://discord.gg/orka) for support and examples
 ---
 ← [Memory Agents](memory-agents-guide.md) | [📚 INDEX](index.md) | [Best Practices](best-practices.md) →
+
+-->

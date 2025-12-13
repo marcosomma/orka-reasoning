@@ -2,7 +2,7 @@
 
 > **Last Updated:** 29 November 2025  
 > **Status:** 🆕 New in v0.9.6  
-> **Related:** [Architecture](architecture.md) | [Components](COMPONENTS.md) | [index](index.md)
+> **Related:** [Architecture](architecture.md) | [index](index.md)
 
 This guide provides comprehensive visual design specifications for OrKa's architecture components. Use this as a reference for creating diagrams, presentations, and visual documentation.
 
@@ -634,4 +634,4 @@ For questions about visual specifications or to contribute custom components:
 **Last Updated:** 16 November 2025  
 **Maintained By:** OrKa Documentation Team
 ---
-← [Components](COMPONENTS.md) | [📚 INDEX](index.md) | [YAML Configuration](YAML_CONFIGURATION.md) →
+← [Architecture](architecture.md) | [📚 INDEX](index.md) | [YAML Configuration](YAML_CONFIGURATION.md) →

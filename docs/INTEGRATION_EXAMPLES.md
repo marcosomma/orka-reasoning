@@ -1,6 +1,6 @@
 # OrKa Integration Examples
 
-[📘 Getting Started](./getting-started.md) | [⚙️ Configuration](./CONFIGURATION.md) | [🧩 Core Components](./COMPONENTS.md) | [🧪 Testing](./TESTING.md)
+[📘 Getting Started](./getting-started.md) | [📝 YAML Configuration](./YAML_CONFIGURATION.md) | [🔍 Architecture](./architecture.md) | [🧪 Testing](./TESTING.md)
 
 ## Overview
 
@@ -1398,7 +1398,7 @@ orka memory watch
 For production deployment patterns, monitoring, and debugging:
 
 - **Docker Setup**: See [`../orka/docker/`](../orka/docker/) for container configurations
-- **Environment Configuration**: See [CONFIGURATION.md](./CONFIGURATION.md) for production settings
+- **Environment Configuration**: See [README_BACKENDS.md](./README_BACKENDS.md) for backend and production settings
 - **Monitoring Setup**: See [observability.md](./observability.md) for monitoring integration
 - **Testing Patterns**: See [TESTING.md](./TESTING.md) for comprehensive testing strategies
 

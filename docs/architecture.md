@@ -1,21 +1,21 @@
-# OrKa Architecture V0.7.0
+# OrKa Architecture
 
 > **Last Updated:** 29 November 2025  
 > **Status:** 🟢 Current  
-> **Related:** [Components](COMPONENTS.md) | [Visual Architecture](VISUAL_ARCHITECTURE_GUIDE.md) | [Ontology](ONTOLOGY.md) | [INDEX](index.md)
+> **Related:** [Visual Architecture](VISUAL_ARCHITECTURE_GUIDE.md) | [Ontology](ONTOLOGY.md) | [INDEX](index.md)
 
 OrKa (Orchestrator Kit for Agentic Reasoning) is built on a revolutionary architecture: modular AI agents orchestrated through a declarative YAML interface, with **100x faster vector search** powered by RedisStack HNSW indexing.
 
-This document breaks down the key architectural components and how they work together in the V0.7.0 unified architecture.
+This document breaks down the key architectural components and how they work together in the current OrKa codebase.
 
 ---
 
-## 🚀 V0.7.0 Architecture Revolution
+## Overview
 
-- **🚀 RedisStack HNSW**: 100x faster vector search with sub-millisecond latency
-- **🏗️ Unified Backend**: All components use RedisStack with intelligent fallback
-- **⚡ Enterprise Performance**: 50,000+ memory operations per second
-- **🔧 Zero-Breaking Migration**: Complete backward compatibility maintained
+- **Orchestrator**: executes workflows declared in YAML (`orchestrator` + `agents`).
+- **Agent Factory**: resolves each `type:` to an implementation via the registry.
+- **Nodes**: control flow building blocks (router/fork/join/loop/failover/path executor).
+- **Memory System**: Redis-backed persistent memory with semantic search.
 
 ## 🧠 Core Concepts
 
@@ -27,17 +27,12 @@ This document breaks down the key architectural components and how they work tog
 
 ---
 
-## 🏗️ Modular Architecture (v0.6.4+)
+## Modular Architecture
 
 Starting with version 0.6.4, OrKa's core components have been refactored into a modular architecture for improved maintainability and extensibility. Version 0.6.5 adds intelligent memory decay capabilities:
 
-### Memory Logger Package (`orka/memory_logger/`)
-The memory logging system is now split into focused components:
-
-- **`base_logger.py`** - Abstract base class defining the memory logger interface
-- **`serialization.py`** - JSON sanitization and memory processing utilities  
-- **`file_operations.py`** - Save/load functionality and file I/O operations
-- **`redis_logger.py`** - Complete Redis backend implementation
+### Memory logging
+OrKa includes utilities for logging and inspecting memory interactions; see the memory documentation for operational guidance.
 - **`__init__.py`** - Package initialization and factory functions
 
 ### Orchestrator Package (`orka/orchestrator/`)
@@ -221,4 +216,4 @@ All agent outputs are logged with HNSW-optimized metadata:
 
 OrKa's architecture is intentionally minimal, observable, and composable — so you can build LLM-based cognition that doesn't disappear into a black box.
 ---
-← [Getting Started](getting-started.md) | [📚 INDEX](index.md) | [Components](COMPONENTS.md) →
+← [Getting Started](getting-started.md) | [📚 INDEX](index.md) | [Visual Architecture](VISUAL_ARCHITECTURE_GUIDE.md) →

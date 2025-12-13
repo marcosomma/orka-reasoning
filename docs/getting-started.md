@@ -423,7 +423,7 @@ orka run examples/simple_loop_example.yml "Analyze the pros and cons of remote w
 
 ### 2. Build Advanced Workflows
 Check out our guides:
-- **[📝 YAML Configuration Guide](./yaml-configuration-guide.md)** - Complete configuration reference including LoopNode
+- **[📝 YAML Configuration Guide](./YAML_CONFIGURATION.md)** - Complete configuration reference including LoopNode
 - **[🧠 Memory System Guide](./MEMORY_SYSTEM_GUIDE.md)** - Deep dive into RedisStack memory
 - **[🤖 Agent Types](./agents.md)** - All available agent types including LoopNode
 

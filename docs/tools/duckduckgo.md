@@ -1,12 +1,12 @@
 # DuckDuckGo Search Tool
 
-**Type:** `duckduckgo`  
-**Category:** Search Tool  
-**Version:** v0.9.4+
+**Type:** `duckduckgo`
 
 ## Overview
 
-The DuckDuckGo Search Tool performs real-time web searches using DuckDuckGo's search engine, providing current information and web results for workflows.
+Performs web searches using DuckDuckGo via the optional `ddgs` dependency.
+
+Current codepath uses the agent `prompt` as the query; YAML `params` shown in older examples are **not** consumed by the implementation.
 
 ## Basic Configuration
 
@@ -14,29 +14,12 @@ The DuckDuckGo Search Tool performs real-time web searches using DuckDuckGo's se
 - id: web_search
   type: duckduckgo
   prompt: "{{ input }}"
-  params:
-    num_results: 5
 ```
 
-## Parameters
+See also:
+- [YAML Configuration](../YAML_CONFIGURATION.md)
 
-### Required Parameters
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `id` | string | Unique identifier |
-| `type` | string | Must be `duckduckgo` |
-| `prompt` | string | Search query |
-
-### Optional Parameters (in `params`)
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `num_results` | int | `5` | Number of results (1-10) |
-| `region` | string | `"us-en"` | Region code (us-en, uk-en, etc) |
-| `safe_search` | string | `"moderate"` | `"off"`, `"moderate"`, `"strict"` |
-| `time_range` | string | - | `"d"` (day), `"w"` (week), `"m"` (month), `"y"` (year) |
-| `timeout` | float | `20.0` | Search timeout |
+<!--
 
 ## Usage Examples
 
@@ -471,8 +454,7 @@ agents:
 
 ## Related Documentation
 
-- [Memory Reader Node](../nodes/memory-reader.md)
-- [Memory Writer Node](../nodes/memory-writer.md)
+- [Memory (Agent)](../nodes/memory.md)
 - [OpenAI Answer Agent](../agents/openai-answer.md)
 - [Failover Node](../nodes/failover.md)
 
@@ -481,4 +463,6 @@ agents:
 - **v0.9.4**: Current stable version
 - **v0.8.0**: Added time_range filtering
 - **v0.6.0**: Initial release
+
+-->
 

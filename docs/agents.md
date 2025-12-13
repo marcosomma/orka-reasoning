@@ -14,7 +14,7 @@ The OrKa framework uses a unified agent base implementation that supports both m
 
 ## 🧱 Core Agent Types
 
-### 🧭 `graph_scout` **NEW in v0.9.3**
+### 🧭 `graph-scout`
 
 Intelligent workflow graph inspection and optimal multi-agent path execution. GraphScout automatically discovers, evaluates, and executes the best sequence of agents for any given input.
 
@@ -30,14 +30,13 @@ Intelligent workflow graph inspection and optimal multi-agent path execution. Gr
 **Example config:**
 ```yaml
 - id: smart_router
-  type: graph_scout
-  config:
-    k_beam: 5                    # Top-k candidate paths
-    max_depth: 3                 # Maximum path depth
-    commit_margin: 0.15          # Confidence threshold
-    cost_budget_tokens: 1000     # Token budget limit
-    latency_budget_ms: 2000      # Latency budget limit
-    safety_threshold: 0.8        # Safety assessment threshold
+  type: graph-scout
+  k_beam: 5                # Top-k candidate paths
+  max_depth: 3             # Maximum path depth
+  commit_margin: 0.15      # Confidence threshold
+  cost_budget_tokens: 1000 # Token budget limit
+  latency_budget_ms: 2000  # Latency budget limit
+  safety_threshold: 0.2    # Lower is safer (0.0-1.0)
   prompt: "Find the best path for: {{ input }}"
 ```
 
@@ -65,9 +64,9 @@ Returns a boolean (`"true"` or `"false"` as strings) based on a question or stat
 
 ### 🧾 `classification`
 
-**⚠️ DEPRECATED in v0.5.6** - Use `openai-classification` instead.
+**⚠️ Deprecated** - kept only for backward compatibility.
 
-Returns one of several predefined options using simple rule-based matching.
+This agent no longer performs classification and returns `"deprecated"`.
 
 **Use case:** Basic topic detection (legacy support only).
 
@@ -189,48 +188,35 @@ Performs real-time web search using DuckDuckGo's search engine.
 
 ## 💾 Memory Agents **⚡ 100x Faster with RedisStack HNSW**
 
-### 📖 `memory-reader`
+OrKa configures memory via a single agent type: `memory`. The operation is selected via `config.operation`.
 
-Searches and retrieves relevant memories using **RedisStack HNSW indexing** with sub-millisecond vector search performance. Advanced context-aware algorithms combine semantic similarity, keyword matching, and temporal ranking.
+### 📖 Read (`type: memory`, `config.operation: read`)
 
-**Performance:** 100x faster than basic Redis (0.5-5ms vs 50-200ms search latency)
-
-**Configuration:**
 ```yaml
 - id: memory_reader
-  type: memory-reader
+  type: memory
   namespace: conversations
-  params:
+  memory_preset: episodic
+  config:
+    operation: read
     limit: 10
-    enable_context_search: true      # Use conversation context
-    context_weight: 0.4              # 40% weight for context
-    temporal_weight: 0.3             # 30% weight for recency
-    enable_temporal_ranking: true    # Boost recent memories
-    similarity_threshold: 0.8        # HNSW-optimized threshold
+    similarity_threshold: 0.6
+    enable_context_search: false
+    enable_temporal_ranking: false
   prompt: "Find memories about: {{ input }}"
 ```
 
-### 💾 `memory-writer`
+### 💾 Write (`type: memory`, `config.operation: write`)
 
-Stores information with **RedisStack HNSW vector indexing** for lightning-fast retrieval. Features intelligent decay management and automatic classification.
-
-**Performance:** 50x higher throughput (50,000/sec vs 1,000/sec write performance)
-
-**Configuration:**
 ```yaml
 - id: memory_writer
-  type: memory-writer
-  namespace: user_sessions
-  params:
-    # memory_type automatically classified based on content and importance
-    vector: true                     # Enable HNSW semantic search
-    metadata:
-      source: "user_interaction"
-      performance: "hnsw_optimized"
-  decay_config:
-    enabled: true
-    default_long_term: true
-    default_long_term_hours: 720
+  type: memory
+  namespace: conversations
+  memory_preset: working
+  config:
+    operation: write
+  metadata:
+    source: user
   prompt: "Store: {{ input }}"
 ```
 
@@ -489,7 +475,7 @@ Performs Retrieval-Augmented Generation with vector search and LLM generation.
 4. **Monitor execution** through OrKa UI or logs
 5. **Iterate and optimize** based on results
 
-For detailed configuration examples, see the [YAML Configuration Guide](./yaml-configuration-guide.md).
+For detailed configuration examples, see the [YAML Configuration Guide](./YAML_CONFIGURATION.md).
 
 ← [YAML Configuration](YAML_CONFIGURATION.md) | [📚 index](index.md) | [Advanced Agents](agents-advanced.md) →
 ---
