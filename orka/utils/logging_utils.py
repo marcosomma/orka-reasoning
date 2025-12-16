@@ -222,7 +222,8 @@ def setup_logging(verbose: bool = False):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_file_path = os.path.join(log_dir, f"orka_debug_console_{timestamp}.log")
     file_handler = logging.FileHandler(log_file_path, encoding="utf-8")
-    file_handler.setFormatter(SafeFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+    # Disable colors for file logs to avoid ANSI escape sequences in log files
+    file_handler.setFormatter(SafeFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s", use_colors=False))
     file_handler.setLevel(logging.DEBUG)  # Capture all levels to file
     logging.root.addHandler(file_handler)
 

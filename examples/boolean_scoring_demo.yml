@@ -53,7 +53,8 @@ agents:
   # Step 2: Validate with STRICT preset (production-critical)
   - id: path_validator_strict
     type: plan_validator
-    model: openai/gpt-oss-20b
+    # NOTE: PlanValidator expects `llm_model` (not `model`)
+    llm_model: openai/gpt-oss-20b
     model_url: http://localhost:1234
     provider: lm_studio
     temperature: 0.2
@@ -63,7 +64,7 @@ agents:
   # Step 3: Validate with MODERATE preset (balanced)
   - id: path_validator_moderate
     type: plan_validator
-    model: openai/gpt-oss-20b
+    llm_model: openai/gpt-oss-20b
     model_url: http://localhost:1234
     provider: lm_studio
     temperature: 0.2
@@ -112,7 +113,8 @@ agents:
         # NEW: Loop Validator Node - Robust boolean evaluation with built-in parsing
         - id: boolean_evaluator
           type: loop_validator
-          model: openai/gpt-oss-20b
+          # NOTE: LoopValidator expects `llm_model` key (not `model`)
+          llm_model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
           scoring_preset: moderate  # strict/moderate/lenient

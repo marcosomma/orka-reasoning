@@ -28,6 +28,24 @@ The Loop Node enables iterative improvement workflows that repeat until a qualit
       - id: scorer
         type: openai-answer
         prompt: "Rate: SCORE: X.XX"
+
+## Loop Validator Node
+
+The `loop_validator` node is a specialized validator for loop workflows that evaluates the output of an internal agent (e.g., an `improver`) using boolean-based criteria and built-in parsing. Note: unlike many other agent types, **`loop_validator` expects the LLM model parameter under the YAML key `llm_model` instead of `model`**. This distinction ensures consistent configuration with PlanValidator and improves schema clarity.
+
+Example:
+
+```yaml
+- id: boolean_evaluator
+  type: loop_validator
+  # IMPORTANT: use `llm_model`, not `model`
+  llm_model: openai/gpt-oss-20b
+  model_url: http://localhost:1234
+  provider: lm_studio
+  scoring_preset: moderate
+  evaluation_target: improver
+  temperature: 0.1
+```
 ```
 
 ## Parameters

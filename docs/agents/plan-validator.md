@@ -26,7 +26,8 @@ The PlanValidator agent validates and critiques proposed agent execution paths f
 agents:
   - id: path_validator
     type: plan_validator
-    model:  openai/gpt-oss-20b
+    # NOTE: This agent expects the LLM model to be provided under `llm_model` (not `model`)
+    llm_model:  openai/gpt-oss-20b
     llm_provider: lm_studio
     llm_url: http://localhost:1234
     temperature: 0.2
@@ -40,7 +41,8 @@ agents:
 agents:
   - id: path_validator
     type: plan_validator
-    model:  openai/gpt-oss-20b
+    # NOTE: Use `llm_model` key for PlanValidator (not `model`)
+    llm_model:  openai/gpt-oss-20b
     llm_provider: lm_studio
     scoring_preset: moderate
     scoring_context: graphscout  # Agent path evaluation
@@ -57,7 +59,8 @@ agents:
 agents:
   - id: quality_validator
     type: plan_validator
-    model:  openai/gpt-oss-20b
+    # NOTE: Use `llm_model` key for PlanValidator (not `model`)
+    llm_model:  openai/gpt-oss-20b
     llm_provider: lm_studio
     scoring_preset: moderate
     scoring_context: quality  # Response quality assessment
