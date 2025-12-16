@@ -93,9 +93,9 @@ Usage Example
     agents_config = loader.get_agents()
 """
 
-from typing import Any, Dict, List
-
 import yaml
+from typing import Any, Dict, List
+import orka.utils.template_validator as template_validator
 
 
 class YAMLLoader:
@@ -172,9 +172,8 @@ class YAMLLoader:
         Raises:
             ValueError: If any template has syntax errors
         """
-        from orka.utils.template_validator import TemplateValidator
         
-        validator = TemplateValidator()
+        validator = template_validator.TemplateValidator()
         errors = []
         
         for agent_cfg in self.config.get("agents", []):

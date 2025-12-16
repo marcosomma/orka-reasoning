@@ -19,12 +19,15 @@ This module contains the core CLI functionality including the programmatic entry
 for running OrKa workflows.
 """
 
+
 import logging
 import sys
 from typing import Any
+import argparse
+import asyncio
+import json
 
 from orka.orchestrator import Orchestrator
-
 from .types import Event
 from .utils import setup_logging
 
@@ -176,10 +179,6 @@ async def run_cli_entrypoint(
 
 def run_cli(argv: list[str] | None = None) -> int:
     """Run the CLI with the given arguments."""
-    import argparse
-    import asyncio
-    import json
-
     parser = argparse.ArgumentParser(description="OrKa CLI")
     parser.add_argument("command", choices=["run"], help="Command to execute")
     parser.add_argument("config", help="Path to YAML config file")

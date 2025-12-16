@@ -143,6 +143,9 @@ from typing import Any, cast
 
 import numpy as np
 import redis
+import queue
+import math
+import asyncio
 from redis import ConnectionError, Redis, TimeoutError
 from redis.connection import ConnectionPool
 
@@ -458,8 +461,6 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
             # Skip index creation if Redis is not available (will be retried on first use)
             try:
                 # Use a quick connection test to prevent blocking during initialization
-                import queue
-                import threading
 
                 result_queue: queue.Queue[tuple[str, Any]] = queue.Queue()
 
@@ -695,7 +696,6 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
     def _get_embedding_sync(self, text: str) -> np.ndarray | None:
         """Get embedding in a sync context, handling async embedder properly."""
         try:
-            import asyncio
 
             # Check if we're in an async context
             try:
@@ -1131,7 +1131,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
         try:
             score_float = float(score)
             # Check for NaN, infinity, or invalid values
-            import math
+
 
             if math.isnan(score_float) or math.isinf(score_float) or score_float < 0:
                 return 0.0

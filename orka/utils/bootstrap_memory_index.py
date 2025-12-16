@@ -78,8 +78,7 @@ except ImportError:
         VECTOR_SEARCH_AVAILABLE = False
     except ImportError:
         # Minimal stubs for when Redis search is not available
-        import logging
-        from typing import Any
+
 
         logger = logging.getLogger(__name__)
         logger.warning("Redis search modules not available - vector search disabled")
@@ -319,7 +318,7 @@ def hybrid_vector_search(
 
     try:
         # Import Query from the correct location
-        from redis.commands.search.query import Query
+
 
         # Convert numpy array to bytes for Redis
         if hasattr(query_vector, "astype") and hasattr(query_vector, "tobytes"):

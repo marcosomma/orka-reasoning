@@ -100,7 +100,7 @@ class ModernTUIInterface:
                 self.console.print(f"[red]❌ Error in TUI interface: {e}[/red]")
             else:
                 logger.error(f"Error in TUI interface: {e}")
-            import traceback
+
 
             traceback.print_exc()
             return 1

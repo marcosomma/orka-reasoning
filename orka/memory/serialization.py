@@ -18,6 +18,7 @@ Serialization utilities for memory loggers.
 import json
 import logging
 from typing import Any, Dict, List, Optional
+import base64
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +57,6 @@ class SerializationMixin:
                 return obj
             elif isinstance(obj, bytes):
                 # Convert bytes to base64-encoded string
-                import base64
 
                 return {
                     "__type": "bytes",

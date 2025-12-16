@@ -12,6 +12,7 @@
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 import logging
 
+import asyncio
 from .base_node import BaseNode
 
 logger = logging.getLogger(__name__)
@@ -85,8 +86,6 @@ class FailoverNode(BaseNode):
                 # Try running the current child node
                 if hasattr(child, "run") and callable(child.run):
                     # Check if the child's run method is async
-                    import asyncio
-
                     if asyncio.iscoroutinefunction(child.run):
                         result = await child.run(child_payload)
                     else:
@@ -130,13 +129,10 @@ class FailoverNode(BaseNode):
 
                 # Add delay before trying next child to avoid rate limiting
                 if "ratelimit" in str(e).lower() or "rate" in str(e).lower():
-                    import asyncio
-
-                    logger.info(
-                        f"Rate limit detected, waiting 2 seconds before next attempt",
-                    )
-                    await asyncio.sleep(2)
-
+                        logger.info(
+                            f"Rate limit detected, waiting 2 seconds before next attempt",
+                        )
+                        await asyncio.sleep(2)
         # If we get here, all children failed
         error_msg = (
             f"All fallback agents failed. Last error: {last_error}"

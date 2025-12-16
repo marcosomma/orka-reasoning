@@ -23,9 +23,11 @@ import hashlib
 import json
 import logging
 import threading
+
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime
 from typing import Any, Dict, List, Set
+import json
 
 from .file_operations import FileOperationsMixin
 
@@ -789,7 +791,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
             # Apply blob deduplication to the enhanced trace data
             deduplicated_data = self._apply_deduplication_to_enhanced_trace(enhanced_data)
 
-            import json
+
 
             with open(file_path, "w", encoding="utf-8") as f:
                 json.dump(deduplicated_data, f, indent=2, default=str)
@@ -815,7 +817,7 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
             logger.error(f"Failed to save enhanced trace with deduplication: {e}")
             # Fallback to simple JSON dump
             try:
-                import json
+
 
                 with open(file_path, "w", encoding="utf-8") as f:
                     json.dump(enhanced_data, f, indent=2, default=str)
@@ -829,10 +831,8 @@ class BaseMemoryLogger(ABC, SerializationMixin, FileOperationsMixin):
         self, enhanced_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Apply blob deduplication to enhanced trace data using original events format."""
-        try:
-            import json
-            from datetime import UTC, datetime
 
+        try:
             # Reset blob store for this operation
             original_blob_store = getattr(self, "_blob_store", {})
             self._blob_store = {}

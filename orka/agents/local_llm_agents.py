@@ -11,6 +11,16 @@
 #
 # Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
+import time
+import aiohttp
+import asyncio
+import tiktoken
+import re
+from urllib.parse import urlparse
+from jinja2 import Template as JinjaTemplate
+from .llm_agents import parse_llm_json_response
+from .local_cost_calculator import calculate_local_llm_cost
+
 """
 Local LLM Agents Module
 ======================
@@ -41,7 +51,14 @@ def _count_tokens(text: str, model: str = "gpt-3.5-turbo") -> int:
         return 0
 
     try:
-        import tiktoken
+        # Resolve tiktoken at call time to respect test monkeypatching of sys.modules
+        import importlib
+
+        try:
+            tiktoken_mod = importlib.import_module("tiktoken")
+        except Exception:
+            # Fall back to the module-level tiktoken if available
+            tiktoken_mod = globals().get("tiktoken")
 
         # Map common local models to best available tokenizers
         model_mapping = {
@@ -62,8 +79,8 @@ def _count_tokens(text: str, model: str = "gpt-3.5-turbo") -> int:
 
         # Try to get encoding for the exact model name first
         try:
-            encoding = tiktoken.encoding_for_model(model)
-        except (KeyError, ValueError):
+            encoding = tiktoken_mod.encoding_for_model(model)
+        except (KeyError, ValueError, AttributeError):
             # If exact model not found, try to find a matching encoding by pattern
             encoding_name = "cl100k_base"  # Default to GPT-4 tokenizer (most common)
 
@@ -74,7 +91,11 @@ def _count_tokens(text: str, model: str = "gpt-3.5-turbo") -> int:
                     encoding_name = model_mapping[known_model]
                     break
 
-            encoding = tiktoken.get_encoding(encoding_name)
+            # Obtain encoding via tiktoken module if available
+            if hasattr(tiktoken_mod, "get_encoding"):
+                encoding = tiktoken_mod.get_encoding(encoding_name)
+            else:
+                raise ImportError("tiktoken encoding functions not available")
 
         # Encode the text and return token count
         return len(encoding.encode(text))
@@ -236,7 +257,7 @@ class LocalLLMAgent(BaseAgent):
                 )
 
             # Validate URL shape early to avoid requests' generic "Invalid URL" message
-            from urllib.parse import urlparse
+            # urlparse import moved to top
 
             parsed_url = urlparse(model_url)
             if not parsed_url.scheme or not parsed_url.netloc:
@@ -246,7 +267,7 @@ class LocalLLMAgent(BaseAgent):
                 )
 
             # Track timing for local LLM calls
-            import time
+            # time import moved to top
 
             start_time = time.time()
 
@@ -254,7 +275,7 @@ class LocalLLMAgent(BaseAgent):
             provider_norm = provider.lower().strip()
 
             if provider_norm == "ollama":
-                raw_response = self._call_ollama(
+                raw_response = await self._call_ollama(
                     model_url,
                     model,
                     full_prompt,
@@ -262,7 +283,7 @@ class LocalLLMAgent(BaseAgent):
                     max_tokens=max_tokens,
                 )
             elif provider_norm in ["lm_studio", "lmstudio"]:
-                raw_response = self._call_lm_studio(
+                raw_response = await self._call_lm_studio(
                     model_url,
                     model,
                     full_prompt,
@@ -270,7 +291,7 @@ class LocalLLMAgent(BaseAgent):
                     max_tokens=max_tokens,
                 )
             elif provider_norm == "openai_compatible":
-                raw_response = self._call_openai_compatible(
+                raw_response = await self._call_openai_compatible(
                     model_url,
                     model,
                     full_prompt,
@@ -292,7 +313,7 @@ class LocalLLMAgent(BaseAgent):
             total_tokens = prompt_tokens + completion_tokens
 
             # Import the JSON parser
-            from .llm_agents import parse_llm_json_response
+            # parse_llm_json_response import moved to top
 
             # Parse the response to extract structured JSON with reasoning support
             parsed_response = parse_llm_json_response(raw_response)
@@ -307,9 +328,17 @@ class LocalLLMAgent(BaseAgent):
 
             # Calculate real local LLM cost (electricity + hardware amortization)
             try:
-                from .local_cost_calculator import calculate_local_llm_cost
+                # Resolve cost calculator at call time so tests can monkeypatch it
+                import importlib
 
-                cost_usd = calculate_local_llm_cost(latency_ms, total_tokens, model, provider)
+                try:
+                    cost_mod = importlib.import_module("orka.agents.local_cost_calculator")
+                    cost_func = getattr(cost_mod, "calculate_local_llm_cost")
+                except Exception:
+                    # Fallback to module-level binding if dynamic import fails
+                    cost_func = globals().get("calculate_local_llm_cost")
+
+                cost_usd = cost_func(latency_ms, total_tokens, model, provider)
             except Exception as cost_error:
                 # If cost calculation fails, log warning and use None to indicate unknown
                 logger.warning(f"Failed to calculate local LLM cost: {cost_error}")
@@ -348,10 +377,17 @@ class LocalLLMAgent(BaseAgent):
 
             # Calculate cost even for error case (we consumed some resources)
             try:
-                from .local_cost_calculator import calculate_local_llm_cost
+                # Resolve cost calculator at call time so tests can monkeypatch it
+                import importlib
+
+                try:
+                    cost_mod = importlib.import_module("orka.agents.local_cost_calculator")
+                    cost_func = getattr(cost_mod, "calculate_local_llm_cost")
+                except Exception:
+                    cost_func = globals().get("calculate_local_llm_cost")
 
                 # Estimate minimal cost for failed request (some GPU cycles were used)
-                error_cost = calculate_local_llm_cost(
+                error_cost = cost_func(
                     100,
                     error_prompt_tokens,
                     self.params.get("model", "unknown"),
@@ -413,7 +449,7 @@ class LocalLLMAgent(BaseAgent):
         if full_context and isinstance(full_context, dict):
             try:
                 # Try to use Jinja2 for more advanced templating like the orchestrator does
-                from jinja2 import Template as JinjaTemplate
+                # JinjaTemplate import moved to top
 
                 jinja_template = JinjaTemplate(template)
 
@@ -440,7 +476,7 @@ class LocalLLMAgent(BaseAgent):
                     prev_outputs = full_context.get("previous_outputs", {})
                     if prev_outputs:
                         # Handle common patterns like {{ previous_outputs.agent_name }}
-                        import re
+                        # re import moved to top
 
                         for match in re.finditer(
                             r"\{\{\s*(previous_outputs)\.(\w+)\s*\}\}",
@@ -455,7 +491,7 @@ class LocalLLMAgent(BaseAgent):
 
         return rendered
 
-    def _call_ollama(
+    async def _call_ollama(
         self,
         model_url: str,
         model: str,
@@ -464,12 +500,12 @@ class LocalLLMAgent(BaseAgent):
         max_tokens: Optional[int] = None,
     ) -> str:
         """
-        Call Ollama API endpoint.
+        Call Ollama API endpoint (async, aiohttp).
 
         Returns:
             str: The model's response text
         """
-        import requests
+        # aiohttp, asyncio import moved to top
 
         payload = {
             "model": model,
@@ -479,23 +515,24 @@ class LocalLLMAgent(BaseAgent):
         }
 
         if max_tokens is not None:
-            # Ollama uses num_predict to cap completion tokens
             payload["options"]["num_predict"] = max_tokens
 
-        response = requests.post(model_url, json=payload, timeout=30)
-        try:
-            response.raise_for_status()
-        except requests.HTTPError as e:
-            body = (response.text or "").strip()
-            if len(body) > 1200:
-                body = body[:1200] + "..."
-            raise RuntimeError(
-                f"Ollama HTTP {response.status_code} for url {response.url}: {body}"
-            ) from e
-        result = response.json()
-        return str(result.get("response", "")).strip()
+        timeout = aiohttp.ClientTimeout(total=30)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.post(model_url, json=payload) as response:
+                try:
+                    response.raise_for_status()
+                except aiohttp.ClientResponseError as e:
+                    body = (await response.text() or "").strip()
+                    if len(body) > 1200:
+                        body = body[:1200] + "..."
+                    raise RuntimeError(
+                        f"Ollama HTTP {response.status} for url {response.url}: {body}"
+                    ) from e
+                result = await response.json()
+                return str(result.get("response", "")).strip()
 
-    def _call_lm_studio(
+    async def _call_lm_studio(
         self,
         model_url: str,
         model: str,
@@ -504,14 +541,13 @@ class LocalLLMAgent(BaseAgent):
         max_tokens: Optional[int] = None,
     ) -> str:
         """
-        Call LM Studio API endpoint (OpenAI-compatible).
+        Call LM Studio API endpoint (OpenAI-compatible, async, aiohttp).
 
         Returns:
             str: The model's response text
         """
-        import requests
+        # aiohttp, asyncio import moved to top
 
-        # LM Studio uses OpenAI-compatible endpoint structure
         payload = {
             "model": model,
             "messages": [{"role": "user", "content": prompt}],
@@ -522,27 +558,31 @@ class LocalLLMAgent(BaseAgent):
         if max_tokens is not None:
             payload["max_tokens"] = max_tokens
 
-        # Ensure URL ends with /chat/completions for OpenAI compatibility
         if not model_url.endswith("/chat/completions"):
             if model_url.endswith("/"):
                 model_url = model_url + "v1/chat/completions"
             else:
                 model_url = model_url + "/v1/chat/completions"
 
-        response = requests.post(model_url, json=payload, timeout=60)
-        try:
-            response.raise_for_status()
-        except requests.HTTPError as e:
-            body = (response.text or "").strip()
-            if len(body) > 1200:
-                body = body[:1200] + "..."
-            raise RuntimeError(
-                f"LM Studio HTTP {response.status_code} for url {response.url}: {body}"
-            ) from e
-        result = response.json()
-        return str(result["choices"][0]["message"]["content"]).strip()
+        timeout = aiohttp.ClientTimeout(total=60)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.post(model_url, json=payload) as response:
+                try:
+                    if response.status >= 400:
+                        body = (await response.text() or "").strip()
+                        if len(body) > 1200:
+                            body = body[:1200] + "..."
+                        raise RuntimeError(
+                            f"LM Studio HTTP {response.status} for url {response.url}: {body}"
+                        )
+                except aiohttp.ClientResponseError as e:
+                    raise RuntimeError(
+                        f"LM Studio HTTP {response.status} for url {response.url}: {await response.text()}"
+                    ) from e
+                result = await response.json()
+                return str(result["choices"][0]["message"]["content"]).strip()
 
-    def _call_openai_compatible(
+    async def _call_openai_compatible(
         self,
         model_url: str,
         model: str,
@@ -551,12 +591,12 @@ class LocalLLMAgent(BaseAgent):
         max_tokens: Optional[int] = None,
     ) -> str:
         """
-        Call any OpenAI-compatible API endpoint.
+        Call any OpenAI-compatible API endpoint (async, aiohttp).
 
         Returns:
             str: The model's response text
         """
-        import requests
+        # aiohttp, asyncio import moved to top
 
         payload = {
             "model": model,
@@ -568,15 +608,20 @@ class LocalLLMAgent(BaseAgent):
         if max_tokens is not None:
             payload["max_tokens"] = max_tokens
 
-        response = requests.post(model_url, json=payload, timeout=60)
-        try:
-            response.raise_for_status()
-        except requests.HTTPError as e:
-            body = (response.text or "").strip()
-            if len(body) > 1200:
-                body = body[:1200] + "..."
-            raise RuntimeError(
-                f"OpenAI-compatible HTTP {response.status_code} for url {response.url}: {body}"
-            ) from e
-        result = response.json()
-        return str(result["choices"][0]["message"]["content"]).strip()
+        timeout = aiohttp.ClientTimeout(total=60)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.post(model_url, json=payload) as response:
+                try:
+                    if response.status >= 400:
+                        body = (await response.text() or "").strip()
+                        if len(body) > 1200:
+                            body = body[:1200] + "..."
+                        raise RuntimeError(
+                            f"OpenAI-compatible HTTP {response.status} for url {response.url}: {body}"
+                        )
+                except aiohttp.ClientResponseError as e:
+                    raise RuntimeError(
+                        f"OpenAI-compatible HTTP {response.status} for url {response.url}: {await response.text()}"
+                    ) from e
+                result = await response.json()
+                return str(result["choices"][0]["message"]["content"]).strip()

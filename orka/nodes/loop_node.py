@@ -18,6 +18,8 @@ import os
 import re
 import tempfile
 from datetime import datetime
+import json
+import re
 from typing import (
     Any,
     Dict,
@@ -705,8 +707,6 @@ class LoopNode(BaseNode):
                             if f'"{agent_id}":' in log_content and '"response":' in log_content:
                                 try:
                                     # Try to extract the JSON structure
-                                    import json
-                                    import re
 
                                     # Look for the pattern: "agent_id": {"response": "...", ...}
                                     pattern = f'"{re.escape(agent_id)}":\\s*\\{{[^}}]+\\}}'

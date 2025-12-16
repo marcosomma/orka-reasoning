@@ -345,7 +345,7 @@ class MemoryTableWidget(DataTable):
         if content_str.startswith('{"') and content_str.endswith('"}'):
             # Try to extract meaningful text from JSON
             try:
-                import json
+
 
                 data = json.loads(content_str)
                 if isinstance(data, dict):

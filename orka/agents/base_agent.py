@@ -50,9 +50,9 @@ import uuid
 from datetime import datetime
 from typing import Any, TypeVar, Union
 
-from ..contracts import Context, OrkaResponse, Registry
-from ..response_builder import ResponseBuilder
-from ..utils.concurrency import ConcurrencyManager
+from orka.contracts import Context, OrkaResponse, Registry
+from orka.response_builder import ResponseBuilder
+from orka.utils.concurrency import ConcurrencyManager
 
 logger = logging.getLogger(__name__)
 

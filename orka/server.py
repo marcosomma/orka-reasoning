@@ -188,7 +188,7 @@ Integration Examples
 
 .. code-block:: python
 
-    import httpx
+
 
     async def call_orka_api(input_text: str, workflow_config: str):
         async with httpx.AsyncClient() as client:

@@ -8,6 +8,7 @@ import logging
 import sys
 from pathlib import Path
 import asyncio
+import tomllib
 
 from orka.cli.core import deep_sanitize_result, run_cli, run_cli_entrypoint, sanitize_for_console
 from orka.cli.memory.watch import memory_watch
@@ -27,7 +28,6 @@ def _get_version() -> str:
     try:
         pyproject_path = Path(__file__).resolve().parents[1] / "pyproject.toml"
         if pyproject_path.exists():
-            import tomllib
 
             data = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
             version = data.get("project", {}).get("version")

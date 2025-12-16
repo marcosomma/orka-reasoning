@@ -52,6 +52,10 @@ for sophisticated natural language understanding and generation tasks.
 import logging
 import os
 import re
+import time
+import json
+
+from jinja2 import Template
 from typing import Any, Optional
 
 from dotenv import load_dotenv
@@ -127,7 +131,6 @@ def _normalize_python_to_json(text: str) -> str:
     - Single quotes to double quotes
     - True/False/None to true/false/null
     """
-    import re
     
     # Replace Python booleans with JSON booleans
     text = re.sub(r'\bTrue\b', 'true', text)
@@ -143,7 +146,6 @@ def _normalize_python_to_json(text: str) -> str:
 
 def _parse_json_safely(json_content: str) -> dict[str, Any] | None:
     """Safely parse JSON with fallback for malformed content."""
-    import json
 
     try:
         result = json.loads(json_content)
@@ -413,8 +415,6 @@ def _simple_json_parse(response_text: str) -> dict[str, Any]:
             "internal_reasoning": "Empty or invalid response",
         }
 
-    # Try to extract JSON from code blocks first
-    import json
 
     # Look for ```json blocks
     if json_match := re.search(r"```json\s*(.*?)\s*```", response_text, re.DOTALL):
@@ -530,7 +530,6 @@ class OpenAIAnswerBuilder(BaseAgent):
         full_prompt = f"{render_prompt}\n\n{ctx}\n\n{self_evaluation}"
 
         # Make API call to OpenAI
-        import time
 
         start_time = time.time()
         status_code = 200  # Default success
@@ -718,8 +717,6 @@ class OpenAIBinaryAgent(OpenAIAnswerBuilder):
         # Store the agent-enhanced prompt with template variables resolved
         # We need to render the enhanced prompt with the input data to show the actual prompt sent
         try:
-            from jinja2 import Template
-
             template = Template(enhanced_prompt)
             rendered_enhanced_prompt = template.render(input=ctx.get("input", ""))
             self._last_formatted_prompt = rendered_enhanced_prompt
@@ -834,8 +831,6 @@ class OpenAIClassificationAgent(OpenAIAnswerBuilder):
         # Store the agent-enhanced prompt with template variables resolved
         # We need to render the enhanced prompt with the input data to show the actual prompt sent
         try:
-            from jinja2 import Template
-
             template = Template(enhanced_prompt)
             rendered_enhanced_prompt = template.render(input=ctx.get("input", ""))
             self._last_formatted_prompt = rendered_enhanced_prompt

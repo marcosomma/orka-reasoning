@@ -18,6 +18,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, cast
+from orka.loader import YAMLLoader
+from orka.orchestrator import Orchestrator
 
 try:
     import numpy as np
@@ -38,10 +40,6 @@ class NumpyJSONEncoder(json.JSONEncoder):
         elif isinstance(obj, np.ndarray):
             return obj.tolist()
         return super().default(obj)
-
-
-from orka.loader import YAMLLoader
-from orka.orchestrator import Orchestrator
 
 # Ensure logs directory exists
 log_dir = Path("logs")

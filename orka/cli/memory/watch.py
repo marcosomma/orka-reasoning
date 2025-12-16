@@ -18,6 +18,7 @@ Memory Watch Functionality
 This module contains memory watch functionality with TUI interface support.
 """
 
+
 import json
 import logging
 import os
@@ -25,8 +26,16 @@ import sys
 import time
 from typing import Any
 
-logger = logging.getLogger(__name__)
+try:
+    import orka.tui_interface as tui_interface
+    HAS_TUI = True
+except ImportError:
+    tui_interface = None
+    HAS_TUI = False
 
+import traceback
+
+logger = logging.getLogger(__name__)
 from orka.memory_logger import create_memory_logger
 
 
@@ -37,23 +46,26 @@ def memory_watch(args: Any) -> int:
         logger.info("Using basic terminal interface as requested")
         return _memory_watch_fallback(args)
 
-    try:
-        # Use the modern TUI interface (defaults to Textual)
-        from orka.tui_interface import ModernTUIInterface
+    if HAS_TUI:
+        try:
+            # Resolve class at runtime so tests can patch orka.tui_interface.ModernTUIInterface
+            tui_cls = getattr(tui_interface, "ModernTUIInterface")
+            tui = tui_cls()
+            return tui.run(args)
+        except Exception as e:
+            # If the TUI isn't importable at runtime, fall back to basic interface
+            if isinstance(e, ImportError):
+                logger.error(f"Could not import TUI interface: {e}")
+                logger.info("Falling back to basic terminal interface...")
+                return _memory_watch_fallback(args)
 
-        tui = ModernTUIInterface()
-        return tui.run(args)
-
-    except ImportError as e:
-        logger.error(f"Could not import TUI interface: {e}")
+            logger.error(f"Error starting memory watch: {e}")
+            traceback.print_exc()
+            return 1
+    else:
+        logger.error("Could not import TUI interface")
         logger.info("Falling back to basic terminal interface...")
         return _memory_watch_fallback(args)
-    except Exception as e:
-        logger.error(f"Error starting memory watch: {e}")
-        import traceback
-
-        traceback.print_exc()
-        return 1
 
 
 def _memory_watch_fallback(args: Any) -> int:

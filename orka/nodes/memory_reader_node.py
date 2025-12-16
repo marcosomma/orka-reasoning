@@ -2,6 +2,12 @@ import json
 import logging
 import time
 from typing import Any, Optional
+import re
+
+try:
+    import numpy as np
+except Exception:
+    np = None
 
 from ..utils.bootstrap_memory_index import retry
 from ..utils.embedder import AsyncEmbedder, from_bytes
@@ -175,8 +181,7 @@ class MemoryReaderNode(BaseNode):
                 # If no results found, try additional search strategies
                 if len(memories) == 0 and query.strip():
                     # Extract key terms from the query for more flexible searching
-                    import re
-
+        
                     # Extract numbers, important words, remove common stopwords
                     key_terms = re.findall(r"\b(?:\d+|\w{3,})\b", query.lower())
                     key_terms = [
@@ -1315,7 +1320,6 @@ class MemoryReaderNode(BaseNode):
     def _cosine_similarity(self, vec1, vec2):
         """Calculate cosine similarity between two vectors."""
         try:
-            import numpy as np
 
             # Ensure vectors are numpy arrays
             if not isinstance(vec1, np.ndarray):

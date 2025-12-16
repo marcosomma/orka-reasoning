@@ -24,6 +24,13 @@ import subprocess
 import time
 from pathlib import Path
 from typing import Optional
+import subprocess
+import socket
+
+try:
+    import redis
+except Exception:
+    redis = None
 
 from ..config import get_docker_dir
 
@@ -248,7 +255,6 @@ def wait_for_redis(port: int, max_attempts: int = 30) -> None:
                 pass  # redis-cli not available, try alternative
 
             # Fallback to socket + Redis library check with longer timeout
-            import socket
 
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(5)  # Increased timeout for Windows Docker
@@ -258,8 +264,6 @@ def wait_for_redis(port: int, max_attempts: int = 30) -> None:
             if socket_result == 0:
                 # Additional check with Redis ping (with retries for Windows Docker)
                 try:
-                    import redis
-
                     client = redis.Redis(
                         host="localhost",
                         port=port,

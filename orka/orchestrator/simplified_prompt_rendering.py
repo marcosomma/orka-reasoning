@@ -33,6 +33,7 @@ Key improvements over the original prompt renderer:
 """
 
 import logging
+import re
 from typing import Any, Dict
 
 try:
@@ -162,8 +163,6 @@ class SimplifiedPromptRenderer:
 
         try:
             # Import Jinja2 only when needed
-            import re
-
             from jinja2 import Environment, TemplateError
 
             # Enhance payload for template rendering
@@ -218,8 +217,6 @@ class SimplifiedPromptRenderer:
             )
 
             # ✅ Fallback: Replace all template variables with empty strings and return
-            import re
-
             fallback_rendered = re.sub(r"\{\{\s*[^}]+\s*\}\}", "", template_str)
             fallback_rendered = re.sub(r"\s+", " ", fallback_rendered).strip()
             logger.warning(f"Using fallback rendering: '{fallback_rendered}'")

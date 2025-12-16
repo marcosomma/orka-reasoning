@@ -494,7 +494,7 @@ Retention: 100 points
 
     def _format_current_time(self) -> str:
         """Format current time for display."""
-        from datetime import datetime
+
 
         return datetime.now().strftime("%H:%M:%S")
 

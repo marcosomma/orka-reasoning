@@ -776,7 +776,7 @@ class ComponentBuilder:
 
     def create_config_view(self):
         """Create comprehensive configuration view with backend testing."""
-        import time
+
 
         layout = Layout()
 

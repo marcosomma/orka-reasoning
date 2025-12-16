@@ -16,7 +16,12 @@ import shutil
 import subprocess
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
-import psutil
+
+try:
+    import psutil
+    HAS_PSUTIL = True
+except ImportError:
+    HAS_PSUTIL = False
 
 logger = logging.getLogger(__name__)
 
@@ -299,17 +304,12 @@ class LocalCostCalculator:
                 pass
 
         # Estimate based on CPU cores
-        try:
-            import psutil
 
+        if HAS_PSUTIL:
             cpu_count = psutil.cpu_count(logical=False)  # Physical cores
-
             if cpu_count is not None:
                 # Estimate ~15W per physical core for modern CPUs under load
                 return cpu_count * 15
-
-        except ImportError:
-            pass
 
         # Conservative default
         return 120  # Typical 8-core CPU

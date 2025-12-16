@@ -23,6 +23,13 @@ import asyncio
 import logging
 from typing import Any, Dict
 
+try:
+    import requests
+    HAS_REQUESTS = True
+except Exception:
+    requests = None
+    HAS_REQUESTS = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -49,45 +56,53 @@ async def call_llm(
     Raises:
         RuntimeError: If the LLM call fails
     """
+    # Resolve requests at call time so tests can monkeypatch sys.modules
     try:
-        import requests
+        import importlib
 
-        if not isinstance(provider, str) or not provider.strip() or provider.startswith("MISSING_"):
-            raise RuntimeError(
-                "Missing/invalid LLM provider for PlanValidator call. "
-                "Set provider/llm_provider explicitly (e.g. 'ollama' or 'openai_compatible')."
-            )
-        if not isinstance(url, str) or not url.strip() or url.startswith("MISSING_"):
-            raise RuntimeError(
-                "Missing/invalid LLM url for PlanValidator call. "
-                "Set url/llm_url explicitly (e.g. an Ollama endpoint or an OpenAI-compatible chat completions URL)."
-            )
-        if not isinstance(model, str) or not model.strip() or model.startswith("MISSING_"):
-            raise RuntimeError(
-                "Missing/invalid LLM model for PlanValidator call. "
-                "Set model/llm_model explicitly."
-            )
+        requests_mod = importlib.import_module("requests")
+    except Exception:
+        logger.error("requests library not available")
+        raise RuntimeError("requests library required for LLM calls")
 
-        provider_norm = provider.lower().strip()
-        if provider_norm in {"lm_studio", "lmstudio"}:
-            provider_norm = "openai_compatible"
+    # Validate inputs
+    if not isinstance(provider, str) or not provider.strip() or provider.startswith("MISSING_"):
+        raise RuntimeError(
+            "Missing/invalid LLM provider for PlanValidator call. "
+            "Set provider/llm_provider explicitly (e.g. 'ollama' or 'openai_compatible')."
+        )
+    if not isinstance(url, str) or not url.strip() or url.startswith("MISSING_"):
+        raise RuntimeError(
+            "Missing/invalid LLM url for PlanValidator call. "
+            "Set url/llm_url explicitly (e.g. an Ollama endpoint or an OpenAI-compatible chat completions URL)."
+        )
+    if not isinstance(model, str) or not model.strip() or model.startswith("MISSING_"):
+        raise RuntimeError(
+            "Missing/invalid LLM model for PlanValidator call. "
+            "Set model/llm_model explicitly."
+        )
 
-        if provider_norm not in {"ollama", "openai_compatible"}:
-            raise RuntimeError(
-                f"Unsupported provider '{provider}'. Supported: 'ollama', 'openai_compatible' (incl. lm_studio/lmstudio aliases)."
-            )
+    provider_norm = provider.lower().strip()
+    if provider_norm in {"lm_studio", "lmstudio"}:
+        provider_norm = "openai_compatible"
 
-        # Build request payload based on provider
-        if provider_norm == "ollama":
-            payload = _build_ollama_payload(prompt, model, temperature)
-        else:
-            payload = _build_openai_compatible_payload(prompt, model, temperature)
+    if provider_norm not in {"ollama", "openai_compatible"}:
+        raise RuntimeError(
+            f"Unsupported provider '{provider}'. Supported: 'ollama', 'openai_compatible' (incl. lm_studio/lmstudio aliases)."
+        )
 
-        logger.debug(f"Calling LLM at {url} with model {model}")
+    # Build request payload based on provider
+    if provider_norm == "ollama":
+        payload = _build_ollama_payload(prompt, model, temperature)
+    else:
+        payload = _build_openai_compatible_payload(prompt, model, temperature)
 
-        # Make sync request in thread pool to avoid blocking
+    logger.debug(f"Calling LLM at {url} with model {model}")
+
+    try:
+        # Make sync request in thread pool to avoid blocking; resolve post at runtime
         response = await asyncio.to_thread(
-            requests.post,
+            requests_mod.post,
             url,
             json=payload,
             timeout=60,
@@ -101,16 +116,18 @@ async def call_llm(
             return _extract_ollama_response(response_data)
         else:
             return _extract_openai_compatible_response(response_data)
-
-    except ImportError as e:
-        logger.error("requests library not available")
-        raise RuntimeError("requests library required for LLM calls") from e
-    except requests.exceptions.RequestException as e:
-        logger.error(f"LLM request failed: {e}")
-        raise RuntimeError(f"Failed to call LLM at {url}: {e}") from e
-    except (KeyError, ValueError) as e:
-        logger.error(f"Failed to parse LLM response: {e}")
-        raise RuntimeError(f"Invalid LLM response format: {e}") from e
+    except Exception as e:
+        # Normalize requests exceptions and parsing errors
+        exc_type = type(e)
+        req_exc = getattr(getattr(requests_mod, "exceptions", None), "RequestException", None)
+        if req_exc and isinstance(e, req_exc):
+            logger.error(f"LLM request failed: {e}")
+            raise RuntimeError(f"Failed to call LLM at {url}: {e}") from e
+        if isinstance(e, (KeyError, ValueError)):
+            logger.error(f"Failed to parse LLM response: {e}")
+            raise RuntimeError(f"Invalid LLM response format: {e}") from e
+        # Re-raise any other unexpected exceptions
+        raise
 
 
 def _build_ollama_payload(prompt: str, model: str, temperature: float) -> Dict[str, Any]:

@@ -18,6 +18,7 @@ REDIS_URL: Redis connection URL (default: redis://localhost:6380/0)
 """
 import os
 import sys
+import asyncio
 
 # Initialize logging first
 from orka.utils.logging_utils import setup_logging
@@ -59,7 +60,6 @@ def cli_main():
     CLI entry point for orka-start command.
     This function is referenced in pyproject.toml's console_scripts.
     """
-    import asyncio
 
     # Display cool banner at startup
     display_banner()

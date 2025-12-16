@@ -1,9 +1,11 @@
 import logging
 from typing import Any
+import traceback
+from datetime import datetime
 
 from jinja2 import Template
 
-from ..memory_logger import create_memory_logger
+from ..memory_logger import create_memory_logger, apply_memory_preset_to_config
 from .base_node import BaseNode
 
 logger = logging.getLogger(__name__)
@@ -85,8 +87,6 @@ class MemoryWriterNode(BaseNode):
         # Apply operation-aware preset defaults to configuration
         config_with_preset_defaults = kwargs.copy()
         if kwargs.get("memory_preset"):
-            from ..memory_logger import apply_memory_preset_to_config
-
             config_with_preset_defaults = apply_memory_preset_to_config(
                 kwargs, memory_preset=kwargs.get("memory_preset"), operation="write"
             )
@@ -146,8 +146,6 @@ class MemoryWriterNode(BaseNode):
                     template_context.update(self._get_template_helper_functions(context))
 
                     # Render the key template
-                    from jinja2 import Template
-
                     template = Template(self.key_template)
                     rendered_key = template.render(**template_context)
 
@@ -289,9 +287,7 @@ class MemoryWriterNode(BaseNode):
 
             # Ensure timestamp is always available
             if not template_context.get("timestamp"):
-                import datetime
-
-                template_context["timestamp"] = datetime.datetime.now().isoformat()
+                template_context["timestamp"] = datetime.now().isoformat()
 
             # Process metadata templates
             for key, value in metadata.items():
@@ -475,8 +471,6 @@ class MemoryWriterNode(BaseNode):
 
         except Exception as e:
             logger.error(f"Error extracting memory content: {e}")
-            import traceback
-
             logger.error(f"Full traceback: {traceback.format_exc()}")
             # Safe fallback - return a simple string
             return "Memory content extraction failed"

@@ -21,7 +21,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-from ..utils.json_parser import parse_llm_json
+from ..utils.json_parser import parse_llm_json, extract_json_from_text, repair_malformed_json
 from .llm_response_schemas import validate_path_evaluation, validate_path_validation
 
 logger = logging.getLogger(__name__)
@@ -1419,7 +1419,7 @@ IMPORTANT: Make each evaluation UNIQUE and SPECIFIC to the path and question typ
     ) -> str:
         """Call Ollama API endpoint asynchronously."""
         try:
-            import aiohttp
+
 
             logger.debug(f"Calling Ollama: model={model}, url={model_url}, prompt_length={len(prompt)}")
 
@@ -1455,7 +1455,7 @@ IMPORTANT: Make each evaluation UNIQUE and SPECIFIC to the path and question typ
     ) -> str:
         """Call LM Studio API endpoint asynchronously."""
         try:
-            import aiohttp
+
 
             # LM Studio uses OpenAI-compatible format
             payload = {
@@ -1491,7 +1491,7 @@ IMPORTANT: Make each evaluation UNIQUE and SPECIFIC to the path and question typ
         
         Uses the robust JSON parser from orka.utils.json_parser.
         """
-        from ..utils.json_parser import extract_json_from_text, repair_malformed_json
+
         
         # First try to extract
         extracted = extract_json_from_text(response)

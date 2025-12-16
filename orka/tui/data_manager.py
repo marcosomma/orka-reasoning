@@ -563,7 +563,7 @@ class DataManager:
         # Handle bytes values from Redis
         if isinstance(metadata, bytes):
             try:
-                import json
+
 
                 metadata = json.loads(metadata.decode("utf-8"))
             except Exception:

@@ -20,6 +20,7 @@ Calculates deterministic scores from boolean evaluation criteria.
 
 import logging
 from typing import Any, Dict, List, Optional
+import copy
 
 from .presets import load_preset
 
@@ -53,8 +54,6 @@ class BooleanScoreCalculator:
         preset_config = load_preset(preset, context=context)
 
         # Deep copy weights to avoid modifying shared preset data
-        import copy
-
         self.weights = copy.deepcopy(preset_config["weights"])
         self.thresholds = preset_config["thresholds"]
 

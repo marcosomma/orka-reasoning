@@ -146,6 +146,8 @@ import inspect
 import json
 import logging
 import os
+import traceback
+import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from time import time
@@ -1192,7 +1194,6 @@ class ExecutionEngine(
                     error_traceback = None
 
                     if hasattr(branch_result, "__traceback__"):
-                        import traceback
 
                         error_traceback = "".join(
                             traceback.format_exception(
@@ -1580,14 +1581,12 @@ class ExecutionEngine(
 
     def _check_unresolved_variables(self, text: str) -> bool:
         """Check if text contains unresolved Jinja2 variables."""
-        import re
 
         pattern = r"\{\{\s*[^}]+\s*\}\}"
         return bool(re.search(pattern, text))
 
     def _extract_template_variables(self, template: str) -> List[str]:
         """Extract all Jinja2 variables from template."""
-        import re
 
         pattern = r"\{\{\s*([^}]+)\s*\}\}"
         return re.findall(pattern, template)

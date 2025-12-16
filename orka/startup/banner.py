@@ -21,6 +21,11 @@ ASCII art banner displayed when OrKa starts up.
 import importlib.metadata
 from pathlib import Path
 
+try:
+    import tomllib
+except Exception:
+    tomllib = None
+
 ORKA_BANNER = r"""
 ⠀⠀⠀⠀⠀⠀⢀⣀⣀⣀⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠺⢿⣿⣿⣿⣿⣿⣿⣷⣦⣠⣤⣤⣤⣄⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -59,12 +64,11 @@ def get_version():
     try:
         pyproject_path = Path(__file__).resolve().parents[2] / "pyproject.toml"
         if pyproject_path.exists():
-            import tomllib
-
-            data = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
-            version = data.get("project", {}).get("version")
-            if isinstance(version, str) and version.strip():
-                return version.strip()
+            if tomllib is not None:
+                data = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
+                version = data.get("project", {}).get("version")
+                if isinstance(version, str) and version.strip():
+                    return version.strip()
     except Exception:
         pass
 

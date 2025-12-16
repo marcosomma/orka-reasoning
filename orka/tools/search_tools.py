@@ -32,28 +32,25 @@ from typing import Any, List
 
 # Optional imports for search engines
 try:
-    from ddgs import DDGS
-
+    import ddgs
+    from ddgs import DDGS as DDGS_INSTANCE
     HAS_DUCKDUCKGO = True
-    DDGS_INSTANCE: Any = DDGS
-except ImportError:
+except Exception:
     DDGS_INSTANCE = None
     HAS_DUCKDUCKGO = False
 
-# Optional import for requests (for alternative search methods)
 try:
     import requests
-
     HAS_REQUESTS = True
-except ImportError:
+except Exception:
+    requests = None
     HAS_REQUESTS = False
 
-# Optional import for BeautifulSoup (for web scraping fallback)
 try:
     from bs4 import BeautifulSoup
-
     HAS_BS4 = True
-except ImportError:
+except Exception:
+    BeautifulSoup = None
     HAS_BS4 = False
 
 from .base_tool import BaseTool

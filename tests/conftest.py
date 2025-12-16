@@ -8,16 +8,38 @@ from types import ModuleType
 from typing import Any, Dict, Generator, List
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
+import importlib.util
+import types as _types
+
 import pytest
 import yaml
+
+# Optional/conditional test-time modules
+try:
+    import orka.memory_logger as memory_logger_mod
+except Exception:
+    memory_logger_mod = None
+
+try:
+    import orka.utils.embedder as embedder_mod
+except Exception:
+    embedder_mod = None
+
+try:
+    import orka.memory.redisstack_logger as rs_mod
+except Exception:
+    rs_mod = None
+
+try:
+    import litellm.llms.custom_httpx.async_client_cleanup as _litellm_async_cleanup
+except Exception:
+    _litellm_async_cleanup = None
 
 
 # Minimal test-time shim for redis to avoid network/ConnectionPool side-effects.
 def _ensure_redis_shim():
     # Prefer the real redis package if it's installed.
     try:
-        import importlib.util
-
         if importlib.util.find_spec("redis") is not None:
             return
     except Exception:
@@ -73,7 +95,7 @@ def _ensure_redis_shim():
     try:
         import types as _types
 
-        asyncio_mod = _types.ModuleType("redis.asyncio")
+        asyncio_mod = ModuleType("redis.asyncio")
 
         class AsyncRedisShim(RedisShim):
             async def ping(self):
