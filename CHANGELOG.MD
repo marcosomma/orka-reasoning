@@ -1,3 +1,40 @@
+# [UNRELEASED] · 2025-12-16 ✨
+OrKa Unreleased — Ongoing fixes and reliability improvements
+
+### Summary
+* **🔧 Reliability & Parallelism**
+  - Standardized async HTTP usage (aiohttp) in local LLM agents and related tools to enable real, concurrent HTTP calls and improve throughput for parallel agent execution.
+
+* **📥 Import Hygiene & Testability**
+  - Moved imports to module top-level where safe and **restored runtime import resolution** for optional dependencies and testability. Reintroduced module-level flags/guards (e.g., `HAS_REQUESTS`, `HAS_DUCKDUCKGO`, `HAS_BS4`, `DDGS_INSTANCE`) and runtime lookups for modules used by tests (tiktoken, TemplateValidator, requests). This preserves monkeypatchability while improving global import hygiene.
+
+* **🧪 Tests & Fixes**
+  - Fixed multiple tests broken by the import refactor by adding runtime resolution and guarded imports; validated with a full test run: **1763 passed, 0 failed**.
+
+* **📝 Logging & Observability**
+  - Disabled ANSI color sequences for file logs (file handler uses SafeFormatter with `use_colors=False`) to remove escape characters from saved logs. Suggested follow-up: payload-size-aware truncation/preview for very large nested payloads (optional improvement).
+
+* **📚 Docs & Examples**
+  - Updated documentation and examples to clarify that `PlanValidator` and `LoopValidator` expect `llm_model` (not `model`) and to prefer LM Studio style endpoints (`http://localhost:1234`) in local examples.
+
+* **🔁 LM Studio Robustness**
+  - Reproduced LM Studio "Failed to load model" behavior in live curl tests and recommended preflight checks and retry/backoff for transient model-loading errors; proposed changes (preflight + retry) for improved resilience.
+
+### Files changed (high level)
+- `orka/utils/logging_utils.py` — disable color for file handlers
+- `orka/agents/local_llm_agents.py` — async HTTP / token handling improvements
+- `orka/agents/plan_validator/llm_client.py` — runtime import resolution and robustness
+- `orka/cli/memory/watch.py` — lazy-loading TUI imports and fallbacks
+- `orka/tools/search_tools.py` — restored module-level optional flags
+- `orka/orchestrator/dry_run_engine.py` — import/usage fixes for JSON helpers
+- `orka/loader.py` — runtime TemplateValidator instantiation
+- `orka/nodes/memory_writer_node.py` — metadata rendering and datetime fixes
+- `docs/*` and `examples/*` — clarified `llm_model` usage and LM Studio endpoint examples
+- Tests updated and full suite validated (1763 passed, 0 failed)
+
+**Notes**: Additional suggested follow-ups (not implemented here) include: payload truncation for large logs and an optional LM Studio preflight + retry/backoff mechanism for model-loading transient failures.
+
+
 # [0.9.11] · 2025-12-12 🧪
 OrKa v0.9.11 – Test Strictness, Warning Hardening & Reliability
 
