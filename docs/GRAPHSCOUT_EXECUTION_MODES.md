@@ -67,7 +67,9 @@ agents:
 
 ---
 
-### 2. Real-Time Execution Mode (Production)
+### 2. Real-Time Execution Mode (Deployment Example)
+
+Note: Real-time performance and safety guarantees require validation and monitoring before production use.
 
 **Location:** GraphScout in main orchestrator  
 **Purpose:** Immediate routing and execution  
@@ -101,8 +103,8 @@ agents:
 
 #### When to Use
 
-- ✅ Production user-facing applications
-- ✅ Real-time routing decisions
+- ✅ Deployment example for user-facing applications (requires validation)
+- ✅ Near real-time routing decisions (deployment-dependent)
 - ✅ Well-tuned, trusted GraphScout
 - ✅ Speed-critical scenarios
 - ✅ High-throughput workflows
@@ -124,7 +126,7 @@ agents:
 #### Examples
 
 - `graphscout_validated_execution.yml` - Basic execution mode
-- `graphscout_realtime_execution.yml` - Production-ready with quality monitoring
+- `graphscout_realtime_execution.yml` - Deployment example with quality monitoring; validate for your workload
 
 ---
 

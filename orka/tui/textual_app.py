@@ -27,7 +27,7 @@ class OrKaTextualApp(App):
     """Modern Textual-native OrKa monitoring application."""
 
     TITLE = "OrKa Memory Monitor"
-    SUB_TITLE = "Real-time Memory System Monitoring"
+    SUB_TITLE = "Near real-time Memory System Monitoring (deployment-dependent)"
 
     BINDINGS = [
         Binding("1", "show_dashboard", "Dashboard", show=True),

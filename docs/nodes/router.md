@@ -228,7 +228,7 @@ The Router Node dynamically routes execution to different agent paths based on p
       "b": [z]
 ```
 
-### 2. Always Provide Fallback
+### 2. Provide Fallback (recommended)
 
 ```yaml
 # ✅ GOOD: Has fallback for unexpected values

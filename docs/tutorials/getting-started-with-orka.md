@@ -24,13 +24,13 @@ export OPENAI_API_KEY=your-key-here
 
 ## Step 2: Start OrKa
 
-OrKa V0.7.0+ includes automatic RedisStack setup for 100x faster vector search:
+OrKa V0.7.0+ includes optional RedisStack setup for local development (performance varies by workload):
 
 ```bash
 # Start OrKa with RedisStack (for development)
 orka-start
 
-# For production (same command):
+# For deployment (same command):
 orka-start
 ```
 

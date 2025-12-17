@@ -62,7 +62,7 @@ config = GraphScoutConfig(
 ### When to Use Numeric Mode
 
 - GraphScout path discovery and ranking
-- Real-time routing decisions
+- Near real-time routing decisions (deployment-dependent)
 - Multi-criteria optimization
 - Dynamic workflow planning
 - When you need soft rankings with weighted criteria
@@ -169,7 +169,7 @@ Enable boolean mode via `GraphScoutConfig`:
 ### When to Use Boolean Mode
 
 - **Compliance & Audit**: When you need to prove why paths were selected/rejected
-- **Production Safety**: When you need guaranteed safety checks
+- **Production Safety**: Safety checks available; integration and configuration are required to meet project-specific guarantees
 - **Debugging**: When numeric scores are mysterious and you need clarity
 - **Regulatory Requirements**: When decisions must be explainable
 - **Testing**: When you want deterministic, repeatable outcomes

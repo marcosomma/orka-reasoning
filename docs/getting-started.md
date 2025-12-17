@@ -508,17 +508,17 @@ docker stop orka-ui && docker rm orka-ui
 orka-start
 ```
 
-## 🌟 Why OrKa V0.7.0 is Game-Changing
+## Notes on OrKa V0.7.0
 
-**Enterprise Performance**: 100x faster vector search makes OrKa suitable for production AI applications that were previously impossible.
+**Performance note**: RedisStack HNSW can significantly improve vector search latency in many workloads; results vary by deployment and workload — validate in your environment.
 
-**Zero Configuration**: Automatic RedisStack setup means you focus on building, not infrastructure.
+**Simplified Setup**: Optional RedisStack setup is provided for local development to speed experiments; production deployments require operational hardening.
 
-**Intelligent Memory**: Context-aware search with temporal ranking provides human-like memory patterns.
+**Intelligent Memory**: Context-aware search with temporal ranking can improve relevance in many use cases.
 
-**Complete Transparency**: Every decision is auditable and explainable.
+**Transparency**: Execution traces and logs are available for debugging and analysis.
 
-**Ready to experience the future of AI orchestration?** Your RedisStack-powered OrKa system is now running with 100x faster vector search!
+**Note**: Example deployments are for demonstration; validate performance and stability before production use.
 
 ---
 ---

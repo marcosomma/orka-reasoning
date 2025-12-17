@@ -448,7 +448,7 @@ agents:
 
 ## Best Practices
 
-### 1. Always Use Safe Accessors
+### 1. Use Safe Accessors (recommended)
 ❌ **Bad:**
 ```yaml
 prompt: "Score: {{ previous_outputs.validator.result.score }}"

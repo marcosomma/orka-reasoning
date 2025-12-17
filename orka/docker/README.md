@@ -186,7 +186,7 @@ docker-compose logs --tail=100 -f
 - Configure network security groups
 - Implement proper firewall rules
 
-## 🎯 Production Deployment
+## 🎯 Deployment Example (requires hardening and validation)
 
 ### Performance Tuning
 1. **Memory Configuration**: Set appropriate `maxmemory` and `maxmemory-policy`

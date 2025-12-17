@@ -262,7 +262,7 @@ children:
 |-------|-------|----------|
 | All children fail | None succeed | Add more fallbacks or fix logic |
 | Slow execution | All children timeout | Reduce individual timeouts |
-| Expensive costs | Always uses last child | Fix earlier children |
+| Expensive costs | Typically uses last child (evaluate for your workflow) | Fix earlier children |
 | No output | Missing children | Add at least one child |
 
 ## Related Documentation

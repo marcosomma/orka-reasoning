@@ -408,7 +408,7 @@ orchestrator:
     local_llm_backup: true
 ```
 
-## Production Deployment
+## Production Deployment (guidance — requires hardening and validation)
 
 ### RedisStack Integration
 

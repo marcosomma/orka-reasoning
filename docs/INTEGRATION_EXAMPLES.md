@@ -558,7 +558,7 @@ docker run -d -p 6380:6380 --name orka-redis redis/redis-stack:latest
 orka run cognitive-society-collaborative-enhanced-local.yml \
   "How should AI systems balance automation efficiency with preserving meaningful human work?"
 
-# 4. Monitor execution in real-time (separate terminal)
+# 4. Monitor execution in near real-time (deployment-dependent) (separate terminal)
 orka memory watch --interval 5
 
 # 5. Check memory statistics after completion
@@ -1036,9 +1036,9 @@ agents:
       This represents a complete self-improving analysis with comprehensive learning tracking.
 ```
 
-## Production Deployment Examples
+## Production Deployment Examples (examples; requires hardening and validation)
 
-### Docker Compose for Production
+### Docker Compose for Deployment (example)
 
 **File: `production-docker-compose.yml`**
 
@@ -1139,11 +1139,11 @@ volumes:
   grafana_data:
 ```
 
-### Production Configuration Files
+### Deployment Configuration Files (examples — validate before use)
 
 **File: `redis.conf`**
 ```conf
-# Redis Configuration for OrKa Production
+# Redis Configuration for OrKa (deployment example)
 bind 0.0.0.0
 port 6380
 
@@ -1210,7 +1210,7 @@ ORKA_MAX_CONCURRENT_REQUESTS=10
 ORKA_TIMEOUT_SECONDS=120
 ```
 
-**Production Environment (`.env.production`)**:
+**Deployment Environment (`.env.production`) (example)**:
 ```bash
 # Production Environment Configuration
 ORKA_MEMORY_BACKEND=redisstack
@@ -1239,24 +1239,7 @@ ORKA_METRICS_ENABLED=true
 ### Health Check and Monitoring
 
 **File: `scripts/health_check.py`**
-```python
-#!/usr/bin/env python3
-"""Production Health Check Script"""
-
-import asyncio
-import redis
-import httpx
-import json
-import sys
-from datetime import datetime
-
-async def check_redis_health():
-    """Check RedisStack connectivity and modules"""
-    try:
-        client = redis.Redis(host='localhost', port=6380, db=0)
-        
-        # Basic connectivity
-        pong = client.ping()
+    print(f"OrKa Deployment Health Check - {datetime.now()}")
         if not pong:
             return False, "Redis not responding to ping"
         
@@ -1316,7 +1299,7 @@ async def check_memory_statistics():
 
 async def main():
     """Run complete health check"""
-    print(f"OrKa Production Health Check - {datetime.now()}")
+    print(f"OrKa Deployment Health Check - {datetime.now()}")
     print("=" * 50)
     
     checks = [
@@ -1374,7 +1357,7 @@ Instead of inline YAML (which can become outdated), **all integration examples a
 |----------|----------|-----------|
 | **Local LLM** | [`orka_soc/`](../examples/orka_soc/) | Local model deployment |
 | **Genius Minds** | [`orka_smartest/`](../examples/orka_smartest/) | Advanced cognitive patterns |
-| **Production** | [`multi_perspective_chatbot.yml`](../examples/multi_perspective_chatbot.yml) | Production-ready chatbot |
+| **Production** | [`multi_perspective_chatbot.yml`](../examples/multi_perspective_chatbot.yml) | Example chatbot configuration; review and harden before deployment |
 
 ### Quick Start
 
@@ -1393,13 +1376,13 @@ orka run my-integration.yml "Your test input"
 orka memory watch
 ```
 
-## 🔧 Production Deployment Examples
+## 🔧 Deployment Examples (requires hardening and validation)
 
-For production deployment patterns, monitoring, and debugging:
+For deployment patterns, monitoring, and debugging (examples):
 
 - **Docker Setup**: See [`../orka/docker/`](../orka/docker/) for container configurations
 - **Environment Configuration**: See [README_BACKENDS.md](./README_BACKENDS.md) for backend and production settings
 - **Monitoring Setup**: See [observability.md](./observability.md) for monitoring integration
 - **Testing Patterns**: See [TESTING.md](./TESTING.md) for comprehensive testing strategies
 
-These integration examples demonstrate how OrKa's components work together to address production requirements, providing tested workflows with proper configuration, monitoring, and debugging capabilities.
+These integration examples demonstrate how OrKa's components work together to address deployment requirements; they are provided as examples and require testing, configuration, and monitoring in your environment.

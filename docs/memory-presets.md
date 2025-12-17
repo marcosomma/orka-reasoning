@@ -98,7 +98,7 @@ Memory presets are templates with predefined retention durations and search para
 ```yaml
 memory_preset: "sensory"
 ```
-- **Use for**: Real-time data, sensor input, immediate responses
+- **Use for**: Near real-time data, sensor input, immediate responses (deployment-dependent)
 - **Duration**: 15 minutes (very short-term)
 - **Read Defaults**: Fast retrieval (limit=3, similarity_threshold=0.95, no vector search)
 - **Write Defaults**: Minimal indexing (vector=false, fast storage)
@@ -290,7 +290,7 @@ final_config = merge_preset_with_config("episodic", {"default_long_term_hours": 
 |----------|-------------------|
 | **Chatbots** | `episodic` |
 | **Knowledge Base** | `semantic` |
-| **Real-time Processing** | `sensory` |
+| **Near real-time Processing (deployment-dependent)** | `sensory` |
 | **Workflow Optimization** | `procedural` |
 | **System Monitoring** | `meta` |
 | **Session Management** | `working` |

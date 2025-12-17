@@ -391,7 +391,7 @@ agents:
 
 | Aspect | PathExecutor | GraphScout Direct |
 |--------|--------------|-------------------|
-| **When Routing** | After validation | Real-time |
+| **When Routing** | After validation | Near real-time (deployment-dependent) |
 | **Validation** | Explicit validation loop | Optional LLM evaluation |
 | **Use Case** | High-stakes, validated workflows | Dynamic real-time routing |
 | **Overhead** | Higher (validation first) | Lower (immediate execution) |

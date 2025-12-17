@@ -154,7 +154,7 @@ export ORKA_HARDWARE_COST_USD=3500         # Your actual hardware cost
 ```
 
 ### 3. Enforce Real Costs
-Use `null_fail` policy in production to prevent cost blind spots:
+Use `null_fail` policy in deployment (or high-assurance environments) to help prevent cost blind spots:
 
 ```bash
 export ORKA_LOCAL_COST_POLICY=null_fail
@@ -174,7 +174,7 @@ Local 70B:   $0.000110 per 1K tokens (4.1x cheaper)
 ### From Fantasy $0.00
 1. **Immediate:** Set `ORKA_LOCAL_COST_POLICY=calculate`
 2. **Optional:** Configure environment variables for accuracy
-3. **Production:** Consider `null_fail` policy for strict cost tracking
+3. **Deployment guidance:** Consider `null_fail` policy for strict cost tracking (validate for your workload)
 
 ### Cost Impact
 - **Typical local inference:** $0.0001-0.0003 per 1K tokens
@@ -191,7 +191,7 @@ Local 70B:   $0.000110 per 1K tokens (4.1x cheaper)
 ### Pipeline Failures with null_fail
 - Configure real cost calculation environment variables
 - Or switch to `calculate` policy: `ORKA_LOCAL_COST_POLICY=calculate`
-- Or use cloud models for guaranteed cost tracking
+- Or use cloud models for more robust cost tracking
 
 ### Unrealistic Costs
 - Verify electricity rate: `ORKA_ELECTRICITY_RATE_USD_KWH=0.15`

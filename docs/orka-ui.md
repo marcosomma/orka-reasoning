@@ -33,7 +33,7 @@ OrKa UI is a **browser-based visual editor** that transforms the complexity of Y
 1. **Drag** agents and control flow nodes onto a canvas
 2. **Connect** them with visual links to define execution order
 3. **Configure** each node's properties in a sidebar panel
-4. **Generate** production-ready YAML with one click
+4. **Generate** example YAML for deployment (review and harden before production use)
 5. **Execute** workflows directly from the UI
 
 Think of it as a **visual programming environment** for AI agent orchestration, similar to Node-RED but specifically designed for LLM-powered workflows with memory, routing, and advanced control flow.
@@ -53,7 +53,7 @@ Think of it as a **visual programming environment** for AI agent orchestration, 
 
 **With OrKa UI:**
 - ✅ Visual canvas with drag-and-drop node placement
-- ✅ Real-time connection validation with helpful hints
+- ✅ Near real-time connection validation with helpful hints (deployment-dependent)
 - ✅ Automatic YAML generation from visual graph
 - ✅ Live workflow execution and testing
 - ✅ Example workflows to learn from
@@ -76,7 +76,7 @@ Think of it as a **visual programming environment** for AI agent orchestration, 
 - **Template support**: Jinja2 syntax highlighting for prompt templates
 
 ### 📤 YAML Generation & Import
-- **One-click export**: Generate production-ready YAML from visual graph
+- **One-click export**: Generate example YAML for deployment from visual graph; review and harden before production use
 - **Import workflows**: Load existing YAML files for visualization and editing
 - **Example library**: Pre-built workflows for common patterns (fork/join, routing, loops, memory)
 - **Validation**: Real-time schema validation with error highlighting
@@ -226,7 +226,7 @@ npm run dev
 
 The UI will be available at `http://localhost:5173`
 
-#### Step 4: Build for Production
+#### Step 4: Build for Deployment (example, requires validation)
 ```bash
 npm run build
 ```

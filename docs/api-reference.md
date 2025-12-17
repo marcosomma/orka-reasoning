@@ -323,7 +323,7 @@ orka memory cleanup
 
 # Start OrKa services
 orka-start      # Development (Redis)
-orka-start      # Production (RedisStack)
+orka-start      # Deployment example (RedisStack)
 
 # Check system health
 orka system status

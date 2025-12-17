@@ -135,7 +135,7 @@ Integration Points
 - Recovery action recommendations
 
 **Monitoring:**
-- Real-time execution metrics
+- Near real-time execution metrics (deployment-dependent)
 - Agent performance tracking
 - Resource usage monitoring
 - Error rate and pattern analysis
@@ -215,9 +215,14 @@ class ExecutionEngine(
     Core Features:
     - Agent execution with precise coordination
     - Rich context flow across workflow steps
-    - Fault tolerance with automatic recovery
-    - Real-time optimization and resource management
-    - Scalable architecture for distributed execution
+    - Resilience patterns and configurable recovery actions (operational validation required)
+    - Optimization features (deployment-dependent)
+    - Support for distributed execution patterns (requires validation and tests)
+
+    Assumptions:
+    - External systems (Redis, APIs) must be provisioned with appropriate HA and monitoring.
+
+    Proof: See `tests/integration/test_execution_*` and `docs/INTEGRATION_EXAMPLES.md` for concrete verification and examples.
 
     Execution Patterns:
 
@@ -244,15 +249,15 @@ class ExecutionEngine(
 
     Advanced Features:
     - Intelligent retry logic with exponential backoff
-    - Real-time monitoring and performance metrics
+    - Near real-time monitoring and performance metrics (deployment-dependent)
     - Resource management and connection pooling
-    - Production-ready distributed capabilities
+    - Distributed execution capabilities (operational validation required)
 
     Use Cases:
     - Multi-step AI reasoning workflows
     - High-throughput content processing pipelines
-    - Real-time decision systems with complex branching
-    - Fault-tolerant distributed AI applications
+    - Near real-time decision systems with complex branching (deployment-dependent)
+    - Resilience patterns for distributed applications (no absolute availability guarantees) 
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -1757,7 +1762,7 @@ class ExecutionEngine(
             queue: Current agent execution queue
 
         Returns:
-            Validated queue with guaranteed LLM terminal agent
+            Validated queue logic; guarantees depend on runtime configuration and validation
         """
         if not queue:
             return queue

@@ -90,7 +90,7 @@ External tools and integrations.
 - Memory presets - Pre-configured settings
 
 ### Search & Retrieval
-- `duckduckgo` - Real-time web search
+- `duckduckgo` - Near real-time web search (depends on API)
 - `rag` - Document Q&A
 - `memory` (read) - Semantic memory search
 

@@ -254,7 +254,7 @@ Orka provides various tools that can be used within workflows. Here are the avai
 
 Instead of complex manual configurations, use cognitive memory presets that automatically adapt to read vs write operations:
 
-1. **Sensory Memory** (Real-time Processing)
+1. **Sensory Memory** (Near real-time processing; deployment-dependent)
    ```yaml
    # ❌ OLD WAY: Complex configuration (30+ lines)
    # memory:
@@ -267,7 +267,7 @@ Instead of complex manual configurations, use cognitive memory presets that auto
    # ✅ NEW WAY: Simple preset (1 line!)
    - id: sensor_memory
      type: memory
-     memory_preset: "sensory"  # 🎯 Auto-optimized for real-time data!
+     memory_preset: "sensory"  # 🎯 Auto-optimized for near real-time data (deployment-dependent)!
      config:
        operation: write
      namespace: sensor_data
@@ -417,7 +417,7 @@ Instead of complex manual configurations, use cognitive memory presets that auto
 1. **Sensory Memory** (15 minutes)
    - **Read**: Fast retrieval (limit=3, similarity_threshold=0.95, no vector search)
    - **Write**: Minimal indexing (vector=false, speed-optimized storage)
-   - **Use**: Real-time data, sensor input, immediate processing
+   - **Use**: Near real-time data, sensor input, immediate processing (deployment-dependent)
 
 2. **Working Memory** (2-8 hours)
    - **Read**: Context-aware search (limit=5, context_weight=0.5, temporal_weight=0.4)

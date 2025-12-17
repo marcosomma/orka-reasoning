@@ -14,7 +14,7 @@ The memory system in Orka serves several purposes:
 ## Supported Backends
 
 ### RedisStack (Recommended)
-- **Best for**: Production AI workloads, high-performance applications
+- **Best for**: Latency-sensitive or high-performance applications (validate HA and scale needs)
 - **Features**: HNSW vector indexing, 100x faster search, advanced memory management
 - **Performance**: Sub-millisecond search, 50,000+ operations/second
 - **Scalability**: Single RedisStack instance or Redis Cluster
@@ -248,7 +248,7 @@ redis-cli -p 6380 FT.SEARCH orka_enhanced_memory "*"
 ## Best Practices
 
 1. **Backend Selection**:
-   - Use RedisStack for production AI workloads requiring fast search
+   - Consider RedisStack for low-latency, high-performance search; validate for your deployment
    - Use basic Redis for simple applications or development
 
 2. **Memory Management**:
@@ -263,7 +263,7 @@ redis-cli -p 6380 FT.SEARCH orka_enhanced_memory "*"
    - Monitor Redis memory usage and performance metrics
    - Set up alerts for memory usage and connection issues
 
-5. **Production Deployment**:
+5. **Deployment Guidance**:
    - Use Redis Cluster for high availability
    - Configure appropriate backup and retention policies
    - Use RedisStack for maximum performance benefits

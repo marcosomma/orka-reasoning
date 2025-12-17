@@ -107,7 +107,7 @@ OrKa's core components were refactored from monolithic files into focused module
 No. All existing imports like `from orka.orchestrator import Orchestrator` and `from orka.memory_logger import create_memory_logger` continue to work exactly as before. The refactoring was designed with 100% backward compatibility.
 
 ### How does the memory decay system work (v0.6.5+)?
-OrKa now automatically manages memory with intelligent decay. Memories are classified as short-term or long-term based on importance and event type. You can configure retention periods globally or per-agent. Use `orka memory watch` to monitor memory in real-time and `orka memory stats` to see current usage. Memory decay is enabled by default but fully configurable.
+OrKa now automatically manages memory with intelligent decay. Memories are classified as short-term or long-term based on importance and event type. You can configure retention periods globally or per-agent. Use `orka memory watch` to monitor memory in near real-time and `orka memory stats` to see current usage. Memory decay is enabled by default but fully configurable.
 
 ### Can I control memory retention for specific agents?
 Yes. Each agent can have its own `decay:` configuration that overrides global settings. You can force memories to be short-term or long-term using `default_long_term: true/false`, set custom retention periods, and define importance rules. This allows fine-grained control over what gets remembered and for how long.

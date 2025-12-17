@@ -44,7 +44,13 @@ import re
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
-from json_repair import repair_json
+try:
+    from json_repair import repair_json
+    REPAIR_AVAILABLE = True
+except Exception:  # pragma: no cover - optional dependency
+    repair_json = None
+    REPAIR_AVAILABLE = False
+
 from jsonschema import Draft7Validator, ValidationError, validate
 
 logger = logging.getLogger(__name__)
@@ -227,6 +233,10 @@ def repair_malformed_json(text: str) -> Optional[str]:
     Returns:
         Repaired JSON string or None if repair failed
     """
+    if not REPAIR_AVAILABLE or repair_json is None:
+        logger.debug("json_repair not available; skipping repair step")
+        return None
+
     try:
         repaired = repair_json(text, return_objects=False)
         # Verify the repair produced valid JSON

@@ -16,8 +16,16 @@ Embedder Module
 ==============
 
 This module provides text embedding functionality for the OrKa framework with robust
-fallback mechanisms. It is designed to be resilient and provide embeddings even in
-cases where model loading fails or when running in restricted environments.
+fallback mechanisms. It is designed to provide best-effort embeddings even when
+model loading fails or when running in restricted environments.
+
+Purpose: Provide text embeddings with fallback strategies and deterministic behavior when models are unavailable.
+
+Assumptions:
+- External model files may not be present in all environments; fallback hashing is used when models are unavailable.
+- Deterministic fallback embeddings are suitable for basic storage and retrieval but not for advanced semantic operations.
+
+Proof: Unit tests in `tests/unit/utils/test_embedder.py` cover model loading, fallback, and deterministic behavior.
 
 Key features:
 - Async-friendly embedding interface
@@ -99,7 +107,7 @@ class AsyncEmbedder:
 
     This class provides an async-friendly interface to sentence transformer models for
     generating text embeddings. It includes robust error handling, fallback mechanisms,
-    and resilience features to ensure embedding functionality always works.
+    and resilience features to provide best-effort embedding functionality in diverse environments.
 
     Key features:
     - Lazy loading of embedding models to reduce startup time
@@ -217,8 +225,7 @@ class AsyncEmbedder:
         Encode text to embedding vector with robust fallback mechanisms.
 
         This async method converts text to a numerical vector representation using
-        either the loaded model or fallback mechanisms. It ensures that valid
-        embeddings are always returned, regardless of model status.
+        either the loaded model or fallback mechanisms. It aims to return embeddings when possible; when the model is unavailable, deterministic fallback embeddings or zeros are provided per fallback policy.
 
         Args:
             text (str): The text to encode into an embedding vector
@@ -262,7 +269,7 @@ class AsyncEmbedder:
 
         This method creates embeddings when the primary model is unavailable.
         It uses a hash-based approach to generate deterministic vectors, ensuring
-        that identical text inputs always produce the same embedding vectors.
+        that identical text inputs produce deterministic fallback embeddings when model-based embeddings are not available.
 
         Args:
             text (str): The text to encode

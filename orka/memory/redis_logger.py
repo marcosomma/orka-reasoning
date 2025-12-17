@@ -82,7 +82,7 @@ class RedisMemoryLogger(BaseMemoryLogger):
     - Real-time conversation systems requiring instant recall
     - High-throughput API services with memory requirements
     - Interactive applications with complex context management
-    - Production AI systems with reliability requirements
+    - AI systems with reliability requirements (deployment validation and HA required)
 
     **Production Features:**
     - Connection pooling for high concurrency

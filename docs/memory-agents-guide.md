@@ -91,7 +91,7 @@ Memory writing stores data in Redis with optional vector embeddings:
 ```yaml
 memory_preset: "sensory"
 ```
-- **For**: Real-time data, sensor input, immediate processing
+- **For**: Near real-time data, sensor input, immediate processing (deployment-dependent)
 - **Duration**: 15 minutes (very short retention)
 - **Read Defaults**: Fast retrieval (limit=3, similarity_threshold=0.95)
 - **Write Defaults**: Minimal indexing (vector=false, speed-optimized)
@@ -423,7 +423,7 @@ agents:
 |----------|-------------------|
 | **Chatbots & Conversations** | `episodic` |
 | **Knowledge Bases** | `semantic` |
-| **Real-time Processing** | `sensory` |
+| **Near real-time Processing (deployment-dependent)** | `sensory` |
 | **Workflow Management** | `procedural` |
 | **System Monitoring** | `meta` |
 | **Session Context** | `working` |
@@ -551,7 +551,7 @@ params:
 
 ### Optimization Tips
 
-1. **Vector Search**: Always enable `vector: true` for semantic search
+1. **Vector Search**: Recommended: enable `vector: true` for semantic search; validate performance and costs for your workload
 2. **Namespaces**: Use specific namespaces to limit search scope  
 3. **Thresholds**: Tune similarity thresholds based on your use case
 4. **Limits**: Set appropriate `limit` values to balance quality vs speed

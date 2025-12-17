@@ -9,7 +9,7 @@ OrKa-Reasoning demonstrates **world-class execution** in three critical domains 
 ### 1. 🧠 **Cognitive Architecture Design** - *Industry Pioneering*
 
 **What makes it exceptional:**
-OrKa has architected the world's first production-ready **"Cognitive Society Framework"** that enables multiple AI agents to deliberate, reach consensus, and learn from their collective reasoning process.
+OrKa has architected a **"Cognitive Society Framework"** designed for research and experimentation; production readiness requires validation and deployment hardening.
 
 ```mermaid
 mindmap
@@ -141,7 +141,7 @@ graph TD
 
 **Evidence of Excellence:**
 
-**🔧 Zero-to-Production in 2 Minutes:**
+**🔧 Quick-start / Local demo** (Not a production runbook; production deployment requires validation and hardening)
 ```bash
 # From nothing to intelligent AI system
 pip install orka-reasoning
@@ -176,7 +176,7 @@ orchestrator:
 
 **🛠️ Professional Tooling:**
 ```bash
-# Real-time dashboard like 'top' for AI systems
+# Near real-time dashboard (deployment-dependent) similar to 'top' for AI systems
 orka memory watch
 # ┌─────────────────────────────────────────────────────────────┐
 # │ OrKa Memory Dashboard - 14:23:45 | Backend: redisstack     │

@@ -203,7 +203,7 @@ class ShortlistExecutor:
 
 ### Phase 4: Deprecation (Optional)
 - Mark numeric scoring as legacy
-- Recommend boolean scoring for production
+- Recommend boolean scoring for high-assurance contexts (validate for your domain)
 - Keep numeric for quick prototyping
 
 ## Configuration

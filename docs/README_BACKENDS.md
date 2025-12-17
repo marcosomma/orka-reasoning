@@ -6,7 +6,7 @@ OrKa supports Redis-based memory backends: **RedisStack** (recommended) and **Re
 
 | Backend | Performance | Use Case | Vector Search | Setup Complexity |
 |---------|-------------|----------|---------------|------------------|
-| **RedisStack** | ⚡ 100x faster | Production AI workloads | ✅ HNSW indexing | 🟢 Simple |
+| **RedisStack** | ⚡ 100x faster | Latency-sensitive workloads | ✅ HNSW indexing | 🟢 Simple |
 | **Redis** | 🔄 Standard | Development, legacy | ❌ Basic search | 🟢 Simple |
 
 ## 🚀 Quick Start Options
@@ -58,7 +58,7 @@ python -m orka.orka_start
 **Features:**
 - ✅ HNSW vector indexing for 100x faster semantic search
 - ✅ Advanced memory decay and compression
-- ✅ Real-time memory analytics
+- ✅ Near real-time memory analytics (deployment-dependent)
 - ✅ Automatic index optimization
 
 ### Redis (Basic)
@@ -115,7 +115,7 @@ volumes:
 
 ### Choose **RedisStack** if:
 - ✅ You need semantic/vector search
-- ✅ Building production AI applications
+- ✅ Guidance for building production-grade AI applications (validate for your environment)
 - ✅ Want 100x faster query performance
 - ✅ Need advanced memory features
 
@@ -195,11 +195,11 @@ python -m orka.orka_start
 
 ## 🎯 **Best Practices**
 
-1. **Production:** Always use RedisStack for production workloads
+Guidance: RedisStack is recommended for latency-sensitive workloads; evaluate trade-offs and test for your specific environment.
 2. **Development:** RedisStack recommended, Redis acceptable for simple testing
 3. **Monitoring:** Use `orka memory watch` to monitor performance
 4. **Backup:** Configure Redis persistence with `--save` options
-5. **Security:** Use Redis AUTH and network isolation in production
+5. **Security:** Use Redis AUTH and network isolation in deployments
 
 ## 📚 **Additional Resources**
 

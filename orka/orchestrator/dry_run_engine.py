@@ -363,7 +363,7 @@ CONTEXT:
 
 CRITICAL REQUIREMENTS:
 - The workflow MUST end with an agent type that generate comprehensive LLM response to the user. Best suitable agent type for this task are local_llm and openaai based ones. 
-- NEVER route to the same agent that is currently making the routing decision
+- Avoid routing to the agent that is currently making the routing decision where possible; document exceptions and tests where this is needed
 - This prevents infinite loops and ensures workflow progression
 - Consider if this path leads to or enables a final answer generation
 - Prioritize paths that contribute to complete user responses and workflow progression
@@ -887,7 +887,7 @@ EVALUATION CRITERIA:
 4. **Specificity**: Each path should have DIFFERENT scores and reasoning
 
 CRITICAL REQUIREMENTS:
-- NEVER route to the current agent ({current_agent})
+- Avoid routing to the current agent ({current_agent}) when possible; document exceptions and test coverage
 - Each path MUST have a UNIQUE score (no identical scores)
 - Provide SPECIFIC pros/cons for each path
 - For factual questions, prioritize search → response_builder paths

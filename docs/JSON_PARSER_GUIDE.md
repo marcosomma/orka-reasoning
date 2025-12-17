@@ -1,12 +1,14 @@
 # Robust JSON Parsing for LLM Outputs
 
 **Version:** 1.0.0  
-**Status:** Production Ready  
+**Status:** Stable — production criteria defined  
+
+Assumptions: The parser handles common LLM formatting issues; does not guarantee correction of all malformed responses. Proof: `tests/unit/utils/test_json_parser.py` and related integration tests.
 **Last Updated:** November 22, 2025
 
 ## Overview
 
-OrKa v1.0.0 introduces a robust JSON parsing system designed to handle the unpredictable nature of LLM outputs. This system ensures reliability in production by providing:
+OrKa v1.0.0 introduces a robust JSON parsing system designed to handle common LLM output formats. This system aims to provide robust handling; see 'Assumptions & Coverage' for limits and required validation steps:
 
 - **Automatic JSON repair** for common syntax errors
 - **Schema validation** with detailed error messages
@@ -340,7 +342,7 @@ if "error" in result:
     }
 ```
 
-### 3. Always Provide Defaults for Optional Fields
+### 3. Provide Defaults for Optional Fields (recommended)
 
 ```python
 # Ensure your code doesn't break on missing fields
@@ -483,4 +485,4 @@ For issues or questions:
 
 ---
 
-**Built for Production Reliability** 🚀
+**Designed for Robustness (see coverage and limitations)**

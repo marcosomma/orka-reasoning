@@ -15,8 +15,7 @@
 OrKa Server - FastAPI Web Server
 ===============================
 
-Production-ready FastAPI server that exposes OrKa workflows through RESTful APIs.
-Transforms AI workflows into scalable web services with comprehensive data handling.
+FastAPI server that exposes OrKa workflows through RESTful APIs. This server is provided as an example deployment; production hardening is required prior to use in critical environments.
 
 Core Features
 ------------
@@ -33,7 +32,9 @@ Core Features
 - Base64 encoding for binary data transmission
 - Type preservation with metadata for complex structures
 
-**Production Features**
+**Deployment Considerations**
+
+Assumptions: See `docs/production-readiness.md` for hardening guidance.
 - FastAPI framework with automatic OpenAPI documentation
 - Uvicorn ASGI server for high-performance async handling
 - Configurable port binding with environment variable support
@@ -52,7 +53,7 @@ Architecture Details
 7. **Cleanup**: Remove temporary files and return response
 
 **JSON Sanitization System**
-The server includes sophisticated data sanitization for API responses:
+The server includes a data sanitization system for API responses.
 
 - **Primitive Types**: Direct passthrough for strings, numbers, booleans
 - **Bytes Objects**: Base64 encoding with type metadata
@@ -66,6 +67,11 @@ The server includes sophisticated data sanitization for API responses:
 - Graceful degradation for serialization failures
 - Fallback responses with error context
 - HTTP status codes for different error types
+
+Assumptions:
+- This server is an example deployment and requires TLS, secrets management, and load balancing to be production-ready.
+
+Proof: See `docs/INTEGRATION_EXAMPLES.md` and `docs/production-readiness.md` for required hardening and tests.
 
 Implementation Details
 ---------------------
@@ -157,7 +163,7 @@ Deployment Configuration
 - `ORKA_PORT`: Server port (default: 8001)
 - Standard FastAPI/Uvicorn environment variables
 
-**Production Deployment**
+**Production Deployment (requires hardening and validation)**
 
 .. code-block:: bash
 
@@ -268,7 +274,7 @@ try:
 
         _orka_setup_logging()
 except Exception:
-    # Never fail server startup due to logging configuration issues
+    # Aim to avoid server startup failures due to logging configuration issues; verify logging configuration in deployment.
     pass
 
 # CORS (optional, but useful if UI and API are on different ports during dev)

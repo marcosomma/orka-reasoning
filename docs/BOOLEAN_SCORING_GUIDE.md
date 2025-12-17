@@ -60,28 +60,47 @@ OrKa's scoring system now supports **context-specific evaluation criteria**. Dif
 - **loop_convergence**: Iterative improvement tracking (progress, stability, convergence)
 - **validation**: Schema/constraint compliance (schema_compliance, format, constraints)
 
+> **Note:** The `orka.scoring` helpers (`BooleanScoreCalculator`) are **deprecated**. Prefer the canonical `PathScorer` (`orka.orchestrator.path_scoring.PathScorer`) for new code — it centralizes numeric and boolean scoring and supports experimental LLM evaluators via `llm_evaluator_name`.
+
 ```python
-# Different contexts use different criteria
+# Legacy API (deprecated but retained for compatibility)
 from orka.scoring import BooleanScoreCalculator
 
-# For validating agent paths
+# For validating agent paths (legacy)
 path_calc = BooleanScoreCalculator(preset="strict", context="graphscout")
 
-# For evaluating response quality
+# For evaluating response quality (legacy)
 quality_calc = BooleanScoreCalculator(preset="moderate", context="quality")
 
-# For tracking loop convergence
+# For tracking loop convergence (legacy)
 loop_calc = BooleanScoreCalculator(preset="lenient", context="loop_convergence")
 ```
+
+```python
+# Preferred: use PathScorer in boolean mode
+from orka.orchestrator.path_scoring import PathScorer
+
+config = {
+    "scoring_mode": "boolean",
+    "scoring": {
+        "preset": "strict",
+        "context": "graphscout"
+    },
+    "llm_evaluator_name": "disabled"  # experimental: "mock" is available for deterministic LLM evaluation
+}
+
+path_scorer = PathScorer(config)
+```
+
 
 ### Scoring Presets
 
 OrKa includes three built-in presets for each evaluation context:
 
-#### Strict (Production-Critical Paths)
+#### Strict (High-Assurance Paths)
 - **Approval Threshold**: 0.90-0.95 (varies by context)
 - **Needs Improvement**: 0.75-0.90
-- **Use Case**: Mission-critical production workflows
+- **Use Case**: Mission-critical or high-assurance workflows (validate and monitor)
 - **Emphasis**: High standards across all dimensions
 
 #### Moderate (General-Purpose)
@@ -268,20 +287,35 @@ coherence: 100.0% (0.05/0.05)
 
 ### In Python
 
-```python
-from orka.scoring import BooleanScoreCalculator
+> **Tip:** Prefer the canonical `PathScorer` for new code. The legacy `BooleanScoreCalculator` is retained for compatibility but is deprecated.
 
-# For loop convergence evaluation
+```python
+# Preferred: use PathScorer configured for boolean mode
+from orka.orchestrator.path_scoring import PathScorer
+
+config = {
+    "scoring_mode": "boolean",
+    "scoring": {"preset": "moderate", "context": "loop_convergence"},
+    "llm_evaluator_name": "disabled"
+}
+path_scorer = PathScorer(config)
+# PathScorer exposes a `boolean_engine` for direct boolean calculations
+result = path_scorer.boolean_engine.calculate(boolean_evaluations)
+print(f"Score: {result['score']:.4f}")
+```
+
+```python
+# Legacy (still supported): direct BooleanScoreCalculator use
+from orka.scoring import BooleanScoreCalculator
 calculator = BooleanScoreCalculator(
     preset="moderate",
-    context="loop_convergence",  # Specify evaluation context
+    context="loop_convergence",
     custom_weights={
         "improvement.shows_progress": 0.30,
         "convergence.approaching_threshold": 0.25,
         # ... other overrides
     }
 )
-
 result = calculator.calculate(boolean_evaluations)
 print(f"Score: {result['score']:.4f}")
 ```
@@ -323,7 +357,7 @@ quality_calc = BooleanScoreCalculator(
 
 ### 1. Choose the Right Preset
 
-- **Strict**: Use for production-critical systems, compliance-required workflows
+- **Strict**: Use for high-assurance or compliance-required workflows (validate and test for your environment)
 - **Moderate**: Default for most applications
 - **Lenient**: Use for experimental features, rapid iteration
 

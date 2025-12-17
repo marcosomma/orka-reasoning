@@ -62,7 +62,7 @@ def start_infrastructure(backend: str) -> dict[str, subprocess.Popen]:
 
     logger.info(f"Starting {backend.upper()} backend...")
 
-    # Always start Redis natively for all backends (except when explicitly using Docker)
+    # Recommended: start Redis locally for native backends (unless explicitly using Docker); validate for your environment
     if backend in ["redis", "redisstack"]:
         redis_proc = start_native_redis(6380)
         if redis_proc is not None:

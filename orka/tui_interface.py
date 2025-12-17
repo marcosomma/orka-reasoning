@@ -3,7 +3,7 @@ OrKa TUI Interface
 ==================
 
 Terminal User Interface for OrKa memory system monitoring and management.
-Provides real-time visualizations and interactive controls for memory operations.
+Provides near real-time visualizations and interactive controls for memory operations (backend dependent).
 
 Overview
 --------
@@ -15,7 +15,7 @@ interactive interfaces when Textual is available.
 Core Features
 ------------
 
-**Real-time Monitoring**
+**Near real-time Monitoring**
 - Live memory statistics with automatic refresh
 - Connection status and backend information
 - Performance metrics and system health indicators
@@ -61,7 +61,7 @@ Implementation Details
 When Textual is available, the interface provides:
 - Rich terminal widgets and layouts
 - Interactive keyboard bindings
-- Real-time data updates
+- Near real-time data updates (backend dependent)
 - Professional styling and themes
 
 **Fallback Mode**

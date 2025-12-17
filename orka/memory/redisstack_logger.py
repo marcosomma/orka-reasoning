@@ -198,7 +198,9 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
     - Category separation (stored vs logs)
     - Namespace-based multi-tenancy
 
-    **4. Production-Ready Features:**
+    **4. Deployment Considerations and Features:**
+
+Assumptions: Achieving high availability requires an appropriate RedisStack HA deployment and monitoring.
     - Connection pooling and failover
     - Comprehensive monitoring and metrics
     - Graceful degradation capabilities
@@ -208,7 +210,7 @@ class RedisStackMemoryLogger(BaseMemoryLogger):
     - Real-time AI applications requiring instant memory recall
     - High-throughput services with complex memory requirements
     - Multi-tenant SaaS platforms with memory isolation
-    - Production systems requiring 99.9% uptime
+    - Systems that may require high availability (99.9% uptime requires appropriate HA configuration and monitoring)
     """
 
     def __init__(

@@ -16,8 +16,14 @@ OrKa: Orchestrator Kit Agents
 ==============================
 
 OrKa is a comprehensive orchestration framework for AI agents that provides
-structured workflows, intelligent memory management, and production-ready
-infrastructure for building sophisticated AI applications.
+structured workflows and intelligent memory management.
+
+Purpose: High-level package overview and entrypoints.
+
+Assumptions:
+- Users should validate configuration and run integration tests before deploying to production.
+
+Proof: See `docs/INTEGRATION_EXAMPLES.md` and `tests/integration/` for verified examples.
 
 Architecture Overview
 =====================
@@ -74,7 +80,9 @@ Core Components
 Key Features
 ============
 
-**Production-Ready Infrastructure**
+**Deployment Considerations**
+
+Assumptions: Production deployment requires operational hardening and validation. See `docs/production-readiness.md`.
 - Thread-safe execution with concurrency control
 - Comprehensive error handling and retry logic
 - Performance metrics and monitoring
@@ -88,7 +96,7 @@ Key Features
 
 **Developer Experience**
 - Declarative YAML configuration
-- Interactive CLI with real-time feedback
+- Interactive CLI with near real-time feedback (deployment and environment dependent)
 - Comprehensive error reporting and debugging
 - Hot-reload for development workflows
 
@@ -151,7 +159,7 @@ Usage Patterns
     orka memory stats
     orka memory cleanup --dry-run
 
-    # Real-time monitoring
+    # Near real-time monitoring (subject to backend and deployment configuration)
     orka memory watch --run-id <run_id>
 
 Backward Compatibility
@@ -176,11 +184,12 @@ For More Information
 * **Author**: Marco Somma (marcosomma.work@gmail.com)
 """
 
-from .agents import *
+# Import minimal, commonly-used components lazily to avoid heavy import-time costs
+# and unintended side-effects (e.g., deprecation warnings from legacy modules).
+# Consumers can import specific agents/nodes directly from their modules when needed.
 from .fork_group_manager import ForkGroupManager
 from .loader import YAMLLoader
 from .memory_logger import RedisMemoryLogger, MemoryLogger
-from .nodes import *
 from .orchestrator import Orchestrator
 from .orka_cli import *
 
