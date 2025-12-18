@@ -86,10 +86,30 @@ def test_template_helpers_agent_response_and_safe_get_response():
 
     assert helpers["get_agent_response"]("agent_a") == "A"
     assert helpers["safe_get_response"]("agent_a") == "A"
-    # Note: get_agent_response uses the wording "No response from ..." for missing agents,
-    # and safe_get_response only switches to fallback when the string starts with
-    # "No response found".
-    assert helpers["safe_get_response"]("missing_agent", fallback="F") == "No response from missing_agent"
+    assert helpers["safe_get_response"]("missing_agent", fallback="F") == "F"
+
+
+def test_template_helpers_safe_get_response_handles_non_string_payloads():
+    """Regression: safe_get_response must not call .startswith() on list/dict results."""
+    node = _make_node()
+
+    payload = {
+        "input": "x",
+        "previous_outputs": {
+            "list_agent": {"response": ["a", "b"]},
+            "dict_agent": {"response": {"k": "v"}},
+            "orka_response_agent": {"result": {"response": ["x", "y"]}},
+        },
+    }
+
+    helpers = node._get_template_helper_functions(payload)
+
+    assert helpers["safe_get_response"]("list_agent") == ["a", "b"]
+    assert helpers["safe_get_response"]("dict_agent") == {"k": "v"}
+    assert helpers["safe_get_response"]("orka_response_agent") == ["x", "y"]
+
+    # Dotted access should traverse dict keys after unwrapping result
+    assert helpers["safe_get_response"]("dict_agent.k", fallback="F") == "v"
 
 
 def test_template_helpers_joined_results_and_fork_responses_multiple_shapes():

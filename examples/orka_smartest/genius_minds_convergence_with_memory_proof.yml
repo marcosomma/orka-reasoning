@@ -111,12 +111,12 @@ agents:
       context: loop_convergence  # Track genius minds convergence
       custom_weights:
         # Convergence criteria for multi-perspective synthesis
-        improvement.shows_progress: 0.25
-        improvement.approaches_goal: 0.20
+        improvement.better_than_previous: 0.25
+        improvement.approaching_target: 0.20
         stability.consistent_direction: 0.15
-        stability.no_oscillation: 0.10
-        convergence.approaching_threshold: 0.15
-        convergence.diminishing_changes: 0.10
+        stability.not_degrading: 0.10
+        convergence.within_tolerance: 0.15
+        convergence.delta_decreasing: 0.10
     
     cognitive_extraction:
       enabled: true

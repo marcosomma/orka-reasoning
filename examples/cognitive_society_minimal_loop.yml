@@ -46,10 +46,10 @@ agents:
       preset: moderate
       context: loop_convergence  # Track debate convergence, not agent paths
       custom_weights:
-        improvement.shows_progress: 0.25
-        improvement.approaches_goal: 0.20
+        improvement.better_than_previous: 0.25
+        improvement.approaching_target: 0.20
         stability.consistent_direction: 0.20
-        convergence.approaching_threshold: 0.15
+        convergence.within_tolerance: 0.15
     
     past_loops_metadata:
       round: "{{ get_loop_number() }}"

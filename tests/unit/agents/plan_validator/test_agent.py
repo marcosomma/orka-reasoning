@@ -225,3 +225,35 @@ class TestPlanValidatorAgent:
         mock_prompt_builder.assert_called_once()
         called_kwargs = mock_prompt_builder.call_args[1]
         assert called_kwargs.get("scoring_context") == "loop_convergence"
+
+    @pytest.mark.asyncio
+    async def test_synthesizes_loop_convergence_booleans_when_missing(self, mock_prompt_builder, mock_boolean_score_calculator_class):
+        """When boolean_evaluations are missing, synthesize loop_convergence booleans from LLM response."""
+        # Patch LLM to return a text indicating improvement and stability
+        with patch("orka.agents.plan_validator.llm_client.call_llm", new_callable=AsyncMock) as mock_llm_call:
+            mock_llm_call.return_value = "The proposed path improves accuracy by 6% and shows stable behavior with no regressions."
+
+            # Patch boolean parser to return empty
+            with patch("orka.agents.plan_validator.boolean_parser.parse_boolean_evaluation") as mock_parse:
+                mock_parse.return_value = {}
+
+                context = {
+                    "input": "test",
+                    "previous_outputs": {},
+                    "loop_number": 2,
+                    "scoring_context": "loop_convergence",
+                }
+
+                agent = PlanValidatorAgent(agent_id="pv", llm_model="m", llm_provider="p", llm_url="u")
+                result = await agent._run_impl(context)
+
+                assert isinstance(result, dict)
+                assert "boolean_evaluations" in result
+                be = result["boolean_evaluations"]
+                # Should have synthesized improvement and stability keys
+                assert "improvement" in be
+                assert be["improvement"].get("better_than_previous") is True
+                # Significant delta synthesized from 6% should be True
+                assert be["improvement"].get("significant_delta") is True
+                assert "stability" in be
+                assert be["stability"].get("not_degrading") is True

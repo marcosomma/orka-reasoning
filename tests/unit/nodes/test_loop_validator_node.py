@@ -27,7 +27,8 @@ class TestLoopValidatorNode:
         assert node.temperature == 0.1
         assert node.evaluation_target is None
         assert node.custom_prompt is None
-        assert "BALANCED" in node.prompt_template or "has_all_required_steps" in node.prompt_template
+        # Default is loop-focused prompt (IMPROVEMENT/STABILITY/CONVERGENCE)
+        assert "IMPROVEMENT" in node.prompt_template.upper() or "better_than_previous" in node.prompt_template
 
     def test_init_with_custom_params(self):
         """Test initialization with custom parameters."""
@@ -72,7 +73,7 @@ class TestLoopValidatorNode:
         )
         
         assert "STRICT" in node.prompt_template.upper()
-        assert "has_all_required_steps" in node.prompt_template
+        assert "better_than_previous" in node.prompt_template
 
     def test_init_with_lenient_preset(self):
         """Test initialization with lenient preset."""
@@ -97,21 +98,17 @@ class TestLoopValidatorNode:
         # Mock LLM response with valid JSON
         mock_response = {
             "response": json.dumps({
-                "completeness": {
-                    "has_all_required_steps": True,
-                    "addresses_all_query_aspects": True
+                "improvement": {
+                    "better_than_previous": True,
+                    "significant_delta": True
                 },
-                "efficiency": {
-                    "minimizes_redundant_calls": True,
-                    "uses_appropriate_agents": False
+                "stability": {
+                    "not_degrading": True,
+                    "consistent_direction": False
                 },
-                "safety": {
-                    "validates_inputs": True,
-                    "handles_errors_gracefully": True
-                },
-                "coherence": {
-                    "logical_agent_sequence": True,
-                    "proper_data_flow": True
+                "convergence": {
+                    "delta_decreasing": True,
+                    "within_tolerance": False
                 }
             })
         }
@@ -140,10 +137,9 @@ class TestLoopValidatorNode:
         )
         
         mock_response = {"response": json.dumps({
-            "completeness": {"has_all_required_steps": True},
-            "efficiency": {"minimizes_redundant_calls": True},
-            "safety": {"validates_inputs": True},
-            "coherence": {"logical_agent_sequence": True}
+            "improvement": {"better_than_previous": True},
+            "stability": {"not_degrading": True},
+            "convergence": {"delta_decreasing": True}
         })}
         
         node.llm_agent.run = AsyncMock(return_value=mock_response)
@@ -294,17 +290,16 @@ class TestLoopValidatorNode:
         )
         
         json_text = json.dumps({
-            "completeness": {"has_all_required_steps": True},
-            "efficiency": {"minimizes_redundant_calls": False},
-            "safety": {"validates_inputs": True},
-            "coherence": {"logical_agent_sequence": True}
+            "improvement": {"better_than_previous": True},
+            "stability": {"not_degrading": False},
+            "convergence": {"delta_decreasing": True}
         })
         
         result = node._try_json_parse(json_text)
         
         assert result is not None
-        assert "completeness" in result
-        assert result["completeness"]["has_all_required_steps"] is True
+        assert "improvement" in result
+        assert result["improvement"]["better_than_previous"] is True
 
     def test_try_json_parse_json_in_text(self):
         """Test JSON parsing with JSON embedded in text."""
@@ -315,16 +310,15 @@ class TestLoopValidatorNode:
         )
         
         text = "Here is the evaluation: " + json.dumps({
-            "completeness": {"has_all_required_steps": True},
-            "efficiency": {"minimizes_redundant_calls": True},
-            "safety": {"validates_inputs": True},
-            "coherence": {"logical_agent_sequence": True}
+            "improvement": {"better_than_previous": True},
+            "stability": {"not_degrading": True},
+            "convergence": {"delta_decreasing": True}
         }) + " That's all."
         
         result = node._try_json_parse(text)
         
         assert result is not None
-        assert "completeness" in result
+        assert "improvement" in result
 
     def test_try_json_parse_invalid_json(self):
         """Test JSON parsing with invalid JSON."""
@@ -346,19 +340,19 @@ class TestLoopValidatorNode:
         )
         
         text = """
-        completeness:
-        has_all_required_steps: true
-        addresses_all_query_aspects: false
+        improvement:
+        better_than_previous: true
+        significant_delta: false
         
-        efficiency:
-        minimizes_redundant_calls: true
+        stability:
+        not_degrading: true
         """
         
         result = node._try_regex_parse(text)
         
         assert result is not None
-        assert "completeness" in result
-        assert result["completeness"]["has_all_required_steps"] is True
+        assert "improvement" in result
+        assert result["improvement"]["better_than_previous"] is True
 
     def test_try_regex_parse_various_formats(self):
         """Test regex parsing with various formats."""
@@ -368,8 +362,8 @@ class TestLoopValidatorNode:
             provider="ollama"
         )
         
-        # Test with quotes and colons
-        text = '"has_all_required_steps": true'
+        # Test with quotes and colons (loop keys)
+        text = '"better_than_previous": true'
         result = node._try_regex_parse(text)
         assert result is not None
 
@@ -382,14 +376,14 @@ class TestLoopValidatorNode:
         )
         
         text = """
-        The has_all_required_steps criterion is true
-        For addresses_all_query_aspects, the answer is false
+        The better_than_previous criterion is true
+        For significant_delta, the answer is false
         """
         
         result = node._try_keyword_parse(text)
         
         assert result is not None
-        assert "completeness" in result
+        assert "improvement" in result
 
     def test_try_keyword_parse_with_symbols(self):
         """Test keyword parsing with symbols (✓, ✗)."""
@@ -400,8 +394,8 @@ class TestLoopValidatorNode:
         )
         
         text = """
-        has_all_required_steps ✓
-        addresses_all_query_aspects ✗
+        better_than_previous ✓
+        significant_delta ✗
         """
         
         result = node._try_keyword_parse(text)
@@ -417,10 +411,10 @@ class TestLoopValidatorNode:
         
         result = node._conservative_defaults()
         
-        assert "completeness" in result
-        assert "efficiency" in result
-        assert "safety" in result
-        assert "coherence" in result
+        # Should reflect loop convergence categories
+        assert "improvement" in result
+        assert "stability" in result
+        assert "convergence" in result
         
         # All values should be False
         for category in result.values():
@@ -435,8 +429,8 @@ class TestLoopValidatorNode:
         )
         
         data = {
-            "completeness": {"has_all_required_steps": True},
-            "efficiency": {"minimizes_redundant_calls": True}
+            "improvement": {"better_than_previous": True},
+            "stability": {"not_degrading": True}
         }
         
         assert node._validate_structure(data) is True
@@ -464,8 +458,8 @@ class TestLoopValidatorNode:
         )
         
         data = {
-            "completeness": {"has_all_required_steps": True},
-            "efficiency": {"minimizes_redundant_calls": True}
+            "IMPROVEMENT": {"better_than_previous": True},
+            "StAbIlItY": {"not_degrading": True}
         }
         
         assert node._validate_structure(data) is True
@@ -479,22 +473,22 @@ class TestLoopValidatorNode:
         )
         
         data = {
-            "completeness": {
-                "has_all_required_steps": True,
-                "addresses_all_query_aspects": False
+            "improvement": {
+                "better_than_previous": True,
+                "significant_delta": False
             },
-            "efficiency": {
-                "minimizes_redundant_calls": "true",
-                "uses_appropriate_agents": "yes"
+            "stability": {
+                "not_degrading": "true",
+                "consistent_direction": "yes"
             }
         }
         
         result = node._normalize_structure(data)
         
-        assert result["completeness"]["has_all_required_steps"] is True
-        assert result["completeness"]["addresses_all_query_aspects"] is False
-        assert result["efficiency"]["minimizes_redundant_calls"] is True
-        assert result["efficiency"]["uses_appropriate_agents"] is True
+        assert result["improvement"]["better_than_previous"] is True
+        assert result["improvement"]["significant_delta"] is False
+        assert result["stability"]["not_degrading"] is True
+        assert result["stability"]["consistent_direction"] is True
 
     def test_normalize_structure_case_insensitive(self):
         """Test structure normalization handles case-insensitive keys."""
@@ -505,14 +499,14 @@ class TestLoopValidatorNode:
         )
         
         data = {
-            "completeness": {
-                "HAS_ALL_REQUIRED_STEPS": True
+            "improvement": {
+                "BETTER_THAN_PREVIOUS": True
             }
         }
         
         result = node._normalize_structure(data)
-        assert "completeness" in result
-        assert result["completeness"]["has_all_required_steps"] is True
+        assert "improvement" in result
+        assert result["improvement"]["better_than_previous"] is True
 
     def test_normalize_structure_missing_category(self):
         """Test structure normalization with missing category."""
@@ -523,19 +517,18 @@ class TestLoopValidatorNode:
         )
         
         data = {
-            "completeness": {"has_all_required_steps": True}
+            "improvement": {"better_than_previous": True}
             # Missing other categories
         }
         
         result = node._normalize_structure(data)
         
         # Should have all categories with defaults
-        assert "efficiency" in result
-        assert "safety" in result
-        assert "coherence" in result
+        assert "stability" in result
+        assert "convergence" in result
         
         # Missing categories should have all false
-        assert all(val is False for val in result["efficiency"].values())
+        assert all(val is False for val in result["convergence"].values())
 
     def test_format_for_loop_node_success(self):
         """Test formatting output for LoopNode."""
@@ -610,7 +603,48 @@ class TestLoopValidatorNode:
         # Only 1 passed out of 8 = 0.125
         assert result["validation_score"] < 0.7
         assert result["overall_assessment"] == "REJECTED"
+    def test_path_mode_uses_path_prompts(self):
+        """Ensure LoopValidatorNode can operate in 'path' mode for backward compatibility."""
+        node = LoopValidatorNode(
+            node_id="validator",
+            llm_model="gpt-oss:20b",
+            provider="ollama",
+            mode="path",
+            scoring_preset="strict",
+        )
 
+        # Path mode prompt should include path-specific criteria
+        assert "has_all_required_steps" in node.prompt_template
+        # The active criteria structure should reflect path mode
+        assert "completeness" in node.criteria_structure
+
+    def test_scoring_context_overrides_mode_to_path(self):
+        """scoring_context='graphscout' should select path criteria even with default mode."""
+        node = LoopValidatorNode(
+            node_id="validator",
+            llm_model="gpt-oss:20b",
+            provider="ollama",
+            scoring_context="graphscout",
+            scoring_preset="moderate",
+        )
+        assert node.effective_mode == "path"
+        assert "has_all_required_steps" in node.prompt_template
+        # Also ensure the effective dynamic criteria structure is path-based
+        assert "completeness" in node.criteria_structure
+
+    def test_scoring_context_overrides_mode_to_loop(self):
+        """scoring_context='loop_convergence' should select loop criteria."""
+        node = LoopValidatorNode(
+            node_id="validator",
+            llm_model="gpt-oss:20b",
+            provider="ollama",
+            scoring_context="loop_convergence",
+            scoring_preset="lenient",
+        )
+        assert node.effective_mode == "loop"
+        assert "better_than_previous" in node.prompt_template
+        # The effective dynamic criteria structure should reflect loop convergence
+        assert "improvement" in node.criteria_structure
     def test_safe_fallback_response(self):
         """Test safe fallback response on error."""
         node = LoopValidatorNode(
@@ -638,17 +672,15 @@ class TestLoopValidatorNode:
         )
         
         json_text = json.dumps({
-            "completeness": {"has_all_required_steps": True},
-            "efficiency": {"minimizes_redundant_calls": True},
-            "safety": {"validates_inputs": True},
-            "coherence": {"logical_agent_sequence": True}
+            "improvement": {"better_than_previous": True},
+            "stability": {"not_degrading": True},
+            "convergence": {"delta_decreasing": True}
         })
-        
-        result = node._parse_with_fallbacks(json_text)
-        
-        assert result is not None
-        assert "completeness" in result
 
+        result = node._parse_with_fallbacks(json_text)
+
+        assert result is not None
+        assert "improvement" in result
     def test_parse_with_fallbacks_regex_second(self):
         """Test parse_with_fallbacks falls back to regex."""
         node = LoopValidatorNode(

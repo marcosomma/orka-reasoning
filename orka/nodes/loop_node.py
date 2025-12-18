@@ -914,6 +914,44 @@ class LoopNode(BaseNode):
             f"LoopNode '{self.node_id}': Attempting boolean score extraction from {len(result)} agents"
         )
 
+        # Quick heuristic: if boolean evaluations are present but there is no
+        # observable routing/join information in the agent outputs, it's likely
+        # the validator ran without any actionable input (e.g., upstream join
+        # or routing decision missing). In such cases we should skip boolean
+        # scoring early and fall back to numeric pattern extraction to avoid
+        # producing misleading false negatives.
+        any_boolean_present = any(
+            isinstance(v, dict) and "boolean_evaluations" in v for v in result.values()
+        )
+        any_boolean_has_entries = any(
+            isinstance(v, dict)
+            and isinstance(v.get("boolean_evaluations"), dict)
+            and any(
+                isinstance(c, dict) and bool(c) for c in v.get("boolean_evaluations", {}).values()
+            )
+            for v in result.values()
+        )
+        # Detect signs of routing/join outputs in responses or keys
+        routing_indicators = ("join_results", "routing_decision", "routing", "proposed_path", "path", "join")
+        has_routing_or_join = False
+        for v in result.values():
+            if isinstance(v, dict):
+                if any(k in v for k in routing_indicators):
+                    has_routing_or_join = True
+                    break
+                if "response" in v and isinstance(v["response"], str):
+                    txt = v["response"]
+                    if any(tok in txt for tok in ("Join Results", "Routing Decision", "proposed_path", "proposed path")):
+                        has_routing_or_join = True
+                        break
+        # Only skip if there are boolean_evaluations present but none have any criteria
+        # (i.e., empty / sparse parsing) and no routing/join inputs are present.
+        if any_boolean_present and not any_boolean_has_entries and not has_routing_or_join:
+            logger.warning(
+                f"LoopNode '{self.node_id}': boolean_evaluations present but empty and no routing/join data observed; skipping boolean scoring and falling back to numeric extraction"
+            )
+            return None
+
         # Look for boolean evaluation structure in agent responses
         for agent_id, agent_result in result.items():
             if not isinstance(agent_result, dict):

@@ -54,7 +54,6 @@ class AgentRunner:
             try:
                 formatted_prompt = self.orchestrator.render_template(agent_prompt, payload)
                 payload["formatted_prompt"] = formatted_prompt
-                logger.debug(f"- Rendered preview: {formatted_prompt[:200]}...")
             except Exception as e:
                 logger.error(f"Failed to render prompt for agent '{agent_id}': {e}")
                 payload["formatted_prompt"] = agent_prompt if agent_prompt else ""

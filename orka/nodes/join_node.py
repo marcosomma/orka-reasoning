@@ -246,7 +246,7 @@ class JoinNode(BaseNode):
         if not pending:
             logger.info(f"🔗 JOIN - All agents completed! Proceeding to merge results.")
             self.memory_logger.hdel("join_retry_counts", self._retry_key)
-            return self._complete(fork_targets, state_key)
+            return self._complete(fork_targets, state_key, input_data=input_data)
 
         # Check for max retries
         if retry_count >= self.max_retries:
@@ -278,7 +278,7 @@ class JoinNode(BaseNode):
             "max_retries": self.max_retries,
         }
 
-    def _complete(self, fork_targets, state_key):
+    def _complete(self, fork_targets, state_key, input_data: Any = None):
         """
         Complete the join operation by merging all fork results.
 
@@ -369,10 +369,47 @@ class JoinNode(BaseNode):
         join_key = f"join_result:{self.node_id}"
         self.memory_logger.set(join_key, json.dumps(result, default=json_serializer))
         logger.debug(f"- Stored final join result: {join_key}")
+        # Log join_key info at info level for easier runtime visibility
+        try:
+            stored_join = self.memory_logger.get(join_key)
+            join_len = len(stored_join) if stored_join else 0
+            logger.info(f"🔗 JOIN COMPLETE - join_key='{join_key}', bytes={join_len}")
+        except Exception as e:
+            logger.warning(f"🔗 JOIN COMPLETE - could not read back join_key '{join_key}': {e}")
 
         # Store in Redis hash for group tracking
         group_key = f"join_results:{self.node_id}"
         self.memory_logger.hset(group_key, "result", json.dumps(result, default=json_serializer))
         logger.debug(f"- Stored final result in group")
+
+        # Additional info log to help debug missing join_results entries
+        try:
+            stored = self.memory_logger.hget(group_key, "result")
+            stored_val = stored.decode() if isinstance(stored, bytes) else stored
+            stored_len = len(stored_val) if stored_val else 0
+            logger.info(f"🔗 JOIN COMPLETE - group_key='{group_key}', result_len={stored_len}, join_key='{join_key}'")
+            sample = stored_val[:400] if stored_val else ""
+            logger.info(f"🔗 JOIN COMPLETE - sample result (truncated): {sample}")
+        except Exception as e:
+            logger.warning(f"🔗 JOIN COMPLETE - unable to read back stored group result: {e}")
+
+        # Also create an indexed memory entry so template helpers and FT.SEARCH can find the join result
+        try:
+            trace_id = input_data.get("trace_id") if isinstance(input_data, dict) else None
+
+            # Only attempt memory logging if the backend supports it (RedisStackMemoryLogger does).
+            if hasattr(self.memory_logger, "log_memory"):
+                memory_content = json.dumps(result, default=json_serializer)
+                memory_key = self.memory_logger.log_memory(
+                    memory_content,
+                    node_id=self.node_id,
+                    trace_id=trace_id or join_key,
+                    metadata={"event_type": "join_result", "node_id": self.node_id},
+                    importance_score=1.0,
+                    memory_type="short_term",
+                )
+                logger.info(f"🔗 JOIN COMPLETE - logged memory key: {memory_key}")
+        except Exception as e:
+            logger.warning(f"🔗 JOIN COMPLETE - failed to log join memory: {e}")
 
         return result

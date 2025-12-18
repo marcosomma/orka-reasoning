@@ -319,6 +319,36 @@ def mock_search_results():
     ]
 
 
+# Shared fixtures used by PlanValidator unit tests and integration-style node tests
+@pytest.fixture
+def mock_prompt_builder():
+    """Fixture for a mocked prompt_builder used by PlanValidator tests."""
+    with patch("orka.agents.plan_validator.prompt_builder.build_validation_prompt") as mock_build_validation_prompt:
+        mock_build_validation_prompt.return_value = "Mocked validation prompt"
+        yield mock_build_validation_prompt
+
+
+@pytest.fixture
+def mock_boolean_score_calculator_class():
+    """Fixture for a mocked BooleanScoreCalculator class used by PlanValidator tests."""
+    from orka.scoring import BooleanScoreCalculator
+
+    with patch("orka.agents.plan_validator.agent.BooleanScoreCalculator") as mock_class:
+        mock_instance = MagicMock(spec=BooleanScoreCalculator)
+        mock_instance.calculate.return_value = {
+            "score": 0.8,
+            "assessment": "ACCEPTED",
+            "breakdown": {"completeness": 0.9, "efficiency": 0.7},
+            "passed_criteria": ["completeness_check"],
+            "failed_criteria": ["efficiency_check"],
+            "dimension_scores": {"completeness": 0.9, "efficiency": 0.7},
+            "total_criteria": 2,
+            "passed_count": 1,
+        }
+        mock_class.return_value = mock_instance
+        yield mock_class
+
+
 @pytest.fixture
 def temp_config_file():
     """Create temporary YAML config file."""

@@ -143,6 +143,51 @@ class TestJoinNode:
         assert "agent1" in result
         assert "agent2" in result
 
+    def test_complete_logs_memory_with_trace_id(self):
+        """Regression: _complete must not reference undefined input_data and should use trace_id when logging."""
+        mock_memory = Mock()
+
+        state_key = "waitfor:join_parallel_checks:inputs"
+        group_key = "join_results:join_node"
+
+        def hget_side_effect(key, field):
+            if key == state_key:
+                # Simulate completed agent payload stored in join state
+                return json.dumps(
+                    {
+                        "response": "ok",
+                        "status": "done",
+                        "confidence": "0.9",
+                        "fork_group": "fork_group_123",
+                    }
+                )
+            if key == group_key and field == "result":
+                return json.dumps({"status": "done"})
+            return None
+
+        mock_memory.hget.side_effect = hget_side_effect
+        mock_memory.set = Mock()
+        mock_memory.get = Mock(return_value="{}")
+        mock_memory.hset = Mock()
+        mock_memory.hdel = Mock()
+        mock_memory.log_memory = Mock(return_value="orka_memory:test")
+
+        node = JoinNode(
+            node_id="join_node",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory,
+        )
+
+        fork_targets = ["agent1", "agent2"]
+
+        result = node._complete(fork_targets, state_key, input_data={"trace_id": "trace_123"})
+
+        assert isinstance(result, dict)
+        mock_memory.log_memory.assert_called()
+        # Ensure our trace_id is used (not join_key fallback)
+        assert mock_memory.log_memory.call_args.kwargs["trace_id"] == "trace_123"
+
     @pytest.mark.asyncio
     async def test_run_impl_find_fork_group_by_pattern(self):
         """Test _run_impl finding fork group by pattern when not in input."""

@@ -77,7 +77,12 @@ async def test_run_impl(agent_params):
     
     # Simulate a valid JSON response from the mocked LLM
     llm_response_payload = {
-        "response": '```json\n{"valid": true, "reason": "It is correct", "memory_object": {"fact": "the fact"}}\n```'
+        "status": "success",
+        "component_type": "agent",
+        "component_id": "test_validator_llm",
+        "result": {
+            "response": '```json\n{"valid": true, "reason": "It is correct", "memory_object": {"fact": "the fact"}}\n```'
+        },
     }
     mock_llm_run.return_value = llm_response_payload
     

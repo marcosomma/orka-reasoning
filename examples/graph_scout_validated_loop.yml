@@ -34,12 +34,12 @@ agents:
       context: loop_convergence  # Evaluate loop convergence, not agent paths
       custom_weights:
         # Loop convergence criteria (not agent path criteria)
-        improvement.shows_progress: 0.25
-        improvement.reduces_errors: 0.20
+        improvement.better_than_previous: 0.25
+        improvement.significant_delta: 0.20
         stability.consistent_direction: 0.15
-        stability.no_oscillation: 0.10
-        convergence.approaching_threshold: 0.20
-        convergence.diminishing_changes: 0.10
+        stability.not_degrading: 0.10
+        convergence.within_tolerance: 0.20
+        convergence.delta_decreasing: 0.10
     
     # Track validation feedback across loops
     past_loops_metadata:

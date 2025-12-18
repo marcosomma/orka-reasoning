@@ -232,10 +232,23 @@ class ValidationAndStructuringAgent(BaseAgent):
         response = await self.llm_agent.run(llm_input)
 
         # Extract the raw LLM output
+        raw_llm_output = ""
         if isinstance(response, dict):
-            raw_llm_output = response.get("response", "")
+            # BaseAgent.run returns an OrkaResponse wrapper with the actual payload under `result`
+            # (e.g., OpenAIAnswerBuilder returns {"response": "..."} as its internal result).
+            inner = response.get("result")
+
+            if isinstance(inner, dict):
+                # Most common: {"result": {"response": "<llm_text>", ...}}
+                raw_llm_output = str(inner.get("response", ""))
+            elif isinstance(inner, str):
+                # Sometimes components return a plain string as result
+                raw_llm_output = inner
+            else:
+                # Backward-compat: some tests/mocks return {"response": "..."} directly
+                raw_llm_output = str(response.get("response", "") or "")
         else:
-            raw_llm_output = str(response)  # type: ignore [unreachable]
+            raw_llm_output = str(response)
 
         # Parse the LLM output - pass the correct formatted prompt
         formatted_prompt_to_use = (

@@ -50,8 +50,8 @@ agents:
       preset: lenient
       context: loop_convergence  # Track plan validation iterations
       custom_weights:
-        improvement.shows_progress: 0.35
-        convergence.approaching_threshold: 0.30
+        improvement.better_than_previous: 0.35
+        convergence.within_tolerance: 0.30
     
     past_loops_metadata:
       loop_number: "{{ get_loop_number() }}"

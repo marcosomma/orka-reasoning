@@ -738,12 +738,63 @@ class MemoryWriterNode(BaseNode):
 
             return "\n\n".join(responses) if responses else "No collaborative responses available"
 
-        def safe_get_response(agent_name, fallback="No response available"):
-            """Safely get an agent response with fallback."""
-            response = get_agent_response(agent_name)
-            if response and not response.startswith("No response found"):
-                return response
-            return fallback
+        def safe_get_response(agent_path, fallback="No response available"):
+            """
+            Safely fetch a value from previous_outputs with optional dotted access.
+
+            Supports:
+            - agent id: "web_search"
+            - dotted path: "guardian.result.memory_object.confidence"
+            - OrkaResponse unwrapping: if previous_outputs[agent] is an OrkaResponse,
+              this helper will default to its `result`.
+
+            Returns `fallback` if the agent/path is missing, and never assumes the
+            returned value is a string (avoids `.startswith()` on lists/dicts).
+            """
+            if not isinstance(agent_path, str) or not agent_path.strip():
+                return fallback
+
+            parts = [p for p in agent_path.split(".") if p]
+            if not parts:
+                return fallback
+
+            previous_outputs = payload.get("previous_outputs", {})
+            if not isinstance(previous_outputs, dict):
+                return fallback
+
+            agent_id = parts[0]
+            agent_obj = previous_outputs.get(agent_id)
+            if agent_obj is None:
+                return fallback
+
+            # Unwrap OrkaResponse to its actual payload
+            current: Any = agent_obj
+            if isinstance(current, dict) and "result" in current:
+                current = current.get("result")
+
+            # If no sub-path is requested, try common conventions
+            if len(parts) == 1:
+                if isinstance(current, dict) and "response" in current:
+                    current = current.get("response")
+                return current if current is not None else fallback
+
+            # For dotted access, prefer drilling into a conventional `response` field
+            # when the outer object is a wrapper like {"response": {...}}.
+            if isinstance(current, dict) and "response" in current and parts[1] not in current:
+                current = current.get("response")
+
+            # Traverse the remainder of the path through dict keys
+            for key in parts[1:]:
+                if isinstance(current, dict) and key in current:
+                    current = current[key]
+                else:
+                    return fallback
+
+            # Preserve old sentinel behavior only for string values
+            if isinstance(current, str) and current.startswith("No response found"):
+                return fallback
+
+            return current
 
         def get_my_past_memory(agent_type):
             """Get past memory entries for a specific agent type."""
