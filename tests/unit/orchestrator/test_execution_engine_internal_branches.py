@@ -244,10 +244,13 @@ async def test_run_parallel_agents_adds_formatted_prompt_and_wraps_non_dict_resu
     assert by_id["b"]["payload"]["prompt"] == "Hello {{ input }}"
     assert "Hello INPUT" in by_id["b"]["payload"]["formatted_prompt"]
 
-    # join-state writes happen for each agent
-    assert engine.memory.hset.call_count == 2
+    # join-state and fork group result writes happen for each agent (join_state + group hash)
+    assert engine.memory.hset.call_count == 4
     calls = [c.args for c in engine.memory.hset.call_args_list]
-    assert all(call[0] == "waitfor:join_parallel_checks:inputs" for call in calls)
+    join_calls = [call for call in calls if call[0] == "waitfor:join_parallel_checks:inputs"]
+    group_calls = [call for call in calls if call[0] == f"fork_group_results:fork_group_1"]
+    assert len(join_calls) == 2
+    assert len(group_calls) == 2
 
 
 @pytest.mark.asyncio

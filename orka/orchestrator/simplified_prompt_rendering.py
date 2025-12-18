@@ -49,6 +49,69 @@ logger = logging.getLogger(__name__)
 
 class SimplifiedPromptRenderer:
 
+    class _TemplateSafeObject:
+        """Wrapper that makes template attribute access and common string ops safe.
+
+        It wraps arbitrary values (dict, list, string, number) and exposes
+        attribute access (dot notation) by delegating to dict keys when
+        possible or falling back to sensible defaults.
+        """
+
+        def __init__(self, value: Any):
+            self._value = value
+
+        def __getattr__(self, name: str) -> Any:
+            # Support common pattern: previous_outputs.agent.result
+            val = self._value
+            if isinstance(val, dict):
+                if name in val:
+                    return SimplifiedPromptRenderer._TemplateSafeObject(val[name])
+                # allow nested 'result' lookup in nested result dicts
+                if "result" in val and isinstance(val["result"], dict) and name in val["result"]:
+                    return SimplifiedPromptRenderer._TemplateSafeObject(val["result"][name])
+            # fallback: raise AttributeError so Jinja treats as missing
+            raise AttributeError(name)
+
+        def __str__(self) -> str:
+            val = self._value
+            if isinstance(val, (dict, list)):
+                # for dict/list return simple string representation
+                return str(val)
+            return str(val)
+
+        def __repr__(self) -> str:
+            return f"TemplateSafeObject({repr(self._value)})"
+
+        def get(self, key, default=None):
+            if isinstance(self._value, dict):
+                return self._value.get(key, default)
+            return default
+
+        def raw(self):
+            """Return the underlying raw value wrapped by this object."""
+            return self._value
+
+        def __getitem__(self, key):
+            if isinstance(self._value, dict):
+                val = self._value[key]
+                # unwrap nested dicts/values into TemplateSafeObject for consistency
+                if isinstance(val, dict) or isinstance(val, list):
+                    return SimplifiedPromptRenderer._TemplateSafeObject(val)
+                return val
+            raise TypeError("TemplateSafeObject is not subscriptable for non-dict values")
+
+        def startswith(self, prefix):
+            # Safe startswith: only works for string-like values
+            if isinstance(self._value, str):
+                return self._value.startswith(prefix)
+            return False
+
+        def items(self):
+            if isinstance(self._value, dict):
+                return self._value.items()
+            return []
+
+
     @staticmethod
     def get_input_field(input_obj, field, default=None):
         """
@@ -88,9 +151,17 @@ class SimplifiedPromptRenderer:
                 payload["previous_outputs"]
             )
 
-        # Add essential template helper functions
-        enhanced_payload.update(self._get_template_helper_functions(enhanced_payload))
+        # Wrap previous_outputs entries with TemplateSafeObject for safe dot access
+        if "previous_outputs" in enhanced_payload and isinstance(enhanced_payload["previous_outputs"], dict):
+            safe_prev = {}
+            for k, v in enhanced_payload["previous_outputs"].items():
+                safe_prev[k] = SimplifiedPromptRenderer._TemplateSafeObject(v)
+            enhanced_payload["previous_outputs"] = safe_prev
 
+        # Wrap common template fields to make attribute access and startswith safe
+        for key in ("web_sources", "past_context", "expires_at", "input"):
+            if key in enhanced_payload:
+                enhanced_payload[key] = SimplifiedPromptRenderer._TemplateSafeObject(enhanced_payload[key])
         return enhanced_payload
 
     def _enhance_previous_outputs(self, original_outputs: Dict[str, Any]) -> Dict[str, Any]:
@@ -181,6 +252,8 @@ class SimplifiedPromptRenderer:
             helper_functions = self._get_template_helper_functions(enhanced_payload)
             env.globals.update(helper_functions)
             env.globals['get_input_field'] = SimplifiedPromptRenderer.get_input_field
+            # Expose safe string helper to templates
+            env.globals['safe_str'] = lambda v: "" if v is None else str(v)
             logger.debug(f"Registered {len(helper_functions)+1} internal helper functions to Jinja2 environment (including get_input_field)")
             # Create and render template
             jinja_template = env.from_string(template_str)
@@ -308,68 +381,130 @@ class SimplifiedPromptRenderer:
             return 1
 
         def get_agent_response(agent_name):
-            """Get an agent's response from previous_outputs."""
-            previous_outputs = payload.get("previous_outputs", {})
+            """Get an agent's response from previous_outputs safely."""
+            try:
+                previous_outputs = payload.get("previous_outputs", {})
 
-            # Direct access
-            if agent_name in previous_outputs:
-                agent_result = previous_outputs[agent_name]
-                if isinstance(agent_result, dict):
-                    # OrkaResponse format
-                    if "result" in agent_result:
-                        return str(agent_result["result"])
-                    # Legacy format
-                    elif "response" in agent_result:
-                        return str(agent_result["response"])
-                return str(agent_result)
+                # Direct access
+                if agent_name in previous_outputs:
+                    agent_result = previous_outputs[agent_name]
+                    # Unwrap TemplateSafeObject
+                    if hasattr(agent_result, "raw"):
+                        agent_result = agent_result.raw()
 
-            return f"No response found for {agent_name}"
+                    if isinstance(agent_result, dict):
+                        # OrkaResponse format
+                        if "result" in agent_result:
+                            return str(agent_result["result"])
+                        # Legacy format
+                        elif "response" in agent_result:
+                            return str(agent_result["response"])
+                    return str(agent_result)
 
+                return f"No response found for {agent_name}"
+            except Exception as e:
+                logger.debug(f"get_agent_response error for {agent_name}: {e}")
+                return f"No response found for {agent_name}"
         def safe_get_response(agent_name, fallback="No response available", prev_outputs=None):
             """
             Safely get an agent response with fallback.
-            
-            Args:
-                agent_name: Name of the agent to retrieve response from
-                fallback: Default value if response not found
-                prev_outputs: Optional previous_outputs dict (for template compatibility)
-            
-            Returns:
-                Agent response string or fallback value
             """
-            # Use provided prev_outputs if given, otherwise use payload's previous_outputs
-            if prev_outputs is not None:
-                previous_outputs = prev_outputs
-            else:
-                previous_outputs = payload.get("previous_outputs", {})
-            
-            # Direct access to previous_outputs
-            if agent_name in previous_outputs:
-                agent_result = previous_outputs[agent_name]
-                if isinstance(agent_result, dict):
-                    # OrkaResponse format
-                    if "result" in agent_result:
-                        result_str = str(agent_result["result"])
-                        if result_str and not result_str.startswith("No response found"):
-                            return result_str
-                    # Legacy format
-                    elif "response" in agent_result:
-                        result_str = str(agent_result["response"])
-                        if result_str and not result_str.startswith("No response found"):
-                            return result_str
+            try:
+                # Use provided prev_outputs if given, otherwise use payload's previous_outputs
+                if prev_outputs is not None:
+                    previous_outputs = prev_outputs
                 else:
-                    result_str = str(agent_result)
-                    if result_str and not result_str.startswith("No response found"):
-                        return result_str
-            
-            return fallback
+                    previous_outputs = payload.get("previous_outputs", {})
+
+                # Direct access to previous_outputs
+                if agent_name in previous_outputs:
+                    agent_result = previous_outputs[agent_name]
+                    # Unwrap TemplateSafeObject
+                    if hasattr(agent_result, "raw"):
+                        agent_result = agent_result.raw()
+
+                    if isinstance(agent_result, dict):
+                        # OrkaResponse format
+                        if "result" in agent_result:
+                            result_str = str(agent_result["result"])
+                            if result_str and not result_str.startswith("No response found"):
+                                return result_str
+                        # Legacy format
+                        elif "response" in agent_result:
+                            result_str = str(agent_result["response"])
+                            if result_str and not result_str.startswith("No response found"):
+                                return result_str
+                    else:
+                        result_str = str(agent_result)
+                        if result_str and not result_str.startswith("No response found"):
+                            return result_str
+
+                return fallback
+            except Exception as e:
+                logger.debug(f"safe_get_response error for {agent_name}: {e}")
+                return fallback
 
         def get_progressive_response():
-            """Get progressive agent response."""
-            return safe_get_response("progressive_refinement") or safe_get_response(
-                "radical_progressive"
-            )
+            """Get progressive agent response safely."""
+            try:
+                return safe_get_response("progressive_refinement") or safe_get_response(
+                    "radical_progressive"
+                )
+            except Exception as e:
+                logger.debug(f"get_progressive_response error: {e}")
+                return "No response available"
 
+        def get_conservative_response():
+            """Get conservative agent response safely."""
+            try:
+                return safe_get_response("conservative_refinement") or safe_get_response(
+                    "traditional_conservative"
+                )
+            except Exception as e:
+                logger.debug(f"get_conservative_response error: {e}")
+                return "No response available"
+
+        def get_realist_response():
+            """Get realist agent response safely."""
+            try:
+                return safe_get_response("realist_refinement") or safe_get_response("pragmatic_realist")
+            except Exception as e:
+                logger.debug(f"get_realist_response error: {e}")
+                return "No response available"
+
+        def get_purist_response():
+            """Get purist agent response safely."""
+            try:
+                return safe_get_response("purist_refinement") or safe_get_response("ethical_purist")
+            except Exception as e:
+                logger.debug(f"get_purist_response error: {e}")
+                return "No response available"
+
+        def get_collaborative_responses():
+            """Get all collaborative refinement responses as a formatted string."""
+            try:
+                responses = []
+
+                progressive = get_progressive_response()
+                if progressive != "No response available":
+                    responses.append(f"Progressive: {progressive}")
+
+                conservative = get_conservative_response()
+                if conservative != "No response available":
+                    responses.append(f"Conservative: {conservative}")
+
+                realist = get_realist_response()
+                if realist != "No response available":
+                    responses.append(f"Realist: {realist}")
+
+                purist = get_purist_response()
+                if purist != "No response available":
+                    responses.append(f"Purist: {purist}")
+
+                return "\n\n".join(responses) if responses else "No collaborative responses available"
+            except Exception as e:
+                logger.debug(f"get_collaborative_responses error: {e}")
+                return "No collaborative responses available"
         def get_conservative_response():
             """Get conservative agent response."""
             return safe_get_response("conservative_refinement") or safe_get_response(
@@ -469,30 +604,43 @@ class SimplifiedPromptRenderer:
                 return last_loop.get("round", str(loop_num))
             return str(loop_num)
 
-        def get_fork_responses(fork_group_name):
-            """Get all responses from a fork group execution."""
-            previous_outputs = payload.get("previous_outputs", {})
+        def get_fork_responses(fork_group_name=None):
+                """Get all responses from a fork group execution.
 
-            # Look for fork group results
-            if fork_group_name in previous_outputs:
-                fork_result = previous_outputs[fork_group_name]
-                if isinstance(fork_result, dict):
+                If no `fork_group_name` is provided, attempt to find any fork-like
+                groups in `previous_outputs` and return a mapping of their
+                responses. This avoids TemplateErrors when templates call
+                `get_fork_responses()` without args.
+                """
+                previous_outputs = payload.get("previous_outputs", {})
+
+                def extract_responses(fork_result):
                     responses = {}
-
-                    # Check direct agent results
-                    for key, value in fork_result.items():
-                        if isinstance(value, dict) and "response" in value:
-                            responses[key] = value["response"]
-
-                    # Check nested results structure
-                    if "result" in fork_result and isinstance(fork_result["result"], dict):
-                        for key, value in fork_result["result"].items():
+                    if isinstance(fork_result, dict):
+                        # Check direct agent results
+                        for key, value in fork_result.items():
                             if isinstance(value, dict) and "response" in value:
                                 responses[key] = value["response"]
 
+                        # Check nested results structure
+                        if "result" in fork_result and isinstance(fork_result["result"], dict):
+                            for key, value in fork_result["result"].items():
+                                if isinstance(value, dict) and "response" in value:
+                                    responses[key] = value["response"]
                     return responses
 
-            return {}
+                if fork_group_name:
+                    fork_result = previous_outputs.get(fork_group_name, {})
+                    return extract_responses(fork_result)
+
+                # No fork_group_name: find candidate fork groups heuristically
+                found = {}
+                for key, val in previous_outputs.items():
+                    candidate = extract_responses(val)
+                    if candidate:
+                        found[key] = candidate
+
+                return found
 
         def format_memory_query(perspective, topic=None):
             """Format a memory query for a specific perspective."""
@@ -695,6 +843,9 @@ class SimplifiedPromptRenderer:
                 return {}
             
             output = previous_outputs[agent_id]
+            # Unwrap TemplateSafeObject if present
+            if hasattr(output, "raw"):
+                output = output.raw()
             
             # LoopNode wraps output in 'response' field
             if isinstance(output, dict) and 'response' in output:
@@ -708,6 +859,35 @@ class SimplifiedPromptRenderer:
             
             logger.warning(f"get_loop_output: output for '{agent_id}' is not a dict: {type(output)}")
             return {}
+
+        def has_context(agent_name: str) -> bool:
+            """Return True if there is any context for the given agent name.
+
+            This covers common cases used in templates: presence in
+            `previous_outputs`, simple conversation context in `input`, or
+            an associated memory entry.
+            """
+            prev_outputs = payload.get("previous_outputs", {})
+            # Direct previous outputs check
+            if agent_name in prev_outputs:
+                val = prev_outputs[agent_name]
+                # Consider non-empty values as having context
+                return bool(val)
+
+            # Input-level context (e.g., conversation_context)
+            if "input" in payload and isinstance(payload["input"], dict):
+                input_data = payload["input"]
+                if input_data.get("conversation_context"):
+                    return True
+
+            # Search memories
+            memories = payload.get("memories", [])
+            if isinstance(memories, list):
+                for m in memories:
+                    if isinstance(m, dict) and m.get("agent_name") == agent_name:
+                        return True
+
+            return False
 
         return {
             # Input helpers
@@ -746,6 +926,8 @@ class SimplifiedPromptRenderer:
             "get_final_score": get_final_score,
             "get_loop_status": get_loop_status,
             "get_loop_output": get_loop_output,
+            # Context helper
+            "has_context": has_context,
         }
 
     def _add_prompt_to_payload(

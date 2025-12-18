@@ -22,7 +22,7 @@ import json
 import logging
 from typing import Any, Dict, List
 
-from orka.scoring.presets import get_criteria_description
+from orka.scoring.presets import get_criteria_description, load_preset
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +33,7 @@ def build_validation_prompt(
     previous_critiques: List[Dict[str, Any]],
     loop_number: int,
     preset_name: str = "moderate",
+    scoring_context: str | None = None,
 ) -> str:
     """
     Build validation prompt requesting boolean evaluations.
@@ -48,7 +49,7 @@ def build_validation_prompt(
         Formatted prompt string
     """
     critique_history = _format_critique_history(previous_critiques)
-    criteria_instructions = _build_criteria_instructions(preset_name)
+    criteria_instructions = _build_criteria_instructions(preset_name, scoring_context)
 
     prompt = f"""You are a Plan Validator agent. Your job is to evaluate proposed agent execution paths using boolean criteria.
 
@@ -95,7 +96,42 @@ Evaluate the proposed path by answering TRUE or FALSE for each criterion below.
 }}
 
 Respond ONLY with the JSON structure above.
+
 """
+
+    # If a specific scoring context is requested, dynamically build an
+    # ADDITIONAL OUTPUT FORMAT block from the preset weights so the prompt is
+    # generic and driven by configuration rather than hardcoded fields.
+    if scoring_context:
+        try:
+            preset = load_preset(preset_name, context=scoring_context)
+            weights = preset.get("weights", {})
+
+            schema_lines = [f"\n\nADDITIONAL OUTPUT FORMAT FOR {scoring_context} CONTEXT (JSON only):", "{"]
+
+            for dim, crits in weights.items():
+                schema_lines.append(f'  "{dim}": {{')
+                crit_lines = []
+                for crit in crits.keys():
+                    crit_lines.append(f'    "{crit}": true/false')
+                # join with commas and add
+                schema_lines.append(
+                    ",\n".join(crit_lines)
+                )
+                schema_lines.append("  },")
+
+            # Add a rationale field and close the object
+            schema_lines.append('  "rationale": "Brief explanation of your evaluation"')
+            schema_lines.append("}")
+            schema_lines.append(f"\nRespond ONLY with the JSON structure above for the {scoring_context} output.")
+
+            prompt += "\n" + "\n".join(schema_lines)
+
+        except Exception as e:
+            # If the context/preset cannot be loaded, log and continue without
+            # raising — we want the prompt builder to be robust in all cases.
+            logger.warning(f"Could not build context-specific schema for '{scoring_context}': {e}")
+
     return prompt
 
 
@@ -126,7 +162,7 @@ def _format_critique_history(previous_critiques: List[Dict[str, Any]]) -> str:
     return history
 
 
-def _build_criteria_instructions(preset_name: str) -> str:
+def _build_criteria_instructions(preset_name: str, context: str | None = None) -> str:
     """
     Build instructions explaining each criterion.
 
@@ -137,7 +173,7 @@ def _build_criteria_instructions(preset_name: str) -> str:
         Formatted instructions string
     """
     try:
-        descriptions = get_criteria_description(preset_name)
+        descriptions = get_criteria_description(preset_name, context=context or "graphscout")
     except Exception as e:
         logger.warning(f"Failed to load criteria descriptions: {e}")
         descriptions = {}
@@ -201,4 +237,5 @@ def build_simple_validation_prompt(
         previous_critiques=[],
         loop_number=1,
         preset_name="moderate",
+        scoring_context=None,
     )

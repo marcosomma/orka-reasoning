@@ -28,7 +28,7 @@ from orka.scoring import BooleanScoreCalculator
 
 from ..base_agent import BaseAgent, Context
 from . import boolean_parser, llm_client
-from .prompt_builder import build_validation_prompt
+from . import prompt_builder
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +87,7 @@ class PlanValidatorAgent(BaseAgent):
         self.llm_url = llm_url
         self.temperature = temperature
         self.scoring_preset = scoring_preset
+        self.custom_weights = custom_weights
 
         self.score_calculator = BooleanScoreCalculator(
             preset=scoring_preset,
@@ -126,12 +127,13 @@ class PlanValidatorAgent(BaseAgent):
         logger.debug(f"Query: {original_query[:100]}...")
 
         # Build validation prompt requesting boolean evaluations
-        validation_prompt = build_validation_prompt(
+        validation_prompt = prompt_builder.build_validation_prompt(
             query=original_query,
             proposed_path=proposed_path,
             previous_critiques=previous_critiques,
             loop_number=loop_number,
             preset_name=self.scoring_preset,
+            scoring_context=ctx.get("scoring_context") if isinstance(ctx, dict) else None,
         )
 
         # Call LLM for boolean evaluation
@@ -150,8 +152,17 @@ class PlanValidatorAgent(BaseAgent):
         # Parse boolean evaluations from LLM response
         boolean_evaluations = boolean_parser.parse_boolean_evaluation(llm_response)
 
+        # Determine scoring context (can be provided by runtime ctx for loop-specific scoring)
+        scoring_context = ctx.get("scoring_context") if isinstance(ctx, dict) else None
+
+        # Use a context-aware score calculator instance for this run
+        if scoring_context and getattr(self.score_calculator, "context", None) != scoring_context:
+            score_calc = BooleanScoreCalculator(preset=self.scoring_preset, context=scoring_context, custom_weights=self.custom_weights)
+        else:
+            score_calc = self.score_calculator
+
         # Calculate score using boolean calculator
-        score_result = self.score_calculator.calculate(boolean_evaluations)
+        score_result = score_calc.calculate(boolean_evaluations)
 
         # Build validation result with additional metadata
         validation_result = self._build_validation_result(

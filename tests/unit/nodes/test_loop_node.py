@@ -104,6 +104,30 @@ class TestLoopNode:
             
             assert score == 0.85
 
+        def test_try_boolean_scoring_ignores_sparse_evals(self):
+            """Sparse boolean_evaluations (too few criteria) should be ignored."""
+            mock_memory = Mock()
+
+            node = LoopNode(
+                node_id="loop_node",
+                memory_logger=mock_memory,
+                scoring={"preset": "moderate"}
+            )
+
+            # Provide only two criteria out of many expected -> should be ignored
+            result = {
+                "agreement_moderator": {
+                    "boolean_evaluations": {
+                        "completeness": {"has_all_required_steps": True},
+                        "efficiency": {"minimizes_redundant_calls": True},
+                    }
+                }
+            }
+
+            score = node._try_boolean_scoring(result)
+
+            assert score is None
+
     def test_is_valid_boolean_structure(self):
         """Test _is_valid_boolean_structure method."""
         mock_memory = Mock()

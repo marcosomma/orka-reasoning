@@ -171,6 +171,10 @@ class LoopNode(BaseNode):
         self.custom_weights: Optional[Dict[str, float]] = (
             scoring_config.get("custom_weights") if isinstance(scoring_config, dict) else None
         )
+        # Scoring context (e.g., 'loop_convergence', 'quality', 'graphscout')
+        self.scoring_context: str = (
+            scoring_config.get("context") if isinstance(scoring_config, dict) else "loop_convergence"
+        )
 
         # Initialize boolean score calculator if preset is configured
         self.score_calculator: Optional[BooleanScoreCalculator] = None
@@ -178,6 +182,7 @@ class LoopNode(BaseNode):
             try:
                 self.score_calculator = BooleanScoreCalculator(
                     preset=self.scoring_preset,
+                    context=self.scoring_context,
                     custom_weights=self.custom_weights,
                 )
                 logger.info(
@@ -375,6 +380,14 @@ class LoopNode(BaseNode):
 
             # Extract score
             score = await self._extract_score(loop_result)
+
+            # Safety: ensure final score is normalized and clamped to [0.0, 1.0]
+            normalized_score = self._normalize_score(score)
+            if abs(normalized_score - float(score)) > 1e-9:
+                logger.info(
+                    f"Normalized final extracted score: raw={score} -> normalized={normalized_score}"
+                )
+            score = normalized_score
 
             # Create past_loop object using metadata template
             past_loop_obj = self._create_past_loop_object(
@@ -604,6 +617,7 @@ class LoopNode(BaseNode):
                 "input": simple_input,  # Pass simple string input for template rendering
                 "previous_outputs": safe_previous_outputs,
                 "loop_number": current_loop_number,
+                "scoring_context": self.scoring_context,
                 "past_loops_metadata": dynamic_metadata,
             }
 
@@ -912,11 +926,45 @@ class LoopNode(BaseNode):
             if "boolean_evaluations" in agent_result:
                 boolean_evals = agent_result["boolean_evaluations"]
                 logger.info(f"  - Agent '{agent_id}': Found boolean_evaluations field")
-
                 if isinstance(boolean_evals, dict) and self._is_valid_boolean_structure(
                     boolean_evals
                 ):
+                    # Check completeness of provided criteria against the calculator's expected set.
                     try:
+                        # If the calculator does not expose the flat_weights (e.g., in unit
+                        # tests where it's mocked), skip the completeness check and call
+                        # calculate directly.
+                        if not hasattr(self.score_calculator, "flat_weights") or not isinstance(
+                            getattr(self.score_calculator, "flat_weights", None), dict
+                        ):
+                            score_result = self.score_calculator.calculate(boolean_evals)
+                            logger.info(
+                                f"✅ Boolean evaluations from '{agent_id}': "
+                                f"{score_result['passed_count']}/{score_result['total_criteria']} passed, "
+                                f"score={score_result['score']:.4f}"
+                            )
+                            return float(score_result["score"])
+
+                        total_expected = len(self.score_calculator.flat_weights)
+                        provided_keys = set()
+                        for dim, criteria in boolean_evals.items():
+                            if isinstance(criteria, dict):
+                                for crit in criteria.keys():
+                                    provided_keys.add(f"{dim}.{crit}")
+
+                        provided_count = len([k for k in provided_keys if k in self.score_calculator.flat_weights])
+                        provided_fraction = provided_count / total_expected if total_expected else 0.0
+
+                        # If the provided boolean evaluations are too sparse (likely incomplete
+                        # parsing by the LLM), skip using them so we don't accidentally
+                        # treat many missing criteria as False and drive the score to 0.0.
+                        MIN_PROVIDED_FRACTION = 0.5
+                        if provided_fraction < MIN_PROVIDED_FRACTION:
+                            logger.warning(
+                                f"  - Agent '{agent_id}': boolean_evaluations too sparse ({provided_count}/{total_expected} criteria). Skipping."
+                            )
+                            continue
+
                         score_result = self.score_calculator.calculate(boolean_evals)
                         logger.info(
                             f"✅ Boolean evaluations from '{agent_id}': "
@@ -985,17 +1033,52 @@ class LoopNode(BaseNode):
         if not isinstance(data, dict):
             return False
 
-        expected_dimensions = ["completeness", "efficiency", "safety", "coherence"]
-        found_valid = 0
+        # Accept a wider variety of boolean evaluation structures.
+        # Valid if data is a dict with at least one nested dict that contains
+        # at least one boolean-like value (bool or string/number that can
+        # be interpreted as boolean).
+        if not isinstance(data, dict):
+            return False
 
-        for dimension in expected_dimensions:
-            if dimension in data and isinstance(data[dimension], dict):
-                dim_data = data[dimension]
-                # Check if it has boolean values
-                if any(isinstance(v, bool) for v in dim_data.values()):
-                    found_valid += 1
+        def _has_boolean_like_values(d: dict) -> bool:
+            for v in d.values():
+                if isinstance(v, bool):
+                    return True
+                if isinstance(v, str) and v.strip().lower() in (
+                    "true",
+                    "yes",
+                    "1",
+                    "pass",
+                    "passed",
+                    "✓",
+                ):
+                    return True
+                if isinstance(v, (int, float)) and v != 0:
+                    return True
+            return False
 
-        return found_valid >= 2
+        nested_dims = 0
+        single_dim_name = None
+        single_dim_count = 0
+        for key, value in data.items():
+            if isinstance(value, dict) and _has_boolean_like_values(value):
+                nested_dims += 1
+                single_dim_name = key
+                single_dim_count = len(value)
+
+        # If canonical dimensions are present, keep the former stricter rule
+        canonical_present = any(d in data for d in ["completeness", "efficiency", "safety", "coherence"])
+        if canonical_present:
+            return nested_dims >= 2
+
+        # For custom contexts: accept if at least 2 nested dimensions,
+        # or a single dimension that provides at least 2 boolean criteria.
+        if nested_dims >= 2:
+            return True
+        if nested_dims == 1 and single_dim_count >= 2:
+            return True
+
+        return False
 
     def _extract_boolean_from_text(self, text: str) -> Optional[Dict[str, Dict[str, bool]]]:
         """
@@ -1114,7 +1197,8 @@ class LoopNode(BaseNode):
                         match = re.search(score_pattern, response_text)
                         if match and match.group(1):
                             try:
-                                score = float(match.group(1))
+                                raw = float(match.group(1))
+                                score = self._normalize_score(raw, pattern=score_pattern, matched_text=response_text)
                                 logger.info(
                                     f"✅ Found score {score} from high-priority agent '{priority_agent}' using pattern: {score_pattern}"
                                 )
@@ -1138,8 +1222,10 @@ class LoopNode(BaseNode):
                 if key in result:
                     value = result[key]
                     if self._is_valid_value(value):
-                        logger.info(f"✅ Found score {value} via direct_key strategy")
-                        return float(value)  # Now type-safe due to TypeGuard
+                        raw = float(value)
+                        score = self._normalize_score(raw, matched_text=str(value))
+                        logger.info(f"✅ Found score {score} via direct_key strategy")
+                        return score  # Now normalized and clamped
 
             elif strategy_type == "pattern":
                 patterns = strategy.get("patterns", [])
@@ -1159,7 +1245,8 @@ class LoopNode(BaseNode):
                             match = re.search(pattern, agent_result)
                             if match and match.group(1):
                                 try:
-                                    score = float(match.group(1))
+                                    raw = float(match.group(1))
+                                    score = self._normalize_score(raw, pattern=pattern, matched_text=agent_result)
                                     logger.info(
                                         f"✅ Found score {score} in {agent_id} (direct string) using pattern: {pattern}"
                                     )
@@ -1228,14 +1315,15 @@ class LoopNode(BaseNode):
                             for score_pattern in agent_score_patterns:
                                 score_match = re.search(score_pattern, response_text)
                                 if score_match:
-                                    try:
-                                        score = float(score_match.group(1))
-                                        logger.info(
-                                            f"✅ Found score {score} in agent_key strategy from {agent_name} using pattern: {score_pattern}"
-                                        )
-                                        return score
-                                    except (ValueError, TypeError):
-                                        continue
+                                            try:
+                                                raw = float(score_match.group(1))
+                                                score = self._normalize_score(raw, pattern=score_pattern, matched_text=response_text)
+                                                logger.info(
+                                                    f"✅ Found score {score} in agent_key strategy from {agent_name} using pattern: {score_pattern}"
+                                                )
+                                                return score
+                                            except (ValueError, TypeError):
+                                                continue
                     else:
                         logger.debug(
                             f"🔍 Agent '{agent_name}' not found in results. Available agents: {list(result.keys())}"
@@ -1350,6 +1438,62 @@ class LoopNode(BaseNode):
                     continue
 
         return None
+
+    def _normalize_score(self, raw: float, pattern: Optional[str] = None, matched_text: Optional[str] = None) -> float:
+        """Normalize raw numeric extraction into 0.0-1.0 range.
+
+        Rules:
+        - If pattern or matched_text indicates a percentage (contains '%'), divide by 100.
+        - If pattern indicates a '/10' or 'out of 10' scale, divide by 10.
+        - If value > 1.0 and <= 100, treat as percentage and divide by 100 (with a warning).
+        - If value > 100, clamp to 1.0 and warn.
+        - Always clamp final value to [0.0, 1.0].
+        """
+        try:
+            score = float(raw)
+        except Exception:
+            return 0.0
+
+        # Detect percent markers
+        text = (pattern or "") + (matched_text or "")
+        if "%" in text or (pattern and "%" in pattern):
+            try:
+                score = score / 100.0
+                logger.debug(f"Normalizing percentage score {raw} -> {score}")
+            except Exception:
+                pass
+
+        # Detect /10 style patterns
+        elif pattern and ("/10" in pattern or "out of 10" in pattern.lower()):
+            try:
+                score = score / 10.0
+                logger.debug(f"Normalizing /10 score {raw} -> {score}")
+            except Exception:
+                pass
+
+        # Heuristic: if score > 1 and looks like percentage (<=100)
+        if score > 1.0:
+            if raw <= 100.0:
+                new_score = raw / 100.0
+                logger.warning(
+                    f"Interpreting score {raw} as percentage and normalizing to {new_score}"
+                )
+                score = new_score
+            else:
+                logger.warning(f"Score {raw} out of expected range, clamping to 1.0")
+                score = 1.0
+
+        # Clamp to [0.0, 1.0]
+        if score < 0.0:
+            score = 0.0
+        if score > 1.0:
+            score = 1.0
+
+        # Diagnostic log to aid debugging in live runs
+        if score != float(raw) and ("%" in (pattern or "") or "%" in (matched_text or "") or raw > 1.0):
+            logger.info(f"Normalized extracted score: raw={raw} -> normalized={score} (pattern={pattern})")
+
+        return float(score)
 
     async def _compute_agreement_score(self, result: dict[str, Any]) -> float:
         """

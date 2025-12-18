@@ -193,6 +193,201 @@ class TestJoinNode:
         assert result["status"] == "waiting"
 
     @pytest.mark.asyncio
+    async def test_run_impl_uses_mapping_if_scan_fails(self):
+        """If scan finds no matches, use explicit mapping key set by ForkNode."""
+        mock_memory = Mock()
+        mock_memory.hget.return_value = None
+        mock_memory.scan.return_value = (0, [])  # No matches
+        # mapping exists for join node
+        # first hget call (mapping) -> mapped_group_123, second hget (retry count) -> None
+        mock_memory.hget.side_effect = ["mapped_group_123", None]
+        mock_memory.hkeys.return_value = ["agent1", "agent2"]
+        mock_memory.smembers.return_value = ["agent1", "agent2"]
+        mock_memory.hdel = Mock()
+
+        node = JoinNode(
+            node_id="join_node",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory,
+            group="test_group",
+        )
+
+        node._complete = Mock(return_value={"status": "done"})
+
+        result = await node._run_impl({})
+
+        # Should have used mapping and completed
+        assert result["status"] == "done"
+
+    @pytest.mark.asyncio
+    async def test_run_impl_mapping_with_no_targets_waits(self):
+        """If mapping recovers a group but smembers returns no targets, join should wait."""
+        mock_memory = Mock()
+        # retry count missing
+        # first hget -> mapped_group_456 (mapping), second hget -> None (retry)
+        mock_memory.hget.side_effect = ["mapped_group_456", None]
+        mock_memory.scan.return_value = (0, [])
+        # mapping exists, but smembers returns empty
+        mock_memory.smembers.return_value = []
+        mock_memory.hkeys.return_value = ["agent1"]
+
+        node = JoinNode(
+            node_id="join_node",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory,
+            group="test_group",
+        )
+
+        result = await node._run_impl({})
+
+        assert result["status"] == "waiting"
+        assert result["message"] == "No expected fork targets yet; waiting for Fork to register targets"
+
+    @pytest.mark.asyncio
+    async def test_run_impl_mapping_used_but_state_has_completed_payload_merges(self):
+        """If mapping recovers a group but smembers returns no targets, but join state shows a completed payload, join should merge using received."""
+        mock_memory = Mock()
+        # first hget -> mapped_group_456 (mapping), second hget -> None (retry)
+        def hget_side(*args):
+            if args == (f"fork_group_mapping:test_group", "group_id"):
+                return "mapped_group_456"
+            # state entry for agent1 contains a completed payload
+            if args == ("waitfor:join_parallel_checks:inputs", "agent1"):
+                return json.dumps({"response": "done", "confidence": "0.9", "status": "done", "fork_group": "mapped_group_456"})
+            # retry count
+            if args == ("join_retry_counts", "join_node:output"):
+                return None
+            return None
+
+        mock_memory.hget.side_effect = hget_side
+        mock_memory.scan.return_value = (0, [])
+        mock_memory.smembers.return_value = []
+        mock_memory.hkeys.return_value = ["agent1"]
+
+        node = JoinNode(
+            node_id="join_node",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory,
+            group="test_group",
+        )
+
+        node._complete = Mock(return_value={"status": "done"})
+
+        result = await node._run_impl({})
+
+        assert result["status"] == "done"
+
+    @pytest.mark.asyncio
+    async def test_run_impl_recovers_group_from_state_and_merges(self):
+        """When fork_group is missing, derive it from stored agent state and proceed to merge."""
+        mock_memory = Mock()
+        mock_memory.hget.return_value = None
+        mock_memory.scan.return_value = (0, [])
+        # state has received keys for 2 agents
+        mock_memory.hkeys.return_value = ["agent1", "agent2"]
+        # first agent's state contains fork_group info
+        state_key = "waitfor:join_parallel_checks:inputs"
+        mock_memory.hget.side_effect = lambda *args: json.dumps({"fork_group": "fork_from_state"}) if args == (state_key, "agent1") else None
+
+        # smembers for inferred group returns targets
+        def smembers_side(key):
+            if key == "fork_group:fork_from_state":
+                return ["agent1", "agent2"]
+            return []
+
+        mock_memory.smembers.side_effect = smembers_side
+
+        node = JoinNode(
+            node_id="join_node",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory,
+            group="test_group",
+        )
+
+        node._complete = Mock(return_value={"status": "done"})
+
+        result = await node._run_impl({})
+
+        assert result["status"] == "done"
+
+    @pytest.mark.asyncio
+    async def test_run_impl_mapping_used_but_state_points_elsewhere_and_merges(self):
+        """If mapping recovers a group but it has no targets, and a received entry points to another group, use that group."""
+        mock_memory = Mock()
+        # Simulate mapping found first
+        def hget_side(*args):
+            # mapping lookup
+            if args == (f"fork_group_mapping:test_group", "group_id"):
+                return "mapped_group_456"
+            # retry count
+            if args == ("join_retry_counts", "join_node:output"):
+                return None
+            # state entry for agent1
+            if args == ("waitfor:join_parallel_checks:inputs", "agent1"):
+                return json.dumps({"fork_group": "actual_group_789"})
+            return None
+
+        mock_memory.hget.side_effect = hget_side
+        mock_memory.scan.return_value = (0, [])
+        mock_memory.hkeys.return_value = ["agent1"]
+
+        # smembers returns empty for mapped_group_456 but returns targets for actual_group_789
+        def smembers_side(key):
+            if key == "fork_group:mapped_group_456":
+                return []
+            if key == "fork_group:actual_group_789":
+                return ["agent1", "agent2"]
+            return []
+
+        mock_memory.smembers.side_effect = smembers_side
+
+        node = JoinNode(
+            node_id="join_node",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory,
+            group="test_group",
+        )
+
+        node._complete = Mock(return_value={"status": "done"})
+
+        result = await node._run_impl({})
+
+        assert result["status"] == "done"
+
+    @pytest.mark.asyncio
+    async def test_run_impl_falls_back_to_received_when_targets_missing(self):
+        """When fork group set is empty, use received inputs as targets to allow merging."""
+        mock_memory = Mock()
+        # retry count missing
+        mock_memory.hget.return_value = None
+        mock_memory.scan.return_value = (0, [])
+        # no mapping
+        # smembers for fork group returns empty
+        mock_memory.smembers.return_value = []
+        # state has received keys for 2 agents
+        mock_memory.hkeys.return_value = ["agent1", "agent2"]
+
+        node = JoinNode(
+            node_id="join_node",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory,
+            group="test_group",
+        )
+
+        node._complete = Mock(return_value={"status": "done"})
+
+        result = await node._run_impl({})
+
+        # Should have merged using received inputs as targets
+        assert result["status"] == "done"
+
+    @pytest.mark.asyncio
     async def test_run_impl_scan_error(self):
         """Test _run_impl handling scan errors gracefully."""
         mock_memory = Mock()

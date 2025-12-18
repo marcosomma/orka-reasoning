@@ -170,7 +170,7 @@ class BaseAgent(abc.ABC):
         registry: Registry | None = None,
         prompt: str | None = None,
         queue: list[str] | None = None,
-        timeout: float | None = 30.0,
+        timeout: float | None = 120.0,
         max_concurrency: int = 10,
         **kwargs,
     ):

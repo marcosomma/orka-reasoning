@@ -199,6 +199,7 @@ class ResponseBuilder:
             internal_reasoning=legacy_response.get("internal_reasoning"),
             token_usage=legacy_response.get("token_usage"),
             cost_usd=legacy_response.get("cost_usd"),
+            confidence=legacy_response.get("confidence"),
             metadata=legacy_response.get("metadata", {}),
             metrics=legacy_response.get("_metrics", {}),
         )

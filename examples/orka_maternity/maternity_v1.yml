@@ -113,6 +113,8 @@ agents:
   - id: risk_predictor
     type: local_llm
     model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Predict harm score H ∈ [0,1] for the request using context.
       Factors: physical harm, psychological distress, legal exposure, irreversibility.
@@ -123,6 +125,8 @@ agents:
   - id: vulnerability_analyzer
     type: local_llm
     model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Infer vulnerability V ∈ [0,1] from the request and prior incidents.
       Consider minors, dependency, coercion, crisis cues.
@@ -134,6 +138,8 @@ agents:
   - id: reversibility_estimator
     type: local_llm
     model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Estimate reversibility R ∈ [0,1]; 1 = fully reversible.
       Return JSON: {"R": float, "notes": "..."}.
@@ -143,6 +149,8 @@ agents:
   - id: consent_checker
     type: local_llm
     model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Is explicit informed consent present for the risky action?
       Return JSON: {"C": "verified" | "unclear" | "denied", "evidence": "..."}.
@@ -171,6 +179,8 @@ agents:
   - id: route_determiner
     type: local_llm
     model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Analyze the metrics and determine the appropriate safety route.
       
@@ -202,6 +212,8 @@ agents:
   - id: safe_alternative_builder
     type: local_llm
     model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Suggest a safer, reversible alternative based on policies and the request.
       
@@ -211,6 +223,8 @@ agents:
   - id: responder_block
     type: local_llm
     model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Block the risky request. Provide protective rationale, reassurance, and a safer alternative.
       
@@ -220,6 +234,8 @@ agents:
   - id: responder_caution
     type: local_llm
     model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Decline risky portion and propose the safer alternative while maintaining rapport.
       
@@ -229,6 +245,8 @@ agents:
   - id: responder_normal
     type: local_llm
     model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Proceed safely with clarity and boundary reminders.
       
@@ -238,6 +256,8 @@ agents:
   - id: empathy_scorer
     type: local_llm
     model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Score comfort/clarity (K) of the final response in [0,1].
       
@@ -285,6 +305,8 @@ agents:
   - id: perspective_synthesis
     type: local_llm
     model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Integrate multiple perspectives to create a balanced final assessment.
       
@@ -305,6 +327,8 @@ agents:
   - id: explainer
     type: local_llm
     model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Summarize rationale with metrics and chosen route.
       

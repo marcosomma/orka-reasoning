@@ -85,3 +85,15 @@ async def test_run_branch_async_executes_each_agent_in_sequence(temp_config_file
     assert "a" in res and "b" in res
     assert res["a"]["result"] == "ok-a"
     assert res["b"]["result"] == "ok-b"
+
+
+def test_enqueue_fork_inserts_at_front(temp_config_file):
+    engine = ExecutionEngine(temp_config_file)
+
+    # start with an existing queue
+    engine.queue = ["one", "two", "three"]
+
+    engine.enqueue_fork(["x", "y"], "fg_test")
+
+    assert engine.queue[:2] == ["x", "y"]
+    assert engine.queue[2:] == ["one", "two", "three"]

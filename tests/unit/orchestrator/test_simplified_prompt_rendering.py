@@ -398,6 +398,117 @@ class TestSimplifiedPromptRenderer:
         assert "test" in result
         assert "2" in result
 
+    def test_helper_has_context_and_template_if(self):
+        """Test that has_context is available and works in templates."""
+        renderer = SimplifiedPromptRenderer()
+
+        # Case: previous_outputs contains agent
+        payload = {"previous_outputs": {"path_proposer": {"result": "x"}}}
+        helpers = renderer._get_template_helper_functions(payload)
+
+        assert helpers["has_context"]("path_proposer") is True
+        assert helpers["has_context"]("missing_agent") is False
+
+        # Test using a Jinja2 conditional in render_prompt
+        template = "{% if has_context('path_proposer') %}YES{% else %}NO{% endif %}"
+        result = renderer.render_prompt(template, payload)
+        assert result == "YES"
+
+    def test_helper_has_context_from_input_and_memories(self):
+        """Test has_context finds context in input.conversation_context and memories."""
+        renderer = SimplifiedPromptRenderer()
+
+        payload_input = {"input": {"conversation_context": "some context"}}
+        helpers = renderer._get_template_helper_functions(payload_input)
+        assert helpers["has_context"]("any") is True
+
+        payload_mem = {"memories": [{"agent_name": "agent_x", "content": "..."}]}
+        helpers = renderer._get_template_helper_functions(payload_mem)
+        assert helpers["has_context"]("agent_x") is True
+
+    def test_template_dot_access_and_startswith(self):
+        """Templates should be able to access nested dict results and call startswith safely."""
+        renderer = SimplifiedPromptRenderer()
+
+        payload = {
+            "previous_outputs": {
+                "agent1": {
+                    "component_type": "agent_response",
+                    "result": {"summary": "hello"}
+                },
+                "agent2": {
+                    "component_type": "agent_response",
+                    "result": "http://example.com/page"
+                }
+            }
+        }
+
+        # Dot access nested value
+        template = "Nested: {{ previous_outputs.agent1.result.summary }}"
+        result = renderer.render_prompt(template, payload)
+        assert "hello" in result
+
+        # startswith on result
+        template2 = "{% if previous_outputs.agent2.result.startswith('http') %}YES{% else %}NO{% endif %}"
+        result2 = renderer.render_prompt(template2, payload)
+        assert result2 == "YES"
+
+    def test_helpers_handle_bad_objects_gracefully(self):
+        """Helpers should not raise if underlying objects misbehave."""
+        class Bad:
+            def __str__(self):
+                raise RuntimeError("broken str")
+
+        renderer = SimplifiedPromptRenderer()
+        payload = {"previous_outputs": {"agent_broken": Bad()}}
+        helpers = renderer._get_template_helper_functions(payload)
+
+        # get_agent_response should return fallback string rather than raising
+        res = helpers["get_agent_response"]("agent_broken")
+        assert "No response found" in res
+
+        # safe_get_response should return fallback
+        res2 = helpers["safe_get_response"]("agent_broken", "fallback")
+        assert res2 == "fallback"
+
+    def test_get_fork_responses_optional(self):
+        """get_fork_responses should be callable with no args and return candidates."""
+        renderer = SimplifiedPromptRenderer()
+
+        payload = {
+            "previous_outputs": {
+                "fork_group1": {
+                    "a": {"response": "x"},
+                    "b": {"response": "y"}
+                },
+                "other": {"result": "nope"}
+            }
+        }
+
+        helpers = renderer._get_template_helper_functions(payload)
+        all_forks = helpers["get_fork_responses"]()
+        assert "fork_group1" in all_forks
+        fg = helpers["get_fork_responses"]("fork_group1")
+        assert fg == {"a": "x", "b": "y"}
+
+    def test_web_sources_and_past_context_startswith(self):
+        """Ensure template calls to startswith on list/dict don't error (safe wrapper)."""
+        renderer = SimplifiedPromptRenderer()
+
+        payload = {
+            "web_sources": ["http://a", "http://b"],
+            "past_context": {"summary": "x"}
+        }
+
+        template = "{% if web_sources.startswith('http') %}YES{% else %}NO{% endif %}"
+        result = renderer.render_prompt(template, payload)
+        # For a list, startswith should be False
+        assert result == "NO"
+
+        template2 = "{% if past_context.startswith('x') %}YES{% else %}NO{% endif %}"
+        result2 = renderer.render_prompt(template2, payload)
+        assert result2 == "NO"
+
     def test_enhance_previous_outputs_removes_none(self):
         """Test that _enhance_previous_outputs removes None values."""
         renderer = SimplifiedPromptRenderer()

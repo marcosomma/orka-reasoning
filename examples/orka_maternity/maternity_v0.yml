@@ -117,6 +117,8 @@ agents:
   - id: route_determiner
     type: local_llm
     model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Analyze the metrics and determine the appropriate safety route.
       
@@ -144,42 +146,52 @@ agents:
   - id: safe_alternative_builder
     type: local_llm
     model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Suggest a safer, reversible alternative based on policies and the request.
       
       Request: {{ get_input() }}
-      Policies: {{ safe_get_response('policies_rag', 'No specific policies found') }}
+      Policies: {{ safe_get_response('policies_rag', 'No specific policies found') }} 
 
   - id: responder_block
     type: local_llm
     model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Block the risky request. Provide protective rationale, reassurance, and a safer alternative.
       
       Request: {{ get_input() }}
-      Metrics: {{ safe_get_response('metrics_join', '{}') }}
+      Metrics: {{ safe_get_response('metrics_join', '{}') }} 
 
   - id: responder_caution
     type: local_llm
     model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Decline risky portion and propose the safer alternative while maintaining rapport.
       
       Request: {{ get_input() }}
-      Alternative: {{ safe_get_response('safe_alternative_builder', 'No specific alternative available') }}
+      Alternative: {{ safe_get_response('safe_alternative_builder', 'No specific alternative available') }} 
 
   - id: responder_normal
     type: local_llm
     model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Proceed safely with clarity and boundary reminders.
       
       Request: {{ get_input() }}
-      Metrics: {{ safe_get_response('metrics_join', '{}') }}
+      Metrics: {{ safe_get_response('metrics_join', '{}') }} 
 
   - id: empathy_scorer
     type: local_llm
     model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Score comfort/clarity (K) of the final response in [0,1].
       

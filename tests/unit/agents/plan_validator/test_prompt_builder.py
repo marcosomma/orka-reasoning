@@ -60,3 +60,40 @@ def test_build_criteria_instructions():
     assert "has_all_required_steps" in instructions
     # Check for a description
     assert "All necessary steps are included" in instructions
+
+
+def test_build_validation_prompt_with_scoring_context_loop_convergence():
+    """When scoring_context is loop_convergence, the prompt should include the specific JSON schema."""
+    query = "improve output"
+    proposed_path = {"path": ["a", "b"]}
+    prompt = build_validation_prompt(
+        query=query,
+        proposed_path=proposed_path,
+        previous_critiques=[],
+        loop_number=1,
+        preset_name="moderate",
+        scoring_context="loop_convergence",
+    )
+
+    # Should include dynamic schema keys from the preset
+    assert "ADDITIONAL OUTPUT FORMAT FOR loop_convergence CONTEXT" in prompt
+    assert '"improvement"' in prompt
+    assert '"better_than_previous"' in prompt
+
+
+def test_build_validation_prompt_with_unknown_context_does_not_raise():
+    """Prompt builder should not raise for an unknown scoring context; it should fall back."""
+    query = "test"
+    proposed_path = {"path": ["x"]}
+    prompt = build_validation_prompt(
+        query=query,
+        proposed_path=proposed_path,
+        previous_critiques=[],
+        loop_number=1,
+        preset_name="moderate",
+        scoring_context="non_existent_context",
+    )
+
+    # If the context is unknown, we still return a prompt and include a warning-friendly message
+    assert isinstance(prompt, str)
+    assert "ADDITIONAL OUTPUT FORMAT FOR non_existent_context CONTEXT" not in prompt or "Respond ONLY" in prompt

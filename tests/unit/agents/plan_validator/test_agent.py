@@ -202,3 +202,26 @@ class TestPlanValidatorAgent:
         assert result["decision"] == "shortlist"
         assert len(result["target"]) == 2
         assert result["target"][0]["node_id"] == "agent1"
+
+    @pytest.mark.asyncio
+    async def test_run_impl_passes_scoring_context(
+        self,
+        mock_prompt_builder,
+        mock_llm_client,
+        mock_boolean_score_calculator_class,
+        mock_boolean_parser,
+        plan_validator_agent,
+    ):
+        """Ensure scoring_context from ctx is passed into prompt builder."""
+        context = {
+            "input": "test",
+            "previous_outputs": {},
+            "loop_number": 1,
+            "scoring_context": "loop_convergence",
+        }
+
+        await plan_validator_agent._run_impl(context)
+
+        mock_prompt_builder.assert_called_once()
+        called_kwargs = mock_prompt_builder.call_args[1]
+        assert called_kwargs.get("scoring_context") == "loop_convergence"

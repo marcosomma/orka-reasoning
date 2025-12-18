@@ -119,6 +119,55 @@ async def test_extract_score_pattern_strategy_on_string_result():
     assert abs(score - 0.66) < 1e-6
 
 
+@pytest.mark.asyncio
+async def test_extract_score_percentage_from_high_priority_agent():
+    node = LoopNode("test_node")
+
+    # Ensure no boolean calculator so we exercise pattern-based extraction
+    node.score_calculator = None
+
+    payload = {"agreement_moderator": {"response": "Agreement: 15% observed in outcomes"}}
+
+    score = await node._extract_score(payload)
+
+    assert isinstance(score, float)
+    assert abs(score - 0.15) < 1e-6
+
+
+@pytest.mark.asyncio
+async def test_extract_score_pattern_percentage_strategy():
+    node = LoopNode("test_node")
+    node.score_extraction_config = {"strategies": [{"type": "pattern", "patterns": [r"(\d+\.?\d*)%"]}]}
+
+    payload = {"agent_x": "Value: 15%"}
+    score = await node._extract_score(payload)
+    assert isinstance(score, float)
+    assert abs(score - 0.15) < 1e-6
+
+
+@pytest.mark.asyncio
+async def test_extract_score_out_of_ten_pattern():
+    node = LoopNode("test_node")
+    node.score_extraction_config = {"strategies": [{"type": "pattern", "patterns": [r"(\d+\.?\d*)/10"]}]}
+
+    payload = {"agent_x": "Score: 8/10"}
+    score = await node._extract_score(payload)
+    assert isinstance(score, float)
+    assert abs(score - 0.8) < 1e-6
+
+
+@pytest.mark.asyncio
+async def test_extract_score_direct_key_normalizes_large_values():
+    node = LoopNode("test_node")
+    node.score_extraction_config = {"strategies": [{"type": "direct_key", "key": "some_score"}]}
+
+    # Raw score of 150 should be clamped to 1.0 (out of expected range)
+    payload = {"some_score": "150"}
+    score = await node._extract_score(payload)
+    assert isinstance(score, float)
+    assert abs(score - 1.0) < 1e-6
+
+
 def test_extract_boolean_from_text_returns_none_on_invalid():
     node = LoopNode("test_node")
     result = node._extract_boolean_from_text("no json here")
