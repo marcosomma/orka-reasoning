@@ -23,6 +23,8 @@ import logging
 import subprocess
 from typing import Dict
 
+from orka.startup.banner import display_banner
+
 logger = logging.getLogger(__name__)
 
 
@@ -83,6 +85,11 @@ def display_startup_success() -> None:
     logger.info("✅ All services started successfully!")
     logger.info("📝 Press Ctrl+C to stop all services")
     logger.info("")
+
+
+def display_final_banner() -> None:
+    """Display banner just before Uvicorn starts - stays visible in terminal."""
+    display_banner()
 
 
 def display_shutdown_message() -> None:

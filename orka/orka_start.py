@@ -39,7 +39,6 @@ from orka.startup import (  # Main orchestration functions
     run_startup,
     wait_for_redis,
 )
-from orka.startup.banner import display_banner
 
 # The _wait_for_redis function is now wait_for_redis (removed underscore)
 # Provide backward compatibility alias
@@ -60,9 +59,6 @@ def cli_main():
     CLI entry point for orka-start command.
     This function is referenced in pyproject.toml's console_scripts.
     """
-
-    # Display cool banner at startup
-    display_banner()
 
     backend = os.environ["ORKA_MEMORY_BACKEND"]
     print(f"🚀 Starting OrKa with {backend.upper()} Backend...")
