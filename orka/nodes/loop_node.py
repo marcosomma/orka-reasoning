@@ -41,7 +41,7 @@ from .loop.sanitize import create_safe_result, create_safe_result_with_context
 from .loop.score_extractor import LoopScoreExtractor
 from .loop.score_utils import normalize_score
 from .loop.runner import LoopRunnerDeps, run_loop
-from .loop.types import PastLoopMetadata
+from .loop.types import InsightCategory, PastLoopMetadata
 
 logger = logging.getLogger(__name__)
 

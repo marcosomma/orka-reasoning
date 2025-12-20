@@ -2,6 +2,7 @@
 Data management for TUI interface - statistics, caching, and data fetching.
 """
 
+import json
 import os
 import time
 from collections import deque
