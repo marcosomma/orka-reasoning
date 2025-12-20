@@ -12,7 +12,7 @@ This report identifies the top 20 largest and most complex files in the `orka/` 
 |------|------|-------|-----------|---------|-----------|-------------|------------|
 | **1** | `memory/redisstack_logger.py` | ~~1,954~~ **365** | ~~95.6~~ 18.2 | 1 | 48→9 | 0 | ✅ Done |
 | **2** | `orchestrator/dry_run_engine.py` | ~~1,287~~ **312** | ~~65.2~~ 15.4 | 4→1 | 25→12 | 11→5 | ✅ Done |
-| **3** | `nodes/memory_reader_node.py` | **1,154** | 53.0 | 1 | 15 | 9 | 🟠 High |
+| **3** | `nodes/memory_reader_node.py` | ~~1,154~~ **214** | ~~53.0~~ 10.6 | 1 | 15→5 | 9→2 | ✅ Done |
 | **4** | `orchestrator/simplified_prompt_rendering.py` | **953** | 50.0 | 1 | 12 | 0 | 🟠 High |
 | **5** | `memory/base_logger.py` | **949** | 45.0 | 1 | 38 | 0 | 🟠 High |
 | **6** | `tui/components.py` | **902** | 42.7 | 1 | 21 | 0 | 🟠 High |
@@ -74,10 +74,15 @@ This report identifies the top 20 largest and most complex files in the `orka/` 
   - ✅ `PathEvaluatorMixin` - Path evaluation
   - ✅ 64 new unit tests added
 
-#### 3. `nodes/memory_reader_node.py` (1,154 lines)
-- Large node with **9 async methods**
-- Handles memory retrieval, filtering, and processing
-- **Recommendation:** Extract filtering logic into a separate `MemoryFilter` class
+#### 3. `nodes/memory_reader_node.py` ~~(1,154 lines)~~ → **214 lines ✅ REFACTORED**
+- ~~Large node with **9 async methods**~~ → Now modular with 4 mixins
+- ~~Handles memory retrieval, filtering, and processing~~
+- **Completed refactoring** (Dec 20, 2025):
+  - ✅ `ContextScoringMixin` - Context scoring, temporal ranking
+  - ✅ `QueryVariationMixin` - Query variation generation
+  - ✅ `SearchMethodsMixin` - Search strategies
+  - ✅ `FilteringMixin` - Memory filtering
+  - ✅ 39 new unit tests added
 
 ---
 
@@ -97,7 +102,7 @@ This report identifies the top 20 largest and most complex files in the `orka/` 
 |--------|-----------------|-------------|-------|
 | `memory/` | 4 | ~~4,216~~ 2,627 | Refactored - 1,589 lines moved to mixins |
 | `orchestrator/` | 4 | ~~3,470~~ 2,495 | Refactored - 975 lines moved to mixins |
-| `nodes/` | 4 | 3,064 | Node implementations |
+| `nodes/` | 4 | ~~3,064~~ 2,124 | Refactored - 940 lines moved to mixins |
 | `tui/` | 3 | 2,035 | UI components |
 | `agents/` | 2 | 1,273 | LLM integration |
 | `utils/` | 2 | 1,124 | Utility functions |
@@ -122,10 +127,10 @@ This report identifies the top 20 largest and most complex files in the `orka/` 
 ## Metrics Summary
 
 - **Total files analyzed:** 20
-- **Combined lines of code:** ~~14,682~~ 12,118 (after refactoring)
-- **Average file size:** ~~734~~ 606 lines
-- **Files exceeding 1,000 lines:** ~~3~~ 1
-- **Files with >30 functions:** ~~3~~ 2 (`base_logger`, `data_manager`) - `redisstack_logger` & `dry_run_engine` refactored
+- **Combined lines of code:** ~~14,682~~ 11,178 (after refactoring)
+- **Average file size:** ~~734~~ 559 lines
+- **Files exceeding 1,000 lines:** ~~3~~ 0 ✅
+- **Files with >30 functions:** ~~3~~ 2 (`base_logger`, `data_manager`) - all critical files refactored
 
 ---
 
@@ -178,11 +183,20 @@ Track progress on addressing complexity issues in each file.
   - `agent_analyzer.py` - Agent capability inference
   - `path_evaluator.py` - Path scoring & outcome generation
 
-- [ ] **`nodes/memory_reader_node.py`** (1,154 lines, 9 async methods)
-  - [ ] Extract `MemoryFilter` class for filtering logic
-  - [ ] Simplify async method chains
-  - [ ] Add unit tests for retrieval logic
-  - [ ] Document memory processing pipeline
+- [x] **`nodes/memory_reader_node.py`** ~~(1,154 lines, 9 async methods)~~ → **214 lines (81.5% reduction) ✅**
+  - [x] Extract `ContextScoringMixin` for context scoring and temporal ranking
+  - [x] Extract `QueryVariationMixin` for query variation generation
+  - [x] Extract `SearchMethodsMixin` for vector, keyword, hybrid search
+  - [x] Extract `FilteringMixin` for filtering logic
+  - [x] Extract utility functions (calculate_overlap, cosine_similarity)
+  - [x] Add comprehensive unit tests (39 new tests)
+  
+  **New module structure:** `orka/nodes/memory_reader/`
+  - `context_scoring.py` - Context scoring, temporal ranking, metrics
+  - `query_variation.py` - Query variation generation
+  - `search_methods.py` - Vector, keyword, hybrid, stream search
+  - `filtering.py` - Memory filtering (category, expired, relevance)
+  - `utils.py` - Utility functions
 
 ### 🟠 High Priority (Should Fix)
 
@@ -281,11 +295,11 @@ Track progress on addressing complexity issues in each file.
 
 | Priority | Total Files | Completed | Remaining |
 |----------|-------------|-----------|-----------|
-| 🔴 Critical | 3 | 2 | 1 |
+| 🔴 Critical | 3 | 3 | 0 |
 | 🟠 High | 3 | 0 | 3 |
 | 🟡 Medium | 11 | 0 | 11 |
 | 🟢 Low | 3 | 0 | 3 |
-| **Total** | **20** | **2** | **18** |
+| **Total** | **20** | **3** | **17** |
 
 ---
 
@@ -295,6 +309,8 @@ _Use this section to track decisions, blockers, and additional context._
 
 - [x] **Completed:** `redisstack_logger.py` refactored (Dec 20, 2025) - 81.3% size reduction, 108 new unit tests
 - [x] **Completed:** `dry_run_engine.py` refactored (Dec 20, 2025) - 75.8% size reduction, 64 new unit tests
+- [x] **Completed:** `memory_reader_node.py` refactored (Dec 20, 2025) - 81.5% size reduction, 39 new unit tests
+- [x] **🎉 ALL CRITICAL FILES REFACTORED**
 - [ ] **Blocker:** _None identified_
 - [ ] **Decision:** _Pending team review for remaining files_
 - [ ] **Context:** _Report generated December 20, 2025_
