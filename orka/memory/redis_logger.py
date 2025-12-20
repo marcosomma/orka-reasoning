@@ -561,8 +561,12 @@ class RedisMemoryLogger(BaseMemoryLogger):
             return 0
 
     def close(self) -> None:
-        """Close the Redis client connection."""
+        """Close the Redis client connection and stop background threads."""
         try:
+            # Stop the memory decay scheduler to prevent background threads
+            # This must be called first to ensure no new operations occur
+            self.stop_decay_scheduler()
+
             self.client.close()
             # Only log if logging system is still available
             try:

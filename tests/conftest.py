@@ -8,6 +8,11 @@ from types import ModuleType
 from typing import Any, Dict, Generator, List
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
+# Disable memory decay scheduler BEFORE any orka imports to prevent thread accumulation.
+# This must be set early, before OrchestratorBase is imported, as it reads this env var
+# during module initialization.
+os.environ["ORKA_MEMORY_DECAY_ENABLED"] = "false"
+
 import importlib.util
 import types as _types
 
@@ -150,6 +155,7 @@ def global_test_mocks(request, monkeypatch):
         return
 
     # Mock the memory logger factory to return a lightweight mock object
+    # without decay scheduler threads that can accumulate and hang tests
     try:
         import orka.memory_logger as memory_logger_mod
 
@@ -160,9 +166,19 @@ def global_test_mocks(request, monkeypatch):
             m.index_name = kwargs.get("memory_preset", "orka_enhanced_memory")
             m.store = MagicMock()
             m.query = MagicMock(return_value=[])
+            # Ensure close() and stop_decay_scheduler() are no-ops
+            m.close = MagicMock()
+            m.stop_decay_scheduler = MagicMock()
             return m
 
         monkeypatch.setattr(memory_logger_mod, "create_memory_logger", fake_create_memory_logger)
+        
+        # Also patch in base.py where create_memory_logger is imported directly
+        try:
+            import orka.orchestrator.base as base_mod
+            monkeypatch.setattr(base_mod, "create_memory_logger", fake_create_memory_logger)
+        except Exception:
+            pass
     except Exception:
         # If module not importable during some targeted tests, skip patch
         pass
@@ -359,7 +375,7 @@ def mock_boolean_score_calculator_class():
 
 @pytest.fixture
 def temp_config_file():
-    """Create temporary YAML config file."""
+    """Create temporary YAML config file with decay disabled for tests."""
     config_data = {
         'orchestrator': {
             'id': 'test_workflow',
@@ -373,7 +389,13 @@ def temp_config_file():
             'prompt': 'Test prompt: {{ input }}',
             'provider': 'ollama',
             'model': 'test-model'
-        }]
+        }],
+        # Disable memory decay scheduler for tests to prevent thread accumulation
+        'memory': {
+            'decay': {
+                'enabled': False
+            }
+        }
     }
     
     with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:

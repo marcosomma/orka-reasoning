@@ -12,17 +12,21 @@ def _make_pool_with_attrs():
     p._created_connections = 5
     p._available_connections = [1, 2]
     p._in_use_connections = [3]
+    p.disconnect = MagicMock()
     return p
 
 
 def test_get_connection_stats_with_pool_attrs(monkeypatch):
-    # Patch connection pool creation and skip index setup during init
+    # Patch ConnectionManager's pool creation to return our custom pool
+    from orka.memory.redisstack.connection_manager import ConnectionManager
     from orka.memory.redisstack_logger import RedisStackMemoryLogger
 
+    mock_pool = _make_pool_with_attrs()
+
     monkeypatch.setattr(
-        RedisStackMemoryLogger,
+        ConnectionManager,
         "_create_connection_pool",
-        lambda self: _make_pool_with_attrs(),
+        lambda self: mock_pool,
     )
     monkeypatch.setattr(RedisStackMemoryLogger, "_ensure_index", lambda self: None)
 
@@ -38,12 +42,15 @@ def test_get_connection_stats_with_pool_attrs(monkeypatch):
 
 
 def test_cleanup_connections_clears_and_disconnects(monkeypatch):
+    from orka.memory.redisstack.connection_manager import ConnectionManager
     from orka.memory.redisstack_logger import RedisStackMemoryLogger
 
+    mock_pool = _make_pool_with_attrs()
+
     monkeypatch.setattr(
-        RedisStackMemoryLogger,
+        ConnectionManager,
         "_create_connection_pool",
-        lambda self: _make_pool_with_attrs(),
+        lambda self: mock_pool,
     )
     monkeypatch.setattr(RedisStackMemoryLogger, "_ensure_index", lambda self: None)
 
@@ -58,25 +65,23 @@ def test_cleanup_connections_clears_and_disconnects(monkeypatch):
     logger._active_connections.add(c1)
     logger._active_connections.add(c2)
 
-    # Provide a connection_pool with a disconnect method
-    conn_pool = MagicMock()
-    logger.connection_pool = conn_pool
-
     res = logger.cleanup_connections()
     assert res["status"] == "success"
     assert res["cleared_tracked_connections"] == 2
-    # Ensure disconnect was invoked
-    assert conn_pool.disconnect.called
+    # Ensure disconnect was invoked on the pool
+    assert mock_pool.disconnect.called
 
 
 def test_ensure_index_calls_bootstrap_helpers(monkeypatch):
+    from orka.memory.redisstack.connection_manager import ConnectionManager
     from orka.memory.redisstack_logger import RedisStackMemoryLogger
 
     # Avoid network in pool creation during __init__ but call the real _ensure_index later
+    mock_pool = _make_pool_with_attrs()
     monkeypatch.setattr(
-        RedisStackMemoryLogger,
+        ConnectionManager,
         "_create_connection_pool",
-        lambda self: _make_pool_with_attrs(),
+        lambda self: mock_pool,
     )
 
     # Temporarily stub _ensure_index during __init__, then restore the original
@@ -91,6 +96,7 @@ def test_ensure_index_calls_bootstrap_helpers(monkeypatch):
     # Patch _get_redis_client to return a fake client (so connection attempt succeeds)
     fake_client = MagicMock()
     monkeypatch.setattr(logger, "_get_redis_client", lambda: fake_client)
+    monkeypatch.setattr(logger._conn_mgr, "get_client", lambda: fake_client)
 
     # Patch bootstrap helpers
     import threading
