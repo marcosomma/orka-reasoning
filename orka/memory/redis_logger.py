@@ -560,6 +560,24 @@ class RedisMemoryLogger(BaseMemoryLogger):
             logger.error(f"Failed to delete keys {keys}: {e!s}")
             return 0
 
+    def scan(self, cursor: int = 0, match: str | None = None, count: int = 10):
+        """
+        Scan Redis keys with optional pattern matching.
+
+        Args:
+            cursor: Cursor position for iteration.
+            match: Optional pattern to match keys.
+            count: Hint for number of keys to return per call.
+
+        Returns:
+            Tuple of (next_cursor, list_of_keys).
+        """
+        try:
+            return self.client.scan(cursor=cursor, match=match, count=count)
+        except Exception as e:
+            logger.error(f"Failed to scan keys: {e!s}")
+            return (0, [])
+
     def close(self) -> None:
         """Close the Redis client connection and stop background threads."""
         try:

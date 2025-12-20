@@ -14,7 +14,7 @@ This report identifies the top 20 largest and most complex files in the `orka/` 
 | **2** | `orchestrator/dry_run_engine.py` | ~~1,287~~ **312** | ~~65.2~~ 15.4 | 4→1 | 25→12 | 11→5 | ✅ Done |
 | **3** | `nodes/memory_reader_node.py` | ~~1,154~~ **214** | ~~53.0~~ 10.6 | 1 | 15→5 | 9→2 | ✅ Done |
 | **4** | `orchestrator/simplified_prompt_rendering.py` | ~~953~~ **235** | ~~50.0~~ 11.8 | 1 | 12→6 | 0 | ✅ Done |
-| **5** | `memory/base_logger.py` | **949** | 45.0 | 1 | 38 | 0 | 🟠 High |
+| **5** | `memory/base_logger.py` | ~~949~~ **165** | ~~45.0~~ 8.2 | 1 | 38→0 | 0 | ✅ Done |
 | **6** | `tui/components.py` | **902** | 42.7 | 1 | 21 | 0 | 🟠 High |
 | **7** | `memory/redis_logger.py` | **742** | 33.8 | 1 | 19 | 0 | 🟡 Medium |
 | **8** | `nodes/memory_writer_node.py` | **740** | 39.9 | 1 | 11 | 1 | 🟡 Medium |
@@ -91,7 +91,7 @@ This report identifies the top 20 largest and most complex files in the `orka/` 
 | File | Issue | Recommendation |
 |------|-------|----------------|
 | `simplified_prompt_rendering.py` ✅ | ~~Template rendering with Jinja2~~ **REFACTORED** | ~~Extract template helpers~~ Done |
-| `base_logger.py` | Base class with 38 methods, inheritance complexity | Consider composition over inheritance |
+| `base_logger.py` ✅ | ~~Base class with 38 methods~~ **REFACTORED** | ~~Consider composition~~ Done |
 | `tui/components.py` | UI state management, 21 methods | Split into smaller component files |
 
 ---
@@ -219,10 +219,22 @@ Track progress on addressing complexity issues in each file.
   - `memory_helpers.py` - Memory data access helpers
   - `utility_helpers.py` - General utility helpers
 
-- [ ] **`memory/base_logger.py`** (949 lines, 38 methods)
-  - [ ] Consider composition over inheritance
-  - [ ] Split into focused abstract classes
-  - [ ] Document inheritance chain
+- [x] **`memory/base_logger.py`** ~~(949 lines, 38 methods)~~ → **165 lines (85.5% reduction) ✅**
+  - [x] Extract `ConfigMixin` for configuration resolution
+  - [x] Extract `ClassificationMixin` for memory classification
+  - [x] Extract `DecaySchedulerMixin` for decay scheduling
+  - [x] Extract `BlobDeduplicationMixin` for blob deduplication
+  - [x] Extract `MemoryProcessingMixin` for memory processing
+  - [x] Extract `CostAnalysisMixin` for cost analysis
+  - [x] Add comprehensive unit tests (51 new tests)
+  
+  **New module structure:** `orka/memory/base_logger_mixins/`
+  - `config_mixin.py` - Preset resolution & decay config
+  - `classification_mixin.py` - Importance, type, category classification
+  - `decay_scheduler_mixin.py` - Automatic decay scheduling
+  - `blob_dedup_mixin.py` - Blob deduplication & reference counting
+  - `memory_processing_mixin.py` - Memory entry processing
+  - `cost_analysis_mixin.py` - Cost & token extraction
 
 - [ ] **`tui/components.py`** (902 lines, 21 methods)
   - [ ] Split into smaller component files
@@ -310,10 +322,10 @@ Track progress on addressing complexity issues in each file.
 | Priority | Total Files | Completed | Remaining |
 |----------|-------------|-----------|-----------|
 | 🔴 Critical | 3 | 3 | 0 |
-| 🟠 High | 3 | 1 | 2 |
+| 🟠 High | 3 | 2 | 1 |
 | 🟡 Medium | 11 | 0 | 11 |
 | 🟢 Low | 3 | 0 | 3 |
-| **Total** | **20** | **4** | **16** |
+| **Total** | **20** | **5** | **15** |
 
 ---
 
@@ -325,7 +337,9 @@ _Use this section to track decisions, blockers, and additional context._
 - [x] **Completed:** `dry_run_engine.py` refactored (Dec 20, 2025) - 75.8% size reduction, 64 new unit tests
 - [x] **Completed:** `memory_reader_node.py` refactored (Dec 20, 2025) - 81.5% size reduction, 39 new unit tests
 - [x] **Completed:** `simplified_prompt_rendering.py` refactored (Dec 20, 2025) - 78.9% size reduction, 100 new unit tests
+- [x] **Completed:** `base_logger.py` refactored (Dec 20, 2025) - 85.5% size reduction, 51 new unit tests
 - [x] **🎉 ALL CRITICAL FILES REFACTORED**
+- [x] **🎉 5/20 files refactored - 25% complete**
 - [ ] **Blocker:** _None identified_
 - [ ] **Decision:** _Pending team review for remaining files_
 - [ ] **Context:** _Report generated December 20, 2025_

@@ -413,6 +413,9 @@ class RedisStackMemoryLogger(
     def delete(self, *keys: str) -> int:
         return RedisInterfaceMixin.delete(self, *keys)
 
+    def scan(self, cursor: int = 0, match: str | None = None, count: int = 10):
+        return RedisInterfaceMixin.scan(self, cursor, match, count)
+
     # ==========================================================================
     # Resource Cleanup
     # ==========================================================================

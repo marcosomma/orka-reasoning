@@ -194,6 +194,9 @@ except ImportError:
         def delete(self, *keys: str) -> int:
             raise NotImplementedError
 
+        def scan(self, cursor: int = 0, match: str | None = None, count: int = 10):
+            raise NotImplementedError
+
         def ensure_index(self) -> bool:
             raise NotImplementedError
 
