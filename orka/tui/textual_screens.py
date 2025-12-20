@@ -2,6 +2,7 @@
 Screen implementations for OrKa Textual TUI application.
 """
 
+from datetime import datetime
 from typing import Any
 
 from textual.app import ComposeResult
@@ -489,13 +490,13 @@ Retention: 100 points
 """
             hist_widget.update(hist_content)
 
-        except Exception:
-            pass
+        except Exception as e:
+            # Log error to help diagnose issues
+            import logging
+            logging.getLogger(__name__).warning(f"HealthScreen refresh_data error: {e}")
 
     def _format_current_time(self) -> str:
         """Format current time for display."""
-
-
         return datetime.now().strftime("%H:%M:%S")
 
 

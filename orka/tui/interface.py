@@ -26,7 +26,7 @@ try:
 except ImportError:
     TEXTUAL_AVAILABLE = False
 
-from .components import ComponentBuilder
+from .component_builder import ComponentBuilder
 from .data_manager import DataManager
 from .fallback import FallbackInterface
 
