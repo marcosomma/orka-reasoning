@@ -15,10 +15,23 @@ pytestmark = [pytest.mark.unit]
 class TestMetricsCollector:
     """Test suite for MetricsCollector class."""
 
-    def create_collector(self):
-        """Helper to create a MetricsCollector instance."""
+    def create_collector(self, mock_runtime_env=False):
+        """Helper to create a MetricsCollector instance.
+        
+        Args:
+            mock_runtime_env: If True, mock _get_runtime_environment to avoid
+                subprocess calls affecting platform module in CI environments.
+        """
         collector = MetricsCollector()
         collector.run_id = "test-run-123"
+        if mock_runtime_env:
+            collector._get_runtime_environment = lambda: {
+                "platform": "Linux-test",
+                "python_version": "3.11.0",
+                "git_sha": "test-sha",
+                "gpu_type": "none",
+                "docker_image": None,
+            }
         return collector
 
     def test_extract_llm_metrics_from_result_dict(self):
@@ -261,7 +274,7 @@ class TestMetricsCollector:
 
     def test_generate_meta_report_empty_logs(self):
         """Test _generate_meta_report with empty logs."""
-        collector = self.create_collector()
+        collector = self.create_collector(mock_runtime_env=True)
         
         logs = []
         
@@ -277,7 +290,7 @@ class TestMetricsCollector:
 
     def test_generate_meta_report_with_llm_metrics(self):
         """Test _generate_meta_report aggregates LLM metrics."""
-        collector = self.create_collector()
+        collector = self.create_collector(mock_runtime_env=True)
         
         logs = [
             {
@@ -313,7 +326,7 @@ class TestMetricsCollector:
 
     def test_generate_meta_report_with_nested_metrics(self):
         """Test _generate_meta_report extracts nested _metrics from payload."""
-        collector = self.create_collector()
+        collector = self.create_collector(mock_runtime_env=True)
         
         logs = [
             {
@@ -338,7 +351,7 @@ class TestMetricsCollector:
 
     def test_generate_meta_report_deduplicates_metrics(self):
         """Test _generate_meta_report deduplicates identical metrics."""
-        collector = self.create_collector()
+        collector = self.create_collector(mock_runtime_env=True)
         
         # Same metrics object appears multiple times
         same_metrics = {
@@ -369,7 +382,7 @@ class TestMetricsCollector:
 
     def test_generate_meta_report_null_cost(self):
         """Test _generate_meta_report handles null cost."""
-        collector = self.create_collector()
+        collector = self.create_collector(mock_runtime_env=True)
         
         logs = [
             {
@@ -391,7 +404,7 @@ class TestMetricsCollector:
 
     def test_generate_meta_report_null_cost_policy_fail(self):
         """Test _generate_meta_report raises error with null_fail policy."""
-        collector = self.create_collector()
+        collector = self.create_collector(mock_runtime_env=True)
         
         with patch.dict(os.environ, {"ORKA_LOCAL_COST_POLICY": "null_fail"}):
             logs = [
@@ -412,7 +425,7 @@ class TestMetricsCollector:
 
     def test_generate_meta_report_per_agent_metrics(self):
         """Test _generate_meta_report tracks per-agent metrics."""
-        collector = self.create_collector()
+        collector = self.create_collector(mock_runtime_env=True)
         
         logs = [
             {
@@ -448,7 +461,7 @@ class TestMetricsCollector:
 
     def test_generate_meta_report_per_model_usage(self):
         """Test _generate_meta_report tracks per-model usage."""
-        collector = self.create_collector()
+        collector = self.create_collector(mock_runtime_env=True)
         
         logs = [
             {
@@ -483,7 +496,7 @@ class TestMetricsCollector:
 
     def test_generate_meta_report_zero_latency_excluded(self):
         """Test _generate_meta_report excludes zero latencies from average."""
-        collector = self.create_collector()
+        collector = self.create_collector(mock_runtime_env=True)
         
         logs = [
             {
@@ -651,7 +664,7 @@ class TestMetricsCollector:
 
     def test_generate_meta_report_deeply_nested_metrics(self):
         """Test _generate_meta_report finds metrics in deeply nested structures."""
-        collector = self.create_collector()
+        collector = self.create_collector(mock_runtime_env=True)
         
         logs = [
             {
@@ -681,7 +694,7 @@ class TestMetricsCollector:
 
     def test_generate_meta_report_list_nested_metrics(self):
         """Test _generate_meta_report finds metrics in lists."""
-        collector = self.create_collector()
+        collector = self.create_collector(mock_runtime_env=True)
         
         logs = [
             {

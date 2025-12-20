@@ -38,9 +38,10 @@ def test_build_previous_outputs_handles_multiple_payload_shapes():
 def test_get_runtime_environment_no_git_no_gpu(monkeypatch):
     collector = MetricsCollector()
 
-    with patch("orka.orchestrator.metrics.subprocess.check_output", side_effect=Exception("no git")):
-        with patch("orka.orchestrator.metrics.shutil.which", return_value=None):
-            env = collector._get_runtime_environment()
+    with patch("orka.orchestrator.metrics.platform.platform", return_value="Linux-5.4.0"):
+        with patch("orka.orchestrator.metrics.subprocess.check_output", side_effect=Exception("no git")):
+            with patch("orka.orchestrator.metrics.shutil.which", return_value=None):
+                env = collector._get_runtime_environment()
 
     assert env["git_sha"] == "unknown"
     assert env["gpu_type"] == "none"
@@ -52,10 +53,11 @@ def test_get_runtime_environment_with_git_and_gpu():
 
     fake_run = SimpleNamespace(returncode=0, stdout="RTX 4090\n")
 
-    with patch("orka.orchestrator.metrics.subprocess.check_output", return_value=b"abcdef1234567890"):
-        with patch("orka.orchestrator.metrics.shutil.which", return_value="nvidia-smi"):
-            with patch("orka.orchestrator.metrics.subprocess.run", return_value=fake_run):
-                env = collector._get_runtime_environment()
+    with patch("orka.orchestrator.metrics.platform.platform", return_value="Linux-5.4.0"):
+        with patch("orka.orchestrator.metrics.subprocess.check_output", return_value=b"abcdef1234567890"):
+            with patch("orka.orchestrator.metrics.shutil.which", return_value="nvidia-smi"):
+                with patch("orka.orchestrator.metrics.subprocess.run", return_value=fake_run):
+                    env = collector._get_runtime_environment()
 
     assert env["git_sha"] == "abcdef123456"  # short SHA
     assert "RTX 4090" in env["gpu_type"]
