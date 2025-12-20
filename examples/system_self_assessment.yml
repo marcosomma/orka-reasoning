@@ -453,17 +453,38 @@ agents:
          - Flag potential issues or edge cases
          - Suggest improvements
       
-      == REPORT FORMAT ==
-      Provide a comprehensive assessment report with:
-      - Executive summary (3-4 sentences)
-      - Detailed scores for each aspect (1-6 above)
-      - Strengths identified
-      - Weaknesses or concerns found
-      - Specific recommendations for improvement
-      - Overall system health rating (Excellent/Good/Fair/Poor)
-      - Confidence level in this assessment (0-100%)
+      == CONSTRAINED REPORT FORMAT ==
+      Provide a comprehensive assessment report with the following format using only JSON:
+      ```json
+      {
+        "summary": "Executive summary (3-4 sentences)",
+        "scores": {
+          "parallel_processing_performance": 0-100,
+          "conditional_routing_effectiveness": 0-100,
+          "loop_convergence_quality": 0-100,
+          "validation_robustness": 0-100,
+          "overall_system_integrity": 0-100,
+          "anomaly_detection": 0-100
+        },
+        "strengths": [
+          "Specific strength 1",
+          "Specific strength 2"
+        ],
+        "weaknesses": [
+          "Specific weakness 1",
+          "Specific weakness 2"
+        ],
+        "recommendations": [
+          "Specific recommendation 1",
+          "Specific recommendation 2"
+        ],
+        "overall_system_health_rating": "Excellent/Good/Fair/Poor",
+        "confidence_level": 0-100
+      }
+      ```
       
       Be thorough, objective, and specific in your evaluation.
+      Do not include any other text or formatting than the JSON object. Use the JSON format exactly as specified.
     model: openai/gpt-oss-20b
     model_url: http://localhost:1234
     provider: lm_studio

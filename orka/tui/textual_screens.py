@@ -364,131 +364,84 @@ class HealthScreen(BaseOrKaScreen):
     """Screen for system health monitoring."""
 
     def compose_content(self) -> ComposeResult:
-        """Compose the health monitoring layout."""
-        with Vertical():
-            # 🎯 COMPACT: Reduce height of health header area
-            with Container(classes="health-container-compact"):
-                yield Static("🏥 System Health Monitor", classes="container-compact")
-                yield Static("", id="health-summary")
-
-            with Container(classes="dashboard-grid"):
-                # Connection health
-                with Container(classes="stats-container"):
-                    yield Static("🔌 Connection", classes="container")
-                    yield Static("", id="connection-health")
-
-                # Memory system health
-                with Container(classes="memory-container"):
-                    yield Static("🧠 Memory System", classes="container")
-                    yield Static("", id="memory-health")
-
-                # Performance health
-                with Container(classes="logs-container"):
-                    yield Static("⚡ Performance", classes="container")
-                    yield Static("", id="performance-health")
-
-                # Backend information
-                with Container():
-                    yield Static("🔧 Backend Info", classes="container")
-                    yield Static("", id="backend-info")
-
-                # System metrics
-                with Container():
-                    yield Static("📊 System Metrics", classes="container")
-                    yield Static("", id="system-metrics")
-
-                # Historical data
-                with Container():
-                    yield Static("📈 Historical", classes="container")
-                    yield Static("", id="historical-data")
+        """Compose the health monitoring layout - single unified box with styled sections."""
+        with Container(classes="health-main-container"):
+            # Header with overall status
+            yield Static("🏥 System Health Monitor", classes="container")
+            yield Static("", id="health-summary")
+            
+            # All sections in one container
+            yield Static("", id="health-details")
 
     def refresh_data(self) -> None:
         """Refresh health monitoring data."""
         try:
-            # 🎯 USE UNIFIED: Get all health data from centralized calculation
+            # Get all health data from centralized calculation
             unified = self.data_manager.get_unified_stats()
             health = unified["health"]
             backend = unified["backend"]
             stored_memories = unified["stored_memories"]
             log_entries = unified["log_entries"]
 
-            # 🎯 IMPROVED: Better organized health summary with key metrics
-            summary_widget = self.query_one("#health-summary", Static)
+            # Calculate metrics
             overall = health["overall"]
-            total_entries = backend["active_entries"] + backend["expired_entries"]
-            summary_content = f"""[bold]Overall: {overall["icon"]} {overall["message"]}[/bold] | [cyan]Total: {total_entries:,} entries[/cyan] | [green]Active: {backend["active_entries"]:,}[/green] | [red]Expired: {backend["expired_entries"]:,}[/red]
-[dim]Last Update: {self._format_current_time()} | Auto-refresh: 2s | Backend: {backend["type"]}[/dim]"""
-            summary_widget.update(summary_content)
-
-            # Update connection health
-            conn_widget = self.query_one("#connection-health", Static)
             backend_health = health["backend"]
-            conn_status = f"{backend_health['icon']} {backend_health['message']}"
-            conn_content = f"""
-Status: {conn_status}
-Backend: {backend["type"]}
-Protocol: Redis
-"""
-            conn_widget.update(conn_content)
-
-            # Update memory system health
-            mem_widget = self.query_one("#memory-health", Static)
             memory_health = health["memory"]
-            total = backend["active_entries"] + backend["expired_entries"]
-
-            mem_content = f"""
-Health: {memory_health["icon"]} {memory_health["message"]}
-Total: {total:,} entries
-Active: {backend["active_entries"]:,} entries
-Expired: {backend["expired_entries"]:,} entries
-"""
-            mem_widget.update(mem_content)
-
-            # Update performance health
-            perf_widget = self.query_one("#performance-health", Static)
             perf_health = health["performance"]
+            total_entries = backend["active_entries"] + backend["expired_entries"]
             search_time = unified["performance"]["search_time"]
-            perf_content = f"""
-Status: {perf_health["icon"]} {perf_health["message"]}
-Response Time: {search_time:.3f}s
-Throughput: Normal
-Errors: < 0.1%
-"""
-            perf_widget.update(perf_content)
-
-            # Update backend info
-            backend_widget = self.query_one("#backend-info", Static)
-            backend_content = f"""
-Type: {backend["type"]}
-Version: Latest
-Features: TTL, Search, Indexing
-Config: Auto-detected
-"""
-            backend_widget.update(backend_content)
-
-            # Update system metrics
-            metrics_widget = self.query_one("#system-metrics", Static)
             stored_total = stored_memories["total"]
             logs_total = log_entries["orchestration"]
-            usage_pct = (backend["active_entries"] / total * 100) if total > 0 else 0
+            usage_pct = (backend["active_entries"] / total_entries * 100) if total_entries > 0 else 0
+            data_points = len(self.data_manager.stats.history)
+            trend = unified["trends"]["total_entries"]
 
-            metrics_content = f"""
-Stored Memories: {stored_total:,}
-Orchestration Logs: {logs_total:,}
-Memory Usage: {usage_pct:.1f}%
-Cache Hit Rate: 95%
-"""
-            metrics_widget.update(metrics_content)
+            # Update summary
+            summary_widget = self.query_one("#health-summary", Static)
+            summary_content = f"""[bold]Overall:[/bold] {overall["icon"]} {overall["message"]} [dim]│[/dim] [cyan]Total:[/cyan] {total_entries:,} [dim]│[/dim] [green]Active:[/green] {backend["active_entries"]:,} [dim]│[/dim] [red]Expired:[/red] {backend["expired_entries"]:,}
+[dim]Last Update: {self._format_current_time()} │ Auto-refresh: 2s │ Backend: {backend["type"]}[/dim]"""
+            summary_widget.update(summary_content)
 
-            # Update historical data
-            hist_widget = self.query_one("#historical-data", Static)
-            hist_content = f"""
-Data Points: {len(self.data_manager.stats.history)}
-Trends: {unified["trends"]["total_entries"]}
-Performance: Stable
-Retention: 100 points
-"""
-            hist_widget.update(hist_content)
+            # Build unified details content with visual headers
+            details_content = f"""
+[bold yellow]🔌 CONNECTION[/bold yellow]
+   Status: {backend_health["icon"]} {backend_health["message"]}
+   Backend: {backend["type"]}
+   Protocol: Redis
+
+[bold magenta]🧠 MEMORY SYSTEM[/bold magenta]
+   Health: {memory_health["icon"]} {memory_health["message"]}
+   Total: {total_entries:,} entries
+   Active: {backend["active_entries"]:,} entries
+   Expired: {backend["expired_entries"]:,} entries
+
+[bold green]⚡ PERFORMANCE[/bold green]
+   Status: {perf_health["icon"]} {perf_health["message"]}
+   Response Time: {search_time:.3f}s
+   Throughput: Normal
+   Errors: < 0.1%
+
+[bold blue]🔧 BACKEND INFO[/bold blue]
+   Type: {backend["type"]}
+   Version: Latest
+   Features: TTL, Search, Indexing
+   Config: Auto-detected
+
+[bold white]📊 SYSTEM METRICS[/bold white]
+   Stored Memories: {stored_total:,}
+   Orchestration Logs: {logs_total:,}
+   Memory Usage: {usage_pct:.1f}%
+   Cache Hit Rate: 95%
+
+[bold cyan]📈 HISTORICAL[/bold cyan]
+   Data Points: {data_points:,}
+   Trends: {trend}
+   Performance: Stable
+   Retention: 100 points"""
+
+            # Update the details widget
+            details_widget = self.query_one("#health-details", Static)
+            details_widget.update(details_content)
 
         except Exception as e:
             # Log error to help diagnose issues
