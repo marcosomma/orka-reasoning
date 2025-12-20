@@ -72,6 +72,11 @@ class BooleanScoreCalculator:
 
     def _apply_custom_weights(self, custom_weights: Dict[str, Any]) -> None:
         """Apply custom weight overrides and renormalize to sum to 1.0."""
+        # Collect unknown or invalid keys to surface a useful error
+        unknown_dimensions = []
+        unknown_criteria = []
+        invalid_format = []
+
         for key, value in custom_weights.items():
             if "." in key:
                 dimension, criterion = key.split(".", 1)
@@ -81,13 +86,32 @@ class BooleanScoreCalculator:
                         self.weights[dimension][criterion] = float(value)
                         logger.debug(f"Custom weight override: {key} = {value} (was {old_value})")
                     else:
+                        unknown_criteria.append(key)
                         logger.warning(f"Custom weight '{key}' references unknown criterion")
                 else:
+                    unknown_dimensions.append(key)
                     logger.warning(f"Custom weight '{key}' references unknown dimension")
             else:
+                invalid_format.append(key)
                 logger.warning(
                     f"Custom weight '{key}' has invalid format (use 'dimension.criterion')"
                 )
+
+        # Fail fast if any invalid or unknown keys were provided. This prevents
+        # silent misconfigurations where typos in custom weight names result in
+        # unexpected scoring behavior and many noisy warnings at runtime.
+        errors = []
+        if invalid_format:
+            errors.append(f"invalid_format: {invalid_format}")
+        if unknown_dimensions:
+            errors.append(f"unknown_dimensions: {unknown_dimensions}")
+        if unknown_criteria:
+            errors.append(f"unknown_criteria: {unknown_criteria}")
+
+        if errors:
+            raise ValueError(
+                "Invalid custom_weights provided (see details): " + "; ".join(errors)
+            )
 
         # Renormalize weights to sum to 1.0 after custom overrides
         total_weight = sum(sum(criteria.values()) for criteria in self.weights.values())
@@ -142,7 +166,6 @@ class BooleanScoreCalculator:
                 dimension_max += weight
 
                 criterion_value = self._get_nested_value(boolean_evaluations, dimension, criterion)
-
                 if criterion_value is True:
                     score += weight
                     dimension_score += weight
@@ -152,9 +175,7 @@ class BooleanScoreCalculator:
                     failed_criteria.append(key)
                     status = "✗"
                 else:
-                    logger.warning(
-                        f"Missing or invalid boolean value for '{key}', treating as False"
-                    )
+                    # Defer per-criterion missing warnings; collect and summarize later
                     failed_criteria.append(key)
                     status = "?"
 
@@ -182,6 +203,13 @@ class BooleanScoreCalculator:
 
         assessment = self._score_to_assessment(score)
 
+        # Log any missing/invalid boolean values once to avoid noisy logs
+        missing = [k for k, v in breakdown.items() if v["status"] == "?"]
+        if missing:
+            logger.warning(
+                f"Missing or invalid boolean values for {len(missing)} criteria: {missing[:10]}{'...' if len(missing) > 10 else ''}. Treating as False"
+            )
+
         result = {
             "score": round(score, 4),
             "assessment": assessment,
@@ -195,9 +223,20 @@ class BooleanScoreCalculator:
         }
 
         logger.info(
-            f"Score calculated: {score:.4f} ({assessment}) - "
-            f"Passed: {len(passed_criteria)}/{len(self.flat_weights)}"
+            f"Score calculated: {score:.4f} ({assessment}) - \n"
+            f"--------------------------------------------------\n"
+            f"Passed: {len(passed_criteria)}/{len(self.flat_weights)} \n"
+            f"Failed: {len(failed_criteria)}/{len(self.flat_weights)} \n"
+            f"Breakdown: {breakdown} \n"
+            f"Passed Criteria: {passed_criteria} \n"
+            f"Failed Criteria: {failed_criteria} \n"
+            f"Dimension Scores: {dimension_scores} \n"
+            f"Passed: {passed_criteria} \n"
+            f"Failed: {failed_criteria} \n"
+            f"Total Criteria: {self.flat_weights} \n"
+            f"--------------------------------------------------\n"
         )
+        logger.debug(result)
 
         return result
 

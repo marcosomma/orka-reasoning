@@ -1,5 +1,11 @@
 # Plan Validation Loop with Boolean Scoring
 # Uses PlanValidatorAgent with built-in boolean scoring for deterministic path evaluation
+#
+# ROBUSTNESS FEATURES:
+# - Timeout and fallback scores
+# - Realistic thresholds for local LLMs
+# - Explicit output format requirements
+# - Safe template accessors with defaults
 
 orchestrator:
   id: plan-validation-loop
@@ -9,25 +15,25 @@ orchestrator:
     - final_report
 
 agents:
-  # Iterative validation loop with STRICT boolean scoring
   - id: validation_loop_strict
     type: loop
     max_loops: 5
-    score_threshold: 0.35  # Lowered from 0.90 to match actual gpt-oss:20b performance
-    persist_across_runs: true
+    score_threshold: 0.50
+    fallback_score: 0.15
+    timeout_score: 0.10
+    persist_across_runs: false
     
     # Boolean scoring configuration
     scoring:
-      preset: strict  # Highest standards for production paths
-      context: loop_convergence  # Track iterative improvement
+      preset: strict
+      context: loop_convergence
       custom_weights:
-        # Emphasize convergence for production readiness
-        improvement.shows_progress: 0.30
-        improvement.approaches_goal: 0.25
-        convergence.approaching_threshold: 0.20
-        stability.consistent_direction: 0.15
+        improvement.better_than_previous: 0.30
+        improvement.approaching_target: 0.25
+        convergence.within_tolerance: 0.25
+        stability.consistent_direction: 0.20
     
-    # Track which criteria failed in each loop
+    # Track validation feedback
     past_loops_metadata:
       loop_number: "{{ get_loop_number() }}"
       score: "{{ score }}"
@@ -43,125 +49,143 @@ agents:
         agents: [path_proposer, path_validator_strict]
       
       agents:
-        # Propose or improve the execution path
         - id: path_proposer
           type: local_llm
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
-          temperature: 0.7
+          temperature: 0.6
+          timeout: 60
           prompt: |
             {% if get_loop_number() == 1 %}
-            Design an execution path for: {{ get_input() }}
+            TASK: Design an execution path for this query.
+            QUERY: {{ get_input() }}
             
-            Requirements:
-            - Clear agent sequence
+            REQUIREMENTS:
+            - Clear agent sequence with purposes
             - Data flow between agents
-            - Error handling strategy
-            - Edge case handling
+            - Error handling for each step
             - Input validation
             - Timeout protection
+            
+            OUTPUT FORMAT:
+            
+            AGENT_SEQUENCE:
+            1. [Agent] - [Purpose] - [Error handling]
+            2. [Agent] - [Purpose] - [Error handling]
+            3. [Agent] - [Purpose] - [Error handling]
+            
+            DATA_FLOW:
+            [Describe how data moves between agents]
+            
+            VALIDATION:
+            [How inputs are validated]
+            
+            TIMEOUTS:
+            [Timeout strategy]
+            
             {% else %}
-            Improve the execution path based on validation feedback:
+            TASK: Improve path based on validation feedback.
+            QUERY: {{ get_input() }}
             
-            Query: {{ get_input() }}
-            
-            Previous Attempt (Loop {{ get_loop_number() - 1 }}):
             {% if has_past_loops() %}
-            {% set last_loop = get_past_loops()[-1] %}
-            Score: {{ last_loop.score }}
-            Failed Criteria: {{ last_loop.mistakes }}
+            {% set last = get_past_loops()[-1] %}
+            PREVIOUS SCORE: {{ last.score }}
+            FAILED CRITERIA: {{ last.mistakes | default('None specified') }}
+            
+            Address EACH failed criterion explicitly.
             {% endif %}
             
-            Address ALL failed criteria. Be specific and concrete.
+            OUTPUT FORMAT:
+            
+            IMPROVED_PATH:
+            1. [Agent] - [Purpose] - [Fixes: criterion]
+            2. [Agent] - [Purpose] - [Fixes: criterion]
+            
+            CHANGES:
+            - [Specific change 1]
+            - [Specific change 2]
             {% endif %}
+            
+            Target 300-400 words. Be specific.
         
-        # Validate with boolean scoring (using PlanValidatorAgent)
+        # Validate with boolean scoring
         - id: path_validator_strict
           type: plan_validator
-          llm_model:  openai/gpt-oss-20b
+          llm_model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
-          temperature: 0.2
-          
-          # Boolean scoring configuration
+          temperature: 0.1
+          timeout: 60
           scoring_preset: strict
-          scoring_context: graphscout  # Validate agent path quality
+          scoring_context: graphscout
           custom_weights:
-            completeness.has_all_required_steps: 0.25
-            safety.validates_inputs: 0.10
-            safety.handles_errors_gracefully: 0.08
+            completeness.has_all_required_steps: 0.20
+            completeness.addresses_all_query_aspects: 0.15
+            safety.validates_inputs: 0.15
+            safety.handles_errors_gracefully: 0.15
+            coherence.logical_agent_sequence: 0.15
+            coherence.proper_data_flow: 0.10
+            efficiency.uses_appropriate_agents: 0.10
 
-  # Generate final report with detailed breakdown
   - id: final_report
     type: local_llm
     model: openai/gpt-oss-20b
     model_url: http://localhost:1234
     provider: lm_studio
     temperature: 0.3
+    timeout: 60
     prompt: |
-      # Boolean Scoring Validation Report
+      TASK: Generate validation report.
       
       {% if previous_outputs.validation_loop_strict %}
-      {% set loop_result = get_loop_output('validation_loop_strict', previous_outputs) %}
+      {% set lr = get_loop_output('validation_loop_strict', previous_outputs) %}
       
-      ## Summary
-      - Total Iterations: {{ previous_outputs.validation_loop_strict.loops_completed | default(0) }}
+      STATISTICS:
+      - Iterations: {{ previous_outputs.validation_loop_strict.loops_completed | default(0) }}
       - Final Score: {{ (previous_outputs.validation_loop_strict.final_score | default(0)) | round(3) }}
-      - Threshold (0.90): {{ 'MET ✓' if previous_outputs.validation_loop_strict.threshold_met else 'NOT MET ✗' }}
+      - Status: {{ 'PASSED' if previous_outputs.validation_loop_strict.threshold_met else 'FAILED' }}
       
-      ## Scoring Evolution
-      {% if loop_result.past_loops %}
-      {% for past_loop in loop_result.past_loops %}
-      
-      ### Loop {{ past_loop.loop_number | default('?') }}
-      - Score: {{ past_loop.score | default(0) }}
-      - Status: {{ 'PASS' if (past_loop.score | default(0) | float) >= 0.90 else 'FAIL' }}
-      - Issues Found: {{ past_loop.mistakes | default('None') }}
+      EVOLUTION:
+      {% if lr.past_loops %}
+      {% for pl in lr.past_loops %}
+      Loop {{ pl.loop_number | default('?') }}: {{ pl.score | default(0) }} - {{ pl.mistakes | default('None') }}
       {% endfor %}
       {% endif %}
       
-      ## Final Boolean Evaluation
-      {% if loop_result.result.path_validator_strict %}
-      {% set validation = loop_result.result.path_validator_strict %}
+      FINAL VALIDATION:
+      {% if lr.result.path_validator_strict %}
+      {% set v = lr.result.path_validator_strict %}
+      Assessment: {{ v.overall_assessment | default('N/A') }}
+      Score: {{ (v.validation_score | default(0)) | round(3) }}
       
-      **Overall Assessment:** {{ validation.overall_assessment | default('UNKNOWN') }}
-      **Final Score:** {{ (validation.validation_score | default(0)) | round(3) }}
+      Passed: {{ v.passed_criteria | default([]) | length }}
+      Failed: {{ v.failed_criteria | default([]) | length }}
       
-      ### Dimension Breakdown
-      {% if validation.dimension_scores %}
-      {% for dimension, data in validation.dimension_scores.items() %}
-      - **{{ dimension|capitalize }}**: {{ (data.percentage | default(0)) | round(1) }}% ({{ (data.score | default(0)) | round(3) }}/{{ (data.max_score | default(1)) | round(3) }})
+      {% if v.failed_criteria %}
+      Failed Criteria:
+      {% for c in v.failed_criteria %}
+      - {{ c }}
       {% endfor %}
       {% endif %}
-      
-      ### Passed Criteria ({{ validation.passed_criteria|length }})
-      {% for criterion in validation.passed_criteria %}
-      - ✓ {{ criterion }}
-      {% endfor %}
-      
-      {% if validation.failed_criteria %}
-      ### Failed Criteria ({{ validation.failed_criteria|length }})
-      {% for criterion in validation.failed_criteria %}
-      - ✗ {{ criterion }}
-      {% endfor %}
       {% endif %}
       
-      ### Final Execution Path
-      {{ loop_result.result.path_proposer.response | default('Path not available') }}
-      {% endif %}
+      FINAL PATH:
+      {{ lr.result.path_proposer.response | default('Not available') }}
       {% else %}
-      No validation results available.
+      No results available.
       {% endif %}
       
-      ---
+      OUTPUT FORMAT:
       
-      Generate a concise executive summary highlighting:
-      1. Key improvements made across iterations
-      2. Most challenging criteria to satisfy
-      3. Confidence in the final path (based on score breakdown)
-      4. Recommendations for deployment
+      EXECUTIVE_SUMMARY:
+      [2-3 sentences on validation performance]
       
-      Note: This example validates PATH DESCRIPTIONS (text), not executable agent sequences.
-      For executable paths with GraphScout, see: graph_scout_validated_loop.yml
-
+      KEY_IMPROVEMENTS:
+      [What changed across iterations]
+      
+      HARDEST_CRITERIA:
+      [Which were most difficult]
+      
+      RECOMMENDATION:
+      [Ready for production? What's needed?]

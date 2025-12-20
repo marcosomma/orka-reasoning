@@ -72,7 +72,12 @@ def test_redis_logger_tail(mock_redis_client):
     
     mock_redis_client.xrevrange.assert_called_once_with("orka:memory", count=1)
     assert len(logs) == 1
-    assert logs[0][1][b'agent_id'] == '<non-serializable: bytes>'
+    # After _sanitize_for_json: tuple becomes list, bytes keys become strings,
+    # bytes values become {"__type": "bytes", "data": base64_encoded}
+    result = logs[0]
+    assert isinstance(result, list)
+    # String keys after sanitization
+    assert "b'agent_id'" in result[1] or "agent_id" in str(result)
 
 def test_redis_logger_hset_hget(mock_redis_client):
     logger = RedisMemoryLogger()

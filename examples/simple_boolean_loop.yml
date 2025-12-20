@@ -1,5 +1,12 @@
 # Simple Boolean Scoring Loop
-# A minimal example showing boolean-based loop termination
+# A minimal, robust example showing boolean-based loop termination
+#
+# ROBUSTNESS FEATURES:
+# - Explicit SCORE format requirement
+# - Multiple score extraction patterns
+# - Fallback and timeout scores
+# - Low temperature for evaluator (0.1)
+# - Realistic threshold for local LLMs
 
 orchestrator:
   id: simple-boolean-loop
@@ -11,12 +18,43 @@ agents:
   - id: quality_loop
     type: loop
     max_loops: 3
-    score_threshold: 0.30  # Lowered from 0.85 to match actual performance with gpt-oss:20b
+    score_threshold: 0.50
+    fallback_score: 0.20
+    timeout_score: 0.10
+    persist_across_runs: false
     
-    # Boolean scoring - just specify the preset!
+    # Boolean scoring configuration
     scoring:
-      preset: moderate  # Options: strict (0.90), moderate (0.85), lenient (0.80)
-      context: loop_convergence  # Evaluate iterative improvement, not agent paths
+      preset: moderate
+      context: loop_convergence
+      custom_weights:
+        improvement.better_than_previous: 0.35
+        stability.consistent_direction: 0.25
+        convergence.within_tolerance: 0.40
+    
+    # Robust score extraction with multiple fallback patterns
+    score_extraction_config:
+      strategies:
+        - type: pattern
+          patterns:
+            - "SCORE:\\s*([0-9]+\\.?[0-9]*)"
+            - "Score:\\s*([0-9]+\\.?[0-9]*)"
+            - "QUALITY_SCORE:\\s*([0-9]+\\.?[0-9]*)"
+        - type: pattern
+          patterns:
+            - "(0\\.[5-9][0-9]?)"
+            - "(1\\.0)"
+        - type: agent_key
+          agents: ["boolean_evaluator"]
+          key: "response"
+          transform: "extract_score"
+    
+    past_loops_metadata:
+      loop_number: "{{ get_loop_number() }}"
+      score: "{{ score }}"
+      timestamp: "{{ timestamp }}"
+      insights: "{{ insights }}"
+      improvements: "{{ improvements }}"
     
     internal_workflow:
       orchestrator:
@@ -31,46 +69,53 @@ agents:
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
-          temperature: 0.7
+          temperature: 0.6
+          timeout: 60
           prompt: |
-            Analyze: {{ get_input() }}
+            TASK: Analyze this topic comprehensively.
+            TOPIC: {{ get_input() }}
             
             {% if get_loop_number() > 1 %}
-            Previous attempt had issues. Improve the analysis.
+            PREVIOUS FEEDBACK: Your last attempt needed improvement. Address gaps.
+            {% if has_past_loops() %}
+            {% set last = get_past_loops()[-1] %}
+            Last Score: {{ last.score }}
+            Issues: {{ last.improvements | default('General quality') }}
+            {% endif %}
             {% endif %}
             
-            Provide comprehensive insights.
+            REQUIRED OUTPUT FORMAT:
+            KEY_INSIGHTS:
+            1. [Insight with supporting evidence]
+            2. [Insight with supporting evidence]
+            3. [Insight with supporting evidence]
+            
+            ANALYSIS:
+            [2-3 paragraphs of thorough analysis]
+            
+            CONCLUSION:
+            [Clear, actionable conclusion]
+            
+            Be thorough but concise. Target 300-400 words.
         
-        # Evaluate using loop_validator node - robust boolean evaluation
+        # Evaluate using loop_validator node
         - id: boolean_evaluator
           type: loop_validator
-          llm_model:  openai/gpt-oss-20b
+          llm_model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
           scoring_preset: moderate
-          scoring_context: quality  # Evaluate response quality
-          evaluation_target: analyzer  # Evaluate the analyzer's output
+          scoring_context: quality
+          evaluation_target: analyzer
           temperature: 0.1
+          timeout: 60
 
-# Usage Examples:
+# Usage:
+#   orka run simple_boolean_loop.yml "Analyze the impact of AI on healthcare"
 #
-# 1. Run with default moderate preset (threshold: 0.85):
-#    orka run simple_boolean_loop.yml "Analyze user authentication flow"
+# Expected behavior:
+#   Loop 1: Initial analysis, score ~0.4-0.6
+#   Loop 2: Improved based on feedback, score ~0.5-0.7
+#   Loop 3: Refined analysis, score ≥0.5 → exits
 #
-# 2. Switch to strict preset (threshold: 0.90) by editing line 18:
-#    scoring:
-#      preset: strict
-#
-# 3. Add custom weights to emphasize specific criteria:
-#    scoring:
-#      preset: moderate
-#      custom_weights:
-#        safety.validates_inputs: 0.20  # Increase from default
-#        completeness.has_all_required_steps: 0.25
-#
-# 4. View detailed scoring breakdown in trace logs:
-#    - boolean_evaluations: Shows all true/false values
-#    - dimension_scores: Shows score per dimension (completeness, efficiency, etc.)
-#    - passed_criteria: List of criteria that passed
-#    - failed_criteria: List of criteria that failed
-
+# If threshold not met after max_loops, uses best attempt.

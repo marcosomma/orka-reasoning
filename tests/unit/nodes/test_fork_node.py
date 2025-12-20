@@ -124,6 +124,8 @@ class TestForkNode:
         # In sequential mode, should only queue first agent
         assert result["status"] == "forked"
         mock_fork_manager.track_branch_sequence.assert_called_once()
+        # The orchestrator should be requested to enqueue the first branch agent
+        mock_orchestrator.enqueue_fork.assert_called_once_with(["agent1"], "fork_group_123")
 
     @pytest.mark.asyncio
     async def test_run_impl_with_memory_logger(self):

@@ -1,3 +1,12 @@
+# Veterinary Specialists Convergence - Deep Analysis
+# Multi-specialist consultation with parallel diagnosis paths
+#
+# ROBUSTNESS FEATURES:
+# - Safe template accessors with defaults
+# - Explicit output formats
+# - Fallback values for missing data
+# - Realistic timeout settings
+
 orchestrator:
   id: veterinary_specialists_convergence_v2
   strategy: sequential
@@ -21,9 +30,29 @@ agents:
   - id: specialists_loop
     type: loop
     max_loops: 2
+    score_threshold: 0.50
+    fallback_score: 0.30
+    timeout_score: 0.20
+    persist_across_runs: false
+    
     scoring:
       preset: moderate
-    stop_condition: "{{ get_agent_response('diagnosis_join').response.CONVERGENCE_SCORE >= 0.9 }}"
+      context: loop_convergence
+      custom_weights:
+        improvement.better_than_previous: 0.35
+        stability.consistent_direction: 0.30
+        convergence.within_tolerance: 0.35
+    
+    score_extraction_config:
+      strategies:
+        - type: pattern
+          patterns:
+            - "CONVERGENCE_SCORE:\\s*([0-9]+\\.?[0-9]*)"
+            - "SCORE:\\s*([0-9]+\\.?[0-9]*)"
+        - type: pattern
+          patterns:
+            - "(0\\.[5-9][0-9]?)"
+    
     internal_workflow:
       orchestrator:
         id: specialists-internal-v2
@@ -41,204 +70,251 @@ agents:
             - [infectious_disease_screening, infectious_disease_tests, infectious_disease_plan]
             - [dermatology_history, dermatology_tests, dermatology_plan]
 
-        # Internal Medicine Path
+        # === INTERNAL MEDICINE PATH ===
         - id: internal_medicine_history
           type: local_llm
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
+          temperature: 0.4
+          timeout: 60
           prompt: |
-            Act as a veterinary internal medicine specialist. Focus ONLY on collecting and interpreting the patient's history and clinical signs.
-            Patient data: {{ get_input() }}
-            CBC: {{ get_input().test_results.cbc if get_input().test_results and get_input().test_results.cbc else "Non disponibile" }}
-            Biochemistry: {{ get_input().test_results.biochemistry if get_input().test_results and get_input().test_results.biochemistry else "Non disponibile" }}
-            Urinalysis: {{ get_input().test_results.urinalysis if get_input().test_results and get_input().test_results.urinalysis else "Non disponibile" }}
-            Altri test: {{ get_input().test_results if get_input().test_results else "Nessun test disponibile" }}
-            Output: HISTORY_SUMMARY: <summary>, KEY_CLINICAL_SIGNS: [<sign1>, <sign2>]
+            ROLE: Veterinary Internal Medicine Specialist
+            TASK: Collect and interpret patient history.
+            
+            PATIENT DATA: {{ get_input() }}
+            
+            OUTPUT FORMAT:
+            HISTORY_SUMMARY: [Brief summary]
+            KEY_CLINICAL_SIGNS: [sign1, sign2, sign3]
 
         - id: internal_medicine_diagnostics
           type: local_llm
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
+          temperature: 0.4
+          timeout: 60
           prompt: |
-            Based on the history and signs: {{ previous_outputs.internal_medicine_history }}, and available test results:
-            CBC: {{ get_input().test_results.cbc if get_input().test_results and get_input().test_results.cbc else "Non disponibile" }}
-            Biochemistry: {{ get_input().test_results.biochemistry if get_input().test_results and get_input().test_results.biochemistry else "Non disponibile" }}
-            Urinalysis: {{ get_input().test_results.urinalysis if get_input().test_results and get_input().test_results.urinalysis else "Non disponibile" }}
-            Propose a prioritized diagnostic workup (tests, rationale, urgency).
-            Output: DIAGNOSTIC_PLAN: [<test1>, <test2>], RATIONALE: <explanation>
+            ROLE: Internal Medicine - Diagnostics
+            HISTORY: {{ previous_outputs.internal_medicine_history | default('No history', true) }}
+            
+            OUTPUT FORMAT:
+            DIAGNOSTIC_PLAN: [test1, test2, test3]
+            RATIONALE: [Brief explanation]
 
         - id: internal_medicine_management
           type: local_llm
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
+          temperature: 0.4
+          timeout: 60
           prompt: |
-            Given diagnostics: {{ previous_outputs.internal_medicine_diagnostics }}, and all available test results:
-            CBC: {{ get_input().test_results.cbc if get_input().test_results and get_input().test_results.cbc else "Non disponibile" }}
-            Biochemistry: {{ get_input().test_results.biochemistry if get_input().test_results and get_input().test_results.biochemistry else "Non disponibile" }}
-            Urinalysis: {{ get_input().test_results.urinalysis if get_input().test_results and get_input().test_results.urinalysis else "Non disponibile" }}
-            Suggest initial medical management and monitoring.
-            Output: MANAGEMENT_PLAN: [<step1>, <step2>], MONITORING: <instructions>
+            ROLE: Internal Medicine - Management
+            DIAGNOSTICS: {{ previous_outputs.internal_medicine_diagnostics | default('Pending', true) }}
+            
+            OUTPUT FORMAT:
+            MANAGEMENT_PLAN: [step1, step2]
+            MONITORING: [Instructions]
 
-        # Surgery Path
+        # === SURGERY PATH ===
         - id: surgery_assessment
           type: local_llm
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
+          temperature: 0.4
+          timeout: 60
           prompt: |
-            Act as a veterinary surgeon. Assess for surgical/traumatic causes based on history: {{ get_input() }}.
-            CBC: {{ get_input().test_results.cbc if get_input().test_results and get_input().test_results.cbc else "Non disponibile" }}
-            Biochemistry: {{ get_input().test_results.biochemistry if get_input().test_results and get_input().test_results.biochemistry else "Non disponibile" }}
-            Radiographs: {{ get_input().test_results.radiographs if get_input().test_results and get_input().test_results.radiographs else "Non disponibili" }}
-            Altri test: {{ get_input().test_results if get_input().test_results else "Nessun test disponibile" }}
-            Output: SURGICAL_DIFFERENTIALS: [<dx1>, <dx2>], URGENCY: <score 0-1>
+            ROLE: Veterinary Surgeon
+            TASK: Assess surgical/traumatic causes.
+            
+            PATIENT DATA: {{ get_input() }}
+            
+            OUTPUT FORMAT:
+            SURGICAL_DIFFERENTIALS: [dx1, dx2]
+            URGENCY: [0.0-1.0]
 
         - id: surgery_risk
           type: local_llm
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
+          temperature: 0.4
+          timeout: 60
           prompt: |
-            For each differential: {{ previous_outputs.surgery_assessment }}, and available test results:
-            CBC: {{ get_input().test_results.cbc if get_input().test_results and get_input().test_results.cbc else "Non disponibile" }}
-            Biochemistry: {{ get_input().test_results.biochemistry if get_input().test_results and get_input().test_results.biochemistry else "Non disponibile" }}
-            Radiographs: {{ get_input().test_results.radiographs if get_input().test_results and get_input().test_results.radiographs else "Non disponibili" }}
-            Evaluate surgical risk and perioperative considerations.
-            Output: RISK_ASSESSMENT: <summary>, PRE_OP: <instructions>
+            ROLE: Surgery - Risk Assessment
+            DIFFERENTIALS: {{ previous_outputs.surgery_assessment | default('Pending', true) }}
+            
+            OUTPUT FORMAT:
+            RISK_ASSESSMENT: [Summary]
+            PRE_OP: [Instructions]
 
         - id: surgery_plan
           type: local_llm
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
+          temperature: 0.4
+          timeout: 60
           prompt: |
-            Propose a surgical or non-surgical plan, including post-op care, based on risk: {{ previous_outputs.surgery_risk }}.
-            CBC: {{ get_input().test_results.cbc if get_input().test_results and get_input().test_results.cbc else "Non disponibile" }}
-            Biochemistry: {{ get_input().test_results.biochemistry if get_input().test_results and get_input().test_results.biochemistry else "Non disponibile" }}
-            Radiographs: {{ get_input().test_results.radiographs if get_input().test_results and get_input().test_results.radiographs else "Non disponibili" }}
-            Output: SURGERY_PLAN: <plan>, POST_OP: <care>
+            ROLE: Surgery - Planning
+            RISK: {{ previous_outputs.surgery_risk | default('Pending', true) }}
+            
+            OUTPUT FORMAT:
+            SURGERY_PLAN: [Plan]
+            POST_OP: [Care instructions]
 
-        # Infectious Disease Path
+        # === INFECTIOUS DISEASE PATH ===
         - id: infectious_disease_screening
           type: local_llm
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
+          temperature: 0.4
+          timeout: 60
           prompt: |
-            Act as an infectious disease specialist. List all possible infectious/parasitic causes and relevant risk factors.
-            Patient data: {{ get_input() }}
-            CBC: {{ get_input().test_results.cbc if get_input().test_results and get_input().test_results.cbc else "Non disponibile" }}
-            Serology: {{ get_input().test_results.serology if get_input().test_results and get_input().test_results.serology else "Non disponibile" }}
-            Fecal tests: {{ get_input().test_results.fecal_tests if get_input().test_results and get_input().test_results.fecal_tests else "Non disponibili" }}
-            Output: INFECTIOUS_DIFFERENTIALS: [<dx1>, <dx2>], RISK_FACTORS: [<factor1>]
+            ROLE: Infectious Disease Specialist
+            TASK: List possible infectious/parasitic causes.
+            
+            PATIENT DATA: {{ get_input() }}
+            
+            OUTPUT FORMAT:
+            INFECTIOUS_DIFFERENTIALS: [dx1, dx2]
+            RISK_FACTORS: [factor1, factor2]
 
         - id: infectious_disease_tests
           type: local_llm
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
+          temperature: 0.4
+          timeout: 60
           prompt: |
-            For each differential: {{ previous_outputs.infectious_disease_screening }}, and available test results:
-            CBC: {{ get_input().test_results.cbc if get_input().test_results and get_input().test_results.cbc else "Non disponibile" }}
-            Serology: {{ get_input().test_results.serology if get_input().test_results and get_input().test_results.serology else "Non disponibile" }}
-            Fecal tests: {{ get_input().test_results.fecal_tests if get_input().test_results and get_input().test_results.fecal_tests else "Non disponibili" }}
-            Recommend specific diagnostic tests and isolation protocols.
-            Output: TESTS: [<test1>, <test2>], ISOLATION: <instructions>
+            ROLE: Infectious Disease - Testing
+            DIFFERENTIALS: {{ previous_outputs.infectious_disease_screening | default('Pending', true) }}
+            
+            OUTPUT FORMAT:
+            TESTS: [test1, test2]
+            ISOLATION: [Instructions]
 
         - id: infectious_disease_plan
           type: local_llm
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
+          temperature: 0.4
+          timeout: 60
           prompt: |
-            Based on test results and protocols: {{ previous_outputs.infectious_disease_tests }}, and all available test results:
-            CBC: {{ get_input().test_results.cbc if get_input().test_results and get_input().test_results.cbc else "Non disponibile" }}
-            Serology: {{ get_input().test_results.serology if get_input().test_results and get_input().test_results.serology else "Non disponibile" }}
-            Fecal tests: {{ get_input().test_results.fecal_tests if get_input().test_results and get_input().test_results.fecal_tests else "Non disponibili" }}
-            Suggest treatment and public health actions.
-            Output: TREATMENT: <plan>, PUBLIC_HEALTH: <advice>
+            ROLE: Infectious Disease - Treatment
+            TESTS: {{ previous_outputs.infectious_disease_tests | default('Pending', true) }}
+            
+            OUTPUT FORMAT:
+            TREATMENT: [Plan]
+            PUBLIC_HEALTH: [Advice]
 
-        # Dermatology Path
+        # === DERMATOLOGY PATH ===
         - id: dermatology_history
           type: local_llm
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
+          temperature: 0.4
+          timeout: 60
           prompt: |
-            Act as a veterinary dermatologist. Focus on history and lesion description.
-            Patient data: {{ get_input() }}
-            Skin cytology: {{ get_input().test_results.skin_cytology if get_input().test_results and get_input().test_results.skin_cytology else "Non disponibile" }}
-            Allergy testing: {{ get_input().test_results.allergy_testing if get_input().test_results and get_input().test_results.allergy_testing else "Non disponibile" }}
-            Output: DERM_HISTORY: <summary>, LESIONS: [<lesion1>, <lesion2>]
+            ROLE: Veterinary Dermatologist
+            TASK: Focus on history and lesion description.
+            
+            PATIENT DATA: {{ get_input() }}
+            
+            OUTPUT FORMAT:
+            DERM_HISTORY: [Summary]
+            LESIONS: [lesion1, lesion2]
 
         - id: dermatology_tests
           type: local_llm
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
+          temperature: 0.4
+          timeout: 60
           prompt: |
-            Propose dermatological diagnostics based on: {{ previous_outputs.dermatology_history }}.
-            Skin cytology: {{ get_input().test_results.skin_cytology if get_input().test_results and get_input().test_results.skin_cytology else "Non disponibile" }}
-            Allergy testing: {{ get_input().test_results.allergy_testing if get_input().test_results and get_input().test_results.allergy_testing else "Non disponibile" }}
-            Output: DERM_TESTS: [<test1>, <test2>], RATIONALE: <explanation>
+            ROLE: Dermatology - Diagnostics
+            HISTORY: {{ previous_outputs.dermatology_history | default('Pending', true) }}
+            
+            OUTPUT FORMAT:
+            DERM_TESTS: [test1, test2]
+            RATIONALE: [Explanation]
 
         - id: dermatology_plan
           type: local_llm
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
+          temperature: 0.4
+          timeout: 60
           prompt: |
-            Suggest a treatment and follow-up plan based on: {{ previous_outputs.dermatology_tests }}.
-            Skin cytology: {{ get_input().test_results.skin_cytology if get_input().test_results and get_input().test_results.skin_cytology else "Non disponibile" }}
-            Allergy testing: {{ get_input().test_results.allergy_testing if get_input().test_results and get_input().test_results.allergy_testing else "Non disponibile" }}
-            Output: DERM_PLAN: <plan>, FOLLOW_UP: <instructions>
+            ROLE: Dermatology - Treatment
+            TESTS: {{ previous_outputs.dermatology_tests | default('Pending', true) }}
+            
+            OUTPUT FORMAT:
+            DERM_PLAN: [Plan]
+            FOLLOW_UP: [Instructions]
 
-        # Join specialist perspectives
+        # === JOIN & SCORE ===
         - id: diagnosis_join
           type: join
           group: specialists_fork
           prompt: |
-            Combine all specialist path outputs for synthesis.
-            Internal Medicine: |
-              {{ safe_get_response('internal_medicine_management', '{}') }}
-            Surgery: |
-              {{ safe_get_response('surgery_plan', '{}') }}
-            Infectious Disease: |
-              {{ safe_get_response('infectious_disease_plan', '{}') }}
-            Dermatology: |
-              {{ safe_get_response('dermatology_plan', '{}') }}
-            Synthesize and return ONLY the following as a YAML string:
-            CONVERGENCE_SCORE: <score 0.0-1.0>
-            SYNTHESIS: <one paragraph summary>
+            TASK: Synthesize all specialist outputs.
+            
+            INTERNAL_MEDICINE: {{ safe_get_response('internal_medicine_management', 'Pending') }}
+            SURGERY: {{ safe_get_response('surgery_plan', 'Pending') }}
+            INFECTIOUS: {{ safe_get_response('infectious_disease_plan', 'Pending') }}
+            DERMATOLOGY: {{ safe_get_response('dermatology_plan', 'Pending') }}
+            
+            OUTPUT FORMAT:
+            CONVERGENCE_SCORE: [0.0-1.0]
+            SYNTHESIS: [One paragraph summary]
 
         - id: convergence_scorer
           type: local_llm
           model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
+          temperature: 0.1
+          timeout: 60
           prompt: |
-            Score the convergence and actionability of the specialists' synthesis.
-            Synthesis: |
-              {{ safe_get_response('diagnosis_join', '') }}
-            Return ONLY the following as a YAML string:
-            ---
-            CONVERGENCE_SCORE: <score 0.0-1.0>
-            ACTIONABILITY_NOTES: |
-              <key actionable points, one per line>
+            TASK: Score convergence and actionability.
+            
+            SYNTHESIS: {{ safe_get_response('diagnosis_join', 'No synthesis') }}
+            
+            OUTPUT FORMAT:
+            CONVERGENCE_SCORE: [0.0-1.0]
+            ACTIONABILITY_NOTES: [Key actionable points]
+            
+            IMPORTANT: CONVERGENCE_SCORE must be "CONVERGENCE_SCORE: X.XX"
 
   - id: actionable_plan_builder
     type: local_llm
     model: openai/gpt-oss-20b
     model_url: http://localhost:1234
     provider: lm_studio
+    temperature: 0.4
+    timeout: 60
     prompt: |
-      Build a step-by-step actionable plan for the vet and owner, integrating all specialist recommendations.
-      Patient data: {{ get_input() }}
-      Synthesis: {{ get_agent_response('specialists_loop.diagnosis_join') }}
-      Output ONLY as YAML:
+      TASK: Build step-by-step actionable plan for vet and owner.
+      
+      PATIENT: {{ get_input() }}
+      
+      SYNTHESIS: {{ get_agent_response('specialists_loop').result.diagnosis_join | default('No synthesis', true) }}
+      
+      OUTPUT FORMAT (YAML):
       ACTION_PLAN: |
-        <step-by-step plan, with dosages, rationales, and owner instructions>
+        1. [Step with dosage/rationale]
+        2. [Step with dosage/rationale]
+        3. [Owner instructions]
 
   - id: memory_writer
     type: memory
@@ -247,31 +323,29 @@ agents:
       operation: write
       memory_type: long_term
     prompt: |
-      Store the following structured YAML object as the final result for this patient case:
-      synthesis: |
-        {{ get_agent_response('specialists_loop.diagnosis_join') }}
-      action_plan: |
-        {{ get_agent_response('actionable_plan_builder') }}
+      synthesis: {{ get_agent_response('specialists_loop').result.diagnosis_join | default('None', true) }}
+      action_plan: {{ get_agent_response('actionable_plan_builder') }}
 
   - id: explanation_builder
     type: local_llm
     model: openai/gpt-oss-20b
     model_url: http://localhost:1234
     provider: lm_studio
+    temperature: 0.4
+    timeout: 60
     prompt: |
-      # TASK
-      Compose a comprehensive, actionable explanation for the owner and vet.
-      Patient data: {{ get_input() }}
-      Synthesis: {{ get_agent_response('specialists_loop.diagnosis_join') }}
-      Action plan: {{ get_agent_response('actionable_plan_builder') }}
-      # CONSTRAINT:
-      - DEVI RISPONDERE IN LINGUA ITALIANA.
-      - Output ONLY as YAML, filling all fields:
-        diagnosis: <main detailed diagnosis with reasoning and differentials>
-        differentials:
-          - <differential 1>
-          - <differential 2>
-        specialist_reasoning: <detailed highlighting key points from each specialist>
-        action_plan: <detailed of the action plan>
-        owner_instructions: <actionable explanation for the owner with warning signs and next steps>
+      TASK: Compose comprehensive explanation for owner and vet.
+      LANGUAGE: ITALIAN (Rispondere in italiano)
       
+      PATIENT: {{ get_input() }}
+      SYNTHESIS: {{ get_agent_response('specialists_loop').result.diagnosis_join | default('None', true) }}
+      ACTION_PLAN: {{ get_agent_response('actionable_plan_builder') }}
+      
+      OUTPUT FORMAT (YAML):
+      diagnosis: [Main diagnosis with reasoning]
+      differentials:
+        - [Differential 1]
+        - [Differential 2]
+      specialist_reasoning: [Key points from each specialist]
+      action_plan: [Detailed plan]
+      owner_instructions: [Clear instructions with warning signs]

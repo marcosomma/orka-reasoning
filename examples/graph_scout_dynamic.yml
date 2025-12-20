@@ -55,6 +55,8 @@ agents:
       # Two-stage LLM evaluation configuration
       evaluation_model: "local_llm"
       evaluation_model_name: "deepseek-r1:7b"
+      provider: lm_studio
+      model_url: http://localhost:1234
       validation_model: "local_llm"
       validation_model_name: "deepseek-r1:7b"
       llm_evaluation_enabled: true
@@ -94,6 +96,7 @@ agents:
     type: local_llm
     params:
       model: openai/gpt-oss-20b
+      model_url: http://localhost:1234
       provider: lm_studio
       temperature: 0.3
       timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
@@ -106,7 +109,6 @@ agents:
       {% endif %}
 
       Provide a detailed analysis with key insights and conclusions.
-
   # Memory storage
   - id: memory_writer
     type: memory
@@ -127,8 +129,10 @@ agents:
   # Final response generation
   - id: response_builder
     type: local_llm
+    is_terminal: true  # Mark as terminal for GraphScout path completion
     params:
       model: openai/gpt-oss-20b
+      model_url: http://localhost:1234
       provider: lm_studio
       temperature: 0.2
       timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
@@ -152,5 +156,4 @@ agents:
       Memory Context: Information has been stored for future reference.
       {% endif %}
 
-      Provide a clear, helpful response that addresses the user's question.
-      Include sources if available and explain your reasoning.
+      Provide a clear, helpful response that addresses the user's question.      Include sources if available and explain your reasoning.

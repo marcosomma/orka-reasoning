@@ -2,6 +2,7 @@
 Data management for TUI interface - statistics, caching, and data fetching.
 """
 
+import json
 import os
 import time
 from collections import deque
@@ -503,24 +504,29 @@ class DataManager:
             return {"status": "critical", "icon": "🔴", "message": "Disconnected"}
 
         try:
-            # Test basic connectivity - check for different client attribute names
-            if hasattr(self.memory_logger, "redis_client"):
-                # RedisStack and Redis loggers use redis_client
-                try:
-                    # Test actual connectivity with ping
-                    ping_result = self.memory_logger.redis_client.ping()
-                    if ping_result:
-                        return {"status": "healthy", "icon": "🟢", "message": "Connected"}
-                    else:
-                        return {"status": "warning", "icon": "🟡", "message": "Limited"}
-                except Exception:
+            # Get the Redis client - use 'client' property which handles lazy initialization
+            redis_client = None
+            
+            # Try 'client' property first (triggers lazy init for RedisStack)
+            if hasattr(self.memory_logger, "client"):
+                redis_client = self.memory_logger.client
+            # Fall back to direct redis_client attribute
+            elif hasattr(self.memory_logger, "redis_client"):
+                redis_client = self.memory_logger.redis_client
+            
+            if redis_client is None:
+                return {"status": "warning", "icon": "🟡", "message": "No Client"}
+            
+            # Test actual connectivity with ping
+            try:
+                ping_result = redis_client.ping()
+                if ping_result:
+                    return {"status": "healthy", "icon": "🟢", "message": "Connected"}
+                else:
                     return {"status": "warning", "icon": "🟡", "message": "Limited"}
-            elif hasattr(self.memory_logger, "client"):
-                # Other memory loggers might use client
-                return {"status": "healthy", "icon": "🟢", "message": "Connected"}
-            else:
-                # Memory logger exists but no known client attribute
+            except Exception:
                 return {"status": "warning", "icon": "🟡", "message": "Limited"}
+                
         except Exception:
             return {"status": "critical", "icon": "🔴", "message": "Error"}
 

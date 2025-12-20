@@ -62,6 +62,8 @@ agents:
       validation_model: "local_llm"
       validation_model_name: "openai/gpt-oss-20b"
       llm_evaluation_enabled: true
+      provider: lm_studio
+      model_url: http://localhost:1234
       fallback_to_heuristics: true
     prompt: |
       Select and route to optimal agent path.
@@ -178,6 +180,7 @@ agents:
 
   - id: content_synthesizer
     type: local_llm
+    is_terminal: true  # Mark as terminal for GraphScout path completion
     capabilities: [answer_emit, synthesis]
     model: openai/gpt-oss-20b
     model_url: http://localhost:1234
@@ -193,6 +196,7 @@ agents:
 
   - id: report_builder
     type: local_llm
+    is_terminal: true  # Mark as terminal for GraphScout path completion
     capabilities: [answer_emit, reporting]
     model: openai/gpt-oss-20b
     model_url: http://localhost:1234

@@ -154,6 +154,12 @@ def test_escape_and_validate_helpers():
     escaped = logger._escape_redis_search_query("hello:world?{x}")
     assert "\\:" in escaped and "\\?" in escaped
 
+    # Phrase escaping should NOT over-escape punctuation (it is used inside quotes).
+    phrase = logger._escape_redis_search_phrase('What is this? "quoted" \\ backslash')
+    assert "\\?" not in phrase
+    assert '\\"quoted\\"' in phrase
+    assert "\\\\" in phrase
+
     assert logger._validate_similarity_score(0.5) == 0.5
     assert logger._validate_similarity_score(-1) == 0.0
     assert logger._validate_similarity_score(float("nan")) == 0.0

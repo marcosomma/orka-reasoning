@@ -204,8 +204,8 @@ agents:
       preset: moderate
       context: loop_convergence  # Evaluate convergence, not agent paths
       custom_weights:
-        improvement.shows_progress: 0.30
-        convergence.approaching_threshold: 0.25
+        improvement.better_than_previous: 0.30
+        convergence.within_tolerance: 0.25
 ```
 
 ## Response Structure
@@ -311,8 +311,8 @@ calculator = BooleanScoreCalculator(
     preset="moderate",
     context="loop_convergence",
     custom_weights={
-        "improvement.shows_progress": 0.30,
-        "convergence.approaching_threshold": 0.25,
+        "improvement.better_than_previous": 0.30,
+        "convergence.within_tolerance": 0.25,
         # ... other overrides
     }
 )

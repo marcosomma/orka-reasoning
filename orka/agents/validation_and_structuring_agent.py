@@ -218,6 +218,33 @@ class ValidationAndStructuringAgent(BaseAgent):
             # Use default prompt building logic
             prompt = self.build_prompt(str(question), str(context), str(answer), store_structure)
 
+        # Ensure the prompt always instructs the model to return the required JSON schema.
+        # If a user supplies a custom/pre-rendered prompt (common in YAML examples), we still
+        # need to enforce the schema to avoid downstream parsing/validation failures.
+        if (
+            '"valid"' not in prompt
+            and "'valid'" not in prompt
+            and "memory_object" not in prompt
+            and "Return your response in the following JSON format" not in prompt
+        ):
+            prompt = "\n".join(
+                [
+                    prompt.strip(),
+                    "",
+                    self._get_structure_instructions(store_structure),
+                    "",
+                    "Return your response in the following JSON format:",
+                    "{",
+                    '    "valid": true/false,',
+                    '    "reason": "explanation of validation decision",',
+                    '    "memory_object": {',
+                    "        // structured memory object if valid, null if invalid",
+                    "    }",
+                    "}",
+                    "Do not include any other text outside the JSON.",
+                ]
+            )
+
         # Create LLM input with prompt but disable automatic JSON parsing
         # We'll handle JSON parsing manually since we expect a different schema
         llm_input = {"prompt": prompt, "parse_json": False}
@@ -232,10 +259,23 @@ class ValidationAndStructuringAgent(BaseAgent):
         response = await self.llm_agent.run(llm_input)
 
         # Extract the raw LLM output
+        raw_llm_output = ""
         if isinstance(response, dict):
-            raw_llm_output = response.get("response", "")
+            # BaseAgent.run returns an OrkaResponse wrapper with the actual payload under `result`
+            # (e.g., OpenAIAnswerBuilder returns {"response": "..."} as its internal result).
+            inner = response.get("result")
+
+            if isinstance(inner, dict):
+                # Most common: {"result": {"response": "<llm_text>", ...}}
+                raw_llm_output = str(inner.get("response", ""))
+            elif isinstance(inner, str):
+                # Sometimes components return a plain string as result
+                raw_llm_output = inner
+            else:
+                # Backward-compat: some tests/mocks return {"response": "..."} directly
+                raw_llm_output = str(response.get("response", "") or "")
         else:
-            raw_llm_output = str(response)  # type: ignore [unreachable]
+            raw_llm_output = str(response)
 
         # Parse the LLM output - pass the correct formatted prompt
         formatted_prompt_to_use = (

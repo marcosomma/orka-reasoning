@@ -43,6 +43,7 @@ agents:
       - - path_b_processor
         - path_b_validator
       - - path_c_processor
+        - path_c_validator
     depends_on: data_preparation
 
   # Path A: Simple processing
@@ -129,6 +130,23 @@ agents:
     model_url: http://localhost:1234
     provider: lm_studio
     temperature: 0.5
+
+  - id: path_c_validator
+    type: local_llm
+    prompt: |
+      Validate the processing result from path C:
+      Input: {{ get_agent_response('path_c_processor') }}
+      Expected from dataset: {{ get_agent_response('data_preparation') }}
+      
+      Perform deep validation:
+      - Step-by-step correctness
+      - Logical consistency
+      - Accuracy score (0-100%)
+      - Error analysis if any
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
+    temperature: 0.2
 
   # Phase 3: Join all parallel paths
   - id: join_results
@@ -217,26 +235,30 @@ agents:
   - id: loop_processor
     type: loop
     max_loops: 3
-    score_threshold: 0.7
+    score_threshold: 0.3
     
     # Boolean scoring for iterative refinement convergence
     scoring:
       preset: lenient
       context: loop_convergence  # Track refinement convergence
+      mode: loop  # Use loop-focused evaluation
     
-    # Depends on BOTH possible router paths (at least one will execute)
+    # Ensure required upstream signals are present inside LoopNode.previous_outputs.
+    # (LoopNode passes only depends_on outputs through as previous_outputs to the internal workflow.)
+    #
+    # Also depends on BOTH possible router paths (at least one will execute)
     depends_on:
+      - join_results
+      - routing_decision
       - reprocess_validator
       - aggregation_analyzer
     
     # Pass external data to internal workflow as input
     prompt: |
-      {
-        "routing_decision": {{ get_agent_response('routing_decision') | tojson }},
-        "join_results": {{ get_agent_response('join_results') | tojson }},
-        "reprocess_validator": {{ get_agent_response('reprocess_validator') | tojson }},
-        "aggregation_analyzer": {{ get_agent_response('aggregation_analyzer') | tojson }}
-      }
+      Routing Decision: {{ get_agent_response('routing_decision').result }}
+      Join Results: {{ get_agent_response('join_results').result }}
+      Reprocessed Results: {{ get_agent_response('reprocess_validator').result }}
+      Aggregated Results: {{ get_agent_response('aggregation_analyzer').result }}
     
     internal_workflow:
       orchestrator:
@@ -254,15 +276,13 @@ agents:
             ITERATION {{ get_loop_number() }} - Refinement Analysis
             
             == DATA TO ANALYZE ==
-            Routing Decision: {{ input.routing_decision }}
-            Join Results: {{ input.join_results }}
-            
-            {% if input.reprocess_validator %}
-            Reprocessed Results: {{ input.reprocess_validator }}
+            Routing Decision: {{ input.previous_outputs.routing_decision }}
+            Join Results: {{ input.previous_outputs.join_results }}
+            {% if input.previous_outputs.reprocess_validator %}
+            Reprocessed Results: {{ input.previous_outputs.reprocess_validator }}
             {% endif %}
-            
-            {% if input.aggregation_analyzer %}
-            Aggregated Results: {{ input.aggregation_analyzer }}
+            {% if input.previous_outputs.aggregation_analyzer %}
+            Aggregated Results: {{ input.previous_outputs.aggregation_analyzer }}
             {% endif %}
             
             {% if get_loop_number() > 1 %}
@@ -314,7 +334,7 @@ agents:
 
         - id: loop_convergence_validator
           type: loop_validator
-          model:  openai/gpt-oss-20b
+          llm_model:  openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
           scoring_preset: lenient
@@ -327,6 +347,7 @@ agents:
             Current Synthesis: {{ get_agent_response('synthesis') }}
             
             {% if get_loop_number() > 1 %}
+            TAKE DEEP CONSIDERATION OF ALREADY PASSED CHECKS.
             Previous Iterations: {{ get_past_loops() }}
             {% endif %}
             
@@ -342,10 +363,10 @@ agents:
     prompt: |
       Perform comprehensive validation of all processing stages:
       
-      1. Initial data prep: {{ get_agent_response('data_preparation') }}
-      2. Parallel processing: {{ get_agent_response('join_results') }}
+      1. Initial data pre {{ get_agent_response('data_preparation') }}
+      2. Parallel processing (joine {{ get_agent_response('join_results') }}
       3. Routing decision: {{ get_agent_response('routing_decision') }}
-      4. Loop refinements: {{ get_agent_response('loop_processor') }}
+      4. Loop refinement {{ get_loop_output('loop_processor').past_loops | tojson }}
       
       Validate:
       - Data integrity through all stages
@@ -386,11 +407,13 @@ agents:
       Aggregation: {{ get_agent_response('aggregation_analyzer') }}
       {% endif %}
       
-      Phase 4 - Iterative Refinement (Loop):
-      {{ get_agent_response('loop_processor') }}
-      
+      Phase 4 - Loop Refinement:
+      {{ get_loop_output('loop_processor').past_loops | tojson }}
+
       Phase 5 - Final Validation:
       {{ get_agent_response('validation_check') }}
+
+
       
       == ASSESSMENT REQUIREMENTS ==
       Evaluate the following aspects with scores (0-100) and detailed analysis:
@@ -430,17 +453,38 @@ agents:
          - Flag potential issues or edge cases
          - Suggest improvements
       
-      == REPORT FORMAT ==
-      Provide a comprehensive assessment report with:
-      - Executive summary (3-4 sentences)
-      - Detailed scores for each aspect (1-6 above)
-      - Strengths identified
-      - Weaknesses or concerns found
-      - Specific recommendations for improvement
-      - Overall system health rating (Excellent/Good/Fair/Poor)
-      - Confidence level in this assessment (0-100%)
+      == CONSTRAINED REPORT FORMAT ==
+      Provide a comprehensive assessment report with the following format using only JSON:
+      ```json
+      {
+        "summary": "Executive summary (3-4 sentences)",
+        "scores": {
+          "parallel_processing_performance": 0-100,
+          "conditional_routing_effectiveness": 0-100,
+          "loop_convergence_quality": 0-100,
+          "validation_robustness": 0-100,
+          "overall_system_integrity": 0-100,
+          "anomaly_detection": 0-100
+        },
+        "strengths": [
+          "Specific strength 1",
+          "Specific strength 2"
+        ],
+        "weaknesses": [
+          "Specific weakness 1",
+          "Specific weakness 2"
+        ],
+        "recommendations": [
+          "Specific recommendation 1",
+          "Specific recommendation 2"
+        ],
+        "overall_system_health_rating": "Excellent/Good/Fair/Poor",
+        "confidence_level": 0-100
+      }
+      ```
       
       Be thorough, objective, and specific in your evaluation.
+      Do not include any other text or formatting than the JSON object. Use the JSON format exactly as specified.
     model: openai/gpt-oss-20b
     model_url: http://localhost:1234
     provider: lm_studio

@@ -1,14 +1,12 @@
-# Simplified Cognitive Society - Boolean Scoring Edition
-# ======================================================
+# Cognitive Society - Boolean Scoring Multi-Agent Debate
+# Progressive vs Conservative agents debate with boolean quality evaluation
 #
-# Demonstrates multi-agent debate with boolean-based quality evaluation.
-# Uses boolean scoring to assess debate progress across 15 criteria.
-#
-# Key Features:
-# - Progressive vs Conservative debate agents
-# - Boolean evaluation of debate quality (not just agreement score)
-# - Memory integration with vector search
-# - Deterministic, auditable scoring
+# ROBUSTNESS FEATURES:
+# - Explicit output format for all agents
+# - JSON format for agreement checker
+# - Realistic thresholds (0.50)
+# - Fallback and timeout scores
+# - Safe template accessors
 
 orchestrator:
   id: cognitive-society-simple
@@ -19,18 +17,12 @@ orchestrator:
       default_short_term_hours: 1.0
       default_long_term_hours: 1.0
       check_interval_minutes: 10
-    # Vector search configuration
     vector_search:
       enabled: true
       index_name: "orka_enhanced_memory"
       vector_dim: 384
       enable_hnsw: true
       force_recreate_index: false
-      vector_params:
-        type: "FLOAT32"
-        distance_metric: "COSINE"
-        ef_construction: 200
-        m: 16
   agents:
     - simple_debate_loop
     - final_answer
@@ -39,23 +31,36 @@ agents:
   - id: simple_debate_loop
     type: loop
     max_loops: 3
-    score_threshold: 0.25  # Lowered from 0.8 to realistic cognitive convergence thresholds
+    score_threshold: 0.50
+    fallback_score: 0.25
+    timeout_score: 0.15
+    persist_across_runs: false
     
-    # Boolean scoring configuration for debate convergence
+    # Boolean scoring for debate convergence
     scoring:
       preset: moderate
-      context: loop_convergence  # Track debate convergence, not agent paths
+      context: loop_convergence
       custom_weights:
-        improvement.shows_progress: 0.25
-        improvement.approaches_goal: 0.20
-        stability.consistent_direction: 0.20
-        convergence.approaching_threshold: 0.15
+        improvement.better_than_previous: 0.30
+        stability.consistent_direction: 0.25
+        convergence.within_tolerance: 0.25
+        improvement.approaching_target: 0.20
+    
+    # Score extraction patterns
+    score_extraction_config:
+      strategies:
+        - type: pattern
+          patterns:
+            - "SCORE:\\s*([0-9]+\\.?[0-9]*)"
+            - "OVERALL_SCORE:\\s*([0-9]+\\.?[0-9]*)"
+        - type: pattern
+          patterns:
+            - "(0\\.[5-9][0-9]?)"
     
     past_loops_metadata:
       round: "{{ get_loop_number() }}"
       agreement_score: "{{ score }}"
       timestamp: "{{ timestamp }}"
-      debate_summary: "{{ get_agent_response('debate_summary') if get_agent_response('debate_summary') else 'No summary' }}"
       insights: "{{ insights }}"
       mistakes: "{{ mistakes }}"
     
@@ -71,7 +76,6 @@ agents:
           - memory_writer
       
       agents:
-        # Simple memory reader
         - id: memory_reader
           type: memory
           queue: orka:simple-memory-reader
@@ -79,13 +83,10 @@ agents:
             operation: read
             limit: 3
             enable_context_search: true
-            # Vector search configuration
             enable_vector_search: true
             vector_weight: 0.7
             text_weight: 0.3
-            enable_hybrid_search: true
-            similarity_threshold: 0.75
-            ef_runtime: 10
+            similarity_threshold: 0.70
           namespace: simple_debate_memory
           decay:
             enabled: true
@@ -94,7 +95,6 @@ agents:
           prompt: |
             {{ get_input() }}
 
-        # Simplified debate with just 2 agents
         - id: opening_debate
           type: fork
           targets:
@@ -106,189 +106,159 @@ agents:
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
-          temperature: 0.7
+          temperature: 0.6
+          timeout: 60
           prompt: |
-            You are a PROGRESSIVE agent analyzing: {{ get_input() }}
+            ROLE: Progressive Agent - Round {{ get_loop_number() }}
+            TOPIC: {{ get_input() }}
             
-            Round {{ get_loop_number() }}
-            
-            Past Memory: {{ get_agent_response('memory_reader') }}
-            
-            Your role: Advocate for change and innovation while being open to compromise.
-            
-            **CONVERGENCE GOAL**: Work toward agreement with conservative perspective. Score target: 0.8+
+            PAST CONTEXT: {{ get_agent_response('memory_reader') | default('None', true) }}
             
             {% if get_loop_number() == 1 %}
-            Present your progressive position while noting common ground opportunities.
+            Present your progressive position while noting common ground.
             {% elif get_loop_number() == 2 %}
-            Build on previous round. Actively seek synthesis with conservative views.
+            Build on round 1. Seek synthesis with conservative views.
             {% else %}
-            PRIORITIZE AGREEMENT: Find collaborative solutions that incorporate both perspectives.
+            PRIORITY: Find collaborative solutions.
             {% endif %}
             
-            Format:
-            POSITION: [Your stance - 2 sentences max]
-            COMMON_GROUND: [Areas of potential agreement - 1 sentence]
-            COMPROMISE: [What you can accept from conservative view - 1 sentence]
+            OUTPUT FORMAT:
+            POSITION: [2 sentences max]
+            COMMON_GROUND: [1 sentence]
+            COMPROMISE: [What you accept from conservative view]
         
         - id: conservative_agent
           type: local_llm
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
-          temperature: 0.7
+          temperature: 0.6
+          timeout: 60
           prompt: |
-            You are a CONSERVATIVE agent analyzing: {{ get_input() }}
+            ROLE: Conservative Agent - Round {{ get_loop_number() }}
+            TOPIC: {{ get_input() }}
             
-            Round {{ get_loop_number() }}
-            
-            Past Memory: {{ get_agent_response('memory_reader') }}
-            
-            Your role: Defend stability and tradition while being open to gradual change.
-            
-            **CONVERGENCE GOAL**: Work toward agreement with progressive perspective. Score target: 0.8+
+            PAST CONTEXT: {{ get_agent_response('memory_reader') | default('None', true) }}
             
             {% if get_loop_number() == 1 %}
-            Present your conservative position while noting areas for potential compromise.
+            Present your conservative position while noting compromise areas.
             {% elif get_loop_number() == 2 %}
-            Build on previous round. Show how tradition can accommodate progressive concerns.
+            Show how tradition can accommodate progressive concerns.
             {% else %}
-            PRIORITIZE AGREEMENT: Find stable solutions that address progressive goals.
+            PRIORITY: Find stable solutions addressing progressive goals.
             {% endif %}
             
-            Format:
-            POSITION: [Your stance - 2 sentences max]
-            COMMON_GROUND: [Areas of potential agreement - 1 sentence]
-            COMPROMISE: [What you can accept from progressive view - 1 sentence]
+            OUTPUT FORMAT:
+            POSITION: [2 sentences max]
+            COMMON_GROUND: [1 sentence]
+            COMPROMISE: [What you accept from progressive view]
 
-        # Boolean evaluation of debate quality
         - id: agreement_check
           type: local_llm
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
-          temperature: 0.2
+          temperature: 0.1
+          timeout: 60
           prompt: |
-            Evaluate the debate quality between these positions:
+            TASK: Evaluate debate quality between these positions.
             
-            Progressive: {{ get_agent_response('progressive_agent') }}
-            Conservative: {{ get_agent_response('conservative_agent') }}
+            PROGRESSIVE:
+            {{ get_agent_response('progressive_agent') }}
             
-            Round {{ get_loop_number() }} - Evaluating debate progress
+            CONSERVATIVE:
+            {{ get_agent_response('conservative_agent') }}
+            
+            ROUND: {{ get_loop_number() }}
             
             Evaluate each criterion as TRUE or FALSE:
             
-            **Completeness:**
-            - has_all_required_steps: Did both agents present positions AND compromises?
-            - addresses_all_query_aspects: Does the debate address all aspects of the original query?
-            - handles_edge_cases: Do agents consider alternative perspectives?
-            - includes_fallback_path: Are there backup positions if agreement fails?
+            COMPLETENESS (4 criteria):
+            - has_all_required_steps: Both presented positions AND compromises?
+            - addresses_all_query_aspects: Covers all aspects of topic?
+            - handles_edge_cases: Considers alternative perspectives?
+            - includes_fallback_path: Backup positions if agreement fails?
             
-            **Efficiency:**
-            - minimizes_redundant_calls: Do agents avoid repeating previous arguments?
-            - uses_appropriate_agents: Are both perspectives contributing meaningfully?
-            - optimizes_cost: Are responses concise yet substantive?
-            - optimizes_latency: Is progress made toward consensus?
+            EFFICIENCY (4 criteria):
+            - minimizes_redundant_calls: Avoids repeating previous arguments?
+            - uses_appropriate_agents: Both contribute meaningfully?
+            - optimizes_cost: Responses are concise yet substantive?
+            - optimizes_latency: Progress made toward consensus?
             
-            **Safety:**
-            - validates_inputs: Do agents respect the original query context?
-            - handles_errors_gracefully: Are conflicting views managed constructively?
-            - has_timeout_protection: Is there reasonable convergence progress?
-            - avoids_risky_combinations: Do compromises remain logically sound?
+            SAFETY (4 criteria):
+            - validates_inputs: Respects original query context?
+            - handles_errors_gracefully: Conflicts managed constructively?
+            - has_timeout_protection: Reasonable convergence progress?
+            - avoids_risky_combinations: Compromises logically sound?
             
-            **Coherence:**
-            - logical_agent_sequence: Do arguments build on previous rounds?
-            - proper_data_flow: Are compromises informed by counterarguments?
-            - no_conflicting_actions: Do proposed solutions avoid contradictions?
+            COHERENCE (3 criteria):
+            - logical_agent_sequence: Arguments build on previous rounds?
+            - proper_data_flow: Compromises informed by counterarguments?
+            - no_conflicting_actions: Solutions avoid contradictions?
             
-            Return ONLY this JSON structure:
-            {
-              "completeness": {
-                "has_all_required_steps": true/false,
-                "addresses_all_query_aspects": true/false,
-                "handles_edge_cases": true/false,
-                "includes_fallback_path": true/false
-              },
-              "efficiency": {
-                "minimizes_redundant_calls": true/false,
-                "uses_appropriate_agents": true/false,
-                "optimizes_cost": true/false,
-                "optimizes_latency": true/false
-              },
-              "safety": {
-                "validates_inputs": true/false,
-                "handles_errors_gracefully": true/false,
-                "has_timeout_protection": true/false,
-                "avoids_risky_combinations": true/false
-              },
-              "coherence": {
-                "logical_agent_sequence": true/false,
-                "proper_data_flow": true/false,
-                "no_conflicting_actions": true/false
-              },
-              "rationale": "Brief explanation of the debate quality and progress toward consensus"
-            }
+            OUTPUT FORMAT:
+            
+            PASSED: [List true criteria]
+            FAILED: [List false criteria]
+            
+            SCORE: [Number true / 15, as decimal]
+            
+            RATIONALE: [One sentence on debate quality]
+            
+            IMPORTANT: SCORE must be "SCORE: X.XX"
 
-        # Simple memory writer
         - id: memory_writer
           type: memory
-          memory_preset: "working"  # Active debate context (4 hours)
+          memory_preset: "working"
           queue: orka:simple-memory-writer
           config:
             operation: write
             vector: true
-            # Vector configuration for memory writing
             vector_field_name: "content_vector"
-            force_recreate_index: false
           namespace: simple_debate_memory
           prompt: |
-            Debate round {{ get_loop_number() }} summary:
+            Round {{ get_loop_number() }}:
             Progressive: {{ get_agent_response('progressive_agent') }}
             Conservative: {{ get_agent_response('conservative_agent') }}
-            Agreement: {{ get_agent_response('agreement_check') }}
           metadata:
             round: "{{ get_loop_number() }}"
-            agreement_score: "{{ score }}"
             timestamp: "{{ timestamp }}"
 
-        # Join fork
         - id: debate_summary
           type: join
           group: opening_debate
 
-  # Final answer processor
   - id: final_answer
     type: local_llm
     model: openai/gpt-oss-20b
     model_url: http://localhost:1234
     provider: lm_studio
     temperature: 0.3
+    timeout: 60
     prompt: |
-      USER ASKED: {{ get_input() }}
+      TOPIC: {{ get_input() }}
       
-      Debate completed:
-      - Loops: {{ get_loop_rounds() }}
-      - Final Score: {{ get_final_score() }}
-      - Status: {{ get_loop_status() }}
-      - Agreement: {{ 'Yes' if get_final_score() != 'Unknown' and get_final_score() >= 0.8 else 'No' }}
+      DEBATE RESULTS:
+      - Rounds: {{ get_loop_rounds() | default('?') }}
+      - Final Score: {{ get_final_score() | default('?') }}
+      - Status: {{ get_loop_status() | default('Unknown') }}
       
-      Past Debate Results:
       {% if has_past_loops() %}
-      {% for past_loop in get_past_loops() %}
-      Round {{ past_loop.round }}: Score {{ past_loop.agreement_score }}
-      {% if past_loop.debate_summary and past_loop.debate_summary != "No response found for debate_summary" %}
-      Summary: {{ past_loop.debate_summary }}
-      {% endif %}
+      ROUND HISTORY:
+      {% for pl in get_past_loops() %}
+      Round {{ pl.round }}: Score {{ pl.agreement_score }}
       {% endfor %}
-      {% else %}
-      No past loops available.
       {% endif %}
       
-      Loop Results: {{ get_agent_response('simple_debate_loop') }}
+      LOOP OUTPUT: {{ get_agent_response('simple_debate_loop') }}
       
-      Provide a direct answer to the user's question based on the debate results.
+      OUTPUT FORMAT:
       
-      Format:
-      **Answer**: [Direct response to user's question]
-      **Consensus Reached**: {{ 'Yes' if get_final_score() != 'Unknown' and get_final_score() >= 0.8 else 'No' }}
-      **Key Insights**: [2-3 main takeaways from the debate] 
+      ANSWER: [Direct response to topic]
+      
+      CONSENSUS: [Yes/No and explanation]
+      
+      KEY_INSIGHTS:
+      - [Insight 1]
+      - [Insight 2]
+      - [Insight 3]

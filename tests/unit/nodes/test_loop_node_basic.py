@@ -1,9 +1,11 @@
 import asyncio
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, AsyncMock, patch
 
 import pytest
 
 from orka.nodes.loop_node import LoopNode
+from orka.agents.plan_validator.agent import PlanValidatorAgent
+from orka.scoring import BooleanScoreCalculator
 
 
 def test_is_valid_value_cases():
@@ -119,7 +121,108 @@ async def test_extract_score_pattern_strategy_on_string_result():
     assert abs(score - 0.66) < 1e-6
 
 
+@pytest.mark.asyncio
+async def test_extract_score_percentage_from_high_priority_agent():
+    node = LoopNode("test_node")
+
+    # Ensure no boolean calculator so we exercise pattern-based extraction
+    node.score_calculator = None
+
+    payload = {"agreement_moderator": {"response": "Agreement: 15% observed in outcomes"}}
+
+    score = await node._extract_score(payload)
+
+    assert isinstance(score, float)
+    assert abs(score - 0.15) < 1e-6
+
+
+@pytest.mark.asyncio
+async def test_extract_score_pattern_percentage_strategy():
+    node = LoopNode("test_node")
+    node.score_extraction_config = {"strategies": [{"type": "pattern", "patterns": [r"(\d+\.?\d*)%"]}]}
+
+    payload = {"agent_x": "Value: 15%"}
+    score = await node._extract_score(payload)
+    assert isinstance(score, float)
+    assert abs(score - 0.15) < 1e-6
+
+
+@pytest.mark.asyncio
+async def test_extract_score_out_of_ten_pattern():
+    node = LoopNode("test_node")
+    node.score_extraction_config = {"strategies": [{"type": "pattern", "patterns": [r"(\d+\.?\d*)/10"]}]}
+
+    payload = {"agent_x": "Score: 8/10"}
+    score = await node._extract_score(payload)
+    assert isinstance(score, float)
+    assert abs(score - 0.8) < 1e-6
+
+
+@pytest.mark.asyncio
+async def test_extract_score_direct_key_normalizes_large_values():
+    node = LoopNode("test_node")
+    node.score_extraction_config = {"strategies": [{"type": "direct_key", "key": "some_score"}]}
+
+    # Raw score of 150 should be clamped to 1.0 (out of expected range)
+    payload = {"some_score": "150"}
+    score = await node._extract_score(payload)
+    assert isinstance(score, float)
+    assert abs(score - 1.0) < 1e-6
+
+
 def test_extract_boolean_from_text_returns_none_on_invalid():
     node = LoopNode("test_node")
     result = node._extract_boolean_from_text("no json here")
     assert result is None
+
+
+def test_skip_boolean_scoring_when_no_join_or_routing():
+    node = LoopNode(node_id="loop_processor", prompt="", queue=[], memory_logger=MagicMock())
+    # Provide a fake score_calculator so _try_boolean_scoring would normally attempt
+    # but boolean_evaluations are sparse.
+    node.score_calculator = MagicMock()
+    node.score_calculator.flat_weights = {f"improvement.k{i}": 0.1 for i in range(7)}
+
+    # Agent includes boolean_evaluations but there is no routing/join data
+    result = {
+        "loop_convergence_validator": {
+            "boolean_evaluations": {},
+            "response": "I cannot evaluate, no join results were provided"
+        }
+    }
+
+    score = node._try_boolean_scoring(result)
+    assert score is None
+
+
+@pytest.mark.asyncio
+async def test_loop_node_uses_synthesized_booleans_from_plan_validator(
+    mock_prompt_builder, mock_boolean_score_calculator_class
+):
+    """Integration: PlanValidator synthesizes booleans -> LoopNode uses boolean scoring."""
+    # Patch LLM to return a text indicating improvement and stability
+    with patch("orka.agents.plan_validator.llm_client.call_llm", new_callable=AsyncMock) as mock_llm_call:
+        mock_llm_call.return_value = "The proposed path improves accuracy by 6% and shows stable behavior with no regressions."
+
+        # Patch boolean parser to return empty -> force synthesis
+        with patch("orka.agents.plan_validator.boolean_parser.parse_boolean_evaluation") as mock_parse:
+            mock_parse.return_value = {}
+
+            pv = PlanValidatorAgent(agent_id="pv", llm_model="m", llm_provider="p", llm_url="u")
+            ctx = {"input": "test", "previous_outputs": {}, "loop_number": 1, "scoring_context": "loop_convergence"}
+            result = await pv._run_impl(ctx)
+
+            assert "boolean_evaluations" in result
+            be = result["boolean_evaluations"]
+            assert "improvement" in be and be["improvement"].get("significant_delta") is True
+
+            # Now feed into LoopNode and ensure boolean scoring picks it up
+            node = LoopNode("loop_node")
+            # Initialize score_calculator with loop_convergence preset to ensure scoring runs
+            node.scoring_preset = "moderate"
+            node.score_calculator = BooleanScoreCalculator(preset="moderate", context="loop_convergence")
+
+            score = await node._extract_score({"loop_convergence_validator": result})
+            assert isinstance(score, float)
+            # Expect a non-zero score due to synthesized booleans
+            assert score > 0.0

@@ -1,29 +1,12 @@
 # Boolean-Based Scoring System Demo
 # Demonstrates deterministic, auditable scoring with LoopValidatorNode
 #
-# NEW: LoopValidatorNode
-# =====================
-# A specialized node that wraps LLM evaluation with robust format handling.
-# Eliminates the need for fragile prompt engineering in loops.
-#
-# Key Benefits:
-# - Built-in prompt templates (strict/moderate/lenient)
-# - Robust parsing with multiple fallback strategies
-# - Model-agnostic operation (works with any LLM)
-# - Consistent output format for LoopNode consumption
-# - No manual JSON formatting required in prompts
-#
-# When to Use LoopValidatorNode:
-# - Loop workflows requiring boolean pass/fail evaluation
-# - Scenarios where LLM output format compliance is problematic  
-# - Production systems needing reliable score extraction
-# - Workflows that need to work across different LLM models
-#
-# When to Use PlanValidatorAgent Instead:
-# - Validating complete execution plans (not loop iterations)
-# - Need weighted scoring with dimension breakdowns
-# - Require detailed validation rationale
-# - One-time validation (not iterative loops)
+# ROBUSTNESS IMPROVEMENTS:
+# - Explicit output format requirements in all prompts
+# - Fallback score and timeout handling
+# - Lower, realistic thresholds for local LLMs
+# - Multiple score extraction patterns
+# - Consistent temperature settings (evaluators: 0.1, generators: 0.5-0.7)
 
 orchestrator:
   id: boolean-scoring-demo
@@ -42,24 +25,35 @@ agents:
     model_url: http://localhost:1234
     provider: lm_studio
     temperature: 0.5
+    timeout: 60
     prompt: |
-      Propose an agent execution path for this query: {{ input }}
+      TASK: Propose an agent execution path for this query.
+      QUERY: {{ input }}
       
-      Provide a structured path with:
-      - Agent sequence
-      - Data flow
-      - Error handling
+      REQUIRED OUTPUT FORMAT:
+      AGENT_SEQUENCE:
+      1. [Agent Name]: [Purpose]
+      2. [Agent Name]: [Purpose]
+      3. [Agent Name]: [Purpose]
+      
+      DATA_FLOW:
+      - Input → [Agent1] → [Agent2] → Output
+      
+      ERROR_HANDLING:
+      - [Scenario]: [Fallback action]
+      
+      Be specific and actionable. Keep response under 500 words.
   
   # Step 2: Validate with STRICT preset (production-critical)
   - id: path_validator_strict
     type: plan_validator
-    # NOTE: PlanValidator expects `llm_model` (not `model`)
     llm_model: openai/gpt-oss-20b
     model_url: http://localhost:1234
     provider: lm_studio
-    temperature: 0.2
-    scoring_preset: strict  # High standards: approved at 0.90+
-    # Note: Removed old numeric validation_score, now using boolean criteria
+    temperature: 0.1
+    timeout: 60
+    scoring_preset: strict
+    # Strict: threshold 0.90, emphasizes safety and completeness
 
   # Step 3: Validate with MODERATE preset (balanced)
   - id: path_validator_moderate
@@ -67,22 +61,50 @@ agents:
     llm_model: openai/gpt-oss-20b
     model_url: http://localhost:1234
     provider: lm_studio
-    temperature: 0.2
-    scoring_preset: moderate  # Balanced: approved at 0.85+
+    temperature: 0.1
+    timeout: 60
+    scoring_preset: moderate
+    # Moderate: threshold 0.85, balanced weights
 
   # Step 4: Improvement loop with boolean scoring
   - id: improvement_loop
     type: loop
     max_loops: 3
-    score_threshold: 0.30  # Lowered from 0.85 to realistic boolean scoring thresholds
+    score_threshold: 0.50
+    fallback_score: 0.10
+    timeout_score: 0.05
+    persist_across_runs: false
     
     # Boolean scoring with custom weights
     scoring:
       preset: moderate
+      context: loop_convergence
       custom_weights:
-        # Override specific criteria weights
-        completeness.has_all_required_steps: 0.25  # Emphasize completeness
-        safety.validates_inputs: 0.15  # Emphasize safety
+        improvement.better_than_previous: 0.30
+        improvement.approaching_target: 0.20
+        stability.consistent_direction: 0.20
+        convergence.within_tolerance: 0.30
+    
+    # Multiple score extraction strategies for robustness
+    score_extraction_config:
+      strategies:
+        - type: pattern
+          patterns:
+            - "SCORE:\\s*([0-9]+\\.?[0-9]*)"
+            - "Score:\\s*([0-9]+\\.?[0-9]*)"
+            - "score:\\s*([0-9]+\\.?[0-9]*)"
+        - type: pattern
+          patterns:
+            - "([0-9]\\.[0-9]+)\\s*/\\s*1\\.0"
+            - "(0\\.[5-9][0-9]?)"
+    
+    past_loops_metadata:
+      loop_number: "{{ get_loop_number() }}"
+      score: "{{ score }}"
+      timestamp: "{{ timestamp }}"
+      insights: "{{ insights }}"
+      improvements: "{{ improvements }}"
+      mistakes: "{{ mistakes }}"
     
     internal_workflow:
       orchestrator:
@@ -97,29 +119,44 @@ agents:
           model_url: http://localhost:1234
           provider: lm_studio
           temperature: 0.6
+          timeout: 60
           prompt: |
-            Improve the proposed path based on feedback:
+            TASK: Improve the proposed execution path.
             
-            Original: {{ get_input() }}
+            ORIGINAL QUERY: {{ get_input() }}
             
             {% if has_past_loops() %}
-            Previous attempts: {{ get_past_loops() | length }}
+            PREVIOUS ATTEMPTS: {{ get_past_loops() | length }}
             {% for past_loop in get_past_loops() %}
             Loop {{ past_loop.loop_number }}: Score {{ past_loop.score }}
-            Failed: {{ past_loop.failed_criteria | join(', ') }}
+            Issues: {{ past_loop.mistakes | default('None identified') }}
             {% endfor %}
+            
+            ADDRESS THESE SPECIFIC ISSUES in your improved path.
             {% endif %}
+            
+            REQUIRED OUTPUT FORMAT:
+            IMPROVED_PATH:
+            1. [Agent]: [Purpose] - [How it addresses feedback]
+            2. [Agent]: [Purpose] - [How it addresses feedback]
+            
+            IMPROVEMENTS_MADE:
+            - [Specific improvement 1]
+            - [Specific improvement 2]
+            
+            Keep response focused and under 400 words.
         
-        # NEW: Loop Validator Node - Robust boolean evaluation with built-in parsing
+        # Robust boolean evaluation with built-in parsing
         - id: boolean_evaluator
           type: loop_validator
-          # NOTE: LoopValidator expects `llm_model` key (not `model`)
           llm_model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
-          scoring_preset: moderate  # strict/moderate/lenient
-          evaluation_target: improver  # Evaluate the improver's output
+          scoring_preset: moderate
+          scoring_context: loop_convergence
+          evaluation_target: improver
           temperature: 0.1
+          timeout: 60
 
 # Benefits of Boolean Scoring:
 # 1. DETERMINISTIC: Same booleans always produce same score
@@ -127,4 +164,3 @@ agents:
 # 3. CONSISTENT: Different LLMs agree more on true/false than numeric scores
 # 4. TUNABLE: Adjust weights without retraining
 # 5. TESTABLE: Easy to write unit tests with exact expected scores
-

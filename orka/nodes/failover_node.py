@@ -62,10 +62,14 @@ class FailoverNode(BaseNode):
         )
 
         for i, child in enumerate(self.children):
-            child_id = getattr(
-                child,
-                "agent_id",
-                getattr(child, "node_id", f"unknown_child_{i}"),
+            def _pick_id(val):
+                return val if isinstance(val, str) and val.strip() else None
+
+            child_id = (
+                _pick_id(getattr(child, "agent_id", None))
+                or _pick_id(getattr(child, "node_id", None))
+                or _pick_id(getattr(child, "tool_id", None))
+                or f"unknown_child_{i}"
             )
             logger.info(
                 f"Trying child {i + 1}/{len(self.children)}: {child_id}",
@@ -77,7 +81,17 @@ class FailoverNode(BaseNode):
                     try:
                         from jinja2 import Template
 
-                        formatted_prompt = Template(child.prompt).render(**input_data)
+                        # Provide minimal compatibility helpers for templates like {{ get_input() }}
+                        # without requiring full Orka template context in this node.
+                        render_ctx = dict(input_data)
+                        if "input" not in render_ctx:
+                            render_ctx["input"] = input_data
+
+                        def get_input():
+                            return render_ctx.get("input", "")
+
+                        render_ctx["get_input"] = get_input
+                        formatted_prompt = Template(child.prompt).render(**render_ctx)
                         child_payload["formatted_prompt"] = formatted_prompt
                     except Exception:
                         # If rendering fails, use original prompt as fallback

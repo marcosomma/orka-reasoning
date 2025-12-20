@@ -4,6 +4,8 @@
 
 OrKa provides THREE scoring systems for different purposes. Understanding these distinctions is critical for proper usage.
 
+Note: Path validation (boolean criteria such as completeness/efficiency/safety/coherence) is intended for GraphScout/PlanValidator use (path-level validation). Loop iteration logic should use a separate convergence scoring context (`loop_convergence`) with its own criteria (improvement, stability, convergence). The `LoopValidatorNode` defaults to `loop` mode and uses loop-focused prompts and scoring; use `mode: path` if you explicitly want path-level validation within a loop.
+
 ---
 
 ## 1. PathScorer with Dual-Mode Support

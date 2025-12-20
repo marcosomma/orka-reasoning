@@ -118,7 +118,8 @@ agents:
       
       Original Input: {{ get_input() }}
       
-      {% set answer_result = get_agent_response('build_answer') %}
+      {# NOTE: build_answer is a child inside test_failover2, so it will NOT exist as a top-level agent output #}
+      {% set answer_result = get_agent_response('test_failover2') %}
       {% if answer_result %}
       Answer Result: {{ answer_result }}
       {% endif %}

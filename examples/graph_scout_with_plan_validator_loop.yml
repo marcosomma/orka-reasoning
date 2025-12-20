@@ -28,8 +28,8 @@ agents:
       preset: lenient
       context: loop_convergence  # Track path improvement iterations
       custom_weights:
-        improvement.shows_progress: 0.30
-        convergence.approaching_threshold: 0.25
+        improvement.better_than_previous: 0.30
+        convergence.within_tolerance: 0.25
         stability.consistent_direction: 0.20
     
     past_loops_metadata:
@@ -99,6 +99,8 @@ agents:
             validation_model: "local_llm"
             validation_model_name: "openai/gpt-oss-20b"
             llm_evaluation_enabled: true
+            provider: lm_studio
+            model_url: http://localhost:1234
             fallback_to_heuristics: true
           prompt: |
             You are GraphScout. Select the optimal execution path.
@@ -223,6 +225,7 @@ agents:
   
   - id: response_builder
     type: local_llm
+    is_terminal: true  # Mark as terminal for GraphScout path completion
     capabilities: [answer_emit, response_generation]
     model: openai/gpt-oss-20b
     model_url: http://localhost:1234

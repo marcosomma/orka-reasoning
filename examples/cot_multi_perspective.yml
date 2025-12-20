@@ -1,3 +1,13 @@
+# Chain-of-Thought Multi-Perspective Analysis
+# Each loop iteration takes a different perspective (Analytical, Empathetic, Creative)
+#
+# ROBUSTNESS FEATURES:
+# - Explicit SCORE format requirement
+# - Multiple score extraction strategies
+# - Fallback scores for failures
+# - Focused prompts per perspective
+# - Lower threshold for realistic performance
+
 orchestrator:
   id: cot-multi-perspective
   strategy: sequential
@@ -8,21 +18,24 @@ orchestrator:
 agents:
   - id: conversation_loop
     type: loop
-    max_loops: 3  # Each perspective gets one loop
-    score_threshold: 0.30  # Lowered from 0.85 to realistic multi-perspective scoring thresholds
+    max_loops: 3
+    score_threshold: 0.50
+    fallback_score: 0.30
+    timeout_score: 0.20
+    persist_across_runs: false
     
+    # Robust score extraction
     score_extraction_config:
       strategies:
         - type: pattern
           patterns:
-            - "SCORE:\\s*([0-9.]+)"
-            - "Score:\\s*([0-9.]+)"
-            - "Quality Score:\\s*([0-9.]+)"
-            - "QUALITY_SCORE:\\s*([0-9.]+)"
+            - "SCORE:\\s*([0-9]+\\.?[0-9]*)"
+            - "Score:\\s*([0-9]+\\.?[0-9]*)"
+            - "QUALITY_SCORE:\\s*([0-9]+\\.?[0-9]*)"
         - type: pattern
           patterns:
-            - "(0\\.[6-9][0-9]?)"  # Matches scores between 0.60 and 0.99
-            - "([0-9])\\.[0-9]+"   # Matches any decimal number
+            - "(0\\.[5-9][0-9]?)"
+            - "(0\\.[4][5-9])"
         - type: agent_key
           agents: ["quality_scorer"]
           key: "response"
@@ -30,10 +43,10 @@ agents:
     
     past_loops_metadata:
       loop_number: "{{ get_loop_number() }}"
-      perspective: "{% set perspectives = ['Analytical', 'Empathetic', 'Creative'] %}{{ perspectives[get_loop_number() - 1] }}"
-      reasoning: "{{ get_agent_response('perspective_handler')['response'] if get_agent_response('perspective_handler') else '' }}"
-      synthesis: "{{ get_agent_response('synthesizer')['response'] if get_agent_response('synthesizer') else '' }}"
-      quality_score: "{{ get_agent_response('quality_scorer')['response'] if get_agent_response('quality_scorer') else '' }}"
+      perspective: "{% set p = ['Analytical', 'Empathetic', 'Creative'] %}{{ p[(get_loop_number() - 1) % 3] }}"
+      reasoning: "{{ get_agent_response('perspective_handler')['response'] | default('') }}"
+      synthesis: "{{ get_agent_response('synthesizer')['response'] | default('') }}"
+      quality_score: "{{ get_agent_response('quality_scorer')['response'] | default('') }}"
       timestamp: "{{ timestamp }}"
     
     internal_workflow:
@@ -48,159 +61,165 @@ agents:
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
+          temperature: 0.6
+          timeout: 60
           prompt: |
             {% set perspectives = ['Analytical', 'Empathetic', 'Creative'] %}
-            {% set current_perspective = perspectives[get_loop_number() - 1] %}
+            {% set current = perspectives[(get_loop_number() - 1) % 3] %}
             
-            Query: {{ get_input() }}
+            TASK: Analyze from the {{ current }} perspective.
+            QUERY: {{ get_input() }}
             
-            You are now taking the {{ current_perspective }} perspective.
-            
-            {% if current_perspective == 'Analytical' %}
-            Analyze the query logically and objectively.
-            Focus on:
-            - Facts and data
-            - Logical reasoning
-            - Systematic analysis
-            - Step-by-step problem solving
-            - Potential implications
-            
-            {% elif current_perspective == 'Empathetic' %}
-            Consider the emotional and human aspects.
-            Focus on:
-            - Emotional understanding
-            - Personal impact
-            - Human relationships
-            - Social dynamics
-            - Real-world context
-            
-            {% else %}  {# Creative perspective #}
-            Think creatively and innovatively.
-            Focus on:
-            - Novel approaches
-            - Alternative viewpoints
-            - Unique solutions
-            - Future possibilities
-            - Out-of-the-box thinking
+            {% if current == 'Analytical' %}
+            ANALYTICAL LENS - Focus on:
+            • Facts, data, and logical reasoning
+            • Systematic problem decomposition
+            • Evidence-based conclusions
+            • Cause-and-effect relationships
+            {% elif current == 'Empathetic' %}
+            EMPATHETIC LENS - Focus on:
+            • Human impact and emotional aspects
+            • Stakeholder perspectives
+            • Social and relational dynamics
+            • Real-world consequences for people
+            {% else %}
+            CREATIVE LENS - Focus on:
+            • Novel approaches and alternatives
+            • Unconventional solutions
+            • Future possibilities
+            • Cross-domain connections
             {% endif %}
             
             {% if has_past_loops() %}
-            Previous perspectives analyzed:
-            {% for past_loop in get_past_loops() %}
-            
-            {{ past_loop.perspective }} Perspective:
-            - Reasoning: {{ past_loop.reasoning }}
-            - Synthesis: {{ past_loop.synthesis }}
-            - Quality: {{ past_loop.quality_score }}
+            BUILD ON PREVIOUS PERSPECTIVES:
+            {% for p in get_past_loops() %}
+            {{ p.perspective }}: {{ p.synthesis }}
             {% endfor %}
-            
-            Build upon these previous perspectives while avoiding repetition.
             {% endif %}
             
-            Provide your perspective while building upon previous insights.
-            Format your response as:
-            REASONING: [Step-by-step thought process]
-            CONCLUSION: [Final perspective-based answer]
+            REQUIRED OUTPUT FORMAT:
+            
+            PERSPECTIVE: {{ current }}
+            
+            REASONING:
+            1. [Key observation from this lens]
+            2. [Supporting point]
+            3. [Implication or insight]
+            
+            CONCLUSION:
+            [2-3 sentences summarizing this perspective's contribution]
+            
+            Target 200-300 words. Avoid repeating previous perspectives.
 
         - id: synthesizer
           type: local_llm
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
+          temperature: 0.4
+          timeout: 60
           prompt: |
-            Current perspective's analysis:
+            TASK: Synthesize the current perspective's insights.
+            
+            CURRENT ANALYSIS:
             {{ get_agent_response('perspective_handler') }}
             
             {% if has_past_loops() %}
-            Previous perspectives for context:
-            {% for past_loop in get_past_loops() %}
-            {{ past_loop.perspective }}: {{ past_loop.synthesis }}
+            PREVIOUS SYNTHESES:
+            {% for p in get_past_loops() %}
+            {{ p.perspective }}: {{ p.synthesis }}
             {% endfor %}
             {% endif %}
             
-            Synthesize the current perspective by:
-            1. Extracting key insights unique to this viewpoint
-            2. Identifying how this complements previous perspectives (if any)
-            3. Highlighting new understanding gained
-            4. Avoiding repetition of previous insights
+            REQUIRED OUTPUT FORMAT:
             
-            Format as:
-            INSIGHTS: [3-5 concise bullet points of unique insights]
-            RESPONSE: [clear, synthesized response that builds on previous work]
+            UNIQUE_INSIGHTS:
+            - [New insight not in previous perspectives]
+            - [Another unique contribution]
+            
+            BUILDS_ON:
+            - [How this complements previous work]
+            
+            RESPONSE:
+            [Synthesized perspective in 2-3 clear sentences]
 
         - id: quality_scorer
           type: local_llm
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
+          temperature: 0.1
+          timeout: 60
           prompt: |
-            Evaluate the quality of this perspective's contribution:
+            TASK: Score this perspective's quality.
+            
+            SYNTHESIS TO EVALUATE:
             {{ get_agent_response('synthesizer') }}
             
+            SCORING RUBRIC:
+            - Uniqueness (0-0.3): New insights vs repetition?
+            - Depth (0-0.3): Thorough analysis?
+            - Integration (0-0.2): Builds on previous work?
+            - Clarity (0-0.2): Well-structured?
+            
             {% if has_past_loops() %}
-            Comparison with previous perspectives:
-            {% for past_loop in get_past_loops() %}
-            {{ past_loop.perspective }}: {{ past_loop.quality_score }}
+            PREVIOUS SCORES:
+            {% for p in get_past_loops() %}
+            {{ p.perspective }}: {{ p.quality_score }}
             {% endfor %}
             {% endif %}
             
-            Score this perspective based on:
-            - Uniqueness of insights (avoid duplication with previous perspectives)
-            - Depth and thoroughness of analysis
-            - Clear reasoning and logical flow
-            - Value added to understanding the query
-            - Quality of synthesis and conclusions
+            REQUIRED OUTPUT FORMAT:
             
-            Provide a score between 0.0 and 1.0 where:
-            - 0.9-1.0: Exceptional insight and analysis
-            - 0.8-0.89: High quality with clear value
-            - 0.7-0.79: Good quality, meets threshold
-            - Below 0.7: Needs improvement
+            BREAKDOWN:
+            - Uniqueness: [0.0-0.3]
+            - Depth: [0.0-0.3]
+            - Integration: [0.0-0.2]
+            - Clarity: [0.0-0.2]
             
-            Format: SCORE: X.XX
-            Then explain your reasoning in 2-3 sentences.
+            SCORE: [Total 0.0-1.0]
+            
+            REASON: [One sentence explanation]
+            
+            IMPORTANT: SCORE line must be exactly "SCORE: X.XX"
 
   - id: final_answer_builder
     type: local_llm
     model: openai/gpt-oss-20b
     model_url: http://localhost:1234
     provider: lm_studio
+    temperature: 0.4
+    timeout: 60
     prompt: |
-      Original query: {{ get_input() }}
+      TASK: Create final answer integrating all perspectives.
       
-      Multi-perspective Analysis Complete:
+      ORIGINAL QUERY: {{ get_input() }}
+      
       {% set loop_results = get_agent_response('conversation_loop') %}
       {% if loop_results and loop_results.past_loops %}
-        {% for perspective_data in loop_results.past_loops %}
-          
-          === {{ perspective_data.perspective }} PERSPECTIVE ===
-          Reasoning: {{ perspective_data.reasoning }}
-          
-          Key Insights: {{ perspective_data.synthesis }}
-          
-          Quality Assessment: {{ perspective_data.quality_score }}
-          
-        {% endfor %}
+      MULTI-PERSPECTIVE ANALYSIS:
+      {% for p in loop_results.past_loops %}
+      
+      === {{ p.perspective | upper }} ===
+      Reasoning: {{ p.reasoning }}
+      Synthesis: {{ p.synthesis }}
+      Quality: {{ p.quality_score }}
+      {% endfor %}
       {% else %}
-        No multi-perspective analysis available. Using single perspective.
-        {% set direct_result = safe_get(loop_results, 'result', {}) %}
-        {% if direct_result %}
-          Reasoning: {{ safe_get(safe_get(direct_result, 'perspective_handler', {}), 'response', 'No response available') }}
-          Synthesis: {{ safe_get(safe_get(direct_result, 'synthesizer', {}), 'response', 'No synthesis available') }}
-        {% endif %}
+      No multi-perspective data available.
       {% endif %}
-
-      Now create a comprehensive final answer that:
-      1. Directly and completely addresses the original query
-      2. Synthesizes insights from all analyzed perspectives
-      3. Presents clear, step-by-step reasoning
-      4. Provides a balanced, well-reasoned response
-      5. Shows how different perspectives contribute to a fuller understanding
-
-      Format your response as:
       
-      SUMMARY: [One clear sentence summarizing your answer]
+      REQUIRED OUTPUT FORMAT:
       
-      DETAILED_RESPONSE: [Complete answer with step-by-step reasoning that addresses the query thoroughly]
+      SUMMARY:
+      [One clear sentence answering the query]
       
-      PERSPECTIVE_INTEGRATION: [How each perspective (Analytical, Empathetic, Creative) contributed unique value to the solution]
+      DETAILED_RESPONSE:
+      [Complete answer integrating all perspectives, 200-300 words]
+      
+      PERSPECTIVE_CONTRIBUTIONS:
+      - Analytical: [Key contribution]
+      - Empathetic: [Key contribution]
+      - Creative: [Key contribution]
+      
+      Ensure the answer directly addresses the original query.

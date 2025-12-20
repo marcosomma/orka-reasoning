@@ -31,11 +31,11 @@ agents:
       context: loop_convergence  # Track debate convergence
       custom_weights:
         # Convergence criteria for collaborative debate
-        improvement.shows_progress: 0.25
-        improvement.approaches_goal: 0.20
+        improvement.better_than_previous: 0.25
+        improvement.approaching_target: 0.20
         stability.consistent_direction: 0.20
-        stability.no_oscillation: 0.15
-        convergence.approaching_threshold: 0.15
+        stability.not_degrading: 0.15
+        convergence.within_tolerance: 0.15
     
     # 🔧 OPTIMIZED: Reduced extraction patterns and length
     cognitive_extraction:

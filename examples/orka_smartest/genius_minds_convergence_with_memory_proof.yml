@@ -111,12 +111,12 @@ agents:
       context: loop_convergence  # Track genius minds convergence
       custom_weights:
         # Convergence criteria for multi-perspective synthesis
-        improvement.shows_progress: 0.25
-        improvement.approaches_goal: 0.20
+        improvement.better_than_previous: 0.25
+        improvement.approaching_target: 0.20
         stability.consistent_direction: 0.15
-        stability.no_oscillation: 0.10
-        convergence.approaching_threshold: 0.15
-        convergence.diminishing_changes: 0.10
+        stability.not_degrading: 0.10
+        convergence.within_tolerance: 0.15
+        convergence.delta_decreasing: 0.10
     
     cognitive_extraction:
       enabled: true
@@ -203,6 +203,8 @@ agents:
         - id: da_vinci_perspective
           type: local_llm
           model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           prompt: |
             Channel Leonardo da Vinci's polymathic genius. Analyze through:
             1. Visual-spatial reasoning
@@ -224,6 +226,8 @@ agents:
         - id: einstein_perspective
           type: local_llm
           model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           prompt: |
             Channel Albert Einstein's revolutionary thinking. Analyze through:
             1. Thought experiments
@@ -245,6 +249,8 @@ agents:
         - id: pythagoras_perspective
           type: local_llm
           model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           prompt: |
             Channel Pythagoras's mathematical wisdom. Analyze through:
             1. Mathematical harmony
@@ -266,6 +272,8 @@ agents:
         - id: newton_perspective
           type: local_llm
           model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           prompt: |
             Channel Isaac Newton's systematic genius. Analyze through:
             1. Physical laws
@@ -287,6 +295,8 @@ agents:
         - id: tesla_perspective
           type: local_llm
           model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
           prompt: |
             Channel Nikola Tesla's visionary mind. Analyze through:
             1. Electromagnetic theory
@@ -341,6 +351,8 @@ agents:
   - id: final_synthesis_builder
     type: local_llm
     model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
     prompt: |
       Create final synthesis of genius minds discussion with proof of memory persistence.
       

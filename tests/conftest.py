@@ -8,10 +8,16 @@ from types import ModuleType
 from typing import Any, Dict, Generator, List
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
+# Disable memory decay scheduler BEFORE any orka imports to prevent thread accumulation.
+# This must be set early, before OrchestratorBase is imported, as it reads this env var
+# during module initialization.
+os.environ["ORKA_MEMORY_DECAY_ENABLED"] = "false"
+
 import importlib.util
 import types as _types
 
 import pytest
+import sys
 import yaml
 
 # Optional/conditional test-time modules
@@ -149,6 +155,7 @@ def global_test_mocks(request, monkeypatch):
         return
 
     # Mock the memory logger factory to return a lightweight mock object
+    # without decay scheduler threads that can accumulate and hang tests
     try:
         import orka.memory_logger as memory_logger_mod
 
@@ -159,9 +166,19 @@ def global_test_mocks(request, monkeypatch):
             m.index_name = kwargs.get("memory_preset", "orka_enhanced_memory")
             m.store = MagicMock()
             m.query = MagicMock(return_value=[])
+            # Ensure close() and stop_decay_scheduler() are no-ops
+            m.close = MagicMock()
+            m.stop_decay_scheduler = MagicMock()
             return m
 
         monkeypatch.setattr(memory_logger_mod, "create_memory_logger", fake_create_memory_logger)
+        
+        # Also patch in base.py where create_memory_logger is imported directly
+        try:
+            import orka.orchestrator.base as base_mod
+            monkeypatch.setattr(base_mod, "create_memory_logger", fake_create_memory_logger)
+        except Exception:
+            pass
     except Exception:
         # If module not importable during some targeted tests, skip patch
         pass
@@ -255,6 +272,13 @@ def mock_external_services(request):
         choices=[Mock(message=Mock(content="Test LLM response"))]
     )
     
+    # ddgs is an optional dependency; patching ddgs.DDGS requires the module to exist.
+    # In minimal CI environments it may be absent, so we stub it in sys.modules first.
+    if "ddgs" not in sys.modules:
+        stub_ddgs = Mock()
+        stub_ddgs.DDGS = Mock()
+        sys.modules["ddgs"] = stub_ddgs
+
     with patch('redis.Redis', return_value=redis_mock), \
          patch('redis.asyncio.Redis', return_value=redis_mock), \
          patch('sentence_transformers.SentenceTransformer', return_value=embedder_mock), \
@@ -319,9 +343,39 @@ def mock_search_results():
     ]
 
 
+# Shared fixtures used by PlanValidator unit tests and integration-style node tests
+@pytest.fixture
+def mock_prompt_builder():
+    """Fixture for a mocked prompt_builder used by PlanValidator tests."""
+    with patch("orka.agents.plan_validator.prompt_builder.build_validation_prompt") as mock_build_validation_prompt:
+        mock_build_validation_prompt.return_value = "Mocked validation prompt"
+        yield mock_build_validation_prompt
+
+
+@pytest.fixture
+def mock_boolean_score_calculator_class():
+    """Fixture for a mocked BooleanScoreCalculator class used by PlanValidator tests."""
+    from orka.scoring import BooleanScoreCalculator
+
+    with patch("orka.agents.plan_validator.agent.BooleanScoreCalculator") as mock_class:
+        mock_instance = MagicMock(spec=BooleanScoreCalculator)
+        mock_instance.calculate.return_value = {
+            "score": 0.8,
+            "assessment": "ACCEPTED",
+            "breakdown": {"completeness": 0.9, "efficiency": 0.7},
+            "passed_criteria": ["completeness_check"],
+            "failed_criteria": ["efficiency_check"],
+            "dimension_scores": {"completeness": 0.9, "efficiency": 0.7},
+            "total_criteria": 2,
+            "passed_count": 1,
+        }
+        mock_class.return_value = mock_instance
+        yield mock_class
+
+
 @pytest.fixture
 def temp_config_file():
-    """Create temporary YAML config file."""
+    """Create temporary YAML config file with decay disabled for tests."""
     config_data = {
         'orchestrator': {
             'id': 'test_workflow',
@@ -335,7 +389,13 @@ def temp_config_file():
             'prompt': 'Test prompt: {{ input }}',
             'provider': 'ollama',
             'model': 'test-model'
-        }]
+        }],
+        # Disable memory decay scheduler for tests to prevent thread accumulation
+        'memory': {
+            'decay': {
+                'enabled': False
+            }
+        }
     }
     
     with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:

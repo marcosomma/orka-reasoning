@@ -641,3 +641,330 @@ class TestGraphIntrospector:
         
         assert filtered == []
 
+
+class TestMultiHopPathDiscovery:
+    """Tests for multi-hop path discovery with pool agents."""
+
+    def create_mock_config(self, max_depth=4, k_beam=6):
+        """Helper to create mock config."""
+        config = Mock()
+        config.max_depth = max_depth
+        config.k_beam = k_beam
+        return config
+
+    def create_multi_agent_graph_state(self):
+        """Create a graph state with multiple pool agents (no explicit edges)."""
+        nodes = {
+            "graphscout": NodeDescriptor(
+                id="graphscout",
+                type="GraphScoutAgent",
+                prompt_summary="GraphScout router",
+                capabilities=["routing"],
+                contract={},
+                cost_model={},
+                safety_tags=[],
+                metadata={},
+            ),
+            "search_agent": NodeDescriptor(
+                id="search_agent",
+                type="DuckDuckGoAgent",
+                prompt_summary="Web search",
+                capabilities=["data_retrieval", "web_search"],
+                contract={},
+                cost_model={},
+                safety_tags=[],
+                metadata={},
+            ),
+            "analysis_agent": NodeDescriptor(
+                id="analysis_agent",
+                type="LocalLLMAgent",
+                prompt_summary="Analysis",
+                capabilities=["reasoning", "analysis"],
+                contract={},
+                cost_model={},
+                safety_tags=[],
+                metadata={},
+            ),
+            "response_builder": NodeDescriptor(
+                id="response_builder",
+                type="LocalLLMAgent",
+                prompt_summary="Response builder",
+                capabilities=["answer_emit", "response_generation"],
+                contract={},
+                cost_model={},
+                safety_tags=[],
+                metadata={"is_terminal": True},
+            ),
+        }
+        # No explicit edges - pool agents rely on universal routing
+        edges = []
+        return GraphState(
+            nodes=nodes,
+            edges=edges,
+            current_node="graphscout",
+            visited_nodes=set(),
+            runtime_state={},
+            budgets={},
+            constraints={},
+        )
+
+    def test_get_eligible_neighbors_graphscout_discovery(self):
+        """Test that GraphScout discovery uses universal routing for pool agents."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+        
+        graph_state = self.create_multi_agent_graph_state()
+        
+        # With is_graphscout_discovery=True, should see all pool agents
+        neighbors = introspector._get_eligible_neighbors(
+            graph_state, "search_agent", set(), is_graphscout_discovery=True
+        )
+        
+        # Should include analysis_agent and response_builder (not search_agent or graphscout)
+        assert "analysis_agent" in neighbors
+        assert "response_builder" in neighbors
+        assert "search_agent" not in neighbors  # Don't include self
+        assert "graphscout" not in neighbors  # Don't include other GraphScout
+
+    def test_get_eligible_neighbors_without_graphscout_discovery(self):
+        """Test that non-GraphScout nodes follow graph edges by default."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+        
+        graph_state = self.create_multi_agent_graph_state()
+        
+        # Without GraphScout discovery, pool agents can't see each other (no edges)
+        neighbors = introspector._get_eligible_neighbors(
+            graph_state, "search_agent", set(), is_graphscout_discovery=False
+        )
+        
+        # No explicit edges, so no neighbors found via graph edges
+        assert neighbors == []
+
+    @pytest.mark.asyncio
+    async def test_explore_from_node_multi_hop_path(self):
+        """Test that _explore_from_node creates multi-hop paths during GraphScout discovery."""
+        config = self.create_mock_config(max_depth=4)
+        introspector = GraphIntrospector(config)
+        
+        graph_state = self.create_multi_agent_graph_state()
+        
+        paths = await introspector._explore_from_node(
+            graph_state,
+            "search_agent",
+            {"search_agent"},  # Already visited
+            ["search_agent"],
+            depth=1,
+            is_graphscout_discovery=True,
+        )
+        
+        # Should find paths to analysis_agent and response_builder
+        assert any("analysis_agent" in path for path in paths)
+        assert any("response_builder" in path for path in paths)
+
+    @pytest.mark.asyncio
+    async def test_explore_from_node_three_hop_path(self):
+        """Test that GraphScout discovers 3-hop paths: search → analysis → response."""
+        config = self.create_mock_config(max_depth=4)
+        introspector = GraphIntrospector(config)
+        
+        graph_state = self.create_multi_agent_graph_state()
+        
+        # Start from GraphScout, exploring paths
+        paths = await introspector._explore_from_node(
+            graph_state,
+            "graphscout",
+            {"graphscout"},
+            ["graphscout"],
+            depth=0,
+            is_graphscout_discovery=True,
+        )
+        
+        # Filter to find the 3-hop path
+        three_hop_paths = [p for p in paths if len(p) >= 3]
+        
+        # Should find at least one 3-hop path
+        assert len(three_hop_paths) > 0
+        
+        # Check for the specific path: graphscout → search_agent → analysis_agent
+        graphscout_search_analysis = [
+            p for p in paths 
+            if "search_agent" in p and "analysis_agent" in p and len(p) >= 3
+        ]
+        assert len(graphscout_search_analysis) > 0
+
+    @pytest.mark.asyncio
+    async def test_explore_stops_at_response_builder(self):
+        """Test that exploration stops at response builder (terminal) nodes.
+        
+        When starting FROM a response builder, exploration can continue to other nodes.
+        But when a response builder is ENCOUNTERED during exploration, we don't
+        continue exploring from it (to avoid infinite chains).
+        """
+        config = self.create_mock_config(max_depth=4)
+        introspector = GraphIntrospector(config)
+        
+        graph_state = self.create_multi_agent_graph_state()
+        
+        # Start from search_agent, explore toward response_builder
+        paths = await introspector._explore_from_node(
+            graph_state,
+            "search_agent",
+            {"search_agent"},
+            ["search_agent"],
+            depth=1,
+            is_graphscout_discovery=True,
+        )
+        
+        # Check that paths ending in response_builder don't extend further
+        # When we hit response_builder, we don't continue exploring from it
+        paths_ending_in_rb = [p for p in paths if p[-1] == "response_builder"]
+        
+        # There should be paths ending at response_builder
+        assert len(paths_ending_in_rb) > 0
+        
+        # Verify there are no paths where response_builder appears in the middle
+        # (i.e., exploration should stop at terminal nodes)
+        for path in paths:
+            if "response_builder" in path:
+                rb_index = path.index("response_builder")
+                # response_builder should be the last element when it appears
+                assert rb_index == len(path) - 1, \
+                    f"response_builder should be terminal, but found in middle: {path}"
+
+    def test_graphscout_node_detection(self):
+        """Test that GraphScout nodes are correctly detected."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+        
+        graph_state = self.create_multi_agent_graph_state()
+        
+        assert introspector._is_graphscout_node(graph_state, "graphscout") is True
+        assert introspector._is_graphscout_node(graph_state, "search_agent") is False
+        assert introspector._is_graphscout_node(graph_state, "analysis_agent") is False
+        assert introspector._is_graphscout_node(graph_state, "response_builder") is False
+
+    def test_response_builder_node_detection(self):
+        """Test that response builder nodes are correctly detected by capabilities."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+        
+        graph_state = self.create_multi_agent_graph_state()
+        
+        assert introspector._is_response_builder_node(graph_state, "response_builder") is True
+        assert introspector._is_response_builder_node(graph_state, "search_agent") is False
+        assert introspector._is_response_builder_node(graph_state, "analysis_agent") is False
+        assert introspector._is_response_builder_node(graph_state, "graphscout") is False
+
+    @pytest.mark.asyncio
+    async def test_discover_paths_with_pool_agents(self):
+        """Test full path discovery with pool agents (integration test)."""
+        config = self.create_mock_config(max_depth=4, k_beam=6)
+        introspector = GraphIntrospector(config)
+        
+        graph_state = self.create_multi_agent_graph_state()
+        
+        paths = await introspector.discover_paths(
+            graph_state, "What is the weather?", {}
+        )
+        
+        # Should discover paths that include pool agents
+        assert isinstance(paths, list)
+
+    def test_eligible_neighbors_excludes_visited(self):
+        """Test that visited nodes are excluded from eligible neighbors."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+        
+        graph_state = self.create_multi_agent_graph_state()
+        visited = {"search_agent", "analysis_agent"}
+        
+        neighbors = introspector._get_eligible_neighbors(
+            graph_state, "graphscout", visited, is_graphscout_discovery=True
+        )
+        
+        assert "search_agent" not in neighbors
+        assert "analysis_agent" not in neighbors
+        assert "response_builder" in neighbors  # Not visited
+
+    def test_eligible_neighbors_excludes_path_executor(self):
+        """Test that PathExecutor nodes are excluded from GraphScout routing."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+        
+        graph_state = self.create_multi_agent_graph_state()
+        graph_state.nodes["path_executor"] = NodeDescriptor(
+            id="path_executor",
+            type="PathExecutorNode",
+            prompt_summary="Path executor",
+            capabilities=[],
+            contract={},
+            cost_model={},
+            safety_tags=[],
+            metadata={},
+        )
+        
+        neighbors = introspector._get_eligible_neighbors(
+            graph_state, "graphscout", set(), is_graphscout_discovery=True
+        )
+        
+        assert "path_executor" not in neighbors
+
+    @pytest.mark.asyncio
+    async def test_explore_respects_max_depth(self):
+        """Test that exploration respects max_depth setting."""
+        config = self.create_mock_config(max_depth=2)
+        introspector = GraphIntrospector(config)
+        
+        graph_state = self.create_multi_agent_graph_state()
+        
+        paths = await introspector._explore_from_node(
+            graph_state,
+            "graphscout",
+            {"graphscout"},
+            ["graphscout"],
+            depth=0,
+            is_graphscout_discovery=True,
+        )
+        
+        # No path should exceed max_depth + 1 (starting node + max_depth hops)
+        assert all(len(path) <= 3 for path in paths)
+
+    def test_get_eligible_neighbors_filters_control_flow(self):
+        """Test that control flow agents are filtered from GraphScout routing."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+        
+        graph_state = self.create_multi_agent_graph_state()
+        graph_state.nodes["input_classifier"] = NodeDescriptor(
+            id="input_classifier",
+            type="LocalLLMAgent",
+            prompt_summary="Classifier",
+            capabilities=[],
+            contract={},
+            cost_model={},
+            safety_tags=[],
+            metadata={},
+        )
+        graph_state.nodes["plan_validator"] = NodeDescriptor(
+            id="plan_validator",
+            type="PlanValidatorAgent",
+            prompt_summary="Validator",
+            capabilities=[],
+            contract={},
+            cost_model={},
+            safety_tags=[],
+            metadata={},
+        )
+        
+        neighbors = introspector._get_eligible_neighbors(
+            graph_state, "graphscout", set(), is_graphscout_discovery=True
+        )
+        
+        # Control flow agents should be filtered out
+        assert "input_classifier" not in neighbors
+        assert "plan_validator" not in neighbors
+        
+        # Regular agents should still be present
+        assert "search_agent" in neighbors
+        assert "analysis_agent" in neighbors

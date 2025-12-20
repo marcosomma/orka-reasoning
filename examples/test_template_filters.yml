@@ -14,6 +14,7 @@ agents:
     provider: "lm_studio"
     model_url: "http://localhost:1234"
     temperature: 0.7
+    parse_json: false
     max_tokens: 100
     timeout: 30.0
     prompt: "Analyze this topic: {{ input }}"
@@ -24,9 +25,10 @@ agents:
     provider: "lm_studio"
     model_url: "http://localhost:1234"
     temperature: 0.7
+    parse_json: false
     max_tokens: 100
     timeout: 30.0
-    prompt: "Build on this analysis: {{ safe_get_response('agent1', 'No previous analysis') | truncate(150) }}"
+    prompt: "Build on this analysis: {{ safe_get_response('agent1', 'No previous analysis') }}"
 
   - id: final_synthesis
     type: local_llm
@@ -34,11 +36,12 @@ agents:
     provider: "lm_studio"
     model_url: "http://localhost:1234"
     temperature: 0.5
+    parse_json: false
     max_tokens: 200
     timeout: 30.0
     prompt: |
       Previous responses:
-      Agent 1: {{ safe_get_response('agent1', 'No response') | truncate(100) }}
-      Agent 2: {{ safe_get_response('agent2', 'No response') | truncate(100) }}
+      Agent 1: {{ safe_get_response('agent1', 'No response') }}
+      Agent 2: {{ safe_get_response('agent2', 'No response') }}
       
       Synthesize these perspectives on: {{ get_input() }}

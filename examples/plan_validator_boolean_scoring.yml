@@ -33,8 +33,8 @@ agents:
       
       # Optional: Emphasize specific criteria
       custom_weights:
-        improvement.shows_progress: 0.30
-        convergence.approaching_threshold: 0.25
+        improvement.better_than_previous: 0.30
+        convergence.within_tolerance: 0.25
     
     past_loops_metadata:
       loop_number: "{{ get_loop_number() }}"
@@ -68,6 +68,8 @@ agents:
             evaluation_model: "local_llm"
             evaluation_model_name: "openai/gpt-oss-20b"
             llm_evaluation_enabled: true
+            provider: lm_studio
+            model_url: http://localhost:1234
             fallback_to_heuristics: true
           prompt: |
             Select optimal agent path for: {{ get_input() }}

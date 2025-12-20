@@ -30,6 +30,7 @@ from .cleanup import cleanup_services
 from .config import get_memory_backend
 from .infrastructure.health import (
     display_error,
+    display_final_banner,
     display_service_endpoints,
     display_shutdown_complete,
     display_shutdown_message,
@@ -118,6 +119,9 @@ async def main() -> None:
             ui_started = start_ui_container()
             if ui_started:
                 logger.info("🌐 OrKa UI is ready at http://localhost:8080")
+
+        # Display banner just before Uvicorn logs - stays visible in terminal
+        display_final_banner()
 
         # Monitor processes
         await monitor_backend_process(backend_proc)

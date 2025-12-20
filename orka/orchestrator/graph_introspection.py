@@ -314,9 +314,18 @@ class GraphIntrospector:
             return []
 
     def _get_eligible_neighbors(
-        self, graph_state: GraphState, current_node: str, visited: Set[str]
+        self, graph_state: GraphState, current_node: str, visited: Set[str],
+        is_graphscout_discovery: bool = False
     ) -> List[str]:
-        """Get eligible neighbor nodes from current position."""
+        """Get eligible neighbor nodes from current position.
+        
+        Args:
+            graph_state: Current graph state
+            current_node: Node to get neighbors for
+            visited: Set of already visited nodes
+            is_graphscout_discovery: If True, use universal routing for all nodes
+                                      (allows pool agents to chain properly)
+        """
         neighbors = []
 
         try:
@@ -326,8 +335,8 @@ class GraphIntrospector:
             logger.debug(f"Available nodes: {list(graph_state.nodes.keys())}")
             logger.debug(f"Edges: {[(e.src, e.dst) for e in graph_state.edges]}")
 
-            # SPECIAL CASE: If current node is GraphScout, it can route to ANY available agent
-            # This provides universal compatibility across ALL orchestrator types (sequential, dynamic, fork/join, etc.)
+            # SPECIAL CASE: If current node is GraphScout OR this is a GraphScout-initiated discovery,
+            # it can route to ANY available agent. This enables pool agents to chain properly.
             if current_node in graph_state.nodes:
                 current_node_obj = graph_state.nodes[current_node]
                 current_is_graphscout = (
@@ -337,7 +346,8 @@ class GraphIntrospector:
             else:
                 current_is_graphscout = False
 
-            if current_is_graphscout:
+            # Use universal routing for GraphScout nodes OR during GraphScout-initiated discovery
+            if current_is_graphscout or is_graphscout_discovery:
                 logger.info(
                     f"GraphScout detected - enabling universal agent visibility across all orchestrator types"
                 )
@@ -559,9 +569,12 @@ class GraphIntrospector:
                 return [current_path]
 
             # Get neighbors of current node
-            # For GraphScout, use universal routing even for extended paths
-            if self._is_graphscout_node(graph_state, current_node):
-                neighbors = self._get_eligible_neighbors(graph_state, current_node, visited)
+            # For GraphScout-initiated discovery, use universal routing for ALL nodes
+            # This ensures pool agents (search_agent, analysis_agent, etc.) can chain properly
+            if is_graphscout_discovery or self._is_graphscout_node(graph_state, current_node):
+                neighbors = self._get_eligible_neighbors(
+                    graph_state, current_node, visited, is_graphscout_discovery=True
+                )
             else:
                 neighbors = self._get_graph_neighbors(graph_state, current_node, visited)
 

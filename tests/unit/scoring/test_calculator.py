@@ -58,6 +58,28 @@ class TestBooleanScoreCalculator:
             
             assert calculator.weights is not None
 
+    def test_init_with_invalid_custom_weight_key_raises(self):
+        """Invalid custom weight keys should raise ValueError at initialization."""
+        with patch('orka.scoring.calculator.load_preset') as mock_load:
+            mock_load.return_value = {
+                "weights": {
+                    "completeness": {"has_all_required_steps": 0.3},
+                },
+                "thresholds": {"min_score": 0.5},
+            }
+
+            # Unknown criterion
+            bad_weights = {"completeness.unknown_criterion": 0.2}
+            with pytest.raises(ValueError) as exc:
+                BooleanScoreCalculator(custom_weights=bad_weights)
+            assert "unknown_criteria" in str(exc.value)
+
+            # Invalid format
+            bad_weights = {"nonsensekey": 0.3}
+            with pytest.raises(ValueError) as exc2:
+                BooleanScoreCalculator(custom_weights=bad_weights)
+            assert "invalid_format" in str(exc2.value)
+
     def test_calculate(self):
         """Test calculate method."""
         with patch('orka.scoring.calculator.load_preset') as mock_load:

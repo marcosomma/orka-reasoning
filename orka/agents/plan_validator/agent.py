@@ -28,7 +28,7 @@ from orka.scoring import BooleanScoreCalculator
 
 from ..base_agent import BaseAgent, Context
 from . import boolean_parser, llm_client
-from .prompt_builder import build_validation_prompt
+from . import prompt_builder
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +87,7 @@ class PlanValidatorAgent(BaseAgent):
         self.llm_url = llm_url
         self.temperature = temperature
         self.scoring_preset = scoring_preset
+        self.custom_weights = custom_weights
 
         self.score_calculator = BooleanScoreCalculator(
             preset=scoring_preset,
@@ -126,12 +127,13 @@ class PlanValidatorAgent(BaseAgent):
         logger.debug(f"Query: {original_query[:100]}...")
 
         # Build validation prompt requesting boolean evaluations
-        validation_prompt = build_validation_prompt(
+        validation_prompt = prompt_builder.build_validation_prompt(
             query=original_query,
             proposed_path=proposed_path,
             previous_critiques=previous_critiques,
             loop_number=loop_number,
             preset_name=self.scoring_preset,
+            scoring_context=ctx.get("scoring_context") if isinstance(ctx, dict) else None,
         )
 
         # Call LLM for boolean evaluation
@@ -150,8 +152,44 @@ class PlanValidatorAgent(BaseAgent):
         # Parse boolean evaluations from LLM response
         boolean_evaluations = boolean_parser.parse_boolean_evaluation(llm_response)
 
+        # Determine scoring context (can be provided by runtime ctx for loop-specific scoring)
+        scoring_context = ctx.get("scoring_context") if isinstance(ctx, dict) else None
+
+        # If we are in the 'loop_convergence' context and the LLM failed to provide
+        # sufficiently many boolean criteria, synthesize a minimal set of booleans
+        # heuristically from the LLM textual response so downstream scoring can run.
+        if scoring_context == "loop_convergence":
+            try:
+                # Count provided criteria
+                provided = 0
+                if isinstance(boolean_evaluations, dict):
+                    for v in boolean_evaluations.values():
+                        if isinstance(v, dict):
+                            provided += len(v)
+
+                MIN_CRITERIA = 2
+                if provided < MIN_CRITERIA:
+                    synthesized = self._synthesize_loop_convergence_booleans(llm_response, boolean_evaluations)
+                    if synthesized:
+                        logger.info("PlanValidator: Synthesized loop_convergence boolean_evaluations from LLM response")
+                        # Merge synthesized booleans, prefer explicit parsed values when available
+                        merged = dict(boolean_evaluations or {})
+                        for dim, criteria in synthesized.items():
+                            if dim not in merged or not isinstance(merged.get(dim), dict):
+                                merged[dim] = {}
+                            merged[dim].update({k: v for k, v in criteria.items() if k not in merged[dim]})
+                        boolean_evaluations = merged
+            except Exception as e:
+                logger.debug(f"Synthesis of loop_convergence booleans failed: {e}")
+
+        # Use a context-aware score calculator instance for this run
+        if scoring_context and getattr(self.score_calculator, "context", None) != scoring_context:
+            score_calc = BooleanScoreCalculator(preset=self.scoring_preset, context=scoring_context, custom_weights=self.custom_weights)
+        else:
+            score_calc = self.score_calculator
+
         # Calculate score using boolean calculator
-        score_result = self.score_calculator.calculate(boolean_evaluations)
+        score_result = score_calc.calculate(boolean_evaluations)
 
         # Build validation result with additional metadata
         validation_result = self._build_validation_result(
@@ -169,6 +207,58 @@ class PlanValidatorAgent(BaseAgent):
         )
 
         return validation_result
+
+    def _synthesize_loop_convergence_booleans(self, llm_response: str, existing: dict | None = None) -> Dict[str, Dict[str, bool]]:
+        """Heuristically synthesize loop_convergence boolean evaluations from text.
+
+        This is intentionally conservative and only creates a few high-value criteria
+        when the LLM response does not already contain a robust set.
+        """
+        text = (llm_response or "").lower()
+        synth: Dict[str, Dict[str, bool]] = {
+            "improvement": {
+                "better_than_previous": False,
+                "significant_delta": False,
+                "approaching_target": False,
+            },
+            "stability": {"not_degrading": False, "consistent_direction": False},
+            "convergence": {"delta_decreasing": False, "within_tolerance": False},
+        }
+
+        # Simple keyword heuristics
+        if any(tok in text for tok in ("improve", "improved", "better", "gain", "reduc", "decrease", "decreased")):
+            synth["improvement"]["better_than_previous"] = True
+        if any(tok in text for tok in ("significant", "substantial", "major", "large")):
+            synth["improvement"]["significant_delta"] = True
+        if any(tok in text for tok in ("within tolerance", "within range", "close to", "near goal", "approach")):
+            synth["improvement"]["approaching_target"] = True
+
+        if any(tok in text for tok in ("stable", "no regression", "no regress", "not degrade", "no degradation")):
+            synth["stability"]["not_degrading"] = True
+        if any(tok in text for tok in ("consistent", "direction", "trend")):
+            synth["stability"]["consistent_direction"] = True
+
+        if any(tok in text for tok in ("decreasing", "decrease", "reduced", "reduction")):
+            synth["convergence"]["delta_decreasing"] = True
+        if any(tok in text for tok in ("within tolerance", "within range", "within target", "close to")):
+            synth["convergence"]["within_tolerance"] = True
+
+        # Try to detect numeric improvements like 'improves by 5%'
+        try:
+            pct_matches = re.findall(r"(\d+\.?\d*)%", text)
+            for m in pct_matches:
+                try:
+                    val = float(m)
+                    if val >= 5.0:
+                        synth["improvement"]["significant_delta"] = True
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+        # If synthesis produced no True flags, then return empty so caller knows not to use it.
+        any_true = any(any(c for c in d.values()) for d in synth.values())
+        return synth if any_true else {}
 
     def _extract_query(self, ctx: Context) -> str:
         """

@@ -32,8 +32,10 @@ class LoopValidatorNode(BaseNode):
     """
     Specialized node for LoopNode boolean evaluation.
 
-    Wraps LLM evaluation with robust format handling to ensure reliable
-    score extraction regardless of LLM output variations.
+    This node is loop-focused by default: it evaluates *iteration convergence*
+    using categories like IMPROVEMENT, STABILITY, and CONVERGENCE. For backward
+    compatibility it also supports `mode='path'` which runs traditional path
+    validation (completeness/efficiency/safety/coherence) when required.
 
     Example usage:
         ```yaml
@@ -43,11 +45,75 @@ class LoopValidatorNode(BaseNode):
           provider: lm_studio
           scoring_preset: moderate
           evaluation_target: improver
+          mode: loop  # default (loop-convergence)
         ```
     """
 
     # Built-in prompt templates (tested and reliable)
-    PROMPT_TEMPLATES = {
+    # Default prompt templates are LOOP-Focused (improvement, stability, convergence)
+    LOOP_PROMPT_TEMPLATES = {
+        "strict": """Evaluate this iteration against STRICT convergence criteria.
+
+Current synthesis / iteration to evaluate:
+{content}
+
+For each category below, answer ONLY "true" or "false":
+
+IMPROVEMENT:
+- better_than_previous: Is this iteration measurably better than the previous?
+- significant_delta: Is the improvement large enough to be meaningful?
+- approaching_target: Is the iteration moving substantially toward the goal?
+
+STABILITY:
+- not_degrading: Results are not degrading over recent iterations
+- consistent_direction: Improvement direction is consistent across metrics
+
+CONVERGENCE:
+- delta_decreasing: The change between iterations is decreasing
+- within_tolerance: Metrics are within acceptable tolerance of the target
+
+Respond in JSON format:
+{
+  "IMPROVEMENT": {"better_than_previous": true, ...},
+  "STABILITY": {...},
+  "CONVERGENCE": {...}
+}""",
+        "moderate": """Evaluate this iteration with BALANCED convergence criteria.
+
+Current synthesis / iteration to evaluate:
+{content}
+
+For IMPROVEMENT, include items like better_than_previous, significant_delta, approaching_target.
+For STABILITY and CONVERGENCE, include the canonical sub-criteria.
+
+Answer true/false for each item in the categories IMPROVEMENT, STABILITY, and CONVERGENCE and return a JSON object with the evaluations.""",
+        "lenient": """Evaluate this iteration with LENIENT convergence criteria (be generous).
+
+Current synthesis / iteration to evaluate:
+{content}
+
+Include at least the IMPROVEMENT checks such as better_than_previous, significant_delta, and approaching_target, and return a JSON object indicating true/false for the IMPROVEMENT, STABILITY and CONVERGENCE checks.""",
+    }
+
+    # Standard criteria structure (loop convergence focused)
+    LOOP_CRITERIA_STRUCTURE = {
+        "improvement": [
+            "better_than_previous",
+            "significant_delta",
+            "approaching_target",
+        ],
+        "stability": [
+            "not_degrading",
+            "consistent_direction",
+        ],
+        "convergence": [
+            "delta_decreasing",
+            "within_tolerance",
+        ],
+    }
+
+    # Backwards-compatible path criteria (kept for 'path' mode)
+    PATH_PROMPT_TEMPLATES = {
         "strict": """Evaluate this proposed execution path against STRICT criteria.
 
 Path to evaluate:
@@ -80,11 +146,7 @@ COHERENCE:
 
 Respond in JSON format:
 {
-  "COMPLETENESS": {
-    "has_all_required_steps": true,
-    "addresses_all_query_aspects": false,
-    ...
-  },
+  "COMPLETENESS": {"has_all_required_steps": true, ...},
   "EFFICIENCY": {...},
   "SAFETY": {...},
   "COHERENCE": {...}
@@ -94,49 +156,25 @@ Respond in JSON format:
 Path to evaluate:
 {content}
 
-For each criterion, answer "true" or "false":
+Answer true/false for sub-criteria such as:
+COMPLETENESS: has_all_required_steps, addresses_all_query_aspects, handles_edge_cases
+EFFICIENCY: minimizes_redundant_calls, uses_appropriate_agents
+SAFETY: validates_inputs, handles_errors_gracefully
+COHERENCE: logical_agent_sequence, proper_data_flow
 
-COMPLETENESS:
-- has_all_required_steps: [true/false]
-- addresses_all_query_aspects: [true/false]
-- handles_edge_cases: [true/false]
-- includes_fallback_path: [true/false]
-
-EFFICIENCY:
-- minimizes_redundant_calls: [true/false]
-- uses_appropriate_agents: [true/false]
-- optimizes_cost: [true/false]
-- optimizes_latency: [true/false]
-
-SAFETY:
-- validates_inputs: [true/false]
-- handles_errors_gracefully: [true/false]
-- has_timeout_protection: [true/false]
-- avoids_risky_combinations: [true/false]
-
-COHERENCE:
-- logical_agent_sequence: [true/false]
-- proper_data_flow: [true/false]
-- no_conflicting_actions: [true/false]
-
-Return JSON with your evaluation.""",
-        "lenient": """Evaluate this proposed execution path with LENIENT criteria.
+Return a JSON object with the four categories and their boolean sub-criteria.
+""",
+        "lenient": """Evaluate this proposed execution path with LENIENT criteria (be generous).
 
 Path to evaluate:
 {content}
 
-Answer true/false for each criterion (be generous in interpretation):
-
-COMPLETENESS: has_all_required_steps, addresses_all_query_aspects, handles_edge_cases, includes_fallback_path
-EFFICIENCY: minimizes_redundant_calls, uses_appropriate_agents, optimizes_cost, optimizes_latency
-SAFETY: validates_inputs, handles_errors_gracefully, has_timeout_protection, avoids_risky_combinations
-COHERENCE: logical_agent_sequence, proper_data_flow, no_conflicting_actions
-
-Return as JSON.""",
+Return a JSON object indicating true/false for the sub-criteria under COMPLETENESS, EFFICIENCY, SAFETY, and COHERENCE.
+Include at least the following keys where possible: has_all_required_steps, minimizes_redundant_calls, validates_inputs, logical_agent_sequence.
+""",
     }
 
-    # Standard criteria structure
-    CRITERIA_STRUCTURE = {
+    PATH_CRITERIA_STRUCTURE = {
         "completeness": [
             "has_all_required_steps",
             "addresses_all_query_aspects",
@@ -165,9 +203,11 @@ Return as JSON.""",
         provider: str,
         model_url: Optional[str] = None,
         scoring_preset: str = "moderate",
+        scoring_context: Optional[str] = None,
         evaluation_target: Optional[str] = None,
         temperature: float = 0.1,
         custom_prompt: Optional[str] = None,
+        mode: str = "loop",  # 'loop' (default) or 'path' for backward compatibility
         **kwargs,
     ):
         """
@@ -204,16 +244,43 @@ Return as JSON.""",
             temperature=temperature,
         )
 
-        # Select prompt template
+        # Mode fallback and scoring_context handling
+        self.mode = mode.lower() if isinstance(mode, str) else "loop"
+        self.scoring_context = scoring_context.lower() if isinstance(scoring_context, str) else None
+
+        # If scoring_context is provided, let it *override* mode selection
+        effective_mode = self.mode
+        if self.scoring_context:
+            if "graph" in self.scoring_context or "path" in self.scoring_context:
+                effective_mode = "path"
+            elif "loop" in self.scoring_context or "converge" in self.scoring_context:
+                effective_mode = "loop"
+
+        # Select prompt template based on effective mode
         if custom_prompt:
             self.prompt_template = custom_prompt
-        elif scoring_preset in self.PROMPT_TEMPLATES:
-            self.prompt_template = self.PROMPT_TEMPLATES[scoring_preset]
+        elif effective_mode == "path":
+            if scoring_preset in self.PATH_PROMPT_TEMPLATES:
+                self.prompt_template = self.PATH_PROMPT_TEMPLATES[scoring_preset]
+            else:
+                raise ValueError(
+                    f"Invalid scoring_preset: {scoring_preset}. Must be one of: {list(self.PATH_PROMPT_TEMPLATES.keys())}"
+                )
         else:
-            raise ValueError(
-                f"Invalid scoring_preset: {scoring_preset}. "
-                f"Must be one of: {list(self.PROMPT_TEMPLATES.keys())}"
-            )
+            if scoring_preset in self.LOOP_PROMPT_TEMPLATES:
+                self.prompt_template = self.LOOP_PROMPT_TEMPLATES[scoring_preset]
+            else:
+                raise ValueError(
+                    f"Invalid scoring_preset: {scoring_preset}. Must be one of: {list(self.LOOP_PROMPT_TEMPLATES.keys())}"
+                )
+
+        # Choose criteria structure
+        self.criteria_structure = (
+            self.PATH_CRITERIA_STRUCTURE if effective_mode == "path" else self.LOOP_CRITERIA_STRUCTURE
+        )
+
+        # Expose effective_mode for debugging / tests
+        self.effective_mode = effective_mode
 
     async def _run_impl(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -330,7 +397,7 @@ Return as JSON.""",
         """Extract boolean values using regex patterns."""
         result: Dict[str, Dict[str, bool]] = {}
 
-        for category, criteria in self.CRITERIA_STRUCTURE.items():
+        for category, criteria in self.criteria_structure.items():
             result[category] = {}
 
             for criterion in criteria:
@@ -362,7 +429,7 @@ Return as JSON.""",
         text_lower = text.lower()
         result: Dict[str, Dict[str, bool]] = {}
 
-        for category, criteria in self.CRITERIA_STRUCTURE.items():
+        for category, criteria in self.criteria_structure.items():
             result[category] = {}
 
             for criterion in criteria:
@@ -387,7 +454,7 @@ Return as JSON.""",
     def _conservative_defaults(self) -> Dict[str, Dict[str, bool]]:
         """Return conservative defaults (all false)."""
         result = {}
-        for category, criteria in self.CRITERIA_STRUCTURE.items():
+        for category, criteria in self.criteria_structure.items():
             result[category] = {criterion: False for criterion in criteria}
         return result
 
@@ -398,7 +465,7 @@ Return as JSON.""",
 
         # Check for category keys (case-insensitive)
         data_keys_lower = {k.lower() for k in data.keys()}
-        expected_categories = set(self.CRITERIA_STRUCTURE.keys())
+        expected_categories = set(self.criteria_structure.keys())
 
         # Must have at least one category
         return len(data_keys_lower & expected_categories) > 0
@@ -407,7 +474,7 @@ Return as JSON.""",
         """Normalize structure to standard format."""
         result: Dict[str, Dict[str, bool]] = {}
 
-        for category, criteria in self.CRITERIA_STRUCTURE.items():
+        for category, criteria in self.criteria_structure.items():
             result[category] = {}
 
             # Find category in data (case-insensitive)
@@ -471,7 +538,7 @@ Return as JSON.""",
             "validation_score": 0.0,
             "passed_criteria": [],
             "failed_criteria": [
-                f"{cat}.{crit}" for cat, crits in self.CRITERIA_STRUCTURE.items() for crit in crits
+                f"{cat}.{crit}" for cat, crits in self.criteria_structure.items() for crit in crits
             ],
             "overall_assessment": "ERROR",
             "error": error_msg,

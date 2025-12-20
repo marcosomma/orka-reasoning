@@ -1,0 +1,379 @@
+# GraphScout + PathValidator + PathExecutor System Self-Assessment
+# Comprehensive evaluation of the path discovery, validation, and execution pipeline
+#
+# DESIGN NOTES:
+# - GraphScout runs OUTSIDE the loop to discover paths
+# - PathValidator validates inside a refinement loop  
+# - PathExecutor executes the GraphScout-selected path
+# - All external data passed via loop prompt field
+
+orchestrator:
+  id: graphscout-path-system-assessment
+  strategy: sequential
+  agents:
+    - task_preparation
+    - graphscout_discovery
+    - validation_refinement_loop
+    - path_executor
+    - execution_analyzer
+    - final_system_report
+
+agents:
+  # Phase 1: Prepare test context
+  - id: task_preparation
+    type: local_llm
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
+    temperature: 0.4
+    timeout: 60
+    prompt: |
+      Generate a test query for evaluating path discovery and execution.
+      
+      Create ONE concrete query that requires multiple agents:
+      
+      QUERY: "Research the latest developments in quantum computing and provide a summary with sources"
+      
+      This query requires:
+      - Search agent: Find current information
+      - Analysis agent: Process and synthesize findings
+      - Response builder: Create final summary
+      
+      OUTPUT FORMAT:
+      QUERY: [The query to process]
+      REQUIRED_AGENTS: [search_agent, analysis_agent, response_builder]
+      SUCCESS_CRITERIA: Returns comprehensive summary with sources
+      EXPECTED_PATH_LENGTH: 3
+
+  # Phase 2: GraphScout discovers optimal path (OUTSIDE loop)
+  - id: graphscout_discovery
+    type: graph-scout
+    depends_on: task_preparation
+    params:
+      k_beam: 6  # Increase to keep more candidates including terminal paths
+      max_depth: 3
+      commit_margin: 0.02  # Very low margin for faster commit
+      require_terminal: true
+      optimal_path_length: [2, 3]  # Prefer 2-3 hop paths
+      # Increase latency budget to include multi-hop paths
+      latency_budget_ms: 15000
+      cost_budget_tokens: 2000
+      score_weights:
+        llm: 0.25
+        heuristics: 0.40  # Higher weight for heuristics (terminal detection)
+        prior: 0.15
+        cost: 0.10
+        latency: 0.10
+      evaluation_model: "local_llm"
+      evaluation_model_name: "openai/gpt-oss-20b"
+      llm_evaluation_enabled: true
+      provider: lm_studio
+      model_url: http://localhost:1234
+      fallback_to_heuristics: true
+    prompt: |
+      TASK: Discover optimal execution path for search + analysis + response.
+      
+      AVAILABLE TERMINAL AGENTS: response_builder (marked is_terminal: true)
+      
+      REQUIRED PATH STRUCTURE:
+      search_agent → analysis_agent → response_builder
+      
+      CONTEXT FROM TASK PREPARATION:
+      {{ get_agent_response('task_preparation') }}
+      
+      SELECT A PATH THAT:
+      1. Starts with search_agent for data retrieval
+      2. Uses analysis_agent for processing  
+      3. MUST end with response_builder (the terminal agent)
+      4. Path length should be exactly 3 agents
+
+  # Phase 3: Validation refinement loop
+  - id: validation_refinement_loop
+    type: loop
+    max_loops: 2
+    score_threshold: 0.40
+    fallback_score: 0.25
+    timeout_score: 0.15
+    persist_across_runs: false
+    depends_on: graphscout_discovery
+    
+    scoring:
+      preset: lenient
+      context: loop_convergence
+    
+    score_extraction_config:
+      strategies:
+        - type: pattern
+          patterns:
+            - "SCORE:\\s*([0-9]+\\.?[0-9]*)"
+            - "Score:\\s*([0-9]+\\.?[0-9]*)"
+    
+    # Pass external data to internal workflow
+    prompt: |
+      GRAPHSCOUT_PATH: {{ get_agent_response('graphscout_discovery') }}
+      TASK_CONTEXT: {{ get_agent_response('task_preparation') }}
+    
+    past_loops_metadata:
+      loop_number: "{{ get_loop_number() }}"
+      score: "{{ score }}"
+      timestamp: "{{ timestamp }}"
+    
+    internal_workflow:
+      orchestrator:
+        id: validation-internal
+        strategy: sequential
+        agents:
+          - path_analyzer
+          - quality_scorer
+      
+      agents:
+        - id: path_analyzer
+          type: local_llm
+          model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
+          temperature: 0.3
+          timeout: 60
+          prompt: |
+            ITERATION {{ get_loop_number() }} - Path Analysis
+            
+            == GRAPHSCOUT SELECTED PATH ==
+            {{ get_input() }}
+            
+            Analyze the discovered path:
+            
+            1. PATH COMPLETENESS:
+               - Does path include all required agents?
+               - Is there a terminal agent (response_builder)?
+               - Are dependencies correct?
+            
+            2. PATH COHERENCE:
+               - Is agent sequence logical?
+               - Can data flow between agents?
+               - Are capabilities matched?
+            
+            3. PATH EFFICIENCY:
+               - Minimal redundant calls?
+               - Appropriate for task complexity?
+            
+            OUTPUT FORMAT:
+            COMPLETENESS: [pass/fail with reason]
+            COHERENCE: [pass/fail with reason]
+            EFFICIENCY: [pass/fail with reason]
+            ISSUES_FOUND: [List any problems]
+            RECOMMENDATIONS: [Suggested improvements]
+
+        - id: quality_scorer
+          type: local_llm
+          model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
+          temperature: 0.1
+          timeout: 60
+          prompt: |
+            TASK: Score the path quality.
+            
+            PATH ANALYSIS:
+            {{ get_agent_response('path_analyzer') }}
+            
+            Score each criterion (1 point each):
+            1. has_terminal_agent: Path ends with response_builder? [0/1]
+            2. correct_sequence: Agents in logical order? [0/1]
+            3. data_flow_valid: Data can pass between agents? [0/1]
+            4. no_redundancy: No unnecessary agents? [0/1]
+            5. matches_requirements: Matches task needs? [0/1]
+            
+            CALCULATION:
+            Total points: [X/5]
+            
+            SCORE: [X/5 as decimal, e.g., 4/5 = 0.80]
+            
+            IMPORTANT: SCORE must be exactly "SCORE: X.XX"
+
+  # Phase 4: Execute the GraphScout-discovered path
+  - id: path_executor
+    type: path_executor
+    path_source: graphscout_discovery
+    on_agent_failure: continue
+    depends_on: validation_refinement_loop
+
+  # Available agents for PathExecutor
+  - id: search_agent
+    type: duckduckgo
+    capabilities: [data_retrieval, web_search]
+    max_results: 5
+  
+  - id: analysis_agent
+    type: local_llm
+    capabilities: [reasoning, analysis, synthesis]
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
+    temperature: 0.4
+    timeout: 60
+    prompt: |
+      TASK: Analyze the search results.
+      
+      QUERY: {{ input }}
+      
+      {% if previous_outputs.search_agent %}
+      SEARCH RESULTS:
+      {{ previous_outputs.search_agent.response | default('No results') }}
+      {% endif %}
+      
+      Provide:
+      1. KEY FINDINGS: Main points from search
+      2. ANALYSIS: Synthesis of information
+      3. SOURCES: Where information came from
+  
+  - id: response_builder
+    type: local_llm
+    is_terminal: true  # CRITICAL: Marks this as terminal for GraphScout path discovery
+    capabilities: [answer_emit, response_generation, synthesis]
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
+    temperature: 0.3
+    timeout: 60
+    prompt: |
+      TASK: Build final response.
+      
+      QUERY: {{ input }}
+      
+      {% if previous_outputs.analysis_agent %}
+      ANALYSIS:
+      {{ previous_outputs.analysis_agent.response | default('No analysis') }}
+      {% endif %}
+      
+      {% if previous_outputs.search_agent %}
+      SEARCH DATA:
+      {{ previous_outputs.search_agent.response | default('No search data') }}
+      {% endif %}
+      
+      Create a comprehensive response that:
+      1. Directly answers the query
+      2. Cites sources
+      3. Is well-structured
+
+  # Phase 5: Analyze execution results
+  - id: execution_analyzer
+    type: local_llm
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
+    temperature: 0.3
+    timeout: 60
+    depends_on: path_executor
+    prompt: |
+      TASK: Analyze the complete execution pipeline.
+      
+      == TASK PREPARATION ==
+      {{ get_agent_response('task_preparation') }}
+      
+      == GRAPHSCOUT DISCOVERY ==
+      {{ get_agent_response('graphscout_discovery') }}
+      
+      == VALIDATION LOOP ==
+      {{ get_agent_response('validation_refinement_loop') }}
+      
+      == PATH EXECUTION ==
+      {{ get_agent_response('path_executor') }}
+      
+      ANALYZE THE PIPELINE:
+      
+      1. GRAPHSCOUT PERFORMANCE (score 0-100):
+         - Did GraphScout commit to a path or return shortlist?
+         - Was path selection appropriate for the task?
+         - Did it include terminal agent (response_builder)?
+      
+      2. VALIDATION PERFORMANCE (score 0-100):
+         - Did the loop converge (threshold met)?
+         - Was quality feedback accurate?
+         - Were iterations necessary?
+      
+      3. EXECUTION PERFORMANCE (score 0-100):
+         - Were all path agents executed?
+         - Did data flow correctly between agents?
+         - Was final output generated?
+      
+      4. INTEGRATION SCORE (score 0-100):
+         - Did pipeline complete end-to-end?
+         - Did results match task expectations?
+      
+      OUTPUT FORMAT:
+      
+      GRAPHSCOUT_SCORE: [0-100]
+      VALIDATION_SCORE: [0-100]
+      EXECUTION_SCORE: [0-100]
+      INTEGRATION_SCORE: [0-100]
+      
+      STRENGTHS: [List 2-3 key strengths]
+      WEAKNESSES: [List 2-3 key weaknesses]
+      RECOMMENDATIONS: [List 2-3 improvements]
+      
+      OVERALL_HEALTH: [excellent/good/fair/poor]
+
+  # Phase 6: Final report
+  - id: final_system_report
+    type: local_llm
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
+    temperature: 0.2
+    timeout: 90
+    depends_on: execution_analyzer
+    prompt: |
+      GRAPHSCOUT + PATHVALIDATOR + PATHEXECUTOR ASSESSMENT REPORT
+      
+      == EXECUTION ANALYZER RESULTS ==
+      {{ get_agent_response('execution_analyzer') }}
+      
+      == RAW COMPONENT DATA ==
+      
+      Task Preparation:
+      {{ get_agent_response('task_preparation') }}
+      
+      GraphScout Discovery:
+      {{ get_agent_response('graphscout_discovery') }}
+      
+      Validation Loop:
+      {{ get_agent_response('validation_refinement_loop') }}
+      
+      Path Executor:
+      {{ get_agent_response('path_executor') }}
+      
+      == GENERATE FINAL REPORT ==
+      
+      Based on the execution analyzer scores (GRAPHSCOUT_SCORE, VALIDATION_SCORE, EXECUTION_SCORE, INTEGRATION_SCORE, OVERALL_HEALTH) and raw data above, generate this JSON report:
+      
+      {
+        "executive_summary": "2-3 sentence summary of pipeline performance",
+        "component_scores": {
+          "graphscout_discovery": [GRAPHSCOUT_SCORE from analyzer],
+          "path_validator": [VALIDATION_SCORE from analyzer],
+          "path_executor": [EXECUTION_SCORE from analyzer],
+          "loop_convergence": [VALIDATION_SCORE from analyzer],
+          "end_to_end_integration": [INTEGRATION_SCORE from analyzer]
+        },
+        "graphscout_analysis": {
+          "path_committed": [true if GraphScout decision was "commit", false if "shortlist"],
+          "terminal_included": [true if response_builder was in the executed path],
+          "key_issues": ["list issues from WEAKNESSES"]
+        },
+        "validator_analysis": {
+          "converged": [true if loop met threshold],
+          "feedback_quality": "good/fair/poor",
+          "key_issues": []
+        },
+        "executor_analysis": {
+          "completed": [true if path executed successfully],
+          "agents_run": [count of agents executed],
+          "key_issues": []
+        },
+        "recommendations": ["list from RECOMMENDATIONS"],
+        "overall_system_health": "[OVERALL_HEALTH from analyzer]",
+        "production_readiness": [true if health is excellent or good],
+        "confidence_level": [0.0-1.0]
+      }
+      
+      Output ONLY the valid JSON object.

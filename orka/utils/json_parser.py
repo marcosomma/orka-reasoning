@@ -105,6 +105,53 @@ class ParseStrategy(str, Enum):
     EXTRACT = "extract"  # Extract first JSON object
 
 
+def _extract_json_candidate(text: str) -> Optional[str]:
+    """
+    Extract a *candidate* JSON string from text, even if it is not yet valid JSON.
+
+    This is intentionally more permissive than `extract_json_from_text()` so that
+    normalization/repair strategies can run on malformed-but-recoverable JSON.
+    """
+    if not text or not isinstance(text, str):
+        return None
+
+    raw = text.strip()
+    if not raw:
+        return None
+
+    # Prefer fenced code blocks.
+    json_match = re.search(r"```json\s*\n?(.*?)\n?```", raw, re.DOTALL | re.IGNORECASE)
+    if json_match:
+        return json_match.group(1).strip()
+
+    code_match = re.search(r"```\s*\n?(.*?)\n?```", raw, re.DOTALL)
+    if code_match:
+        return code_match.group(1).strip()
+
+    # Remove reasoning tags if present.
+    reasoning_pattern = r"<(?:think|reasoning|thoughts?)>.*?</(?:think|reasoning|thoughts?)>"
+    cleaned = re.sub(reasoning_pattern, "", raw, flags=re.DOTALL | re.IGNORECASE).strip()
+    if cleaned and cleaned != raw:
+        raw = cleaned
+
+    # Extract first balanced JSON object/array (without validating).
+    for start_char, end_char in [("{", "}"), ("[", "]")]:
+        start_idx = raw.find(start_char)
+        if start_idx == -1:
+            continue
+
+        depth = 0
+        for i in range(start_idx, len(raw)):
+            if raw[i] == start_char:
+                depth += 1
+            elif raw[i] == end_char:
+                depth -= 1
+                if depth == 0:
+                    return raw[start_idx : i + 1].strip()
+
+    return raw
+
+
 def extract_json_from_text(text: str) -> Optional[str]:
     """
     Extract JSON content from various text formats.
@@ -233,17 +280,68 @@ def repair_malformed_json(text: str) -> Optional[str]:
     Returns:
         Repaired JSON string or None if repair failed
     """
-    if not REPAIR_AVAILABLE or repair_json is None:
-        logger.debug("json_repair not available; skipping repair step")
+    if not text or not isinstance(text, str):
         return None
 
+    # Prefer the optional dependency if present, but always keep a built-in fallback
+    # so Orka remains functional in constrained CI environments.
+    if REPAIR_AVAILABLE and repair_json is not None:
+        try:
+            repaired = repair_json(text, return_objects=False)
+            json.loads(repaired)
+            return repaired
+        except Exception as e:
+            logger.debug(f"json_repair failed; falling back to built-in repair: {e}")
+
+    # Built-in best-effort repair (covers common LLM malformations).
+    candidate = text.strip()
     try:
-        repaired = repair_json(text, return_objects=False)
-        # Verify the repair produced valid JSON
-        json.loads(repaired)
-        return repaired
+        # Fast-path: already valid.
+        json.loads(candidate)
+        return candidate
+    except Exception:
+        pass
+
+    def _strip_js_style_comments(s: str) -> str:
+        # NOTE: This is heuristic and may remove '//' inside strings, but it's
+        # acceptable for LLM-output recovery. We validate via json.loads after.
+        s = re.sub(r"/\*.*?\*/", "", s, flags=re.DOTALL)
+        s = re.sub(r"//.*?$", "", s, flags=re.MULTILINE)
+        return s
+
+    def _quote_unquoted_object_keys(s: str) -> str:
+        # {key: 1} or , key: 1  -> {"key": 1}
+        return re.sub(r'([{\[,]\s*)([A-Za-z_][A-Za-z0-9_]*)(\s*:)', r'\1"\2"\3', s)
+
+    def _remove_trailing_commas(s: str) -> str:
+        return re.sub(r",\s*([}\]])", r"\1", s)
+
+    def _normalize_python_literals(s: str) -> str:
+        s = re.sub(r"\bTrue\b", "true", s)
+        s = re.sub(r"\bFalse\b", "false", s)
+        s = re.sub(r"\bNone\b", "null", s)
+        return s
+
+    def _normalize_single_quotes(s: str) -> str:
+        # Reuse the existing normalizer for common key/value quoting patterns.
+        return normalize_python_to_json(s)
+
+    repaired_attempt = candidate
+    repaired_attempt = _strip_js_style_comments(repaired_attempt)
+    repaired_attempt = _normalize_python_literals(repaired_attempt)
+    repaired_attempt = _quote_unquoted_object_keys(repaired_attempt)
+    repaired_attempt = _normalize_single_quotes(repaired_attempt)
+    repaired_attempt = _remove_trailing_commas(repaired_attempt)
+
+    # A second pass helps for inputs like "{key: 'value',}" after first quoting.
+    repaired_attempt = _quote_unquoted_object_keys(repaired_attempt)
+    repaired_attempt = _remove_trailing_commas(repaired_attempt)
+
+    try:
+        json.loads(repaired_attempt)
+        return repaired_attempt
     except Exception as e:
-        logger.debug(f"JSON repair failed: {e}")
+        logger.debug(f"Built-in JSON repair failed: {e}")
         return None
 
 
@@ -307,25 +405,25 @@ def parse_llm_json(
             if track_errors:
                 logger.debug(f"[{agent_id}] Direct parse failed after extraction: {e}")
 
-    # Strategy 2: Normalize Python syntax and try again
-    if json_text:
-        normalized = normalize_python_to_json(json_text)
-        if normalized != json_text:
-            attempted_strategies.append(ParseStrategy.NORMALIZE)
-            try:
-                parsed = json.loads(normalized)
-                if isinstance(parsed, dict):
-                    if schema:
-                        parsed = validate_and_coerce(
-                            parsed, schema, coerce_types=coerce_types, strict=strict
-                        )
-                    return parsed
-            except json.JSONDecodeError as e:
-                if track_errors:
-                    logger.debug(f"[{agent_id}] Normalized parse failed: {e}")
+    # Strategy 2: Normalize Python syntax and try again (even if extraction failed)
+    candidate_text = json_text or _extract_json_candidate(text)
+    if candidate_text:
+        normalized = normalize_python_to_json(candidate_text)
+        attempted_strategies.append(ParseStrategy.NORMALIZE)
+        try:
+            parsed = json.loads(normalized)
+            if isinstance(parsed, dict):
+                if schema:
+                    parsed = validate_and_coerce(
+                        parsed, schema, coerce_types=coerce_types, strict=strict
+                    )
+                return parsed
+        except json.JSONDecodeError as e:
+            if track_errors:
+                logger.debug(f"[{agent_id}] Normalized parse failed: {e}")
 
     # Strategy 3: Use json_repair library
-    repaired = repair_malformed_json(json_text or text)
+    repaired = repair_malformed_json(candidate_text or text)
     if repaired:
         attempted_strategies.append(ParseStrategy.REPAIR)
         try:

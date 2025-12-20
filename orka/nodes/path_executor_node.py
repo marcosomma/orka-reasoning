@@ -57,7 +57,31 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
+import json
+try:
+    import yaml
+except Exception:
+    yaml = None
+
 from .base_node import BaseNode
+
+
+def _try_parse_serialized(obj: Any) -> Optional[Any]:
+    """Try to parse a serialized string as JSON or YAML. Returns parsed object or None."""
+    if not isinstance(obj, str):
+        return None
+    # Try JSON first
+    try:
+        return json.loads(obj)
+    except Exception:
+        pass
+    # Fall back to YAML if available
+    if yaml is not None:
+        try:
+            return yaml.safe_load(obj)
+        except Exception:
+            pass
+    return None
 
 logger = logging.getLogger(__name__)
 
@@ -416,10 +440,42 @@ class PathExecutorNode(BaseNode):
             parent = current
             current = current[part]
 
+        # If current is a serialized string (JSON/YAML), try to parse it
+        if isinstance(current, str):
+            parsed = _try_parse_serialized(current)
+            if parsed is not None:
+                logger.debug(
+                    "PathExecutor '%s': Parsed serialized string at path '%s' into %s",
+                    self.node_id,
+                    path,
+                    type(parsed).__name__,
+                )
+                current = parsed
+
         # Extract agent list from the result
         agent_path = self._parse_agent_list(current)
 
         if agent_path is None:
+            # If we have a dict that contains nested 'response' or 'result', try to descend
+            if isinstance(current, dict):
+                for nested_key in ("response", "result"):
+                    if nested_key in current:
+                        nested = current[nested_key]
+
+                        if isinstance(nested, str):
+                            parsed = _try_parse_serialized(nested)
+                            if parsed is not None:
+                                nested = parsed
+
+                        parsed_list = self._parse_agent_list(nested)
+                        if parsed_list is not None:
+                            logger.debug(
+                                "PathExecutor '%s': Extracted agent list from nested key '%s'",
+                                self.node_id,
+                                nested_key,
+                            )
+                            return parsed_list, None, nested, current
+
             return None, f"No agent list at path '{path}'", current, parent
 
         return agent_path, None, current, parent
@@ -480,6 +536,25 @@ class PathExecutorNode(BaseNode):
         Returns:
             List of agent IDs, or None if cannot parse
         """
+        # If data is a serialized string, try to parse JSON/YAML
+        if isinstance(data, str):
+            parsed = _try_parse_serialized(data)
+            if parsed is not None:
+                return self._parse_agent_list(parsed)
+
+        # If dict-like, attempt to descend into common wrapper keys
+        if isinstance(data, dict):
+            for wrapper_key in ("response", "result", "payload"):
+                if wrapper_key in data:
+                    nested = data[wrapper_key]
+                    if isinstance(nested, str):
+                        parsed = _try_parse_serialized(nested)
+                        if parsed is not None:
+                            nested = parsed
+                    parsed_list = self._parse_agent_list(nested)
+                    if parsed_list:
+                        return parsed_list
+
         # Case 1: Direct list
         if isinstance(data, list):
             # Check if list contains dicts (GraphScout candidate format)

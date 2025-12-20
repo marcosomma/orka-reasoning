@@ -100,13 +100,30 @@ def _is_valid_boolean_structure(data: Dict[str, Any]) -> bool:
     Returns:
         True if structure appears valid
     """
+    # Accept either the canonical dimensions OR any structure containing
+    # at least one nested dict of criteria. This makes the parser tolerant
+    # to custom scoring contexts (e.g., 'loop_convergence' with
+    # improvement/stability/convergence dimensions).
+    if not isinstance(data, dict):
+        return False
+
+    # Count nested dict-like dimensions with at least one entry
+    nested_dims = 0
+    for value in data.values():
+        if isinstance(value, dict) and len(value) > 0:
+            nested_dims += 1
+
+    # Consider valid if at least one nested dimension exists
+    if nested_dims >= 1:
+        return True
+
+    # Fallback: old behavior — look for canonical dimensions
     expected_dimensions = ["completeness", "efficiency", "safety", "coherence"]
     found_dimensions = 0
-
     for dimension in expected_dimensions:
         if dimension in data:
-            dimension_data = data[dimension]
-            if isinstance(dimension_data, dict) and len(dimension_data) > 0:
+            dim = data[dimension]
+            if isinstance(dim, dict) and len(dim) > 0:
                 found_dimensions += 1
 
     return found_dimensions >= 2

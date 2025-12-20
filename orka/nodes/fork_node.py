@@ -87,9 +87,9 @@ class ForkNode(BaseNode):
                     orchestrator.fork_manager.track_branch_sequence(fork_group_id, branch)
                     logger.debug(f"- Queued first agent {first_agent} in sequential mode")
                 else:
-                    # For parallel mode, queue all agents
-                    orchestrator.enqueue_fork(branch, fork_group_id)
-                    logger.debug(f"- Queued all agents {branch} in parallel mode")
+                    # For parallel mode we will execute branches immediately via the ParallelExecutor
+                    # Do NOT enqueue them into the main orchestrator queue to avoid duplicate runs.
+                    logger.debug(f"- Parallel mode: will execute branch {branch} via ParallelExecutor")
                 all_flat_agents.extend(branch)
             else:
                 # Single agent, flat structure (fallback)
@@ -108,8 +108,15 @@ class ForkNode(BaseNode):
             self.memory_logger.sadd(f"fork_group:{fork_group_id}", *all_flat_agents)
 
             # Store initial state for join node
-            state_key = "waitfor:join_parallel_checks:inputs"
+            state_key = f"waitfor:{fork_group_id}:inputs"
             for agent_id in all_flat_agents:
+                # Allow consumers (ResponseProcessor) to cheaply resolve the fork group
+                # for an agent without scanning all fork_group_results tables.
+                try:
+                    self.memory_logger.hset("fork_agent_to_group", agent_id, fork_group_id)
+                except Exception:
+                    logger.debug("Failed to store fork_agent_to_group mapping for %s", agent_id)
+
                 # Initialize empty result for each agent with proper structure
                 initial_result = {
                     "response": "",
