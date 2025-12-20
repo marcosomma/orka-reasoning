@@ -283,10 +283,13 @@ class AgentFactory:
             # Special handling for memory agent type
             if agent_type == "memory" or agent_cls == "special_handler":
                 # Special handling for memory nodes based on operation
-                operation = cfg.get("config", {}).get("operation", "read")
+                config_dict = cfg.get("config", {}) or {}
+                operation = config_dict.get("operation", "read")
                 prompt = cfg.get("prompt", None)
                 queue = cfg.get("queue", None)
-                namespace = cfg.get("namespace", "default")
+                # Support both legacy top-level `namespace:` and newer `config.namespace:`
+                namespace = cfg.get("namespace") or config_dict.get("namespace") or "default"
+                memory_preset = cfg.get("memory_preset")
 
                 # Extract agent-level decay configuration and merge with global config
                 agent_decay_config = cfg.get("decay", {})
@@ -322,13 +325,20 @@ class AgentFactory:
 
                 if operation == "write":
                     # Use memory writer node for write operations
-                    vector_enabled = memory_cfg.get("vector", False)
+                    # Support both legacy top-level `vector:` and `config.vector:`
+                    vector_enabled = bool(
+                        memory_cfg.get("vector", config_dict.get("vector", False))
+                    )
+                    # If a memory preset is specified, default to vector writes unless explicitly disabled.
+                    if memory_preset and "vector" not in memory_cfg and "vector" not in config_dict:
+                        vector_enabled = True
                     return MemoryWriterNode(
                         node_id=agent_id,
                         prompt=prompt,
                         queue=queue,
                         namespace=namespace,
                         vector=vector_enabled,
+                        memory_preset=memory_preset,
                         key_template=cfg.get("key_template"),
                         metadata=cfg.get("metadata", {}),
                         decay_config=merged_decay_config,
@@ -337,12 +347,13 @@ class AgentFactory:
                 else:  # default to read
                     # Use memory reader node for read operations
                     # Pass ALL config options to MemoryReaderNode
-                    config_dict = memory_cfg.get("config", {})
+                    config_dict = memory_cfg.get("config", {}) or {}
                     return MemoryReaderNode(
                         node_id=agent_id,
                         prompt=prompt,
                         queue=queue,
                         namespace=namespace,
+                        memory_preset=memory_preset,
                         limit=config_dict.get("limit", 10),
                         similarity_threshold=config_dict.get("similarity_threshold", 0.6),
                         # Pass additional config options that were being ignored

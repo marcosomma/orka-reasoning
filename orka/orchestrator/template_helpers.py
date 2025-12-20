@@ -68,6 +68,21 @@ def safe_get_response(agent_id: str, default: str = "unknown", previous_outputs:
     
     # Try different response fields
     if isinstance(output, dict):
+        # Orchestrator log/event shape: payload.response / payload.result
+        payload = output.get("payload")
+        if isinstance(payload, dict):
+            if "response" in payload:
+                resp_val = payload["response"]
+                # If payload.response is itself a dict with nested 'response', unwrap once
+                if isinstance(resp_val, dict) and "response" in resp_val:
+                    return str(resp_val["response"])
+                return str(resp_val)
+            if "result" in payload:
+                res_val = payload["result"]
+                if isinstance(res_val, dict) and "response" in res_val:
+                    return str(res_val["response"])
+                return str(res_val)
+
         # Check common response fields
         for key in ['response', 'result', 'output']:
             if key in output:

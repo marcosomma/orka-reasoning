@@ -109,7 +109,7 @@ class ParallelExecutor:
                     sanitized_result = sanitize_for_json(result)
 
                     # Store result in join state for JoinNode
-                    join_state_key = "waitfor:join_parallel_checks:inputs"
+                    join_state_key = f"waitfor:{fork_group_id}:inputs"
                     # Use json dumps to emulate original behavior
                     if hasattr(self.orchestrator, "memory"):
                         try:

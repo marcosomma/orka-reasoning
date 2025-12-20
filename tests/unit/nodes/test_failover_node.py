@@ -154,6 +154,34 @@ class TestFailoverNode:
         # Verify formatted_prompt was added to payload
         call_args = child.run.call_args[0][0]
         assert "formatted_prompt" in call_args
+        assert "test_data" in call_args["formatted_prompt"]
+
+    @pytest.mark.asyncio
+    async def test_run_impl_uses_tool_id_for_child_identifier(self):
+        """Regression: tool children should be identified by tool_id, not 'unknown_child_*'."""
+        tool_child = Mock()
+        tool_child.run = AsyncMock(return_value={"result": ["ok"]})
+        tool_child.tool_id = "duckduckgo_tool"
+        tool_child.prompt = None
+
+        node = FailoverNode(node_id="failover_node", children=[tool_child], queue=[])
+        result = await node._run_impl({"input": "q"})
+
+        assert result["successful_child"] == "duckduckgo_tool"
+
+    @pytest.mark.asyncio
+    async def test_run_impl_renders_get_input_helper(self):
+        """Regression: FailoverNode must provide get_input() helper for child prompt templates."""
+        child = Mock()
+        child.run = AsyncMock(return_value={"result": "success"})
+        child.agent_id = "child1"
+        child.prompt = "Q={{ get_input() }}"
+
+        node = FailoverNode(node_id="failover_node", children=[child], queue=[])
+        await node._run_impl({"input": "hello"})
+
+        payload = child.run.call_args[0][0]
+        assert payload["formatted_prompt"] == "Q=hello"
 
     @pytest.mark.asyncio
     async def test_run_impl_prompt_rendering_fails(self):

@@ -300,16 +300,10 @@ class MemoryWriterNode(BaseNode):
 
                             # Handle special cases where rendered value might be None or empty
                             if rendered_value is None or rendered_value == "":
-                                # Try to extract default value from template if present
-                                if "default(" in value:
-                                    # Use original template string as fallback
-                                    rendered_metadata[key] = value
-                                    logger.warning(
-                                        f"Template rendered empty, using default for '{key}'",
-                                    )
-                                else:
-                                    rendered_metadata[key] = ""
-                                    logger.warning(f"Template rendered empty for '{key}'")
+                                rendered_metadata[key] = ""
+                                # Empty metadata values are often expected (optional fields).
+                                # Keep signal low here to avoid noisy logs.
+                                logger.debug("Metadata template rendered empty for '%s'", key)
                             else:
                                 rendered_metadata[key] = rendered_value
 

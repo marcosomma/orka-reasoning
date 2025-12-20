@@ -247,7 +247,7 @@ async def test_run_parallel_agents_adds_formatted_prompt_and_wraps_non_dict_resu
     # join-state and fork group result writes happen for each agent (join_state + group hash)
     assert engine.memory.hset.call_count == 4
     calls = [c.args for c in engine.memory.hset.call_args_list]
-    join_calls = [call for call in calls if call[0] == "waitfor:join_parallel_checks:inputs"]
+    join_calls = [call for call in calls if call[0] == "waitfor:fork_group_1:inputs"]
     group_calls = [call for call in calls if call[0] == f"fork_group_results:fork_group_1"]
     assert len(join_calls) == 2
     assert len(group_calls) == 2

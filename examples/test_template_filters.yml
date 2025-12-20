@@ -14,6 +14,7 @@ agents:
     provider: "lm_studio"
     model_url: "http://localhost:1234"
     temperature: 0.7
+    parse_json: false
     max_tokens: 100
     timeout: 30.0
     prompt: "Analyze this topic: {{ input }}"
@@ -24,6 +25,7 @@ agents:
     provider: "lm_studio"
     model_url: "http://localhost:1234"
     temperature: 0.7
+    parse_json: false
     max_tokens: 100
     timeout: 30.0
     prompt: "Build on this analysis: {{ safe_get_response('agent1', 'No previous analysis') | truncate(150) }}"
@@ -34,6 +36,7 @@ agents:
     provider: "lm_studio"
     model_url: "http://localhost:1234"
     temperature: 0.5
+    parse_json: false
     max_tokens: 200
     timeout: 30.0
     prompt: |

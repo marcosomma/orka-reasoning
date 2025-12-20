@@ -108,8 +108,15 @@ class ForkNode(BaseNode):
             self.memory_logger.sadd(f"fork_group:{fork_group_id}", *all_flat_agents)
 
             # Store initial state for join node
-            state_key = "waitfor:join_parallel_checks:inputs"
+            state_key = f"waitfor:{fork_group_id}:inputs"
             for agent_id in all_flat_agents:
+                # Allow consumers (ResponseProcessor) to cheaply resolve the fork group
+                # for an agent without scanning all fork_group_results tables.
+                try:
+                    self.memory_logger.hset("fork_agent_to_group", agent_id, fork_group_id)
+                except Exception:
+                    logger.debug("Failed to store fork_agent_to_group mapping for %s", agent_id)
+
                 # Initialize empty result for each agent with proper structure
                 initial_result = {
                     "response": "",

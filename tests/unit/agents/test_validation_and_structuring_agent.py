@@ -106,3 +106,67 @@ async def test_run_impl(agent_params):
     assert result["valid"] is True
     assert result["reason"] == "It is correct"
     assert result["memory_object"]["fact"] == "the fact"
+
+
+@pytest.mark.asyncio
+async def test_run_impl_appends_schema_when_custom_prompt_missing_it(agent_params):
+    """If YAML supplies a custom prompt without schema, agent must append schema instructions."""
+    agent = ValidationAndStructuringAgent(
+        {
+            "agent_id": "test_validator",
+            # Custom prompt: does NOT include required JSON schema keys
+            "prompt": "Validate and structure. Question: {{ get_input() }}",
+        }
+    )
+
+    mock_llm_run = AsyncMock()
+    agent.llm_agent.run = mock_llm_run
+
+    llm_response_payload = {
+        "status": "success",
+        "component_type": "agent",
+        "component_id": "test_validator_llm",
+        "result": {
+            "response": '```json\n{"valid": true, "reason": "ok", "memory_object": {"fact": "x"}}\n```'
+        },
+    }
+    mock_llm_run.return_value = llm_response_payload
+
+    ctx = {"input": "q", "formatted_prompt": "Custom prompt that lacks schema"}
+    result = await agent._run_impl(ctx)
+
+    # Ensure we called the LLM with an augmented prompt containing schema keys
+    called = mock_llm_run.call_args[0][0]
+    assert '"valid"' in called["prompt"]
+    assert "memory_object" in called["prompt"]
+    assert result["valid"] is True
+
+
+@pytest.mark.asyncio
+async def test_run_impl_does_not_double_append_schema_when_already_present():
+    """If custom prompt already contains schema keys, do not append a second schema block."""
+    agent = ValidationAndStructuringAgent({"agent_id": "test_validator"})
+
+    mock_llm_run = AsyncMock()
+    agent.llm_agent.run = mock_llm_run
+    mock_llm_run.return_value = {
+        "status": "success",
+        "component_type": "agent",
+        "component_id": "test_validator_llm",
+        "result": {
+            "response": '```json\n{"valid": true, "reason": "ok", "memory_object": {"fact": "x"}}\n```'
+        },
+    }
+
+    schema_prompt = "\n".join(
+        [
+            "Please validate.",
+            'Return your response in the following JSON format: {"valid": true, "reason": "x", "memory_object": {}}',
+        ]
+    )
+    ctx = {"input": "q", "formatted_prompt": schema_prompt}
+    await agent._run_impl(ctx)
+
+    called = mock_llm_run.call_args[0][0]
+    # Heuristic: ensure we didn't append the schema header twice
+    assert called["prompt"].count("Return your response in the following JSON format") == 1

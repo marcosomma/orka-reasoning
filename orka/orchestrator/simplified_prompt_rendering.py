@@ -33,6 +33,7 @@ Key improvements over the original prompt renderer:
 """
 
 import logging
+import json
 import re
 from typing import Any, Dict
 
@@ -121,6 +122,27 @@ class SimplifiedPromptRenderer:
         if isinstance(input_obj, dict):
             return input_obj.get(field, default)
         return default
+
+    @staticmethod
+    def _unwrap_template_safe(value: Any) -> Any:
+        """
+        Recursively unwrap TemplateSafeObject (or any object exposing .raw()) into plain
+        Python types for safe JSON serialization inside templates (e.g. via `|tojson`).
+        """
+        if hasattr(value, "raw") and callable(getattr(value, "raw")):
+            try:
+                value = value.raw()
+            except Exception:
+                return str(value)
+
+        if isinstance(value, dict):
+            return {k: SimplifiedPromptRenderer._unwrap_template_safe(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [SimplifiedPromptRenderer._unwrap_template_safe(v) for v in value]
+        if isinstance(value, tuple):
+            return tuple(SimplifiedPromptRenderer._unwrap_template_safe(v) for v in value)
+
+        return value
 
     """
     Simplified prompt renderer that uses OrkaResponse structure for template variables.
@@ -241,6 +263,13 @@ class SimplifiedPromptRenderer:
 
             # Create Jinja2 environment with custom filters
             env = Environment()
+            # Ensure JSON serialization in templates works with TemplateSafeObject
+            # (Jinja's default `tojson` uses json.dumps and will crash on our wrapper).
+            env.filters["tojson"] = lambda v: json.dumps(
+                SimplifiedPromptRenderer._unwrap_template_safe(v),
+                ensure_ascii=False,
+                default=str,
+            )
             # Register custom template helpers if available
             if TEMPLATE_HELPERS_AVAILABLE:
                 try:
@@ -393,6 +422,20 @@ class SimplifiedPromptRenderer:
                         agent_result = agent_result.raw()
 
                     if isinstance(agent_result, dict):
+                        # Orchestrator event/log shape: payload.response / payload.result
+                        p = agent_result.get("payload")
+                        if isinstance(p, dict):
+                            if "response" in p:
+                                pr = p["response"]
+                                if isinstance(pr, dict) and "response" in pr:
+                                    return str(pr["response"])
+                                return str(pr)
+                            if "result" in p:
+                                pr = p["result"]
+                                if isinstance(pr, dict) and "response" in pr:
+                                    return str(pr["response"])
+                                return str(pr)
+
                         # OrkaResponse format
                         if "result" in agent_result:
                             return str(agent_result["result"])
@@ -424,6 +467,22 @@ class SimplifiedPromptRenderer:
                         agent_result = agent_result.raw()
 
                     if isinstance(agent_result, dict):
+                        # Orchestrator event/log shape: payload.response / payload.result
+                        p = agent_result.get("payload")
+                        if isinstance(p, dict):
+                            if "response" in p:
+                                pr = p["response"]
+                                pr = pr.get("response") if isinstance(pr, dict) and "response" in pr else pr
+                                result_str = str(pr)
+                                if result_str and not result_str.startswith("No response found"):
+                                    return result_str
+                            if "result" in p:
+                                pr = p["result"]
+                                pr = pr.get("response") if isinstance(pr, dict) and "response" in pr else pr
+                                result_str = str(pr)
+                                if result_str and not result_str.startswith("No response found"):
+                                    return result_str
+
                         # OrkaResponse format
                         if "result" in agent_result:
                             result_str = str(agent_result["result"])

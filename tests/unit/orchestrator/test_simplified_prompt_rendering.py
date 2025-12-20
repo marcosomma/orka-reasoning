@@ -101,6 +101,16 @@ class TestSimplifiedPromptRenderer:
         assert "test" in result
         assert "output1" in result
 
+    def test_render_prompt_tojson_unwraps_template_safe_object(self):
+        """Regression: `|tojson` must work when values are wrapped as TemplateSafeObject."""
+        renderer = SimplifiedPromptRenderer()
+
+        template = "{{ input | tojson }}"
+        payload = {"input": {"a": 1, "b": "x"}}
+
+        result = renderer.render_prompt(template, payload)
+        assert result == '{"a": 1, "b": "x"}'
+
     def test_render_prompt_invalid_type(self):
         """Test render_prompt with invalid template type."""
         renderer = SimplifiedPromptRenderer()

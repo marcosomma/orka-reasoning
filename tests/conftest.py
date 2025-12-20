@@ -12,6 +12,7 @@ import importlib.util
 import types as _types
 
 import pytest
+import sys
 import yaml
 
 # Optional/conditional test-time modules
@@ -255,6 +256,13 @@ def mock_external_services(request):
         choices=[Mock(message=Mock(content="Test LLM response"))]
     )
     
+    # ddgs is an optional dependency; patching ddgs.DDGS requires the module to exist.
+    # In minimal CI environments it may be absent, so we stub it in sys.modules first.
+    if "ddgs" not in sys.modules:
+        stub_ddgs = Mock()
+        stub_ddgs.DDGS = Mock()
+        sys.modules["ddgs"] = stub_ddgs
+
     with patch('redis.Redis', return_value=redis_mock), \
          patch('redis.asyncio.Redis', return_value=redis_mock), \
          patch('sentence_transformers.SentenceTransformer', return_value=embedder_mock), \

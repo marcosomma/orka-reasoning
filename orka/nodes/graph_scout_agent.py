@@ -100,6 +100,15 @@ class GraphScoutConfig:
     # Dry-run settings
     max_preview_tokens: int = 192
     tool_policy: str = "mock_all"
+    # LLM evaluation settings (used by SmartPathEvaluator in dry-run scoring)
+    evaluation_model: str = "local_llm"
+    evaluation_model_name: str = ""
+    validation_model: str = "local_llm"
+    validation_model_name: str = ""
+    provider: str = ""
+    model_url: str = ""
+    llm_evaluation_enabled: bool = False
+    fallback_to_heuristics: bool = True
 
     # Memory settings
     use_priors: bool = True
@@ -248,6 +257,14 @@ class GraphScoutAgent(BaseNode):
             safety_threshold=params.get("safety_threshold", 0.2),
             max_preview_tokens=params.get("max_preview_tokens", 192),
             tool_policy=params.get("tool_policy", "mock_all"),
+            evaluation_model=params.get("evaluation_model", "local_llm"),
+            evaluation_model_name=params.get("evaluation_model_name", ""),
+            validation_model=params.get("validation_model", "local_llm"),
+            validation_model_name=params.get("validation_model_name", ""),
+            provider=params.get("provider", ""),
+            model_url=params.get("model_url", ""),
+            llm_evaluation_enabled=params.get("llm_evaluation_enabled", False),
+            fallback_to_heuristics=params.get("fallback_to_heuristics", True),
             use_priors=params.get("use_priors", True),
             ttl_days=params.get("ttl_days", 21),
             log_previews=params.get("log_previews", "head64"),

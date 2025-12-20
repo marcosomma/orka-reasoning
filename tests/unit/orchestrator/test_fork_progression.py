@@ -14,8 +14,8 @@ async def test_mark_done_and_enqueue_next_in_sequence(temp_config_file):
     eng.run_id = "run_test"
 
     mem = MagicMock()
-    # Simulate hget returning JSON initial state that includes fork_group
-    mem.hget.return_value = json.dumps({"fork_group": "fg1"})
+    # Simulate fork group lookup for this agent
+    mem.hget.return_value = "fg1"
     eng.memory = mem
 
     eng.fork_manager = Mock()
@@ -51,7 +51,7 @@ async def test_mark_done_and_enqueue_next_in_sequence(temp_config_file):
     eng.fork_manager.mark_agent_done.assert_called_once_with("fg1", "agent1")
     eng.enqueue_fork.assert_called_once_with(["agent_next"], "fg1")
     # Ensure join state and group results were updated with the final payload
-    state_key = "waitfor:join_parallel_checks:inputs"
+    state_key = "waitfor:fg1:inputs"
     eng.memory.hset.assert_any_call(state_key, "agent1", json.dumps(payload_out, default=str))
     group_key = f"fork_group_results:fg1"
     eng.memory.hset.assert_any_call(group_key, "agent1", json.dumps(payload_out, default=str))

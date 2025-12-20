@@ -369,8 +369,8 @@ class TestMemoryWriterNode:
         
         assert "tags" in rendered
 
-    def test_render_metadata_templates_with_empty_result(self):
-        """Test template rendering with empty result."""
+    def test_render_metadata_templates_with_empty_result(self, caplog):
+        """Test template rendering with empty result (should not warn)."""
         mock_memory = Mock()
         
         node = MemoryWriterNode(
@@ -390,6 +390,8 @@ class TestMemoryWriterNode:
         
         # Should handle empty result gracefully
         assert "optional" in rendered
+        assert rendered["optional"] == ""
+        assert "Template rendered empty for" not in caplog.text
 
     def test_render_metadata_templates_with_default(self):
         """Test template rendering with default() function."""

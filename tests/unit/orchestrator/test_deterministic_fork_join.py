@@ -49,7 +49,7 @@ async def test_parallel_executor_writes_join_and_group_hashes(engine):
     calls = [c.args for c in engine.memory.hset.call_args_list]
 
     group_key = "fork_group_results:fork_group_1"
-    join_key = "waitfor:join_parallel_checks:inputs"
+    join_key = "waitfor:fork_group_1:inputs"
 
     assert any(call[0] == group_key and call[1] == "a" for call in calls)
     assert any(call[0] == group_key and call[1] == "b" for call in calls)

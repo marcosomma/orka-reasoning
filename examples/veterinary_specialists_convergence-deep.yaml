@@ -237,7 +237,7 @@ agents:
     prompt: |
       Build a step-by-step actionable plan for the vet and owner, integrating all specialist recommendations.
       Patient data: {{ get_input() }}
-      Synthesis: {{ get_agent_response('specialists_loop.diagnosis_join') }}
+      Synthesis: {{ get_agent_response('specialists_loop').result.diagnosis_join if get_agent_response('specialists_loop') else "No synthesis available" }}
       Output ONLY as YAML:
       ACTION_PLAN: |
         <step-by-step plan, with dosages, rationales, and owner instructions>
@@ -251,7 +251,7 @@ agents:
     prompt: |
       Store the following structured YAML object as the final result for this patient case:
       synthesis: |
-        {{ get_agent_response('specialists_loop.diagnosis_join') }}
+        {{ get_agent_response('specialists_loop').result.diagnosis_join if get_agent_response('specialists_loop') else "No synthesis available" }}
       action_plan: |
         {{ get_agent_response('actionable_plan_builder') }}
 
@@ -264,7 +264,7 @@ agents:
       # TASK
       Compose a comprehensive, actionable explanation for the owner and vet.
       Patient data: {{ get_input() }}
-      Synthesis: {{ get_agent_response('specialists_loop.diagnosis_join') }}
+      Synthesis: {{ get_agent_response('specialists_loop').result.diagnosis_join if get_agent_response('specialists_loop') else "No synthesis available" }}
       Action plan: {{ get_agent_response('actionable_plan_builder') }}
       # CONSTRAINT:
       - DEVI RISPONDERE IN LINGUA ITALIANA.

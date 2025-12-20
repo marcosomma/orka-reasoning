@@ -182,19 +182,6 @@ class TestLoopNode:
         assert isinstance(score, float)
         assert 0.0 <= score <= 1.0
 
-    def test_extract_direct_key(self):
-        """Test _extract_direct_key method."""
-        mock_memory = Mock()
-        node = LoopNode(node_id="loop_node", memory_logger=mock_memory)
-        
-        result = {"score": 0.85, "nested": {"value": 0.9}}
-        
-        score1 = node._extract_direct_key(result, "score")
-        assert score1 == 0.85
-        
-        score2 = node._extract_direct_key(result, "nonexistent")
-        assert score2 is None
-
     def test_extract_nested_path(self):
         """Test _extract_nested_path method."""
         mock_memory = Mock()

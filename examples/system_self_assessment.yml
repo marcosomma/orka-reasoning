@@ -43,6 +43,7 @@ agents:
       - - path_b_processor
         - path_b_validator
       - - path_c_processor
+        - path_c_validator
     depends_on: data_preparation
 
   # Path A: Simple processing
@@ -129,6 +130,23 @@ agents:
     model_url: http://localhost:1234
     provider: lm_studio
     temperature: 0.5
+
+  - id: path_c_validator
+    type: local_llm
+    prompt: |
+      Validate the processing result from path C:
+      Input: {{ get_agent_response('path_c_processor') }}
+      Expected from dataset: {{ get_agent_response('data_preparation') }}
+      
+      Perform deep validation:
+      - Step-by-step correctness
+      - Logical consistency
+      - Accuracy score (0-100%)
+      - Error analysis if any
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
+    temperature: 0.2
 
   # Phase 3: Join all parallel paths
   - id: join_results
@@ -217,7 +235,7 @@ agents:
   - id: loop_processor
     type: loop
     max_loops: 3
-    score_threshold: 0.7
+    score_threshold: 0.4
     
     # Boolean scoring for iterative refinement convergence
     scoring:
@@ -225,19 +243,22 @@ agents:
       context: loop_convergence  # Track refinement convergence
       mode: loop  # Use loop-focused evaluation
     
-    # Depends on BOTH possible router paths (at least one will execute)
+    # Ensure required upstream signals are present inside LoopNode.previous_outputs.
+    # (LoopNode passes only depends_on outputs through as previous_outputs to the internal workflow.)
+    #
+    # Also depends on BOTH possible router paths (at least one will execute)
     depends_on:
+      - join_results
+      - routing_decision
       - reprocess_validator
       - aggregation_analyzer
     
     # Pass external data to internal workflow as input
     prompt: |
-      {
-        "routing_decision": {{ get_agent_response('routing_decision') | tojson }},
-        "join_results": {{ get_agent_response('join_results') | tojson }},
-        "reprocess_validator": {{ get_agent_response('reprocess_validator') | tojson }},
-        "aggregation_analyzer": {{ get_agent_response('aggregation_analyzer') | tojson }}
-      }
+      Routing Decision: {{ get_agent_response('routing_decision').result }}
+      Join Results: {{ get_agent_response('join_results').result }}
+      Reprocessed Results: {{ get_agent_response('reprocess_validator').result }}
+      Aggregated Results: {{ get_agent_response('aggregation_analyzer').result }}
     
     internal_workflow:
       orchestrator:
@@ -255,15 +276,13 @@ agents:
             ITERATION {{ get_loop_number() }} - Refinement Analysis
             
             == DATA TO ANALYZE ==
-            Routing Decision: {{ input.routing_decision }}
-            Join Results: {{ input.join_results }}
-            
-            {% if input.reprocess_validator %}
-            Reprocessed Results: {{ input.reprocess_validator }}
+            Routing Decision: {{ input.previous_outputs.routing_decision }}
+            Join Results: {{ input.previous_outputs.join_results }}
+            {% if input.previous_outputs.reprocess_validator %}
+            Reprocessed Results: {{ input.previous_outputs.reprocess_validator }}
             {% endif %}
-            
-            {% if input.aggregation_analyzer %}
-            Aggregated Results: {{ input.aggregation_analyzer }}
+            {% if input.previous_outputs.aggregation_analyzer %}
+            Aggregated Results: {{ input.previous_outputs.aggregation_analyzer }}
             {% endif %}
             
             {% if get_loop_number() > 1 %}
@@ -328,6 +347,7 @@ agents:
             Current Synthesis: {{ get_agent_response('synthesis') }}
             
             {% if get_loop_number() > 1 %}
+            TAKE DEEP CONSIDERATION OF ALREADY PASSED CHECKS.
             Previous Iterations: {{ get_past_loops() }}
             {% endif %}
             
@@ -343,10 +363,10 @@ agents:
     prompt: |
       Perform comprehensive validation of all processing stages:
       
-      1. Initial data prep: {{ get_agent_response('data_preparation') }}
-      2. Parallel processing: {{ get_agent_response('join_results') }}
+      1. Initial data pre {{ get_agent_response('data_preparation') }}
+      2. Parallel processing (joine {{ get_agent_response('join_results') }}
       3. Routing decision: {{ get_agent_response('routing_decision') }}
-      4. Loop refinements: {{ get_agent_response('loop_processor') }}
+      4. Loop refinement {{ get_loop_output('loop_processor').past_loops | tojson }}
       
       Validate:
       - Data integrity through all stages
@@ -387,11 +407,13 @@ agents:
       Aggregation: {{ get_agent_response('aggregation_analyzer') }}
       {% endif %}
       
-      Phase 4 - Iterative Refinement (Loop):
-      {{ get_agent_response('loop_processor') }}
-      
+      Phase 4 - Loop Refinement:
+      {{ get_loop_output('loop_processor').past_loops | tojson }}
+
       Phase 5 - Final Validation:
       {{ get_agent_response('validation_check') }}
+
+
       
       == ASSESSMENT REQUIREMENTS ==
       Evaluate the following aspects with scores (0-100) and detailed analysis:

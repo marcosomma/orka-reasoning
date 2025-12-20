@@ -125,58 +125,72 @@ class ResponseProcessor:
             # - Try to find fork_group via the join state hash (created by ForkNode)
             # - Mark agent done and enqueue the next agent in sequence if present
             if hasattr(engine, "memory") and hasattr(engine, "fork_manager"):
-                # Try to read join state; fail silently on any memory access errors
+                # Resolve fork group for this agent; fail silently on any memory access errors
                 try:
-                    state_key = "waitfor:join_parallel_checks:inputs"
-                    raw = engine.memory.hget(state_key, agent_id_ret)
+                    mapped = engine.memory.hget("fork_agent_to_group", agent_id_ret)
+                    fork_group = (
+                        mapped.decode() if isinstance(mapped, (bytes, bytearray)) else mapped
+                    )
                 except Exception:
-                    raw = None
+                    fork_group = None
 
-                if raw:
+                if fork_group:
                     try:
-                        # raw may be JSON string
-                        if isinstance(raw, (bytes, bytearray)):
-                            raw = raw.decode()
-                        state_obj = json.loads(raw)
-                        fork_group = state_obj.get("fork_group") or payload_out.get("fork_group")
+                        engine.fork_manager.mark_agent_done(fork_group, agent_id_ret)
                     except Exception:
-                        fork_group = None
+                        logger.debug(
+                            "Failed to mark agent %s done in fork group %s",
+                            agent_id_ret,
+                            fork_group,
+                        )
 
-                    if fork_group:
-                        try:
-                            engine.fork_manager.mark_agent_done(fork_group, agent_id_ret)
-                        except Exception:
-                            logger.debug(f"Failed to mark agent {agent_id_ret} done in fork group {fork_group}")
+                    # update group results table for join node
+                    try:
+                        group_key = f"fork_group_results:{fork_group}"
+                        engine.memory.hset(
+                            group_key, agent_id_ret, json.dumps(payload_out, default=str)
+                        )
+                    except Exception:
+                        logger.debug(
+                            "Failed to update fork group results for %s in %s",
+                            agent_id_ret,
+                            fork_group,
+                        )
 
-                        # update group results table for join node
-                        try:
-                            group_key = f"fork_group_results:{fork_group}"
-                            engine.memory.hset(group_key, agent_id_ret, json.dumps(payload_out, default=str))
-                        except Exception:
-                            logger.debug(f"Failed to update fork group results for {agent_id_ret} in {fork_group}")
+                    # Also update the join state key so JoinNode will read the final
+                    # payload instead of the initial placeholder created by ForkNode.
+                    try:
+                        state_key = f"waitfor:{fork_group}:inputs"
+                        engine.memory.hset(
+                            state_key, agent_id_ret, json.dumps(payload_out, default=str)
+                        )
+                    except Exception:
+                        logger.debug(
+                            "Failed to update join state for %s in %s",
+                            agent_id_ret,
+                            fork_group,
+                        )
 
-                        # Also update the join state key so JoinNode will read the final
-                        # payload instead of the initial placeholder created by ForkNode.
-                        try:
-                            state_key = "waitfor:join_parallel_checks:inputs"
-                            engine.memory.hset(state_key, agent_id_ret, json.dumps(payload_out, default=str))
-                        except Exception:
-                            logger.debug(f"Failed to update join state for {agent_id_ret} in {fork_group}")
+                    # Set a direct agent_result key for backwards compatibility
+                    try:
+                        fork_agent_key = f"agent_result:{fork_group}:{agent_id_ret}"
+                        engine.memory.set(fork_agent_key, json.dumps(payload_out, default=str))
+                    except Exception:
+                        logger.debug(
+                            "Failed to set agent_result key for %s in %s",
+                            agent_id_ret,
+                            fork_group,
+                        )
 
-                        # Set a direct agent_result key for backwards compatibility
-                        try:
-                            fork_agent_key = f"agent_result:{fork_group}:{agent_id_ret}"
-                            engine.memory.set(fork_agent_key, json.dumps(payload_out, default=str))
-                        except Exception:
-                            logger.debug(f"Failed to set agent_result key for {agent_id_ret} in {fork_group}")
-
-                        # enqueue next agent in sequence if any
-                        try:
-                            next_agent = engine.fork_manager.next_in_sequence(fork_group, agent_id_ret)
-                            if next_agent:
-                                engine.enqueue_fork([next_agent], fork_group)
-                        except Exception:
-                            logger.debug(f"Error while enqueuing next agent for fork group {fork_group}")
+                    # enqueue next agent in sequence if any
+                    try:
+                        next_agent = engine.fork_manager.next_in_sequence(fork_group, agent_id_ret)
+                        if next_agent:
+                            engine.enqueue_fork([next_agent], fork_group)
+                    except Exception:
+                        logger.debug(
+                            "Error while enqueuing next agent for fork group %s", fork_group
+                        )
 
         except Exception as e:
             logger.error(f"Unexpected error in ResponseProcessor: {e}")

@@ -1128,6 +1128,24 @@ Assumptions: Achieving high availability requires an appropriate RedisStack HA d
 
         return escaped_query
 
+    def _escape_redis_search_phrase(self, phrase: str) -> str:
+        """
+        Escape a *quoted phrase* for RedisSearch.
+
+        IMPORTANT: RedisSearch phrase syntax already treats most punctuation as literal inside
+        quotes; over-escaping (e.g. turning '?' into '\\?') can trigger syntax errors in some
+        RedisSearch versions. For phrase queries we only escape characters that can break the
+        quoted string itself.
+        """
+        if not phrase:
+            return ""
+
+        # Normalize newlines/tabs to spaces to avoid query parsing issues.
+        normalized = " ".join(str(phrase).split())
+        # Only escape backslash and double-quote for safe inclusion inside "...".
+        normalized = normalized.replace("\\", "\\\\").replace('"', '\\"')
+        return normalized
+
     def _validate_similarity_score(self, score) -> float:
         """Validate and sanitize similarity scores to prevent NaN values."""
         try:
@@ -1162,10 +1180,8 @@ Assumptions: Achieving high availability requires an appropriate RedisStack HA d
 
             # Build search query - handle empty queries properly
             if query.strip():
-                # Escape special characters in the query for RedisStack FT.SEARCH
-                escaped_query = self._escape_redis_search_query(query)
-
-                # Quote the query to handle spaces and special characters properly
+                # Quote the query to handle spaces; escape only quote-breaking chars.
+                escaped_query = self._escape_redis_search_phrase(query)
                 search_query = f'@content:"{escaped_query}"'
             else:
                 # For empty queries, use wildcard to get all records

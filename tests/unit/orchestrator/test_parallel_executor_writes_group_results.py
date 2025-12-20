@@ -23,7 +23,7 @@ async def test_parallel_executor_writes_group_results(temp_config_file):
 
     # Check that memory.hset was called for the join state key and the group key
     hset_calls = [c for c in orchestrator.memory.hset.call_args_list]
-    assert any("waitfor:join_parallel_checks:inputs" in str(c) for c in hset_calls)
+    assert any("waitfor:fg_test:inputs" in str(c) for c in hset_calls)
     assert any("fork_group_results:fg_test" in str(c) for c in hset_calls)
 
     # Expect that direct agent_result key was set

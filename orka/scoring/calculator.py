@@ -223,9 +223,20 @@ class BooleanScoreCalculator:
         }
 
         logger.info(
-            f"Score calculated: {score:.4f} ({assessment}) - "
-            f"Passed: {len(passed_criteria)}/{len(self.flat_weights)}"
+            f"Score calculated: {score:.4f} ({assessment}) - \n"
+            f"--------------------------------------------------\n"
+            f"Passed: {len(passed_criteria)}/{len(self.flat_weights)} \n"
+            f"Failed: {len(failed_criteria)}/{len(self.flat_weights)} \n"
+            f"Breakdown: {breakdown} \n"
+            f"Passed Criteria: {passed_criteria} \n"
+            f"Failed Criteria: {failed_criteria} \n"
+            f"Dimension Scores: {dimension_scores} \n"
+            f"Passed: {passed_criteria} \n"
+            f"Failed: {failed_criteria} \n"
+            f"Total Criteria: {self.flat_weights} \n"
+            f"--------------------------------------------------\n"
         )
+        logger.debug(result)
 
         return result
 

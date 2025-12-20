@@ -47,8 +47,16 @@ class TestJoinNode:
         """Test _run_impl when all agents have completed."""
         mock_memory = Mock()
         mock_memory.hget.return_value = "0"  # retry count
-        mock_memory.hkeys.return_value = ["agent1", "agent2"]
-        mock_memory.smembers.return_value = ["agent1", "agent2"]
+        def hkeys_side(key):
+            # join state has received both
+            if key == "waitfor:fork_group_123:inputs":
+                return ["agent1", "agent2"]
+            # stable fork registry has both
+            if key == "fork_group_results:fork_group_123":
+                return ["agent1", "agent2"]
+            return []
+        mock_memory.hkeys.side_effect = hkeys_side
+        mock_memory.smembers.return_value = []  # not used when fork_group_results present
         mock_memory.hdel = Mock()
         
         node = JoinNode(
@@ -74,8 +82,14 @@ class TestJoinNode:
         """Test _run_impl when agents are still pending."""
         mock_memory = Mock()
         mock_memory.hget.return_value = "0"  # retry count
-        mock_memory.hkeys.return_value = ["agent1"]  # Only one received
-        mock_memory.smembers.return_value = ["agent1", "agent2"]  # Two expected
+        def hkeys_side(key):
+            if key == "waitfor:fork_group_123:inputs":
+                return ["agent1"]  # Only one received
+            if key == "fork_group_results:fork_group_123":
+                return ["agent1", "agent2"]  # Two expected
+            return []
+        mock_memory.hkeys.side_effect = hkeys_side
+        mock_memory.smembers.return_value = []
         mock_memory.hset = Mock()
         
         node = JoinNode(
@@ -99,8 +113,14 @@ class TestJoinNode:
         """Test _run_impl when max retries exceeded."""
         mock_memory = Mock()
         mock_memory.hget.return_value = "30"  # At max retries
-        mock_memory.hkeys.return_value = ["agent1"]
-        mock_memory.smembers.return_value = ["agent1", "agent2"]
+        def hkeys_side(key):
+            if key == "waitfor:fork_group_123:inputs":
+                return ["agent1"]
+            if key == "fork_group_results:fork_group_123":
+                return ["agent1", "agent2"]
+            return []
+        mock_memory.hkeys.side_effect = hkeys_side
+        mock_memory.smembers.return_value = []
         mock_memory.hdel = Mock()
         
         node = JoinNode(
@@ -119,6 +139,39 @@ class TestJoinNode:
         assert result["status"] == "timeout"
         assert "pending" in result
 
+    @pytest.mark.asyncio
+    async def test_run_impl_uses_fork_group_scoped_waitfor_key(self):
+        """Regression: JoinNode must always read waitfor:<fork_group_id>:inputs (no shared global key)."""
+        mock_memory = Mock()
+        mock_memory.hget.return_value = "0"
+
+        def hkeys_side(key):
+            if key == "waitfor:fg_isolation:inputs":
+                return ["agent1", "agent2"]
+            if key == "fork_group_results:fg_isolation":
+                return ["agent1", "agent2"]
+            return []
+
+        mock_memory.hkeys.side_effect = hkeys_side
+        mock_memory.smembers.return_value = []
+        mock_memory.hdel = Mock()
+
+        node = JoinNode(
+            node_id="join_node",
+            prompt="Test",
+            queue=[],
+            memory_logger=mock_memory,
+            group="fg_isolation",
+        )
+        node._complete = Mock(return_value={"status": "complete"})
+
+        result = await node._run_impl({"fork_group_id": "fg_isolation"})
+        assert result["status"] == "complete"
+        assert any(
+            c.args and c.args[0] == "waitfor:fg_isolation:inputs"
+            for c in mock_memory.hkeys.call_args_list
+        )
+
     def test_complete(self):
         """Test _complete method."""
         mock_memory = Mock()
@@ -135,7 +188,7 @@ class TestJoinNode:
         )
         
         fork_targets = ["agent1", "agent2"]
-        state_key = "waitfor:join_parallel_checks:inputs"
+        state_key = "waitfor:fork_group_123:inputs"
         
         result = node._complete(fork_targets, state_key)
         
@@ -147,7 +200,7 @@ class TestJoinNode:
         """Regression: _complete must not reference undefined input_data and should use trace_id when logging."""
         mock_memory = Mock()
 
-        state_key = "waitfor:join_parallel_checks:inputs"
+        state_key = "waitfor:fork_group_123:inputs"
         group_key = "join_results:join_node"
 
         def hget_side_effect(key, field):
@@ -194,8 +247,14 @@ class TestJoinNode:
         mock_memory = Mock()
         mock_memory.hget.return_value = None  # First retry
         mock_memory.scan.return_value = (0, [b"fork_group:test_group_123"])
-        mock_memory.hkeys.return_value = ["agent1", "agent2"]
-        mock_memory.smembers.return_value = ["agent1", "agent2"]
+        def hkeys_side(key):
+            if key == "waitfor:test_group_123:inputs":
+                return ["agent1", "agent2"]
+            if key == "fork_group_results:test_group_123":
+                return ["agent1", "agent2"]
+            return []
+        mock_memory.hkeys.side_effect = hkeys_side
+        mock_memory.smembers.return_value = []
         mock_memory.hdel = Mock()
         
         node = JoinNode(
@@ -241,13 +300,22 @@ class TestJoinNode:
     async def test_run_impl_uses_mapping_if_scan_fails(self):
         """If scan finds no matches, use explicit mapping key set by ForkNode."""
         mock_memory = Mock()
-        mock_memory.hget.return_value = None
         mock_memory.scan.return_value = (0, [])  # No matches
-        # mapping exists for join node
-        # first hget call (mapping) -> mapped_group_123, second hget (retry count) -> None
-        mock_memory.hget.side_effect = ["mapped_group_123", None]
-        mock_memory.hkeys.return_value = ["agent1", "agent2"]
-        mock_memory.smembers.return_value = ["agent1", "agent2"]
+        def hget_side(key, field):
+            if (key, field) == ("fork_group_mapping:test_group", "group_id"):
+                return "mapped_group_123"
+            if (key, field) == ("join_retry_counts", "join_node:join_retry_count"):
+                return None
+            return None
+        mock_memory.hget.side_effect = hget_side
+        def hkeys_side(key):
+            if key == "waitfor:mapped_group_123:inputs":
+                return ["agent1", "agent2"]
+            if key == "fork_group_results:mapped_group_123":
+                return ["agent1", "agent2"]
+            return []
+        mock_memory.hkeys.side_effect = hkeys_side
+        mock_memory.smembers.return_value = []
         mock_memory.hdel = Mock()
 
         node = JoinNode(
@@ -271,11 +339,23 @@ class TestJoinNode:
         mock_memory = Mock()
         # retry count missing
         # first hget -> mapped_group_456 (mapping), second hget -> None (retry)
-        mock_memory.hget.side_effect = ["mapped_group_456", None]
+        def hget_side(key, field):
+            if (key, field) == ("fork_group_mapping:test_group", "group_id"):
+                return "mapped_group_456"
+            if (key, field) == ("join_retry_counts", "join_node:join_retry_count"):
+                return None
+            return None
+        mock_memory.hget.side_effect = hget_side
         mock_memory.scan.return_value = (0, [])
-        # mapping exists, but smembers returns empty
+        # mapping exists, but stable registry is empty and smembers is empty => wait
+        def hkeys_side(key):
+            if key == "waitfor:mapped_group_456:inputs":
+                return ["agent1"]
+            if key == "fork_group_results:mapped_group_456":
+                return []
+            return []
+        mock_memory.hkeys.side_effect = hkeys_side
         mock_memory.smembers.return_value = []
-        mock_memory.hkeys.return_value = ["agent1"]
 
         node = JoinNode(
             node_id="join_node",
@@ -299,7 +379,7 @@ class TestJoinNode:
             if args == (f"fork_group_mapping:test_group", "group_id"):
                 return "mapped_group_456"
             # state entry for agent1 contains a completed payload
-            if args == ("waitfor:join_parallel_checks:inputs", "agent1"):
+            if args == ("waitfor:mapped_group_456:inputs", "agent1"):
                 return json.dumps({"response": "done", "confidence": "0.9", "status": "done", "fork_group": "mapped_group_456"})
             # retry count
             if args == ("join_retry_counts", "join_node:output"):
@@ -334,7 +414,9 @@ class TestJoinNode:
         # state has received keys for 2 agents
         mock_memory.hkeys.return_value = ["agent1", "agent2"]
         # first agent's state contains fork_group info
-        state_key = "waitfor:join_parallel_checks:inputs"
+        # In real runs, join state is scoped by fork_group_id; here we simulate an initial
+        # state_key that doesn't match the inferred fork group to exercise inference logic.
+        state_key = "waitfor:placeholder_group:inputs"
         mock_memory.hget.side_effect = lambda *args: json.dumps({"fork_group": "fork_from_state"}) if args == (state_key, "agent1") else None
 
         # smembers for inferred group returns targets
@@ -372,7 +454,7 @@ class TestJoinNode:
             if args == ("join_retry_counts", "join_node:output"):
                 return None
             # state entry for agent1
-            if args == ("waitfor:join_parallel_checks:inputs", "agent1"):
+            if args == ("waitfor:mapped_group_456:inputs", "agent1"):
                 return json.dumps({"fork_group": "actual_group_789"})
             return None
 
@@ -502,7 +584,7 @@ class TestJoinNode:
         )
         
         fork_targets = ["agent1", "agent2"]
-        state_key = "waitfor:join_parallel_checks:inputs"
+        state_key = "waitfor:fork_group_123:inputs"
         
         result = node._complete(fork_targets, state_key)
         
@@ -534,7 +616,7 @@ class TestJoinNode:
         )
         
         fork_targets = ["agent1", "agent2"]
-        state_key = "waitfor:join_parallel_checks:inputs"
+        state_key = "waitfor:fork_group_123:inputs"
         
         result = node._complete(fork_targets, state_key)
         
@@ -561,7 +643,7 @@ class TestJoinNode:
         )
         
         fork_targets = ["agent1", "agent2"]
-        state_key = "waitfor:join_parallel_checks:inputs"
+        state_key = "waitfor:fork_group_123:inputs"
         
         result = node._complete(fork_targets, state_key)
         
@@ -587,7 +669,7 @@ class TestJoinNode:
         )
         
         fork_targets = ["agent1", "agent2"]
-        state_key = "waitfor:join_parallel_checks:inputs"
+        state_key = "waitfor:fork_group_123:inputs"
         
         result = node._complete(fork_targets, state_key)
         
@@ -615,7 +697,7 @@ class TestJoinNode:
         )
         
         fork_targets = ["agent1", "agent2"]
-        state_key = "waitfor:join_parallel_checks:inputs"
+        state_key = "waitfor:fork_group_123:inputs"
         
         result = node._complete(fork_targets, state_key)
         
@@ -643,7 +725,7 @@ class TestJoinNode:
         )
         
         fork_targets = ["agent1", "agent2"]
-        state_key = "waitfor:join_parallel_checks:inputs"
+        state_key = "waitfor:fork_group_123:inputs"
         
         result = node._complete(fork_targets, state_key)
         
@@ -670,7 +752,7 @@ class TestJoinNode:
         )
         
         fork_targets = ["agent1", "agent2"]
-        state_key = "waitfor:join_parallel_checks:inputs"
+        state_key = "waitfor:fork_group_123:inputs"
         
         result = node._complete(fork_targets, state_key)
         
@@ -699,7 +781,7 @@ class TestJoinNode:
         )
         
         fork_targets = ["agent1", "agent2"]
-        state_key = "waitfor:join_parallel_checks:inputs"
+        state_key = "waitfor:fork_group_123:inputs"
         
         result = node._complete(fork_targets, state_key)
         
@@ -723,7 +805,7 @@ class TestJoinNode:
         )
         
         fork_targets = []
-        state_key = "waitfor:join_parallel_checks:inputs"
+        state_key = "waitfor:fork_group_123:inputs"
         
         result = node._complete(fork_targets, state_key)
         
@@ -737,8 +819,14 @@ class TestJoinNode:
         """Test _run_impl when retry count is None (first run)."""
         mock_memory = Mock()
         mock_memory.hget.return_value = None  # First time, no retry count
-        mock_memory.hkeys.return_value = ["agent1"]
-        mock_memory.smembers.return_value = ["agent1", "agent2"]
+        def hkeys_side(key):
+            if key == "waitfor:fork_group_123:inputs":
+                return ["agent1"]  # only one received, so join remains waiting
+            if key == "fork_group_results:fork_group_123":
+                return ["agent1", "agent2"]  # two expected
+            return []
+        mock_memory.hkeys.side_effect = hkeys_side
+        mock_memory.smembers.return_value = []
         mock_memory.hset = Mock()
         
         node = JoinNode(
@@ -754,7 +842,7 @@ class TestJoinNode:
         result = await node._run_impl(input_data)
         
         # Should set retry count to 3 (starting value when None)
-        mock_memory.hset.assert_called_with(
+        mock_memory.hset.assert_any_call(
             "join_retry_counts",
             node._retry_key,
             "3"
@@ -765,8 +853,14 @@ class TestJoinNode:
         """Test _run_impl properly handles bytes in inputs_received."""
         mock_memory = Mock()
         mock_memory.hget.return_value = "0"
-        mock_memory.hkeys.return_value = [b"agent1", b"agent2"]  # Bytes
-        mock_memory.smembers.return_value = ["agent1", "agent2"]
+        def hkeys_side(key):
+            if key == "waitfor:fork_group_123:inputs":
+                return [b"agent1", b"agent2"]  # Bytes
+            if key == "fork_group_results:fork_group_123":
+                return ["agent1", "agent2"]
+            return []
+        mock_memory.hkeys.side_effect = hkeys_side
+        mock_memory.smembers.return_value = []
         mock_memory.hdel = Mock()
         
         node = JoinNode(
@@ -789,7 +883,13 @@ class TestJoinNode:
         """Test _run_impl properly handles bytes in fork_targets."""
         mock_memory = Mock()
         mock_memory.hget.return_value = "0"
-        mock_memory.hkeys.return_value = ["agent1"]
+        def hkeys_side(key):
+            if key == "waitfor:fork_group_123:inputs":
+                return ["agent1"]
+            if key == "fork_group_results:fork_group_123":
+                return []  # force fallback to smembers
+            return []
+        mock_memory.hkeys.side_effect = hkeys_side
         mock_memory.smembers.return_value = [b"agent1", b"agent2"]  # Bytes
         
         node = JoinNode(

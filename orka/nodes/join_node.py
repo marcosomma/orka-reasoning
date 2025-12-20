@@ -58,12 +58,26 @@ class JoinNode(BaseNode):
         # Track whether we recovered the group using an explicit mapping
         mapping_used = False
         if not fork_group_id and self.group_id:
-            # Look for fork groups that match our pattern (e.g., "opening_positions_*")
-            # Get all keys that match the pattern
+            # Prefer explicit mapping written by ForkNode (avoids stale fork_group:* keys from prior runs)
+            try:
+                mapping_key = f"fork_group_mapping:{self.group_id}"
+                mapped = self.memory_logger.hget(mapping_key, "group_id")
+                if mapped:
+                    fork_group_id = mapped.decode() if isinstance(mapped, bytes) else mapped
+                    mapping_used = True
+                    logger.info(
+                        f"Join node '{self.node_id}' recovered fork group from mapping: {fork_group_id}"
+                    )
+            except Exception as e:
+                logger.debug(
+                    f"Join node '{self.node_id}': error reading mapping key fork_group_mapping:{self.group_id}: {e}"
+                )
+
+        if not fork_group_id and self.group_id:
+            # Fallback: scan for fork groups that match our pattern (e.g., "opening_positions_*")
             pattern = f"fork_group:{self.group_id}_*"
             try:
                 matching_keys = []
-                # Scan for keys matching our pattern
                 cursor = 0
                 while True:
                     cursor, keys = self.memory_logger.scan(cursor, match=pattern, count=100)
@@ -72,7 +86,6 @@ class JoinNode(BaseNode):
                         break
 
                 if matching_keys:
-                    # Get the most recent fork group (assuming timestamp is in the name)
                     latest_key = max(
                         matching_keys, key=lambda k: k.decode() if isinstance(k, bytes) else k
                     )
@@ -84,25 +97,6 @@ class JoinNode(BaseNode):
                     logger.warning(
                         f"Join node '{self.node_id}' could not find fork group matching pattern: {pattern}"
                     )
-                    # Try reading explicit mapping written by the ForkNode, if available
-                    try:
-                        mapping_key = f"fork_group_mapping:{self.group_id}"
-                        mapped = self.memory_logger.hget(mapping_key, "group_id")
-                        if mapped:
-                            mapped_val = mapped.decode() if isinstance(mapped, bytes) else mapped
-                            fork_group_id = mapped_val
-                            mapping_used = True
-                            logger.info(
-                                f"Join node '{self.node_id}' recovered fork group from mapping: {fork_group_id}"
-                            )
-                        else:
-                            logger.debug(
-                                f"Join node '{self.node_id}': no mapping found at {mapping_key}"
-                            )
-                    except Exception as e:
-                        logger.debug(
-                            f"Join node '{self.node_id}': error reading mapping key {mapping_key}: {e}"
-                        )
             except Exception as e:
                 logger.error(f"Join node '{self.node_id}' error finding fork group: {e}")
 
@@ -111,7 +105,12 @@ class JoinNode(BaseNode):
 
         logger.info(f"🔗 JOIN - Final fork_group_id: {fork_group_id}")
 
-        state_key = "waitfor:join_parallel_checks:inputs"
+        # NOTE:
+        # - fork_group_results:<id> is the stable hash containing entries for all agents in the fork
+        # - fork_group:<id> may be used as a "pending set" by ForkGroupManager (members removed as done)
+        # - waitfor:<fork_group_id>:inputs tracks received payloads written during execution
+        #   (must be per-fork group to avoid leaking results across workflows/runs)
+        state_key = f"waitfor:{fork_group_id}:inputs"
 
         # Get or increment retry count using backend-agnostic hash operations
         retry_count_str = self.memory_logger.hget("join_retry_counts", self._retry_key)
@@ -123,15 +122,28 @@ class JoinNode(BaseNode):
 
         logger.info(f"🔗 JOIN - Retry count: {retry_count}/{self.max_retries}")
 
-        # Get list of received inputs and expected targets
+        # "Received" agents are the ones with entries in the join state hash
         inputs_received = self.memory_logger.hkeys(state_key)
         received = [i.decode() if isinstance(i, bytes) else i for i in inputs_received]
 
-        # Try to derive fork group from available information if it's missing
-        fork_targets = []
-        if fork_group_id:
-            fork_targets = self.memory_logger.smembers(f"fork_group:{fork_group_id}")
-            fork_targets = [i.decode() if isinstance(i, bytes) else i for i in fork_targets]
+        # Determine expected agents.
+        # Prefer fork_group_results:<id> (stable registry of all agents in the fork) if present.
+        group_results_key = f"fork_group_results:{fork_group_id}" if fork_group_id else None
+        fork_targets: list[str] = []
+        if group_results_key:
+            try:
+                keys = self.memory_logger.hkeys(group_results_key)
+                fork_targets = [i.decode() if isinstance(i, bytes) else i for i in keys]
+            except Exception:
+                fork_targets = []
+
+        # Fallback: use fork_group:<id> (can be either registry or pending set depending on backend)
+        if not fork_targets and fork_group_id:
+            try:
+                fork_targets = self.memory_logger.smembers(f"fork_group:{fork_group_id}")
+                fork_targets = [i.decode() if isinstance(i, bytes) else i for i in fork_targets]
+            except Exception:
+                fork_targets = []
 
         # If we don't have a fork_group or the recovered mapping returned an empty set,
         # try to infer the correct fork_group from the stored agent state in the
@@ -236,16 +248,20 @@ class JoinNode(BaseNode):
                     "Falling back to received inputs as targets."
                 )
                 fork_targets = list(received)
+        # Pending agents are those expected but not yet present in the join state.
         pending = [agent for agent in fork_targets if agent not in received]
 
         logger.info(f"🔗 JOIN - Expected agents (fork_targets): {fork_targets}")
         logger.info(f"🔗 JOIN - Received agents: {received}")
         logger.info(f"🔗 JOIN - Pending agents: {pending}")
 
-        # Check if all expected agents have completed
+        # Check if all forked agents have completed
         if not pending:
             logger.info(f"🔗 JOIN - All agents completed! Proceeding to merge results.")
             self.memory_logger.hdel("join_retry_counts", self._retry_key)
+            # Merge from the stable results hash if available; otherwise merge from join state.
+            if group_results_key and fork_targets:
+                return self._complete(fork_targets, group_results_key, input_data=input_data)
             return self._complete(fork_targets, state_key, input_data=input_data)
 
         # Check for max retries
@@ -350,8 +366,10 @@ class JoinNode(BaseNode):
         # Store output using hash operations
         self.memory_logger.hset("join_outputs", self.output_key, json.dumps(merged, default=json_serializer))
 
-        # Clean up state using hash operations
-        if fork_targets:  # Only call hdel (hash delete) if there are keys to delete
+        # Clean up state using hash operations.
+        # IMPORTANT: Do not delete fork_group_results:<id> because it is used as the stable
+        # results table for joins and diagnostics. Only delete legacy transient join state.
+        if fork_targets and isinstance(state_key, str) and state_key.startswith("waitfor:"):
             self.memory_logger.hdel(state_key, *fork_targets)
 
         # Return merged results with status and individual agent results

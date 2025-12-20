@@ -69,10 +69,11 @@ agents:
       routing_map:
         "true":
           - failover_search
+          - info_completed
           - final_router
-          - final_builder_true
         "false":
           - info_completed
+          - final_builder_false
     depends_on:
       - join_parallel_checks
   - id: failover_search
@@ -130,8 +131,10 @@ agents:
     temperature: 0.6
     queue: orka:final_output
     prompt: "Build a detailed answer based on the classification result:- Classification result: {{ get_agent_response('initial_classify') }}. Provide the best possible response given the available information."
+    # NOTE: this node can be reached either via `final_router` (when search_required=true)
+    # or directly from `router_search_path` (when search_required=false).
     depends_on:
-      - final_router
+      - router_search_path
   - id: final_summary
     type: local_llm
     model: openai/gpt-oss-20b
