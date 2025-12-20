@@ -28,7 +28,7 @@ agents:
     parse_json: false
     max_tokens: 100
     timeout: 30.0
-    prompt: "Build on this analysis: {{ safe_get_response('agent1', 'No previous analysis') | truncate(150) }}"
+    prompt: "Build on this analysis: {{ safe_get_response('agent1', 'No previous analysis') }}"
 
   - id: final_synthesis
     type: local_llm
@@ -41,7 +41,7 @@ agents:
     timeout: 30.0
     prompt: |
       Previous responses:
-      Agent 1: {{ safe_get_response('agent1', 'No response') | truncate(100) }}
-      Agent 2: {{ safe_get_response('agent2', 'No response') | truncate(100) }}
+      Agent 1: {{ safe_get_response('agent1', 'No response') }}
+      Agent 2: {{ safe_get_response('agent2', 'No response') }}
       
       Synthesize these perspectives on: {{ get_input() }}

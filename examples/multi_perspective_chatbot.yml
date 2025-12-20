@@ -1,3 +1,13 @@
+# Multi-Perspective Chatbot with Memory
+# Combines web search, memory, and multi-perspective analysis
+#
+# ROBUSTNESS FEATURES:
+# - Fallback values for all memory/search operations
+# - Multiple score extraction patterns
+# - Timeout handling
+# - Focused prompts with word limits
+# - Safe template accessors
+
 orchestrator:
   id: multi-perspective-chatbot
   strategy: sequential
@@ -12,62 +22,54 @@ orchestrator:
 agents:
   - id: memory_retriever
     type: memory
-    memory_preset: "episodic"  # Personal experiences and conversations (7 days)
+    memory_preset: "episodic"
     config:
       operation: read
-      # 🎯 Preset provides: limit=8, similarity_threshold=0.6, vector_weight=0.7,
-      # text_weight=0.3, enable_hybrid_search=true, temporal_weight=0.3, etc.
       memory_category_filter: conversation
-      vector_weight: 0.8          # Override for stronger semantic matching
-      text_weight: 0.2            # Override for less text matching
-      similarity_threshold: 0.65  # Override preset default of 0.6
-      limit: 5                    # Override preset default of 8
+      vector_weight: 0.8
+      text_weight: 0.2
+      similarity_threshold: 0.60
+      limit: 5
     prompt: |
-      Query: {{ get_input() }}
-      
-      Return all relevant conversation context and metadata.
-      Include previous perspectives and insights if available.
-      Return "NONE" if no relevant context exists.
+      Find relevant context for: {{ get_input() }}
 
   - id: search_query_optimizer
     type: local_llm
     model: openai/gpt-oss-20b
     model_url: http://localhost:1234
     provider: lm_studio
+    temperature: 0.3
+    timeout: 30
     prompt: |
-      Given the user query: {{ get_input() }}
-      And any relevant context: {{ get_agent_response('memory_retriever') }}
+      TASK: Create a search query for this topic.
       
-      Create a concise, focused search query that would help find relevant information.
-      The query should:
-      1. Be 2-3 keywords or a short phrase
-      2. Focus on the core concept
-      3. Use specific terms that would appear in relevant results
-      4. Exclude unnecessary context words
+      USER QUERY: {{ get_input() }}
+      CONTEXT: {{ get_agent_response('memory_retriever') | default('None', true) }}
       
-      Format: Return ONLY the optimized search query, nothing else.
+      OUTPUT: Return ONLY a 2-4 word search query. Nothing else.
 
   - id: web_search
     type: duckduckgo
-    prompt: "{{ get_agent_response('search_query_optimizer') }}"
+    max_results: 5
+    prompt: "{{ get_agent_response('search_query_optimizer') | default(get_input(), true) }}"
 
   - id: conversation_loop
     type: loop
-    max_loops: 3  # Each perspective gets one loop
-    score_threshold: 0.30  # Lowered from 0.85 to realistic perspective convergence thresholds
+    max_loops: 3
+    score_threshold: 0.50
+    fallback_score: 0.30
+    timeout_score: 0.20
+    persist_across_runs: false
     
     score_extraction_config:
       strategies:
         - type: pattern
           patterns:
-            - "SCORE:\\s*([0-9.]+)"
-            - "Score:\\s*([0-9.]+)"
-            - "Quality Score:\\s*([0-9.]+)"
-            - "QUALITY_SCORE:\\s*([0-9.]+)"
+            - "SCORE:\\s*([0-9]+\\.?[0-9]*)"
+            - "Score:\\s*([0-9]+\\.?[0-9]*)"
         - type: pattern
           patterns:
-            - "(0\\.[6-9][0-9]?)"  # Matches scores between 0.60 and 0.99
-            - "([0-9])\\.[0-9]+"   # Matches any decimal number
+            - "(0\\.[5-9][0-9]?)"
         - type: agent_key
           agents: ["quality_scorer"]
           key: "response"
@@ -75,9 +77,8 @@ agents:
     
     past_loops_metadata:
       loop_number: "{{ get_loop_number() }}"
-      perspective: "{% set perspectives = ['Analytical', 'Empathetic', 'Creative'] %}{{ perspectives[get_loop_number() - 1] }}"
-      response: "{{ get_agent_response('synthesizer')['response'] if get_agent_response('synthesizer') else '' }}"
-      insights: "{{ get_agent_response('synthesizer')['insights'] if get_agent_response('synthesizer') else '' }}"
+      perspective: "{% set p = ['Analytical', 'Empathetic', 'Creative'] %}{{ p[(get_loop_number() - 1) % 3] }}"
+      response: "{{ get_agent_response('synthesizer')['response'] | default('') }}"
       timestamp: "{{ timestamp }}"
     
     internal_workflow:
@@ -92,189 +93,122 @@ agents:
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
+          temperature: 0.6
+          timeout: 60
           prompt: |
             {% set perspectives = ['Analytical', 'Empathetic', 'Creative'] %}
-            {% set current_perspective = perspectives[get_loop_number() - 1] %}
+            {% set current = perspectives[(get_loop_number() - 1) % 3] %}
             
-            Previous context: {{ safe_get_response('memory_retriever') }}
-            Current query: {{ get_input() }}
+            PERSPECTIVE: {{ current }}
+            QUERY: {{ get_input() }}
             
-            You are now taking the {{ current_perspective }} perspective.
+            CONTEXT: {{ safe_get_response('memory_retriever', 'No prior context') }}
             
-            {% if current_perspective == 'Analytical' %}
-            Analyze the query logically and objectively.
-            Focus on:
-            - Facts and data
-            - Logical reasoning
-            - Systematic analysis
-            - Potential implications
-            
-            {% elif current_perspective == 'Empathetic' %}
-            Consider the emotional and human aspects.
-            Focus on:
-            - Emotional understanding
-            - Personal impact
-            - Human relationships
-            - Social dynamics
-            
-            {% else %}  {# Creative perspective #}
-            Think creatively and innovatively.
-            Focus on:
-            - Novel approaches
-            - Alternative viewpoints
-            - Unique solutions
-            - Future possibilities
+            {% if current == 'Analytical' %}
+            Focus: Facts, logic, systematic analysis, evidence.
+            {% elif current == 'Empathetic' %}
+            Focus: Human impact, emotions, relationships, social dynamics.
+            {% else %}
+            Focus: Novel ideas, alternatives, future possibilities.
             {% endif %}
             
             {% if has_past_loops() %}
-            Previous perspectives:
-            {% for past_loop in get_past_loops() %}
-            {{ past_loop.perspective }} View:
-            {{ safe_get(past_loop.result.perspective_handler, 'response', 'No response') }}
-            Key Insights: {{ safe_get(past_loop.result.synthesizer, 'response', 'No insights') }}
+            PREVIOUS:
+            {% for p in get_past_loops() %}
+            {{ p.perspective }}: {{ p.response }}
             {% endfor %}
             {% endif %}
             
-            Memory Context: {{ get_agent_memory_context('perspective_handler', current_perspective) }}
-            
-            Provide your perspective while building upon previous insights.
+            OUTPUT FORMAT:
+            PERSPECTIVE: {{ current }}
+            ANALYSIS: [Your perspective in 100-150 words]
+            KEY_INSIGHT: [One unique insight]
 
         - id: synthesizer
           type: local_llm
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
+          temperature: 0.4
+          timeout: 60
           prompt: |
-            Based on the current perspective's analysis:
-            {{ get_agent_response('perspective_handler') }}
+            TASK: Synthesize current perspective.
             
-            Extract and synthesize:
-            1. Key insights unique to this perspective
-            2. How this complements previous perspectives
-            3. New understanding gained
+            INPUT: {{ get_agent_response('perspective_handler') }}
             
-            Format as:
-            INSIGHTS: [concise bullet points]
-            RESPONSE: [synthesized response]
+            OUTPUT FORMAT:
+            INSIGHTS: [2-3 bullet points]
+            RESPONSE: [Synthesized view in 2 sentences]
 
         - id: quality_scorer
           type: local_llm
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
+          temperature: 0.1
+          timeout: 30
           prompt: |
-            Evaluate the quality of this perspective's contribution:
-            {{ get_agent_response('synthesizer') }}
+            TASK: Score this perspective (0.0-1.0).
             
-            Score based on:
-            - Uniqueness of insights
-            - Depth of analysis
-            - Integration with other perspectives
-            - Value added to the conversation
+            SYNTHESIS: {{ get_agent_response('synthesizer') }}
             
-            Provide a score between 0.0 and 1.0.
-            Format: SCORE: X.XX
-            Then explain the reasoning.
+            CRITERIA:
+            - Uniqueness: 0-0.3
+            - Depth: 0-0.3
+            - Value: 0-0.4
+            
+            OUTPUT FORMAT:
+            SCORE: [0.0-1.0]
+            REASON: [One sentence]
+            
+            IMPORTANT: SCORE must be "SCORE: X.XX"
 
   - id: final_answer_builder
     type: local_llm
     model: openai/gpt-oss-20b
     model_url: http://localhost:1234
     provider: lm_studio
+    temperature: 0.4
+    timeout: 60
     prompt: |
-      Original query: {{ get_input() }}
+      QUERY: {{ get_input() }}
       
-      Past context: {{ safe_get_response('memory_retriever', 'No relevant past context') }}
+      CONTEXT: {{ safe_get_response('memory_retriever', 'None') }}
       
-      Web search results: {{ safe_get_response('web_search', 'No web search results') }}
+      WEB SEARCH: {{ safe_get_response('web_search', 'None') }}
       
-      Perspectives Analysis:
-      {% set loop_results = get_agent_response('conversation_loop') %}
-      {% if loop_results and loop_results.past_loops %}
-        {% for perspective_data in loop_results.past_loops %}
-          {% set perspective = safe_get(perspective_data, 'perspective', 'Unknown') %}
-          {% set result = safe_get(perspective_data, 'result', {}) %}
-          
-          {{ perspective }} Perspective:
-          Response: {{ safe_get(safe_get(result, 'perspective_handler', {}), 'response', 'No response available') }}
-          
-          Synthesis: {{ safe_get(safe_get(result, 'synthesizer', {}), 'response', 'No synthesis available') }}
-          
-          Quality Score: {{ safe_get(safe_get(result, 'quality_scorer', {}), 'response', 'No score available') }}
-          
-          ---
-        {% endfor %}
+      {% set lr = get_agent_response('conversation_loop') %}
+      PERSPECTIVES:
+      {% if lr and lr.past_loops %}
+      {% for p in lr.past_loops %}
+      {{ p.perspective }}: {{ p.response }}
+      {% endfor %}
       {% else %}
-        {% set direct_result = safe_get(loop_results, 'result', {}) %}
-        {% if direct_result %}
-          Direct Analysis:
-          Response: {{ safe_get(safe_get(direct_result, 'perspective_handler', {}), 'response', 'No response available') }}
-          Synthesis: {{ safe_get(safe_get(direct_result, 'synthesizer', {}), 'response', 'No synthesis available') }}
-          Quality Score: {{ safe_get(safe_get(direct_result, 'quality_scorer', {}), 'response', 'No score available') }}
-        {% else %}
-          No perspective analysis available.
-        {% endif %}
+      No perspectives available.
       {% endif %}
-
-      Create a comprehensive final answer that:
-      1. Directly addresses the original query
-      2. Integrates insights from all perspectives
-      3. Incorporates relevant web search findings
-      4. Provides a balanced and nuanced response
-
-      Format the response with:
-      SUMMARY: A one-line summary of the answer
-      DETAILED_RESPONSE: The complete, well-structured answer
-      SOURCES: Key sources of information used (perspectives/web)
+      
+      OUTPUT FORMAT:
+      
+      SUMMARY: [One-line answer]
+      
+      DETAILED_RESPONSE: [Complete answer, 200-300 words]
+      
+      SOURCES: [List: web, memory, perspectives used]
 
   - id: memory_writer
     type: memory
-    memory_preset: "episodic"  # Personal experiences and conversations (7 days)
+    memory_preset: "episodic"
     config:
       operation: write
       vector: true
       vector_field_name: "content_vector"
       store_metadata: true
-      include_agent_context: true
     namespace: conversation
     prompt: |
-      {% set final_answer = safe_get_response('final_answer_builder', '') %}
-      {% if final_answer %}
-        {{ final_answer }}
-      {% else %}
-        {% set last_perspective = get_past_loop_data('perspective_handler') %}
-        {% set last_synthesis = get_past_loop_data('synthesizer') %}
-        {{ last_synthesis if last_synthesis != 'No synthesizer found' else last_perspective }}
-      {% endif %}
+      {{ safe_get_response('final_answer_builder', '') }}
     metadata:
       query: "{{ get_input() }}"
-      perspectives: |
-        {% set loop_results = get_agent_response('conversation_loop') %}
-        {% if loop_results and loop_results.past_loops %}
-          {% for perspective_data in loop_results.past_loops %}
-            {% set perspective = safe_get(perspective_data, 'perspective', 'Unknown') %}
-            {% set result = safe_get(perspective_data, 'result', {}) %}
-            {{ perspective }}:
-              Response: {{ safe_get(safe_get(result, 'perspective_handler', {}), 'response', 'No response') }}
-              Synthesis: {{ safe_get(safe_get(result, 'synthesizer', {}), 'response', 'No synthesis') }}
-              Score: {{ safe_get(safe_get(result, 'quality_scorer', {}), 'response', 'No score') }}
-              Round: {{ get_round_info() }}
-          {% endfor %}
-        {% else %}
-          {% set direct_result = safe_get(loop_results, 'result', {}) %}
-          {% if direct_result %}
-            Direct Analysis:
-              Response: {{ safe_get(safe_get(direct_result, 'perspective_handler', {}), 'response', 'No response') }}
-              Synthesis: {{ safe_get(safe_get(direct_result, 'synthesizer', {}), 'response', 'No synthesis') }}
-              Score: {{ safe_get(safe_get(direct_result, 'quality_scorer', {}), 'response', 'No score') }}
-              Round: {{ get_round_info() }}
-          {% endif %}
-        {% endif %}
-      web_sources: "{{ safe_get_response('web_search', '[]')|tojson }}"
-      past_context: "{{ safe_get_response('memory_retriever', '[]')|tojson }}"
       category: conversation
       timestamp: "{{ timestamp }}"
       session_id: "{{ session_id }}"
-      agent_type: "multi_perspective_chatbot"
-      debate_evolution: "{{ get_debate_evolution() }}"
     key_template: "conversation_{{ timestamp }}_{{ session_id }}"
