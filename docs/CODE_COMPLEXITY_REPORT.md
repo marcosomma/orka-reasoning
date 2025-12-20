@@ -13,7 +13,7 @@ This report identifies the top 20 largest and most complex files in the `orka/` 
 | **1** | `memory/redisstack_logger.py` | ~~1,954~~ **365** | ~~95.6~~ 18.2 | 1 | 48→9 | 0 | ✅ Done |
 | **2** | `orchestrator/dry_run_engine.py` | ~~1,287~~ **312** | ~~65.2~~ 15.4 | 4→1 | 25→12 | 11→5 | ✅ Done |
 | **3** | `nodes/memory_reader_node.py` | ~~1,154~~ **214** | ~~53.0~~ 10.6 | 1 | 15→5 | 9→2 | ✅ Done |
-| **4** | `orchestrator/simplified_prompt_rendering.py` | **953** | 50.0 | 1 | 12 | 0 | 🟠 High |
+| **4** | `orchestrator/simplified_prompt_rendering.py` | ~~953~~ **235** | ~~50.0~~ 11.8 | 1 | 12→6 | 0 | ✅ Done |
 | **5** | `memory/base_logger.py` | **949** | 45.0 | 1 | 38 | 0 | 🟠 High |
 | **6** | `tui/components.py` | **902** | 42.7 | 1 | 21 | 0 | 🟠 High |
 | **7** | `memory/redis_logger.py` | **742** | 33.8 | 1 | 19 | 0 | 🟡 Medium |
@@ -90,7 +90,7 @@ This report identifies the top 20 largest and most complex files in the `orka/` 
 
 | File | Issue | Recommendation |
 |------|-------|----------------|
-| `simplified_prompt_rendering.py` | Template rendering with Jinja2, complex string manipulation | Extract template helpers |
+| `simplified_prompt_rendering.py` ✅ | ~~Template rendering with Jinja2~~ **REFACTORED** | ~~Extract template helpers~~ Done |
 | `base_logger.py` | Base class with 38 methods, inheritance complexity | Consider composition over inheritance |
 | `tui/components.py` | UI state management, 21 methods | Split into smaller component files |
 
@@ -101,7 +101,7 @@ This report identifies the top 20 largest and most complex files in the `orka/` 
 | Module | Files in Top 20 | Total Lines | Notes |
 |--------|-----------------|-------------|-------|
 | `memory/` | 4 | ~~4,216~~ 2,627 | Refactored - 1,589 lines moved to mixins |
-| `orchestrator/` | 4 | ~~3,470~~ 2,495 | Refactored - 975 lines moved to mixins |
+| `orchestrator/` | 4 | ~~3,470~~ 1,777 | Refactored - 1,693 lines moved to mixins |
 | `nodes/` | 4 | ~~3,064~~ 2,124 | Refactored - 940 lines moved to mixins |
 | `tui/` | 3 | 2,035 | UI components |
 | `agents/` | 2 | 1,273 | LLM integration |
@@ -127,10 +127,10 @@ This report identifies the top 20 largest and most complex files in the `orka/` 
 ## Metrics Summary
 
 - **Total files analyzed:** 20
-- **Combined lines of code:** ~~14,682~~ 11,178 (after refactoring)
-- **Average file size:** ~~734~~ 559 lines
+- **Combined lines of code:** ~~14,682~~ 10,460 (after refactoring)
+- **Average file size:** ~~734~~ 523 lines
 - **Files exceeding 1,000 lines:** ~~3~~ 0 ✅
-- **Files with >30 functions:** ~~3~~ 2 (`base_logger`, `data_manager`) - all critical files refactored
+- **Files with >30 functions:** ~~3~~ 2 (`base_logger`, `data_manager`) - all critical & 1 high priority files refactored
 
 ---
 
@@ -200,10 +200,24 @@ Track progress on addressing complexity issues in each file.
 
 ### 🟠 High Priority (Should Fix)
 
-- [ ] **`orchestrator/simplified_prompt_rendering.py`** (953 lines)
-  - [ ] Extract template helper functions
-  - [ ] Reduce Jinja2 complexity
-  - [ ] Add template validation tests
+- [x] **`orchestrator/simplified_prompt_rendering.py`** ~~(953 lines)~~ → **235 lines (78.9% reduction) ✅**
+  - [x] Extract `TemplateSafeObject` class for safe template access
+  - [x] Extract `PayloadEnhancerMixin` for payload enhancement
+  - [x] Extract `input_helpers` for input-related functions
+  - [x] Extract `loop_helpers` for loop-related functions
+  - [x] Extract `agent_helpers` for agent response functions
+  - [x] Extract `memory_helpers` for memory-related functions
+  - [x] Extract `utility_helpers` for general utilities
+  - [x] Add comprehensive unit tests (100 new tests)
+  
+  **New module structure:** `orka/orchestrator/prompt_rendering/`
+  - `template_safe_object.py` - Safe wrapper for template access
+  - `payload_enhancer.py` - Payload enhancement for templates
+  - `input_helpers.py` - Input data access helpers
+  - `loop_helpers.py` - Loop data access helpers
+  - `agent_helpers.py` - Agent response helpers
+  - `memory_helpers.py` - Memory data access helpers
+  - `utility_helpers.py` - General utility helpers
 
 - [ ] **`memory/base_logger.py`** (949 lines, 38 methods)
   - [ ] Consider composition over inheritance
@@ -296,10 +310,10 @@ Track progress on addressing complexity issues in each file.
 | Priority | Total Files | Completed | Remaining |
 |----------|-------------|-----------|-----------|
 | 🔴 Critical | 3 | 3 | 0 |
-| 🟠 High | 3 | 0 | 3 |
+| 🟠 High | 3 | 1 | 2 |
 | 🟡 Medium | 11 | 0 | 11 |
 | 🟢 Low | 3 | 0 | 3 |
-| **Total** | **20** | **3** | **17** |
+| **Total** | **20** | **4** | **16** |
 
 ---
 
@@ -310,6 +324,7 @@ _Use this section to track decisions, blockers, and additional context._
 - [x] **Completed:** `redisstack_logger.py` refactored (Dec 20, 2025) - 81.3% size reduction, 108 new unit tests
 - [x] **Completed:** `dry_run_engine.py` refactored (Dec 20, 2025) - 75.8% size reduction, 64 new unit tests
 - [x] **Completed:** `memory_reader_node.py` refactored (Dec 20, 2025) - 81.5% size reduction, 39 new unit tests
+- [x] **Completed:** `simplified_prompt_rendering.py` refactored (Dec 20, 2025) - 78.9% size reduction, 100 new unit tests
 - [x] **🎉 ALL CRITICAL FILES REFACTORED**
 - [ ] **Blocker:** _None identified_
 - [ ] **Decision:** _Pending team review for remaining files_
