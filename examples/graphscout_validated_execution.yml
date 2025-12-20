@@ -180,6 +180,7 @@ agents:
 
   - id: content_synthesizer
     type: local_llm
+    is_terminal: true  # Mark as terminal for GraphScout path completion
     capabilities: [answer_emit, synthesis]
     model: openai/gpt-oss-20b
     model_url: http://localhost:1234
@@ -195,6 +196,7 @@ agents:
 
   - id: report_builder
     type: local_llm
+    is_terminal: true  # Mark as terminal for GraphScout path completion
     capabilities: [answer_emit, reporting]
     model: openai/gpt-oss-20b
     model_url: http://localhost:1234

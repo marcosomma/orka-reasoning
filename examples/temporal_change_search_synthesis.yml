@@ -61,6 +61,12 @@ agents:
       Based on the user's question and the detected pivot year, write a search query to find how the subject was classified or understood after that year. Use phrasing like: "how was [subject] classified after [year]?" SUBJECT: {{ get_input() }} YEAR: {% set change_data = get_agent_response("detect_change") %}{% if change_data and change_data.response %}{{ change_data.response }}{% else %}2000{% endif %} Constraints: Only return the search sentence.
     depends_on:
       - fork_temporal
+  - id: join_paths
+    type: join
+    group: fork_temporal
+    depends_on:
+      - search_before
+      - search_after
   - id: search_before
     type: duckduckgo
     queue: orka:search_before
@@ -73,9 +79,6 @@ agents:
     prompt: "{{ get_agent_response('generate_after_query') }}"
     depends_on:
       - generate_after_query
-  - id: join_paths
-    type: join
-    group: fork_temporal
   - id: synthesize_timeline_answer
     type: local_llm
     model: openai/gpt-oss-20b
