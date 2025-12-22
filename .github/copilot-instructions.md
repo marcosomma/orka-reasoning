@@ -49,19 +49,37 @@ orka-start
 # Run any workflow
 orka run examples/workflow.yml "input text"
 
-# Run tests with coverage (75% minimum)
-pytest --cov=orka --cov-report=term-missing --cov-fail-under=75.0
+# Run tests with coverage
+# Note: pytest addopts in pyproject enforces >=80% coverage
+pytest --cov=orka --cov-report=term-missing
 
 # Memory debugging TUI
 orka memory watch
 ```
 
+### Task Briefing Checklist
+- Goal and acceptance criteria (Definition of Done)
+- Priority and budget/time constraints
+- Impacted areas/files and API stability requirements
+- Environment details: OS, Python/conda env, RedisStack URL/availability
+- LLM policy: offline-only vs allowed providers/models; API keys availability
+- Reproduction details: logs, failing tests, minimal repro command, expected vs actual
+- Non-functional targets: latency/memory budgets, token limits, parallelism, timeouts
+- Security/compliance: external network allowed/not, secrets handling
+- Testing expectations: unit vs integration, expected coverage impact, flakiness notes
+- Observability requirements: logging, metrics, tracing
+- Release/PR process: branch, commit style, reviewers, changelog note
+- Documentation scope: docs/examples/landing updates required
+- Feature flags/env vars gating the change
+
 ### Agent Development Workflow
-1. Add agent class to `orka/agents/` 
-2. Register in `AGENT_TYPES` dict in `orka/agents/__init__.py`
-3. Add example YAML to `examples/`
-4. Add unit tests in `tests/unit/agents/`
-5. Update documentation in docstring
+1. Add agent class to `orka/agents/`.
+2. Register the agent:
+  - Preferred: via entry point in `pyproject.toml` under `[project.entry-points."orka.agents"]`.
+  - Legacy: add to `AGENT_TYPES` in `orka/agents/__init__.py` (if still used by the component).
+3. Add example YAML to `examples/` and ensure it is validated by tests.
+4. Add unit tests in `tests/unit/agents/` and integration tests if applicable.
+5. Update documentation in docstrings and docs/ as needed.
 
 ## Project-Specific Conventions
 
@@ -70,6 +88,12 @@ orka memory watch
 - **Type hints**: Required for all public methods, use `Dict[str, Any]` for agent outputs
 - **Error handling**: Wrap in `OrkaError` or subclasses, never bare exceptions
 - **Async patterns**: Prefer async/await, use `asyncio.timeout()` for timeouts
+
+### Linting, Formatting, and Types
+- Formatting: Black with line-length 100 and Python 3.11 target (configured in pyproject). Run Black before committing.
+- Linting: Flake8 with repo config (max-line-length 100; extend-ignore E203,W503; Google docstrings). Fix or explicitly justify warnings.
+- Comments: keep code self-explanatory; minimize redundant comments. Provide concise docstrings for public modules/classes/functions.
+- Type checking: mypy is permissive in some parts but constantly work to fix this issue on the long term (fix mypy issue if editing the code) most important do not introduce new type errors in typed modules. Add type hints for new public APIs; prefer `TypedDict`/`Protocol` for structured outputs between agents.
 
 ### YAML Configuration Patterns
 - **Template rendering**: Use Jinja2 syntax: `{{ input }}`, `{{ previous_outputs.agent_id }}`
@@ -112,7 +136,7 @@ AGENT_TYPES = {
 - `orka/agents/__init__.py`: Agent registry and type definitions  
 - `orka/memory/__init__.py`: Memory system with Redis integration
 - `examples/`: Real-world workflow patterns (fork/join, routing, loops)
-- `pyproject.toml`: Dependencies, dev tools, version (currently 0.9.3)
+- `pyproject.toml`: Dependencies, dev tools, version (currently 0.9.12)
 
 ## Testing Patterns
 - **Unit tests**: Mock Redis with `fakeredis`, test agent logic in isolation
@@ -120,8 +144,14 @@ AGENT_TYPES = {
 - **Performance tests**: Located in `tests/performance/`
 - **Example validation**: All YAML examples should have corresponding tests
 
+### CI and Test Isolation
+- CI runs on a clean GitHub runner; do not rely on local paths, GPUs, or secrets.
+- Unit tests must be deterministic and offline. Avoid real network or LLM calls; use fakes/stubs. Mark real-service tests with pytest markers (e.g., `integration`, `redis`, `llm`).
+- Mocking must not invalidate the test's behavior under scrutiny. Do not mock the unit under test; prefer fakes/stubs at boundaries (I/O, network). Avoid over-mocking that hides concurrency or timeout issues.
+- Maintain or raise coverage (pytest addopts enforces >=80%). Add tests for new agents, nodes, and YAML examples.
+
 ## Common Gotchas
-- Use conda environment handling. Activate enviroment `orka_pre_release`
+- Use conda; activate your development environment (e.g., `orka_0.9.10`). Do not hardcode env names in CI.
 - Always call `orka-start` before running workflows (Redis dependency)
 - Agent outputs must be JSON-serializable for cross-agent communication
 - Memory operations require RedisStack with search module enabled
