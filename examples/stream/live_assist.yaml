@@ -1,0 +1,54 @@
+orchestrator:
+  id: live_assist_demo
+  mode: streaming
+  executor: live_executor
+  satellites: [sat_summarizer, sat_intent]
+  executor_invariants:
+    identity: "OrKa Assistant"
+    voice: "neutral"
+    refusal: "safety-first"
+    tool_permissions: ["kb_read"]
+    safety_policies: ["pii_redaction"]
+  prompt_budgets:
+    total_tokens: 512
+    sections:
+      summary: 200
+      intent: 100
+      constraints: 100
+      policy: 80
+      risk: 32
+  refresh:
+    cadence_seconds: 20
+    debounce_ms: 1000
+    max_refresh_per_min: 6
+
+agents:
+  - id: live_executor
+    type: streaming-executor
+    provider: lm_studio
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    prompt: "{{ input }}"
+  - id: sat_summarizer
+    type: satellite-state-writer
+    role: summarizer
+    provider: lm_studio
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    prompt: "{{ previous_outputs.live_executor }}"
+  - id: sat_intent
+    type: satellite-state-writer
+    role: intent
+    provider: lm_studio
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    prompt: "{{ input }}"
+  - id: sat_compliance
+    type: satellite-state-writer
+    role: compliance
+    provider: lm_studio
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    prompt: |
+      Analyze the conversation intent and summary. Return 1-3 concise, actionable constraints the executor should follow next.
+      Format as short bullet-like sentences, no preamble.

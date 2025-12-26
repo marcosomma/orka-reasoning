@@ -18,3 +18,10 @@ Define retry chains per agent. Useful for failure tolerance:
     - search_agent
     - final_output
 ```
+
+## Streaming (live)
+The streaming regime adds an event-driven runtime with low-latency refreshes. It is transport-agnostic: use it for text-only chat or with an external voice stack. Voice is optional metadata inside invariants and is not required for operation.
+
+- Enable with environment variable ORKA_ENABLE_STREAMING=1.
+- Start with: `orka streaming run <config> --session <id>`.
+- YAML must set orchestrator.mode: streaming and can define executor_invariants and prompt_budgets.
