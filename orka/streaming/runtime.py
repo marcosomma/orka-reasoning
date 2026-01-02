@@ -297,7 +297,8 @@ class StreamingOrchestrator:
             "source": "streaming_orchestrator",
             "state_version": self.state.version,
         }
-        await self.bus.publish(env["channel"], env)
+        channel = str(env["channel"])
+        await self.bus.publish(channel, env)
         self._trace.append({"type": "egress", "payload": env.get("payload", {}), "ts": now_ms})
 
         # Optionally call OpenAI-compatible endpoint for a real completion

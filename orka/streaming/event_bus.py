@@ -93,7 +93,7 @@ class EventBus:
 
         # In-memory fallback
         msg_id = self._next_id(channel)
-        await self._get_queue(channel).put((msg_id, envelope))
+        await self._get_queue(channel).put((msg_id, envelope))  # type: ignore[arg-type]
         return msg_id
 
     async def read(self, channels: List[str], count: int, block_ms: int) -> List[Dict[str, Any]]:
@@ -120,21 +120,21 @@ class EventBus:
 
         # In-memory: poll queues fairly
         end = time.time() + (block_ms / 1000.0)
-        results: List[Dict[str, Any]] = []
-        while len(results) < count and time.time() < end:
+        in_mem_results: List[Dict[str, Any]] = []
+        while len(in_mem_results) < count and time.time() < end:
             made_progress = False
             for ch in channels:
                 q = self._get_queue(ch)
                 if q.empty():
                     continue
                 msg_id, env = await q.get()
-                results.append({"channel": ch, "message_id": msg_id, "envelope": env})
+                in_mem_results.append({"channel": ch, "message_id": msg_id, "envelope": env})
                 made_progress = True
-                if len(results) >= count:
+                if len(in_mem_results) >= count:
                     break
             if not made_progress:
                 await asyncio.sleep(0.001)
-        return results
+        return in_mem_results
 
     async def ack(self, group: str, channel: str, message_id: str) -> None:  # noqa: ARG002
         """Acknowledge a message. No-op for in-memory backend."""

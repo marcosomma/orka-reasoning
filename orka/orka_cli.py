@@ -10,6 +10,7 @@ from pathlib import Path
 import asyncio
 import tomllib
 import os
+from typing import Any, Dict
 
 from orka.cli.core import deep_sanitize_result, run_cli, run_cli_entrypoint, sanitize_for_console
 from orka.streaming.event_bus import EventBus
@@ -300,7 +301,7 @@ def main(argv: list[str] | None = None) -> int:
             # Resolve executor model info (optional)
             exec_id = orch.get("executor")
             agents_cfg = cfg.get("agents", [])
-            exec_agent = next((a for a in agents_cfg if a.get("id") == exec_id), {})
+            exec_agent: Dict[str, Any] = next((a for a in agents_cfg if a.get("id") == exec_id), {})
             exec_model = exec_agent.get("model")
             exec_provider = exec_agent.get("provider")
             exec_base_url = exec_agent.get("base_url") or exec_agent.get("model_url")
