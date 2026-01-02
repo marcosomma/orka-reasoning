@@ -1,4 +1,4 @@
-# [# [0.9.13] · 2026-01-02 🌊 [BETA]
+# [0.9.13] · 2026-01-02 🌊 [BETA]
 OrKa v0.9.13 – Streaming Runtime & Real-Time Conversational Orchestration (Beta Release)
 
 ### Summary
@@ -146,11 +146,6 @@ This release introduces **Streaming Runtime Mode (BETA)**, a new event-driven ar
 - ⚠️ Not recommended for applications requiring full conversation history
 
 > **Real-Time Orchestration (Beta)**: This release adds a fundamentally new execution mode to OrKa, enabling event-driven conversational AI with satellite monitoring, budget control, and state management. The core architecture is solid and well-tested for basic streaming scenarios. The beta status reflects ongoing work on context accumulation patterns and memory system integration for complex multi-turn conversations.
-
----
-
-# Unreleased] · 2026-01-02 📋
-OrKa Documentation Update – Streaming Runtime Beta Status
 
 ### Documentation
 * **🚧 Streaming Runtime Beta Status Clarification**
