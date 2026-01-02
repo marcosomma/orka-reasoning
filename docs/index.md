@@ -30,6 +30,7 @@
 ## Operations
 
 - [runtime-modes.md](runtime-modes.md)
+- [STREAMING_GUIDE.md](STREAMING_GUIDE.md) ⚠️ BETA
 - [observability.md](observability.md)
 - [DEBUGGING.md](DEBUGGING.md)
 - [TESTING.md](TESTING.md)

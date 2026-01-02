@@ -199,6 +199,17 @@ See: [Failover node](./nodes/failover.md)
 
 Memory uses a single agent type and selects read vs write via `config.operation`.
 
+## Streaming configuration keys ⚠️ BETA
+
+> **Beta Feature**: Streaming runtime has known limitations including context loss across turns. See [STREAMING_GUIDE.md](./STREAMING_GUIDE.md) for details.
+
+When using the streaming runtime:
+
+- `orchestrator.mode`: set to `streaming`.
+- `orchestrator.executor_invariants`: optional fields including `voice` (omit or empty for text-only), `identity`, `refusal`, `tool_permissions`, `safety_policies`.
+- `orchestrator.prompt_budgets`: `{ total_tokens: int, sections: { <section>: int } }`.
+- `orchestrator.refresh`: `{ cadence_seconds, debounce_ms, max_refresh_per_min }`.
+
 ```yaml
 agents:
   - id: memory_read

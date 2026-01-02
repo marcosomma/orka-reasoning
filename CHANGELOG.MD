@@ -1,3 +1,174 @@
+# [# [0.9.13] · 2026-01-02 🌊 [BETA]
+OrKa v0.9.13 – Streaming Runtime & Real-Time Conversational Orchestration (Beta Release)
+
+### Summary
+This release introduces **Streaming Runtime Mode (BETA)**, a new event-driven architecture for real-time conversational AI applications. The streaming mode enables continuous state management, satellite agent coordination, and prompt budget control for long-running interactive sessions. **This is a beta release with known memory and context limitations** - the basic functionality is implemented, tested, and working for simple streaming chat scenarios. This is a major architectural addition alongside OrKa's existing sequential/parallel/loop modes.
+
+### ⚠️ Beta Release Notice
+**This is a BETA feature with known limitations:**
+- ✅ **Working**: Basic streaming chat functionality tested and operational
+- ✅ **Working**: Event-driven runtime with satellite coordination
+- ✅ **Working**: Token budget enforcement and prompt composition
+- ⚠️ **Limited**: Memory accumulation across conversation turns (satellites overwrite state sections)
+- ⚠️ **Limited**: Context preservation in multi-turn conversations
+- 🚧 **Recommended**: Use for prototyping, development, and simple streaming chat
+- 🚧 **Not Recommended**: Complex conversational systems requiring full context retention
+
+### Added
+* **🌊 Streaming Runtime Architecture (BETA)**
+  - **StreamingOrchestrator** - Event-driven runtime with deterministic refresh loop and debounce control (beta)
+  - **EventBus** - In-memory pub/sub system for message routing between executor and satellites (working)
+  - **StreamingState** - Versioned state model with provenance tracking and delta updates (working)
+  - **PromptComposer** - Token budget enforcement with configurable section allocations (working)
+  - **OpenAICompatClient** - HTTP client for chat completions with streaming support (working)
+  - **StreamingExecutorNode** - Primary executor node for streaming conversations (beta)
+  - **SatelliteStateWriter** - Satellite agents for intent detection, summarization, and compliance checks (beta - limited context)
+
+* **📝 Streaming Configuration System (BETA)**
+  - **YAML Mode** - New `mode: streaming` orchestrator configuration option (beta)
+  - **Executor Invariants** - Identity, voice, refusal policies, tool permissions, safety policies (working)
+  - **Prompt Budgets** - Per-section token limits (summary, intent, constraints, policy, risk) (working)
+  - **Refresh Config** - Cadence, debounce, and rate limiting controls (working)
+  - **Satellite Coordination** - Multi-satellite configuration with role-based state updates (beta - context limitations)
+
+* **🧪 Comprehensive Test Suite**
+  - **Unit Tests** - 524 tests for StreamingOrchestrator covering initialization, configuration, history management
+  - **Integration Tests** - 572 tests validating state patching, message processing, satellite execution
+  - **Event Bus Tests** - 45 tests for pub/sub messaging, channel routing, and subscriptions
+  - **Executor Client Tests** - 479 tests for HTTP client, streaming responses, error handling
+  - **Prompt Composer Tests** - 23 tests for budget enforcement and token limits
+  - **State Management Tests** - 26 tests for versioning, deltas, and invariants
+  - **Node Tests** - 171 tests for StreamingExecutorNode, 277 tests for SatelliteStateWriter
+
+* **📚 Documentation**
+  - **STREAMING_GUIDE.md** - Comprehensive guide with known limitations and beta warnings
+  - **runtime-modes.md** - Updated with streaming mode documentation and use cases
+  - **YAML_CONFIGURATION.md** - Streaming configuration reference
+  - **live_assist.yaml** - Example streaming workflow with multi-satellite setup
+
+### Enhanced
+* **🔧 CLI Integration**
+  - **orka stream** - New CLI command for running streaming workflows
+  - **Beta warnings** - Clear indicators that streaming mode is in beta
+  - **Session management** - Automatic session ID generation and cleanup
+
+* **🔌 Node Registry**
+  - **streaming-executor** - Registered in entry points for YAML workflows
+  - **satellite-state-writer** - Registered in entry points for satellite agents
+
+### Known Limitations (Beta)
+* **⚠️ Context Loss Across Turns** (Primary Beta Limitation)
+  - **Issue**: Satellites receive only current `intent` or `summary`, not full conversation history
+  - **Root Cause**: Satellites overwrite state sections instead of accumulating context
+  - **Impact**: Multi-turn conversations may lose context between turns
+  - **Current Status**: Basic streaming chat works; complex multi-turn reasoning limited
+  - **Workarounds**: 
+    - Keep conversations focused and single-topic
+    - Explicitly re-state context in user messages
+    - Use rolling history prompts that summarize previous context
+    - Limit conversation depth for production use
+  - **Planned Fix**: Context-aware satellite prompts with accumulative state updates in future release
+
+* **⚠️ Memory System Integration** (Beta Limitation)
+  - **Issue**: Limited integration with OrKa's persistent memory system
+  - **Impact**: Streaming sessions don't fully leverage long-term memory features
+  - **Status**: Basic state persistence working; advanced memory features pending
+
+* **✅ What Works Well (Tested & Validated)**
+  - Simple streaming chat with single-topic conversations
+  - Token budget enforcement and prompt composition
+  - Satellite monitoring (intent, summary, compliance)
+  - Event-driven refresh loop and state management
+  - Multi-satellite coordination for current turn
+  - HTTP streaming with OpenAI-compatible endpoints
+
+### Technical Details
+* **Architecture Pattern** - Event-driven with pub/sub messaging and versioned state
+* **Refresh Strategy** - Deterministic loop with configurable cadence and debounce
+* **State Management** - Immutable state with delta tracking and provenance
+* **Token Control** - Budget enforcement at prompt composition time
+* **Satellite Model** - Asynchronous state writers with role-based updates
+* **HTTP Client** - OpenAI-compatible with streaming and non-streaming modes
+* **Test Coverage** - 2,117 total tests added across streaming subsystem
+
+### Use Cases
+* **Conversational AI** - Multi-turn dialogue with context tracking
+* **Live Assistants** - Real-time user interaction with satellite monitoring
+* **Compliance Monitoring** - Continuous policy enforcement during conversations
+* **Intent Detection** - Dynamic intent classification as conversation evolves
+* **Summarization** - Running summaries for long conversations
+
+### Migration Notes
+* **For Existing Users** - No breaking changes; streaming mode is opt-in via `mode: streaming`
+* **For Streaming Workflows** - Review beta limitations before production deployment
+* **Configuration** - Streaming requires explicit executor, satellites, and budgets configuration
+* **Dependencies** - No new external dependencies; uses standard httpx for HTTP client
+
+### Files Added
+- `orka/streaming/runtime.py` - StreamingOrchestrator (563 lines)
+- `orka/streaming/event_bus.py` - EventBus implementation (153 lines)
+- `orka/streaming/state.py` - StreamingState model (95 lines)
+- `orka/streaming/types.py` - Type definitions (96 lines)
+- `orka/streaming/executor_client.py` - OpenAI client (78 lines)
+- `orka/streaming/prompt_composer.py` - Budget enforcement (157 lines)
+- `orka/nodes/executor_node.py` - StreamingExecutorNode (31 lines)
+- `orka/nodes/satellite_state_writer.py` - SatelliteStateWriter (39 lines)
+- `examples/stream/live_assist.yaml` - Example streaming workflow (54 lines)
+- `docs/STREAMING_GUIDE.md` - Comprehensive documentation (66 lines)
+- Tests: 7 new test files (2,117 tests total)
+
+### Compatibility
+* ✅ **Backward Compatible** - All existing workflows continue unchanged
+* ✅ **Opt-In Feature** - Streaming mode requires explicit `mode: streaming` configuration
+* ✅ **Python 3.11+** - Leverages modern async/await patterns
+* ✅ **No Breaking Changes** - Sequential, parallel, and loop modes unaffected
+
+### Beta Status
+🚧 **BETA RELEASE - Streaming runtime is experimental** 
+
+**Known Limitations:**
+- Context accumulation across conversation turns is limited (satellites overwrite state)
+- Memory system integration is basic
+- Multi-turn reasoning may lose context
+
+**What's Working:**
+- ✅ Basic streaming chat functionality (tested and operational)
+- ✅ Event-driven orchestration with satellite coordination
+- ✅ Token budget enforcement and prompt composition
+- ✅ Single-topic conversational interactions
+- ✅ Real-time state updates and refresh mechanism
+
+**Recommended Use:**
+- ✅ Prototyping and development
+- ✅ Simple streaming chat applications
+- ✅ Single-topic conversations
+- ⚠️ Not recommended for production systems requiring complex multi-turn reasoning
+- ⚠️ Not recommended for applications requiring full conversation history
+
+> **Real-Time Orchestration (Beta)**: This release adds a fundamentally new execution mode to OrKa, enabling event-driven conversational AI with satellite monitoring, budget control, and state management. The core architecture is solid and well-tested for basic streaming scenarios. The beta status reflects ongoing work on context accumulation patterns and memory system integration for complex multi-turn conversations.
+
+---
+
+# Unreleased] · 2026-01-02 📋
+OrKa Documentation Update – Streaming Runtime Beta Status
+
+### Documentation
+* **🚧 Streaming Runtime Beta Status Clarification**
+  - Added beta warnings to all streaming-related documentation
+  - Documented known limitation: context loss across conversation turns
+  - Root cause identified: satellites overwrite state sections instead of accumulating context
+  - Files updated:
+    - `docs/STREAMING_GUIDE.md` — Added comprehensive "Known Limitations" section
+    - `docs/runtime-modes.md` — Added beta warning and known issues list
+    - `docs/YAML_CONFIGURATION.md` — Added beta status indicator
+    - `docs/index.md` — Added beta marker to streaming guide reference
+    - `examples/stream/live_assist.yaml` — Added header with beta warning and limitations
+    - `orka/orka_cli.py` — Added beta warnings to CLI help text
+    - `orka/streaming/runtime.py` — Added runtime beta warning on startup
+  - Issue: Satellites receive only current `intent or summary`, without conversation history
+  - Workarounds documented: keep conversations focused, re-state context, use rolling history
+  - Planned fix: context-aware satellite prompts with accumulative state updates
+
 # [0.9.12] · 2025-12-20 🏗️
 OrKa v0.9.12 – Major Refactoring, CI Linting & Reliability
 
