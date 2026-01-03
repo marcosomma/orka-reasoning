@@ -73,4 +73,6 @@ Test cases should verify:
 1. Create unit tests for the new context handling
 2. Implement the fix in `execution_engine.py`
 3. Add debug logging for template context building
-4. Update documentation for template access patterns 
+4. Update documentation for template access patterns
+---
+← [Template Filters](TEMPLATE_FILTERS.md) | [📚 INDEX](index.md) | [Json Inputs Guide](JSON_INPUTS.md) →

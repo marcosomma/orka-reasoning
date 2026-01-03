@@ -1,6 +1,6 @@
 # OrKa Security & Privacy Considerations
 
-> **Last Updated:** 29 November 2025  
+> **Last Updated:** 03 January 2026  
 > **Status:** 🟢 Current  
 > **Related:** [Best Practices](best-practices.md) | [Memory Backends](MEMORY_BACKENDS.md) | [YAML Configuration](YAML_CONFIGURATION.md) | [index](index.md)
 

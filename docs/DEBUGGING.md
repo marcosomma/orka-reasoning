@@ -1,6 +1,6 @@
 # OrKa Debugging and Troubleshooting Guide
 
-> **Last Updated:** 29 November 2025  
+> **Last Updated:** 03 January 2026  
 > **Status:** 🟢 Current  
 > **Related:** [Troubleshooting](troubleshooting.md) | [FAQ](faq.md) | [Observability](observability.md) | [Testing](TESTING.md) | [INDEX](index.md)
 

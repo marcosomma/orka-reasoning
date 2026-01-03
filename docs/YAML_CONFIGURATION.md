@@ -1,6 +1,6 @@
 # OrKa YAML Configuration Guide
 
-> **Last Updated:** 29 November 2025  
+> **Last Updated:** 03 January 2026  
 > **Status:** 🟢 Primary Configuration Guide  
 > **Related:** [Getting Started](getting-started.md) | [Runtime Modes](runtime-modes.md) | [index](index.md)
 
@@ -712,4 +712,4 @@ orchestrator:
       prompt: "How should I perform this task: {{ input }}"
 ```
 ---
-← [Visual Architecture](VISUAL_ARCHITECTURE_GUIDE.md) | [📚 INDEX](index.md) | [Json Inputs Guide](JSON_INPUTS.md) →
+← [Visual Architecture](VISUAL_ARCHITECTURE_GUIDE.md) | [📚 INDEX](index.md) | [Template Filters](TEMPLATE_FILTERS.md) →

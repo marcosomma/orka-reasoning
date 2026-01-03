@@ -1,6 +1,6 @@
 # Observability & Logging in OrKa
 
-> **Last Updated:** 29 November 2025  
+> **Last Updated:** 03 January 2026  
 > **Status:** 🟢 Current  
 > **Related:** [Debugging](DEBUGGING.md) | [Best Practices](best-practices.md) | [Architecture](architecture.md) | [INDEX](index.md)
 

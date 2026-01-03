@@ -37,3 +37,5 @@ See also:
 - [YAML Configuration](YAML_CONFIGURATION.md)
 - [GraphScout Execution Modes](GRAPHSCOUT_EXECUTION_MODES.md)
 - Examples: [examples/graph_scout_example.yml](../examples/graph_scout_example.yml), [examples/graph_scout_dynamic.yml](../examples/graph_scout_dynamic.yml)
+---
+← [Memory Agents](memory-agents-guide.md) | [📚 INDEX](index.md) | [Best Practices](best-practices.md) →

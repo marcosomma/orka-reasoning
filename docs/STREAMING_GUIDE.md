@@ -64,3 +64,5 @@ Assistant: "I don't have that information" ❌
 - Token budgets are enforced but may truncate important context
 - Satellite failures are logged but don't halt execution
 - No persistent session storage between restarts
+---
+← [Json Inputs Guide](JSON_INPUTS.md) | [📚 INDEX](index.md) | [Agents](agents.md) →

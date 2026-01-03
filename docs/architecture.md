@@ -1,6 +1,6 @@
 # OrKa Architecture
 
-> **Last Updated:** 29 November 2025  
+> **Last Updated:** 03 January 2026  
 > **Status:** 🟢 Current  
 > **Related:** [Visual Architecture](VISUAL_ARCHITECTURE_GUIDE.md) | [Ontology](ONTOLOGY.md) | [INDEX](index.md)
 
@@ -216,4 +216,4 @@ All agent outputs are logged with HNSW-optimized metadata:
 
 OrKa's architecture is intentionally minimal, observable, and composable — so you can build LLM-based cognition that doesn't disappear into a black box.
 ---
-← [Getting Started](getting-started.md) | [📚 INDEX](index.md) | [Visual Architecture](VISUAL_ARCHITECTURE_GUIDE.md) →
+← [Getting Started](getting-started.md) | [📚 INDEX](index.md) | [Components](COMPONENTS.md) →

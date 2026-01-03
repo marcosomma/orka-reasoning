@@ -133,4 +133,4 @@ See the `examples/` folder for real-world workflows using JSON input.
 
 For further help, visit the [documentation](https://orkacore.com/docs) or open an issue on GitHub.
 ---
-← [YAML Configuration](YAML_CONFIGURATION.md) | [📚 INDEX](index.md) | [Agents](agents.md) →
+← [Template Rendering](TEMPLATE_RENDERING_FIX.md) | [📚 INDEX](index.md) | [Streaming Guide](STREAMING_GUIDE.md) →

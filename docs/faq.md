@@ -2,7 +2,7 @@
 
 # OrKa FAQ
 
-> **Last Updated:** 29 November 2025  
+> **Last Updated:** 03 January 2026  
 > **Status:** 🟢 Current  
 > **Related:** [Troubleshooting](troubleshooting.md) | [Debugging](DEBUGGING.md) | [Getting Started](getting-started.md) | [INDEX](index.md)
 

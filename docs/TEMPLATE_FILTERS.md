@@ -535,3 +535,5 @@ prompt: "{{ safe_get_response('agent1') }}"
 - [Workflow Configuration](YAML_CONFIGURATION.md) - YAML workflow structure
 - [Memory System Guide](MEMORY_SYSTEM_GUIDE.md) - Memory agent integration
 - [Loop Nodes](agents-advanced.md#loop-node) - Loop execution patterns
+---
+← [YAML Configuration](YAML_CONFIGURATION.md) | [📚 INDEX](index.md) | [Template Rendering](TEMPLATE_RENDERING_FIX.md) →

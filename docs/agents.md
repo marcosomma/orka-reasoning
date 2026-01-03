@@ -1,6 +1,6 @@
 # Agent Types in OrKa
 
-> **Last Updated:** 29 November 2025  
+> **Last Updated:** 03 January 2026  
 > **Status:** 🟢 Current  
 > **Related:** [Advanced Agents](agents-advanced.md) | [Extending Agents](extending-agents.md) | [Agent Index](AGENT_NODE_TOOL_INDEX.md) | [INDEX](index.md)
 
@@ -479,4 +479,4 @@ For detailed configuration examples, see the [YAML Configuration Guide](./YAML_C
 
 ← [YAML Configuration](YAML_CONFIGURATION.md) | [📚 index](index.md) | [Advanced Agents](agents-advanced.md) →
 ---
-← [Json Inputs Guide](JSON_INPUTS.md) | [📚 INDEX](index.md) | [Advanced Agents](agents-advanced.md) →
+← [Streaming Guide](STREAMING_GUIDE.md) | [📚 INDEX](index.md) | [Advanced Agents](agents-advanced.md) →
