@@ -23,15 +23,15 @@
 OrKA-reasoning is a open-source, local‑first, YAML‑driven system for composing AI workflows. Define agents and control‑flow in configuration, run them with a single command, and keep everything observable and reproducible.
 
 Think of it as a streamlined, open-source experimental framework with a strong focus on:
-- YAML‑first workflows: declarative configs over code — see [YAML Configuration](docs/YAML_CONFIGURATION.md)
-- Visual builder and runner (drag‑and‑drop) — see [OrKa UI](docs/orka-ui.md)
-- Built‑in memory with vector search and decay — see [Memory System](docs/MEMORY_SYSTEM_GUIDE.md)
-- Local and cloud LLM support with cost controls — see [Backends](docs/README_BACKENDS.md)
-- Rich control flow (router, fork/join, loop, failover, plan validation) — see [Agents & Nodes](docs/AGENT_NODE_TOOL_INDEX.md)
-- Path discovery with GraphScout (beta) — see [GraphScout](docs/GRAPH_SCOUT_AGENT.md)
-- Structured JSON inputs for complex data — see [JSON Inputs](docs/JSON_INPUTS.md)
-- Observability and tracing — see [Observability](docs/observability.md)
-- Testing guidance and examples — see [Testing Guide](docs/TESTING.md)
+- YAML‑first workflows: declarative configs over code > see [YAML Configuration](docs/YAML_CONFIGURATION.md)
+- Visual builder and runner (drag‑and‑drop) > see [OrKa UI](docs/orka-ui.md)
+- Built‑in memory with vector search and decay > see [Memory System](docs/MEMORY_SYSTEM_GUIDE.md)
+- Local and cloud LLM support with cost controls > see [Backends](docs/README_BACKENDS.md)
+- Rich control flow (router, fork/join, loop, failover, plan validation) > see [Agents & Nodes](docs/AGENT_NODE_TOOL_INDEX.md)
+- Path discovery with GraphScout (beta) > see [GraphScout](docs/GRAPH_SCOUT_AGENT.md)
+- Structured JSON inputs for complex data > see [JSON Inputs](docs/JSON_INPUTS.md)
+- Observability and tracing > see [Observability](docs/observability.md)
+- Testing guidance and examples > see [Testing Guide](docs/TESTING.md)
 
 ## Get started
 
