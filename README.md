@@ -23,12 +23,12 @@
 
 OrKa is a **local first** solution that lets you define AI workflows in YAML files instead of writing complex Python code. You describe what you want - like "search memory, then ask an AI, then save the result" - and OrKa handles the execution.
 
-Think of it as a streamlined, open-source alternative to CrewAI or LangChain, but with a focus on:
+Think of it as a streamlined, open-source experimental framework with a strong focus on:
 - **Local LLM** Vendor agnostic
 - **YAML configuration** instead of code
 - **Built-in memory** that remembers and forgets intelligently  
-- **Local LLM support** for privacy
 - **Simple setup** with Docker
+- **Multiple execution policies**: sequential, parallel, conditional, loops, sync/async, streaming
 
 ## Basic Example
 
