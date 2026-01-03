@@ -11,8 +11,8 @@
 ### What is OrKa?
 OrKa is a tool for creating AI workflows using YAML configuration files instead of writing Python code. You define agents (like memory, LLMs, web search) and how they connect, then OrKa executes the workflow.
 
-### How is OrKa different from LangChain?
-LangChain requires writing Python code to orchestrate AI components. OrKa uses YAML files to define workflows declaratively. OrKa also includes built-in memory management and better support for local LLMs.
+### Why YAML-first instead of code-first?
+OrKa embraces declarative YAML to describe workflows so they are readable, easy to review, and simple to version. You can change orchestration logic without rewriting application code, and non-developers can safely propose changes.
 
 ### How do I choose between local and cloud LLMs?
 - **Local LLMs** (Ollama, LM Studio): Better for privacy, no API costs, but slower and less capable
