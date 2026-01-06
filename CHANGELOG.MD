@@ -10,6 +10,14 @@ This release hardens runtime correctness and observability with a deterministic 
   - Categories: fork/join integrity, routing validity, cycle detection, tool call integrity, schema compliance, depth constraints
   - Integrated in self-assessment workflow before LLM evaluation
   - Files: [orka/orchestrator/execution_invariants.py](orka/orchestrator/execution_invariants.py), tests under [tests/unit/orchestrator](tests/unit/orchestrator)
+* InvariantValidatorAgent (non-LLM) and registry entry `invariant_validator`
+  - Wrapper agent around validator for YAML workflows
+  - Extracts execution data via prompt marker `EXECUTION_DATA_JSON:`
+  - Files: [orka/agents/invariant_validator_agent.py](orka/agents/invariant_validator_agent.py)
+* Template helpers for auto-collection and JSON serialization
+  - `get_execution_artifacts(previous_outputs)` to build invariant input
+  - `to_json_string(obj)` for safe JSON emission in templates
+  - File: [orka/orchestrator/template_helpers.py](orka/orchestrator/template_helpers.py)
 
 ### Enhanced
 * GraphScout compliance scoring (policy-aware)
@@ -23,9 +31,9 @@ This release hardens runtime correctness and observability with a deterministic 
   - Reduced INFO-level noise for expected control-flow scenarios; clearer summaries retained at DEBUG
 
 ### Fixed
-* Template helpers: structured output unwrapping
+* Prompt helpers: structured output unwrapping
   - `get_agent_response()` and `safe_get_response()` now return the inner `response` string when the stored value is a nested dict from structured outputs
-  - Tests added in prompt rendering helpers
+  - Files: [orka/orchestrator/prompt_rendering/agent_helpers.py](orka/orchestrator/prompt_rendering/agent_helpers.py) + tests
 * CLI exit codes
   - `orka run` now returns exit code 0 for valid but falsy results (e.g., empty string/dict/list); only `None` is treated as failure
 * Trace aggregation
@@ -37,7 +45,7 @@ This release hardens runtime correctness and observability with a deterministic 
   - Structured output helper change is non-breaking and returns expected string values
 
 ### Testing
-* New unit tests for invariants validator and helper functions
+* New unit tests for invariants validator, agent wrapper, template/prompt helpers (≈53+ tests across modules)
 * Full suite passes with coverage ≥ 80%
 
 ### Migration Notes
@@ -45,6 +53,14 @@ This release hardens runtime correctness and observability with a deterministic 
   - Add invariant collection step before LLM grading
   - Align schemas of final assessment outputs with actual response shapes
   - Prefer temperature=0 for evaluator agents; consider different model family for judge vs worker
+
+### Files Changed (highlights)
+* Added: [orka/orchestrator/execution_invariants.py](orka/orchestrator/execution_invariants.py)
+* Added: Tests under [tests/unit/orchestrator](tests/unit/orchestrator) and [tests/unit/agents](tests/unit/agents)
+* Modified: [orka/orchestrator/template_helpers.py](orka/orchestrator/template_helpers.py) – new helpers
+* Modified: [orka/orchestrator/path_scoring.py](orka/orchestrator/path_scoring.py) – compliance scoring
+* Modified: [orka/orchestrator/prompt_rendering/agent_helpers.py](orka/orchestrator/prompt_rendering/agent_helpers.py) – structured output unwrapping
+* Modified: Metrics/trace aggregation and normalization utilities
 
 # [0.9.13] · 2026-01-02 🌊 [BETA]
 OrKa v0.9.13 – Streaming Runtime & Real-Time Conversational Orchestration (Beta Release)
