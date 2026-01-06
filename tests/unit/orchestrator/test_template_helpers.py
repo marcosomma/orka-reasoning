@@ -21,6 +21,8 @@ get_agent_response = template_helpers.get_agent_response
 truncate_text = template_helpers.truncate_text
 format_loop_metadata = template_helpers.format_loop_metadata
 get_debate_evolution = template_helpers.get_debate_evolution
+get_execution_artifacts = template_helpers.get_execution_artifacts
+to_json_string = template_helpers.to_json_string
 register_template_helpers = template_helpers.register_template_helpers
 
 
@@ -430,7 +432,7 @@ class TestGetDebateEvolution:
         result = get_debate_evolution(past_loops)
         assert "Round 4" in result
         assert "improving" in result
-        assert "0.5 → 0.7 → 0.85" in result
+        assert "0.5 -> 0.7 -> 0.85" in result
 
     def test_get_debate_evolution_with_declining_scores(self):
         """Test get_debate_evolution with declining scores."""
@@ -442,7 +444,7 @@ class TestGetDebateEvolution:
         result = get_debate_evolution(past_loops)
         assert "Round 4" in result
         assert "declining" in result
-        assert "0.9 → 0.7 → 0.5" in result
+        assert "0.9 -> 0.7 -> 0.5" in result
 
     def test_get_debate_evolution_with_equal_scores(self):
         """Test get_debate_evolution with equal first and last scores."""
@@ -476,7 +478,7 @@ class TestGetDebateEvolution:
         result = get_debate_evolution(past_loops)
         assert "Round 3" in result
         assert "improving" in result
-        assert "0.6 → 0.8" in result
+        assert "0.6 -> 0.8" in result
 
 
 class TestRegisterTemplateHelpers:
@@ -706,3 +708,218 @@ class TestEdgeCases:
         }
         result = safe_get_response("agent1", "default", previous_outputs)
         assert result == "result_value"
+
+
+class TestGetExecutionArtifacts:
+    """Tests for get_execution_artifacts function."""
+    
+    def test_empty_previous_outputs(self):
+        """Test with no previous outputs."""
+        artifacts = get_execution_artifacts(None)
+        
+        assert artifacts["nodes_executed"] == []
+        assert artifacts["fork_groups"] == {}
+        assert artifacts["router_decisions"] == {}
+        assert artifacts["graph_structure"] == {"nodes": {}, "edges": []}
+        assert artifacts["tool_calls"] == []
+        assert artifacts["structured_outputs"] == {}
+    
+    def test_simple_execution(self):
+        """Test with simple sequential execution."""
+        previous_outputs = {
+            "agent1": {"response": "output1"},
+            "agent2": {"response": "output2"},
+            "agent3": {"response": "output3"}
+        }
+        
+        artifacts = get_execution_artifacts(previous_outputs)
+        
+        assert set(artifacts["nodes_executed"]) == {"agent1", "agent2", "agent3"}
+        assert len(artifacts["graph_structure"]["nodes"]) == 3
+        assert len(artifacts["graph_structure"]["edges"]) == 2
+    
+    def test_fork_detection(self):
+        """Test detection of fork nodes."""
+        previous_outputs = {
+            "test_fork": {
+                "response": {
+                    "status": "forked",
+                    "fork_group": "test_fork_12345",
+                    "agents": ["path_a", "path_b"]
+                }
+            },
+            "path_a": {"response": "processed A"},
+            "path_b": {"response": "processed B"}
+        }
+        
+        artifacts = get_execution_artifacts(previous_outputs)
+        
+        assert "test_fork" in artifacts["fork_groups"]
+        fork_info = artifacts["fork_groups"]["test_fork"]
+        assert fork_info["has_join"] is True
+        assert fork_info["branches"] == ["path_a", "path_b"]
+        assert fork_info["completed_branches"] == ["path_a", "path_b"]
+        assert fork_info["fork_group_id"] == "test_fork_12345"
+    
+    def test_fork_with_nested_branches(self):
+        """Test detection of fork with nested sequential branches."""
+        previous_outputs = {
+            "fork_parallel": {
+                "response": {
+                    "status": "forked",
+                    "fork_group": "fork_parallel_123",
+                    "agents": [
+                        ["agent_a1", "agent_a2"],
+                        ["agent_b1", "agent_b2"]
+                    ]
+                }
+            },
+            "agent_a1": {"response": "a1"},
+            "agent_a2": {"response": "a2"},
+            "agent_b1": {"response": "b1"},
+            "agent_b2": {"response": "b2"}
+        }
+        
+        artifacts = get_execution_artifacts(previous_outputs)
+        
+        assert "fork_parallel" in artifacts["fork_groups"]
+        fork_info = artifacts["fork_groups"]["fork_parallel"]
+        assert fork_info["branches"] == [["agent_a1", "agent_a2"], ["agent_b1", "agent_b2"]]
+        assert fork_info["completed_branches"] == [["agent_a1", "agent_a2"], ["agent_b1", "agent_b2"]]
+    
+    def test_router_detection(self):
+        """Test detection of router decisions."""
+        previous_outputs = {
+            "router_node": {"response": "target_agent"},
+            "target_agent": {"response": "processed"}
+        }
+        
+        artifacts = get_execution_artifacts(previous_outputs)
+        
+        assert "router_node" in artifacts["router_decisions"]
+        router_info = artifacts["router_decisions"]["router_node"]
+        assert router_info["chosen_target"] == "target_agent"
+        assert router_info["target_nodes_executed"] == ["target_agent"]
+    
+    def test_join_node_detection(self):
+        """Test detection of join node responses."""
+        previous_outputs = {
+            "test_fork": {
+                "response": {
+                    "status": "forked",
+                    "fork_group": "fork_123",
+                    "agents": ["a", "b"]
+                }
+            },
+            "a": {"response": "a_output"},
+            "b": {"response": "b_output"},
+            "test_join": {
+                "response": {
+                    "status": "done",
+                    "merged": {
+                        "a": "a_output",
+                        "b": "b_output"
+                    }
+                }
+            }
+        }
+        
+        artifacts = get_execution_artifacts(previous_outputs)
+        
+        # Join detection is implicit - fork should be marked as having results
+        assert "test_fork" in artifacts["fork_groups"]
+        assert artifacts["fork_groups"]["test_fork"]["has_join"] is True
+    
+    def test_graph_structure_building(self):
+        """Test automatic graph structure from execution order."""
+        previous_outputs = {
+            "agent1": {"response": "out1"},
+            "agent2": {"response": "out2"},
+            "agent3": {"response": "out3"}
+        }
+        
+        artifacts = get_execution_artifacts(previous_outputs)
+        
+        graph = artifacts["graph_structure"]
+        assert "agent1" in graph["nodes"]
+        assert "agent2" in graph["nodes"]
+        assert "agent3" in graph["nodes"]
+        
+        # Check edges exist
+        edges = graph["edges"]
+        assert len(edges) == 2
+        assert {"src": "agent1", "dst": "agent2"} in edges
+        assert {"src": "agent2", "dst": "agent3"} in edges
+    
+    def test_non_dict_outputs_ignored(self):
+        """Test that non-dict outputs are handled gracefully."""
+        previous_outputs = {
+            "agent1": "string_output",
+            "agent2": {"response": "dict_output"},
+            "agent3": 123
+        }
+        
+        artifacts = get_execution_artifacts(previous_outputs)
+        
+        # Should not crash, just collect nodes
+        assert len(artifacts["nodes_executed"]) == 3
+        assert "agent1" in artifacts["nodes_executed"]
+        assert "agent2" in artifacts["nodes_executed"]
+        assert "agent3" in artifacts["nodes_executed"]
+
+
+class TestToJsonString:
+    """Test the to_json_string template helper for proper JSON serialization."""
+    
+    def test_simple_dict(self):
+        """Test serialization of simple dict."""
+        data = {"key": "value", "number": 42}
+        result = to_json_string(data)
+        
+        # Should be valid JSON
+        import json
+        parsed = json.loads(result)
+        assert parsed == data
+        
+        # Should use double quotes
+        assert '"key"' in result
+        assert '"value"' in result
+    
+    def test_nested_structure(self):
+        """Test serialization of nested structure."""
+        data = {
+            "nodes": ["a", "b"],
+            "fork_groups": {
+                "group1": {
+                    "branches": [["a"], ["b"]],
+                    "has_join": True
+                }
+            }
+        }
+        result = to_json_string(data)
+        
+        import json
+        parsed = json.loads(result)
+        assert parsed == data
+    
+    def test_unicode_handling(self):
+        """Test that unicode is preserved correctly."""
+        data = {"message": "Hello 世界"}
+        result = to_json_string(data)
+        
+        import json
+        parsed = json.loads(result)
+        assert parsed["message"] == "Hello 世界"
+    
+    def test_in_jinja_template(self):
+        """Test using to_json_string in a Jinja2 template."""
+        env = Environment()
+        register_template_helpers(env)
+        
+        template = env.from_string('{{ data | to_json_string }}')
+        data = {"key": "value", "items": [1, 2, 3]}
+        result = template.render(data=data)
+        
+        import json
+        parsed = json.loads(result)
+        assert parsed == data

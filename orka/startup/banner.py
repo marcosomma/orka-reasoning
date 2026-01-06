@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 OrKa Startup Banner
@@ -53,25 +53,33 @@ ORKA_BANNER = r"""
 
 
 def get_version():
-    """Get OrKa version from package metadata."""
+    """Get OrKa version, preferring local pyproject in dev, else installed package.
+
+    In development workspaces, importlib.metadata may return the version of an
+    older installed distribution (e.g., from site-packages). To reflect the
+    current workspace version, first try to read pyproject.toml from the repo
+    root. If not present (installed package runtime), fall back to package
+    metadata. As a last resort, return a static default.
+    """
+    # 1) Prefer local repo version when available (dev mode)
+    try:
+        pyproject_path = Path(__file__).resolve().parents[2] / "pyproject.toml"
+        if pyproject_path.exists() and tomllib is not None:
+            data = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
+            version = data.get("project", {}).get("version")
+            if isinstance(version, str) and version.strip():
+                return version.strip()
+    except Exception:
+        pass
+
+    # 2) Fallback to installed distribution metadata
     try:
         return importlib.metadata.version("orka-reasoning")
     except Exception:
         pass
 
-    # Dev fallback: read version from repo pyproject.toml
-    try:
-        pyproject_path = Path(__file__).resolve().parents[2] / "pyproject.toml"
-        if pyproject_path.exists():
-            if tomllib is not None:
-                data = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
-                version = data.get("project", {}).get("version")
-                if isinstance(version, str) and version.strip():
-                    return version.strip()
-    except Exception:
-        pass
-
-    return "0.9.11"
+    # 3) Static fallback
+    return "0.9.13"
 
 
 def display_banner():
@@ -96,10 +104,10 @@ def display_banner():
         print(color + line + reset)
     print(f"\033[1;35m  [Or]chestrator [K]it [A]gents\033[0m")  # Magenta
     print("\033[0;90m======================================\033[0m")  # Gray
-    print(f"\033[1;33m  • 🧠 Local-first \033[0m")  # Yellow
-    print(f"\033[1;33m  • ⚡ YAML-Definition \033[0m")  # Yellow
-    print(f"\033[1;33m  • 🎯 Intelligent Routing\033[0m")  # Yellow
-    print(f"\033[1;33m  • 🔄 Built for Reasoning\033[0m")  # Yellow
+    print(f"\033[1;33m  • Local-first \033[0m")  # Yellow
+    print(f"\033[1;33m  • YAML-Definition \033[0m")  # Yellow
+    print(f"\033[1;33m  • Intelligent Routing\033[0m")  # Yellow
+    print(f"\033[1;33m  • Built for Reasoning\033[0m")  # Yellow
     print("\033[0;90m======================================\033[0m")  # Gray
     print(f"\033[1;34m  By: @marcosomma\033[0m")  # Green
     print(f"\033[1;32m  GitHub: https://github.com/marcosomma/orka-reasoning\033[0m")  # Blue

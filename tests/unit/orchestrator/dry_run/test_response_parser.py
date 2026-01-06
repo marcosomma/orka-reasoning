@@ -105,6 +105,43 @@ class TestResponseParserMixin:
         assert isinstance(result, ValidationResult)
         assert result.confidence == 0.3  # Fallback
 
+    def test_parse_validation_response_approved_validation_score_variant(self, parser):
+        """Test parsing validation response using approved/validation_score keys."""
+        response = json.dumps({
+            "approved": False,
+            "validation_score": 0.42,
+            "confidence": 0.7,
+            "reasoning": "Not efficient",
+        })
+
+        with patch(
+            "orka.orchestrator.dry_run.response_parser.validate_path_validation",
+            return_value=(True, None),
+        ):
+            result = parser._parse_validation_response(response)
+
+        assert isinstance(result, ValidationResult)
+        assert result.is_valid is False
+        assert result.efficiency_score == 0.42
+
+    def test_parse_evaluation_response_coerce_types(self, parser):
+        """Test that string numbers are coerced by schema-aware parser."""
+        response = json.dumps({
+            "relevance_score": "0.75",
+            "confidence": "0.6",
+            "reasoning": "ok",
+        })
+
+        with patch(
+            "orka.orchestrator.dry_run.response_parser.validate_path_evaluation",
+            return_value=(True, None),
+        ):
+            result = parser._parse_evaluation_response(response, "node-x")
+
+        assert isinstance(result, PathEvaluation)
+        assert result.relevance_score == 0.75
+        assert result.confidence == 0.6
+
     def test_parse_comprehensive_evaluation_response_valid(self, parser):
         """Test parsing valid comprehensive evaluation response."""
         response = json.dumps({
@@ -137,8 +174,10 @@ class TestResponseParserMixin:
 
         result = parser._parse_comprehensive_evaluation_response(response)
 
-        assert result["confidence"] == 0.3  # Fallback
-        assert "Failed to parse" in result["reasoning"]
+        # With schema-aware parsing, we auto-fill defaults instead of failing the whole object
+        assert isinstance(result["recommended_path"], list)
+        assert result["confidence"] in (0.5, 0.3)
+        assert "reasoning" in result
 
     def test_parse_comprehensive_evaluation_response_not_dict(self, parser):
         """Test parsing response that is not a dict."""
@@ -148,6 +187,30 @@ class TestResponseParserMixin:
 
         assert result["recommended_path"] == []
         assert result["confidence"] == 0.3
+
+    def test_parse_comprehensive_evaluation_response_string_path(self, parser):
+        """Support string path split by arrows."""
+        response = json.dumps({
+            "recommended_path": "search_agent -> analysis_agent -> response_builder",
+            "reasoning": "ok",
+            "confidence": 0.8,
+        })
+        result = parser._parse_comprehensive_evaluation_response(response)
+        assert result["recommended_path"] == [
+            "search_agent",
+            "analysis_agent",
+            "response_builder",
+        ]
+
+    def test_parse_comprehensive_evaluation_response_selected_path_variant(self, parser):
+        """Accept selected_path variant mapping to recommended_path."""
+        response = json.dumps({
+            "selected_path": ["a", "b", "c"],
+            "reasoning": "ok",
+            "confidence": 0.7,
+        })
+        result = parser._parse_comprehensive_evaluation_response(response)
+        assert result["recommended_path"] == ["a", "b", "c"]
 
     def test_create_fallback_evaluation(self, parser):
         """Test creating fallback evaluation."""

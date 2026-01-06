@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Service Cleanup
@@ -36,7 +36,7 @@ def cleanup_services(backend: str, processes: Dict[str, subprocess.Popen] = {}) 
         processes: Dictionary of running processes to terminate
     """
     try:
-        logger.info("🧹 Starting comprehensive service cleanup...")
+        logger.info("[CLEAN] Starting comprehensive service cleanup...")
 
         # Cleanup UI container first
         cleanup_ui_container()
@@ -48,13 +48,13 @@ def cleanup_services(backend: str, processes: Dict[str, subprocess.Popen] = {}) 
                     terminate_redis_process(proc)
                 # Generic process termination
                 elif proc and proc.poll() is None:  # Process is still running
-                    logger.info(f"🛑 Stopping {name} process...")
+                    logger.info(f"[STOP] Stopping {name} process...")
                     proc.terminate()
                     try:
                         proc.wait(timeout=5)
-                        logger.info(f"✅ {name} stopped gracefully")
+                        logger.info(f"[OK] {name} stopped gracefully")
                     except subprocess.TimeoutExpired:
-                        logger.warning(f"⚠️ Force killing {name} process...")
+                        logger.warning(f"[WARN]️ Force killing {name} process...")
                         proc.kill()
                         proc.wait()
 
@@ -63,14 +63,14 @@ def cleanup_services(backend: str, processes: Dict[str, subprocess.Popen] = {}) 
         if backend in ["redis", "redisstack"]:
             cleanup_redis_docker_enhanced()
 
-        logger.info("✅ All services stopped.")
+        logger.info("[OK] All services stopped.")
     except Exception as e:
-        logger.error(f"❌ Error stopping services: {e}")
+        logger.error(f"[FAIL] Error stopping services: {e}")
         # Try emergency cleanup
         try:
             emergency_cleanup()
         except Exception as emergency_error:
-            logger.error(f"❌ Emergency cleanup also failed: {emergency_error}")
+            logger.error(f"[FAIL] Emergency cleanup also failed: {emergency_error}")
 
 
 def terminate_all_processes(processes: Dict[str, subprocess.Popen]) -> None:
@@ -83,16 +83,16 @@ def terminate_all_processes(processes: Dict[str, subprocess.Popen]) -> None:
     for name, proc in processes.items():
         if proc and proc.poll() is None:  # Process is still running
             try:
-                logger.info(f"🛑 Stopping {name} process...")
+                logger.info(f"[STOP] Stopping {name} process...")
                 proc.terminate()
                 proc.wait(timeout=5)
-                logger.info(f"✅ {name} stopped gracefully")
+                logger.info(f"[OK] {name} stopped gracefully")
             except subprocess.TimeoutExpired:
-                logger.warning(f"⚠️ Force killing {name} process...")
+                logger.warning(f"[WARN]️ Force killing {name} process...")
                 proc.kill()
                 proc.wait()
             except Exception as e:
-                logger.warning(f"⚠️ Error stopping {name}: {e}")
+                logger.warning(f"[WARN]️ Error stopping {name}: {e}")
 
 
 def force_kill_processes(processes: Dict[str, subprocess.Popen]) -> None:
@@ -105,11 +105,11 @@ def force_kill_processes(processes: Dict[str, subprocess.Popen]) -> None:
     for name, proc in processes.items():
         if proc and proc.poll() is None:  # Process is still running
             try:
-                logger.warning(f"⚠️ Force killing {name} process...")
+                logger.warning(f"[WARN]️ Force killing {name} process...")
                 proc.kill()
                 proc.wait()
             except Exception as e:
-                logger.warning(f"⚠️ Error force killing {name}: {e}")
+                logger.warning(f"[WARN]️ Error force killing {name}: {e}")
 
 
 def cleanup_specific_backend(backend: str) -> None:
@@ -131,7 +131,7 @@ def cleanup_redis_docker_enhanced() -> None:
         docker_dir = get_docker_dir()
         compose_file = os.path.join(docker_dir, "docker-compose.yml")
 
-        logger.info("🛑 Enhanced Redis Docker cleanup...")
+        logger.info("[STOP] Enhanced Redis Docker cleanup...")
 
         # Force stop and remove Redis containers
         subprocess.run(
@@ -151,15 +151,15 @@ def cleanup_redis_docker_enhanced() -> None:
 
         subprocess.run(["docker", "rm", "-f", "docker-redis-1"], check=False, capture_output=True)
 
-        logger.info("✅ Enhanced Redis cleanup completed")
+        logger.info("[OK] Enhanced Redis cleanup completed")
 
     except Exception as e:
-        logger.warning(f"⚠️ Enhanced Redis cleanup failed: {e}")
+        logger.warning(f"[WARN]️ Enhanced Redis cleanup failed: {e}")
 
 
 def emergency_cleanup() -> None:
     """Emergency cleanup when normal cleanup fails."""
-    logger.warning("🚨 Performing emergency cleanup...")
+    logger.warning("[ERROR] Performing emergency cleanup...")
 
     try:
         # Cleanup UI container in emergency mode
@@ -177,7 +177,7 @@ def emergency_cleanup() -> None:
             container_ids = result.stdout.strip().split("\n")
             for container_id in container_ids:
                 if container_id:
-                    logger.warning(f"🛑 Force stopping container: {container_id}")
+                    logger.warning(f"[STOP] Force stopping container: {container_id}")
                     subprocess.run(
                         ["docker", "kill", container_id], check=False, capture_output=True
                     )
@@ -191,7 +191,7 @@ def emergency_cleanup() -> None:
         for network in networks:
             subprocess.run(["docker", "network", "rm", network], check=False, capture_output=True)
 
-        logger.info("✅ Emergency cleanup completed")
+        logger.info("[OK] Emergency cleanup completed")
 
     except Exception as e:
-        logger.error(f"❌ Emergency cleanup failed: {e}")
+        logger.error(f"[FAIL] Emergency cleanup failed: {e}")

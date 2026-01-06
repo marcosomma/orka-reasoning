@@ -1,7 +1,13 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Graph Introspection Module
@@ -286,8 +292,10 @@ class GraphIntrospector:
 
             # Depth 2+: Extended paths if configured (multi-hop paths)
             if self.max_depth > 1:
+                # Ensure executing_node is passed in context for proper GraphScout detection
+                extended_context = {**context, "executing_node": current_node}
                 extended_candidates = await self._explore_extended_paths(
-                    graph_state, neighbors, visited, question, context
+                    graph_state, neighbors, visited, question, extended_context
                 )
                 # Filter out any single-hop duplicates from extended exploration
                 unique_extended = []
@@ -385,7 +393,7 @@ class GraphIntrospector:
                         (node_class and "PathExecutor" in node_class)
                     )
                     if target_is_path_executor:
-                        logger.info(f"⚠️ Skipping PathExecutor agent: {node_id} (type={node_type}, class={node_class})")
+                        logger.info(f"[WARN]️ Skipping PathExecutor agent: {node_id} (type={node_type}, class={node_class})")
                         continue
 
                     available_agents.append(node_id)
@@ -503,6 +511,11 @@ class GraphIntrospector:
             initiating_node = context.get("executing_node", graph_state.current_node)
             is_graphscout_discovery = self._is_graphscout_node(graph_state, initiating_node)
 
+            logger.info(
+                f"_explore_extended_paths: initiating_node={initiating_node}, "
+                f"is_graphscout_discovery={is_graphscout_discovery}, start_nodes={start_nodes}"
+            )
+
             for start_node in start_nodes:
                 # Explore paths starting from this node
                 paths = await self._explore_from_node(
@@ -515,12 +528,12 @@ class GraphIntrospector:
                 )
 
                 for path in paths:
-                    logger.debug(f"Processing path from _explore_from_node: {' → '.join(path)}")
+                    logger.debug(f"Processing path from _explore_from_node: {' -> '.join(path)}")
 
                     # Ensure all paths end with a response builder
                     terminal_path = await self._ensure_terminal_path(graph_state, path, visited)
 
-                    logger.debug(f"After _ensure_terminal_path: {' → '.join(terminal_path)}")
+                    logger.debug(f"After _ensure_terminal_path: {' -> '.join(terminal_path)}")
 
                     candidate = {
                         "node_id": terminal_path[
@@ -537,12 +550,12 @@ class GraphIntrospector:
 
                     if len(terminal_path) > 1:
                         logger.info(
-                            f"Multi-hop candidate added: {' → '.join(terminal_path)} (depth: {len(terminal_path)})"
+                            f"Multi-hop candidate added: {' -> '.join(terminal_path)} (depth: {len(terminal_path)})"
                         )
 
                     if len(terminal_path) > len(path):
                         logger.info(
-                            f"GraphScout: Enhanced path to ensure terminal: {' → '.join(path)} → {' → '.join(terminal_path)}"
+                            f"GraphScout: Enhanced path to ensure terminal: {' -> '.join(path)} -> {' -> '.join(terminal_path)}"
                         )
 
             return extended_candidates
@@ -575,8 +588,16 @@ class GraphIntrospector:
                 neighbors = self._get_eligible_neighbors(
                     graph_state, current_node, visited, is_graphscout_discovery=True
                 )
+                logger.info(
+                    f"_explore_from_node: Using universal routing for {current_node}, "
+                    f"got {len(neighbors)} neighbors: {neighbors}"
+                )
             else:
                 neighbors = self._get_graph_neighbors(graph_state, current_node, visited)
+                logger.info(
+                    f"_explore_from_node: Using graph routing for {current_node}, "
+                    f"got {len(neighbors)} neighbors: {neighbors}"
+                )
 
             if not neighbors:
                 # Dead end - return current path
@@ -591,7 +612,7 @@ class GraphIntrospector:
                 if len(new_path) > 1:  # Only multi-hop paths
                     paths.append(new_path)
                     logger.info(
-                        f"GraphScout: Created {len(new_path)}-hop path: {' → '.join(new_path)}"
+                        f"GraphScout: Created {len(new_path)}-hop path: {' -> '.join(new_path)}"
                     )
 
                 # For GraphScout-initiated discovery, stop at response builders to avoid infinite exploration
@@ -741,7 +762,7 @@ class GraphIntrospector:
             if not response_builders:
                 # No available response builders, return original path
                 logger.warning(
-                    f"No available response builders to append to path: {' → '.join(path)}"
+                    f"No available response builders to append to path: {' -> '.join(path)}"
                 )
                 return path
 
@@ -757,7 +778,7 @@ class GraphIntrospector:
 
             # Append the response builder to create terminal path
             terminal_path = path + [best_builder]
-            logger.debug(f"Enhanced path with terminal agent: {' → '.join(path)} + {best_builder}")
+            logger.debug(f"Enhanced path with terminal agent: {' -> '.join(path)} + {best_builder}")
 
             return terminal_path
 
@@ -813,7 +834,7 @@ class GraphIntrospector:
             if graphscout_generated:
                 logger.debug(
                     "GraphScout-generated path detected; skipping edge feasibility checks for %s",
-                    " → ".join(path),
+                    " -> ".join(path),
                 )
                 return True
 

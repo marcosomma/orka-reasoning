@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Boolean Evaluation Parser
@@ -166,7 +166,7 @@ def _normalize_boolean_value(value: Any) -> bool:
 
     if isinstance(value, str):
         value_lower = value.lower().strip()
-        return value_lower in ("true", "yes", "1", "pass", "passed", "✓")
+        return value_lower in ("true", "yes", "1", "pass", "passed", "y")
 
     if isinstance(value, (int, float)):
         return value > 0
@@ -194,7 +194,7 @@ def _extract_booleans_from_text(text: str) -> Dict[str, Dict[str, bool]]:
     }
 
     patterns = [
-        r"([a-z_]+):\s*(true|false|yes|no|pass|fail|✓|✗)",
+        r"([a-z_]+):\s*(true|false|yes|no|pass|fail|Y|N)",
         r'"([a-z_]+)":\s*(true|false|yes|no)',
         r"([a-z_]+)\s*=\s*(true|false|yes|no)",
     ]
@@ -207,7 +207,7 @@ def _extract_booleans_from_text(text: str) -> Dict[str, Dict[str, bool]]:
             criterion = match.group(1)
             value_str = match.group(2).lower()
 
-            bool_value = value_str in ("true", "yes", "pass", "✓")
+            bool_value = value_str in ("true", "yes", "pass", "Y")
 
             for dimension in result.keys():
                 if criterion in _get_dimension_criteria(dimension):

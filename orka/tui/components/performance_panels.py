@@ -1,7 +1,13 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """Performance Panel Component Builders."""
 
@@ -34,18 +40,18 @@ class PerformancePanelMixin:
 
         if not self.performance_history:
             table.add_row("  Status", "Collecting", "data", "⏳")
-            return Panel(table, title="⚡ Performance & System", box=ROUNDED)
+            return Panel(table, title="[FAST] Performance & System", box=ROUNDED)
 
         latest_perf = self.performance_history[-1]
 
         # Performance metrics with status indicators
         avg_search_time = latest_perf.get("average_search_time", 0)
         if avg_search_time < 0.1:
-            perf_status = "⚡"
+            perf_status = "[FAST]"
         elif avg_search_time < 0.5:
-            perf_status = "⚠"
+            perf_status = "[WARN]"
         else:
-            perf_status = "🐌"
+            perf_status = "[SLOW]"
 
         table.add_row(
             "  Search Speed",
@@ -59,12 +65,12 @@ class PerformancePanelMixin:
             self._add_redisstack_metrics(table)
         else:
             # Basic Redis metrics
-            table.add_row("  Backend", self.backend.upper(), "type", "🗄️")
+            table.add_row("  Backend", self.backend.upper(), "type", "[DB]️")
             table.add_row(
                 "  Status",
                 "Connected",
                 "conn",
-                "✅" if hasattr(self.memory_logger, "client") else "❌",
+                "[OK]" if hasattr(self.memory_logger, "client") else "[FAIL]",
             )
 
         # Memory operations if available
@@ -73,12 +79,12 @@ class PerformancePanelMixin:
                 perf = self.memory_logger.get_performance_metrics()
                 writes = perf.get("memory_writes", 0)
                 reads = perf.get("memory_reads", 0)
-                table.add_row("  Writes/min", f"{writes}", "ops", "✏️")
-                table.add_row("  Reads/min", f"{reads}", "ops", "👁️")
+                table.add_row("  Writes/min", f"{writes}", "ops", "[EDIT]️")
+                table.add_row("  Reads/min", f"{reads}", "ops", "[VIEW]️")
             except Exception:
                 pass
 
-        return Panel(table, title="⚡ Performance & System Health", box=ROUNDED)
+        return Panel(table, title="[FAST] Performance & System Health", box=ROUNDED)
 
     def _add_redisstack_metrics(self, table):
         """Add RedisStack-specific metrics to the table."""
@@ -89,12 +95,12 @@ class PerformancePanelMixin:
                 docs = index_info.get("num_docs", 0)
                 indexing = index_info.get("indexing", False)
 
-                table.add_row("  Vector Docs", f"{docs:,}", "docs", "📊")
+                table.add_row("  Vector Docs", f"{docs:,}", "docs", "[STATS]")
                 table.add_row(
                     "  HNSW Index",
                     "Active" if indexing else "Idle",
                     "status",
-                    "✅" if indexing else "⏸",
+                    "[OK]" if indexing else "⏸",
                 )
 
                 # Redis system info
@@ -103,30 +109,30 @@ class PerformancePanelMixin:
                 clients = redis_info.get("connected_clients", 0)
                 ops_per_sec = redis_info.get("instantaneous_ops_per_sec", 0)
 
-                table.add_row("  Memory Used", memory_used, "mem", "💾")
-                table.add_row("  Clients", f"{clients}", "conn", "🔗")
+                table.add_row("  Memory Used", memory_used, "mem", "[SAVE]")
+                table.add_row("  Clients", f"{clients}", "conn", "[LINK]")
                 table.add_row(
                     "  Ops/sec",
                     f"{ops_per_sec}",
                     "rate",
-                    "⚡" if ops_per_sec > 10 else "📈",
+                    "[FAST]" if ops_per_sec > 10 else "[PERF]",
                 )
 
                 # Module detection
                 try:
                     modules = self.memory_logger.client.execute_command("MODULE", "LIST")
                     module_count = len(modules) if modules else 0
-                    table.add_row("  Modules", f"{module_count}", "ext", "🔌")
+                    table.add_row("  Modules", f"{module_count}", "ext", "[CONN]")
                 except Exception:
-                    table.add_row("  Modules", "Unknown", "ext", "❓")
+                    table.add_row("  Modules", "Unknown", "ext", "[?]")
 
         except Exception as e:
-            table.add_row("  Vector", "Error", "state", "❌")
-            table.add_row("  Redis", str(e)[:6], "err", "💥")
+            table.add_row("  Vector", "Error", "state", "[FAIL]")
+            table.add_row("  Redis", str(e)[:6], "err", "[CRASH]")
 
     def create_performance_view(self):
         """Create performance view (placeholder)."""
-        return Panel("Performance view not implemented yet", title="⚡ Performance View")
+        return Panel("Performance view not implemented yet", title="[FAST] Performance View")
 
     def create_performance_panel(self):
         """Create comprehensive performance metrics panel."""
@@ -134,7 +140,7 @@ class PerformancePanelMixin:
             self.memory_logger,
             "get_performance_metrics",
         ):
-            return Panel("No performance data available", title="🚀 Performance")
+            return Panel("No performance data available", title="[START] Performance")
 
         # Create layout for performance view
         layout = Layout()
@@ -158,14 +164,14 @@ class PerformancePanelMixin:
         layout["right"].update(
             Panel(
                 "[dim]Performance charts would go here[/dim]",
-                title="📈 Performance Trends",
+                title="[PERF] Performance Trends",
                 box=ROUNDED,
             ),
         )
 
         layout["header"].update(
             Panel(
-                "🚀 Performance Monitoring - Real-time Memory & System Metrics",
+                "[START] Performance Monitoring - Real-time Memory & System Metrics",
                 box=HEAVY,
                 style="bold green",
             ),
@@ -174,7 +180,7 @@ class PerformancePanelMixin:
         # Create performance table
         perf_table = self._create_performance_metrics_table()
         layout["performance_metrics"].update(
-            Panel(perf_table, title="⚡ Performance Metrics", box=ROUNDED),
+            Panel(perf_table, title="[FAST] Performance Metrics", box=ROUNDED),
         )
 
         # Quality metrics
@@ -226,7 +232,7 @@ class PerformancePanelMixin:
                     table.add_row("[bold]HNSW Index Health:[/bold]", "", "")
                     table.add_row(
                         "  Index Status",
-                        "✅ Active" if index_status.get("indexing", False) else "⏸️ Idle",
+                        "[OK] Active" if index_status.get("indexing", False) else "⏸️ Idle",
                         "",
                     )
                     table.add_row("  Documents", f"{index_status.get('num_docs', 0):,}", "docs")

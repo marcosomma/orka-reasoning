@@ -1,7 +1,13 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Path Evaluator
@@ -62,7 +68,7 @@ class PathEvaluatorMixin:
             # Create a comprehensive mapping of path evaluations
             path_details = {}
             for eval_data in path_evaluations:
-                path_key = " → ".join(eval_data.get("path", []))
+                path_key = " -> ".join(eval_data.get("path", []))
                 path_details[path_key] = {
                     "score": eval_data.get("score", 0.5),
                     "pros": eval_data.get("pros", []),
@@ -80,7 +86,7 @@ class PathEvaluatorMixin:
             # Update candidates with path-specific evaluation results
             for candidate in candidates:
                 path = candidate.get("path", [candidate.get("node_id", "")])
-                path_key = " → ".join(path)
+                path_key = " -> ".join(path)
 
                 # Get path-specific details or generate them
                 path_detail = path_details.get(path_key)
@@ -184,7 +190,7 @@ class PathEvaluatorMixin:
                     else:
                         outcomes.append(f"{agent_class_name} processing")
 
-                return f"Multi-step workflow: {' → '.join(outcomes)}"
+                return f"Multi-step workflow: {' -> '.join(outcomes)}"
 
         except Exception as e:
             logger.error(f"Failed to generate path-specific outcome: {e}")
@@ -298,13 +304,13 @@ class PathEvaluatorMixin:
                     reasoning = f"Single-step execution using {agent_id}"
             else:
                 if has_search and has_response_builder:
-                    reasoning = f"Optimal news workflow: {' → '.join(path)} - retrieves current info then generates response"
+                    reasoning = f"Optimal news workflow: {' -> '.join(path)} - retrieves current info then generates response"
                 elif has_analysis and has_response_builder:
-                    reasoning = f"Analytical workflow: {' → '.join(path)} - analyzes then responds"
+                    reasoning = f"Analytical workflow: {' -> '.join(path)} - analyzes then responds"
                 elif has_memory and has_response_builder:
-                    reasoning = f"Memory-based workflow: {' → '.join(path)} - retrieves stored info then responds"
+                    reasoning = f"Memory-based workflow: {' -> '.join(path)} - retrieves stored info then responds"
                 else:
-                    reasoning = f"Multi-step workflow: {' → '.join(path)}"
+                    reasoning = f"Multi-step workflow: {' -> '.join(path)}"
 
             if pros:
                 reasoning += f". Key advantages: {', '.join(pros[:2])}"

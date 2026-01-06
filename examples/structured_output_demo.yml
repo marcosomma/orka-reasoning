@@ -1,0 +1,94 @@
+orchestrator:
+  id: structured_output_demo
+  strategy: sequential
+  agents:
+    - answer_model_json
+    - answer_tool_call
+    - classify_structured
+    - summarize_local_prompt
+    - summarize_local_model_json
+    - summarize_local_tool_call
+
+agents:
+  - id: answer_model_json
+    type: openai-answer
+    prompt: "What is the capital of France?"
+    params:
+      model: gpt-4o
+      structured_output:
+        enabled: true
+        mode: model_json
+
+  - id: answer_tool_call
+    type: openai-answer
+    prompt: "Rate this review: {{ input }}"
+    params:
+      model: gpt-4o
+      structured_output:
+        enabled: true
+        mode: tool_call
+        schema:
+          required: [response]
+          optional:
+            sentiment_score: number
+            keywords: array
+
+  - id: classify_structured
+    type: openai-classification
+    prompt: "Classify: {{ input }}"
+    params:
+      categories: [positive, negative, neutral]
+      structured_output:
+        enabled: true
+        mode: tool_call
+
+  # Local LLM (LM Studio) - prompt mode with explicit schema
+  - id: summarize_local_prompt
+    type: local_llm
+    prompt: "Summarize: {{ input }}"
+    params:
+      provider: lm_studio
+      model: any-local-chat-model
+      model_url: http://localhost:1234
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [summary]
+          optional:
+            key_points: array
+            word_count: integer
+
+  # Local LLM (LM Studio) - model_json mode (will fallback to prompt if unsupported)
+  - id: summarize_local_model_json
+    type: local_llm
+    prompt: "Summarize: {{ input }}"
+    params:
+      provider: lm_studio
+      model: any-local-chat-model
+      model_url: http://localhost:1234
+      structured_output:
+        enabled: true
+        mode: model_json
+        schema:
+          required: [summary]
+          optional:
+            key_points: array
+            word_count: integer
+
+  # Local LLM (LM Studio) - tool_call mode (will fallback to prompt if unsupported)
+  - id: summarize_local_tool_call
+    type: local_llm
+    prompt: "Summarize: {{ input }}"
+    params:
+      provider: lm_studio
+      model: any-local-chat-model
+      model_url: http://localhost:1234
+      structured_output:
+        enabled: true
+        mode: tool_call
+        schema:
+          required: [summary]
+          optional:
+            key_points: array
+            word_count: integer

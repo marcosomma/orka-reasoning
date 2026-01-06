@@ -764,7 +764,7 @@ class TestMultiHopPathDiscovery:
 
     @pytest.mark.asyncio
     async def test_explore_from_node_three_hop_path(self):
-        """Test that GraphScout discovers 3-hop paths: search → analysis → response."""
+        """Test that GraphScout discovers 3-hop paths: search -> analysis -> response."""
         config = self.create_mock_config(max_depth=4)
         introspector = GraphIntrospector(config)
         
@@ -786,7 +786,7 @@ class TestMultiHopPathDiscovery:
         # Should find at least one 3-hop path
         assert len(three_hop_paths) > 0
         
-        # Check for the specific path: graphscout → search_agent → analysis_agent
+        # Check for the specific path: graphscout -> search_agent -> analysis_agent
         graphscout_search_analysis = [
             p for p in paths 
             if "search_agent" in p and "analysis_agent" in p and len(p) >= 3

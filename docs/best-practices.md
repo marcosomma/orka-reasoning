@@ -427,5 +427,10 @@ except Exception as e:
 - [API Reference](./api-reference.md)
 - [Monitoring Guide](./observability.md)
 - [Troubleshooting Guide](./troubleshooting.md)
----
+ 
+### Structured Outputs
+
+- Prefer `params.structured_output` for LLM agents to enforce JSON at generation time
+- Use `tool_call` for strict schema compliance; `model_json` for lighter guarantees
+- For local models (Ollama/LM Studio), use `prompt` mode with concise instructions
 ← [GraphScout](GRAPH_SCOUT_AGENT.md) | [📚 INDEX](index.md) | [Testing](TESTING.md) →

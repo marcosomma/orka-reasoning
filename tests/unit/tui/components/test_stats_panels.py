@@ -18,7 +18,7 @@ class MockStats:
         return self._current
 
     def get_trend(self, key):
-        return "→"
+        return "->"
 
     def get_rate(self, key):
         return 0.0

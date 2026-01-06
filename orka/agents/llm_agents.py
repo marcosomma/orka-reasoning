@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,10 +7,10 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
-🤖 **LLM Agents** - Cloud-Powered Intelligent Processing
+[BOT] **LLM Agents** - Cloud-Powered Intelligent Processing
 ======================================================
 
 This module contains specialized agents that leverage cloud LLMs (OpenAI GPT models)
@@ -18,27 +18,27 @@ for sophisticated natural language understanding and generation tasks.
 
 **Core LLM Agent Types:**
 
-🎨 **OpenAIAnswerBuilder**: The master craftsman of responses
+[STYLE] **OpenAIAnswerBuilder**: The master craftsman of responses
 - Synthesizes multiple data sources into coherent answers
 - Perfect for final response generation in complex workflows
 - Handles context-aware formatting and detailed explanations
 
-🎯 **OpenAIClassificationAgent**: The intelligent router
+[TARGET] **OpenAIClassificationAgent**: The intelligent router
 - Classifies inputs into predefined categories with high precision
 - Essential for workflow branching and content routing
 - Supports complex multi-class classification scenarios
 
-✅ **OpenAIBinaryAgent**: The precise decision maker
+[OK] **OpenAIBinaryAgent**: The precise decision maker
 - Makes accurate true/false determinations
 - Ideal for validation, filtering, and gate-keeping logic
 - Optimized for clear yes/no decision points
 
 **Advanced Features:**
-- 🧠 **Reasoning Extraction**: Captures internal reasoning from <think> blocks
-- 📊 **Cost Tracking**: Automatic token usage and cost calculation
-- 🔧 **JSON Parsing**: Robust handling of structured LLM responses
-- ⚡ **Error Recovery**: Graceful degradation for malformed responses
-- 🎛️ **Flexible Prompting**: Jinja2 template support for dynamic prompts
+- [AI] **Reasoning Extraction**: Captures internal reasoning from <think> blocks
+- [STATS] **Cost Tracking**: Automatic token usage and cost calculation
+- [CONF] **JSON Parsing**: Robust handling of structured LLM responses
+- [FAST] **Error Recovery**: Graceful degradation for malformed responses
+- [CTRL]️ **Flexible Prompting**: Jinja2 template support for dynamic prompts
 
 **Real-world Applications:**
 - Customer service with intelligent intent classification
@@ -65,6 +65,7 @@ logger = logging.getLogger(__name__)
 
 from ..contracts import Context
 from ..utils.json_parser import parse_llm_json, create_standard_schema
+from ..utils.structured_output import StructuredOutputConfig
 from .base_agent import BaseAgent
 
 # Load environment variables
@@ -123,7 +124,7 @@ def _extract_json_content(text: str) -> str:
 
 def _normalize_python_to_json(text: str) -> str:
     """
-    🐛 Bug #6 Fix: Normalize Python dict syntax to valid JSON.
+    [DEBUG] Bug #6 Fix: Normalize Python dict syntax to valid JSON.
     
     Converts common Python syntax to JSON:
     - Single quotes to double quotes
@@ -152,7 +153,7 @@ def _parse_json_safely(json_content: str) -> dict[str, Any] | None:
         return None
     except json.JSONDecodeError:
         try:
-            # 🐛 Bug #6 Fix: Try normalizing Python syntax to JSON before fixing
+            # [DEBUG] Bug #6 Fix: Try normalizing Python syntax to JSON before fixing
             normalized = _normalize_python_to_json(json_content)
             result = json.loads(normalized)
             if isinstance(result, dict):
@@ -453,7 +454,7 @@ def _simple_json_parse(response_text: str) -> dict[str, Any]:
 
 class OpenAIAnswerBuilder(BaseAgent):
     """
-    🎨 **The master craftsman of responses** - builds comprehensive answers from complex inputs.
+    [STYLE] **The master craftsman of responses** - builds comprehensive answers from complex inputs.
 
     **What makes it special:**
     - **Multi-source Synthesis**: Combines search results, context, and knowledge seamlessly
@@ -501,8 +502,10 @@ class OpenAIAnswerBuilder(BaseAgent):
             "agent_id",
             self.agent_id if hasattr(self, "agent_id") else "unknown",
         )
+        # Ensure concrete string for downstream typing
+        agent_id = str(agent_id) if agent_id is not None else "unknown"
 
-        # ✅ FIX: Use already-rendered prompt from execution engine if available
+        # [OK] FIX: Use already-rendered prompt from execution engine if available
         if isinstance(ctx, dict) and "formatted_prompt" in ctx and ctx["formatted_prompt"]:
             render_prompt = ctx["formatted_prompt"]
             logger.debug(
@@ -511,6 +514,29 @@ class OpenAIAnswerBuilder(BaseAgent):
         else:
             render_prompt = original_prompt or ""
             logger.debug(f"Using original prompt template (length: {len(render_prompt)})")
+
+        # Structured Output configuration (per-agent)
+        agent_params = getattr(self, "params", {}) if hasattr(self, "params") else {}
+        # Infer agent type for default schema selection
+        agent_type_name = "openai-answer"
+        try:
+            if isinstance(self, OpenAIBinaryAgent):  # type: ignore[name-defined]
+                agent_type_name = "openai-binary"
+            elif isinstance(self, OpenAIClassificationAgent):  # type: ignore[name-defined]
+                agent_type_name = "openai-classification"
+        except Exception:
+            # Fallback to answer type
+            agent_type_name = "openai-answer"
+        orchestrator_defaults = None
+        if isinstance(ctx, dict):
+            _so = ctx.get("structured_output_defaults")
+            if isinstance(_so, dict):
+                orchestrator_defaults = _so
+        so_config = StructuredOutputConfig.from_params(
+            agent_params=agent_params,
+            agent_type=agent_type_name,
+            orchestrator_defaults=orchestrator_defaults,
+        )
 
         self_evaluation = """
             # CONSTRAINS
@@ -525,7 +551,17 @@ class OpenAIAnswerBuilder(BaseAgent):
                     }
                 ```
         """
-        full_prompt = f"{render_prompt}\n\n{ctx}\n\n{self_evaluation}"
+        # Build final prompt depending on structured output mode
+        if so_config.enabled:
+            # When structured output is enabled, avoid duplicating legacy JSON instructions
+            full_prompt = f"{render_prompt}\n\n{ctx}"
+            resolved_mode = so_config.resolve_mode(provider="openai", model=str(model))
+            if resolved_mode == "prompt":
+                instructions = so_config.build_prompt_instructions()
+                if instructions:
+                    full_prompt = f"{full_prompt}\n\n{instructions}"
+        else:
+            full_prompt = f"{render_prompt}\n\n{ctx}\n\n{self_evaluation}"
 
         # Make API call to OpenAI
 
@@ -538,11 +574,36 @@ class OpenAIAnswerBuilder(BaseAgent):
                     "OpenAI client is not available. Please set OPENAI_API_KEY environment variable or use local LLM agents."
                 )
 
-            response = await client.chat.completions.create(
-                model=model,
-                messages=[{"role": "user", "content": full_prompt}],
-                temperature=temperature,
+            # Build request kwargs according to structured output mode
+            request_kwargs: dict[str, Any] = {
+                "model": model,
+                "messages": [{"role": "user", "content": full_prompt}],
+                "temperature": temperature,
+            }
+
+            resolved_mode = (
+                so_config.resolve_mode(provider="openai", model=str(model))
+                if so_config.enabled
+                else "prompt"
             )
+
+            if so_config.enabled and resolved_mode == "model_json":
+                request_kwargs["response_format"] = {"type": "json_object"}
+            elif so_config.enabled and resolved_mode == "tool_call":
+                json_schema = so_config.build_json_schema()
+                request_kwargs["tools"] = [
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "emit",
+                            "description": "Emit the structured result",
+                            "parameters": json_schema,
+                        },
+                    }
+                ]
+                request_kwargs["tool_choice"] = "required"
+
+            response = await client.chat.completions.create(**request_kwargs)
 
             # Extract usage and cost metrics
             usage = response.usage
@@ -576,34 +637,70 @@ class OpenAIAnswerBuilder(BaseAgent):
                 "status_code": status_code,
             }
 
-            # Parse JSON if requested (simple parsing for OpenAI models)
-            if parse_json:
-                # Simple JSON extraction for OpenAI models (not reasoning models)
-                parsed_response = _simple_json_parse(answer)
+            # Parse response
+            if so_config.enabled:
+                mode_used = resolved_mode
+                if mode_used == "tool_call":
+                    # Extract first tool call result
+                    tool_payload: Optional[dict[str, Any]] = None
+                    try:
+                        tool_calls = getattr(response.choices[0].message, "tool_calls", None)
+                        if tool_calls:
+                            fn = tool_calls[0].function
+                            args_text = getattr(fn, "arguments", "{}")
+                            tool_payload = json.loads(args_text) if args_text else {}
+                    except Exception:
+                        tool_payload = None
 
-                # Track silent degradation if JSON parsing failed and fell back to raw text
-                if (
-                    error_tracker
-                    and parsed_response.get("internal_reasoning")
-                    == "JSON parsing failed, using raw response"
-                ):
-                    error_tracker.record_silent_degradation(
-                        agent_id,
-                        "openai_json_parsing_fallback",
-                        f"OpenAI response was not valid JSON, using raw text: {answer[:100]}...",
+                    if isinstance(tool_payload, dict) and tool_payload:
+                        parsed_response = {
+                            **tool_payload,
+                        }
+                    else:
+                        # Fallback to schema-aware parsing from content
+                        parsed_response = parse_llm_json(
+                            answer or "",
+                            schema=so_config.build_json_schema(),
+                            strict=False,
+                            coerce_types=so_config.coerce_types,
+                            track_errors=True,
+                            agent_id=agent_id,
+                        )
+                else:
+                    # model_json or prompt: content should be a JSON object
+                    parsed_response = parse_llm_json(
+                        answer or "",
+                        schema=so_config.build_json_schema(),
+                        strict=False,
+                        coerce_types=so_config.coerce_types,
+                        track_errors=True,
+                        agent_id=agent_id,
                     )
             else:
-                # When JSON parsing is disabled, return raw response in expected format
-                parsed_response = {
-                    "response": answer,
-                    "confidence": "0.5",
-                    "internal_reasoning": "Raw response without JSON parsing",
-                }
+                # Legacy behavior
+                if parse_json:
+                    parsed_response = _simple_json_parse(answer)
+                    if (
+                        error_tracker
+                        and parsed_response.get("internal_reasoning")
+                        == "JSON parsing failed, using raw response"
+                    ):
+                        error_tracker.record_silent_degradation(
+                            agent_id,
+                            "openai_json_parsing_fallback",
+                            f"OpenAI response was not valid JSON, using raw text: {answer[:100]}...",
+                        )
+                else:
+                    parsed_response = {
+                        "response": answer,
+                        "confidence": "0.5",
+                        "internal_reasoning": "Raw response without JSON parsing",
+                    }
 
             # Add metrics and formatted_prompt to parsed response
             parsed_response["_metrics"] = metrics
 
-            # ✅ FIX: Store the actual rendered template, not the original template
+            # [OK] FIX: Store the actual rendered template, not the original template
             if isinstance(ctx, dict) and "formatted_prompt" in ctx and ctx["formatted_prompt"]:
                 # We used pre-rendered template, so it's already fully rendered
                 parsed_response["formatted_prompt"] = ctx["formatted_prompt"]
@@ -660,7 +757,7 @@ class OpenAIAnswerBuilder(BaseAgent):
 
 class OpenAIBinaryAgent(OpenAIAnswerBuilder):
     """
-    ✅ **The precise decision maker** - makes accurate true/false determinations.
+    [OK] **The precise decision maker** - makes accurate true/false determinations.
 
     **Decision-making excellence:**
     - **High Precision**: Optimized for clear binary classifications
@@ -730,7 +827,11 @@ class OpenAIBinaryAgent(OpenAIAnswerBuilder):
 
         # Extract answer and preserve metrics and LLM response details
         if isinstance(response_data, dict):
-            answer = response_data.get("response", "")
+            # Prefer structured boolean 'result' if present
+            if "result" in response_data:
+                answer = response_data.get("result")
+            else:
+                answer = response_data.get("response", "")
             # Preserve metrics and LLM response details for bubbling up
             self._last_metrics = response_data.get("_metrics", {})
             self._last_response = response_data.get("response", "")
@@ -744,12 +845,15 @@ class OpenAIBinaryAgent(OpenAIAnswerBuilder):
             self._last_internal_reasoning = "Non-JSON response from LLM"
 
         # Convert to binary decision
-        is_true = False
-        positive_indicators = ["yes", "true", "correct", "right", "affirmative"]
-        for indicator in positive_indicators:
-            if indicator in answer.lower():
-                is_true = True
-                break
+        if isinstance(answer, bool):
+            is_true = answer
+        else:
+            is_true = False
+            positive_indicators = ["yes", "true", "correct", "right", "affirmative"]
+            for indicator in positive_indicators:
+                if isinstance(answer, str) and indicator in answer.lower():
+                    is_true = True
+                    break
 
         # Return a dictionary matching the supertype's return
         return {
@@ -759,13 +863,13 @@ class OpenAIBinaryAgent(OpenAIAnswerBuilder):
             "_metrics": self._last_metrics,
             "formatted_prompt": response_data.get(
                 "formatted_prompt", ""
-            ),  # ✅ FIX: Preserve formatted_prompt
+            ),  # [OK] FIX: Preserve formatted_prompt
         }
 
 
 class OpenAIClassificationAgent(OpenAIAnswerBuilder):
     """
-    🎯 **The intelligent router** - classifies inputs into predefined categories with precision.
+    [TARGET] **The intelligent router** - classifies inputs into predefined categories with precision.
 
     **Classification superpowers:**
     - **Multi-class Intelligence**: Handles complex category systems with ease
@@ -813,7 +917,7 @@ class OpenAIClassificationAgent(OpenAIAnswerBuilder):
 
     async def _run_impl(self, ctx: Context) -> dict[str, Any]:
         # Extract categories from params or use defaults
-        categories = self.params.get("options", [])
+        categories = self.params.get("options", self.params.get("categories", []))
         constrains = "**CONSTRAINS**ONLY Return values from the given options. If not return 'not-classified'"
 
         # Get the base prompt
@@ -844,7 +948,9 @@ class OpenAIClassificationAgent(OpenAIAnswerBuilder):
 
         # Extract answer and preserve metrics and LLM response details
         if isinstance(response_data, dict):
-            answer = response_data.get("response", "")
+            # Prefer structured 'category' when available
+            raw_category = response_data.get("category")
+            answer = raw_category if raw_category is not None else response_data.get("response", "")
             # Preserve metrics and LLM response details for bubbling up
             self._last_metrics = response_data.get("_metrics", {})
             self._last_response = response_data.get("response", "")
@@ -857,6 +963,10 @@ class OpenAIClassificationAgent(OpenAIAnswerBuilder):
             self._last_confidence = "0.0"
             self._last_internal_reasoning = "Non-JSON response from LLM"
 
+        # Validate category against provided options if present
+        if categories and isinstance(answer, str) and answer not in categories:
+            answer = "not-classified"
+
         # Return a dictionary matching the supertype's return
         return {
             "response": answer,
@@ -865,5 +975,5 @@ class OpenAIClassificationAgent(OpenAIAnswerBuilder):
             "_metrics": self._last_metrics,
             "formatted_prompt": response_data.get(
                 "formatted_prompt", ""
-            ),  # ✅ FIX: Preserve formatted_prompt
+            ),  # [OK] FIX: Preserve formatted_prompt
         }

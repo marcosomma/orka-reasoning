@@ -1,3 +1,14 @@
+# OrKa: Orchestrator Kit Agents
+# by Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+
 """Diagnostic utilities for troubleshooting OrKa workflows."""
 
 import logging
@@ -48,7 +59,7 @@ def diagnose_template_variables(
             else:
                 missing_vars.append('.'.join(path))
                 logger.warning(
-                    f"  ❌ Missing: {'.'.join(path)}\n"
+                    f"  [FAIL] Missing: {'.'.join(path)}\n"
                     f"     Available at this level: {list(current.keys()) if isinstance(current, dict) else type(current).__name__}"
                 )
                 break
@@ -57,7 +68,7 @@ def diagnose_template_variables(
             value_str = str(current)
             if len(value_str) > 100:
                 value_str = value_str[:100] + "..."
-            logger.debug(f"  ✅ Found: {var} = {value_str}")
+            logger.debug(f"  [OK] Found: {var} = {value_str}")
     
     if missing_vars:
         logger.error(

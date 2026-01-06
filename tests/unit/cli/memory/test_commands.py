@@ -158,7 +158,7 @@ class TestMemoryCommands:
         assert mock_create_memory_logger.call_count == 2
         mock_create_memory_logger.assert_any_call(backend="redisstack", redis_url="redis://localhost:6380/0")
         mock_create_memory_logger.assert_any_call(backend="redis", redis_url="redis://localhost:6380/0")
-        mock_logger.info.assert_any_call("⚠️ RedisStack not available (redisstack not found), falling back to Redis")
+        mock_logger.info.assert_any_call("[WARN]️ RedisStack not available (redisstack not found), falling back to Redis")
 
     @patch("orka.cli.memory.commands.logger")
     def test_memory_cleanup_general_exception(self, mock_logger, mock_create_memory_logger, mock_args):
@@ -183,9 +183,9 @@ class TestMemoryCommands:
         mock_create_memory_logger.assert_called_once_with(backend="redisstack", redis_url="redis://localhost:6380/0")
         mock_logger.info.assert_any_call("=== OrKa Memory Configuration Test ===")
         mock_logger.info.assert_any_call("Backend: redisstack")
-        mock_logger.info.assert_any_call("\n🧪 Testing Configuration:")
-        mock_logger.info.assert_any_call("✅ Decay Config: Enabled")
-        mock_logger.info.assert_any_call("\n✅ Configuration test completed")
+        mock_logger.info.assert_any_call("\n[TEST] Testing Configuration:")
+        mock_logger.info.assert_any_call("[OK] Decay Config: Enabled")
+        mock_logger.info.assert_any_call("\n[OK] Configuration test completed")
 
     @patch("orka.cli.memory.commands.logger")
     def test_memory_configure_redisstack_specific(self, mock_logger, mock_create_memory_logger, mock_args, mock_memory_logger):
@@ -194,8 +194,8 @@ class TestMemoryCommands:
         assert result == 0
         mock_create_memory_logger.assert_called_once_with(backend="redisstack", redis_url="redis://localhost:6380/0")
         mock_memory_logger.client.ft.return_value.info.assert_any_call()
-        mock_logger.info.assert_any_call("\n🔍 RedisStack-Specific Tests:")
-        mock_logger.info.assert_any_call("✅ HNSW Index: Available")
+        mock_logger.info.assert_any_call("\n[...] RedisStack-Specific Tests:")
+        mock_logger.info.assert_any_call("[OK] HNSW Index: Available")
         mock_logger.info.assert_any_call("   Documents: 10")
 
     @patch("orka.cli.memory.commands.logger")
@@ -206,23 +206,23 @@ class TestMemoryCommands:
         mock_create_memory_logger.assert_called_once_with(backend="redis", redis_url="redis://localhost:6380/0")
         mock_memory_logger.client.ping.assert_called_once()
         mock_memory_logger.cleanup_expired_memories.assert_called_once_with(dry_run=True)
-        mock_logger.info.assert_any_call("\n🔧 Redis-Specific Tests:")
-        mock_logger.info.assert_any_call("✅ Redis Connection: Active")
-        mock_logger.info.assert_any_call("✅ Decay Cleanup: Available")
+        mock_logger.info.assert_any_call("\n[CONF] Redis-Specific Tests:")
+        mock_logger.info.assert_any_call("[OK] Redis Connection: Active")
+        mock_logger.info.assert_any_call("[OK] Decay Cleanup: Available")
 
     @patch("orka.cli.memory.commands.logger")
     def test_memory_configure_general_exception(self, mock_logger, mock_create_memory_logger, mock_args):
         mock_create_memory_logger.side_effect = Exception("Config error")
         result = memory_configure(mock_args)
         assert result == 1
-        mock_logger.error.assert_called_once_with("❌ Configuration test failed: Config error")
+        mock_logger.error.assert_called_once_with("[FAIL] Configuration test failed: Config error")
 
     @patch("orka.cli.memory.commands.logger")
     def test_memory_configure_decay_disabled(self, mock_logger, mock_create_memory_logger, mock_args, mock_memory_logger):
         mock_memory_logger.decay_config["enabled"] = False
         result = memory_configure(mock_args)
         assert result == 0
-        mock_logger.info.assert_any_call("✅ Decay Config: Disabled")
+        mock_logger.info.assert_any_call("[OK] Decay Config: Disabled")
 
     @patch("orka.cli.memory.commands.logger")
     def test_memory_configure_hnsw_index_not_available(self, mock_logger, mock_create_memory_logger, mock_args, mock_memory_logger):
@@ -230,7 +230,7 @@ class TestMemoryCommands:
         mock_memory_logger.client.ft.return_value.info.side_effect = Exception("Index not found")
         result = memory_configure(mock_args)
         assert result == 0
-        mock_logger.error.assert_any_call("❌ HNSW Index: Not available - Index not found")
+        mock_logger.error.assert_any_call("[FAIL] HNSW Index: Not available - Index not found")
 
     @patch("orka.cli.memory.commands.logger")
     def test_memory_configure_redis_connection_error(self, mock_logger, mock_create_memory_logger, mock_args, mock_memory_logger):
@@ -238,7 +238,7 @@ class TestMemoryCommands:
         mock_memory_logger.client.ping.side_effect = Exception("Connection refused")
         result = memory_configure(mock_args)
         assert result == 0
-        mock_logger.error.assert_any_call("❌ Redis Connection: Error - Connection refused")
+        mock_logger.error.assert_any_call("[FAIL] Redis Connection: Error - Connection refused")
 
     @patch("orka.cli.memory.commands.logger")
     def test_memory_configure_decay_cleanup_error(self, mock_logger, mock_create_memory_logger, mock_args, mock_memory_logger):
@@ -246,11 +246,11 @@ class TestMemoryCommands:
         mock_memory_logger.cleanup_expired_memories.side_effect = Exception("Cleanup failed")
         result = memory_configure(mock_args)
         assert result == 0
-        mock_logger.error.assert_any_call("❌ Decay Cleanup: Error - Cleanup failed")
+        mock_logger.error.assert_any_call("[FAIL] Decay Cleanup: Error - Cleanup failed")
 
     @patch("orka.cli.memory.commands.logger")
     def test_memory_configure_memory_stats_error(self, mock_logger, mock_create_memory_logger, mock_args, mock_memory_logger):
         mock_memory_logger.get_memory_stats.side_effect = Exception("Stats error")
         result = memory_configure(mock_args)
         assert result == 0
-        mock_logger.error.assert_any_call("\n❌ Memory Stats: Error - Stats error")
+        mock_logger.error.assert_any_call("\n[FAIL] Memory Stats: Error - Stats error")

@@ -386,7 +386,7 @@ class TestLoopValidatorNode:
         assert "improvement" in result
 
     def test_try_keyword_parse_with_symbols(self):
-        """Test keyword parsing with symbols (✓, ✗)."""
+        """Test keyword parsing with symbols (Y, N)."""
         node = LoopValidatorNode(
             node_id="validator",
             llm_model="gpt-oss:20b",
@@ -394,8 +394,8 @@ class TestLoopValidatorNode:
         )
         
         text = """
-        better_than_previous ✓
-        significant_delta ✗
+        better_than_previous Y
+        significant_delta N
         """
         
         result = node._try_keyword_parse(text)

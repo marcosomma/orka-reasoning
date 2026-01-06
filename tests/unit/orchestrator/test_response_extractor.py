@@ -52,3 +52,56 @@ def test_validate_and_enforce_terminal_agent():
     q = ["a", "b"]
     res = re.validate_and_enforce_terminal_agent(q)
     assert res[-1] == "rb"
+
+
+class TestControlFlowDetection:
+    """Tests for control-flow node detection."""
+
+    def test_is_control_flow_agent_fork(self):
+        """Test ForkNode detection."""
+        orch = DummyOrch()
+        orch.agents = {"fork1": Agent("forknode", [])}
+        re = ResponseExtractor(orch)
+        assert re.is_control_flow_agent("fork1") is True
+
+    def test_is_control_flow_agent_join(self):
+        """Test JoinNode detection."""
+        orch = DummyOrch()
+        orch.agents = {"join1": Agent("joinnode", [])}
+        re = ResponseExtractor(orch)
+        assert re.is_control_flow_agent("join1") is True
+
+    def test_is_control_flow_agent_router(self):
+        """Test RouterNode detection."""
+        orch = DummyOrch()
+        orch.agents = {"router1": Agent("routernode", [])}
+        re = ResponseExtractor(orch)
+        assert re.is_control_flow_agent("router1") is True
+
+    def test_is_control_flow_agent_graphscout(self):
+        """Test GraphScout detection."""
+        orch = DummyOrch()
+        orch.agents = {"gs": Agent("graph-scout", [])}
+        re = ResponseExtractor(orch)
+        assert re.is_control_flow_agent("gs") is True
+
+    def test_is_control_flow_agent_llm(self):
+        """Test that LLM agents are not control-flow."""
+        orch = DummyOrch()
+        orch.agents = {"llm": Agent("local_llm", ["response_generation"])}
+        re = ResponseExtractor(orch)
+        assert re.is_control_flow_agent("llm") is False
+
+    def test_is_control_flow_agent_unknown(self):
+        """Test unknown agent returns False."""
+        re = ResponseExtractor(DummyOrch())
+        assert re.is_control_flow_agent("nonexistent") is False
+
+    def test_control_flow_types_constant(self):
+        """Verify CONTROL_FLOW_TYPES contains expected values."""
+        assert "forknode" in ResponseExtractor.CONTROL_FLOW_TYPES
+        assert "joinnode" in ResponseExtractor.CONTROL_FLOW_TYPES
+        assert "routernode" in ResponseExtractor.CONTROL_FLOW_TYPES
+        assert "loopnode" in ResponseExtractor.CONTROL_FLOW_TYPES
+        assert "graph-scout" in ResponseExtractor.CONTROL_FLOW_TYPES
+        assert "graphscout" in ResponseExtractor.CONTROL_FLOW_TYPES

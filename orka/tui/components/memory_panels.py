@@ -1,7 +1,13 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """Memory Panel Component Builders."""
 
@@ -36,7 +42,7 @@ class MemoryPanelMixin:
     def create_compact_memories_panel(self):
         """Create a compact memories panel with comprehensive details."""
         if not self.memory_data:
-            return Panel("No memories", title="🧠 Recent Memories")
+            return Panel("No memories", title="[AI] Recent Memories")
 
         table = Table(show_header=True, header_style="bold magenta", box=None, padding=(0, 1))
         table.add_column("Time", style="dim", width=5)
@@ -100,14 +106,14 @@ class MemoryPanelMixin:
 
         return Panel(
             table,
-            title=f"🧠 Recent Memories ({len(self.memory_data)} total)",
+            title=f"[AI] Recent Memories ({len(self.memory_data)} total)",
             box=ROUNDED,
         )
 
     def create_recent_memories_panel(self):
         """Create recent memories panel with full details."""
         if not self.memory_data:
-            return Panel("No memories found", title="🧠 Recent Memories")
+            return Panel("No memories found", title="[AI] Recent Memories")
 
         table = Table(show_header=True, header_style="bold magenta", box=ROUNDED)
         table.add_column("Time", style="dim", width=8)
@@ -140,9 +146,9 @@ class MemoryPanelMixin:
                 ttl_style,
             )
 
-        return Panel(table, title="🧠 Recent Stored Memories", box=ROUNDED)
+        return Panel(table, title="[AI] Recent Stored Memories", box=ROUNDED)
 
     def create_memory_browser(self):
         """Create memory browser view (placeholder)."""
-        return Panel("Memory browser not implemented yet", title="🧠 Memory Browser")
+        return Panel("Memory browser not implemented yet", title="[AI] Memory Browser")
 

@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Backend Server Management
@@ -67,13 +67,13 @@ def terminate_backend_process(backend_proc: subprocess.Popen) -> None:
         backend_proc: The backend process to terminate
     """
     if backend_proc and backend_proc.poll() is None:  # Process is still running
-        logger.info("🛑 Stopping backend process...")
+        logger.info("[STOP] Stopping backend process...")
         backend_proc.terminate()
         try:
             backend_proc.wait(timeout=5)
-            logger.info("✅ Backend stopped gracefully")
+            logger.info("[OK] Backend stopped gracefully")
         except subprocess.TimeoutExpired:
-            logger.warning("⚠️ Force killing backend process...")
+            logger.warning("[WARN]️ Force killing backend process...")
             backend_proc.kill()
             backend_proc.wait()
 

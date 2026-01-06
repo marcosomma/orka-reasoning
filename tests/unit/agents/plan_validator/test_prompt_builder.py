@@ -97,3 +97,26 @@ def test_build_validation_prompt_with_unknown_context_does_not_raise():
     # If the context is unknown, we still return a prompt and include a warning-friendly message
     assert isinstance(prompt, str)
     assert "ADDITIONAL OUTPUT FORMAT FOR non_existent_context CONTEXT" not in prompt or "Respond ONLY" in prompt
+
+
+def test_build_validation_prompt_skip_json_instructions():
+    """When skip_json_instructions=True, the JSON output block should be omitted."""
+    query = "test query"
+    proposed_path = {"path": ["a", "b"]}
+    prompt = build_validation_prompt(
+        query=query,
+        proposed_path=proposed_path,
+        previous_critiques=[],
+        loop_number=1,
+        preset_name="moderate",
+        scoring_context="loop_convergence",
+        skip_json_instructions=True,
+    )
+
+    # The base prompt should still contain the core sections
+    assert "**VALIDATION ROUND:** 1" in prompt
+    assert "**ORIGINAL QUERY:**\n" in prompt
+
+    # But the JSON output format and additional context-specific format should be omitted
+    assert "**OUTPUT FORMAT (JSON only):**" not in prompt
+    assert "ADDITIONAL OUTPUT FORMAT FOR loop_convergence CONTEXT" not in prompt

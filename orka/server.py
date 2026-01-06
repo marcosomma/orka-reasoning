@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 OrKa Server - FastAPI Web Server
@@ -249,8 +249,6 @@ import os
 import pprint
 import tempfile
 from typing import Any
-
-import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -259,7 +257,7 @@ from orka.orchestrator import Orchestrator
 
 app = FastAPI(
     title="OrKa AI Orchestration API",
-    description="🚀 High-performance API gateway for AI workflow orchestration",
+    description="[START] High-performance API gateway for AI workflow orchestration",
     version="1.0.0",
 )
 logger = logging.getLogger(__name__)
@@ -287,7 +285,7 @@ app.add_middleware(
 
 def sanitize_for_json(obj: Any) -> Any:
     """
-    🧹 **Intelligent JSON sanitizer** - handles complex objects for API responses.
+    [CLEAN] **Intelligent JSON sanitizer** - handles complex objects for API responses.
 
     **What makes sanitization smart:**
     - **Type Intelligence**: Automatically handles datetime, bytes, and custom objects
@@ -402,6 +400,9 @@ async def run_execution(request: Request):
 def main():
     # Get port from environment variable, default to 8000
     port = int(os.environ.get("ORKA_PORT", 8001))  # Default to 8001 to avoid conflicts
+    # Import uvicorn only when running the server to avoid test-time dependency on 'click'
+    import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=port)
 
 if __name__ == "__main__":

@@ -1,7 +1,13 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Prompt Builder
@@ -152,7 +158,7 @@ Latency Estimate: {agent_info['latency_estimate']}ms
         # Format possible paths
         paths_info = []
         for i, path_info in enumerate(possible_paths):
-            path_agents = " → ".join([agent["id"] for agent in path_info["agents"]])
+            path_agents = " -> ".join([agent["id"] for agent in path_info["agents"]])
             paths_info.append(
                 f"""
 Path {i+1}: {path_agents}
@@ -201,7 +207,7 @@ CRITICAL REQUIREMENTS:
 - Avoid routing to the current agent ({current_agent}) when possible; document exceptions and test coverage
 - Each path MUST have a UNIQUE score (no identical scores)
 - Provide SPECIFIC pros/cons for each path
-- For factual questions, prioritize search → response_builder paths
+- For factual questions, prioritize search -> response_builder paths
 - Multi-hop paths should generally score higher than single-hop for completeness
 
 RESPONSE FORMAT: You MUST respond with ONLY valid JSON. Each path must have different scores and specific reasoning:

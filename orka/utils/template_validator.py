@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Template Validator
@@ -47,6 +47,12 @@ class TemplateValidator:
     def __init__(self):
         """Initialize the template validator with a Jinja2 environment."""
         self.env = Environment()
+        # Register custom template helpers including filters
+        try:
+            from orka.orchestrator.template_helpers import register_template_helpers
+            register_template_helpers(self.env)
+        except ImportError:
+            logger.warning("Could not import template_helpers for validation environment")
         # Note: UndefinedError is raised, not used as undefined class
 
     def validate_template(self, template_str: str) -> Tuple[bool, str, Set[str]]:

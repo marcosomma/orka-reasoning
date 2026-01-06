@@ -144,3 +144,65 @@ class TestAgentHelpers:
         helpers = create_agent_helpers({})
         assert helpers["joined_results"]() == []
 
+    def test_get_agent_response_nested_response_dict(self):
+        """Test get_agent_response with nested response dict (structured output format)."""
+        helpers = create_agent_helpers({
+            "previous_outputs": {
+                "agent1": {
+                    "response": {
+                        "response": "actual text response",
+                        "confidence": "0.95",
+                        "internal_reasoning": "test reasoning",
+                        "_metrics": {"tokens": 100}
+                    }
+                }
+            }
+        })
+        result = helpers["get_agent_response"]("agent1")
+        assert result == "actual text response"
+
+    def test_get_agent_response_nested_result_dict(self):
+        """Test get_agent_response with nested result dict (structured output format)."""
+        helpers = create_agent_helpers({
+            "previous_outputs": {
+                "agent1": {
+                    "result": {
+                        "response": "result text response",
+                        "confidence": "0.90"
+                    }
+                }
+            }
+        })
+        result = helpers["get_agent_response"]("agent1")
+        assert result == "result text response"
+
+    def test_safe_get_response_nested_response_dict(self):
+        """Test safe_get_response with nested response dict (structured output format)."""
+        helpers = create_agent_helpers({
+            "previous_outputs": {
+                "agent1": {
+                    "response": {
+                        "response": "nested safe response",
+                        "confidence": "0.85"
+                    }
+                }
+            }
+        })
+        result = helpers["safe_get_response"]("agent1")
+        assert result == "nested safe response"
+
+    def test_safe_get_response_nested_result_dict(self):
+        """Test safe_get_response with nested result dict (structured output format)."""
+        helpers = create_agent_helpers({
+            "previous_outputs": {
+                "agent1": {
+                    "result": {
+                        "response": "nested result response",
+                        "confidence": "0.80"
+                    }
+                }
+            }
+        })
+        result = helpers["safe_get_response"]("agent1")
+        assert result == "nested result response"
+

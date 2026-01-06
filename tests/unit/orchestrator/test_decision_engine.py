@@ -12,12 +12,21 @@ pytestmark = [pytest.mark.unit]
 class TestDecisionEngine:
     """Test suite for DecisionEngine class."""
 
-    def create_mock_config(self, commit_margin=0.1, k_beam=3, require_terminal=True):
+    def create_mock_config(
+        self,
+        commit_margin=0.1,
+        k_beam=3,
+        require_terminal=True,
+        max_depth=4,
+        optimal_path_length=(2, 3),
+    ):
         """Helper to create a mock config object."""
         config = Mock()
         config.commit_margin = commit_margin
         config.k_beam = k_beam
         config.require_terminal = require_terminal
+        config.max_depth = max_depth
+        config.optimal_path_length = optimal_path_length
         return config
 
     def test_init(self):

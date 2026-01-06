@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 CLI Core Functionality
@@ -40,18 +40,18 @@ def sanitize_for_console(text: str) -> str:
     """
     # Replace common Unicode characters that cause issues
     replacements = {
-        "\u2011": "-",  # Non-breaking hyphen → regular hyphen
-        "\u2013": "-",  # En dash → hyphen
-        "\u2014": "--",  # Em dash → double hyphen
-        "\u2018": "'",  # Left single quote → apostrophe
-        "\u2019": "'",  # Right single quote → apostrophe
-        "\u201a": ",",  # Single low quote → comma
-        "\u201c": '"',  # Left double quote → quote
-        "\u201d": '"',  # Right double quote → quote
-        "\u201e": '"',  # Double low quote → quote
-        "\u2026": "...",  # Ellipsis → three dots
-        "\u202f": " ",  # Narrow no-break space → space
-        "\u00a0": " ",  # Non-breaking space → space
+        "\u2011": "-",  # Non-breaking hyphen -> regular hyphen
+        "\u2013": "-",  # En dash -> hyphen
+        "\u2014": "--",  # Em dash -> double hyphen
+        "\u2018": "'",  # Left single quote -> apostrophe
+        "\u2019": "'",  # Right single quote -> apostrophe
+        "\u201a": ",",  # Single low quote -> comma
+        "\u201c": '"',  # Left double quote -> quote
+        "\u201d": '"',  # Right double quote -> quote
+        "\u201e": '"',  # Double low quote -> quote
+        "\u2026": "...",  # Ellipsis -> three dots
+        "\u202f": " ",  # Narrow no-break space -> space
+        "\u00a0": " ",  # Non-breaking space -> space
     }
 
     for unicode_char, ascii_char in replacements.items():
@@ -89,7 +89,7 @@ async def run_cli_entrypoint(
     verbose: bool = False,
 ) -> dict[str, Any] | list[Event] | str:
     """
-    🚀 **Primary programmatic entry point** - run OrKa workflows from any application.
+    [START] **Primary programmatic entry point** - run OrKa workflows from any application.
 
     **What makes this special:**
     - **Universal Integration**: Call OrKa from any Python application seamlessly
@@ -190,35 +190,38 @@ def run_cli(argv: list[str] | None = None) -> int:
         result = asyncio.run(
             run_cli_entrypoint(args.config, args.input, args.log_to_file, args.verbose)
         )
-        if result:
-            try:
-                # Deep sanitize the entire result structure to remove all Unicode
-                result = deep_sanitize_result(result)
+        # Distinguish between None (real failure) and falsy values (valid but empty)
+        if result is None:
+            logger.warning("Workflow returned None - check configuration")
+            return 1
+        try:
+            # Deep sanitize the entire result structure to remove all Unicode
+            result = deep_sanitize_result(result)
 
-                # Now log the sanitized result
-                if isinstance(result, dict):
-                    output = json.dumps(result, indent=4)
+            # Now log the sanitized result
+            if isinstance(result, dict):
+                output = json.dumps(result, indent=4)
+                logger.info(output)
+            elif isinstance(result, list):
+                for item in result:
+                    output = json.dumps(item, indent=4)
                     logger.info(output)
-                elif isinstance(result, list):
-                    for item in result:
-                        output = json.dumps(item, indent=4)
-                        logger.info(output)
-                else:
-                    logger.info(str(result))
-                return 0
-            except (UnicodeEncodeError, UnicodeDecodeError) as e:
-                # If Unicode errors still occur, just log success without details
-                logger.info(
-                    "Workflow completed successfully (output contains unsupported characters)"
-                )
-                return 0
-            except Exception as e:
-                # For any other error, log with sanitized message
-                error_msg = sanitize_for_console(str(e))
-                logger.info(
-                    f"Workflow completed successfully (error displaying output: {error_msg})"
-                )
-                return 0
-        return 1
+            else:
+                # Log even empty strings as valid output
+                logger.info(str(result) if result else "(empty result)")
+            return 0
+        except (UnicodeEncodeError, UnicodeDecodeError) as e:
+            # If Unicode errors still occur, just log success without details
+            logger.info(
+                "Workflow completed successfully (output contains unsupported characters)"
+            )
+            return 0
+        except Exception as e:
+            # For any other error, log with sanitized message
+            error_msg = sanitize_for_console(str(e))
+            logger.info(
+                f"Workflow completed successfully (error displaying output: {error_msg})"
+            )
+            return 0
 
     return 1

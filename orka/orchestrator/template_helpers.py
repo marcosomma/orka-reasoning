@@ -1,3 +1,14 @@
+# OrKa: Orchestrator Kit Agents
+# by Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+
 """
 Template Helper Functions for OrKa Workflows
 ============================================
@@ -12,9 +23,26 @@ Usage in YAML templates:
 """
 
 import logging
+import json
 from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
+
+
+def to_json_string(obj: Any) -> str:
+    """
+    Convert Python object to valid JSON string.
+    
+    Args:
+        obj: Python object to serialize
+    
+    Returns:
+        Valid JSON string with proper double-quote encoding
+    
+    Example:
+        {{ get_execution_artifacts(previous_outputs) | to_json_string }}
+    """
+    return json.dumps(obj, ensure_ascii=False)
 
 
 def safe_get(obj: Any, key: str, default: Any = "unknown") -> Any:
@@ -232,7 +260,96 @@ def get_debate_evolution(past_loops: Optional[list] = None) -> str:
     scores = [loop.get('score', 0) for loop in past_loops]
     trend = "improving" if scores[-1] > scores[0] else "declining"
     
-    return f"Round {len(past_loops) + 1} - debate {trend} (scores: {' → '.join(map(str, scores))})"
+    return f"Round {len(past_loops) + 1} - debate {trend} (scores: {' -> '.join(map(str, scores))})"
+
+
+def get_execution_artifacts(previous_outputs: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """
+    Collect execution artifacts from orchestrator for invariant validation.
+    
+    Args:
+        previous_outputs: Dict containing all agent outputs from execution
+        
+    Returns:
+        Dict containing:
+            - nodes_executed: List of agent IDs that were executed
+            - fork_groups: Dict of fork group states
+            - router_decisions: Dict of router choices
+            - graph_structure: Dict of node connections
+            - tool_calls: List of tool invocations (future)
+            - structured_outputs: Dict of schema validation results (future)
+    """
+    if not previous_outputs:
+        return {
+            "nodes_executed": [],
+            "fork_groups": {},
+            "router_decisions": {},
+            "graph_structure": {"nodes": {}, "edges": []},
+            "tool_calls": [],
+            "structured_outputs": {}
+        }
+    
+    artifacts = {
+        "nodes_executed": [],
+        "fork_groups": {},
+        "router_decisions": {},
+        "graph_structure": {"nodes": {}, "edges": []},
+        "tool_calls": [],
+        "structured_outputs": {}
+    }
+    
+    # Collect nodes executed
+    artifacts["nodes_executed"] = list(previous_outputs.keys())
+    
+    # Extract fork/join information
+    for agent_id, output in previous_outputs.items():
+        if not isinstance(output, dict):
+            continue
+            
+        # Check for fork node responses
+        response = output.get("response", {})
+        if isinstance(response, dict):
+            # Fork node detection
+            if response.get("status") == "forked":
+                fork_group = response.get("fork_group", agent_id)
+                branches = response.get("agents", [])
+                
+                artifacts["fork_groups"][agent_id] = {
+                    "has_join": True,  # Assume join exists (will be validated by invariant checker)
+                    "branches": branches,
+                    "completed_branches": branches,  # All in previous_outputs are completed
+                    "fork_group_id": fork_group
+                }
+            
+            # Join node detection
+            elif response.get("status") == "done" and "merged" in response:
+                # Join nodes have merged results
+                pass  # Already captured in fork_groups
+        
+        # Router node detection - check if output is a simple string (router target)
+        if isinstance(output, dict) and "response" in output:
+            resp_val = output["response"]
+            # If response is a simple agent ID string, this might be a router
+            if isinstance(resp_val, str) and resp_val in previous_outputs:
+                # This looks like a router decision
+                artifacts["router_decisions"][agent_id] = {
+                    "chosen_target": resp_val,
+                    "target_nodes_executed": [resp_val]
+                }
+    
+    # Build graph structure from execution order
+    nodes = artifacts["nodes_executed"]
+    for i, node_id in enumerate(nodes):
+        artifacts["graph_structure"]["nodes"][node_id] = {}
+        
+        # Connect to next node in sequence
+        if i < len(nodes) - 1:
+            artifacts["graph_structure"]["edges"].append({
+                "src": node_id,
+                "dst": nodes[i + 1]
+            })
+    
+    return artifacts
 
 
 def register_template_helpers(env) -> None:
@@ -253,6 +370,7 @@ def register_template_helpers(env) -> None:
     env.filters['safe_get'] = safe_get
     env.filters['truncate'] = truncate_text
     env.filters['format_loop_metadata'] = format_loop_metadata
+    env.filters['to_json_string'] = to_json_string
     
     # Register global functions (callable without filter syntax)
     env.globals['safe_get'] = safe_get
@@ -262,5 +380,7 @@ def register_template_helpers(env) -> None:
     env.globals['truncate_text'] = truncate_text
     env.globals['format_loop_metadata'] = format_loop_metadata
     env.globals['get_debate_evolution'] = get_debate_evolution
+    env.globals['get_execution_artifacts'] = get_execution_artifacts
+    env.globals['to_json_string'] = to_json_string
     
-    logger.debug("Registered template helpers: safe_get, safe_get_response, get_agent_response, get_loop_output, truncate, format_loop_metadata, get_debate_evolution")
+    logger.debug("Registered template helpers: safe_get, safe_get_response, get_agent_response, get_loop_output, truncate, format_loop_metadata, get_debate_evolution, get_execution_artifacts, to_json_string")

@@ -1,7 +1,13 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """Stats Panel Component Builders."""
 
@@ -27,7 +33,7 @@ class StatsPanelMixin:
     def create_compact_stats_panel(self):
         """Create a compact stats panel with comprehensive metrics."""
         if not self.stats.current:
-            return Panel("Loading...", title="📊 Memory Statistics")
+            return Panel("Loading...", title="[STATS] Memory Statistics")
 
         stats = self.stats.current
 
@@ -53,35 +59,35 @@ class StatsPanelMixin:
             trend = self.stats.get_trend(key)
 
             # Trend icon
-            if trend == "↗":
-                trend_display = "[green]↗[/green]"
-            elif trend == "↘":
-                trend_display = "[red]↘[/red]"
+            if trend == "^":
+                trend_display = "[green]^[/green]"
+            elif trend == "v":
+                trend_display = "[red]v[/red]"
             else:
-                trend_display = "[dim]→[/dim]"
+                trend_display = "[dim]->[/dim]"
 
             table.add_row(f"  {name}", f"[bold]{value:,}[/bold]", unit, trend_display)
 
         # Backend health with more details
         table.add_row("", "", "", "")  # Separator
         decay_enabled = stats.get("decay_enabled", False)
-        backend_status = "✅" if hasattr(self.memory_logger, "client") else "❌"
+        backend_status = "[OK]" if hasattr(self.memory_logger, "client") else "[FAIL]"
         table.add_row("  Backend", f"{self.backend.upper()}", backend_status, "")
-        table.add_row("  Decay", "✅" if decay_enabled else "❌", "auto", "")
+        table.add_row("  Decay", "[OK]" if decay_enabled else "[FAIL]", "auto", "")
 
         # Performance if available
         if self.performance_history:
             latest_perf = self.performance_history[-1]
             avg_time = latest_perf.get("average_search_time", 0)
-            perf_icon = "⚡" if avg_time < 0.1 else "⚠" if avg_time < 0.5 else "🐌"
+            perf_icon = "[FAST]" if avg_time < 0.1 else "[WARN]" if avg_time < 0.5 else "[SLOW]"
             table.add_row("  Search", f"{avg_time:.3f}s", "time", f"[cyan]{perf_icon}[/cyan]")
 
-        return Panel(table, title="📊 Memory Statistics & Health", box=ROUNDED)
+        return Panel(table, title="[STATS] Memory Statistics & Health", box=ROUNDED)
 
     def create_stats_panel(self):
         """Create comprehensive memory statistics panel with trending."""
         if not self.stats.current:
-            return Panel("Loading statistics...", title="📊 Memory Statistics")
+            return Panel("Loading statistics...", title="[STATS] Memory Statistics")
 
         stats = self.stats.current
 
@@ -119,12 +125,12 @@ class StatsPanelMixin:
                 rate_text = "[dim]stable[/dim]"
 
             # Trend icon with color
-            if trend == "↗":
-                trend_display = "[green]↗[/green]"
-            elif trend == "↘":
-                trend_display = "[red]↘[/red]"
+            if trend == "^":
+                trend_display = "[green]^[/green]"
+            elif trend == "v":
+                trend_display = "[red]v[/red]"
             else:
-                trend_display = "[dim]→[/dim]"
+                trend_display = "[dim]->[/dim]"
 
             table.add_row(
                 f"  {name}",
@@ -139,11 +145,11 @@ class StatsPanelMixin:
 
         # Decay status
         decay_enabled = stats.get("decay_enabled", False)
-        decay_status = "✅ Active" if decay_enabled else "❌ Inactive"
+        decay_status = "[OK] Active" if decay_enabled else "[FAIL] Inactive"
         table.add_row("  Memory Decay", decay_status, "", "")
 
         # Backend type with status
-        backend_status = "✅ Online" if hasattr(self.memory_logger, "client") else "❌ Offline"
+        backend_status = "[OK] Online" if hasattr(self.memory_logger, "client") else "[FAIL] Offline"
         table.add_row("  Backend", f"{self.backend.upper()}", backend_status, "")
 
         # Performance indicator
@@ -151,12 +157,12 @@ class StatsPanelMixin:
             latest_perf = self.performance_history[-1]
             avg_search_time = latest_perf.get("average_search_time", 0)
             if avg_search_time < 0.1:
-                perf_status = "[green]⚡ Fast[/green]"
+                perf_status = "[green][FAST] Fast[/green]"
             elif avg_search_time < 0.5:
-                perf_status = "[yellow]⚠ Moderate[/yellow]"
+                perf_status = "[yellow][WARN] Moderate[/yellow]"
             else:
-                perf_status = "[red]🐌 Slow[/red]"
+                perf_status = "[red][SLOW] Slow[/red]"
             table.add_row("  Performance", perf_status, f"{avg_search_time:.3f}s", "")
 
-        return Panel(table, title="📊 Memory Statistics & Health", box=ROUNDED)
+        return Panel(table, title="[STATS] Memory Statistics & Health", box=ROUNDED)
 

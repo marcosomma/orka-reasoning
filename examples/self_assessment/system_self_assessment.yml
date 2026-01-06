@@ -1,13 +1,44 @@
+# OrKa System Self-Assessment Workflow
+# =====================================
+# 
+# This workflow exercises all major orchestration patterns (fork/join, routing, loops)
+# and performs deterministic health checks on the execution.
+#
+# CRITICAL DESIGN PRINCIPLES:
+# 
+# 1. SEPARATE WORKER AND JUDGE MODELS
+#    - Worker agents (data_preparation, processors, validators): Use standard model
+#    - Judge agents (invariant_collector, final_assessment, health_check_gate): Use different model or greedy decoding
+#    - This reduces correlated failure where degraded runtime also degrades the evaluator
+#
+# 2. DETERMINISTIC INVARIANTS BEFORE LLM INTERPRETATION
+#    - Hard facts (fork/join integrity, routing validity, cycles, tool errors, schema compliance)
+#      are computed deterministically BEFORE the LLM sees them
+#    - LLM's job is to EXPLAIN violations, not DISCOVER them
+#
+# 3. FAIL HARD ON CRITICAL VIOLATIONS
+#    - If invariants show critical failures, health check must return FAIL regardless of output quality
+#    - If evaluator output is invalid, health check must return FAIL with reason "evaluator_invalid_output"
+#
+# 4. GREEDY EVALUATION FOR STABILITY
+#    - All judge agents use temperature=0.0 for deterministic, reproducible assessments
+#
+# RECOMMENDED CONFIGURATION:
+#   Worker model: openai/gpt-oss-20b at temperature 0.3-0.5
+#   Judge model: openai/gpt-oss-20b at temperature 0.0 OR different model (e.g., qwen2.5:14b)
+
 orchestrator:
   id: system-self-assessment
-  strategy: parallel
+  strategy: sequential
   agents:
     - data_preparation
     - fork_parallel_analysis
     - join_results
     - routing_decision
+    - router_reprocess
     - loop_processor
     - validation_check
+    - invariant_collector  # NEW: Collect deterministic facts before LLM
     - final_assessment
 
 agents:
@@ -33,6 +64,16 @@ agents:
     model_url: http://localhost:1234
     provider: lm_studio
     temperature: 0.3
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
+          types:
+            response: object
 
   # Phase 2: Fork - Parallel processing paths
   - id: fork_parallel_analysis
@@ -62,6 +103,16 @@ agents:
     model_url: http://localhost:1234
     provider: lm_studio
     temperature: 0.5
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
+          types:
+            response: object
 
   - id: path_a_validator
     type: local_llm
@@ -78,6 +129,16 @@ agents:
     model_url: http://localhost:1234
     provider: lm_studio
     temperature: 0.2
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
+          types:
+            response: object
 
   # Path B: Moderate processing
   - id: path_b_processor
@@ -95,6 +156,16 @@ agents:
     model_url: http://localhost:1234
     provider: lm_studio
     temperature: 0.5
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
+          types:
+            response: object
 
   - id: path_b_validator
     type: local_llm
@@ -112,6 +183,16 @@ agents:
     model_url: http://localhost:1234
     provider: lm_studio
     temperature: 0.2
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
+          types:
+            response: object
 
   # Path C: Complex processing
   - id: path_c_processor
@@ -130,6 +211,16 @@ agents:
     model_url: http://localhost:1234
     provider: lm_studio
     temperature: 0.5
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
+          types:
+            response: object
 
   - id: path_c_validator
     type: local_llm
@@ -147,6 +238,16 @@ agents:
     model_url: http://localhost:1234
     provider: lm_studio
     temperature: 0.2
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
+          types:
+            response: object
 
   # Phase 3: Join all parallel paths
   - id: join_results
@@ -169,16 +270,24 @@ agents:
     provider: lm_studio
     temperature: 0.1
     depends_on: join_results
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   - id: router_reprocess
     type: router
     params:
       decision_key: routing_decision
       routing_map:
-        "true": 
+        true: 
           - reprocess_failed
           - reprocess_validator
-        "false": aggregation_analyzer
+        false: aggregation_analyzer
     depends_on: routing_decision
 
   # Router path - Reprocessing if needed
@@ -198,6 +307,14 @@ agents:
     model_url: http://localhost:1234
     provider: lm_studio
     temperature: 0.4
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   - id: reprocess_validator
     type: local_llm
@@ -213,6 +330,14 @@ agents:
     model_url: http://localhost:1234
     provider: lm_studio
     temperature: 0.2
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   # Router path - Direct aggregation if all passed
   - id: aggregation_analyzer
@@ -230,18 +355,28 @@ agents:
     model_url: http://localhost:1234
     provider: lm_studio
     temperature: 0.3
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   # Phase 5: Loop processor - Iterative refinement
   - id: loop_processor
     type: loop
     max_loops: 3
-    score_threshold: 0.3
+    score_threshold: 0.30
+    fallback_score: 0.25
+    timeout_score: 0.20
     
     # Boolean scoring for iterative refinement convergence
     scoring:
       preset: lenient
-      context: loop_convergence  # Track refinement convergence
-      mode: loop  # Use loop-focused evaluation
+      context: loop_convergence
+      mode: loop
     
     # Ensure required upstream signals are present inside LoopNode.previous_outputs.
     # (LoopNode passes only depends_on outputs through as previous_outputs to the internal workflow.)
@@ -255,10 +390,14 @@ agents:
     
     # Pass external data to internal workflow as input
     prompt: |
-      Routing Decision: {{ get_agent_response('routing_decision').result }}
-      Join Results: {{ get_agent_response('join_results').result }}
-      Reprocessed Results: {{ get_agent_response('reprocess_validator').result }}
-      Aggregated Results: {{ get_agent_response('aggregation_analyzer').result }}
+      Routing Decision: {{ get_agent_response('routing_decision') }}
+      Join Results: {{ get_agent_response('join_results') }}
+      {% if get_agent_response('reprocess_validator') %}
+      Reprocessed Results: {{ get_agent_response('reprocess_validator') }}
+      {% endif %}
+      {% if get_agent_response('aggregation_analyzer') %}
+      Aggregated Results: {{ get_agent_response('aggregation_analyzer') }}
+      {% endif %}
     
     internal_workflow:
       orchestrator:
@@ -276,14 +415,7 @@ agents:
             ITERATION {{ get_loop_number() }} - Refinement Analysis
             
             == DATA TO ANALYZE ==
-            Routing Decision: {{ input.previous_outputs.routing_decision }}
-            Join Results: {{ input.previous_outputs.join_results }}
-            {% if input.previous_outputs.reprocess_validator %}
-            Reprocessed Results: {{ input.previous_outputs.reprocess_validator }}
-            {% endif %}
-            {% if input.previous_outputs.aggregation_analyzer %}
-            Aggregated Results: {{ input.previous_outputs.aggregation_analyzer }}
-            {% endif %}
+            {{ get_input() }}
             
             {% if get_loop_number() > 1 %}
             == PREVIOUS ITERATION ANALYSIS ==
@@ -297,11 +429,33 @@ agents:
             3. Validation effectiveness (what passed/failed and why)
             4. Convergence metrics (are results improving?)
             
+            For iteration 1:
+            - Base accuracy: Extract accuracy scores from validation results
+            - Baseline error count: Number of failed validations
+            - Initial convergence: 85 (starting point since all validations passed)
+            
+            For iteration > 1:
+            - Compare with previous iteration metrics
+            - Calculate improvement delta
+            
             Return JSON: {"iteration": {{ get_loop_number() }}, "accuracy_delta": X, "error_count": Y, "improvements": [...], "convergence_score": 0-100}
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
           temperature: 0.4
+          params:
+            structured_output:
+              enabled: true
+              mode: prompt
+              schema:
+                required: [iteration, accuracy_delta, error_count, convergence_score]
+                optional:
+                  improvements: array
+                types:
+                  iteration: integer
+                  accuracy_delta: number
+                  error_count: integer
+                  convergence_score: number
 
         - id: synthesis
           type: local_llm
@@ -331,6 +485,18 @@ agents:
           model_url: http://localhost:1234
           provider: lm_studio
           temperature: 0.3
+          params:
+            structured_output:
+              enabled: true
+              mode: prompt
+              schema:
+                required: [convergence_score, delta_from_previous, improvements, issues, should_continue]
+                types:
+                  convergence_score: number
+                  delta_from_previous: number
+                  improvements: array
+                  issues: array
+                  should_continue: boolean
 
         - id: loop_convergence_validator
           type: loop_validator
@@ -363,10 +529,10 @@ agents:
     prompt: |
       Perform comprehensive validation of all processing stages:
       
-      1. Initial data pre {{ get_agent_response('data_preparation') }}
-      2. Parallel processing (joine {{ get_agent_response('join_results') }}
+      1. Initial data preparation: {{ get_agent_response('data_preparation') }}
+      2. Parallel processing (joined): {{ get_agent_response('join_results') }}
       3. Routing decision: {{ get_agent_response('routing_decision') }}
-      4. Loop refinement {{ get_loop_output('loop_processor').past_loops | tojson }}
+      4. Loop refinement: {{ get_loop_output('loop_processor').past_loops | tojson }}
       
       Validate:
       - Data integrity through all stages
@@ -380,6 +546,28 @@ agents:
     provider: lm_studio
     temperature: 0.2
     depends_on: loop_processor
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [reprocessing_needed, validation_report]
+          types:
+            reprocessing_needed: boolean
+            validation_report: object
+
+  # Phase 6.5: Collect deterministic execution invariants
+  # This uses the invariant_validator agent with auto-collected execution data
+  - id: invariant_collector
+    type: invariant_validator
+    depends_on: validation_check
+    prompt: |
+      EXECUTION_DATA_JSON:
+      {{ get_execution_artifacts(previous_outputs) | to_json_string }}
+    params:
+      max_depth: 50  # Allow deep nesting for complex workflows
+      allow_reentrant_nodes: [loop_processor]  # Loop nodes can execute multiple times
+      strict_tool_errors: false  # Don't fail on tool warnings in this demo
 
   # Phase 7: Comprehensive final assessment
   - id: final_assessment
@@ -387,16 +575,25 @@ agents:
     prompt: |
       COMPREHENSIVE SYSTEM SELF-ASSESSMENT REPORT
       
-      Analyze the complete execution flow and provide detailed evaluation:
+      You are a diagnostic agent analyzing orchestrator execution health.
+      Your role is INTERPRETATION of hard facts, not discovery of facts.
       
-      == EXECUTION DATA ==
+      == HARD EXECUTION INVARIANTS (DETERMINISTIC FACTS) ==
+      The following invariants were validated deterministically:
+      
+      {{ get_agent_response('invariant_collector') }}
+      
+      These are FACTS, not opinions. If any critical_failures_detected = true,
+      the system is objectively broken regardless of output quality.
+      
+      == EXECUTION DATA (for context only) ==
       Phase 1 - Data Preparation:
       {{ get_agent_response('data_preparation') }}
       
       Phase 2 - Parallel Processing (Fork/Join):
       Path A: {{ get_agent_response('path_a_validator') }}
       Path B: {{ get_agent_response('path_b_validator') }}
-      Path C: {{ get_agent_response('path_c_processor') }}
+      Path C: {{ get_agent_response('path_c_validator') }}
       Joined: {{ get_agent_response('join_results') }}
       
       Phase 3 - Conditional Routing:
@@ -412,81 +609,82 @@ agents:
 
       Phase 5 - Final Validation:
       {{ get_agent_response('validation_check') }}
-
-
       
-      == ASSESSMENT REQUIREMENTS ==
-      Evaluate the following aspects with scores (0-100) and detailed analysis:
+      == YOUR ASSESSMENT TASK ==
+      You must interpret the hard invariants above and provide diagnostic analysis:
+      
+      CRITICAL RULE: If critical_failures_detected = true in execution_invariants,
+      you MUST set overall_system_health_rating to "Poor" regardless of output quality.
+      Broken invariants mean the runtime is objectively degraded.
+      
+      Evaluate these aspects (use invariants as ground truth):
       
       1. **PARALLEL PROCESSING PERFORMANCE**
-         - Fork operation: Did all paths execute correctly?
-         - Join operation: Were results properly aggregated?
-         - Path independence: Were paths truly parallel?
-         - Resource efficiency: Execution time and consistency
+         - Use fork_join_integrity facts from invariants
+         - Did all paths execute? Check fork_join_integrity.status
+         - Were results aggregated? Check for violations
       
       2. **CONDITIONAL ROUTING EFFECTIVENESS**
-         - Decision accuracy: Was routing decision correct?
-         - Path execution: Did routed path execute properly?
-         - Error handling: How were failures managed?
-         - Alternative paths: Were unused paths properly skipped?
+         - Use routing_integrity facts from invariants
+         - Did router choose valid target? Check routing_integrity.status
+         - Was target reachable? Check for violations
       
       3. **LOOP CONVERGENCE QUALITY**
-         - Iteration progression: Did quality improve each iteration?
-         - Convergence detection: Was stopping point appropriate?
-         - Resource usage: Number of iterations vs improvement
-         - Stability: Were results consistent and reproducible?
+         - Use cycle_detection facts from invariants
+         - Were there unexpected cycles? Check cycle_detection.cycles_found
+         - Was convergence genuine or fabricated?
       
-      4. **VALIDATION ROBUSTNESS**
-         - Accuracy verification: Were results accurate?
-         - Consistency checks: Were outputs consistent?
-         - Error detection: Were anomalies identified?
-         - Recovery mechanisms: How were errors handled?
+      4. **SCHEMA VALIDATION ROBUSTNESS**
+         - Use schema_compliance facts from invariants
+         - Did outputs match schemas? Check schema_compliance.status
+         - Were there format contract violations?
       
-      5. **OVERALL SYSTEM INTEGRITY**
-         - Data flow: Was data properly propagated through all stages?
-         - Logic coherence: Were decisions logical and justified?
-         - Error resilience: How did system handle edge cases?
-         - Output quality: Are final results trustworthy?
+      5. **TOOL CALL INTEGRITY**
+         - Use tool_integrity facts from invariants
+         - Were tool errors propagated? Check tool_integrity.status
+         - Was execution allowed to continue after failures?
       
-      6. **ANOMALY DETECTION**
-         - Identify any unexpected behaviors
-         - Flag potential issues or edge cases
-         - Suggest improvements
+      6. **DEPTH CONSTRAINT COMPLIANCE**
+         - Use depth_compliance facts from invariants
+         - Did paths respect max_depth? Check depth_compliance.status
       
-      == CONSTRAINED REPORT FORMAT ==
-      Provide a comprehensive assessment report with the following format using only JSON:
-      ```json
+      == OUTPUT FORMAT (STRICT JSON SCHEMA) ==
+      Return ONLY a JSON object with this exact structure:
       {
-        "summary": "Executive summary (3-4 sentences)",
-        "scores": {
-          "parallel_processing_performance": 0-100,
-          "conditional_routing_effectiveness": 0-100,
-          "loop_convergence_quality": 0-100,
-          "validation_robustness": 0-100,
-          "overall_system_integrity": 0-100,
-          "anomaly_detection": 0-100
+        "summary": "string: Executive summary explaining invariant violations and their impact",
+        "invariant_based_scores": {
+          "fork_join_integrity": "number: 0-100 based on fork_join_integrity.status",
+          "routing_integrity": "number: 0-100 based on routing_integrity.status",
+          "cycle_prevention": "number: 0-100 based on cycle_detection.status",
+          "schema_compliance": "number: 0-100 based on schema_compliance.status",
+          "tool_integrity": "number: 0-100 based on tool_integrity.status",
+          "depth_compliance": "number: 0-100 based on depth_compliance.status"
         },
-        "strengths": [
-          "Specific strength 1",
-          "Specific strength 2"
+        "critical_issues": [
+          "string: List each FAIL status from invariants with explanation"
         ],
-        "weaknesses": [
-          "Specific weakness 1",
-          "Specific weakness 2"
+        "warning_issues": [
+          "string: List each WARNING from invariants"
         ],
         "recommendations": [
-          "Specific recommendation 1",
-          "Specific recommendation 2"
+          "string: Specific fixes for each violated invariant"
         ],
-        "overall_system_health_rating": "Excellent/Good/Fair/Poor",
-        "confidence_level": 0-100
+        "overall_system_health_rating": "string: Poor if critical_failures_detected, else Good/Fair based on warnings",
+        "diagnostic_confidence": "number: 0-100, lower if evaluator itself had errors"
       }
-      ```
       
-      Be thorough, objective, and specific in your evaluation.
-      Do not include any other text or formatting than the JSON object. Use the JSON format exactly as specified.
+      IMPORTANT: Your output will be validated against this schema. If you return
+      any other format, the health check FAILS with reason "evaluator_invalid_output".
     model: openai/gpt-oss-20b
     model_url: http://localhost:1234
     provider: lm_studio
-    temperature: 0.3
-    depends_on: validation_check
+    temperature: 0.0  # Deterministic evaluation, no creativity
+    depends_on: invariant_collector
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number

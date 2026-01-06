@@ -14,6 +14,7 @@ orchestrator:
     - task_preparation
     - graphscout_discovery
     - validation_refinement_loop
+    - query_extractor
     - path_executor
     - execution_analyzer
     - final_system_report
@@ -30,9 +31,7 @@ agents:
     prompt: |
       Generate a test query for evaluating path discovery and execution.
       
-      Create ONE concrete query that requires multiple agents:
-      
-      QUERY: "Research the latest developments in quantum computing and provide a summary with sources"
+      Create ONE concrete query that requires multiple agents based on this input: {{ input }}
       
       This query requires:
       - Search agent: Find current information
@@ -190,12 +189,29 @@ agents:
             
             IMPORTANT: SCORE must be exactly "SCORE: X.XX"
 
+  # Phase 3.5: Extract the actual query from task preparation
+  - id: query_extractor
+    type: local_llm
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
+    temperature: 0.1
+    timeout: 30
+    depends_on: validation_refinement_loop
+    prompt: |
+      Extract ONLY the search query from this task preparation output.
+      
+      {{ get_agent_response('task_preparation') }}
+      
+      Return ONLY the query text itself, nothing else. No labels, no formatting.
+
   # Phase 4: Execute the GraphScout-discovered path
   - id: path_executor
     type: path_executor
     path_source: graphscout_discovery
+    input_source: query_extractor.response.response
     on_agent_failure: continue
-    depends_on: validation_refinement_loop
+    depends_on: query_extractor
 
   # Available agents for PathExecutor
   - id: search_agent

@@ -75,6 +75,14 @@ agents:
             - multi_step: Requires orchestration of multiple agents
             
             Return JSON: {"primary": "category", "secondary": "category", "complexity": "low|medium|high"}
+          params:
+            structured_output:
+              enabled: true
+              mode: prompt
+              schema:
+                required: [response]
+                optional:
+                  confidence: number
         
         # GraphScout with enhanced routing based on validation feedback
         - id: graph_scout_router
@@ -160,13 +168,14 @@ agents:
           model_url: http://localhost:1234
           provider: lm_studio
           temperature: 0.2
-          timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
+          timeout: 60.0
           scoring_preset: lenient
-          scoring_context: graphscout  # Evaluate agent path quality
+          scoring_context: graphscout
+          # Simplified criteria - focus on 3 key dimensions for reliable evaluation
           custom_weights:
-            completeness.has_all_required_steps: 0.22
-            efficiency.uses_appropriate_agents: 0.12
-            coherence.logical_agent_sequence: 0.05
+            completeness.has_all_required_steps: 0.50
+            efficiency.uses_appropriate_agents: 0.30
+            coherence.logical_agent_sequence: 0.20
 
   # ===== EXECUTION AGENTS (Top Level) =====
   # CRITICAL: These agents MUST be at top-level, NOT inside internal_workflow
@@ -201,6 +210,14 @@ agents:
       {% endif %}
       
       Provide comprehensive analysis.
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
   
   - id: memory_reader
     type: memory
@@ -242,6 +259,14 @@ agents:
       {% if previous_outputs.memory_reader %}
       Context: {{ previous_outputs.memory_reader }}
       {% endif %}
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   # Execute the validated GraphScout path
   - id: path_executor
@@ -334,6 +359,14 @@ agents:
       {% else %}
       No validation results available.
       {% endif %}
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
 # ============================================================================
 # How This Works
@@ -341,16 +374,16 @@ agents:
 #
 # 1. GraphScout receives query + validation feedback from previous loops
 # 2. GraphScout selects path using its beam search + LLM evaluation
-# 3. PlanValidator evaluates the selected path with 15 boolean criteria
-# 4. If score < 0.85, loop repeats with feedback
+# 3. PlanValidator evaluates the selected path with 3 focused criteria
+# 4. If score < threshold (0.15), loop repeats with feedback
 # 5. GraphScout adjusts path selection based on failed criteria
-# 6. Process continues until high-quality path is found
+# 6. Process continues until quality threshold is met
 #
 # Benefits:
 # - GraphScout learns from validation feedback
-# - Deterministic scoring ensures consistent quality
+# - Simplified scoring ensures consistent local LLM evaluation
 # - Audit trail shows why paths were rejected
-# - Final path is guaranteed to meet quality standards
+# - Final path meets quality threshold
 #
 # ============================================================================
 

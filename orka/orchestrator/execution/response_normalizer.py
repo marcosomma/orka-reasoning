@@ -1,7 +1,19 @@
+# OrKa: Orchestrator Kit Agents
+# by Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+
 import logging
 from typing import Any, Dict
 
 from ...response_builder import ResponseBuilder
+from ...utils.metric_normalization import normalize_payload
 
 logger = logging.getLogger(__name__)
 
@@ -39,10 +51,10 @@ class ResponseNormalizer:
                             "threshold_met": loop_data.get("threshold_met"),
                             "past_loops": loop_data.get("past_loops", []),
                             "status": "success",
-                            "confidence": "1.0",
+                            "confidence": 1.0,
                             "internal_reasoning": "",
                         })
-                        return payload_out
+                        return normalize_payload(payload_out)
                     else:
                         converted = ResponseBuilder.from_node_response(agent_result, agent_id)
                         payload_out.update({
@@ -51,7 +63,7 @@ class ResponseNormalizer:
                             "error": converted.get("error"),
                             "response": converted.get("result"),
                         })
-                        return payload_out
+                        return normalize_payload(payload_out)
 
                 # Generic conversion for other dicts
                 if "response" in agent_result:
@@ -67,7 +79,7 @@ class ResponseNormalizer:
                         "status": converted.get("status"),
                         "error": converted.get("error"),
                         "response": converted.get("result"),
-                        "confidence": converted.get("confidence", "0.0"),
+                        "confidence": converted.get("confidence", 0.0),
                         "internal_reasoning": converted.get("internal_reasoning", ""),
                         "formatted_prompt": converted.get("formatted_prompt", ""),
                         "execution_time_ms": converted.get("execution_time_ms"),
@@ -78,7 +90,7 @@ class ResponseNormalizer:
                         "trace_id": converted.get("trace_id"),
                     }
                 )
-                return payload_out
+                return normalize_payload(payload_out)
 
             # Non-dict results (tools, etc.)
             converted = ResponseBuilder.from_tool_response(agent_result, agent_id)
@@ -90,7 +102,7 @@ class ResponseNormalizer:
                     "_metrics": converted.get("metrics", {}),
                 }
             )
-            return payload_out
+            return normalize_payload(payload_out)
 
         except Exception as e:
             logger.error(f"ResponseNormalizer failed for agent {agent_id}: {e}")

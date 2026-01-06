@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Error Handling
@@ -93,7 +93,7 @@ class ErrorHandler:
         self.error_telemetry["errors"].append(error_entry)
 
         # Log error to console
-        logger.error(f"🚨 [ORKA-ERROR] {error_type} in {agent_id}: {error_msg}")
+        logger.error(f"[ERROR] [ORKA-ERROR] {error_type} in {agent_id}: {error_msg}")
 
     def _record_retry(self, agent_id):
         """Record a retry attempt for an agent."""

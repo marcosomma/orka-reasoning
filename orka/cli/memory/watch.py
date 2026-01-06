@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Memory Watch Functionality
@@ -166,7 +166,7 @@ def _memory_watch_display(memory: Any, backend: str, args: Any) -> int:
                 stats = memory.get_memory_stats()
 
                 # Display basic metrics
-                logger.info("📊 Memory Statistics:")
+                logger.info("[STATS] Memory Statistics:")
                 logger.info(f"   Total Entries: {stats.get('total_entries', 0)}")
                 logger.info(f"   Active Entries: {stats.get('active_entries', 0)}")
                 logger.info(f"   Expired Entries: {stats.get('expired_entries', 0)}")
@@ -174,7 +174,7 @@ def _memory_watch_display(memory: Any, backend: str, args: Any) -> int:
                 logger.info(f"   Orchestration Logs: {stats.get('orchestration_logs', 0)}")
 
                 # Show recent stored memories
-                logger.info("\n🧠 Recent Stored Memories:")
+                logger.info("\n[AI] Recent Stored Memories:")
                 try:
                     # Get recent memories using the dedicated method
                     if hasattr(memory, "get_recent_stored_memories"):
@@ -216,7 +216,7 @@ def _memory_watch_display(memory: Any, backend: str, args: Any) -> int:
             except KeyboardInterrupt:
                 break
             except Exception as e:
-                logger.error(f"❌ Error in memory watch: {e}, file:{sys.stderr}")
+                logger.error(f"[FAIL] Error in memory watch: {e}, file:{sys.stderr}")
                 time.sleep(getattr(args, "interval", 5))
 
     except KeyboardInterrupt:

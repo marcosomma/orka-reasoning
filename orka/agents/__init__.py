@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 OrKa Agents Package
@@ -135,6 +135,7 @@ Module Components
 # Import all agent types from their respective modules
 from .agents import BinaryAgent, ClassificationAgent
 from .base_agent import BaseAgent
+from .invariant_validator_agent import InvariantValidatorAgent
 from .llm_agents import (
     OpenAIAnswerBuilder,
     OpenAIBinaryAgent,
@@ -148,6 +149,7 @@ from .validation_and_structuring_agent import ValidationAndStructuringAgent
 AGENT_REGISTRY = {
     "binary": BinaryAgent,
     "classification": ClassificationAgent,
+    "invariant_validator": InvariantValidatorAgent,
     "local_llm": LocalLLMAgent,
     "openai-answer": OpenAIAnswerBuilder,
     "openai-binary": OpenAIBinaryAgent,

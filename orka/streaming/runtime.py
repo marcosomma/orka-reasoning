@@ -1,3 +1,14 @@
+# OrKa: Orchestrator Kit Agents
+# by Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+
 """
 StreamingOrchestrator runtime skeleton.
 
@@ -78,7 +89,7 @@ class StreamingOrchestrator:
         """Run the streaming loops until shutdown is requested."""
         # Beta warning
         self.logger.warning(
-            "⚠️ BETA: Streaming runtime has known limitations including context loss across turns. "
+            "[WARN]️ BETA: Streaming runtime has known limitations including context loss across turns. "
             "See docs/STREAMING_GUIDE.md for details.",
             session_id=self.session_id
         )

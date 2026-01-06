@@ -1,3 +1,14 @@
+# OrKa: Orchestrator Kit Agents
+# by Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+
 from __future__ import annotations
 
 import json
@@ -169,7 +180,7 @@ def extract_agent_results_from_logs(
                     )
         else:
             # Keep behavior: just log debug; do not raise
-            logger.debug("❌ No result found for '%s' - Available keys: %s", agent_id, list(log_entry.keys()))
+            logger.debug("[FAIL] No result found for '%s' - Available keys: %s", agent_id, list(log_entry.keys()))
 
     return agents_results, executed_agents, stats
 

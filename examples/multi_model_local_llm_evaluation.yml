@@ -30,6 +30,14 @@ agents:
     temperature: 0.7
     depends_on:
       - fork_0
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
   - id: gpt4o_2
     type: openai-answer
     queue: orka:gpt4o_2
@@ -38,6 +46,14 @@ agents:
     temperature: 0.7
     depends_on:
       - fork_0
+    params:
+      structured_output:
+        enabled: true
+        mode: model_json
+        schema:
+          required: [response]
+          optional:
+            confidence: number
   - id: local_llm_19
     type: local_llm
     queue: orka:local_llm_19
@@ -48,6 +64,14 @@ agents:
     temperature: 0.7
     depends_on:
       - fork_0
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
   - id: join_3
     type: join
     group: fork_0
@@ -62,6 +86,14 @@ agents:
     model: gpt-3.5-turbo
     depends_on:
       - join_3
+    params:
+      structured_output:
+        enabled: true
+        mode: tool_call
+        schema:
+          required: [category, confidence]
+          optional:
+            reasoning: string
   - id: fork_5
     type: fork
     targets:
@@ -80,6 +112,14 @@ agents:
     temperature: 0.7
     depends_on:
       - fork_5
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
   - id: gpt4o_7
     type: openai-answer
     queue: orka:gpt4o_7
@@ -88,6 +128,14 @@ agents:
     temperature: 0.7
     depends_on:
       - fork_5
+    params:
+      structured_output:
+        enabled: true
+        mode: model_json
+        schema:
+          required: [response]
+          optional:
+            confidence: number
   - id: local_llm_20
     type: local_llm
     queue: orka:local_llm_20
@@ -98,6 +146,14 @@ agents:
     temperature: 0.7
     depends_on:
       - fork_5
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
   - id: join_8
     type: join
     group: fork_5
@@ -112,6 +168,14 @@ agents:
     model: gpt-3.5-turbo
     depends_on:
       - join_8
+    params:
+      structured_output:
+        enabled: true
+        mode: tool_call
+        schema:
+          required: [category, confidence]
+          optional:
+            reasoning: string
   - id: fork_10
     type: fork
     targets:
@@ -130,6 +194,14 @@ agents:
     temperature: 0.7
     depends_on:
       - fork_10
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
   - id: gpt4o_12
     type: openai-answer
     queue: orka:gpt4o_12
@@ -138,6 +210,14 @@ agents:
     temperature: 0.7
     depends_on:
       - fork_10
+    params:
+      structured_output:
+        enabled: true
+        mode: model_json
+        schema:
+          required: [response]
+          optional:
+            confidence: number
   - id: local_llm_21
     type: local_llm
     queue: orka:local_llm_21
@@ -148,6 +228,14 @@ agents:
     temperature: 0.7
     depends_on:
       - fork_10
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
   - id: join_13
     type: join
     group: fork_10
@@ -162,6 +250,14 @@ agents:
     model: gpt-3.5-turbo
     depends_on:
       - join_13
+    params:
+      structured_output:
+        enabled: true
+        mode: tool_call
+        schema:
+          required: [category, confidence]
+          optional:
+            reasoning: string
   - id: answer_21
     type: openai-answer
     queue: orka:answer_21

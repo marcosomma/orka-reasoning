@@ -79,3 +79,47 @@ async def test_run_cli_entrypoint_sanitizes_other_return_types():
         mock_orchestrator.return_value.run = AsyncMock(return_value=123) # not dict, list or str
         result = await run_cli_entrypoint("config.yml", "input")
         assert result == "123"
+
+
+# Tests for run_cli return codes
+from orka.cli.core import run_cli
+
+
+class TestRunCliReturnCodes:
+    """Test CLI exit code handling for various result types."""
+
+    @pytest.mark.parametrize(
+        "result,expected_code",
+        [
+            # Valid results should return 0 (success)
+            ({"status": "success"}, 0),
+            ("Hello world", 0),
+            ("", 0),  # Empty string is valid
+            ({}, 0),  # Empty dict is valid
+            ([], 0),  # Empty list is valid
+            (0, 0),  # Zero is valid (integer result)
+            (False, 0),  # Boolean False is valid (explicit result)
+            # Only None should return 1 (failure)
+            (None, 1),
+        ],
+    )
+    def test_exit_code_for_result_types(self, result, expected_code):
+        """Verify CLI returns correct exit codes for various result types."""
+        with patch("orka.cli.core.asyncio.run") as mock_run:
+            mock_run.return_value = result
+            exit_code = run_cli(["run", "fake.yml", "test input"])
+            assert exit_code == expected_code, f"Expected {expected_code} for result {result!r}"
+
+    def test_exit_code_for_successful_dict(self):
+        """Test dict result returns success."""
+        with patch("orka.cli.core.asyncio.run") as mock_run:
+            mock_run.return_value = {"answer": "test"}
+            exit_code = run_cli(["run", "fake.yml", "test"])
+            assert exit_code == 0
+
+    def test_exit_code_for_none_result(self):
+        """Test None result returns failure."""
+        with patch("orka.cli.core.asyncio.run") as mock_run:
+            mock_run.return_value = None
+            exit_code = run_cli(["run", "fake.yml", "test"])
+            assert exit_code == 1

@@ -72,6 +72,7 @@ def test_normalize_preserves_confidence_and_internal_reasoning(temp_config_file)
 
     payload = rn.normalize(agent, "llm_agent", agent_result)
 
-    assert payload["confidence"] == "0.87"
+    # Confidence is normalized to float by normalize_payload
+    assert payload["confidence"] == 0.87
     assert payload["internal_reasoning"] == "some reason"
     assert payload["response"] == "ok"

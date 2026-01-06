@@ -1,3 +1,14 @@
+# OrKa: Orchestrator Kit Agents
+# by Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+
 import logging
 from typing import Any
 import traceback
@@ -127,7 +138,7 @@ class MemoryWriterNode(BaseNode):
                     template_context = {
                         "input": context.get("input", ""),
                         "timestamp": context.get("timestamp", ""),
-                        # ✅ FIX: Exclude previous_outputs to reduce memory bloat
+                        # [OK] FIX: Exclude previous_outputs to reduce memory bloat
                         # Include only essential context keys
                         "run_id": context.get("run_id", ""),
                         "session_id": context.get("session_id", ""),
@@ -157,7 +168,7 @@ class MemoryWriterNode(BaseNode):
                     merged_metadata["memory_key_template"] = self.key_template
 
             # Use memory logger for direct memory storage
-            # ✅ FIX: Filter out previous_outputs from merged metadata
+            # [OK] FIX: Filter out previous_outputs from merged metadata
             filtered_merged_metadata = {
                 k: v for k, v in merged_metadata.items() if k != "previous_outputs"
             }
@@ -218,7 +229,7 @@ class MemoryWriterNode(BaseNode):
             rendered_yaml_metadata = self._render_metadata_templates(merged_metadata, context)
 
             # Add context metadata (overrides YAML where keys conflict)
-            # ✅ FIX: Filter out previous_outputs to reduce memory bloat
+            # [OK] FIX: Filter out previous_outputs to reduce memory bloat
             context_metadata = context.get("metadata", {})
             # Remove previous_outputs if present in context metadata
             filtered_context_metadata = {
@@ -258,7 +269,7 @@ class MemoryWriterNode(BaseNode):
                 "input": context.get("input", ""),
                 "timestamp": context.get("timestamp", ""),
                 "now": lambda: context.get("timestamp", ""),  # now() function for templates
-                # ✅ FIX: Include only essential context keys, exclude previous_outputs
+                # [OK] FIX: Include only essential context keys, exclude previous_outputs
                 "run_id": context.get("run_id", ""),
                 "session_id": context.get("session_id", ""),
                 "namespace": context.get("namespace", ""),
@@ -846,7 +857,7 @@ class MemoryWriterNode(BaseNode):
                 score = loop.get("agreement_score", "Unknown")
                 evolution.append(f"Round {i+1}: Agreement {score}")
 
-            return " → ".join(evolution)
+            return " -> ".join(evolution)
 
         return {
             # Input helpers

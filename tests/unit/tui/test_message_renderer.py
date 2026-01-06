@@ -21,13 +21,13 @@ class TestVintageMessageRenderer:
     def test_initialization(self):
         """Test renderer initialization."""
         assert self.renderer.theme == "default"
-        assert self.renderer.STATUS_ICONS["success"] == "✓"
-        assert self.renderer.STATUS_ICONS["error"] == "✗"
+        assert self.renderer.STATUS_ICONS["success"] == "Y"
+        assert self.renderer.STATUS_ICONS["error"] == "N"
     
     def test_get_status_icon(self):
         """Test status icon retrieval."""
-        assert self.renderer._get_status_icon("success") == "✓"
-        assert self.renderer._get_status_icon("error") == "✗"
+        assert self.renderer._get_status_icon("success") == "Y"
+        assert self.renderer._get_status_icon("error") == "N"
         assert self.renderer._get_status_icon("pending") == "⋯"
         assert self.renderer._get_status_icon("running") == "▸"
         assert self.renderer._get_status_icon("unknown") == "?"
@@ -143,7 +143,7 @@ class TestVintageMessageRenderer:
         
         result = self.renderer.render_agent_response(response)
         assert "test_agent" in result
-        assert "✓" in result
+        assert "Y" in result
         assert "SUCCESS" in result
         assert "Test output content" in result
         assert "100 tokens" in result

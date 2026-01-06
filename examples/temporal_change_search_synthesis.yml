@@ -27,6 +27,14 @@ agents:
     prompt: "Given the user query, identify if any important change in classification/understanding/definition (or any adjective associated to the query) occurred in history. If so, return the date when this change occurred. Format strictly: DD/MM/YYYY. If no specific historical change is known, return a reasonable estimate year. QUERY: {{ get_input() }} Constraints: Return a date in the format DD/MM/YYYY or just a year like 2000."
     depends_on:
       - fork_detect
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
   - id: join_detect
     type: join
     group: fork_detect
@@ -49,6 +57,14 @@ agents:
       Based on the user's question and the detected pivot year, write a search query to find how the subject was classified or understood before that year. Use phrasing like: "how was [subject] classified before [year]?" SUBJECT: {{ get_input() }} YEAR: {% set change_data = get_agent_response("detect_change") %}{% if change_data and change_data.response %}{{ change_data.response }}{% else %}2000{% endif %} Constraints: Only return the search sentence.
     depends_on:
       - fork_temporal
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
   - id: generate_after_query
     type: local_llm
     model: openai/gpt-oss-20b
@@ -61,6 +77,14 @@ agents:
       Based on the user's question and the detected pivot year, write a search query to find how the subject was classified or understood after that year. Use phrasing like: "how was [subject] classified after [year]?" SUBJECT: {{ get_input() }} YEAR: {% set change_data = get_agent_response("detect_change") %}{% if change_data and change_data.response %}{{ change_data.response }}{% else %}2000{% endif %} Constraints: Only return the search sentence.
     depends_on:
       - fork_temporal
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
   - id: join_paths
     type: join
     group: fork_temporal
@@ -90,3 +114,11 @@ agents:
     prompt: "Based on the query, the year, and data from both the before and after searches, write a comprehensive summary explaining: - What the subject was classified/understood/defined as before the change - What it became after the change - The context and significance of this shift QUERY: {{ get_input() }} YEAR: {% set change_data = get_agent_response('detect_change') %}{% if change_data and change_data.response %}{{ change_data.response }}{% else %}Unknown{% endif %} EXTRA DATA: {% set before = get_agent_response('search_before') %}{% if before and before.response %}{{ before.response }}{% else %}No response found for search_before{% endif %} | {% set after = get_agent_response('search_after') %}{% if after and after.response %}{{ after.response }}{% else %}No response found for search_after{% endif %}"
     depends_on:
       - join_paths
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number

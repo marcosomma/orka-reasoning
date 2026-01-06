@@ -1,3 +1,14 @@
+# OrKa: Orchestrator Kit Agents
+# by Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+
 """
 Screen implementations for OrKa Textual TUI application.
 """
@@ -50,12 +61,12 @@ class DashboardScreen(BaseOrKaScreen):
                 yield StatsWidget(self.data_manager, id="dashboard-stats")
 
             with Container(classes="health-container"):
-                yield Static("🏥 Quick Health", classes="container")
+                yield Static("[HEALTH] Quick Health", classes="container")
                 yield Static("", id="quick-health")
 
             # Middle row: Recent memories table (spanning 2 columns)
             with Container(classes="memory-container"):
-                yield Static("📋 Recent Memories", classes="container")
+                yield Static("[LIST] Recent Memories", classes="container")
                 yield MemoryTableWidget(
                     self.data_manager,
                     memory_type="all",
@@ -64,7 +75,7 @@ class DashboardScreen(BaseOrKaScreen):
 
             # Bottom row: Recent logs
             with Container(classes="logs-container"):
-                yield Static("📋 System Memory", classes="container")
+                yield Static("[LIST] System Memory", classes="container")
                 yield LogsWidget(self.data_manager, id="dashboard-logs")
 
     def refresh_data(self) -> None:
@@ -84,9 +95,9 @@ class DashboardScreen(BaseOrKaScreen):
             connection_status = f"{health['backend']['icon']} {health['backend']['message']}"
             health_content = f"""
 {connection_status}
-📊 Total: {unified["total_entries"]:,} entries
-⚡ Active: {backend["active_entries"]:,} entries  
-📈 Backend: {backend["type"]}
+[STATS] Total: {unified["total_entries"]:,} entries
+[FAST] Active: {backend["active_entries"]:,} entries  
+[PERF] Backend: {backend["type"]}
 """
             health_widget.update(health_content)
 
@@ -94,7 +105,7 @@ class DashboardScreen(BaseOrKaScreen):
             memories_widget = self.query_one("#dashboard-memories", MemoryTableWidget)
             memories_widget.update_data("all")
 
-            # 🎯 FIX: Update logs using correct method name
+            # [TARGET] FIX: Update logs using correct method name
             logs_widget = self.query_one("#dashboard-logs", LogsWidget)
             logs_widget.update_data()  # Changed from update_logs() to update_data()
 
@@ -111,7 +122,7 @@ class ShortMemoryScreen(BaseOrKaScreen):
         with Vertical():
             # Top section: Compact header
             with Container(classes="memory-container", id="short-memory-header"):
-                yield Static("⚡ Short-Term Memory", classes="container-compact")
+                yield Static("[FAST] Short-Term Memory", classes="container-compact")
                 yield Static("", id="short-memory-info")
 
             # Middle section: Memory table
@@ -124,7 +135,7 @@ class ShortMemoryScreen(BaseOrKaScreen):
 
             # Bottom section: Content and Metadata viewer
             with Container(classes="content-panel", id="short-content-panel"):
-                yield Static("📄 Content & Metadata", classes="container-compact")
+                yield Static("[FILE] Content & Metadata", classes="container-compact")
                 with Container(id="short-selected-content"):
                     yield Static(
                         "[dim]Select a row to view memory content and metadata[/dim]",
@@ -166,7 +177,7 @@ class ShortMemoryScreen(BaseOrKaScreen):
     def refresh_data(self) -> None:
         """Refresh short memory data."""
         try:
-            # 🎯 USE UNIFIED: Get comprehensive stats from centralized calculation
+            # [TARGET] USE UNIFIED: Get comprehensive stats from centralized calculation
             unified = self.data_manager.get_unified_stats()
             stored_memories = unified["stored_memories"]
 
@@ -193,7 +204,7 @@ class LongMemoryScreen(BaseOrKaScreen):
         with Vertical():
             # Top section: Compact header
             with Container(classes="memory-container", id="long-memory-header"):
-                yield Static("🧠 Long-Term Memory", classes="container-compact")
+                yield Static("[AI] Long-Term Memory", classes="container-compact")
                 yield Static("", id="long-memory-info")
 
             # Middle section: Memory table
@@ -206,7 +217,7 @@ class LongMemoryScreen(BaseOrKaScreen):
 
             # Bottom section: Content and Metadata viewer
             with Container(classes="content-panel", id="long-content-panel"):
-                yield Static("📄 Content & Metadata", classes="container-compact")
+                yield Static("[FILE] Content & Metadata", classes="container-compact")
                 with Container(id="long-selected-content"):
                     yield Static(
                         "[dim]Select a row to view memory content and metadata[/dim]",
@@ -248,7 +259,7 @@ class LongMemoryScreen(BaseOrKaScreen):
     def refresh_data(self) -> None:
         """Refresh long memory data."""
         try:
-            # 🎯 USE UNIFIED: Get comprehensive stats from centralized calculation
+            # [TARGET] USE UNIFIED: Get comprehensive stats from centralized calculation
             unified = self.data_manager.get_unified_stats()
             stored_memories = unified["stored_memories"]
 
@@ -275,7 +286,7 @@ class MemoryLogsScreen(BaseOrKaScreen):
         with Vertical():
             # Top 50%: Orchestration Logs Table
             with Container(classes="logs-container", id="logs-top-section"):
-                yield Static("🔄 Orchestration Logs", classes="container-compact")
+                yield Static("[SYNC] Orchestration Logs", classes="container-compact")
                 yield MemoryTableWidget(
                     self.data_manager,
                     memory_type="logs",
@@ -284,7 +295,7 @@ class MemoryLogsScreen(BaseOrKaScreen):
 
             # Bottom 50%: Content inspector for selected logs
             with Container(classes="content-panel", id="logs-content-panel"):
-                yield Static("📄 Entry Details", classes="container-compact")
+                yield Static("[FILE] Entry Details", classes="container-compact")
                 with Container(id="logs-selected-content"):
                     yield Static(
                         "[dim]Select a row to view entry details and metadata[/dim]",
@@ -334,13 +345,13 @@ class MemoryLogsScreen(BaseOrKaScreen):
 
                 formatted_content = f"""[bold blue]Entry: ...{key_short}[/bold blue]
 
-[bold green]📄 CONTENT:[/bold green]
+[bold green][FILE] CONTENT:[/bold green]
 {content_text}
 
-[bold yellow]📋 METADATA:[/bold yellow]
+[bold yellow][LIST] METADATA:[/bold yellow]
 {metadata_display}
 
-[bold cyan]🏷️ SYSTEM INFO:[/bold cyan]
+[bold cyan][TAG]️ SYSTEM INFO:[/bold cyan]
 [cyan]Log Type:[/cyan] {log_type}
 [cyan]Node ID:[/cyan] {node_id}
 [cyan]Importance:[/cyan] {importance_score}"""
@@ -367,7 +378,7 @@ class HealthScreen(BaseOrKaScreen):
         """Compose the health monitoring layout - single unified box with styled sections."""
         with Container(classes="health-main-container"):
             # Header with overall status
-            yield Static("🏥 System Health Monitor", classes="container")
+            yield Static("[HEALTH] System Health Monitor", classes="container")
             yield Static("", id="health-summary")
             
             # All sections in one container
@@ -404,36 +415,36 @@ class HealthScreen(BaseOrKaScreen):
 
             # Build unified details content with visual headers
             details_content = f"""
-[bold yellow]🔌 CONNECTION[/bold yellow]
+[bold yellow][CONN] CONNECTION[/bold yellow]
    Status: {backend_health["icon"]} {backend_health["message"]}
    Backend: {backend["type"]}
    Protocol: Redis
 
-[bold magenta]🧠 MEMORY SYSTEM[/bold magenta]
+[bold magenta][AI] MEMORY SYSTEM[/bold magenta]
    Health: {memory_health["icon"]} {memory_health["message"]}
    Total: {total_entries:,} entries
    Active: {backend["active_entries"]:,} entries
    Expired: {backend["expired_entries"]:,} entries
 
-[bold green]⚡ PERFORMANCE[/bold green]
+[bold green][FAST] PERFORMANCE[/bold green]
    Status: {perf_health["icon"]} {perf_health["message"]}
    Response Time: {search_time:.3f}s
    Throughput: Normal
    Errors: < 0.1%
 
-[bold blue]🔧 BACKEND INFO[/bold blue]
+[bold blue][CONF] BACKEND INFO[/bold blue]
    Type: {backend["type"]}
    Version: Latest
    Features: TTL, Search, Indexing
    Config: Auto-detected
 
-[bold white]📊 SYSTEM METRICS[/bold white]
+[bold white][STATS] SYSTEM METRICS[/bold white]
    Stored Memories: {stored_total:,}
    Orchestration Logs: {logs_total:,}
    Memory Usage: {usage_pct:.1f}%
    Cache Hit Rate: 95%
 
-[bold cyan]📈 HISTORICAL[/bold cyan]
+[bold cyan][PERF] HISTORICAL[/bold cyan]
    Data Points: {data_points:,}
    Trends: {trend}
    Performance: Stable

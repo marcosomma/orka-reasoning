@@ -1,3 +1,14 @@
+# OrKa: Orchestrator Kit Agents
+# by Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+
 """
 LoopValidatorNode - Specialized node for robust boolean evaluation in LoopNodes.
 
@@ -440,9 +451,9 @@ Include at least the following keys where possible: has_all_required_steps, mini
                     criterion_idx = text_lower.find(criterion_lower)
                     context = text_lower[criterion_idx : criterion_idx + 100]
 
-                    if any(word in context for word in ["true", "yes", "pass", "✓", "correct"]):
+                    if any(word in context for word in ["true", "yes", "pass", "Y", "correct"]):
                         result[category][criterion] = True
-                    elif any(word in context for word in ["false", "no", "fail", "✗", "incorrect"]):
+                    elif any(word in context for word in ["false", "no", "fail", "N", "incorrect"]):
                         result[category][criterion] = False
                     else:
                         result[category][criterion] = False

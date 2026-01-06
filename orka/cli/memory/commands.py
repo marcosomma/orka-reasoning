@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Memory CLI Commands
@@ -116,7 +116,7 @@ def memory_cleanup(args: Any) -> int:
             memory = create_memory_logger(backend=str(backend), redis_url=redis_url)
         except ImportError as e:
             if backend == "redisstack":
-                logger.info(f"⚠️ RedisStack not available ({e}), falling back to Redis")
+                logger.info(f"[WARN]️ RedisStack not available ({e}), falling back to Redis")
                 backend = "redis"
                 redis_url = os.getenv("REDIS_URL", "redis://localhost:6380/0")
                 memory = create_memory_logger(backend=backend, redis_url=redis_url)
@@ -183,7 +183,7 @@ def memory_configure(args: Any) -> int:
         logger.info(f"Backend: {backend}")
 
         # Test configuration
-        logger.info("\n🧪 Testing Configuration:")
+        logger.info("\n[TEST] Testing Configuration:")
         try:
             memory = create_memory_logger(backend=backend, redis_url=redis_url)
 
@@ -191,24 +191,24 @@ def memory_configure(args: Any) -> int:
             if hasattr(memory, "decay_config"):
                 config = memory.decay_config
                 logger.info(
-                    f"✅ Decay Config: {'Enabled' if config.get('enabled', False) else 'Disabled'}",
+                    f"[OK] Decay Config: {'Enabled' if config.get('enabled', False) else 'Disabled'}",
                 )
                 if config.get("enabled", False):
                     logger.info(f"   Short-term: {config.get('default_short_term_hours', 1.0)}h")
                     logger.info(f"   Long-term: {config.get('default_long_term_hours', 24.0)}h")
                     logger.info(f"   Check interval: {config.get('check_interval_minutes', 30)}min")
             else:
-                logger.info("⚠️  Decay Config: Not available")
+                logger.info("[WARN]️  Decay Config: Not available")
 
             # Backend-specific tests
             if backend == "redisstack":
-                logger.info("\n🔍 RedisStack-Specific Tests:")
+                logger.info("\n[...] RedisStack-Specific Tests:")
 
                 # Test index availability
                 try:
                     if hasattr(memory, "client"):
                         memory.client.ft("enhanced_memory_idx").info()
-                        logger.info("✅ HNSW Index: Available")
+                        logger.info("[OK] HNSW Index: Available")
 
                         # Get index details
                         index_info = memory.client.ft("enhanced_memory_idx").info()
@@ -217,37 +217,37 @@ def memory_configure(args: Any) -> int:
                             f"   Indexing: {'Yes' if index_info.get('indexing', False) else 'No'}",
                         )
                     else:
-                        logger.info("⚠️  HNSW Index: Cannot test (no client access)")
+                        logger.info("[WARN]️  HNSW Index: Cannot test (no client access)")
                 except Exception as e:
-                    logger.error(f"❌ HNSW Index: Not available - {e}")
+                    logger.error(f"[FAIL] HNSW Index: Not available - {e}")
 
             elif backend == "redis":
-                logger.info("\n🔧 Redis-Specific Tests:")
+                logger.info("\n[CONF] Redis-Specific Tests:")
 
                 # Test basic connectivity
                 try:
                     if hasattr(memory, "client"):
                         memory.client.ping()
-                        logger.info("✅ Redis Connection: Active")
+                        logger.info("[OK] Redis Connection: Active")
                     else:
-                        logger.info("⚠️  Redis Connection: Cannot test")
+                        logger.info("[WARN]️  Redis Connection: Cannot test")
                 except Exception as e:
-                    logger.error(f"❌ Redis Connection: Error - {e}")
+                    logger.error(f"[FAIL] Redis Connection: Error - {e}")
 
                 # Test decay cleanup
                 try:
                     cleanup_result = memory.cleanup_expired_memories(dry_run=True)
-                    logger.info("✅ Decay Cleanup: Available")
+                    logger.info("[OK] Decay Cleanup: Available")
                     logger.info(
                         f"   Checked: {cleanup_result.get('total_entries_checked', 0)} entries"
                     )
                 except Exception as e:
-                    logger.error(f"❌ Decay Cleanup: Error - {e}")
+                    logger.error(f"[FAIL] Decay Cleanup: Error - {e}")
 
             # Test memory stats retrieval
             try:
                 stats = memory.get_memory_stats()
-                logger.info("\n✅ Memory Stats: Available")
+                logger.info("\n[OK] Memory Stats: Available")
                 logger.info(f"   Total entries: {stats.get('total_entries', 0)}")
                 logger.info(f"   Decay enabled: {stats.get('decay_enabled', False)}")
 
@@ -257,16 +257,16 @@ def memory_configure(args: Any) -> int:
                     )
 
             except Exception as e:
-                logger.error(f"\n❌ Memory Stats: Error - {e}")
+                logger.error(f"\n[FAIL] Memory Stats: Error - {e}")
 
-            logger.info("\n✅ Configuration test completed")
+            logger.info("\n[OK] Configuration test completed")
 
         except Exception as e:
-            logger.error(f"❌ Configuration test failed: {e}")
+            logger.error(f"[FAIL] Configuration test failed: {e}")
             return 1
 
     except Exception as e:
-        logger.error(f"❌ Error testing configuration: {e}")
+        logger.error(f"[FAIL] Error testing configuration: {e}")
         return 1
 
     return 0

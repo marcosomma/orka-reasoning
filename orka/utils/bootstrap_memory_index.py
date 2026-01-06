@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Bootstrap Memory Index
@@ -127,18 +127,18 @@ def ensure_memory_index(redis_client: redis.Redis, index_name: str = "memory_ent
                         NumericField("orka_expire_time"),
                     ],
                 )
-                logger.info(f"✅ Basic memory index '{index_name}' created successfully")
+                logger.info(f"[OK] Basic memory index '{index_name}' created successfully")
                 return True
             else:
                 raise
     except Exception as e:
-        logger.error(f"❌ Failed to ensure basic memory index: {e}")
+        logger.error(f"[FAIL] Failed to ensure basic memory index: {e}")
         if "unknown command" in str(e).lower() or "ft.create" in str(e).lower():
             logger.warning(
-                "⚠️  Redis instance does not support RediSearch. Please install RedisStack or enable RediSearch module.",
+                "[WARN]️  Redis instance does not support RediSearch. Please install RedisStack or enable RediSearch module.",
             )
             logger.info(
-                "🔧 For RedisStack setup: https://redis.io/docs/latest/operate/oss_and_stack/install/install-stack/",
+                "[CONF] For RedisStack setup: https://redis.io/docs/latest/operate/oss_and_stack/install/install-stack/",
             )
         return False
 
@@ -248,7 +248,7 @@ def ensure_enhanced_memory_index(
                 definition=IndexDefinition(prefix=["orka_memory:"], index_type=IndexType.HASH),
             )
 
-            logger.info(f"✅ Enhanced memory index '{index_name}' created successfully")
+            logger.info(f"[OK] Enhanced memory index '{index_name}' created successfully")
             return True
 
         except redis.ResponseError as e:
@@ -275,22 +275,22 @@ def ensure_enhanced_memory_index(
                     definition=IndexDefinition(prefix=["orka_memory:"], index_type=IndexType.HASH),
                 )
 
-                logger.info(f"✅ Enhanced memory index '{index_name}' created successfully")
+                logger.info(f"[OK] Enhanced memory index '{index_name}' created successfully")
                 return True
             else:
                 raise
         except Exception as e:
-            logger.error(f"❌ Failed to ensure enhanced memory index: {e}")
+            logger.error(f"[FAIL] Failed to ensure enhanced memory index: {e}")
             if "unknown command" in str(e).lower() or "ft.create" in str(e).lower():
                 logger.warning(
-                    "⚠️  Redis instance does not support RediSearch. Please install RedisStack or enable RediSearch module.",
+                    "[WARN]️  Redis instance does not support RediSearch. Please install RedisStack or enable RediSearch module.",
                 )
                 logger.info(
-                    "🔧 For RedisStack setup: https://redis.io/docs/latest/operate/oss_and_stack/install/install-stack/",
+                    "[CONF] For RedisStack setup: https://redis.io/docs/latest/operate/oss_and_stack/install/install-stack/",
                 )
             elif "vector" in str(e).lower():
                 logger.warning(
-                    "⚠️  Redis instance does not support vector search. Please upgrade to RedisStack 7.2+ for vector capabilities.",
+                    "[WARN]️  Redis instance does not support vector search. Please upgrade to RedisStack 7.2+ for vector capabilities.",
                 )
             index_created = False
     except Exception as e:

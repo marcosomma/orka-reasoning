@@ -85,8 +85,9 @@ agents:
             # text_weight=0.3, enable_hybrid_search=true, temporal_weight=0.3, ef_runtime=10
             limit: 5  # Override for less context noise
             similarity_threshold: 0.2  # Broader matching for diverse perspectives
-            vector_field: "embedded_vector"
-            search_field: "embedded_content"
+            # Align to actual index schema (see logs: vector_field_name=content_vector, content_field=content)
+            vector_field: "content_vector"
+            search_field: "content"
           prompt: |
             Context for: {{ get_input() }}
         
@@ -394,8 +395,10 @@ agents:
             operation: write
             # 🎯 Episodic preset provides: vector=true, vector_field, vector_params,
             # decay settings (7 days retention), importance_threshold=0.5
-            vector_field: "embedded_vector"
-            embed_field: "embedded_content"
+            vector: true
+            # Align to actual index schema (see logs: fields include 'content' and 'content_vector')
+            vector_field: "content_vector"
+            embed_field: "content"
           # Configure what content gets embedded - with proper formatting
           embed_content: |
             {{ safe_get_response('agreement_finder', '') | truncate(200) | replace('\n', ' ') }}

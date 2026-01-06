@@ -1,3 +1,14 @@
+# OrKa: Orchestrator Kit Agents
+# by Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+
 """OrKa CLI - Command line interface for OrKa."""
 
 import argparse
@@ -123,8 +134,8 @@ Note: Run 'orka-start' before using workflows that require memory operations.
     # Streaming command (feature-gated)
     streaming_parser = subparsers.add_parser(
         "streaming",
-        help="Streaming runtime commands (⚠️ BETA: known context loss issues)",
-        description="⚠️ BETA RELEASE: The streaming runtime has known limitations including "
+        help="Streaming runtime commands ([WARN]️ BETA: known context loss issues)",
+        description="[WARN]️ BETA RELEASE: The streaming runtime has known limitations including "
                     "context loss across conversation turns. See docs/STREAMING_GUIDE.md for details."
     )
     streaming_sub = streaming_parser.add_subparsers(dest="streaming_command")
@@ -138,8 +149,8 @@ Note: Run 'orka-start' before using workflows that require memory operations.
 
     streaming_chat = streaming_sub.add_parser(
         "chat",
-        help="Interactive chat over streaming runtime (⚠️ BETA)",
-        description="⚠️ BETA: Known limitation - conversation context may be lost across turns. "
+        help="Interactive chat over streaming runtime ([WARN]️ BETA)",
+        description="[WARN]️ BETA: Known limitation - conversation context may be lost across turns. "
                     "Satellites overwrite state sections instead of accumulating context."
     )
     streaming_chat.add_argument("config", help="Configuration file path")
@@ -576,11 +587,11 @@ def cli_main() -> None:
     try:
         sys.exit(main())
     except KeyboardInterrupt:
-        logger.info("\n🛑 Operation cancelled.")
+        logger.info("\n[STOP] Operation cancelled.")
         sys.exit(1)
     except Exception as e:
         error_msg = sanitize_for_console(str(e))
-        logger.info(f"\n❌ Error: {error_msg}")
+        logger.info(f"\n[FAIL] Error: {error_msg}")
         sys.exit(1)
 
 

@@ -1,7 +1,13 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Smart Path Evaluator
@@ -20,6 +26,7 @@ This module has been refactored into smaller components in the dry_run/ package.
 import json
 import logging
 from typing import Any, Dict, List
+from ..utils.structured_output import StructuredOutputConfig
 
 from .dry_run.data_classes import PathEvaluation, ValidationResult
 from .dry_run.deterministic_evaluator import DeterministicPathEvaluator
@@ -88,6 +95,26 @@ class SmartPathEvaluator(
         logger.debug(
             "SmartPathEvaluator initialized with LLM-powered evaluation and deterministic fallback"
         )
+
+        # Initialize structured output configs for stage prompts (prompt mode)
+        try:
+            self.eval_structured_config = StructuredOutputConfig.from_params(
+                agent_params={"structured_output": {"enabled": True, "mode": "prompt"}},
+                agent_type="path-evaluator",
+            )
+            self.validation_structured_config = StructuredOutputConfig.from_params(
+                agent_params={"structured_output": {"enabled": True, "mode": "prompt"}},
+                agent_type="path-validator",
+            )
+            self.comprehensive_structured_config = StructuredOutputConfig.from_params(
+                agent_params={"structured_output": {"enabled": True, "mode": "prompt"}},
+                agent_type="path-comprehensive",
+            )
+        except Exception:
+            # Fallback placeholders (not critical)
+            self.eval_structured_config = None  # type: ignore
+            self.validation_structured_config = None  # type: ignore
+            self.comprehensive_structured_config = None  # type: ignore
 
     async def simulate_candidates(
         self,
@@ -209,8 +236,8 @@ class SmartPathEvaluator(
             logger.error(f"Stage 2 validation failed for {candidate.get('node_id')}: {e}")
             return self._create_fallback_validation()
 
-    async def _call_evaluation_llm(self, prompt: str) -> str:
-        """Call LLM for Stage 1 evaluation."""
+    async def _call_evaluation_llm(self, prompt: str, schema_key: str = "path-evaluator") -> str:
+        """Call LLM for Stage 1/comprehensive evaluation with schema instructions."""
         try:
             if not getattr(self.config, "llm_evaluation_enabled", True):
                 logger.warning("LLM evaluation disabled, cannot proceed without LLM")
@@ -234,14 +261,29 @@ class SmartPathEvaluator(
                     + ", ".join(missing_fields)
                 )
 
+            # Inject structured output instructions for prompt-mode local providers
+            cfg_map = {
+                "path-evaluator": getattr(self, "eval_structured_config", None),
+                "path-validator": getattr(self, "validation_structured_config", None),
+                "path-comprehensive": getattr(self, "comprehensive_structured_config", None),
+            }
+            so_cfg = cfg_map.get(schema_key)
+            if so_cfg is None:
+                so_cfg = StructuredOutputConfig.from_params(
+                    agent_params={"structured_output": {"enabled": True, "mode": "prompt"}},
+                    agent_type=schema_key if schema_key in ("path-evaluator", "path-validator", "path-comprehensive") else "path-evaluator",
+                )
+            so_instructions = so_cfg.build_prompt_instructions()
+            final_prompt = f"{prompt}\n\n{so_instructions}" if so_instructions else prompt
+
             provider_norm = str(provider).lower().strip()
             if provider_norm == "ollama":
                 raw_response = await self._call_ollama_async(
-                    model_url, model_name, prompt, temperature
+                    model_url, model_name, final_prompt, temperature
                 )
             elif provider_norm in ["lm_studio", "lmstudio"]:
                 raw_response = await self._call_lm_studio_async(
-                    model_url, model_name, prompt, temperature
+                    model_url, model_name, final_prompt, temperature
                 )
             else:
                 logger.error(f"Unsupported LLM provider: {provider}")
@@ -284,14 +326,22 @@ class SmartPathEvaluator(
                     + ", ".join(missing_fields)
                 )
 
+            # Inject structured output instructions for prompt-mode local providers
+            so_cfg = StructuredOutputConfig.from_params(
+                agent_params={"structured_output": {"enabled": True, "mode": "prompt"}},
+                agent_type="path-validator",
+            )
+            so_instructions = so_cfg.build_prompt_instructions()
+            final_prompt = f"{prompt}\n\n{so_instructions}" if so_instructions else prompt
+
             provider_norm = str(provider).lower().strip()
             if provider_norm == "ollama":
                 raw_response = await self._call_ollama_async(
-                    model_url, model_name, prompt, temperature
+                    model_url, model_name, final_prompt, temperature
                 )
             elif provider_norm in ["lm_studio", "lmstudio"]:
                 raw_response = await self._call_lm_studio_async(
-                    model_url, model_name, prompt, temperature
+                    model_url, model_name, final_prompt, temperature
                 )
             else:
                 logger.error(f"Unsupported LLM provider: {provider}")
@@ -320,7 +370,7 @@ class SmartPathEvaluator(
             evaluation_prompt = self._build_comprehensive_evaluation_prompt(
                 question, available_agents, possible_paths, context
             )
-            llm_response = await self._call_evaluation_llm(evaluation_prompt)
+            llm_response = await self._call_evaluation_llm(evaluation_prompt, schema_key="path-comprehensive")
             return self._parse_comprehensive_evaluation_response(llm_response)
 
         except Exception as e:

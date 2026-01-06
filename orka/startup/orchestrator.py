@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Service Orchestrator
@@ -116,7 +116,7 @@ async def main() -> None:
         if os.getenv("ORKA_DISABLE_UI", "").lower() not in ("true", "1", "yes"):
             ui_started = start_ui_container()
             if ui_started:
-                logger.info("🌐 OrKa UI is ready at http://localhost:8080")
+                logger.info("[WEB] OrKa UI is ready at http://localhost:8080")
 
         # Display banner just before Uvicorn logs - stays visible in terminal
         display_final_banner()
@@ -145,7 +145,7 @@ def run_startup() -> None:
         asyncio.run(main())
     except KeyboardInterrupt:
         # Handle any remaining KeyboardInterrupt that might bubble up
-        logger.warning("🛑 Shutdown complete.")
+        logger.warning("[STOP] Shutdown complete.")
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         sys.exit(1)

@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 OrKa UI Container Management
@@ -61,7 +61,7 @@ def stop_ui_container() -> None:
             capture_output=True,
             check=False,
         )
-        logger.info("🗑️  Stopped and removed existing orka-ui container")
+        logger.info("[DEL]️  Stopped and removed existing orka-ui container")
     except Exception as e:
         logger.warning(f"Could not stop UI container: {e}")
 
@@ -78,7 +78,7 @@ def start_ui_container(api_url: str = "http://localhost:8000") -> bool:
     """
     # Check if container is already running
     if is_ui_container_running():
-        logger.info("✅ OrKa UI container is already running")
+        logger.info("[OK] OrKa UI container is already running")
         return True
 
     # Stop any existing container
@@ -87,7 +87,7 @@ def start_ui_container(api_url: str = "http://localhost:8000") -> bool:
     # Get the API URL from environment or use default
     api_url = os.getenv("ORKA_API_URL", api_url)
 
-    logger.info("🚀 Starting OrKa UI container...")
+    logger.info("[START] Starting OrKa UI container...")
     logger.info(f"   • API URL: {api_url}")
     logger.info(f"   • UI Port: 8080")
 
@@ -96,7 +96,7 @@ def start_ui_container(api_url: str = "http://localhost:8000") -> bool:
         skip_pull = os.getenv("ORKA_UI_SKIP_PULL", "").lower() in ("true", "1", "yes")
         
         if not skip_pull:
-            logger.info("📥 Pulling latest orka-ui image...")
+            logger.info("[IN] Pulling latest orka-ui image...")
             pull_result = subprocess.run(
                 ["docker", "pull", "marcosomma/orka-ui:latest"],
                 capture_output=True,
@@ -105,7 +105,7 @@ def start_ui_container(api_url: str = "http://localhost:8000") -> bool:
             )
 
             if pull_result.returncode != 0:
-                logger.warning("⚠️  Could not pull latest image, using cached version")
+                logger.warning("[WARN]️  Could not pull latest image, using cached version")
         else:
             logger.info("⏭️  Skipping image pull (using cached version)")
 
@@ -135,24 +135,24 @@ def start_ui_container(api_url: str = "http://localhost:8000") -> bool:
 
         # Verify container is running
         if is_ui_container_running():
-            logger.info("✅ OrKa UI container started successfully")
+            logger.info("[OK] OrKa UI container started successfully")
             logger.info(f"   • Access UI at: http://localhost:8080")
             return True
         else:
-            logger.error("❌ UI container failed to start")
+            logger.error("[FAIL] UI container failed to start")
             return False
 
     except subprocess.CalledProcessError as e:
-        logger.error(f"❌ Failed to start UI container: {e.stderr}")
+        logger.error(f"[FAIL] Failed to start UI container: {e.stderr}")
         return False
     except FileNotFoundError:
         logger.error(
-            "❌ Docker not found. Please install Docker to use the OrKa UI.\n"
+            "[FAIL] Docker not found. Please install Docker to use the OrKa UI.\n"
             "   Download from: https://www.docker.com/products/docker-desktop"
         )
         return False
     except Exception as e:
-        logger.error(f"❌ Unexpected error starting UI container: {e}")
+        logger.error(f"[FAIL] Unexpected error starting UI container: {e}")
         return False
 
 
@@ -160,8 +160,8 @@ def cleanup_ui_container() -> None:
     """
     Clean up the OrKa UI container on shutdown.
     """
-    logger.info("🧹 Cleaning up OrKa UI container...")
+    logger.info("[CLEAN] Cleaning up OrKa UI container...")
     try:
         stop_ui_container()
     except Exception as e:
-        logger.warning(f"⚠️  Error during UI container cleanup: {e}")
+        logger.warning(f"[WARN]️  Error during UI container cleanup: {e}")

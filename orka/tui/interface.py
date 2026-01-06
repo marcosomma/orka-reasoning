@@ -1,3 +1,14 @@
+# OrKa: Orchestrator Kit Agents
+# by Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+
 """
 Core TUI interface coordination and lifecycle management.
 """
@@ -84,9 +95,9 @@ class ModernTUIInterface:
             if not TEXTUAL_AVAILABLE:
                 if self.console:
                     self.console.print(
-                        "[yellow]⚠️  Textual not available. Using Rich fallback interface.[/yellow]",
+                        "[yellow][WARN]️  Textual not available. Using Rich fallback interface.[/yellow]",
                     )
-                    self.console.print("[blue]💡 Install with: pip install textual[/blue]")
+                    self.console.print("[blue][TIP] Install with: pip install textual[/blue]")
                 return self._run_rich_interface(args)
             elif use_rich_fallback:
                 if self.console:
@@ -98,7 +109,7 @@ class ModernTUIInterface:
 
         except Exception as e:
             if self.console:
-                self.console.print(f"[red]❌ Error in TUI interface: {e}[/red]")
+                self.console.print(f"[red][FAIL] Error in TUI interface: {e}[/red]")
             else:
                 logger.error(f"Error in TUI interface: {e}")
 
@@ -146,7 +157,7 @@ class ModernTUIInterface:
             pass
 
         if self.console:
-            self.console.print("\n[green]👋 OrKa TUI monitoring stopped[/green]")
+            self.console.print("\n[green][HI] OrKa TUI monitoring stopped[/green]")
         return 0
 
     def _run_textual_interface(self, args: Any) -> int:

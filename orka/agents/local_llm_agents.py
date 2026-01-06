@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 import time
 import aiohttp
@@ -17,6 +17,8 @@ import re
 from urllib.parse import urlparse
 from jinja2 import Template as JinjaTemplate
 from .llm_agents import parse_llm_json_response
+from ..utils.structured_output import StructuredOutputConfig
+from ..utils.json_parser import parse_llm_json
 from .local_cost_calculator import calculate_local_llm_cost
 
 """
@@ -189,7 +191,7 @@ class LocalLLMAgent(BaseAgent):
         # Convert ctx to dict if it's not already
         context_dict: Dict[str, Any] = dict(ctx) if isinstance(ctx, dict) else {"input": str(ctx)}
 
-        # ✅ FIX: Use already-rendered prompt from execution engine if available
+        # [OK] FIX: Use already-rendered prompt from execution engine if available
         if isinstance(ctx, dict) and "formatted_prompt" in ctx and ctx["formatted_prompt"]:
             render_prompt = ctx["formatted_prompt"]
             logger.debug(
@@ -198,6 +200,15 @@ class LocalLLMAgent(BaseAgent):
         else:
             render_prompt = self.build_prompt(input_text, prompt, context_dict)
             logger.debug(f"Using agent's own template rendering (length: {len(render_prompt)})")
+
+        # Structured output configuration (local LLMs typically use prompt mode)
+        agent_params = getattr(self, "params", {}) if hasattr(self, "params") else {}
+        orchestrator_defaults = (
+            ctx.get("structured_output_defaults") if isinstance(ctx, dict) else None
+        )
+        so_config = StructuredOutputConfig.from_params(
+            agent_params=agent_params, agent_type="local_llm", orchestrator_defaults=orchestrator_defaults
+        )
 
         # Enhanced instructions for reasoning models to force JSON output
         self_evaluation = """
@@ -234,7 +245,17 @@ class LocalLLMAgent(BaseAgent):
             }
             ```
         """
-        full_prompt = f"{render_prompt}\n\n{self_evaluation}"
+        # Build final prompt
+        if so_config.enabled:
+            mode = so_config.resolve_mode(provider=str(self.params.get("provider", "ollama")), model=model)
+            if mode != "prompt":
+                logger.warning(
+                    f"Structured output mode '{mode}' not supported by local provider; falling back to prompt instructions."
+                )
+            instructions = so_config.build_prompt_instructions()
+            full_prompt = f"{render_prompt}\n\n{instructions if instructions else ''}".strip()
+        else:
+            full_prompt = f"{render_prompt}\n\n{self_evaluation}"
 
         # Get model endpoint configuration
         model_url = self.params.get("model_url", "MISSING_MODEL_URL")
@@ -313,8 +334,19 @@ class LocalLLMAgent(BaseAgent):
             # Import the JSON parser
             # parse_llm_json_response import moved to top
 
-            # Parse the response to extract structured JSON with reasoning support
-            parsed_response = parse_llm_json_response(raw_response)
+            # Parse the response
+            if so_config.enabled:
+                parsed_response = parse_llm_json(
+                    raw_response or "",
+                    schema=so_config.build_json_schema(),
+                    strict=False,
+                    coerce_types=so_config.coerce_types,
+                    track_errors=True,
+                    agent_id=self.agent_id,
+                )
+            else:
+                # Legacy parser with reasoning and robust extraction
+                parsed_response = parse_llm_json_response(raw_response)
 
             # Ensure we always return a valid dict
             if not parsed_response or not isinstance(parsed_response, dict):
@@ -353,7 +385,7 @@ class LocalLLMAgent(BaseAgent):
                 "provider": provider,
             }
 
-            # ✅ FIX: Store the actual rendered template, not the full_prompt with evaluation instructions
+            # [OK] FIX: Store the actual rendered template, not the full_prompt with evaluation instructions
             # If we used pre-rendered template, store it; otherwise store the original prompt
             if isinstance(ctx, dict) and "formatted_prompt" in ctx and ctx["formatted_prompt"]:
                 # We used pre-rendered template, so it's already fully rendered

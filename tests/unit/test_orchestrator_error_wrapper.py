@@ -39,7 +39,7 @@ class TestOrkaErrorHandler:
             assert error["agent_id"] == "agent1"
             assert error["message"] == "Something went wrong"
             assert "exception" not in error
-            mock_logger.info.assert_called_with("🚨 [ORKA-ERROR] TypeError in agent1: Something went wrong")
+            mock_logger.info.assert_called_with("[ERROR] [ORKA-ERROR] TypeError in agent1: Something went wrong")
 
     def test_record_error_with_exception(self, error_handler):
         try:
@@ -103,7 +103,7 @@ class TestOrkaErrorHandler:
                 assert error_handler.error_telemetry["execution_status"] == "completed"
                 m_open.assert_called_once_with("test_report.json", "w")
                 mock_json_dump.assert_called_once()
-                mock_logger.info.assert_any_call("📋 Comprehensive error report saved: test_report.json")
+                mock_logger.info.assert_any_call("[LIST] Comprehensive error report saved: test_report.json")
                 error_handler.orchestrator.memory.save_to_file.assert_called_once()
                 assert report_path == "test_report.json"
 
@@ -118,7 +118,7 @@ class TestOrkaErrorHandler:
                 error_handler.orchestrator.memory.save_to_file = MagicMock()
                 report_path = error_handler.save_comprehensive_error_report([{"log": "entry"}])
                 assert error_handler.error_telemetry["execution_status"] == "partial"
-                mock_logger.info.assert_any_call("📋 Comprehensive error report saved: test_report.json")
+                mock_logger.info.assert_any_call("[LIST] Comprehensive error report saved: test_report.json")
                 error_handler.orchestrator.memory.save_to_file.assert_called_once()
                 assert report_path == "test_report.json"
 
@@ -133,7 +133,7 @@ class TestOrkaErrorHandler:
                 report_path = error_handler.save_comprehensive_error_report([{"log": "entry"}], final_error=Exception("Critical"))
                 assert error_handler.error_telemetry["execution_status"] == "failed"
                 assert len(error_handler.error_telemetry["critical_failures"]) == 1
-                mock_logger.info.assert_any_call("📋 Comprehensive error report saved: test_report.json")
+                mock_logger.info.assert_any_call("[LIST] Comprehensive error report saved: test_report.json")
                 error_handler.orchestrator.memory.save_to_file.assert_called_once()
                 assert report_path == "test_report.json"
 
@@ -149,7 +149,7 @@ class TestOrkaErrorHandler:
                 report_path = error_handler.save_comprehensive_error_report([{"log": "entry"}])
                 assert len(error_handler.error_telemetry["errors"]) == 1
                 assert error_handler.error_telemetry["errors"][0]["type"] == "meta_report_generation"
-                mock_logger.info.assert_any_call("📋 Comprehensive error report saved: test_report.json")
+                mock_logger.info.assert_any_call("[LIST] Comprehensive error report saved: test_report.json")
                 error_handler.orchestrator.memory.save_to_file.assert_called_once()
                 assert report_path == "test_report.json"
 
@@ -163,7 +163,7 @@ class TestOrkaErrorHandler:
             with patch("json.dump") as mock_json_dump:
                 error_handler.orchestrator.memory.save_to_file = MagicMock()
                 report_path = error_handler.save_comprehensive_error_report([{"log": "entry"}])
-                mock_logger.info.assert_any_call("❌ Failed to save error report: File write error")
+                mock_logger.info.assert_any_call("[FAIL] Failed to save error report: File write error")
                 error_handler.orchestrator.memory.save_to_file.assert_called_once()
                 assert report_path == "test_report.json" # Still returns the path even if write fails
 
@@ -176,7 +176,7 @@ class TestOrkaErrorHandler:
             with patch("json.dump") as mock_json_dump:
                 error_handler.orchestrator.memory.save_to_file.side_effect = Exception("Trace save error")
                 report_path = error_handler.save_comprehensive_error_report([{"log": "entry"}])
-                mock_logger.info.assert_any_call("⚠️ Failed to save trace to memory backend: Trace save error")
+                mock_logger.info.assert_any_call("[WARN]️ Failed to save trace to memory backend: Trace save error")
                 assert report_path == "test_report.json"
 
     def test_get_execution_summary(self, error_handler):
@@ -219,7 +219,7 @@ class TestOrkaErrorHandler:
                 assert "Orchestrator crashed" in result["error"]
                 assert result["error_report_path"] == "critical_report.json"
                 assert error_handler.error_telemetry["execution_status"] == "failed"
-                mock_logger.info.assert_any_call("💥 [ORKA-CRITICAL] Orchestrator failed: Orchestrator crashed")
+                mock_logger.info.assert_any_call("[CRASH] [ORKA-CRITICAL] Orchestrator failed: Orchestrator crashed")
                 mock_orchestrator.memory.close.assert_called_once()
 
     @pytest.mark.asyncio

@@ -92,6 +92,14 @@ agents:
       Answer with exactly 'true' or 'false' only.
     depends_on:
       - memory_reader
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   # Step 3: Router to decide between memory-based answer or search fallback
   - id: answer_router
@@ -133,6 +141,14 @@ agents:
       Answer:
     depends_on:
       - answer_router
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   # Step 3b: Fallback to internet search if memories are insufficient
   - id: search_fallback
@@ -168,6 +184,14 @@ agents:
       Answer:
     depends_on:
       - search_fallback
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   # Step 5: Store the answer in short-term memory (1 minute expiration)
   - id: memory_writer
@@ -228,3 +252,11 @@ agents:
       Provide a complete, accurate response that directly addresses what the user is asking about.
     depends_on:
       - memory_writer
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number

@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Memory Logger
@@ -281,7 +281,7 @@ def create_memory_logger(
 
     if force_basic_redis and backend in ["redis", "redisstack"]:
         # Force basic Redis when explicitly requested
-        logging.getLogger(__name__).info("🔧 Force basic Redis mode enabled")
+        logging.getLogger(__name__).info("[CONF] Force basic Redis mode enabled")
         try:
             from .memory.redis_logger import RedisMemoryLogger
 
@@ -306,9 +306,9 @@ def create_memory_logger(
                 from .utils.embedder import get_embedder
 
                 embedder = get_embedder()
-                logger.info("✅ Embedder initialized for vector search")
+                logger.info("[OK] Embedder initialized for vector search")
             except Exception as e:
-                logger.warning(f"⚠️ Could not initialize embedder: {e}")
+                logger.warning(f"[WARN]️ Could not initialize embedder: {e}")
                 logger.warning("Vector search will not be available")
 
             # Prepare vector params with additional configuration
@@ -318,7 +318,7 @@ def create_memory_logger(
             if force_recreate_index:
                 effective_vector_params["force_recreate"] = True
 
-            logger.info("✅ RedisStack with HNSW and vector search enabled")
+            logger.info("[OK] RedisStack with HNSW and vector search enabled")
 
             return RedisStackMemoryLogger(
                 redis_url=redis_url or "redis://localhost:6380/0",

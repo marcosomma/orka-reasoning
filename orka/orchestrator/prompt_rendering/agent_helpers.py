@@ -1,7 +1,13 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Agent Helper Functions
@@ -52,9 +58,17 @@ def create_agent_helpers(payload: Dict[str, Any]) -> Dict[str, Any]:
                             return str(pr)
 
                     if "result" in agent_result:
-                        return str(agent_result["result"])
+                        res_val = agent_result["result"]
+                        # Handle nested result dict (structured output format)
+                        if isinstance(res_val, dict) and "response" in res_val:
+                            return str(res_val["response"])
+                        return str(res_val)
                     elif "response" in agent_result:
-                        return str(agent_result["response"])
+                        resp_val = agent_result["response"]
+                        # Handle nested response dict (structured output format)
+                        if isinstance(resp_val, dict) and "response" in resp_val:
+                            return str(resp_val["response"])
+                        return str(resp_val)
                 return str(agent_result)
 
             return f"No response found for {agent_name}"
@@ -92,11 +106,19 @@ def create_agent_helpers(payload: Dict[str, Any]) -> Dict[str, Any]:
                                 return result_str
 
                     if "result" in agent_result:
-                        result_str = str(agent_result["result"])
+                        res_val = agent_result["result"]
+                        # Handle nested result dict (structured output format)
+                        if isinstance(res_val, dict) and "response" in res_val:
+                            res_val = res_val["response"]
+                        result_str = str(res_val)
                         if result_str and not result_str.startswith("No response found"):
                             return result_str
                     elif "response" in agent_result:
-                        result_str = str(agent_result["response"])
+                        resp_val = agent_result["response"]
+                        # Handle nested response dict (structured output format)
+                        if isinstance(resp_val, dict) and "response" in resp_val:
+                            resp_val = resp_val["response"]
+                        result_str = str(resp_val)
                         if result_str and not result_str.startswith("No response found"):
                             return result_str
                 else:

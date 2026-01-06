@@ -101,30 +101,39 @@ agents:
     model_url: http://localhost:1234
     provider: lm_studio
     temperature: 0.3
-    timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
+    timeout: 60.0
     prompt: |
-      # Execution Results
+      # Execution Results Summary
       
-      ## GraphScout's Decision
+      **Original Query:** {{ input }}
+      
+      ## GraphScout's Routing Decision
       {% if previous_outputs.graphscout_router %}
-      - Selected Path: {{ previous_outputs.graphscout_router.target }}
-      - Confidence: {{ previous_outputs.graphscout_router.confidence }}
-      - Reasoning: {{ previous_outputs.graphscout_router.reasoning }}
+      {% set gs = previous_outputs.graphscout_router %}
+      - Target: {{ gs.target | default(gs.response.target | default('N/A')) }}
+      - Confidence: {{ gs.confidence | default(gs.response.confidence | default('N/A')) }}
+      - Selected Path: {{ gs.selected_path | default(gs.response.selected_path | default('See routing results')) }}
+      {% else %}
+      - GraphScout routing completed (see details in previous_outputs)
       {% endif %}
       
-      ## Executed Agents & Results
+      ## Analysis Context
+      {% if previous_outputs.input_analyzer %}
+      **Input Analysis:** {{ previous_outputs.input_analyzer.response | default(previous_outputs.input_analyzer) }}
+      {% endif %}
+      
+      ## All Available Results
       {% for agent_id, output in previous_outputs.items() %}
-      {% if agent_id not in ['input_analyzer', 'graphscout_router', 'result_synthesizer'] %}
-      
+      {% if agent_id not in ['input_analyzer', 'result_synthesizer'] %}
       ### {{ agent_id }}
-      {{ output }}
-      
+      {{ output.response | default(output.result | default(output)) }}
       {% endif %}
       {% endfor %}
       
       ---
       
-      Synthesize the final response based on all executed agent results.
+      Based on all the above results, provide a comprehensive final response to the original query.
+      Synthesize the key findings and deliver a clear, actionable answer.
 
   # Supporting agents that GraphScout can route to
   - id: web_search

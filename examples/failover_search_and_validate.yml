@@ -19,6 +19,15 @@ agents:
     queue: orka:answer_9
     prompt: >
       Rephrase this input in a more understandable way: "{{ get_input() }}". Make it clearer and more concise.
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
+            internal_reasoning: string
   - id: test_failover
     type: failover
     input: answer_9
@@ -42,6 +51,14 @@ agents:
     temperature: 0.1
     queue: orka:is_fact
     prompt: "Does '{{ get_input() }}' ask a question that requires an answer, or is it an assertion that requires fact validation? Return true if it is a question, false if it is an assertion. Answer with exactly 'true' or 'false' only."
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
     depends_on:
       - test_failover
   - id: router_answer
@@ -79,6 +96,14 @@ agents:
           {% else %}
           No search results available
           {% endif %}
+        params:
+          structured_output:
+            enabled: true
+            mode: prompt
+            schema:
+              required: [response]
+              optional:
+                confidence: number
     depends_on:
       - router_answer
       - failing_test_agent2
@@ -130,3 +155,11 @@ agents:
       {% endif %}
       
       Provide a clear, comprehensive final response that addresses the user's input appropriately.
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number

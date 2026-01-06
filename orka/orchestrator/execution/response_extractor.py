@@ -1,3 +1,14 @@
+# OrKa: Orchestrator Kit Agents
+# by Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+
 from typing import Any, Dict, List, Optional
 import logging
 
@@ -5,8 +16,22 @@ logger = logging.getLogger(__name__)
 
 
 class ResponseExtractor:
+    # Control-flow node types that don't produce user-facing output
+    CONTROL_FLOW_TYPES = {
+        "forknode", "joinnode", "routernode", "loopnode", "graph-scout",
+        "fork", "join", "router", "loop", "graphscout",
+    }
+
     def __init__(self, orchestrator):
         self.orchestrator = orchestrator
+
+    def is_control_flow_agent(self, agent_id: str) -> bool:
+        """Check if agent is a control-flow node that doesn't produce user-facing output."""
+        if agent_id not in getattr(self.orchestrator, "agents", {}):
+            return False
+        agent = self.orchestrator.agents[agent_id]
+        agent_type = (getattr(agent, "type", "") or "").lower()
+        return agent_type in self.CONTROL_FLOW_TYPES
 
     def is_response_builder(self, agent_id: str) -> bool:
         if agent_id not in getattr(self.orchestrator, "agents", {}):
@@ -34,16 +59,16 @@ class ResponseExtractor:
             return queue
         last_agent_id = queue[-1]
         if self.is_response_builder(last_agent_id):
-            logger.info(f"✅ Terminal validation passed: {last_agent_id} is a response builder")
+            logger.info(f"[OK] Terminal validation passed: {last_agent_id} is a response builder")
             return queue
         response_builder = self._get_best_response_builder()
         if response_builder:
             validated_queue = queue + [response_builder]
-            logger.info(f"🔧 Terminal enforcement: Added {response_builder} to ensure LLM response")
-            logger.info(f"📋 Final validated queue: {validated_queue}")
+            logger.info(f"[CONF] Terminal enforcement: Added {response_builder} to ensure LLM response")
+            logger.info(f"[LIST] Final validated queue: {validated_queue}")
             return validated_queue
         else:
-            logger.warning("⚠️ No response builder found - workflow may not provide comprehensive response")
+            logger.warning("[WARN]️ No response builder found - workflow may not provide comprehensive response")
             return queue
 
     def extract_final_response(self, logs: List[Dict[str, Any]]) -> Any:
@@ -85,7 +110,16 @@ class ResponseExtractor:
                     break
 
         if not final_response_log_entry:
-            logger.warning("No suitable final agent found, returning full logs")
+            # Only warn if workflow had LLM agents (not purely control-flow)
+            has_llm_agents = any(
+                not self.is_control_flow_agent(log.get("agent_id", ""))
+                for log in logs
+                if log.get("event_type") != "MetaReport"
+            )
+            if has_llm_agents:
+                logger.warning("No suitable final agent found, returning full logs")
+            else:
+                logger.debug("Control-flow only workflow - returning logs without warning")
             return logs
 
         payload = final_response_log_entry.get("payload", {})

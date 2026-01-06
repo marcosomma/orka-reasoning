@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 from __future__ import annotations
 
@@ -173,7 +173,7 @@ class LoopNode(BaseNode):
         logger.debug(f"LoopNode.run() original_input: {original_input}")
         logger.debug(f"LoopNode.run() original_input type: {type(original_input)}")
 
-        # 🐛 GraphScout Fix: Extract parent orchestrator's agents for internal workflow
+        # [DEBUG] GraphScout Fix: Extract parent orchestrator's agents for internal workflow
         if "orchestrator" in payload and hasattr(payload["orchestrator"], "agent_cfgs"):
             self._parent_agents = payload["orchestrator"].agent_cfgs
             logger.debug(

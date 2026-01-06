@@ -26,7 +26,7 @@ def test_parse_boolean_evaluation_valid_json_structure_normalizes_values():
         "handles_edge_cases": 1
       },
       "efficiency": {
-        "optimizes_cost": "✓",
+        "optimizes_cost": "Y",
         "optimizes_latency": false
       },
       "coherence": {

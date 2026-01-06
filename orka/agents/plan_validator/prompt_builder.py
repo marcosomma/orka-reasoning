@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Validation Prompt Builder
@@ -32,6 +32,7 @@ def build_validation_prompt(
     loop_number: int,
     preset_name: str = "moderate",
     scoring_context: str | None = None,
+    skip_json_instructions: bool = False,
 ) -> str:
     """
     Build validation prompt requesting boolean evaluations.
@@ -65,33 +66,37 @@ Evaluate the proposed path by answering TRUE or FALSE for each criterion below.
 
 {criteria_instructions}
 
+"""
+
+    if not skip_json_instructions:
+        prompt += """
 **OUTPUT FORMAT (JSON only):**
-{{
-    "completeness": {{
+{
+    "completeness": {
         "has_all_required_steps": true/false,
         "addresses_all_query_aspects": true/false,
         "handles_edge_cases": true/false,
         "includes_fallback_path": true/false
-    }},
-    "efficiency": {{
+    },
+    "efficiency": {
         "minimizes_redundant_calls": true/false,
         "uses_appropriate_agents": true/false,
         "optimizes_cost": true/false,
         "optimizes_latency": true/false
-    }},
-    "safety": {{
+    },
+    "safety": {
         "validates_inputs": true/false,
         "handles_errors_gracefully": true/false,
         "has_timeout_protection": true/false,
         "avoids_risky_combinations": true/false
-    }},
-    "coherence": {{
+    },
+    "coherence": {
         "logical_agent_sequence": true/false,
         "proper_data_flow": true/false,
         "no_conflicting_actions": true/false
-    }},
+    },
     "rationale": "Brief explanation of your evaluation"
-}}
+}
 
 Respond ONLY with the JSON structure above.
 
@@ -100,7 +105,7 @@ Respond ONLY with the JSON structure above.
     # If a specific scoring context is requested, dynamically build an
     # ADDITIONAL OUTPUT FORMAT block from the preset weights so the prompt is
     # generic and driven by configuration rather than hardcoded fields.
-    if scoring_context:
+    if scoring_context and not skip_json_instructions:
         try:
             preset = load_preset(preset_name, context=scoring_context)
             weights = preset.get("weights", {})

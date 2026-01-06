@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,10 +7,10 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
-🧭 **GraphScout Agent** - Intelligent Path Discovery and Selection
+[NAV] **GraphScout Agent** - Intelligent Path Discovery and Selection
 ================================================================
 
 The GraphScoutAgent is an intelligent routing agent that automatically inspects
@@ -39,6 +39,7 @@ based on the current question and context.
 - Cost-optimized path selection
 """
 
+import re
 import asyncio
 import json
 import logging
@@ -187,7 +188,7 @@ class ScoutDecision:
 
 class GraphScoutAgent(BaseNode):
     """
-    🧭 **Intelligent Path Discovery Agent**
+    [NAV] **Intelligent Path Discovery Agent**
 
     The GraphScoutAgent automatically inspects the workflow graph and selects
     the optimal next path based on the current question and context.
@@ -372,9 +373,16 @@ class GraphScoutAgent(BaseNode):
                 return self._handle_safety_violation(context)
 
             # Step 5: Path Scoring - Evaluate all criteria
+            # Extract required agents from question if specified (e.g., REQUIRED_AGENTS: [a, b, c])
+            scoring_context = context.copy()
+            required_agents = self._extract_required_agents(question)
+            if required_agents:
+                scoring_context["required_agents"] = required_agents
+                logger.info(f"Extracted required agents from question: {required_agents}")
+            
             assert self.scorer is not None
             scored_candidates = await self.scorer.score_candidates(
-                safe_candidates, question, context
+                safe_candidates, question, scoring_context
             )
 
             # Step 6: Decision Making - Select final path
@@ -413,7 +421,7 @@ class GraphScoutAgent(BaseNode):
             )
 
             # Log metrics summary
-            logger.info(f"📊 {metrics.summary()}")
+            logger.info(f"[STATS] {metrics.summary()}")
 
             # Return structured result for execution engine and logging
             result = {
@@ -481,6 +489,51 @@ class GraphScoutAgent(BaseNode):
             "reasoning": "No viable paths found from current position",
             "status": "no_candidates",
         }
+
+    def _extract_required_agents(self, question: str) -> List[str]:
+        """Extract required agents from question text.
+        
+        Looks for patterns like:
+        - REQUIRED_AGENTS: [agent1, agent2, agent3]
+        - required_agents: [a, b, c]
+        - REQUIRED PATH STRUCTURE:
+          search_agent → analysis_agent → response_builder
+        
+        Returns:
+            List of required agent names, or empty list if not found.
+        """
+        try:
+            # Pattern 1: REQUIRED_AGENTS: [agent1, agent2, ...]
+            pattern = r'REQUIRED_AGENTS?\s*[:=]\s*\[([^\]]+)\]'
+            match = re.search(pattern, question, re.IGNORECASE)
+            
+            if match:
+                agents_str = match.group(1)
+                # Parse comma-separated agents, stripping quotes and whitespace
+                agents = [
+                    agent.strip().strip('"\'') 
+                    for agent in agents_str.split(',')
+                ]
+                return [a for a in agents if a]  # Filter empty strings
+            
+            # Pattern 2: REQUIRED PATH STRUCTURE:\n agent1 → agent2 → agent3
+            # Also handles: agent1 -> agent2 -> agent3
+            path_pattern = r'REQUIRED\s+PATH\s+STRUCTURE\s*:\s*\n?\s*([^\n]+)'
+            path_match = re.search(path_pattern, question, re.IGNORECASE)
+            
+            if path_match:
+                path_str = path_match.group(1).strip()
+                # Split by → or -> 
+                agents = re.split(r'\s*(?:→|->)\s*', path_str)
+                agents = [a.strip() for a in agents if a.strip()]
+                if agents:
+                    logger.debug(f"Extracted required agents from path structure: {agents}")
+                    return agents
+            
+            return []
+        except Exception as e:
+            logger.debug(f"Failed to extract required agents: {e}")
+            return []
 
     def _handle_budget_exceeded(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Handle case where all candidates exceed budget."""

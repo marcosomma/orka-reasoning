@@ -18,19 +18,20 @@ agents:
   - id: quality_loop
     type: loop
     max_loops: 3
-    score_threshold: 0.50
-    fallback_score: 0.20
-    timeout_score: 0.10
+    score_threshold: 0.40
+    fallback_score: 0.25
+    timeout_score: 0.15
     persist_across_runs: false
     
-    # Boolean scoring configuration
+    # Boolean scoring configuration - simplified for reliable convergence
     scoring:
-      preset: moderate
+      preset: lenient
       context: loop_convergence
+      # Reduced weights focused on improvement over absolute quality
       custom_weights:
-        improvement.better_than_previous: 0.35
-        stability.consistent_direction: 0.25
-        convergence.within_tolerance: 0.40
+        improvement.better_than_previous: 0.50
+        convergence.within_tolerance: 0.30
+        stability.consistent_direction: 0.20
     
     # Robust score extraction with multiple fallback patterns
     score_extraction_config:
@@ -69,34 +70,48 @@ agents:
           model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
-          temperature: 0.6
+          temperature: 0.5
           timeout: 60
           prompt: |
-            TASK: Analyze this topic comprehensively.
+            TASK: Analyze this topic with clear structure.
             TOPIC: {{ get_input() }}
             
             {% if get_loop_number() > 1 %}
-            PREVIOUS FEEDBACK: Your last attempt needed improvement. Address gaps.
+            FEEDBACK FROM LOOP {{ get_loop_number() - 1 }}:
             {% if has_past_loops() %}
             {% set last = get_past_loops()[-1] %}
-            Last Score: {{ last.score }}
-            Issues: {{ last.improvements | default('General quality') }}
+            Score: {{ last.score }} (target: 0.40)
+            Improvements needed: {{ last.improvements | default('Add more depth and structure') }}
             {% endif %}
+            
+            Focus on improving the weak areas identified above.
             {% endif %}
             
-            REQUIRED OUTPUT FORMAT:
-            KEY_INSIGHTS:
-            1. [Insight with supporting evidence]
-            2. [Insight with supporting evidence]
-            3. [Insight with supporting evidence]
+            REQUIRED FORMAT:
             
-            ANALYSIS:
-            [2-3 paragraphs of thorough analysis]
+            ## KEY INSIGHTS
+            1. [First key insight with evidence]
+            2. [Second key insight with evidence]
+            3. [Third key insight with evidence]
             
-            CONCLUSION:
+            ## ANALYSIS
+            [Thorough analysis paragraph covering the main aspects]
+            
+            ## IMPLICATIONS
+            [What this means and why it matters]
+            
+            ## CONCLUSION
             [Clear, actionable conclusion]
             
-            Be thorough but concise. Target 300-400 words.
+            Aim for 250-350 words total.
+          params:
+            structured_output:
+              enabled: true
+              mode: prompt
+              schema:
+                required: [response]
+                optional:
+                  confidence: number
         
         # Evaluate using loop_validator node
         - id: boolean_evaluator
@@ -104,7 +119,7 @@ agents:
           llm_model: openai/gpt-oss-20b
           model_url: http://localhost:1234
           provider: lm_studio
-          scoring_preset: moderate
+          scoring_preset: lenient
           scoring_context: quality
           evaluation_target: analyzer
           temperature: 0.1

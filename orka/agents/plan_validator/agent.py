@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Plan Validator Agent
@@ -21,6 +21,7 @@ import json
 import logging
 import re
 from typing import Any, Dict, List, Optional, cast
+from orka.utils.structured_output import StructuredOutputConfig
 
 from orka.scoring import BooleanScoreCalculator
 
@@ -59,6 +60,7 @@ class PlanValidatorAgent(BaseAgent):
         temperature: float = 0.2,
         scoring_preset: str = "moderate",
         custom_weights: Optional[Dict[str, float]] = None,
+        structured_output: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ):
         super().__init__(agent_id, **kwargs)
@@ -86,6 +88,17 @@ class PlanValidatorAgent(BaseAgent):
         self.temperature = temperature
         self.scoring_preset = scoring_preset
         self.custom_weights = custom_weights
+
+        # Initialize structured output config (prompt mode for local LLMs)
+        try:
+            so_params = {"structured_output": structured_output} if structured_output else {"structured_output": {"enabled": True, "mode": "prompt"}}
+            self.structured_config = StructuredOutputConfig.from_params(
+                agent_params=so_params,
+                agent_type="plan-validator",
+            )
+        except Exception:
+            # Fallback to disabled structured output if config invalid
+            self.structured_config = StructuredOutputConfig()
 
         self.score_calculator = BooleanScoreCalculator(
             preset=scoring_preset,
@@ -125,6 +138,12 @@ class PlanValidatorAgent(BaseAgent):
         logger.debug(f"Query: {original_query[:100]}...")
 
         # Build validation prompt requesting boolean evaluations
+        resolved_mode = None
+        try:
+            resolved_mode = self.structured_config.resolve_mode(self.llm_provider, self.llm_model)
+        except Exception:
+            resolved_mode = None
+
         validation_prompt = prompt_builder.build_validation_prompt(
             query=original_query,
             proposed_path=proposed_path,
@@ -132,6 +151,7 @@ class PlanValidatorAgent(BaseAgent):
             loop_number=loop_number,
             preset_name=self.scoring_preset,
             scoring_context=ctx.get("scoring_context") if isinstance(ctx, dict) else None,
+            skip_json_instructions=(resolved_mode is not None and resolved_mode != "prompt"),
         )
 
         # Call LLM for boolean evaluation
@@ -142,6 +162,7 @@ class PlanValidatorAgent(BaseAgent):
                 url=self.llm_url,
                 provider=self.llm_provider,
                 temperature=self.temperature,
+                structured_config=self.structured_config,
             )
         except RuntimeError as e:
             logger.error(f"LLM call failed: {e}")

@@ -47,16 +47,19 @@ agents:
   - id: routing_validation_loop
     type: loop
     max_loops: 4
-    score_threshold: 0.30  # Lowered from 0.85 to match actual gpt-oss:20b validation performance
+    score_threshold: 0.35
     persist_across_runs: true
+    fallback_score: 0.15
+    timeout_score: 0.10
     
-    # Boolean scoring for deterministic validation
+    # Boolean scoring - simplified for consistent local LLM evaluation
     scoring:
-      preset: moderate
+      preset: lenient
+      context: loop_convergence
       custom_weights:
-        completeness.has_all_required_steps: 0.20
-        efficiency.uses_appropriate_agents: 0.15
-        coherence.logical_agent_sequence: 0.05
+        improvement.better_than_previous: 0.45
+        convergence.within_tolerance: 0.35
+        stability.consistent_direction: 0.20
     
     past_loops_metadata:
       loop_number: "{{ get_loop_number() }}"
@@ -100,6 +103,14 @@ agents:
             4. Expected output format
             
             Return JSON with classification.
+          params:
+            structured_output:
+              enabled: true
+              mode: prompt
+              schema:
+                required: [response]
+                optional:
+                  confidence: number
         
         # GraphScout selects optimal execution path
         - id: graphscout_router
@@ -194,11 +205,14 @@ agents:
           model_url: http://localhost:1234
           provider: lm_studio
           temperature: 0.2
-          scoring_preset: moderate
+          timeout: 60
+          scoring_preset: lenient
+          scoring_context: graphscout
+          # Simplified criteria for reliable evaluation
           custom_weights:
-            completeness.has_all_required_steps: 0.20
-            efficiency.uses_appropriate_agents: 0.15
-            coherence.logical_agent_sequence: 0.05
+            completeness.has_all_required_steps: 0.50
+            efficiency.uses_appropriate_agents: 0.30
+            coherence.logical_agent_sequence: 0.20
 
   # Generate execution report
   - id: execution_report
@@ -296,6 +310,14 @@ agents:
       {% else %}
       No validation loop results available.
       {% endif %}
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   # PathExecutor: Execute the validated path from the routing loop
   - id: path_executor
@@ -352,6 +374,14 @@ agents:
       2. Business perspective
       3. Risk perspective
       4. Innovation perspective
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   - id: technical_specialist
     type: local_llm
@@ -373,6 +403,14 @@ agents:
       - Architecture recommendations
       - Implementation approach
       - Technology stack
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   - id: business_analyst
     type: local_llm
@@ -390,6 +428,14 @@ agents:
       2. Stakeholder analysis
       3. Success criteria
       4. ROI considerations
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   - id: memory_writer
     type: memory
@@ -416,6 +462,14 @@ agents:
       {{ previous_outputs }}
       
       Create coherent, well-structured response.
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   - id: report_generator
     type: local_llm
@@ -431,6 +485,14 @@ agents:
       Data: {{ previous_outputs }}
       
       Format as professional report with sections.
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   - id: fact_checker
     type: local_llm
@@ -444,6 +506,14 @@ agents:
       {{ previous_outputs }}
       
       Verify accuracy and identify any issues.
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   - id: quality_reviewer
     type: local_llm
@@ -457,6 +527,14 @@ agents:
       {{ previous_outputs }}
       
       Check completeness, accuracy, and coherence.
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
 # ============================================================================
 # How This Works

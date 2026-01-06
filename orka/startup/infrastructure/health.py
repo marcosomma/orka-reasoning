@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Health Checking
@@ -67,10 +67,10 @@ def display_service_endpoints(backend: str) -> None:
     Args:
         backend: The backend type ('redis' or 'redisstack')
     """
-    logger.info(f"🚀 Starting OrKa with {backend.upper()} backend...")
+    logger.info(f"[START] Starting OrKa with {backend.upper()} backend...")
     logger.info("=============================================")
 
-    logger.info("📍 Service Endpoints:")
+    logger.info("[LOC] Service Endpoints:")
     logger.info("   • Orka API: http://localhost:8000")
     logger.info("   • Redis:    localhost:6380 (native)")
 
@@ -80,8 +80,8 @@ def display_service_endpoints(backend: str) -> None:
 def display_startup_success() -> None:
     """Display successful startup message."""
     logger.info("")
-    logger.info("✅ All services started successfully!")
-    logger.info("📝 Press Ctrl+C to stop all services")
+    logger.info("[OK] All services started successfully!")
+    logger.info("[NOTE] Press Ctrl+C to stop all services")
     logger.info("")
 
 
@@ -92,12 +92,12 @@ def display_final_banner() -> None:
 
 def display_shutdown_message() -> None:
     """Display graceful shutdown message."""
-    logger.info("\n🛑 Shutting down services...")
+    logger.info("\n[STOP] Shutting down services...")
 
 
 def display_shutdown_complete() -> None:
     """Display shutdown complete message."""
-    logger.info("✅ All services stopped.")
+    logger.info("[OK] All services stopped.")
 
 
 def display_error(error: Exception) -> None:

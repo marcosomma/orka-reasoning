@@ -710,6 +710,44 @@ orchestrator:
     - id: "task_processor"
       type: "openai-answer"
       prompt: "How should I perform this task: {{ input }}"
+
+## Structured Output
+
+Agents can opt-in to provider-enforced structured outputs using `params.structured_output`.
+
+Example:
+
+```yaml
+agents:
+  - id: answer
+    type: openai-answer
+    prompt: "Answer: {{ input }}"
+    params:
+      model: gpt-4o
+      structured_output:
+        enabled: true
+        mode: auto  # model_json | tool_call | prompt
+```
+
+For `tool_call`, provide a JSON Schema under `schema`.
+Local models (ollama, lm_studio) use `prompt` mode.
+
+Orchestrator-level defaults:
+
+You can set workflow-wide defaults inherited by all agents (overridable per agent):
+
+```yaml
+orchestrator:
+  id: my_workflow
+  strategy: sequential
+  agents: [answer]
+  structured_output_defaults:
+    enabled: true
+    mode: auto
+    coerce_types: true
+    strict: false
+```
+These defaults are injected into each agent's context as `structured_output_defaults`.
 ```
 ---
 ← [Visual Architecture](VISUAL_ARCHITECTURE_GUIDE.md) | [📚 INDEX](index.md) | [Template Filters](TEMPLATE_FILTERS.md) →

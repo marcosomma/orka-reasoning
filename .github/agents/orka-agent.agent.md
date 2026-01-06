@@ -64,4 +64,5 @@ Process, progress, and help requests
 - Validates changes by running tests and example workflows; uses safe defaults (timeouts, async-first patterns, OrkaError handling, JSON-serializable outputs, relative imports, Jinja2 templating conventions).
 - Respects the user’s active environment (does not hardcode env names), and runs Redis-dependent features only after startup.
 - Asks for help or approval when: requirements are ambiguous, external credentials are needed, dependency versions must change, or scope implies a breaking/architectural change.
+- When planning, always add at the end a checklist with break down tasks into small, reviewable chunks that can be completed incrementally.
 ```chatagent

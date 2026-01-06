@@ -1,3 +1,14 @@
+# OrKa: Orchestrator Kit Agents
+# by Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+
 """
 Validation and Structuring Agent
 ==============================
@@ -197,7 +208,7 @@ class ValidationAndStructuringAgent(BaseAgent):
 
         store_structure = self.params.get("store_structure")
 
-        # ✅ FIX: Check for pre-rendered prompt from execution engine first
+        # [OK] FIX: Check for pre-rendered prompt from execution engine first
         if isinstance(ctx, dict) and "formatted_prompt" in ctx and ctx["formatted_prompt"]:
             prompt = ctx["formatted_prompt"]
             logger.debug(f"Using pre-rendered prompt from execution engine (length: {len(prompt)})")
@@ -249,7 +260,7 @@ class ValidationAndStructuringAgent(BaseAgent):
         # We'll handle JSON parsing manually since we expect a different schema
         llm_input = {"prompt": prompt, "parse_json": False}
 
-        # ✅ FIX: Pass the rendered prompt to the inner LLM agent
+        # [OK] FIX: Pass the rendered prompt to the inner LLM agent
         if isinstance(ctx, dict) and "formatted_prompt" in ctx and ctx["formatted_prompt"]:
             llm_input["formatted_prompt"] = ctx["formatted_prompt"]
         else:

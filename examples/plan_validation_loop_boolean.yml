@@ -108,6 +108,14 @@ agents:
             {% endif %}
             
             Target 300-400 words. Be specific.
+          params:
+            structured_output:
+              enabled: true
+              mode: prompt
+              schema:
+                required: [response]
+                optional:
+                  confidence: number
         
         # Validate with boolean scoring
         - id: path_validator_strict
@@ -189,3 +197,11 @@ agents:
       
       RECOMMENDATION:
       [Ready for production? What's needed?]
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number

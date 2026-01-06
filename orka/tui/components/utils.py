@@ -1,7 +1,13 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """TUI Utility Functions - Common helpers for UI components."""
 
@@ -39,16 +45,16 @@ def parse_timestamp(raw_timestamp: Any) -> str:
 def format_ttl_display(ttl: str, has_rich: bool = True) -> str:
     """Format TTL with color coding for Rich display."""
     if ttl == "0s" or "Expired" in ttl:
-        return f"[red]💀 {ttl}[/red]" if has_rich else f"💀 {ttl}"
+        return f"[red][DEAD] {ttl}[/red]" if has_rich else f"[DEAD] {ttl}"
     elif "Never" in ttl:
-        return f"[green]♾️ {ttl}[/green]" if has_rich else f"♾️ {ttl}"
+        return f"[green][INF]️ {ttl}[/green]" if has_rich else f"[INF]️ {ttl}"
     elif any(unit in ttl for unit in ["s", "m", "h"]):
         if "h" in ttl:
             return f"[green]⏰ {ttl}[/green]" if has_rich else f"⏰ {ttl}"
         elif "m" in ttl:
             return f"[yellow]⏰ {ttl}[/yellow]" if has_rich else f"⏰ {ttl}"
         else:  # seconds
-            return f"[red]⚠️ {ttl}[/red]" if has_rich else f"⚠️ {ttl}"
+            return f"[red][WARN]️ {ttl}[/red]" if has_rich else f"[WARN]️ {ttl}"
     return ttl
 
 

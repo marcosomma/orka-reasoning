@@ -1,0 +1,20 @@
+orchestrator:
+  id: structured_output_defaults_demo
+  strategy: sequential
+  agents:
+    - summarize_inherited
+  structured_output_defaults:
+    enabled: true
+    mode: prompt
+    coerce_types: true
+    strict: false
+
+agents:
+  - id: summarize_inherited
+    type: local_llm
+    prompt: "Summarize: {{ input }}"
+    params:
+      provider: lm_studio
+      model: any-local-chat-model
+      model_url: http://localhost:1234
+      # No agent-level structured_output: inherits from orchestrator.defaults

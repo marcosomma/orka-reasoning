@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Redis Memory Logger Implementation
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 class RedisMemoryLogger(BaseMemoryLogger):
     """
-    🚀 **High-performance memory engine** - Redis-powered storage with intelligent decay.
+    [START] **High-performance memory engine** - Redis-powered storage with intelligent decay.
 
     **What makes Redis memory special:**
     - **Lightning Speed**: Sub-millisecond memory retrieval with 10,000+ writes/second
@@ -59,15 +59,15 @@ class RedisMemoryLogger(BaseMemoryLogger):
     ```python
     # Conversation memories
     namespace: "user_conversations"
-    # → Stored in: orka:memory:user_conversations:session_id
+    # -> Stored in: orka:memory:user_conversations:session_id
 
     # Knowledge base
     namespace: "verified_facts"
-    # → Stored in: orka:memory:verified_facts:default
+    # -> Stored in: orka:memory:verified_facts:default
 
     # Error tracking
     namespace: "system_errors"
-    # → Stored in: orka:memory:system_errors:default
+    # -> Stored in: orka:memory:system_errors:default
     ```
 
     **3. Memory Lifecycle:**

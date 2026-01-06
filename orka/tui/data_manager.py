@@ -1,3 +1,14 @@
+# OrKa: Orchestrator Kit Agents
+# by Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+
 """
 Data management for TUI interface - statistics, caching, and data fetching.
 """
@@ -41,11 +52,11 @@ class MemoryStats:
     def get_trend(self, key: str, window: int = 10) -> str:
         """Get trend direction for a metric."""
         if len(self.history) < 2:
-            return "→"
+            return "->"
 
         recent = list(self.history)[-window:]
         if len(recent) < 2:
-            return "→"
+            return "->"
 
         try:
             values = []
@@ -58,16 +69,16 @@ class MemoryStats:
                         values.append(float(val))
 
             if len(values) < 2:
-                return "→"
+                return "->"
 
             if values[-1] > values[0]:
-                return "↗"
+                return "^"
             elif values[-1] < values[0]:
-                return "↘"
+                return "v"
             else:
-                return "→"
+                return "->"
         except (ValueError, TypeError):
-            return "→"
+            return "->"
 
     def get_rate(self, key: str, window: int = 5) -> float:
         """Get rate of change for a metric (per second)."""
@@ -150,7 +161,7 @@ class DataManager:
             stats = self.memory_logger.get_memory_stats()
             self.stats.update(cast(StatsDict, stats))
 
-            # 🎯 FIX: Collect memories with deduplication by key
+            # [TARGET] FIX: Collect memories with deduplication by key
             memory_dict: Dict[str, MemoryEntry] = {}  # Use dict to deduplicate by key
 
             # Get stored memories
@@ -179,7 +190,7 @@ class DataManager:
                     orchestration_logs = self.memory_logger.search_memories(
                         query=" ",
                         num_results=20,
-                        log_type="log",  # 🎯 FIX: Use "log" instead of "orchestration"
+                        log_type="log",  # [TARGET] FIX: Use "log" instead of "orchestration"
                     )
                     if orchestration_logs:
                         for memory in orchestration_logs:
@@ -236,7 +247,7 @@ class DataManager:
         # First check direct memory_type field
         memory_type = memory.get("memory_type")
         if memory_type:
-            # 🎯 FIX: Handle bytes values from Redis
+            # [TARGET] FIX: Handle bytes values from Redis
             if isinstance(memory_type, bytes):
                 memory_type = memory_type.decode("utf-8", errors="ignore")
             if memory_type in ["short_term", "long_term"]:
@@ -246,7 +257,7 @@ class DataManager:
         metadata = memory.get("metadata", {})
         memory_type = metadata.get("memory_type")
         if memory_type:
-            # 🎯 FIX: Handle bytes values from Redis
+            # [TARGET] FIX: Handle bytes values from Redis
             if isinstance(memory_type, bytes):
                 memory_type = memory_type.decode("utf-8", errors="ignore")
             if memory_type in ["short_term", "long_term"]:
@@ -257,7 +268,7 @@ class DataManager:
 
     def get_filtered_memories(self, memory_type: str = "all") -> list[dict[str, Any]]:
         if memory_type == "short":
-            # 🎯 FIX: Use actual memory_type field instead of TTL
+            # [TARGET] FIX: Use actual memory_type field instead of TTL
             return [
                 m
                 for m in self.memory_data
@@ -265,7 +276,7 @@ class DataManager:
             ]
 
         elif memory_type == "long":
-            # 🎯 FIX: Use actual memory_type field instead of TTL
+            # [TARGET] FIX: Use actual memory_type field instead of TTL
             return [
                 m
                 for m in self.memory_data
@@ -278,7 +289,7 @@ class DataManager:
                 m
                 for m in self.memory_data
                 if self._get_log_type(m)
-                in ["log", "system"]  # 🎯 FIX: Use "log" instead of "orchestration"
+                in ["log", "system"]  # [TARGET] FIX: Use "log" instead of "orchestration"
             ]
         else:
             return self.memory_data
@@ -380,7 +391,7 @@ class DataManager:
 
         return distribution
 
-    # 🎯 NEW: Unified Data Calculation System
+    # [TARGET] NEW: Unified Data Calculation System
     def get_unified_stats(self) -> Dict[str, Any]:
         """
         Get unified, comprehensive statistics for all TUI components.
@@ -400,7 +411,7 @@ class DataManager:
             latest_perf = dict(latest)
             search_time = self._safe_float(latest.get("average_search_time", 0))
 
-        # 🎯 UNIFIED: Calculate all core metrics consistently
+        # [TARGET] UNIFIED: Calculate all core metrics consistently
         unified_stats: Dict[str, Any] = {
             # === CORE COUNTS ===
             "total_entries": distribution["total_entries"],
@@ -460,23 +471,23 @@ class DataManager:
     def _calculate_overall_health(self) -> Dict[str, str]:
         """Calculate overall system health status."""
         if not self.memory_logger:
-            return {"status": "critical", "icon": "🔴", "message": "No Connection"}
+            return {"status": "critical", "icon": "[R]", "message": "No Connection"}
 
         stats = self.stats.current
         total = self._safe_float(stats.get("total_entries", 0))
         expired = self._safe_float(stats.get("expired_entries", 0))
 
         if total == 0:
-            return {"status": "warning", "icon": "🟡", "message": "No Data"}
+            return {"status": "warning", "icon": "[Y]", "message": "No Data"}
 
         expired_ratio = expired / total if total > 0 else 0
 
         if expired_ratio < 0.1:
-            return {"status": "healthy", "icon": "🟢", "message": "Healthy"}
+            return {"status": "healthy", "icon": "[G]", "message": "Healthy"}
         elif expired_ratio < 0.3:
-            return {"status": "degraded", "icon": "🟡", "message": "Degraded"}
+            return {"status": "degraded", "icon": "[Y]", "message": "Degraded"}
         else:
-            return {"status": "critical", "icon": "🔴", "message": "Critical"}
+            return {"status": "critical", "icon": "[R]", "message": "Critical"}
 
     def _calculate_memory_health(self) -> Dict[str, str]:
         """Calculate memory system health."""
@@ -486,22 +497,22 @@ class DataManager:
         expired = self._safe_float(stats.get("expired_entries", 0))
 
         if total == 0:
-            return {"status": "warning", "icon": "🟡", "message": "No Data"}
+            return {"status": "warning", "icon": "[Y]", "message": "No Data"}
 
         expired_ratio = expired / total if total > 0 else 0
         active_ratio = active / total if total > 0 else 0
 
         if expired_ratio < 0.1 and active_ratio > 0.8:
-            return {"status": "healthy", "icon": "🟢", "message": "Healthy"}
+            return {"status": "healthy", "icon": "[G]", "message": "Healthy"}
         elif expired_ratio < 0.3:
-            return {"status": "degraded", "icon": "🟡", "message": "Degraded"}
+            return {"status": "degraded", "icon": "[Y]", "message": "Degraded"}
         else:
-            return {"status": "critical", "icon": "🔴", "message": "Critical"}
+            return {"status": "critical", "icon": "[R]", "message": "Critical"}
 
     def _calculate_backend_health(self) -> dict[str, Any]:
         """Calculate backend connection health."""
         if not self.memory_logger:
-            return {"status": "critical", "icon": "🔴", "message": "Disconnected"}
+            return {"status": "critical", "icon": "[R]", "message": "Disconnected"}
 
         try:
             # Get the Redis client - use 'client' property which handles lazy initialization
@@ -515,39 +526,39 @@ class DataManager:
                 redis_client = self.memory_logger.redis_client
             
             if redis_client is None:
-                return {"status": "warning", "icon": "🟡", "message": "No Client"}
+                return {"status": "warning", "icon": "[Y]", "message": "No Client"}
             
             # Test actual connectivity with ping
             try:
                 ping_result = redis_client.ping()
                 if ping_result:
-                    return {"status": "healthy", "icon": "🟢", "message": "Connected"}
+                    return {"status": "healthy", "icon": "[G]", "message": "Connected"}
                 else:
-                    return {"status": "warning", "icon": "🟡", "message": "Limited"}
+                    return {"status": "warning", "icon": "[Y]", "message": "Limited"}
             except Exception:
-                return {"status": "warning", "icon": "🟡", "message": "Limited"}
+                return {"status": "warning", "icon": "[Y]", "message": "Limited"}
                 
         except Exception:
-            return {"status": "critical", "icon": "🔴", "message": "Error"}
+            return {"status": "critical", "icon": "[R]", "message": "Error"}
 
     def _calculate_performance_health(self) -> Dict[str, str]:
         """Calculate performance health."""
         if not self.performance_history:
-            return {"status": "unknown", "icon": "❓", "message": "No Data"}
+            return {"status": "unknown", "icon": "[?]", "message": "No Data"}
 
         latest = self.performance_history[-1]
         search_time = self._safe_float(latest.get("average_search_time", 0))
 
         if search_time < 0.1:
-            return {"status": "excellent", "icon": "⚡", "message": "Fast"}
+            return {"status": "excellent", "icon": "[FAST]", "message": "Fast"}
         elif search_time < 0.5:
-            return {"status": "good", "icon": "✅", "message": "Good"}
+            return {"status": "good", "icon": "[OK]", "message": "Good"}
         elif search_time < 1.0:
-            return {"status": "moderate", "icon": "⚠️", "message": "Moderate"}
+            return {"status": "moderate", "icon": "[WARN]️", "message": "Moderate"}
         else:
-            return {"status": "slow", "icon": "🐌", "message": "Slow"}
+            return {"status": "slow", "icon": "[SLOW]", "message": "Slow"}
 
-    # 🎯 UNIFIED: Centralized data extraction methods (handle bytes consistently)
+    # [TARGET] UNIFIED: Centralized data extraction methods (handle bytes consistently)
     def _safe_decode(self, value: Any) -> str:
         """Safely decode bytes values to strings."""
         if isinstance(value, bytes):

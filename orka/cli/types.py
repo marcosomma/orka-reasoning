@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 CLI Type Definitions
@@ -22,7 +22,7 @@ from typing import Any, Dict, Optional, TypedDict
 
 class EventPayload(TypedDict):
     """
-    📊 **Event payload structure** - standardized data format for orchestration events.
+    [STATS] **Event payload structure** - standardized data format for orchestration events.
 
     **Purpose**: Provides consistent structure for all events flowing through OrKa workflows,
     enabling reliable monitoring, debugging, and analytics across complex AI systems.
@@ -40,7 +40,7 @@ class EventPayload(TypedDict):
 
 class Event(TypedDict):
     """
-    🎯 **Complete event record** - comprehensive tracking of orchestration activities.
+    [TARGET] **Complete event record** - comprehensive tracking of orchestration activities.
 
     **Purpose**: Captures complete context for every action in your AI workflow,
     providing full traceability and enabling sophisticated monitoring and debugging.

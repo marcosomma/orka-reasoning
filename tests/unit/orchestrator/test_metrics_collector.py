@@ -124,3 +124,62 @@ def test_generate_meta_report_null_cost_respects_policy(monkeypatch):
         report = collector._generate_meta_report(logs)
         assert report["total_llm_calls"] == 1
         assert report["total_cost_usd"] == 0.0
+
+
+def test_generate_meta_report_extracts_graphscout_decision_trace_metrics():
+    """Test that GraphScout decision_trace candidate metrics are extracted."""
+    collector = MetricsCollector()
+    collector.run_id = "run-gs"
+
+    # GraphScout trace structure with nested candidate metrics
+    logs = [
+        {
+            "agent_id": "graph_scout",
+            "duration": 0.5,
+            "payload": {
+                "result": {
+                    "decision_trace": {
+                        "candidates": [
+                            {
+                                "node_id": "path_a",
+                                "score": 0.85,
+                                "evaluation_result": {
+                                    "_metrics": {
+                                        "model": "local-eval",
+                                        "tokens": 50,
+                                        "prompt_tokens": 30,
+                                        "completion_tokens": 20,
+                                        "latency_ms": 100,
+                                        "cost_usd": 0.0,
+                                    }
+                                },
+                            },
+                            {
+                                "node_id": "path_b",
+                                "score": 0.7,
+                                "evaluation_result": {
+                                    "_metrics": {
+                                        "model": "local-eval",
+                                        "tokens": 40,
+                                        "prompt_tokens": 25,
+                                        "completion_tokens": 15,
+                                        "latency_ms": 80,
+                                        "cost_usd": 0.0,
+                                    }
+                                },
+                            },
+                        ]
+                    }
+                }
+            },
+        }
+    ]
+
+    with patch.object(collector, "_get_runtime_environment", return_value={}):
+        report = collector._generate_meta_report(logs)
+
+    # Should aggregate both candidate metrics
+    assert report["total_llm_calls"] == 2
+    assert report["total_tokens"] == 90  # 50 + 40
+    assert report["agent_breakdown"]["graph_scout"]["calls"] == 2
+    assert report["agent_breakdown"]["graph_scout"]["tokens"] == 90

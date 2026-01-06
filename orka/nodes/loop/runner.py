@@ -1,3 +1,14 @@
+# OrKa: Orchestrator Kit Agents
+# by Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+
 from __future__ import annotations
 
 import logging
@@ -91,7 +102,7 @@ async def run_loop(
         # Add to our local past_loops array
         past_loops.append(past_loop_obj)
 
-        # 🐛 Fix: Limit past_loops size to prevent unbounded growth
+        # [DEBUG] Fix: Limit past_loops size to prevent unbounded growth
         MAX_PAST_LOOPS_PER_RUN = 20
         if len(past_loops) > MAX_PAST_LOOPS_PER_RUN:
             past_loops = past_loops[-MAX_PAST_LOOPS_PER_RUN:]

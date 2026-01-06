@@ -65,12 +65,12 @@ class TestFormatTtlDisplay:
 
     def test_expired(self):
         result = format_ttl_display("0s")
-        assert "💀" in result
+        assert "[DEAD]" in result
         assert "[red]" in result
 
     def test_never_expires(self):
         result = format_ttl_display("Never")
-        assert "♾️" in result
+        assert "[INF]️" in result
         assert "[green]" in result
 
     def test_hours(self):
@@ -85,7 +85,7 @@ class TestFormatTtlDisplay:
 
     def test_seconds(self):
         result = format_ttl_display("45s")
-        assert "⚠️" in result
+        assert "[WARN]️" in result
         assert "[red]" in result
 
     def test_no_rich(self):

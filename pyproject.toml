@@ -29,6 +29,8 @@ dependencies = [
   "python-dotenv>=0.19.0",
   "GPUtil>=1.4.0",
   "psutil>=7.0.0",
+  # CLI runtime dependency required by litellm/uvicorn toolchain
+  "click>=8.1.8,<9.0.0",
   
   # AI and LLM
   "openai>=1.0.0",
@@ -213,7 +215,7 @@ exclude_lines = [
 fail_under = 70
 
 [tool.black]
-line-length = 100
+line-length = 120
 target-version = ["py311"]
 include = '\.pyi?$'
 extend-exclude = '''
@@ -226,7 +228,7 @@ extend-exclude = '''
 typeCheckingMode = "off"
 
 [tool.flake8]
-max-line-length = 100
+max-line-length = 120
 extend-ignore = ["E203", "W503"]
 exclude = [
     ".git",

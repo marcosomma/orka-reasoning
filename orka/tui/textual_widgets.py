@@ -1,3 +1,14 @@
+# OrKa: Orchestrator Kit Agents
+# by Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+
 """
 Custom Textual widgets for OrKa memory monitoring.
 """
@@ -33,7 +44,7 @@ class StatsWidget(Static):
 
     def _format_stats(self, stats: Dict[str, Any]) -> str:
         """Format statistics for display using unified stats system."""
-        # 🎯 USE UNIFIED: Get all stats from centralized calculation
+        # [TARGET] USE UNIFIED: Get all stats from centralized calculation
         unified = self.data_manager.get_unified_stats()
 
         # Extract key metrics from unified stats
@@ -44,7 +55,7 @@ class StatsWidget(Static):
         health = unified["health"]
         trends = unified["trends"]
 
-        return f"""[bold]📊 Memory Statistics[/bold]
+        return f"""[bold][STATS] Memory Statistics[/bold]
 
 [metric-label]Total Entries:[/metric-label] [metric-value]{total_entries:,}[/metric-value] {trends["total_entries"]}
 [metric-label]Short-term Memory:[/metric-label] [metric-value]{stored_memories["short_term"]:,}[/metric-value] 
@@ -80,9 +91,9 @@ class MemoryTableWidget(DataTable):
         self.cursor_type = "row"
         self.zebra_stripes = True
 
-        # 🎯 IMPROVED: Add checkbox column + reorganized columns
+        # [TARGET] IMPROVED: Add checkbox column + reorganized columns
         self.add_columns(
-            "☐",  # Checkbox for selection
+            "[ ]",  # Checkbox for selection
             "Time",  # When was it created
             "TTL",  # How long until expiry
             "Memory Key",  # Full access to memory key
@@ -163,7 +174,7 @@ class MemoryTableWidget(DataTable):
 
             if stored_memories["total"] == 0:
                 self.add_row(
-                    "☐",
+                    "[ ]",
                     "[dim]--[/dim]",
                     "[dim]--[/dim]",
                     "[dim]No stored memories found[/dim]",
@@ -177,7 +188,7 @@ class MemoryTableWidget(DataTable):
 
                 if memory_type == "short" and short_count == 0:
                     self.add_row(
-                        "☐",
+                        "[ ]",
                         "[dim]--[/dim]",
                         "[dim]--[/dim]",
                         "[dim]No short-term memories[/dim]",
@@ -187,7 +198,7 @@ class MemoryTableWidget(DataTable):
                     )
                 elif memory_type == "long" and long_count == 0:
                     self.add_row(
-                        "☐",
+                        "[ ]",
                         "[dim]--[/dim]",
                         "[dim]--[/dim]",
                         "[dim]No long-term memories[/dim]",
@@ -220,10 +231,10 @@ class MemoryTableWidget(DataTable):
 
             # Checkbox - check if this memory is selected
             if self.selected_memory_key == memory_key:
-                checkbox = "✓"  # Simple checkmark without markup
+                checkbox = "Y"  # Simple checkmark without markup
                 selected_row_found = True
             else:
-                checkbox = "☐"
+                checkbox = "[ ]"
 
             self.add_row(
                 checkbox,
@@ -269,23 +280,23 @@ class MemoryTableWidget(DataTable):
     def _format_enhanced_ttl(self, ttl_formatted: Any) -> str:
         """Enhanced TTL formatting with urgency indicators."""
         if ttl_formatted == "Never" or ttl_formatted == "∞" or not ttl_formatted:
-            return "[blue]♾️ Never[/blue]"
+            return "[blue][INF]️ Never[/blue]"
 
         # Parse TTL for urgency classification
         ttl_str = str(ttl_formatted).lower()
 
         if "s" in ttl_str and "m" not in ttl_str and "h" not in ttl_str:
             # Seconds only - critical urgency
-            return f"[red]🚨 {ttl_formatted}[/red]"
+            return f"[red][ERROR] {ttl_formatted}[/red]"
         elif "m" in ttl_str and "h" not in ttl_str:
             # Minutes only - high urgency
-            return f"[yellow]⚠️ {ttl_formatted}[/yellow]"
+            return f"[yellow][WARN]️ {ttl_formatted}[/yellow]"
         elif "h" in ttl_str:
             # Hours - medium urgency
             if ttl_str.startswith("1h") or ttl_str.startswith("2h"):
                 return f"[orange]⏰ {ttl_formatted}[/orange]"
             else:
-                return f"[green]🕐 {ttl_formatted}[/green]"
+                return f"[green][TIME] {ttl_formatted}[/green]"
         else:
             return f"[cyan]{ttl_formatted}[/cyan]"
 
@@ -317,13 +328,13 @@ class MemoryTableWidget(DataTable):
 
         # Format based on type
         if memory_type == "short_term":
-            icon = "⚡"
+            icon = "[FAST]"
             color = "yellow"
         elif memory_type == "long_term":
-            icon = "🧠"
+            icon = "[AI]"
             color = "green"
         else:
-            icon = "📝"
+            icon = "[NOTE]"
             color = "white"
             memory_type = memory_type or "unknown"
 
@@ -481,12 +492,12 @@ class HealthWidget(Container):
 
     def compose(self) -> Any:
         """Compose the health widget."""
-        yield Static("🏥 System Health", classes="container")
+        yield Static("[HEALTH] System Health", classes="container")
         yield self._health_content
 
     def update_health(self):
         """Update health display with unified health calculations."""
-        # 🎯 USE UNIFIED: Get all health data from centralized calculation
+        # [TARGET] USE UNIFIED: Get all health data from centralized calculation
         unified = self.data_manager.get_unified_stats()
         health = unified["health"]
         backend = unified["backend"]
@@ -514,7 +525,7 @@ class HealthWidget(Container):
 
         # Format content with unified data
         health_content = f"""
-[bold]🏥 System Health Monitor[/bold]
+[bold][HEALTH] System Health Monitor[/bold]
 
 [metric-label]Overall Status:[/metric-label] {overall_text}
 [metric-label]Memory Health:[/metric-label] {memory_text}
@@ -524,7 +535,7 @@ class HealthWidget(Container):
 [metric-label]Memory Usage:[/metric-label] [metric-value]{usage_pct:.1f}%[/metric-value]
 [metric-label]Response Time:[/metric-label] [metric-value]{performance["search_time"]:.3f}s[/metric-value]
 [metric-label]Backend Type:[/metric-label] [status-info]{backend["type"]}[/status-info]
-[metric-label]Decay Status:[/metric-label] {"✅ Active" if backend["decay_enabled"] else "❌ Inactive"}
+[metric-label]Decay Status:[/metric-label] {"[OK] Active" if backend["decay_enabled"] else "[FAIL] Inactive"}
 """
 
         self._health_content.update(health_content)
@@ -542,7 +553,7 @@ class LogsWidget(DataTable):
         """Update logs with unified filtering - show overview of recent orchestration and system logs."""
         self.clear()
 
-        # 🎯 USE UNIFIED: Get all log data from centralized calculation
+        # [TARGET] USE UNIFIED: Get all log data from centralized calculation
         unified = self.data_manager.get_unified_stats()
         log_entries = unified["log_entries"]
 
@@ -569,7 +580,7 @@ class LogsWidget(DataTable):
             "[bold]--:--:--[/bold]",
             "[bold]SUMMARY[/bold]",
             "[bold]OVERVIEW[/bold]",
-            f"[bold]📊 Total Logs: {log_entries['total']}[/bold]",
+            f"[bold][STATS] Total Logs: {log_entries['total']}[/bold]",
             f"[bold]{summary_details}[/bold]",
         )
 
@@ -582,7 +593,7 @@ class LogsWidget(DataTable):
                 "[cyan]--:--:--[/cyan]",
                 "[cyan]ORCHESTRATION[/cyan]",
                 "[cyan]HEADER[/cyan]",
-                "[cyan]📋 Recent Orchestration Activity[/cyan]",
+                "[cyan][LIST] Recent Orchestration Activity[/cyan]",
                 "[cyan]Last 8 entries[/cyan]",
             )
 
@@ -624,7 +635,7 @@ class LogsWidget(DataTable):
                 "[yellow]--:--:--[/yellow]",
                 "[yellow]SYSTEM[/yellow]",
                 "[yellow]HEADER[/yellow]",
-                "[yellow]🔧 Recent System Activity[/yellow]",
+                "[yellow][CONF] Recent System Activity[/yellow]",
                 "[yellow]Last 3 entries[/yellow]",
             )
 

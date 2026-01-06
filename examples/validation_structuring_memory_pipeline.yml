@@ -28,6 +28,14 @@ agents:
     queue: orka:memory-check
     prompt: |
       Check if the following memory data is relevant to the question and has high confidence. Question: {{ get_input() }} Memory: {{ get_agent_response('memory-reader') }} Return true if: 1) The memory contains relevant information about the question; 2) The memory has a confidence score higher than 0.89; 3) The memory is not "NONE". Return false otherwise. Answer with exactly 'true' or 'false' only.
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
   - id: router
     type: router
     params:
@@ -53,6 +61,14 @@ agents:
     prompt: Format the stored memory information about the {{ get_input() }} into a clear answer:{{ get_agent_response('memory-reader') if get_agent_response('memory-reader') else 'NONE' }}. Provide a well-structured response.
     depends_on:
       - router
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
   - id: context-collector
     type: local_llm
     model: openai/gpt-oss-20b
@@ -63,6 +79,14 @@ agents:
     prompt: Based on the question "{{ get_input() }}", collect relevant context and background information. Focus on gathering factual information that will help validate the answer. If no specific information is available, explain what type of information would be needed and suggest research directions. Do not return just "NONE" - provide a meaningful response about the information availability.
     depends_on:
       - router
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
   - id: answer-builder
     type: local_llm
     model: openai/gpt-oss-20b
@@ -73,6 +97,14 @@ agents:
     prompt: "Using the context: {{ get_agent_response('context-collector') }} Provide a detailed answer to: {{ get_input() }}. If the context indicates no information is available, explain what is known and what would need to be researched. Do not return just 'NONE'. Be comprehensive and helpful."
     depends_on:
       - context-collector
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
   - id: validation-guard
     type: validate_and_structure
     queue: orka:validation-guard
@@ -127,3 +159,11 @@ agents:
       {% endif %}
       
       Provide a thorough, accurate response to the user's question.
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number

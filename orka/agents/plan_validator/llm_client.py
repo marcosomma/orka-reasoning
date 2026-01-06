@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 LLM Client for Plan Validator
@@ -19,7 +19,8 @@ on other OrKa agent classes. Supports Ollama and OpenAI-compatible APIs.
 
 import asyncio
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+from orka.utils.structured_output import StructuredOutputConfig
 
 try:
     import requests
@@ -37,6 +38,7 @@ async def call_llm(
     url: str,
     provider: str,
     temperature: float = 0.2,
+    structured_config: Optional[StructuredOutputConfig] = None,
 ) -> str:
     """
     Make an async LLM inference call.
@@ -88,6 +90,17 @@ async def call_llm(
         raise RuntimeError(
             f"Unsupported provider '{provider}'. Supported: 'ollama', 'openai_compatible' (incl. lm_studio/lmstudio aliases)."
         )
+
+    # Inject structured output instructions only when resolved mode is 'prompt'
+    if structured_config and structured_config.enabled:
+        try:
+            mode = structured_config.resolve_mode(provider_norm, model)
+        except Exception:
+            mode = "prompt"
+        if mode == "prompt":
+            instr = structured_config.build_prompt_instructions()
+            if instr:
+                prompt = f"{prompt}\n\n{instr}"
 
     # Build request payload based on provider
     if provider_norm == "ollama":

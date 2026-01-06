@@ -1,7 +1,13 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Path Scoring System
@@ -154,6 +160,14 @@ class PathScorer:
                 f"top score: {scored_candidates[0]['score']:.3f}, "
                 f"keeping top {len(final_candidates)} (k_beam={k_beam})"
             )
+            
+            # Log final candidates for debugging
+            for i, cand in enumerate(final_candidates):
+                path = cand.get("path", [cand["node_id"]])
+                logger.info(
+                    f"[NUMERIC] Final candidate #{i+1}: {' -> '.join(path)} "
+                    f"(score={cand['score']:.3f}, depth={len(path)})"
+                )
 
             return final_candidates
 
@@ -232,9 +246,9 @@ class PathScorer:
             is_multi_hop = len(path) > 1
 
             if is_multi_hop:
-                logger.info(f"🔍 SCORING multi-hop path: {' → '.join(path)} (depth: {len(path)})")
+                logger.info(f"[...] SCORING multi-hop path: {' -> '.join(path)} (depth: {len(path)})")
             else:
-                logger.info(f"🔍 SCORING single-hop path: {path[0] if path else 'unknown'}")
+                logger.info(f"[...] SCORING single-hop path: {path[0] if path else 'unknown'}")
 
             # Normal scoring for all paths
             components["llm"] = await self._score_llm_relevance(candidate, question, context)
@@ -243,11 +257,83 @@ class PathScorer:
             components["cost"] = await self._score_cost(candidate, context)
             components["latency"] = await self._score_latency(candidate, context)
 
+            # Optional compliance component (weighted only if configured)
+            # Computes 1.0 when compliant, 0.0 when violating required agent policy
+            # Policy can be provided via context["graph_scout_policy"] or context["graph_scout"]["policy"].
+            if "compliance" in self.score_weights or self._has_compliance_policy(context):
+                components["compliance"] = self._score_compliance(candidate, context)
+
             return components
 
         except Exception as e:
             logger.error(f"Individual candidate scoring failed: {e}")
             return {"llm": 0.0, "heuristics": 0.0, "prior": 0.0, "cost": 0.0, "latency": 0.0}
+
+    def _has_compliance_policy(self, context: Dict[str, Any]) -> bool:
+        """Return True if a compliance policy is present in context."""
+        try:
+            # Check for direct required_agents in context (e.g., from question extraction)
+            if isinstance(context.get("required_agents"), list) and context.get("required_agents"):
+                return True
+            
+            policy = context.get("graph_scout_policy") or context.get("graph_scout", {}).get("policy")
+            if not isinstance(policy, dict):
+                return False
+            # Require either a boolean flag or explicit required_agents list
+            if policy.get("require_critical") is True:
+                return True
+            if isinstance(policy.get("required_agents"), list) and policy.get("required_agents"):
+                return True
+            return False
+        except Exception:
+            return False
+
+    def _score_compliance(self, candidate: Dict[str, Any], context: Dict[str, Any]) -> float:
+        """Score compliance with required agents policy.
+
+        Returns:
+            1.0 if path contains all required agents or no policy; 0.0 if non-compliant.
+        """
+        try:
+            path = candidate.get("path", [candidate.get("node_id", "")]) or []
+            # Gather policy configuration from context and config
+            policy = context.get("graph_scout_policy") or context.get("graph_scout", {}).get("policy", {})
+            if not isinstance(policy, dict):
+                policy = {}
+
+            # If config has a high-level flag, honor it (boolean scoring already uses it, but we extend here)
+            require_critical = bool(getattr(self.config, "require_critical", False) or policy.get("require_critical", False))
+            required_agents: List[str] = []
+
+            # Priority: explicit list from policy, else context fallback
+            if isinstance(policy.get("required_agents"), list):
+                required_agents = [str(x) for x in policy.get("required_agents")]
+            elif isinstance(context.get("required_agents"), list):
+                required_agents = [str(x) for x in context.get("required_agents")]
+
+            # No policy -> neutral full compliance
+            if not require_critical and not required_agents:
+                return 1.0
+
+            # If policy requires critical steps but no explicit list provided, do a conservative pass
+            # i.e., do not penalize unless we know what to check.
+            if require_critical and not required_agents:
+                return 1.0
+
+            # Check that every required agent is present in the candidate path (exact match)
+            path_set = set(path)
+            missing = [agent for agent in required_agents if agent not in path_set]
+
+            if missing:
+                logger.debug(
+                    f"Compliance violation for path {' -> '.join(path)}; missing required agents: {missing}"
+                )
+                return 0.0
+
+            return 1.0
+        except Exception as e:
+            logger.debug(f"Compliance scoring failed, defaulting to neutral: {e}")
+            return 1.0
 
     async def _score_llm_relevance(
         self, candidate: Dict[str, Any], question: str, context: Dict[str, Any]
@@ -411,6 +497,12 @@ class PathScorer:
     def _calculate_final_score(self, components: Dict[str, float]) -> float:
         """Calculate weighted final score from components."""
         try:
+            # CRITICAL: If compliance is present and 0.0, the path is non-compliant
+            # Apply as a hard filter - non-compliant paths get near-zero score
+            if "compliance" in components and components["compliance"] == 0.0:
+                logger.debug("Non-compliant path detected - applying heavy penalty")
+                return 0.01  # Near-zero score for non-compliant paths
+            
             final_score = 0.0
 
             for component, score in components.items():

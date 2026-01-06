@@ -33,6 +33,14 @@ agents:
     temperature: 0.7
     queue: orka:openai-answer_2
     prompt: Given previous context {{ get_agent_response('memory-read_0') }}, provide an initial detailed answer to {{ get_input() }}. Be comprehensive and informative.
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
   - id: fork_3
     type: fork
     targets:
@@ -48,6 +56,14 @@ agents:
     temperature: 0.1
     queue: orka:openai-binary_4
     prompt: Does the question {{ get_input() }} require factual validation? Answer with exactly 'true' or 'false' only.
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
     depends_on:
       - fork_3
   - id: openai-answer_7
@@ -58,6 +74,14 @@ agents:
     temperature: 0.5
     queue: orka:openai-answer_7
     prompt: Provide a concise summary for the question {{ get_input() }}. Be clear and to the point.
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
     depends_on:
       - fork_3
   - id: openai-classification_5
@@ -69,6 +93,14 @@ agents:
     queue: orka:openai-classification_5
     prompt: | 
       Classify the domain of the question {{ get_input() }}. Choose exactly one from: science, history, technology, geography, culture, general. Answer with only the domain name.
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
     depends_on:
       - openai-binary_4
   - id: failover_11
@@ -95,6 +127,14 @@ agents:
     temperature: 0.8
     queue: orka:openai-answer_6
     prompt: "Provide an alternative perspective or deeper insight into the question {{ get_input() }} considering domain: {{ get_agent_response('openai-classification_5') }}. Be creative and thoughtful."
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
     depends_on:
       - openai-classification_5
   - id: join_9
@@ -108,6 +148,14 @@ agents:
     temperature: 0.1
     queue: orka:openai-binary_10
     prompt: "Is the provided information coherent and complete based on outputs: {{ get_agent_response('join_9') }}? Answer with exactly 'true' or 'false' only."
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
     depends_on:
       - join_9
   - id: router_11
@@ -131,6 +179,14 @@ agents:
     temperature: 0.6
     queue: orka:openai-answer_14
     prompt: Given confirmed coherent inputs {{ get_agent_response('join_9') }}, provide a polished final response to {{ get_input() }}. Be professional and comprehensive.
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
     depends_on:
       - router_11
   - id: openai-answer_15
@@ -141,6 +197,14 @@ agents:
     temperature: 0.7
     queue: orka:openai-answer_15
     prompt: "Given identified gaps in coherence or completeness in {{ get_agent_response('join_9') }}, clarify or complete the information to fully answer {{ get_input() }}. Fill in the missing pieces."
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
     depends_on:
       - router_11
   - id: memory-write_final
@@ -192,5 +256,13 @@ agents:
       {% endif %}
       
       Synthesize all available information to provide the most accurate and helpful response to the user's question.
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
     depends_on:
       - memory-write_final

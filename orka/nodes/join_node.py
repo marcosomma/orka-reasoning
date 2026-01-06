@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,8 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
-
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 import json
 import logging
@@ -46,12 +45,12 @@ class JoinNode(BaseNode):
         """
         Run the join operation by collecting and merging results from forked agents.
         """
-        logger.info(f"🔗 JOIN NODE START: {self.node_id}")
-        logger.info(f"🔗 JOIN - Input data: {input_data}")
+        logger.info(f"[LINK] JOIN NODE START: {self.node_id}")
+        logger.info(f"[LINK] JOIN - Input data: {input_data}")
         
         # Try to get fork_group_id from input, fallback to finding by pattern
         fork_group_id = input_data.get("fork_group_id")
-        logger.info(f"🔗 JOIN - Fork group ID from input: {fork_group_id}")
+        logger.info(f"[LINK] JOIN - Fork group ID from input: {fork_group_id}")
 
         # Track whether we recovered the group using an explicit mapping
         mapping_used = False
@@ -101,7 +100,7 @@ class JoinNode(BaseNode):
         if not fork_group_id:
             fork_group_id = self.group_id
 
-        logger.info(f"🔗 JOIN - Final fork_group_id: {fork_group_id}")
+        logger.info(f"[LINK] JOIN - Final fork_group_id: {fork_group_id}")
 
         # NOTE:
         # - fork_group_results:<id> is the stable hash containing entries for all agents in the fork
@@ -118,7 +117,7 @@ class JoinNode(BaseNode):
             retry_count = int(retry_count_str) + 1
         self.memory_logger.hset("join_retry_counts", self._retry_key, str(retry_count))
 
-        logger.info(f"🔗 JOIN - Retry count: {retry_count}/{self.max_retries}")
+        logger.info(f"[LINK] JOIN - Retry count: {retry_count}/{self.max_retries}")
 
         # "Received" agents are the ones with entries in the join state hash
         inputs_received = self.memory_logger.hkeys(state_key)
@@ -249,13 +248,13 @@ class JoinNode(BaseNode):
         # Pending agents are those expected but not yet present in the join state.
         pending = [agent for agent in fork_targets if agent not in received]
 
-        logger.info(f"🔗 JOIN - Expected agents (fork_targets): {fork_targets}")
-        logger.info(f"🔗 JOIN - Received agents: {received}")
-        logger.info(f"🔗 JOIN - Pending agents: {pending}")
+        logger.info(f"[LINK] JOIN - Expected agents (fork_targets): {fork_targets}")
+        logger.info(f"[LINK] JOIN - Received agents: {received}")
+        logger.info(f"[LINK] JOIN - Pending agents: {pending}")
 
         # Check if all forked agents have completed
         if not pending:
-            logger.info(f"🔗 JOIN - All agents completed! Proceeding to merge results.")
+            logger.info(f"[LINK] JOIN - All agents completed! Proceeding to merge results.")
             self.memory_logger.hdel("join_retry_counts", self._retry_key)
             # Merge from the stable results hash if available; otherwise merge from join state.
             if group_results_key and fork_targets:
@@ -264,7 +263,7 @@ class JoinNode(BaseNode):
 
         # Check for max retries
         if retry_count >= self.max_retries:
-            logger.error(f"🔗 JOIN - TIMEOUT! Max retries reached.")
+            logger.error(f"[LINK] JOIN - TIMEOUT! Max retries reached.")
             self.memory_logger.hdel("join_retry_counts", self._retry_key)
             logger.error(
                 f"[ORKA][NODE][JOIN][TIMEOUT] Join node '{self.node_id}' timed out after {self.max_retries} retries. "
@@ -283,7 +282,7 @@ class JoinNode(BaseNode):
             }
 
         # Return waiting status if not all agents have completed
-        logger.info(f"🔗 JOIN - Still waiting for {len(pending)} agents: {pending}")
+        logger.info(f"[LINK] JOIN - Still waiting for {len(pending)} agents: {pending}")
         return {
             "status": "waiting",
             "pending": pending,
@@ -303,7 +302,7 @@ class JoinNode(BaseNode):
         Returns:
             dict: Merged results from all agents
         """
-        logger.info(f"🔗 JOIN COMPLETE - Starting merge for {len(fork_targets)} agents")
+        logger.info(f"[LINK] JOIN COMPLETE - Starting merge for {len(fork_targets)} agents")
 
         # Get all results from Redis
         merged = {}
@@ -377,9 +376,9 @@ class JoinNode(BaseNode):
             **merged,  # Expose individual agent results at top level
         }
 
-        logger.info(f"🔗 JOIN COMPLETE - Merged {len(merged)} results")
-        logger.info(f"🔗 JOIN COMPLETE - Result keys: {list(result.keys())}")
-        logger.info(f"🔗 JOIN COMPLETE - Status: {result['status']}")
+        logger.info(f"[LINK] JOIN COMPLETE - Merged {len(merged)} results")
+        logger.info(f"[LINK] JOIN COMPLETE - Result keys: {list(result.keys())}")
+        logger.info(f"[LINK] JOIN COMPLETE - Status: {result['status']}")
 
         # Store the final result in Redis
         join_key = f"join_result:{self.node_id}"
@@ -389,9 +388,9 @@ class JoinNode(BaseNode):
         try:
             stored_join = self.memory_logger.get(join_key)
             join_len = len(stored_join) if stored_join else 0
-            logger.info(f"🔗 JOIN COMPLETE - join_key='{join_key}', bytes={join_len}")
+            logger.info(f"[LINK] JOIN COMPLETE - join_key='{join_key}', bytes={join_len}")
         except Exception as e:
-            logger.warning(f"🔗 JOIN COMPLETE - could not read back join_key '{join_key}': {e}")
+            logger.warning(f"[LINK] JOIN COMPLETE - could not read back join_key '{join_key}': {e}")
 
         # Store in Redis hash for group tracking
         group_key = f"join_results:{self.node_id}"
@@ -403,11 +402,11 @@ class JoinNode(BaseNode):
             stored = self.memory_logger.hget(group_key, "result")
             stored_val = stored.decode() if isinstance(stored, bytes) else stored
             stored_len = len(stored_val) if stored_val else 0
-            logger.info(f"🔗 JOIN COMPLETE - group_key='{group_key}', result_len={stored_len}, join_key='{join_key}'")
+            logger.info(f"[LINK] JOIN COMPLETE - group_key='{group_key}', result_len={stored_len}, join_key='{join_key}'")
             sample = stored_val[:400] if stored_val else ""
-            logger.info(f"🔗 JOIN COMPLETE - sample result (truncated): {sample}")
+            logger.info(f"[LINK] JOIN COMPLETE - sample result (truncated): {sample}")
         except Exception as e:
-            logger.warning(f"🔗 JOIN COMPLETE - unable to read back stored group result: {e}")
+            logger.warning(f"[LINK] JOIN COMPLETE - unable to read back stored group result: {e}")
 
         # Also create an indexed memory entry so template helpers and FT.SEARCH can find the join result
         try:
@@ -424,8 +423,8 @@ class JoinNode(BaseNode):
                     importance_score=1.0,
                     memory_type="short_term",
                 )
-                logger.info(f"🔗 JOIN COMPLETE - logged memory key: {memory_key}")
+                logger.info(f"[LINK] JOIN COMPLETE - logged memory key: {memory_key}")
         except Exception as e:
-            logger.warning(f"🔗 JOIN COMPLETE - failed to log join memory: {e}")
+            logger.warning(f"[LINK] JOIN COMPLETE - failed to log join memory: {e}")
 
         return result

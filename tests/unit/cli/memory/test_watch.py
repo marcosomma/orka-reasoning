@@ -172,8 +172,8 @@ class TestMemoryWatchDisplay:
         assert mock_memory_logger.get_memory_stats.call_count == 2
         assert mock_memory_logger.get_recent_stored_memories.call_count == 2
         mock_logger.info.assert_any_call("=== OrKa Memory Watch ===")
-        mock_logger.info.assert_any_call("📊 Memory Statistics:")
-        mock_logger.info.assert_any_call("\n🧠 Recent Stored Memories:")
+        mock_logger.info.assert_any_call("[STATS] Memory Statistics:")
+        mock_logger.info.assert_any_call("\n[AI] Recent Stored Memories:")
         mock_logger.info.assert_any_call("   [1] node1: content 1")
         assert mock_time_sleep.call_count == 2
 
@@ -199,7 +199,7 @@ class TestMemoryWatchDisplay:
         mock_time_sleep.side_effect = [None, KeyboardInterrupt]
         result = _memory_watch_display(mock_memory_logger, "redisstack", mock_args)
         assert result == 0
-        mock_logger.error.assert_any_call("❌ Error in memory watch: Stats error, file:" + str(sys.stderr))
+        mock_logger.error.assert_any_call("[FAIL] Error in memory watch: Stats error, file:" + str(sys.stderr))
 
     def test_memory_watch_display_recent_memories_error(self, mock_logger, mock_memory_logger, mock_args, mock_time_sleep, mock_os_system):
         mock_memory_logger.get_recent_stored_memories.side_effect = Exception("Recent memories error")

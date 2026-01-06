@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Execution Engine
@@ -321,6 +321,15 @@ class ExecutionEngine(
             "input": input_data,
             "previous_outputs": previous_outputs,
         }
+
+        # Pass orchestrator-level structured output defaults to agents when configured
+        try:
+            so_defaults = self.orchestrator_cfg.get("structured_output_defaults")
+            if isinstance(so_defaults, dict) and so_defaults:
+                payload["structured_output_defaults"] = so_defaults
+        except Exception:
+            # Non-fatal: simply skip if orchestrator config not available
+            pass
 
         # Include orchestrator context from full_payload if available
         if full_payload and "orchestrator" in full_payload:

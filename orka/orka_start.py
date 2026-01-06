@@ -1,4 +1,15 @@
 #!/usr/bin/env python3
+# OrKa: Orchestrator Kit Agents
+# by Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+
 """
 OrKa Service Runner
 ====================
@@ -61,8 +72,8 @@ def cli_main():
     """
 
     backend = os.environ["ORKA_MEMORY_BACKEND"]
-    print(f"🚀 Starting OrKa with {backend.upper()} Backend...")
-    print("📋 Configuration:")
+    print(f"[START] Starting OrKa with {backend.upper()} Backend...")
+    print("[LIST] Configuration:")
     print(f"   • Memory Backend: {backend}")
     print(f"   • Redis URL: {os.environ['REDIS_URL']}")
     print(f"   • LOG_LEVEL: {os.getenv('ORKA_LOG_LEVEL', 'INFO')}\n")
@@ -70,9 +81,9 @@ def cli_main():
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\n🛑 Shutdown complete.")
+        print("\n[STOP] Shutdown complete.")
     except Exception as e:
-        print(f"\n❌ Error: {e}")
+        print(f"\n[FAIL] Error: {e}")
         sys.exit(1)
 
 

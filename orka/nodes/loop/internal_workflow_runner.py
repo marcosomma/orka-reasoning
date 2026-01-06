@@ -1,3 +1,14 @@
+# OrKa: Orchestrator Kit Agents
+# by Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+
 from __future__ import annotations
 
 import logging
@@ -100,7 +111,7 @@ async def run_internal_workflow_with_temp_yaml(
     with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
         yaml.dump(workflow_config, f)
         temp_file = f.name
-        logger.info("🔍 DEBUG: Wrote temp workflow file: %s", temp_file)
+        logger.info("[...] DEBUG: Wrote temp workflow file: %s", temp_file)
 
     try:
         # Lazy import to avoid circular import at package import time:

@@ -62,6 +62,14 @@ agents:
       Return JSON: {"H": float, "rationale": "..."}.
       
       Request: {{ get_input() }}
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   - id: vulnerability_analyzer
     type: local_llm
@@ -76,6 +84,14 @@ agents:
       
       Request: {{ get_input() }}
       Prior incidents: {{ safe_get_response('prior_incidents_reader', 'No prior incidents') }}
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   - id: reversibility_estimator
     type: local_llm
@@ -88,6 +104,14 @@ agents:
       Return JSON: {"R": float, "notes": "..."}.
       
       Request: {{ get_input() }}
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   - id: consent_checker
     type: local_llm
@@ -100,6 +124,14 @@ agents:
       Return JSON: {"C": "verified" | "unclear" | "denied", "evidence": "..."}.
       
       Request: {{ get_input() }}
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   - id: metrics_join
     type: join
@@ -130,6 +162,14 @@ agents:
       - Otherwise: output exactly "normal_path"
       
       Return ONLY one of these exact strings: "safeguard_gate", "caution_path", or "normal_path".
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   - id: maternal_policy_router
     type: router
@@ -153,6 +193,14 @@ agents:
       
       Request: {{ get_input() }}
       Policies: {{ safe_get_response('policies_rag', 'No specific policies found') }} 
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   - id: responder_block
     type: local_llm
@@ -164,6 +212,14 @@ agents:
       
       Request: {{ get_input() }}
       Metrics: {{ safe_get_response('metrics_join', '{}') }} 
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   - id: responder_caution
     type: local_llm
@@ -175,6 +231,14 @@ agents:
       
       Request: {{ get_input() }}
       Alternative: {{ safe_get_response('safe_alternative_builder', 'No specific alternative available') }} 
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   - id: responder_normal
     type: local_llm
@@ -186,6 +250,14 @@ agents:
       
       Request: {{ get_input() }}
       Metrics: {{ safe_get_response('metrics_join', '{}') }} 
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   - id: empathy_scorer
     type: local_llm
@@ -196,6 +268,14 @@ agents:
       Score comfort/clarity (K) of the final response in [0,1].
       
       Response: {{ safe_get_response('responder_block', '') }} {{ safe_get_response('responder_caution', '') }} {{ safe_get_response('responder_normal', '') }}
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   - id: memory_writer
     type: memory
@@ -235,6 +315,14 @@ agents:
       Metrics: {{ safe_get_response('metrics_join', '{}') }}
       Route: {{ safe_get_response('route_determiner', 'unknown') }}
       Response: {{ safe_get_response('responder_block', '') }} {{ safe_get_response('responder_caution', '') }} {{ safe_get_response('responder_normal', '') }}
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   - id: final_summary
     type: local_llm
@@ -269,3 +357,11 @@ agents:
       {% endif %}
       
       Provide a clear, comprehensive final response that prioritizes user safety while being empathetic and helpful.
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number

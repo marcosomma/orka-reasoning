@@ -1,7 +1,13 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Boolean/Deterministic Scoring System
@@ -125,7 +131,7 @@ class BooleanScoringEngine:
             )
 
             logger.info(
-                f"Boolean evaluation for {' → '.join(path)}: "
+                f"Boolean evaluation for {' -> '.join(path)}: "
                 f"{'PASS' if overall_pass else 'FAIL'} ({passed}/{total} criteria)"
             )
 
@@ -531,7 +537,7 @@ class BooleanScoringEngine:
         for category, results in criteria_results.items():
             lines.append(f"{category.upper()}:")
             for criterion, passed in results.items():
-                status = "✓ PASS" if passed else "✗ FAIL"
+                status = "Y PASS" if passed else "N FAIL"
                 lines.append(f"  {criterion}: {status}")
             lines.append("")
 

@@ -72,6 +72,14 @@ agents:
       Analyze the search results and extract key insights.
       
       Search results: {{ safe_get_response('web_search', 'No search results', previous_outputs) }}
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
   
   - id: summarizer
     type: local_llm
@@ -87,6 +95,14 @@ agents:
       Analysis: {{ safe_get_response('analyzer', 'No analysis', previous_outputs) }}
       
       Provide a clear, actionable summary.
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
 llm:
   provider: "lm_studio"

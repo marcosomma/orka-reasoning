@@ -192,7 +192,7 @@ class TestSanitizeForJson:
         assert result["agent_results"][0]["result"]["metadata"]["created_at"] == "2025-12-06T11:45:30+00:00"
         assert result["agent_results"][0]["result"]["metadata"]["scores"] == [0.95, 0.87]
         assert result["agent_results"][1]["timestamp"] == "2025-12-06T12:15:20+00:00"
-        assert result["agent_results"][1]["result"]["metrics"] == [100, 200, 300]  # Tuple → list
+        assert result["agent_results"][1]["result"]["metrics"] == [100, 200, 300]  # Tuple -> list
         assert result["workflow_start"] == "2025-12-06T10:30:45+00:00"
         assert result["status"] == "completed"
 

@@ -19,20 +19,20 @@ agents:
   - id: path_discovery_loop
     type: loop
     max_loops: 3
-    score_threshold: 0.40
-    fallback_score: 0.15
-    timeout_score: 0.10
+    score_threshold: 0.35
+    fallback_score: 0.20
+    timeout_score: 0.15
     persist_across_runs: false
     
-    # Boolean scoring for path validation
+    # Boolean scoring for path validation - simplified for realistic local LLM scoring
     scoring:
       preset: lenient
       context: loop_convergence
+      # Focus on fewer, high-impact criteria that local LLMs can evaluate reliably
       custom_weights:
-        improvement.better_than_previous: 0.30
-        improvement.significant_delta: 0.20
-        stability.consistent_direction: 0.20
-        convergence.within_tolerance: 0.30
+        improvement.better_than_previous: 0.40
+        convergence.within_tolerance: 0.35
+        stability.consistent_direction: 0.25
     
     past_loops_metadata:
       loop_number: "{{ get_loop_number() }}"
@@ -75,18 +75,19 @@ agents:
             {% if has_past_loops() %}
             VALIDATION FEEDBACK (Loop {{ get_loop_number() }}):
             {% set last = get_past_loops()[-1] %}
-            Previous Score: {{ last.score }} (need 0.40)
+            Previous Score: {{ last.score }} (need 0.35)
             
-            FAILED CRITERIA TO ADDRESS:
+            ISSUES TO ADDRESS:
             {{ last.mistakes | default('None specified') }}
             
-            HISTORY:
-            {% for pl in get_past_loops() %}
-            Loop {{ pl.loop_number }}: {{ pl.score }}
-            {% endfor %}
+            IMPROVEMENTS NEEDED:
+            {{ last.improvements | default('Improve path completeness and logical flow') }}
             {% endif %}
             
-            Select a path that addresses all validation criteria.
+            Select a path with:
+            1. All required steps for the query
+            2. Logical agent sequence
+            3. Appropriate agent selection
         
         - id: path_validator_moderate
           type: plan_validator
@@ -97,15 +98,11 @@ agents:
           timeout: 60
           scoring_preset: lenient
           scoring_context: graphscout
+          # Simplified criteria - focus on 3 key dimensions for reliable local LLM evaluation
           custom_weights:
-            completeness.has_all_required_steps: 0.20
-            completeness.addresses_all_query_aspects: 0.15
-            completeness.includes_fallback_path: 0.10
-            coherence.logical_agent_sequence: 0.15
-            coherence.proper_data_flow: 0.10
-            safety.validates_inputs: 0.10
-            safety.handles_errors_gracefully: 0.10
-            efficiency.uses_appropriate_agents: 0.10
+            completeness.has_all_required_steps: 0.40
+            coherence.logical_agent_sequence: 0.35
+            efficiency.uses_appropriate_agents: 0.25
 
   # Execution agents (top-level for GraphScout discovery)
   - id: search_agent

@@ -33,6 +33,14 @@ agents:
       
       Choose exactly one from: tech, nature, people, others.
       Answer with only the category name.
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
   - id: join_1
     type: join
     group: fork_2
@@ -49,6 +57,14 @@ agents:
       EXTRA DATA: {{ joined_results() }}
       
       Answer with exactly 'true' or 'false' only.
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
   - id: router_7
     type: router
     params:
@@ -74,6 +90,14 @@ agents:
       EXTRA DATA: {{ joined_results() }}
       
       Provide just the name, nothing else.
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
   - id: duckduckgo_8
     type: duckduckgo
     queue: orka:duckduckgo_8
@@ -92,6 +116,14 @@ agents:
       EXTRA DATA: {{ joined_results() }}
       
       Provide a comprehensive and engaging response.
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
   - id: openai-answer_11
     type: local_llm
     model: openai/gpt-oss-20b
@@ -106,6 +138,14 @@ agents:
       EXTRA DATA: {{ joined_results() }}
       
       Provide a detailed and informative response.
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
   - id: answer-final
     type: local_llm
     model: openai/gpt-oss-20b
@@ -120,3 +160,11 @@ agents:
       EXTRA DATA: {{ joined_results() }}
       
       Provide the final, polished response.
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number

@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Boolean Score Calculator
@@ -168,10 +168,10 @@ class BooleanScoreCalculator:
                     score += weight
                     dimension_score += weight
                     passed_criteria.append(key)
-                    status = "✓"
+                    status = "Y"
                 elif criterion_value is False:
                     failed_criteria.append(key)
-                    status = "✗"
+                    status = "N"
                 else:
                     # Defer per-criterion missing warnings; collect and summarize later
                     failed_criteria.append(key)

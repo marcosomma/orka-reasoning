@@ -1,7 +1,13 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """Header and Footer Component Builders."""
 
@@ -31,7 +37,7 @@ class HeaderFooterMixin:
         status_color = "green" if self.running else "red"
 
         header_text = Text()
-        header_text.append("🚀 OrKa Monitor ", style="bold blue")
+        header_text.append("[START] OrKa Monitor ", style="bold blue")
         header_text.append(f"| {self.backend.upper()} ", style="cyan")
         header_text.append(f"| {current_time} ", style="dim")
         header_text.append("●", style=f"bold {status_color}")
@@ -46,7 +52,7 @@ class HeaderFooterMixin:
         backend_info = f"Backend: [bold]{self.backend}[/bold]"
 
         header_text = Text()
-        header_text.append("🚀 OrKa Memory Monitor ", style="bold blue")
+        header_text.append("[START] OrKa Memory Monitor ", style="bold blue")
         header_text.append(f"| {backend_info} ", style="dim")
         header_text.append(f"| {current_time} ", style="dim")
         header_text.append("● LIVE", style=f"bold {status_color}")

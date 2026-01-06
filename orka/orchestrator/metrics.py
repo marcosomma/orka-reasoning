@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Metrics Collection and Reporting
@@ -170,6 +170,17 @@ class MetricsCollector:
                     if metrics_id not in seen_metrics:
                         seen_metrics.add(metrics_id)
                         found_metrics.append((metrics, source_agent_id))
+
+                # GraphScout-specific: extract metrics from decision_trace candidates
+                if "decision_trace" in data:
+                    candidates = data.get("decision_trace", {}).get("candidates", [])
+                    for candidate in candidates:
+                        eval_result = candidate.get("evaluation_result", {})
+                        if "_metrics" in eval_result:
+                            sub_metrics = extract_metrics_recursively(
+                                eval_result, source_agent_id
+                            )
+                            found_metrics.extend(sub_metrics)
 
                 # Recursively check all values
                 for key, value in data.items():

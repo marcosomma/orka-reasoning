@@ -1,3 +1,14 @@
+# OrKa: Orchestrator Kit Agents
+# by Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+
 """
 Message Renderer - Advanced Content Formatting for OrKa TUI
 
@@ -5,7 +16,7 @@ This module provides sophisticated rendering capabilities for agent responses,
 memory content, and structured data within the Terminal User Interface.
 
 Features:
-- Status icon rendering (✓/✗/▸/⋯)
+- Status icon rendering (Y/N/▸/⋯)
 - Rich syntax highlighting for JSON/YAML
 - Markdown rendering support
 - Metadata box formatting
@@ -35,8 +46,8 @@ class VintageMessageRenderer:
     
     # Status icon mapping
     STATUS_ICONS = {
-        "success": "✓",
-        "error": "✗",
+        "success": "Y",
+        "error": "N",
         "pending": "⋯",
         "running": "▸",
         "unknown": "?"
@@ -135,7 +146,7 @@ class VintageMessageRenderer:
         output_parts = [
             f"[bold blue]Memory: {key_display}[/bold blue]",
             "",
-            "[bold green]📄 CONTENT:[/bold green]",
+            "[bold green][FILE] CONTENT:[/bold green]",
             self._format_content(content, max_content_length=2000),
         ]
         
@@ -143,14 +154,14 @@ class VintageMessageRenderer:
         if metadata:
             output_parts.extend([
                 "",
-                "[bold yellow]📋 METADATA:[/bold yellow]",
+                "[bold yellow][LIST] METADATA:[/bold yellow]",
                 self._format_metadata(metadata)
             ])
         
         # Add system information
         output_parts.extend([
             "",
-            "[bold cyan]🏷️ SYSTEM INFO:[/bold cyan]",
+            "[bold cyan][TAG]️ SYSTEM INFO:[/bold cyan]",
             f"[cyan]Type:[/cyan] {memory_type}",
         ])
         

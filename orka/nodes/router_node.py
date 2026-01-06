@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,10 +7,10 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
-🚦 **Router Node** - Intelligent Traffic Controller
+[ROUTE] **Router Node** - Intelligent Traffic Controller
 ================================================
 
 The RouterNode is the intelligent traffic controller of OrKa workflows, enabling
@@ -36,7 +36,7 @@ from .base_node import BaseNode
 
 class RouterNode(BaseNode):
     """
-    🚦 **The intelligent traffic controller** - routes execution based on dynamic conditions.
+    [ROUTE] **The intelligent traffic controller** - routes execution based on dynamic conditions.
 
     **What makes routing powerful:**
     - **Context-Aware Decisions**: Routes based on previous agent outputs and classifications

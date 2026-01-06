@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,10 +7,10 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
-🧠 **Agents Domain** - Intelligent Processing Units
+[AI] **Agents Domain** - Intelligent Processing Units
 ================================================
 
 This module defines the foundation for all OrKa agents - the cognitive building blocks
@@ -21,11 +21,11 @@ into structured outputs while maintaining context and handling errors gracefully
 Think of agents as expert consultants in your workflow - each with specialized knowledge
 and capabilities, working together to solve complex problems. They provide:
 
-- 🎯 **Specialized Intelligence**: Each agent excels at specific tasks
-- 🧠 **Context Awareness**: Maintains conversation and processing context
-- 🔄 **Error Resilience**: Graceful failure handling with fallback strategies
-- ⚡ **Performance**: Async execution with concurrency control
-- 🔧 **Flexibility**: Support for both cloud LLMs and local models
+- [TARGET] **Specialized Intelligence**: Each agent excels at specific tasks
+- [AI] **Context Awareness**: Maintains conversation and processing context
+- [SYNC] **Error Resilience**: Graceful failure handling with fallback strategies
+- [FAST] **Performance**: Async execution with concurrency control
+- [CONF] **Flexibility**: Support for both cloud LLMs and local models
 
 **Agent Types:**
 - **Classification Agents**: Route and categorize inputs intelligently

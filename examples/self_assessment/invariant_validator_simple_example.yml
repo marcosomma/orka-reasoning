@@ -1,0 +1,88 @@
+# Simple Example: Using Invariant Validator Agent
+# =================================================
+# 
+# This minimal example shows how to use the invariant_validator agent type
+# to perform deterministic execution checks.
+
+orchestrator:
+  id: invariant-validation-demo
+  strategy: sequential
+  agents:
+    - test_fork
+    - test_join
+    - invariant_check
+    - display_results
+
+agents:
+  # Simple fork/join to generate execution trace
+  - id: test_fork
+    type: fork
+    targets:
+      - - path_a
+      - - path_b
+    
+  - id: path_a
+    type: local_llm
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
+    temperature: 0.5
+    prompt: "Process path A: {{ input }}"
+  
+  - id: path_b
+    type: local_llm
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
+    temperature: 0.5
+    prompt: "Process path B: {{ input }}"
+  
+  - id: test_join
+    type: join
+    group: test_fork
+  
+  # Deterministic invariant validation (Python agent, not LLM)
+  - id: invariant_check
+    type: invariant_validator
+    params:
+      max_depth: 10
+      allow_reentrant_nodes: []
+      strict_tool_errors: false
+      # Execution data would ideally come from orchestrator context
+      # For now, this is a minimal placeholder structure
+      execution_data:
+        nodes_executed: ["test_fork", "path_a", "path_b", "test_join"]
+        fork_groups:
+          test_fork:
+            has_join: true
+            branches: ["path_a", "path_b"]
+            completed_branches: ["path_a", "path_b"]
+        router_decisions: {}
+        tool_calls: []
+        structured_outputs: {}
+        graph_structure:
+          nodes:
+            test_fork: {}
+            path_a: {}
+            path_b: {}
+            test_join: {}
+          edges:
+            - {src: "test_fork", dst: "path_a"}
+            - {src: "test_fork", dst: "path_b"}
+            - {src: "path_a", dst: "test_join"}
+            - {src: "path_b", dst: "test_join"}
+  
+  # Display validation results
+  - id: display_results
+    type: local_llm
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
+    temperature: 0.0
+    prompt: |
+      INVARIANT VALIDATION RESULTS
+      ============================
+      
+      {{ get_agent_response('invariant_check') | tojson }}
+      
+      Summarize the validation status in plain English.

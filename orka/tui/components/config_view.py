@@ -1,7 +1,13 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """Configuration View Component Builder."""
 
@@ -54,7 +60,7 @@ class ConfigViewMixin:
 
         layout["header"].update(
             Panel(
-                "🔧 Configuration & System Health - Backend Testing & Diagnostics",
+                "[CONF] Configuration & System Health - Backend Testing & Diagnostics",
                 box=HEAVY,
                 style="bold magenta",
             ),
@@ -62,7 +68,7 @@ class ConfigViewMixin:
 
         # Backend configuration testing
         layout["backend_config"].update(
-            Panel(self._create_backend_config_table(), title="🔌 Backend Health", box=ROUNDED),
+            Panel(self._create_backend_config_table(), title="[CONN] Backend Health", box=ROUNDED),
         )
 
         # Decay configuration
@@ -72,17 +78,17 @@ class ConfigViewMixin:
 
         # Connection testing
         layout["connection_test"].update(
-            Panel(self._create_connection_test_table(), title="🔍 Connection Tests", box=ROUNDED),
+            Panel(self._create_connection_test_table(), title="[...] Connection Tests", box=ROUNDED),
         )
 
         # System information
         layout["system_info"].update(
-            Panel(self._create_system_info_table(), title="🖥️ System Information", box=ROUNDED),
+            Panel(self._create_system_info_table(), title="[HOST]️ System Information", box=ROUNDED),
         )
 
         # Module information
         layout["module_info"].update(
-            Panel(self._create_module_info_table(), title="🔌 Redis Modules", box=ROUNDED),
+            Panel(self._create_module_info_table(), title="[CONN] Redis Modules", box=ROUNDED),
         )
 
         layout["footer"].update(self.create_footer())
@@ -103,7 +109,7 @@ class ConfigViewMixin:
         if hasattr(self.memory_logger, "client"):
             try:
                 self.memory_logger.client.ping()
-                table.add_row("  Connection", "✅ Active", "")
+                table.add_row("  Connection", "[OK] Active", "")
 
                 # Get Redis info
                 redis_info = self.memory_logger.client.info()
@@ -120,18 +126,18 @@ class ConfigViewMixin:
                     self.memory_logger.client.set(test_key, "test", ex=5)
                     test_result = self.memory_logger.client.get(test_key)
                     if test_result:
-                        table.add_row("  Read/Write", "✅ Working", "")
+                        table.add_row("  Read/Write", "[OK] Working", "")
                         self.memory_logger.client.delete(test_key)
                     else:
-                        table.add_row("  Read/Write", "❌ Failed", "")
+                        table.add_row("  Read/Write", "[FAIL] Failed", "")
                 except Exception:
-                    table.add_row("  Read/Write", "❌ Error", "")
+                    table.add_row("  Read/Write", "[FAIL] Error", "")
 
             except Exception as e:
-                table.add_row("  Connection", "❌ Failed", "")
+                table.add_row("  Connection", "[FAIL] Failed", "")
                 table.add_row("  Error", str(e)[:15], "")
         else:
-            table.add_row("  Connection", "❌ No Client", "")
+            table.add_row("  Connection", "[FAIL] No Client", "")
 
         # Backend-specific tests
         if self.backend == "redisstack":
@@ -150,23 +156,23 @@ class ConfigViewMixin:
                 has_search = any("search" in str(module).lower() for module in modules)
 
                 if has_search:
-                    table.add_row("  Search Module", "✅ Loaded", "")
+                    table.add_row("  Search Module", "[OK] Loaded", "")
 
                     try:
                         index_info = self.memory_logger.client.ft("enhanced_memory_idx").info()
-                        table.add_row("  HNSW Index", "✅ Available", "")
+                        table.add_row("  HNSW Index", "[OK] Available", "")
                         table.add_row(
                             "  Documents",
                             f"{index_info.get('num_docs', 0):,}",
                             "docs",
                         )
                     except Exception:
-                        table.add_row("  HNSW Index", "❌ Missing", "")
+                        table.add_row("  HNSW Index", "[FAIL] Missing", "")
                 else:
-                    table.add_row("  Search Module", "❌ Missing", "")
+                    table.add_row("  Search Module", "[FAIL] Missing", "")
 
         except Exception as e:
-            table.add_row("  Module Check", f"❌ {str(e)[:10]}", "")
+            table.add_row("  Module Check", f"[FAIL] {str(e)[:10]}", "")
 
     def _create_decay_config_table(self):
         """Create decay configuration table."""
@@ -181,7 +187,7 @@ class ConfigViewMixin:
             table.add_row("[bold]Memory Decay:[/bold]", "", "")
 
             if config and config.get("enabled", False):
-                table.add_row("  Status", "✅ Enabled", "")
+                table.add_row("  Status", "[OK] Enabled", "")
                 table.add_row(
                     "  Short-term TTL",
                     f"{config.get('default_short_term_hours', 1)}",
@@ -200,20 +206,20 @@ class ConfigViewMixin:
 
                 try:
                     test_result = self.memory_logger.cleanup_expired_memories(dry_run=True)
-                    table.add_row("  Cleanup Test", "✅ Working", "")
+                    table.add_row("  Cleanup Test", "[OK] Working", "")
                     table.add_row(
                         "  Last Check",
                         str(test_result.get("duration_seconds", 0)),
                         "sec",
                     )
                 except Exception:
-                    table.add_row("  Cleanup Test", "❌ Error", "")
+                    table.add_row("  Cleanup Test", "[FAIL] Error", "")
 
             else:
-                table.add_row("  Status", "❌ Disabled", "")
+                table.add_row("  Status", "[FAIL] Disabled", "")
                 table.add_row("  Reason", "Not configured", "")
         else:
-            table.add_row("  Status", "❌ Unavailable", "")
+            table.add_row("  Status", "[FAIL] Unavailable", "")
 
         return table
 
@@ -234,11 +240,11 @@ class ConfigViewMixin:
                 latency = (time.time() - start_time) * 1000
 
                 if latency < 5:
-                    latency_status = "[green]⚡ Excellent[/green]"
+                    latency_status = "[green][FAST] Excellent[/green]"
                 elif latency < 20:
-                    latency_status = "[yellow]⚠ Good[/yellow]"
+                    latency_status = "[yellow][WARN] Good[/yellow]"
                 else:
-                    latency_status = "[red]🐌 Slow[/red]"
+                    latency_status = "[red][SLOW] Slow[/red]"
 
                 table.add_row("  Ping Latency", f"{latency:.1f}ms", latency_status)
 
@@ -246,17 +252,17 @@ class ConfigViewMixin:
                 start_time = time.time()
                 self.memory_logger.get_memory_stats()
                 stats_time = (time.time() - start_time) * 1000
-                table.add_row("  Stats Query", f"{stats_time:.1f}ms", "✅")
+                table.add_row("  Stats Query", f"{stats_time:.1f}ms", "[OK]")
 
                 # Search test
                 if hasattr(self.memory_logger, "search_memories"):
                     start_time = time.time()
                     self.memory_logger.search_memories(" ", num_results=1)
                     search_time = (time.time() - start_time) * 1000
-                    table.add_row("  Search Test", f"{search_time:.1f}ms", "✅")
+                    table.add_row("  Search Test", f"{search_time:.1f}ms", "[OK]")
 
             except Exception as e:
-                table.add_row("  Test Failed", str(e)[:15], "❌")
+                table.add_row("  Test Failed", str(e)[:15], "[FAIL]")
 
         return table
 
@@ -329,20 +335,20 @@ class ConfigViewMixin:
                             )
 
                             if "search" in name.lower():
-                                status = "✅ Vector Ready"
+                                status = "[OK] Vector Ready"
                             elif "json" in name.lower():
-                                status = "✅ JSON Ready"
+                                status = "[OK] JSON Ready"
                             elif "timeseries" in name.lower():
-                                status = "✅ TS Ready"
+                                status = "[OK] TS Ready"
                             else:
-                                status = "✅ Loaded"
+                                status = "[OK] Loaded"
 
                             table.add_row(name, version, status)
                 else:
-                    table.add_row("No modules", "N/A", "❌ Plain Redis")
+                    table.add_row("No modules", "N/A", "[FAIL] Plain Redis")
 
             except Exception as e:
-                table.add_row("Error", str(e)[:10], "❌ Failed")
+                table.add_row("Error", str(e)[:10], "[FAIL] Failed")
 
         return table
 

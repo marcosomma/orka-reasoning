@@ -1,3 +1,14 @@
+# OrKa: Orchestrator Kit Agents
+# by Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+
 from __future__ import annotations
 
 import ast
@@ -128,7 +139,7 @@ class LoopScoreExtractor:
                         ):
                             score_result = self.score_calculator.calculate(boolean_evals)
                             logger.info(
-                                "✅ Boolean evaluations from '%s': %s/%s passed, score=%0.4f",
+                                "[OK] Boolean evaluations from '%s': %s/%s passed, score=%0.4f",
                                 agent_id,
                                 score_result["passed_count"],
                                 score_result["total_criteria"],
@@ -162,7 +173,7 @@ class LoopScoreExtractor:
 
                         score_result = self.score_calculator.calculate(boolean_evals)
                         logger.info(
-                            "✅ Boolean evaluations from '%s': %s/%s passed, score=%0.4f",
+                            "[OK] Boolean evaluations from '%s': %s/%s passed, score=%0.4f",
                             agent_id,
                             score_result["passed_count"],
                             score_result["total_criteria"],
@@ -186,7 +197,7 @@ class LoopScoreExtractor:
                 logger.info("  - Agent '%s': Found validation_score field", agent_id)
                 try:
                     score = float(agent_result["validation_score"])
-                    logger.info("✅ Using validation_score from '%s': %0.4f", agent_id, score)
+                    logger.info("[OK] Using validation_score from '%s': %0.4f", agent_id, score)
                     return score
                 except (ValueError, TypeError) as e:
                     logger.warning("  - Agent '%s': Invalid validation_score: %s", agent_id, e)
@@ -205,7 +216,7 @@ class LoopScoreExtractor:
                     try:
                         score_result = self.score_calculator.calculate(boolean_evals)
                         logger.info(
-                            "✅ Boolean evaluations from '%s' response text: %s/%s passed, score=%0.4f",
+                            "[OK] Boolean evaluations from '%s' response text: %s/%s passed, score=%0.4f",
                             agent_id,
                             score_result["passed_count"],
                             score_result["total_criteria"],
@@ -222,7 +233,7 @@ class LoopScoreExtractor:
                         "  - Agent '%s': No valid boolean structure in response", agent_id
                     )
 
-        logger.warning("LoopNode '%s': ❌ No valid boolean evaluations found in any agent", self.node_id)
+        logger.warning("LoopNode '%s': [FAIL] No valid boolean evaluations found in any agent", self.node_id)
         return None
 
     async def extract_score(self, result: Dict[str, Any]) -> float:
@@ -242,7 +253,7 @@ class LoopScoreExtractor:
             boolean_score = self._try_boolean_scoring(result)
             if boolean_score is not None:
                 logger.info(
-                    "✅ Using boolean scoring: %0.4f (preset: %s)", boolean_score, self.scoring_preset
+                    "[OK] Using boolean scoring: %0.4f (preset: %s)", boolean_score, self.scoring_preset
                 )
                 return float(boolean_score)
             logger.debug(
@@ -257,7 +268,7 @@ class LoopScoreExtractor:
                 if isinstance(agent_result, dict) and "response" in agent_result:
                     response_text = str(agent_result["response"])
                     logger.info(
-                        "🔍 Checking high-priority agent '%s': %s...",
+                        "[...] Checking high-priority agent '%s': %s...",
                         priority_agent,
                         response_text[:100],
                     )
@@ -288,7 +299,7 @@ class LoopScoreExtractor:
                                     raw, pattern=score_pattern, matched_text=response_text
                                 )
                                 logger.info(
-                                    "✅ Found score %s from high-priority agent '%s' using pattern: %s",
+                                    "[OK] Found score %s from high-priority agent '%s' using pattern: %s",
                                     score,
                                     priority_agent,
                                     score_pattern,
@@ -298,7 +309,7 @@ class LoopScoreExtractor:
                                 continue
 
                     logger.warning(
-                        "❌ High-priority agent '%s' found but no score extracted from: %s",
+                        "[FAIL] High-priority agent '%s' found but no score extracted from: %s",
                         priority_agent,
                         response_text,
                     )
@@ -316,7 +327,7 @@ class LoopScoreExtractor:
                     if self._is_valid_value(value):
                         raw = float(value)
                         score = normalize_score(raw, matched_text=str(value))
-                        logger.info("✅ Found score %s via direct_key strategy", score)
+                        logger.info("[OK] Found score %s via direct_key strategy", score)
                         return float(score)
 
             elif strategy_type == "pattern":
@@ -328,7 +339,7 @@ class LoopScoreExtractor:
                     if not isinstance(pattern, str):
                         continue
 
-                    logger.debug("🔍 Trying pattern: %s", pattern)
+                    logger.debug("[...] Trying pattern: %s", pattern)
 
                     for agent_id, agent_result in result.items():
                         if isinstance(agent_result, str):
@@ -341,7 +352,7 @@ class LoopScoreExtractor:
                                         raw, pattern=pattern, matched_text=agent_result
                                     )
                                     logger.info(
-                                        "✅ Found score %s in %s (direct string) using pattern: %s",
+                                        "[OK] Found score %s in %s (direct string) using pattern: %s",
                                         score,
                                         agent_id,
                                         pattern,
@@ -355,7 +366,7 @@ class LoopScoreExtractor:
                                 if key in agent_result and isinstance(agent_result[key], str):
                                     text_content = agent_result[key]
                                     logger.debug(
-                                        "🔍 Searching in %s.%s: %r",
+                                        "[...] Searching in %s.%s: %r",
                                         agent_id,
                                         key,
                                         text_content[:200],
@@ -366,10 +377,10 @@ class LoopScoreExtractor:
                                             raw_str = match.group(1) if match.groups() else match.group(0)
                                             score = float(raw_str)
                                             logger.debug(
-                                                "✅ Matched text: '%s'", text_content[:200]
+                                                "[OK] Matched text: '%s'", text_content[:200]
                                             )
                                             logger.info(
-                                                "✅ Found score %s in %s.%s using pattern: %s",
+                                                "[OK] Found score %s in %s.%s using pattern: %s",
                                                 score,
                                                 agent_id,
                                                 key,
@@ -384,7 +395,7 @@ class LoopScoreExtractor:
                                             or "AGREEMENT_SCORE" in text_content
                                         ):
                                             logger.debug(
-                                                "❌ No match for pattern '%s' in %s.%s: '%s'",
+                                                "[FAIL] No match for pattern '%s' in %s.%s: '%s'",
                                                 pattern,
                                                 agent_id,
                                                 key,
@@ -395,17 +406,17 @@ class LoopScoreExtractor:
                 agents = strategy.get("agents", [])
                 key = str(strategy.get("key", "response"))
                 logger.debug(
-                    "🔍 Trying agent_key strategy for agents: %s, key: %s", agents, key
+                    "[...] Trying agent_key strategy for agents: %s, key: %s", agents, key
                 )
 
                 for agent_name in agents:
                     if agent_name in result:
-                        logger.debug("🔍 Found agent '%s' in results", agent_name)
+                        logger.debug("[...] Found agent '%s' in results", agent_name)
                         agent_result = result[agent_name]
                         if isinstance(agent_result, dict) and key in agent_result:
                             response_text = str(agent_result[key])
                             logger.debug(
-                                "🔍 Agent '%s' %s: '%s'", agent_name, key, response_text[:100]
+                                "[...] Agent '%s' %s: '%s'", agent_name, key, response_text[:100]
                             )
                             agent_score_patterns: list[str] = []
                             for s in strategies:
@@ -433,7 +444,7 @@ class LoopScoreExtractor:
                                             matched_text=response_text,
                                         )
                                         logger.info(
-                                            "✅ Found score %s in agent_key strategy from %s using pattern: %s",
+                                            "[OK] Found score %s in agent_key strategy from %s using pattern: %s",
                                             score,
                                             agent_name,
                                             score_pattern,
@@ -443,7 +454,7 @@ class LoopScoreExtractor:
                                         continue
                     else:
                         logger.debug(
-                            "🔍 Agent '%s' not found in results. Available agents: %s",
+                            "[...] Agent '%s' not found in results. Available agents: %s",
                             agent_name,
                             list(result.keys()),
                         )
@@ -452,7 +463,7 @@ class LoopScoreExtractor:
         has_score_agents = any(agent_id in result for agent_id in self.high_priority_agents)
         if has_score_agents:
             logger.warning(
-                "❌ Score agents present but no scores extracted. NOT using embedding fallback to avoid overriding explicit scores."
+                "[FAIL] Score agents present but no scores extracted. NOT using embedding fallback to avoid overriding explicit scores."
             )
             return 0.0
 
@@ -469,13 +480,13 @@ class LoopScoreExtractor:
             logger.info("Using embedding-based agreement computation as final fallback")
             try:
                 agreement_score = await self._compute_agreement_score(result)
-                logger.info("✅ Computed fallback agreement score: %s", agreement_score)
+                logger.info("[OK] Computed fallback agreement score: %s", agreement_score)
                 return float(agreement_score)
             except Exception as e:
                 logger.error("Failed to compute agreement score: %s", e)
                 return 0.0
 
-        logger.warning("❌ No valid score extraction method succeeded")
+        logger.warning("[FAIL] No valid score extraction method succeeded")
         return 0.0
 
     async def _compute_agreement_score(self, result: Dict[str, Any]) -> float:

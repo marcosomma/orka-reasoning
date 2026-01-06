@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,7 +7,7 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Agent Factory
@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Type, Union, cast
 
 from ..agents import (
     agents,
+    invariant_validator_agent,
     llm_agents,
     local_llm_agents,
     plan_validator,
@@ -50,6 +51,7 @@ logger = logging.getLogger(__name__)
 AgentClass = Union[
     Type[agents.BinaryAgent],
     Type[agents.ClassificationAgent],
+    Type[invariant_validator_agent.InvariantValidatorAgent],
     Type[local_llm_agents.LocalLLMAgent],
     Type[llm_agents.OpenAIAnswerBuilder],
     Type[llm_agents.OpenAIBinaryAgent],
@@ -75,6 +77,7 @@ AgentClass = Union[
 AGENT_TYPES: Dict[str, AgentClass] = {
     "binary": agents.BinaryAgent,
     "classification": agents.ClassificationAgent,
+    "invariant_validator": invariant_validator_agent.InvariantValidatorAgent,
     "local_llm": local_llm_agents.LocalLLMAgent,
     "openai-answer": llm_agents.OpenAIAnswerBuilder,
     "openai-binary": llm_agents.OpenAIBinaryAgent,
@@ -90,7 +93,7 @@ AGENT_TYPES: Dict[str, AgentClass] = {
     "fork": fork_node.ForkNode,
     "loop": loop_node.LoopNode,
     "loop_validator": loop_validator_node.LoopValidatorNode,
-    "path_executor": "special_handler",  # 🐛 Bug #1: Lazy loaded to avoid circular imports
+    "path_executor": "special_handler",  # [DEBUG] Bug #1: Lazy loaded to avoid circular imports
     "graph-scout": GraphScoutAgent,
     "memory": "special_handler",  # This will be handled specially in init_single_agent
 }
@@ -270,7 +273,7 @@ class AgentFactory:
                 )
 
             if agent_type == "path_executor":
-                # 🐛 Bug #1 Fix: Lazy load PathExecutorNode to avoid circular imports
+                # [DEBUG] Bug #1 Fix: Lazy load PathExecutorNode to avoid circular imports
                 from ..nodes import path_executor_node
 
                 # PathExecutorNode doesn't need prompt or queue

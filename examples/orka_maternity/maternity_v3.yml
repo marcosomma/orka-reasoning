@@ -175,6 +175,14 @@ agents:
             {% if get_loop_number() > 1 %}
             Previous assessment: {{ get_past_loops() | truncate(200) }}
             {% endif %}
+          params:
+            structured_output:
+              enabled: true
+              mode: prompt
+              schema:
+                required: [response]
+                optional:
+                  confidence: number
         
         # Vulnerability analyzer
         - id: vulnerability_analyzer
@@ -192,6 +200,14 @@ agents:
             {% if get_loop_number() > 1 %}
             Previous assessment: {{ get_past_loops() | truncate(200) }}
             {% endif %}
+          params:
+            structured_output:
+              enabled: true
+              mode: prompt
+              schema:
+                required: [response]
+                optional:
+                  confidence: number
         
         # Reversibility estimator
         - id: reversibility_estimator
@@ -207,6 +223,14 @@ agents:
             {% if get_loop_number() > 1 %}
             Previous assessment: {{ get_past_loops() | truncate(200) }}
             {% endif %}
+          params:
+            structured_output:
+              enabled: true
+              mode: prompt
+              schema:
+                required: [response]
+                optional:
+                  confidence: number
         
         # Consent checker
         - id: consent_checker
@@ -222,6 +246,14 @@ agents:
             {% if get_loop_number() > 1 %}
             Previous assessment: {{ get_past_loops() | truncate(200) }}
             {% endif %}
+          params:
+            structured_output:
+              enabled: true
+              mode: prompt
+              schema:
+                required: [response]
+                optional:
+                  confidence: number
         
         # Join metrics
         - id: metrics_join
@@ -306,6 +338,14 @@ agents:
             {% else %}
             ERROR
             {% endif %}
+          params:
+            structured_output:
+              enabled: true
+              mode: prompt
+              schema:
+                required: [response]
+                optional:
+                  confidence: number
         
         # Route determiner
         - id: route_determiner
@@ -340,6 +380,14 @@ agents:
             {% endif %}
             
             Return ONLY one of these exact strings: "safeguard_gate", "caution_path", or "normal_path".
+          params:
+            structured_output:
+              enabled: true
+              mode: prompt
+              schema:
+                required: [response]
+                optional:
+                  confidence: number
         
         # Router based on route determination
         - id: maternal_policy_router
@@ -368,6 +416,14 @@ agents:
             {% if get_loop_number() > 1 %}
             Previous alternatives: {{ get_past_loops() | truncate(200) }}
             {% endif %}
+          params:
+            structured_output:
+              enabled: true
+              mode: prompt
+              schema:
+                required: [response]
+                optional:
+                  confidence: number
         
         # Responder for high-risk cases
         - id: responder_block
@@ -388,6 +444,14 @@ agents:
             {% if get_loop_number() > 1 %}
             Previous responses: {{ get_past_loops() | truncate(200) }}
             {% endif %}
+          params:
+            structured_output:
+              enabled: true
+              mode: prompt
+              schema:
+                required: [response]
+                optional:
+                  confidence: number
         
         # Responder for medium-risk cases
         - id: responder_caution
@@ -408,6 +472,14 @@ agents:
             {% if get_loop_number() > 1 %}
             Previous responses: {{ get_past_loops() | truncate(200) }}
             {% endif %}
+          params:
+            structured_output:
+              enabled: true
+              mode: prompt
+              schema:
+                required: [response]
+                optional:
+                  confidence: number
         
         # Responder for low-risk cases
         - id: responder_normal
@@ -428,6 +500,14 @@ agents:
             {% if get_loop_number() > 1 %}
             Previous responses: {{ get_past_loops() | truncate(200) }}
             {% endif %}
+          params:
+            structured_output:
+              enabled: true
+              mode: prompt
+              schema:
+                required: [response]
+                optional:
+                  confidence: number
         
         # Multi-perspective synthesis
         - id: perspective_synthesis
@@ -459,6 +539,14 @@ agents:
             3. SUSTAINED SUPPORT: Ongoing commitment to help beyond this interaction
             
             Return a synthesized assessment that balances these perspectives and includes all maternal elements.
+          params:
+            structured_output:
+              enabled: true
+              mode: prompt
+              schema:
+                required: [response]
+                optional:
+                  confidence: number
         
         # Response quality checker
         - id: response_quality_checker
@@ -486,6 +574,14 @@ agents:
             INSIGHTS: [short]
             IMPROVEMENTS: [short]
             QUALITY_SCORE: [0.00-1.00]
+          params:
+            structured_output:
+              enabled: true
+              mode: prompt
+              schema:
+                required: [response]
+                optional:
+                  confidence: number
         
         # Safety scorer - determines if loop should continue
         - id: safety_scorer
@@ -515,6 +611,14 @@ agents:
             OUTPUT:
             SAFETY_CONCERNS: [comma separated list]
             SAFETY_SCORE: [0.00-1.00]
+          params:
+            structured_output:
+              enabled: true
+              mode: prompt
+              schema:
+                required: [response]
+                optional:
+                  confidence: number
 
   # Final response builder that integrates the loop results into a polished response
   - id: final_response_builder
@@ -541,6 +645,14 @@ agents:
       5. Offers concrete next steps or alternatives when appropriate
       
       FINAL_RESPONSE:
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   # Final explainer that provides reasoning about the decision process
   - id: final_explainer
@@ -566,6 +678,14 @@ agents:
       6. Include Final response in the answer
       
       EXPLANATION:
+    params:
+      structured_output:
+        enabled: true
+        mode: prompt
+        schema:
+          required: [response]
+          optional:
+            confidence: number
 
   # Final memory writer to store the complete interaction
   - id: memory_writer

@@ -1,7 +1,13 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
 Decision Engine
@@ -65,12 +71,12 @@ class DecisionEngine:
                 if terminal_paths:
                     best_terminal = terminal_paths[0]
                     terminal_path = best_terminal["path"]
-                    logger.info(f"🎯 Creating commit_path decision with target: {terminal_path}")
+                    logger.info(f"[TARGET] Creating commit_path decision with target: {terminal_path}")
                     return self._create_decision(
                         "commit_path",
                         terminal_path,
                         best_terminal.get("confidence", 0.8),
-                        f"🎯 Terminal path to response builder (score={best_terminal.get('score', 0.0):.3f})",
+                        f"[TARGET] Terminal path to response builder (score={best_terminal.get('score', 0.0):.3f})",
                     )
                 # If no terminal paths found, continue with normal decision logic
                 # This allows shortlist to be returned when appropriate
@@ -113,52 +119,68 @@ class DecisionEngine:
     def _find_terminal_paths(
         self, scored_candidates: List[Dict[str, Any]], context: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
-        """Find terminal paths that end with response builders."""
+        """Find terminal paths that end with response builders.
+        
+        Selection is score-based, not length-based. The path scoring system
+        already applies penalties/bonuses based on optimal_path_length config,
+        so we simply collect all terminal paths and sort by score.
+        """
         terminal_paths = []
 
         try:
-            logger.info(f"🔍 Searching for terminal paths in {len(scored_candidates)} candidates")
-
-            # First priority: 2-hop paths ending with response builders
-            for candidate in scored_candidates:
-                path = candidate.get("path", [candidate["node_id"]])
-                logger.debug(f"🔍 Checking path: {' → '.join(path)} (length: {len(path)})")
-
-                # Prioritize 2-hop chains
-                if len(path) == 2:
-                    last_node = path[-1]
-                    is_terminal = self._is_response_builder(last_node, context)
-                    logger.info(
-                        f"🔍 2-hop path {' → '.join(path)}: last_node='{last_node}' is_terminal={is_terminal}"
-                    )
-                    if is_terminal:
-                        terminal_paths.append(candidate)
-                        logger.info(f"✅ Found 2-hop terminal path: {' → '.join(path)}")
-
-            # If no 2-hop terminals, consider longer paths
-            if not terminal_paths:
-                logger.info("🔍 No 2-hop terminals found, checking longer paths...")
-                for candidate in scored_candidates:
-                    path = candidate.get("path", [candidate["node_id"]])
-
-                    if len(path) > 2:
-                        last_node = path[-1]
-                        is_terminal = self._is_response_builder(last_node, context)
-                        logger.info(
-                            f"🔍 {len(path)}-hop path {' → '.join(path)}: last_node='{last_node}' is_terminal={is_terminal}"
-                        )
-                        if is_terminal:
-                            terminal_paths.append(candidate)
-                            logger.info(
-                                f"✅ Found {len(path)}-hop terminal path: {' → '.join(path)}"
-                            )
-
+            # Get optimal path length from config for logging
+            optimal_range = getattr(self.config, "optimal_path_length", (2, 3))
+            max_depth = getattr(self.config, "max_depth", 4)
+            
             logger.info(
-                f"🔍 Terminal path search complete: found {len(terminal_paths)} terminal paths"
+                f"[...] Searching for terminal paths in {len(scored_candidates)} candidates "
+                f"(optimal_length={optimal_range}, max_depth={max_depth})"
             )
 
-            # Sort terminal paths by score
+            # Collect ALL terminal paths regardless of length (up to max_depth)
+            # Score-based selection - scoring system already penalizes non-optimal lengths
+            for candidate in scored_candidates:
+                path = candidate.get("path", [candidate["node_id"]])
+                path_len = len(path)
+                
+                # Skip paths that exceed max_depth
+                if path_len > max_depth:
+                    logger.debug(f"[...] Skipping path exceeding max_depth: {' -> '.join(path)}")
+                    continue
+                
+                last_node = path[-1]
+                is_terminal = self._is_response_builder(last_node, context)
+                score = candidate.get("score", 0.0)
+                
+                # Check if path length is within optimal range
+                is_optimal_length = optimal_range[0] <= path_len <= optimal_range[1]
+                optimal_marker = "[OPTIMAL]" if is_optimal_length else ""
+                
+                logger.info(
+                    f"[...] {path_len}-hop path {' -> '.join(path)}: "
+                    f"is_terminal={is_terminal}, score={score:.3f} {optimal_marker}"
+                )
+                
+                if is_terminal:
+                    terminal_paths.append(candidate)
+                    logger.info(f"[OK] Found {path_len}-hop terminal path: {' -> '.join(path)}")
+
+            logger.info(
+                f"[...] Terminal path search complete: found {len(terminal_paths)} terminal paths"
+            )
+
+            # Sort terminal paths by score (highest first)
+            # The scoring system already factors in path length via optimal_path_length
             terminal_paths.sort(key=lambda x: x.get("score", 0.0), reverse=True)
+            
+            if terminal_paths:
+                best = terminal_paths[0]
+                best_path = best.get("path", [])
+                logger.info(
+                    f"[OK] Best terminal path by score: {' -> '.join(best_path)} "
+                    f"(score={best.get('score', 0.0):.3f}, length={len(best_path)})"
+                )
+            
             return terminal_paths
 
         except Exception as e:
@@ -198,7 +220,7 @@ class DecisionEngine:
     def _is_response_builder(self, node_id: str, context: Dict[str, Any]) -> bool:
         """Check if a node is a response builder."""
         try:
-            logger.debug(f"🔍 Checking if '{node_id}' is a response builder...")
+            logger.debug(f"[...] Checking if '{node_id}' is a response builder...")
 
             # Check capabilities first (most reliable)
             graph_state = context.get("graph_state")
@@ -206,9 +228,9 @@ class DecisionEngine:
                 node_obj = graph_state.nodes[node_id]
                 if hasattr(node_obj, "capabilities"):
                     capabilities = getattr(node_obj, "capabilities", [])
-                    logger.debug(f"🔍 Node '{node_id}' capabilities: {capabilities}")
+                    logger.debug(f"[...] Node '{node_id}' capabilities: {capabilities}")
                     if "answer_emit" in capabilities or "response_generation" in capabilities:
-                        logger.debug(f"✅ Node '{node_id}' is response builder (capabilities)")
+                        logger.debug(f"[OK] Node '{node_id}' is response builder (capabilities)")
                         return True
 
             # Fallback to heuristics based on node name and type patterns
@@ -222,12 +244,12 @@ class DecisionEngine:
 
             node_id_lower = node_id.lower()
             logger.debug(
-                f"🔍 Checking node name '{node_id_lower}' against patterns: {response_builder_patterns}"
+                f"[...] Checking node name '{node_id_lower}' against patterns: {response_builder_patterns}"
             )
             for pattern in response_builder_patterns:
                 if pattern in node_id_lower:
                     logger.debug(
-                        f"✅ Node '{node_id}' is response builder (name pattern: '{pattern}')"
+                        f"[OK] Node '{node_id}' is response builder (name pattern: '{pattern}')"
                     )
                     return True
 
@@ -236,7 +258,7 @@ class DecisionEngine:
             # This would require access to the orchestrator's node configuration
             # For now, we'll use the name-based heuristic
 
-            logger.debug(f"❌ Node '{node_id}' is NOT a response builder")
+            logger.debug(f"[FAIL] Node '{node_id}' is NOT a response builder")
             return False
 
         except Exception as e:

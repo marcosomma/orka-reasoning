@@ -1,3 +1,14 @@
+# OrKa: Orchestrator Kit Agents
+# by Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+
 from __future__ import annotations
 
 import json
@@ -31,7 +42,7 @@ def is_valid_boolean_structure(data: Any) -> bool:
                 "1",
                 "pass",
                 "passed",
-                "✓",
+                "Y",
             ):
                 return True
             if isinstance(v, (int, float)) and v != 0:
@@ -98,10 +109,10 @@ def extract_boolean_from_text(text: str) -> Optional[Dict[str, Dict[str, bool]]]
             logger.debug("Normalized keys to lowercase: %s", list(data.keys()))
 
         if is_valid_boolean_structure(data):
-            logger.info("✅ Successfully extracted boolean evaluations from text")
+            logger.info("[OK] Successfully extracted boolean evaluations from text")
             return cast(Dict[str, Dict[str, bool]], data)
 
-        logger.debug("❌ Invalid boolean structure. Keys found: %s", list(data.keys()) if isinstance(data, dict) else [])
+        logger.debug("[FAIL] Invalid boolean structure. Keys found: %s", list(data.keys()) if isinstance(data, dict) else [])
         return None
 
     except json.JSONDecodeError as e:

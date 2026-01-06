@@ -1,5 +1,5 @@
 # OrKa: Orchestrator Kit Agents
-# Copyright © 2025 Marco Somma
+# by Marco Somma
 #
 # This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
 #
@@ -7,10 +7,10 @@
 #
 # Full license: https://www.apache.org/licenses/LICENSE-2.0
 #
-# Required attribution: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
 
 """
-🚀 **PathExecutor Node** - Dynamic Agent Path Execution
+[START] **PathExecutor Node** - Dynamic Agent Path Execution
 =======================================================
 
 The PathExecutorNode executes dynamically provided agent paths from validation loops,
@@ -100,7 +100,7 @@ def _make_json_serializable(obj: Any) -> Any:
 
 class PathExecutorNode(BaseNode):
     """
-    🚀 **The dynamic path executor** - executes validated agent sequences.
+    [START] **The dynamic path executor** - executes validated agent sequences.
 
     **What makes PathExecutor powerful:**
     - **Runtime Flexibility**: Executes paths determined during execution
@@ -162,6 +162,7 @@ class PathExecutorNode(BaseNode):
         node_id: str,
         path_source: str = "validated_path",
         on_agent_failure: str = "continue",
+        input_source: Optional[str] = None,
         **kwargs: Any,
     ):
         """
@@ -177,6 +178,9 @@ class PathExecutorNode(BaseNode):
             on_agent_failure: Behavior when an agent fails:
                             - "continue": Log error and continue with next agent
                             - "abort": Stop execution and return error
+            input_source: Optional dot-notation path to extract input for agents from
+                         previous_outputs instead of using the default context input.
+                         Example: "task_preparation.response" to use task_preparation output.
             **kwargs: Additional configuration parameters
 
         Raises:
@@ -185,6 +189,7 @@ class PathExecutorNode(BaseNode):
         super().__init__(node_id=node_id, prompt=None, queue=None, **kwargs)
 
         self.path_source = path_source
+        self.input_source = input_source
 
         if on_agent_failure not in ("continue", "abort"):
             raise ValueError(
@@ -195,7 +200,7 @@ class PathExecutorNode(BaseNode):
 
         logger.info(
             f"PathExecutor '{node_id}' initialized: path_source='{path_source}', "
-            f"on_agent_failure='{on_agent_failure}'"
+            f"on_agent_failure='{on_agent_failure}', input_source='{input_source}'"
         )
 
     async def _run_impl(self, context: Dict[str, Any]) -> Dict[str, Any]:
@@ -316,7 +321,7 @@ class PathExecutorNode(BaseNode):
         """
         Extract agent path from previous_outputs using path_source.
 
-        🐛 Bug #3 Fix: Try multiple path variants to handle different output structures
+        [DEBUG] Bug #3 Fix: Try multiple path variants to handle different output structures
 
         Args:
             context: Execution context with previous_outputs
@@ -685,6 +690,31 @@ class PathExecutorNode(BaseNode):
         
         return False
 
+    def _extract_from_path(self, path: str, data: Dict[str, Any]) -> Optional[Any]:
+        """
+        Extract a value from a nested dictionary using dot notation path.
+
+        Args:
+            path: Dot-notation path like "agent_id.response" or "agent_id.response.field"
+            data: Dictionary to extract from (typically previous_outputs)
+
+        Returns:
+            The extracted value, or None if path not found
+        """
+        if not path or not data:
+            return None
+
+        parts = path.split(".")
+        current = data
+
+        for part in parts:
+            if isinstance(current, dict) and part in current:
+                current = current[part]
+            else:
+                return None
+
+        return current
+
     def _validate_execution_context(self, context: Dict[str, Any]) -> Optional[str]:
         """
         Validate that execution context has required components.
@@ -723,8 +753,25 @@ class PathExecutorNode(BaseNode):
             - errors_list: List of error messages for failed agents
         """
         orchestrator = context["orchestrator"]
-        current_input = context.get("input")
         run_id = context.get("run_id", "unknown")
+
+        # Determine input for agent execution
+        # If input_source is specified, extract from previous_outputs
+        if self.input_source:
+            previous_outputs = context.get("previous_outputs", {})
+            current_input = self._extract_from_path(self.input_source, previous_outputs)
+            if current_input is None:
+                logger.warning(
+                    f"PathExecutor '{self.node_id}': Could not extract input from "
+                    f"'{self.input_source}', falling back to context input"
+                )
+                current_input = context.get("input")
+            else:
+                logger.info(
+                    f"PathExecutor '{self.node_id}': Using input from '{self.input_source}'"
+                )
+        else:
+            current_input = context.get("input")
 
         execution_results: Dict[str, Any] = {}
         errors: List[str] = []

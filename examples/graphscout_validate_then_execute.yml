@@ -41,17 +41,19 @@ agents:
   - id: path_validation_loop
     type: loop
     max_loops: 2
-    score_threshold: 0.15
+    score_threshold: 0.30
     persist_across_runs: true
-    fallback_score: 0.10  # Score to use when validation agent times out
-    timeout_score: 0.08  # Score to use when validation explicitly times out
+    fallback_score: 0.15
+    timeout_score: 0.10
     
     scoring:
       preset: lenient
-      context: loop_convergence  # Track plan validation iterations
+      context: loop_convergence
+      # Simplified criteria for achievable validation
       custom_weights:
-        improvement.better_than_previous: 0.35
-        convergence.within_tolerance: 0.30
+        improvement.better_than_previous: 0.45
+        convergence.within_tolerance: 0.35
+        stability.consistent_direction: 0.20
     
     past_loops_metadata:
       loop_number: "{{ get_loop_number() }}"
@@ -94,13 +96,16 @@ agents:
             {% if has_past_loops() %}
             ## Validation Feedback (Attempt {{ get_loop_number() }})
             {% set last = get_past_loops()[-1] %}
-            Previous score: {{ last.score }} (need 0.85)
-            Failed criteria: {{ last.mistakes }}
+            Previous score: {{ last.score }} (need 0.30)
+            Issues identified: {{ last.mistakes }}
             
-            Address these issues in your new path selection.
+            Address these issues in your path selection.
             {% endif %}
             
-            Select path that meets all validation criteria.
+            Select a path that:
+            1. Addresses the query completely
+            2. Uses appropriate agents
+            3. Has logical flow and dependencies
         
         # Validate the proposed plan
         - id: plan_validator
@@ -109,12 +114,14 @@ agents:
           model_url: http://localhost:1234
           provider: lm_studio
           temperature: 0.2
-          timeout: 60.0  # Increased timeout for slow gpt-oss:20b model
+          timeout: 60.0
           scoring_preset: lenient
-          scoring_context: graphscout  # Evaluate agent path quality
+          scoring_context: graphscout
+          # Focused criteria for reliable validation
           custom_weights:
-            completeness.has_all_required_steps: 0.20
-            efficiency.uses_appropriate_agents: 0.15
+            completeness.has_all_required_steps: 0.50
+            efficiency.uses_appropriate_agents: 0.30
+            coherence.logical_agent_sequence: 0.20
 
   # ===== EXECUTION AGENTS (Top Level) =====
   # CRITICAL: These agents MUST be at top-level, NOT inside internal_workflow

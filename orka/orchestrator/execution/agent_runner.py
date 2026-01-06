@@ -1,3 +1,14 @@
+# OrKa: Orchestrator Kit Agents
+# by Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+
 import asyncio
 import inspect
 import logging
@@ -34,6 +45,16 @@ class AgentRunner:
         if full_payload and "orchestrator" in full_payload:
             payload["orchestrator"] = full_payload["orchestrator"]
             logger.debug(f"- Agent '{agent_id}' inherited orchestrator context from full_payload")
+
+        # Inherit orchestrator-level structured output defaults when available
+        try:
+            orchestrator_cfg = getattr(self.orchestrator, "orchestrator_cfg", {})
+            so_defaults = orchestrator_cfg.get("structured_output_defaults") if isinstance(orchestrator_cfg, dict) else None
+            if isinstance(so_defaults, dict) and so_defaults:
+                payload["structured_output_defaults"] = so_defaults
+        except Exception:
+            # Ignore if not available
+            pass
 
         if isinstance(input_data, dict):
             if "loop_number" in input_data:

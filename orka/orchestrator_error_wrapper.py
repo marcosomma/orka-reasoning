@@ -1,4 +1,15 @@
 #!/usr/bin/env python3
+# OrKa: Orchestrator Kit Agents
+# by Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+
 """
 Error handling wrapper for OrKa Orchestrator.
 Provides comprehensive error tracking and telemetry without modifying the core orchestrator logic.
@@ -86,7 +97,7 @@ class OrkaErrorHandler:
             )
 
         self.error_telemetry["errors"].append(error_entry)
-        logger.info(f"🚨 [ORKA-ERROR] {error_type} in {agent_id}: {error_msg}")
+        logger.info(f"[ERROR] [ORKA-ERROR] {error_type} in {agent_id}: {error_msg}")
 
     def record_silent_degradation(self, agent_id: str, degradation_type: str, details: str):
         """Record silent degradations like JSON parsing failures."""
@@ -164,17 +175,17 @@ class OrkaErrorHandler:
         try:
             with open(error_report_path, "w") as f:
                 json.dump(error_report, f, indent=2, default=str)
-            logger.info(f"📋 Comprehensive error report saved: {error_report_path}")
+            logger.info(f"[LIST] Comprehensive error report saved: {error_report_path}")
         except Exception as e:
-            logger.info(f"❌ Failed to save error report: {e}")
+            logger.info(f"[FAIL] Failed to save error report: {e}")
 
         # Also save execution trace
         try:
             trace_path = os.path.join(log_dir, f"orka_trace_{timestamp}.json")
             self.orchestrator.memory.save_to_file(trace_path)
-            logger.info(f"📋 Execution trace saved: {trace_path}")
+            logger.info(f"[LIST] Execution trace saved: {trace_path}")
         except Exception as e:
-            logger.info(f"⚠️ Failed to save trace to memory backend: {e}")
+            logger.info(f"[WARN]️ Failed to save trace to memory backend: {e}")
 
         return error_report_path
 
@@ -215,7 +226,7 @@ class OrkaErrorHandler:
             # Check if any errors occurred during execution
             if self.error_telemetry["errors"]:
                 logger.info(
-                    f"⚠️ [ORKA-WARNING] Execution completed with {len(self.error_telemetry['errors'])} errors",
+                    f"[WARN]️ [ORKA-WARNING] Execution completed with {len(self.error_telemetry['errors'])} errors",
                 )
                 self.error_telemetry["execution_status"] = "partial"
             else:
@@ -251,7 +262,7 @@ class OrkaErrorHandler:
                 critical_error,
             )
 
-            logger.info(f"💥 [ORKA-CRITICAL] Orchestrator failed: {critical_error}")
+            logger.info(f"[CRASH] [ORKA-CRITICAL] Orchestrator failed: {critical_error}")
 
             # Try to get partial logs if possible
             try:
@@ -269,7 +280,7 @@ class OrkaErrorHandler:
             try:
                 self.orchestrator.memory.close()
             except Exception as cleanup_error:
-                logger.info(f"⚠️ Failed to cleanup memory backend: {cleanup_error}")
+                logger.info(f"[WARN]️ Failed to cleanup memory backend: {cleanup_error}")
 
             # Return error report for debugging instead of raising
             return {

@@ -1,3 +1,14 @@
+# OrKa: Orchestrator Kit Agents
+# by Marco Somma
+#
+# This file is part of OrKa – https://github.com/marcosomma/orka-reasoning
+#
+# Licensed under the Apache License, Version 2.0 (Apache 2.0).
+#
+# Full license: https://www.apache.org/licenses/LICENSE-2.0
+#
+# Attribution would be appreciated: OrKa by Marco Somma – https://github.com/marcosomma/orka-reasoning
+
 """
 Fallback interface implementations for when Rich is not available.
 """
@@ -93,7 +104,7 @@ class FallbackInterface:
                     stats = memory.get_memory_stats()
 
                     # Display basic metrics
-                    logger.info("📊 Memory Statistics:")
+                    logger.info("[STATS] Memory Statistics:")
                     logger.info(f"   Total Entries: {stats.get('total_entries', 0)}")
                     logger.info(f"   Stored Memories: {stats.get('stored_memories', 0)}")
                     logger.info(f"   Orchestration Logs: {stats.get('orchestration_logs', 0)}")

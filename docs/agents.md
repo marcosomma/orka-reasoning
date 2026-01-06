@@ -467,6 +467,14 @@ Performs Retrieval-Augmented Generation with vector search and LLM generation.
 
 ---
 
+## 🧩 Structured Output
+
+Agents support provider-enforced structured outputs via `params.structured_output`.
+Enable it per agent to receive valid JSON matching a schema. Modes: `auto`, `model_json`, `tool_call`, `prompt`.
+See the Structured Output Guide for details and examples.
+
+---
+
 ## 🚀 Getting Started
 
 1. **Choose your agent types** based on your workflow needs
