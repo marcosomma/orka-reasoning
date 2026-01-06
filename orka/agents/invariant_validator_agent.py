@@ -21,12 +21,15 @@ execution correctness.
 import re
 import json
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, TYPE_CHECKING
 from .base_agent import BaseAgent
 from ..orchestrator.execution_invariants import (
     ExecutionInvariantsValidator,
     ExecutionInvariants,
 )
+
+if TYPE_CHECKING:
+    from ..contracts import Context
 
 logger = logging.getLogger(__name__)
 
@@ -96,11 +99,13 @@ class InvariantValidatorAgent(BaseAgent):
         logger.info(
             f"Initialized InvariantValidatorAgent '{agent_id}' with config: {self.validator_config}"
         )
-    async def _run_impl(self, input_data: str) -> Dict[str, Any]:
+
+    async def _run_impl(self, ctx: "Context") -> Dict[str, Any]:
         """
         Async implementation required by BaseAgent.
         Delegates to synchronous process() method.
         """
+        input_data = ctx.get("input", "") or ""
         return self.process(input_data)
     
     def process(self, input_data: str) -> Dict[str, Any]:

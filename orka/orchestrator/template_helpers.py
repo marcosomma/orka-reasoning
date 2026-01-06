@@ -289,7 +289,7 @@ def get_execution_artifacts(previous_outputs: Optional[Dict[str, Any]] = None) -
             "structured_outputs": {}
         }
     
-    artifacts = {
+    artifacts: Dict[str, Any] = {
         "nodes_executed": [],
         "fork_groups": {},
         "router_decisions": {},

@@ -306,10 +306,12 @@ class PathScorer:
             required_agents: List[str] = []
 
             # Priority: explicit list from policy, else context fallback
-            if isinstance(policy.get("required_agents"), list):
-                required_agents = [str(x) for x in policy.get("required_agents")]
-            elif isinstance(context.get("required_agents"), list):
-                required_agents = [str(x) for x in context.get("required_agents")]
+            policy_agents = policy.get("required_agents")
+            context_agents = context.get("required_agents")
+            if isinstance(policy_agents, list):
+                required_agents = [str(x) for x in policy_agents]
+            elif isinstance(context_agents, list):
+                required_agents = [str(x) for x in context_agents]
 
             # No policy -> neutral full compliance
             if not require_critical and not required_agents:
