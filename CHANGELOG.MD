@@ -1,3 +1,51 @@
+# [0.9.14] · 2026-01-06 ✅
+OrKa v0.9.14 – Deterministic Invariants, Compliance Scoring, and Stability Fixes
+
+### Summary
+This release hardens runtime correctness and observability with a deterministic Execution Invariants validator, introduces a compliance scoring component for GraphScout, improves metric normalization and trace aggregation, and fixes template helper behavior for structured outputs. It also reduces log noise and corrects CLI exit code semantics.
+
+### Added
+* Deterministic Execution Invariants validation
+  - New validator producing compact facts for self-assessment workflows
+  - Categories: fork/join integrity, routing validity, cycle detection, tool call integrity, schema compliance, depth constraints
+  - Integrated in self-assessment workflow before LLM evaluation
+  - Files: [orka/orchestrator/execution_invariants.py](orka/orchestrator/execution_invariants.py), tests under [tests/unit/orchestrator](tests/unit/orchestrator)
+
+### Enhanced
+* GraphScout compliance scoring (policy-aware)
+  - Compliance component in path scoring reads `graph_scout.policy` from context and can penalize non-compliant paths
+  - Neutral behavior when flags are absent; backward compatible
+  - File: [orka/orchestrator/path_scoring.py](orka/orchestrator/path_scoring.py)
+* Metrics and traces
+  - Metric type normalization for `confidence`, tokens, latency, and cost to ensure numeric types throughout
+  - Trace cost/token aggregation corrected to include nested and blob-backed events
+* Logging
+  - Reduced INFO-level noise for expected control-flow scenarios; clearer summaries retained at DEBUG
+
+### Fixed
+* Template helpers: structured output unwrapping
+  - `get_agent_response()` and `safe_get_response()` now return the inner `response` string when the stored value is a nested dict from structured outputs
+  - Tests added in prompt rendering helpers
+* CLI exit codes
+  - `orka run` now returns exit code 0 for valid but falsy results (e.g., empty string/dict/list); only `None` is treated as failure
+* Trace aggregation
+  - Top-level totals now include GraphScout evaluation metrics; no more zero total tokens/cost in meta reports for non-trivial runs
+
+### Compatibility
+* Backward compatible by default
+  - Compliance scoring is opt-in via policy/weights; no behavior change without config
+  - Structured output helper change is non-breaking and returns expected string values
+
+### Testing
+* New unit tests for invariants validator and helper functions
+* Full suite passes with coverage ≥ 80%
+
+### Migration Notes
+* Self-assessment workflows should:
+  - Add invariant collection step before LLM grading
+  - Align schemas of final assessment outputs with actual response shapes
+  - Prefer temperature=0 for evaluator agents; consider different model family for judge vs worker
+
 # [0.9.13] · 2026-01-02 🌊 [BETA]
 OrKa v0.9.13 – Streaming Runtime & Real-Time Conversational Orchestration (Beta Release)
 
@@ -261,8 +309,6 @@ This release represents a **massive codebase refactoring effort** reducing compl
 * **Recommended** — Review refactored modules for improved code organization patterns
 
 > **Maintainability Revolution**: This release transforms OrKa's most complex modules into clean, testable, single-responsibility components. The 5,000+ lines of refactored code with 426 new tests establishes a solid foundation for future development.
-
----
 
 # [0.9.11] · 2025-12-12 🧪
 OrKa v0.9.11 – Test Strictness, Warning Hardening & Reliability
