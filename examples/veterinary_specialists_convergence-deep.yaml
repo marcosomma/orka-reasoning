@@ -308,7 +308,9 @@ agents:
       
       PATIENT: {{ get_input() }}
       
-      SYNTHESIS: {{ get_agent_response('specialists_loop').result.diagnosis_join | default('No synthesis', true) }}
+      {% set loop_output = get_loop_output('specialists_loop', previous_outputs) %}
+      {% set loop_result = safe_get(loop_output, 'result', {}) %}
+      SYNTHESIS: {{ safe_get(loop_result, 'diagnosis_join', 'No synthesis available') }}
       
       OUTPUT FORMAT (YAML):
       ACTION_PLAN: |
@@ -323,8 +325,10 @@ agents:
       operation: write
       memory_type: long_term
     prompt: |
-      synthesis: {{ get_agent_response('specialists_loop').result.diagnosis_join | default('None', true) }}
-      action_plan: {{ get_agent_response('actionable_plan_builder') }}
+      {% set loop_output = get_loop_output('specialists_loop', previous_outputs) %}
+      {% set loop_result = safe_get(loop_output, 'result', {}) %}
+      synthesis: {{ safe_get(loop_result, 'diagnosis_join', 'None') }}
+      action_plan: {{ safe_get_response('actionable_plan_builder', 'None') }}
 
   - id: explanation_builder
     type: local_llm
@@ -338,8 +342,10 @@ agents:
       LANGUAGE: ITALIAN (Rispondere in italiano)
       
       PATIENT: {{ get_input() }}
-      SYNTHESIS: {{ get_agent_response('specialists_loop').result.diagnosis_join | default('None', true) }}
-      ACTION_PLAN: {{ get_agent_response('actionable_plan_builder') }}
+      {% set loop_output = get_loop_output('specialists_loop', previous_outputs) %}
+      {% set loop_result = safe_get(loop_output, 'result', {}) %}
+      SYNTHESIS: {{ safe_get(loop_result, 'diagnosis_join', 'None') }}
+      ACTION_PLAN: {{ safe_get_response('actionable_plan_builder', 'None') }}
       
       OUTPUT FORMAT (YAML):
       diagnosis: [Main diagnosis with reasoning]
