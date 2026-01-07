@@ -205,7 +205,11 @@ agents:
       store_metadata: true
     namespace: conversation
     prompt: |
-      {{ safe_get_response('final_answer_builder', '') }}
+      {
+        "type": "conversation_result",
+        "query": {{ get_input() | tojson }},
+        "response": {{ safe_get_response('final_answer_builder', '') | tojson }}
+      }
     metadata:
       query: "{{ get_input() }}"
       category: conversation

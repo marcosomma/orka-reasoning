@@ -69,8 +69,8 @@ class FilteringMixin:
                         age_hours = (time.time() - ts_seconds) / 3600
                         decay_hours = getattr(self, "temporal_decay_hours", 24.0)
                         recency_factor = max(0.5, 1.0 - (age_hours / (decay_hours * 24)))
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Recency factor calculation failed for timestamp {timestamp}: {e}")
 
                 # 3. Metadata quality factor
                 metadata_factor = 1.0

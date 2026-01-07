@@ -238,7 +238,15 @@ agents:
       operation: write
       vector: true
     prompt: |
-      Store findings: {{ previous_outputs }}
+      {
+        "type": "graph_scout_validated_record",
+        "question": {{ input | tojson }},
+        "findings": {{ previous_outputs | tojson }}
+      }
+    metadata:
+      category: stored
+      source: graph_scout_with_plan_validator_loop
+    key_template: "graphscout_validated_{{ input | truncate(60) }}"
   
   - id: response_builder
     type: local_llm

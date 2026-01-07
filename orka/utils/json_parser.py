@@ -310,8 +310,8 @@ def repair_malformed_json(text: str) -> Optional[str]:
         # Fast-path: already valid.
         json.loads(candidate)
         return candidate
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"Initial JSON validation failed, attempting repair: {e}")
 
     def _strip_js_style_comments(s: str) -> str:
         # NOTE: This is heuristic and may remove '//' inside strings, but it's

@@ -244,6 +244,10 @@ Performance Considerations
 """
 
 import base64
+import time
+import sys
+import platform
+from urllib.parse import urlparse, urlunparse
 import logging
 import os
 import pprint
@@ -252,8 +256,21 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from typing import Dict, Optional
+
+# Optional imports guarded to avoid hard failures in constrained environments
+try:  # psutil is in project dependencies; guard anyway for robustness
+    import psutil  # type: ignore
+except Exception:  # pragma: no cover - fallback if psutil import fails
+    psutil = None  # type: ignore
+
+try:
+    import redis.asyncio as aioredis  # type: ignore
+except Exception:  # pragma: no cover
+    aioredis = None  # type: ignore
 
 from orka.orchestrator import Orchestrator
+from orka.startup.banner import get_version as _get_orka_version
 
 app = FastAPI(
     title="OrKa AI Orchestration API",
@@ -261,6 +278,9 @@ app = FastAPI(
     version="1.0.0",
 )
 logger = logging.getLogger(__name__)
+
+# Track server start time for uptime reporting
+app.state.start_time = time.time()
 
 # Ensure server logs are visible when launched via orka-start or as a module
 try:
@@ -332,6 +352,194 @@ def sanitize_for_json(obj: Any) -> Any:
     except Exception as e:
         logger.warning(f"Failed to sanitize object for JSON: {e!s}")
         return f"<sanitization-error: {e!s}>"
+
+
+def _sanitize_url(url: str) -> str:
+    """
+    Remove credentials from URLs to avoid leaking secrets in health output.
+
+    Examples:
+        redis://:password@localhost:6380/0 -> redis://localhost:6380/0
+    """
+    try:
+        parsed = urlparse(url)
+        netloc = parsed.hostname or ""
+        if parsed.port:
+            netloc = f"{netloc}:{parsed.port}"
+            # Rebuild ParseResult without userinfo
+            sanitized = parsed._replace(netloc=netloc)
+        return urlunparse(sanitized)
+    except Exception:
+        return "<redacted>"
+
+
+async def _check_memory_health() -> Dict[str, Any]:
+    """Perform connectivity and basic performance checks against Redis/RedisStack.
+
+    Returns a JSON-serializable dict with connection status, latencies, and optional
+    RedisStack index visibility if the module is available.
+    """
+    details: Dict[str, Any] = {
+        "backend": os.getenv("ORKA_MEMORY_BACKEND", "redisstack"),
+        "url": None,
+        "connected": False,
+        "ping_ms": None,
+        "set_get_ms": None,
+        "roundtrip_ok": None,
+        "search_module": None,
+        "index_list": None,
+        "errors": [],
+    }
+
+    # Determine target URL (same defaults used across the project)
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6380/0")
+    details["url"] = _sanitize_url(redis_url)
+
+    if aioredis is None:
+        details["errors"].append("redis.asyncio not available")
+        return details
+
+    client: Optional[aioredis.Redis] = None  # type: ignore[name-defined]
+    try:
+        # Use default UTF-8 encoding to avoid encode() errors from redis-py when handling str keys
+        # (passing encoding=None can break key encoding on some redis-py versions)
+        # Use default encoding; avoid passing None which can cause runtime encode errors
+        client = aioredis.from_url(redis_url, decode_responses=False)  # type: ignore[attr-defined]
+
+        # 1) Ping latency
+        t0 = time.perf_counter()
+        pong = await client.ping()
+        t1 = time.perf_counter()
+        details["ping_ms"] = round((t1 - t0) * 1000.0, 2)
+        details["connected"] = bool(pong)
+
+        # 2) Small SET/GET roundtrip
+        key = f"orka:health:probe:{int(time.time()*1000)}"
+        t0 = time.perf_counter()
+        await client.set(key, b"ok", ex=5)
+        val = await client.get(key)
+        t1 = time.perf_counter()
+        details["set_get_ms"] = round((t1 - t0) * 1000.0, 2)
+        details["roundtrip_ok"] = val == b"ok"
+
+        # 3) Try to check RediSearch availability (RedisStack)
+        try:
+            idx = await client.execute_command("FT._LIST")  # type: ignore[no-untyped-call]
+            # idx can be a list of bytes index names
+            if isinstance(idx, (list, tuple)):
+                details["search_module"] = True
+                try:
+                    details["index_list"] = [i.decode("utf-8") if isinstance(i, (bytes, bytearray)) else str(i) for i in idx]
+                except Exception:
+                    details["index_list"] = "<unavailable>"
+            else:
+                details["search_module"] = False
+        except Exception as e:  # Module may not be loaded
+            details["search_module"] = False
+            details["errors"].append(f"FT._LIST failed: {e!s}")
+
+    except Exception as e:
+        details["errors"].append(f"connection failed: {e!s}")
+        details["connected"] = False
+    finally:
+        try:
+            if client is not None:
+                await client.close()  # type: ignore[func-returns-value]
+        except Exception:
+            pass
+
+    return details
+
+
+def _overall_status(memory: Dict[str, Any]) -> str:
+    """Derive overall health from memory metrics."""
+    if not memory.get("connected"):
+        return "critical"
+    # Prefer functional signal over timing to avoid false degradations in CI
+    roundtrip_ok = memory.get("roundtrip_ok")
+    if roundtrip_ok is False:
+        return "degraded"
+    return "healthy"
+
+
+@app.get("/api/health")
+async def api_health() -> JSONResponse:
+    """Deep health report for OrKa server and memory backend."""
+    try:
+        mem = await _check_memory_health()
+        status = _overall_status(mem)
+
+        # System info
+        py_ver = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+        try:
+            ver = _get_orka_version()
+        except Exception:
+            ver = "unknown"
+
+        uptime_s = max(0, time.time() - getattr(app.state, "start_time", time.time()))
+
+        system_info = {
+            "python": py_ver,
+            "platform": platform.platform(),
+            "pid": os.getpid(),
+            "uptime_seconds": int(uptime_s),
+        }
+
+        if psutil is not None:
+            try:
+                proc = psutil.Process(os.getpid())
+                with proc.oneshot():
+                    mem_info = proc.memory_info()
+                    system_info["rss_mb"] = round(mem_info.rss / (1024 * 1024), 2)
+                    system_info["threads"] = proc.num_threads()
+                # Optional extended metrics (best-effort)
+                try:
+                    system_info["cpu_percent"] = psutil.cpu_percent(interval=0.0)
+                except Exception:
+                    pass
+                try:
+                    vm = psutil.virtual_memory()
+                    system_info["memory"] = {
+                        "percent": vm.percent,
+                        "total_mb": round(vm.total / (1024 * 1024), 2),
+                        "available_mb": round(vm.available / (1024 * 1024), 2),
+                    }
+                except Exception:
+                    pass
+                try:
+                    # Pick current drive root for portability (Windows/Linux)
+                    cwd = os.getcwd()
+                    root = os.path.splitdrive(cwd)[0] + os.sep if os.name == "nt" else "/"
+                    du = psutil.disk_usage(root)
+                    system_info["disk"] = {
+                        "percent": du.percent,
+                        "total_mb": round(du.total / (1024 * 1024), 2),
+                        "free_mb": round(du.free / (1024 * 1024), 2),
+                    }
+                except Exception:
+                    pass
+            except Exception:
+                pass
+
+        payload = {
+            "status": status,
+            "version": {"orka": ver},
+            "system": system_info,
+            "memory": mem,
+        }
+
+        return JSONResponse(content=payload, status_code=200 if status != "critical" else 503)
+    except Exception as e:
+        logger.error(f"Health endpoint error: {e!s}")
+        return JSONResponse(content={"status": "error", "error": str(e)}, status_code=500)
+
+
+@app.get("/health")
+async def health_basic() -> JSONResponse:
+    """Lightweight liveness probe. Returns overall status only."""
+    mem = await _check_memory_health()
+    status = _overall_status(mem)
+    return JSONResponse(content={"status": status}, status_code=200 if status != "critical" else 503)
 
 
 # API endpoint at /api/run

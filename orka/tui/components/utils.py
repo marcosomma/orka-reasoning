@@ -12,7 +12,10 @@
 """TUI Utility Functions - Common helpers for UI components."""
 
 import datetime
+import logging
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 def format_bytes_content(raw_content: Any, max_length: int = 35) -> str:
@@ -38,7 +41,8 @@ def parse_timestamp(raw_timestamp: Any) -> str:
         else:  # seconds
             dt = datetime.datetime.fromtimestamp(timestamp)
         return dt.strftime("%H:%M:%S")
-    except Exception:
+    except Exception as e:
+        logger.debug(f"TUI timestamp parse error (non-fatal): {e}")
         return "??:??:??"
 
 
@@ -75,7 +79,8 @@ def parse_importance_score(raw_importance: Any) -> float:
     if isinstance(raw_importance, bytes):
         try:
             return float(raw_importance.decode())
-        except Exception:
+        except Exception as e:
+            logger.debug(f"TUI importance score parse error (non-fatal): {e}")
             return 0.0
     return float(raw_importance) if raw_importance else 0.0
 

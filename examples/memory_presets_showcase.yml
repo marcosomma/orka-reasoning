@@ -82,11 +82,17 @@ agents:
     params:
       vector: true
     prompt: |
-      Experience Summary:
-      Input: {{ input }}
-      Processing: {{ previous_outputs.working_processor }}
-      Knowledge Used: {{ previous_outputs.knowledge_lookup }}
-      Process Applied: {{ previous_outputs.process_optimizer }}
+      {
+        "type": "experience",
+        "input": {{ input | tojson }},
+        "processing": {{ previous_outputs.working_processor | tojson }},
+        "knowledge": {{ previous_outputs.knowledge_lookup | tojson }},
+        "procedure": {{ previous_outputs.process_optimizer | tojson }}
+      }
+    metadata:
+      category: experience
+      source: memory_presets_showcase
+    key_template: "experience_{{ input | truncate(60) }}"
 
   # 6. Meta Memory - System self-reflection
   - id: meta_analyzer
@@ -98,10 +104,12 @@ agents:
     params:
       vector: true
     prompt: |
-      Meta-Analysis:
-      - Workflow efficiency: How well did this process work?
-      - Memory utilization: Which memory types were most effective?
-      - System insights: What can we learn about our cognitive process?
-      
-      Input: {{ input }}
-      All outputs: {{ previous_outputs | tojson }}
+      {
+        "type": "meta",
+        "input": {{ input | tojson }},
+        "outputs": {{ previous_outputs | tojson }}
+      }
+    metadata:
+      category: meta
+      source: memory_presets_showcase
+    key_template: "meta_{{ input | truncate(60) }}"

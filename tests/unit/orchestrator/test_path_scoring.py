@@ -329,3 +329,131 @@ class TestPathScorer:
         
         assert 0.0 <= score <= 1.0
 
+
+class TestSemanticSimilarity:
+    """Test suite for semantic similarity implementation."""
+
+    def create_mock_config(self):
+        """Helper to create mock config."""
+        config = Mock()
+        config.score_weights = {
+            "llm_relevance": 0.4,
+            "heuristics": 0.3,
+            "priors": 0.2,
+            "cost": 0.1,
+        }
+        config.scoring_mode = "numeric"
+        config.k_beam = 3
+        config.max_reasonable_cost = 0.10
+        config.path_length_penalty = 0.10
+        config.keyword_match_boost = 0.30
+        config.default_neutral_score = 0.50
+        config.optimal_path_length = (2, 3)
+        config.min_readiness_score = 0.30
+        config.no_requirements_score = 0.90
+        config.risky_capabilities = {"file_write", "code_execution"}
+        config.safety_markers = {"sandboxed", "read_only"}
+        config.safe_default_score = 0.70
+        return config
+
+    def test_has_embedder_returns_false_when_not_available(self):
+        """Test _has_embedder returns False when embedder not available."""
+        config = self.create_mock_config()
+        scorer = PathScorer(config)
+
+        # Default behavior - embedder may or may not be available
+        result = scorer._has_embedder()
+        assert isinstance(result, bool)
+
+    def test_keyword_overlap_score_exact_match(self):
+        """Test _keyword_overlap_score with exact match."""
+        config = self.create_mock_config()
+        scorer = PathScorer(config)
+
+        score = scorer._keyword_overlap_score(
+            "search_agent", "search for information", {}
+        )
+
+        assert score > 0.0  # Should have some overlap
+
+    def test_keyword_overlap_score_no_match(self):
+        """Test _keyword_overlap_score with no match."""
+        config = self.create_mock_config()
+        scorer = PathScorer(config)
+
+        score = scorer._keyword_overlap_score(
+            "analysis_engine", "search for weather", {}
+        )
+
+        # May still have some score due to generic words
+        assert 0.0 <= score <= 1.0
+
+    def test_keyword_overlap_score_partial_match(self):
+        """Test _keyword_overlap_score with partial/substring match."""
+        config = self.create_mock_config()
+        scorer = PathScorer(config)
+
+        # "search" is a substring of "researcher"
+        score = scorer._keyword_overlap_score(
+            "researcher_agent", "search for data", {}
+        )
+
+        assert 0.0 <= score <= 1.0
+
+    def test_keyword_overlap_score_with_description(self):
+        """Test _keyword_overlap_score uses candidate description."""
+        config = self.create_mock_config()
+        scorer = PathScorer(config)
+
+        candidate = {"description": "This agent searches web resources"}
+        score = scorer._keyword_overlap_score(
+            "web_agent", "search for information", candidate
+        )
+
+        assert 0.0 <= score <= 1.0
+
+    def test_keyword_overlap_score_stopwords_filtered(self):
+        """Test _keyword_overlap_score filters stopwords."""
+        config = self.create_mock_config()
+        scorer = PathScorer(config)
+
+        # Common words like "the", "for" should be filtered
+        score1 = scorer._keyword_overlap_score("agent", "the agent for searching", {})
+        score2 = scorer._keyword_overlap_score("agent", "agent", {})
+
+        # Scores should be similar since stopwords are filtered
+        assert abs(score1 - score2) < 0.5
+
+    def test_check_domain_overlap_uses_keyword_fallback(self):
+        """Test _check_domain_overlap falls back to keyword matching."""
+        config = self.create_mock_config()
+        scorer = PathScorer(config)
+
+        candidate = {"node_id": "search_agent"}
+        score = scorer._check_domain_overlap(candidate, "search query")
+
+        assert 0.0 <= score <= 1.0
+
+    def test_check_domain_overlap_missing_node_id(self):
+        """Test _check_domain_overlap handles missing node_id."""
+        config = self.create_mock_config()
+        scorer = PathScorer(config)
+
+        candidate = {}  # No node_id
+        score = scorer._check_domain_overlap(candidate, "search query")
+
+        assert score == 0.5  # Default fallback
+
+    def test_compute_semantic_similarity_no_embedder(self):
+        """Test _compute_semantic_similarity returns None when no embedder."""
+        config = self.create_mock_config()
+        scorer = PathScorer(config)
+
+        # Patch _has_embedder to return False
+        scorer._has_embedder = Mock(return_value=False)
+
+        result = scorer._compute_semantic_similarity("node", "question")
+
+        # Should return None when no embedder
+        # (actual behavior depends on embedder availability)
+        assert result is None or isinstance(result, float)

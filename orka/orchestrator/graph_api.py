@@ -264,10 +264,32 @@ class GraphAPI:
         try:
             visited: Set[str] = set()
 
-            # Check memory for executed agents
+            # Method 1: Check execution_history if available (works without memory)
+            if hasattr(orchestrator, "execution_history"):
+                for entry in orchestrator.execution_history:
+                    if isinstance(entry, dict) and "agent_id" in entry:
+                        visited.add(entry["agent_id"])
+
+            # Method 2: Check previous_outputs if available (works without memory)
+            if hasattr(orchestrator, "previous_outputs"):
+                visited.update(orchestrator.previous_outputs.keys())
+
+            # Method 3: Query memory for agent completions in this run
             if hasattr(orchestrator, "memory") and orchestrator.memory:
-                # TODO: Query memory for executed agents in this run
-                pass
+                memory = orchestrator.memory
+                if hasattr(memory, "search_memories"):
+                    try:
+                        # Search for agent completion logs with this run_id
+                        results = memory.search_memories(
+                            query=f"agent completed run_id:{run_id}",
+                            num_results=100,
+                            log_type="agent_completion",
+                        )
+                        for result in results:
+                            if isinstance(result, dict) and "node_id" in result:
+                                visited.add(result["node_id"])
+                    except Exception as e:
+                        logger.debug(f"Memory search for visited nodes failed: {e}")
 
             return visited
 

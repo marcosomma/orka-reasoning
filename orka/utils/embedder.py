@@ -261,6 +261,33 @@ class AsyncEmbedder:
         logger.warning("Using fallback pseudo-random encoding based on text hash")
         return self._fallback_encode(text)
 
+    def embed(self, text: str) -> np.ndarray:
+        """
+        Synchronous embedding method compatible with existing call sites.
+
+        This mirrors the logic of `encode` without async, so it can be used
+        in synchronous scoring and routing paths without event loop juggling.
+
+        Args:
+            text: Text to embed
+
+        Returns:
+            np.ndarray: Embedding vector
+        """
+        if not text:
+            logger.warning("Empty text provided for embedding. Using zero vector.")
+            return np.zeros(self.embedding_dim, dtype=np.float32)
+
+        if self.model_loaded and self.model is not None:
+            try:
+                result = self.model.encode(text)
+                return _ensure_numpy_array(result)
+            except Exception as e:
+                logger.error(f"Error embedding text with model: {str(e)}. Using fallback.")
+
+        logger.warning("Using fallback pseudo-random embedding based on text hash")
+        return self._fallback_encode(text)
+
     def _fallback_encode(self, text: str) -> np.ndarray:
         """
         Generate a deterministic pseudo-random embedding based on text hash.

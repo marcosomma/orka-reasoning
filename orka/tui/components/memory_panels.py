@@ -12,6 +12,7 @@
 """Memory Panel Component Builders."""
 
 import datetime
+import logging
 
 try:
     from rich.box import ROUNDED
@@ -22,6 +23,8 @@ try:
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
+
+logger = logging.getLogger(__name__)
 
 from .utils import (
     decode_bytes_field,
@@ -72,7 +75,8 @@ class MemoryPanelMixin:
                 else:
                     dt = datetime.datetime.fromtimestamp(timestamp)
                 time_str = dt.strftime("%H:%M")
-            except Exception:
+            except Exception as e:
+                logger.debug(f"TUI memory timestamp format error (non-fatal): {e}")
                 time_str = "??:??"
 
             # Handle TTL
@@ -86,7 +90,8 @@ class MemoryPanelMixin:
                         ttl_display = f"[green]{ttl}[/green]"
                     else:
                         ttl_display = f"[yellow]{ttl}[/yellow]"
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"TUI TTL hours parse error (non-fatal): {e}")
                     ttl_display = f"[yellow]{ttl}[/yellow]"
             elif "m" in ttl:
                 ttl_display = f"[yellow]{ttl}[/yellow]"

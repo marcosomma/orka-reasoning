@@ -226,13 +226,7 @@ agents:
         m: 16
     namespace: processed_numbers
     prompt: |
-      Number {{ get_input() }} Analysis Result: {{ get_input() }} > 5 (TRUE - greater than 5)
-
-      Classification: {{ previous_outputs.binary_classifier }}
-      Confidence: {{ previous_outputs.binary_classifier.confidence | default(1.0) }}
-      Validation: {{ previous_outputs.true_validation_guardian.valid }}
-
-      CACHED RESULT: The number {{ get_input() }} IS greater than 5. Classification result is TRUE.
+      {{ previous_outputs.true_validation_guardian.memory_object | tojson }}
     metadata:
       number: "{{ get_input() }}"
       result: "true"
@@ -266,13 +260,7 @@ agents:
         m: 16
     namespace: processed_numbers
     prompt: |
-      Number {{ get_input() }} Analysis Result: {{ get_input() }} ≤ 5 (FALSE - not greater than 5)
-
-      Classification: {{ previous_outputs.binary_classifier }}
-      Confidence: {{ previous_outputs.binary_classifier.confidence | default(1.0) }}
-      Validation: {{ previous_outputs.false_validation_guardian.result.valid }}
-
-      CACHED RESULT: The number {{ get_input() }} is NOT greater than 5. Classification result is FALSE.
+      {{ previous_outputs.false_validation_guardian.memory_object | tojson }}
     metadata:
       number: "{{ input }}"
       result: "false"

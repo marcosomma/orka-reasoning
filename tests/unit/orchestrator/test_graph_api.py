@@ -503,3 +503,118 @@ class TestGraphAPI:
         nodes = await api._extract_nodes(mock_orchestrator)
 
         assert nodes == {}
+
+
+class TestGetVisitedNodes:
+    """Test suite for _get_visited_nodes implementation."""
+
+    @pytest.mark.asyncio
+    async def test_get_visited_nodes_from_execution_history(self):
+        """Test _get_visited_nodes reads from execution_history."""
+        api = GraphAPI()
+
+        mock_orchestrator = Mock()
+        mock_orchestrator.memory = None
+        mock_orchestrator.execution_history = [
+            {"agent_id": "agent1", "status": "completed"},
+            {"agent_id": "agent2", "status": "completed"},
+        ]
+        # Delete auto-created previous_outputs so it's not accessed
+        del mock_orchestrator.previous_outputs
+
+        visited = await api._get_visited_nodes(mock_orchestrator, "run_123")
+
+        assert "agent1" in visited
+        assert "agent2" in visited
+
+    @pytest.mark.asyncio
+    async def test_get_visited_nodes_from_previous_outputs(self):
+        """Test _get_visited_nodes reads from previous_outputs."""
+        api = GraphAPI()
+
+        mock_orchestrator = Mock()
+        mock_orchestrator.memory = Mock()
+        mock_orchestrator.previous_outputs = {"agent1": "output1", "agent2": "output2"}
+        # No execution_history
+        del mock_orchestrator.execution_history
+        # No search_memories
+        del mock_orchestrator.memory.search_memories
+
+        visited = await api._get_visited_nodes(mock_orchestrator, "run_123")
+
+        assert "agent1" in visited
+        assert "agent2" in visited
+
+    @pytest.mark.asyncio
+    async def test_get_visited_nodes_from_memory_search(self):
+        """Test _get_visited_nodes queries memory for agent completions."""
+        api = GraphAPI()
+
+        mock_memory = Mock()
+        mock_memory.search_memories = Mock(
+            return_value=[
+                {"node_id": "agent1"},
+                {"node_id": "agent2"},
+            ]
+        )
+
+        mock_orchestrator = Mock()
+        mock_orchestrator.memory = mock_memory
+        # No execution_history or previous_outputs
+        del mock_orchestrator.execution_history
+        del mock_orchestrator.previous_outputs
+
+        visited = await api._get_visited_nodes(mock_orchestrator, "run_123")
+
+        assert "agent1" in visited
+        assert "agent2" in visited
+        mock_memory.search_memories.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_get_visited_nodes_memory_search_failure(self):
+        """Test _get_visited_nodes handles memory search failure gracefully."""
+        api = GraphAPI()
+
+        mock_memory = Mock()
+        mock_memory.search_memories = Mock(side_effect=Exception("Search error"))
+
+        mock_orchestrator = Mock()
+        mock_orchestrator.memory = mock_memory
+        mock_orchestrator.previous_outputs = {"agent1": "output1"}
+        del mock_orchestrator.execution_history
+
+        visited = await api._get_visited_nodes(mock_orchestrator, "run_123")
+
+        # Should still get previous_outputs even if memory search fails
+        assert "agent1" in visited
+
+    @pytest.mark.asyncio
+    async def test_get_visited_nodes_no_memory(self):
+        """Test _get_visited_nodes when no memory is available."""
+        api = GraphAPI()
+
+        mock_orchestrator = Mock()
+        mock_orchestrator.memory = None
+
+        visited = await api._get_visited_nodes(mock_orchestrator, "run_123")
+
+        assert visited == set()
+
+    @pytest.mark.asyncio
+    async def test_get_visited_nodes_combined_sources(self):
+        """Test _get_visited_nodes combines all sources."""
+        api = GraphAPI()
+
+        mock_memory = Mock()
+        mock_memory.search_memories = Mock(return_value=[{"node_id": "agent3"}])
+
+        mock_orchestrator = Mock()
+        mock_orchestrator.memory = mock_memory
+        mock_orchestrator.execution_history = [{"agent_id": "agent1"}]
+        mock_orchestrator.previous_outputs = {"agent2": "output2"}
+
+        visited = await api._get_visited_nodes(mock_orchestrator, "run_123")
+
+        assert "agent1" in visited
+        assert "agent2" in visited
+        assert "agent3" in visited

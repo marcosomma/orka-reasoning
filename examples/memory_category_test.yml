@@ -18,10 +18,16 @@ agents:
       force_recreate_index: false
     namespace: category_demo
     prompt: |
-      Save this as a stored memory for '{{ get_input() }}'.
+      {
+        "type": "note",
+        "topic": {{ get_input() | tojson }},
+        "note": "Stored memory for topic",
+        "category": "stored"
+      }
     metadata:
       category: stored
       log_type: memory
+    key_template: "{{ get_input() }}"
 
   - id: memory-read_stored
     type: memory

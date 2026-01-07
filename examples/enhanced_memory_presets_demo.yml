@@ -38,10 +38,16 @@ agents:
       namespace: conversations
       # Preset provides: vector=true, vector_field_name="content_vector", 
       # vector_params with COSINE distance, ef_construction=200, etc.
-    prompt: "Conversation: {{ get_input() }}"
+    prompt: |
+      {
+        "type": "conversation",
+        "query": {{ get_input() | tojson }},
+        "context": {{ get_agent_response('episodic_reader') | tojson }}
+      }
     metadata:
       type: conversation
       category: interaction
+    key_template: "conversation_{{ get_input() | truncate(60) }}"
 
   # SEMANTIC MEMORY (Facts & Knowledge Base)
   # 30-day retention, optimized for knowledge retrieval
@@ -63,10 +69,15 @@ agents:
       operation: write
       namespace: knowledge_base
       # Preset provides: vector=true, optimized for long-term knowledge storage
-    prompt: "Knowledge fact: {{ get_input() }}"
+    prompt: |
+      {
+        "type": "knowledge",
+        "fact": {{ get_input() | tojson }}
+      }
     metadata:
       type: knowledge
       category: stored
+    key_template: "fact_{{ get_input() | truncate(60) }}"
 
   # WORKING MEMORY (Active Problem-Solving Cache)
   # 4-hour retention, optimized for session context
@@ -88,10 +99,15 @@ agents:
       operation: write
       namespace: session_cache
       # Preset provides: vector=true, optimized for temporary storage
-    prompt: "Session context: {{ get_input() }}"
+    prompt: |
+      {
+        "type": "working",
+        "context": {{ get_input() | tojson }}
+      }
     metadata:
       type: working
       category: temporary
+    key_template: "session_{{ timestamp }}_{{ session_id }}"
 
   # SUMMARY AGENT to demonstrate the preset functionality
   - id: summary_agent

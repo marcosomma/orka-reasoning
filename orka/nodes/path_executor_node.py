@@ -51,17 +51,19 @@ pattern by taking validated agent sequences and actually executing them.
         # Executes the validated agent sequence
 """
 
+import json
 import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
-import json
 try:
     import yaml
 except Exception:
-    yaml = None
+    yaml = None  # type: ignore
 
 from .base_node import BaseNode
+
+logger = logging.getLogger(__name__)
 
 
 def _try_parse_serialized(obj: Any) -> Optional[Any]:
@@ -71,17 +73,15 @@ def _try_parse_serialized(obj: Any) -> Optional[Any]:
     # Try JSON first
     try:
         return json.loads(obj)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"JSON parse attempt failed (trying YAML next): {e}")
     # Fall back to YAML if available
     if yaml is not None:
         try:
             return yaml.safe_load(obj)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"YAML parse attempt failed: {e}")
     return None
-
-logger = logging.getLogger(__name__)
 
 
 def _make_json_serializable(obj: Any) -> Any:
@@ -685,8 +685,8 @@ class PathExecutorNode(BaseNode):
                         "PathExecutor", "GraphScout", "Validator", "Classifier"
                     ]):
                         return True
-        except Exception:
-            pass  # Fallback to ID-based check only
+        except Exception as e:
+            logger.debug(f"Control agent type check failed for {agent_id}: {e}")
         
         return False
 

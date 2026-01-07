@@ -35,17 +35,38 @@ class BudgetController:
     """
 
     def __init__(self, config: Any):
-        """Initialize budget controller with configuration."""
+        """Initialize budget controller with configurable limits."""
         self.config = config
-        self.cost_budget_tokens = config.cost_budget_tokens
-        self.latency_budget_ms = config.latency_budget_ms
+
+        # Token budget
+        try:
+            self.cost_budget_tokens = int(
+                getattr(config, "cost_budget_tokens", None) or 10000
+            )
+        except (TypeError, ValueError):
+            self.cost_budget_tokens = 10000
+
+        # Cost budget (configurable, default $1.00)
+        try:
+            max_cost_val = getattr(config, "max_cost_usd", None)
+            self.max_cost_usd = float(max_cost_val) if max_cost_val is not None else 1.0
+        except (TypeError, ValueError):
+            self.max_cost_usd = 1.0
+
+        # Latency budget
+        try:
+            self.latency_budget_ms = int(
+                getattr(config, "latency_budget_ms", None) or 30000
+            )
+        except (TypeError, ValueError):
+            self.latency_budget_ms = 30000
 
         # Track current usage
         self.current_usage = {"tokens": 0, "cost_usd": 0.0, "latency_ms": 0.0}
 
         logger.debug(
             f"BudgetController initialized with token_budget={self.cost_budget_tokens}, "
-            f"latency_budget={self.latency_budget_ms}ms"
+            f"cost_budget=${self.max_cost_usd:.2f}, latency_budget={self.latency_budget_ms}ms"
         )
 
     async def filter_candidates(
@@ -98,12 +119,48 @@ class BudgetController:
     async def _get_remaining_budget(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Get remaining budget for this execution."""
         try:
-            # TODO: Get actual usage from orchestrator/memory
-            # For now, use configured limits as remaining budget
+            orchestrator = context.get("orchestrator")
+
+            # Get actual usage from orchestrator metrics if available
+            if orchestrator and hasattr(orchestrator, "metrics"):
+                metrics = orchestrator.metrics
+                if hasattr(metrics, "get_usage"):
+                    try:
+                        actual_usage = metrics.get_usage()
+                        self.current_usage.update(
+                            {
+                                "tokens": actual_usage.get(
+                                    "total_tokens", self.current_usage["tokens"]
+                                ),
+                                "cost_usd": actual_usage.get(
+                                    "total_cost", self.current_usage["cost_usd"]
+                                ),
+                                "latency_ms": actual_usage.get(
+                                    "total_latency_ms", self.current_usage["latency_ms"]
+                                ),
+                            }
+                        )
+                    except Exception as e:
+                        logger.debug(f"Could not get metrics from orchestrator: {e}")
+
+            # Get usage from memory if available
+            if orchestrator and hasattr(orchestrator, "memory") and orchestrator.memory:
+                memory = orchestrator.memory
+                run_id = getattr(orchestrator, "run_id", None)
+                if run_id and hasattr(memory, "get_run_metrics"):
+                    try:
+                        run_metrics = memory.get_run_metrics(run_id)
+                        if run_metrics:
+                            self.current_usage["tokens"] = max(
+                                self.current_usage["tokens"],
+                                run_metrics.get("tokens_used", 0),
+                            )
+                    except Exception as e:
+                        logger.debug(f"Could not get metrics from memory: {e}")
 
             return {
                 "tokens": self.cost_budget_tokens - self.current_usage["tokens"],
-                "cost_usd": 1.0 - self.current_usage["cost_usd"],  # Default $1 limit
+                "cost_usd": self.max_cost_usd - self.current_usage["cost_usd"],
                 "latency_ms": self.latency_budget_ms - self.current_usage["latency_ms"],
             }
 
@@ -111,7 +168,7 @@ class BudgetController:
             logger.error(f"Failed to get remaining budget: {e}")
             return {
                 "tokens": self.cost_budget_tokens,
-                "cost_usd": 1.0,
+                "cost_usd": self.max_cost_usd,
                 "latency_ms": self.latency_budget_ms,
             }
 
@@ -168,18 +225,38 @@ class BudgetController:
         """Estimate token usage for candidate path."""
         try:
             path = candidate.get("path", [candidate["node_id"]])
-            base_tokens_per_node = 100  # Conservative estimate
+            orchestrator = context.get("orchestrator")
 
-            # Simple estimation based on path length
-            estimated_tokens = len(path) * base_tokens_per_node
+            estimated_tokens = 0
 
-            # Adjust based on node types (if available)
-            # TODO: Use actual node metadata for better estimates
+            for node_id in path:
+                node_tokens = 100  # Base estimate
+
+                # Use actual node metadata if available
+                if orchestrator and hasattr(orchestrator, "agents"):
+                    agent = orchestrator.agents.get(node_id)
+                    if agent:
+                        # Check for token estimates in agent config
+                        if hasattr(agent, "config") and agent.config:
+                            config_tokens = agent.config.get("estimated_tokens")
+                            if config_tokens:
+                                node_tokens = int(config_tokens)
+
+                        # Estimate based on prompt length
+                        if hasattr(agent, "prompt") and agent.prompt:
+                            prompt_len = len(str(agent.prompt))
+                            # Rough estimate: 4 chars per token
+                            node_tokens = max(node_tokens, prompt_len // 4)
+
+                        # Check model type for multiplier
+                        model = getattr(agent, "model", "")
+                        if "gpt-4" in str(model).lower():
+                            node_tokens = int(node_tokens * 1.5)  # GPT-4 tends to use more
+
+                estimated_tokens += node_tokens
 
             # Add buffer for safety
-            estimated_tokens = int(estimated_tokens * 1.2)
-
-            return estimated_tokens
+            return int(estimated_tokens * 1.2)
 
         except Exception as e:
             logger.error(f"Token estimation failed: {e}")
@@ -212,16 +289,43 @@ class BudgetController:
             if "estimated_latency" in candidate:
                 return float(candidate["estimated_latency"])
 
-            # Fallback estimation
             path = candidate.get("path", [candidate["node_id"]])
-            base_latency_per_node = 1000  # 1 second per node
+            orchestrator = context.get("orchestrator")
 
-            estimated_latency = len(path) * base_latency_per_node
+            estimated_latency = 0.0
 
-            # Adjust for node types
-            # TODO: Use actual node metadata for better estimates
+            for node_id in path:
+                node_latency = 1000.0  # Base 1 second
 
-            return float(estimated_latency)
+                # Use actual node metadata if available
+                if orchestrator and hasattr(orchestrator, "agents"):
+                    agent = orchestrator.agents.get(node_id)
+                    if agent:
+                        # Check for latency estimates in agent config
+                        if hasattr(agent, "config") and isinstance(agent.config, dict):
+                            config_latency = agent.config.get("estimated_latency_ms")
+                            if config_latency is not None:
+                                try:
+                                    node_latency = float(config_latency)
+                                except (TypeError, ValueError):
+                                    pass
+
+                        # Adjust based on agent type
+                        agent_type = getattr(agent, "agent_type", "") or ""
+                        if agent_type in ("local_llm", "ollama"):
+                            node_latency *= 0.5  # Local models are faster
+                        elif agent_type in ("openai-gpt-4", "gpt-4"):
+                            node_latency *= 2.0  # GPT-4 is slower
+
+                        # Check for timeout settings (must be numeric)
+                        timeout = getattr(agent, "timeout", None)
+                        if isinstance(timeout, (int, float)) and timeout > 0:
+                            if node_latency > timeout * 1000:
+                                node_latency = timeout * 1000 * 0.8  # Estimate 80% of timeout
+
+                estimated_latency += node_latency
+
+            return estimated_latency
 
         except Exception as e:
             logger.error(f"Latency estimation failed: {e}")
@@ -250,13 +354,19 @@ class BudgetController:
                 "current_usage": self.current_usage.copy(),
                 "budget_limits": {
                     "tokens": self.cost_budget_tokens,
-                    "cost_usd": 1.0,  # TODO: Make configurable
+                    "cost_usd": self.max_cost_usd,
                     "latency_ms": self.latency_budget_ms,
                 },
                 "utilization": {
-                    "tokens": self.current_usage["tokens"] / self.cost_budget_tokens,
-                    "cost": self.current_usage["cost_usd"] / 1.0,
-                    "latency": self.current_usage["latency_ms"] / self.latency_budget_ms,
+                    "tokens": self.current_usage["tokens"] / self.cost_budget_tokens
+                    if self.cost_budget_tokens > 0
+                    else 0.0,
+                    "cost": self.current_usage["cost_usd"] / self.max_cost_usd
+                    if self.max_cost_usd > 0
+                    else 0.0,
+                    "latency": self.current_usage["latency_ms"] / self.latency_budget_ms
+                    if self.latency_budget_ms > 0
+                    else 0.0,
                 },
             }
 

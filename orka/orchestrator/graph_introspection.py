@@ -483,12 +483,91 @@ class GraphIntrospector:
             if not edge.condition:
                 return True
 
-            # TODO: Implement condition evaluation
-            # This would evaluate conditions like:
-            # - Previous agent outputs
-            # - Runtime state
-            # - Budget constraints
+            condition = edge.condition
+            runtime_state = graph_state.runtime_state
 
+            # Evaluate different condition types
+            condition_type = condition.get("type", "simple")
+
+            if condition_type == "simple":
+                # Simple key-value match against runtime state
+                key = condition.get("key")
+                expected = condition.get("value")
+                if key and key in runtime_state:
+                    return runtime_state[key] == expected
+                return True  # Allow if key not present (optional condition)
+
+            elif condition_type == "threshold":
+                # Numeric threshold comparison
+                key = condition.get("key")
+                threshold = condition.get("threshold", 0.5)
+                operator = condition.get("operator", ">=")
+                if key and key in runtime_state:
+                    try:
+                        value = float(runtime_state[key])
+                        if operator == ">=":
+                            return value >= threshold
+                        elif operator == ">":
+                            return value > threshold
+                        elif operator == "<=":
+                            return value <= threshold
+                        elif operator == "<":
+                            return value < threshold
+                        elif operator == "==":
+                            return value == threshold
+                    except (ValueError, TypeError):
+                        logger.debug(f"Could not convert value for threshold comparison: {key}")
+                return True
+
+            elif condition_type == "visited":
+                # Check if specific node was visited
+                required_node = condition.get("node")
+                return required_node in graph_state.visited_nodes
+
+            elif condition_type == "budget":
+                # Check budget constraints
+                budget_key = condition.get("budget_key", "tokens")
+                min_remaining = condition.get("min_remaining", 0)
+                current = graph_state.budgets.get(budget_key, float("inf"))
+                return current >= min_remaining
+
+            elif condition_type == "expression":
+                # Safe expression evaluation (limited to basic comparisons)
+                import re
+
+                expr = condition.get("expression", "")
+                # Only allow safe patterns: key op value
+                match = re.match(r"(\w+)\s*(>=|<=|>|<|==|!=)\s*(.+)", expr.strip())
+                if match:
+                    key, op, val = match.groups()
+                    if key in runtime_state:
+                        actual = runtime_state[key]
+                        try:
+                            # Try to parse the expected value to the same type as actual
+                            if isinstance(actual, bool):
+                                expected = val.lower() in ("true", "1", "yes")
+                            elif isinstance(actual, int):
+                                expected = int(val)
+                            elif isinstance(actual, float):
+                                expected = float(val)
+                            else:
+                                expected = val.strip("'\"")
+
+                            ops = {
+                                ">=": lambda a, b: a >= b,
+                                "<=": lambda a, b: a <= b,
+                                ">": lambda a, b: a > b,
+                                "<": lambda a, b: a < b,
+                                "==": lambda a, b: a == b,
+                                "!=": lambda a, b: a != b,
+                            }
+                            return ops[op](actual, expected)
+                        except (ValueError, TypeError) as e:
+                            logger.debug(f"Expression evaluation type error: {e}")
+                return True
+
+            # Unknown condition type - default to allowing
+            logger.warning(f"Unknown edge condition type: {condition_type}")
             return True
 
         except Exception as e:
@@ -869,15 +948,96 @@ class GraphIntrospector:
     def _check_join_feasibility(self, candidate: Dict[str, Any], graph_state: GraphState) -> bool:
         """Check if path leads to satisfiable joins."""
         try:
-            # TODO: Implement join feasibility analysis
-            # This would check if downstream joins can be satisfied
-            # given the current branch and available parallel paths
+            path = candidate.get("path", [])
+            if not path:
+                return True
+
+            nodes = graph_state.nodes
+            edges = graph_state.edges
+            visited = graph_state.visited_nodes
+
+            # Build edge lookup for efficiency
+            incoming_edges: Dict[str, List[str]] = {}
+            for edge in edges:
+                if edge.dst not in incoming_edges:
+                    incoming_edges[edge.dst] = []
+                incoming_edges[edge.dst].append(edge.src)
+
+            # Check each node in path for join requirements
+            for node_id in path:
+                if node_id not in nodes:
+                    continue
+
+                node = nodes[node_id]
+                node_type = node.metadata.get("type", "") if node.metadata else ""
+
+                # Check if this is a join node
+                if node_type == "join":
+                    join_config = node.metadata.get("join_config", {}) if node.metadata else {}
+                    required_inputs = join_config.get("required_inputs", [])
+                    join_strategy = join_config.get("strategy", "all")
+
+                    if required_inputs:
+                        # Check if all required inputs are satisfied
+                        satisfied_inputs = []
+                        for req_input in required_inputs:
+                            # Input is satisfied if:
+                            # 1. It's already visited
+                            # 2. It's in the current path (will be visited)
+                            # 3. It's reachable from another parallel path
+                            if req_input in visited or req_input in path:
+                                satisfied_inputs.append(req_input)
+                            elif self._is_reachable_from_parallel(req_input, graph_state):
+                                satisfied_inputs.append(req_input)
+
+                        if join_strategy == "all":
+                            if len(satisfied_inputs) < len(required_inputs):
+                                logger.debug(
+                                    f"Join {node_id} infeasible: only "
+                                    f"{len(satisfied_inputs)}/{len(required_inputs)} inputs satisfiable"
+                                )
+                                return False
+                        elif join_strategy == "any":
+                            if not satisfied_inputs:
+                                logger.debug(f"Join {node_id} infeasible: no inputs satisfiable")
+                                return False
+                        elif join_strategy == "majority":
+                            if len(satisfied_inputs) < len(required_inputs) // 2 + 1:
+                                logger.debug(f"Join {node_id} infeasible: majority not satisfiable")
+                                return False
+
+                    # Check minimum inputs from incoming edges
+                    min_inputs = join_config.get("min_inputs", 1)
+                    potential_inputs = len(incoming_edges.get(node_id, []))
+                    available_inputs = sum(
+                        1 for src in incoming_edges.get(node_id, []) if src in visited or src in path
+                    )
+
+                    if available_inputs < min_inputs and potential_inputs >= min_inputs:
+                        # Could still become feasible from parallel paths
+                        if not self._has_parallel_paths_to_join(node_id, graph_state):
+                            logger.debug(
+                                f"Join {node_id} infeasible: "
+                                f"{available_inputs}/{min_inputs} inputs available"
+                            )
+                            return False
 
             return True
 
         except Exception as e:
             logger.error(f"Join feasibility check failed: {e}")
             return False
+
+    def _is_reachable_from_parallel(self, node_id: str, graph_state: GraphState) -> bool:
+        """Check if node is reachable from a parallel execution path."""
+        # This is a simplified check - in practice would need full graph traversal
+        return node_id in graph_state.nodes
+
+    def _has_parallel_paths_to_join(self, join_node_id: str, graph_state: GraphState) -> bool:
+        """Check if there are parallel paths that could satisfy a join."""
+        # Check if multiple paths converge on this join
+        incoming = [e for e in graph_state.edges if e.dst == join_node_id]
+        return len(incoming) > 1
 
     def _check_resource_constraints(
         self, candidate: Dict[str, Any], graph_state: GraphState

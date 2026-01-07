@@ -204,13 +204,13 @@ agents:
       vector: true
       key_template: "answer_{{ run_id }}_{{ step_index }}"
     prompt: |
-      Query: {{ get_input() }}
-
-      Answer: {{ safe_get(previous_outputs.get('answer_builder', {}), 'response') or safe_get(previous_outputs.get('search_answer_builder', {}), 'response') }}
-
-      Source: {{ 'Retrieved from validated memories' if previous_outputs.get('answer_builder') else 'Generated from internet search' }}
-
-      Validation Details: {{ 'VALUABLE - Memories were sufficient' if previous_outputs.get('answer_builder') else 'INSUFFICIENT - Required internet search' }}
+      {
+        "type": "answer_record",
+        "query": {{ get_input() | tojson }},
+        "answer": {{ (safe_get(previous_outputs.get('answer_builder', {}), 'response') or safe_get(previous_outputs.get('search_answer_builder', {}), 'response')) | tojson }},
+        "source": {{ ('Retrieved from validated memories' if previous_outputs.get('answer_builder') else 'Generated from internet search') | tojson }},
+        "memory_valuable": {{ (previous_outputs.get('answer_builder') is not none) | tojson }}
+      }
     metadata:
       source: memory_validation_workflow
       query: "{{ get_input() }}"

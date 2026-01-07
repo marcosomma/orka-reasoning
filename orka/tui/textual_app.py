@@ -15,6 +15,7 @@ Features native Textual layout system with proper navigation.
 """
 
 import json
+import logging
 from pathlib import Path
 from datetime import datetime
 from textual.app import App
@@ -28,6 +29,8 @@ from .textual_screens import (
     ShortMemoryScreen,
     HelpScreen,
 )
+
+logger = logging.getLogger(__name__)
 
 # Import custom themes
 from .theme_vintage import VINTAGE
@@ -163,7 +166,8 @@ class OrKaTextualApp(App):
                     json.dump(table_widget.current_memories, f, indent=2, default=str)
                 
                 self.notify(f"Exported {len(table_widget.current_memories)} memories to {filename}", timeout=3.0)
-            except Exception:
+            except Exception as e:
+                logger.debug(f"TUI table widget access failed (trying fallback): {e}")
                 # If no table widget, export all data
                 all_data = self.data_manager.memory_data
                 if not all_data:
@@ -188,32 +192,32 @@ class OrKaTextualApp(App):
             # Try to focus on current widget and send down key
             if hasattr(self.focused, 'action_cursor_down'):
                 self.focused.action_cursor_down()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"TUI vim down navigation error (non-fatal): {e}")
 
     def action_vim_up(self) -> None:
         """Vim-style up navigation (k)."""
         try:
             if hasattr(self.focused, 'action_cursor_up'):
                 self.focused.action_cursor_up()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"TUI vim up navigation error (non-fatal): {e}")
 
     def action_vim_top(self) -> None:
         """Vim-style jump to top (g)."""
         try:
             if hasattr(self.focused, 'action_scroll_home'):
                 self.focused.action_scroll_home()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"TUI vim top navigation error (non-fatal): {e}")
 
     def action_vim_bottom(self) -> None:
         """Vim-style jump to bottom (G)."""
         try:
             if hasattr(self.focused, 'action_scroll_end'):
                 self.focused.action_scroll_end()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"TUI vim bottom navigation error (non-fatal): {e}")
 
     def on_screen_resume(self, event) -> None:
         """Handle screen resume events."""

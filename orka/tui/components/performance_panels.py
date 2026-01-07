@@ -11,6 +11,8 @@
 
 """Performance Panel Component Builders."""
 
+import logging
+
 try:
     from rich.box import HEAVY, ROUNDED
     from rich.layout import Layout
@@ -20,6 +22,8 @@ try:
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
+
+logger = logging.getLogger(__name__)
 
 
 class PerformancePanelMixin:
@@ -81,8 +85,8 @@ class PerformancePanelMixin:
                 reads = perf.get("memory_reads", 0)
                 table.add_row("  Writes/min", f"{writes}", "ops", "[EDIT]️")
                 table.add_row("  Reads/min", f"{reads}", "ops", "[VIEW]️")
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"TUI performance metrics error (non-fatal): {e}")
 
         return Panel(table, title="[FAST] Performance & System Health", box=ROUNDED)
 
@@ -123,7 +127,8 @@ class PerformancePanelMixin:
                     modules = self.memory_logger.client.execute_command("MODULE", "LIST")
                     module_count = len(modules) if modules else 0
                     table.add_row("  Modules", f"{module_count}", "ext", "[CONN]")
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"TUI module detection error (non-fatal): {e}")
                     table.add_row("  Modules", "Unknown", "ext", "[?]")
 
         except Exception as e:

@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch, mock_open
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
-from orka.server import app, sanitize_for_json, run_execution
+from orka.server import app, sanitize_for_json, run_execution, api_health, health_basic
 from orka.orchestrator import Orchestrator
 
 class CustomObject:
@@ -247,3 +247,79 @@ def test_server_startup_default_port(mock_exit, mock_run):
         from orka import server
         server.main()
     mock_run.assert_called_once_with(app, host="0.0.0.0", port=8001)
+
+
+class DummyRedisClient:
+    async def ping(self):
+        return True
+
+    async def set(self, key, value, ex=None):  # noqa: ARG002 - test stub
+        return True
+
+    async def get(self, key):  # noqa: ARG002 - test stub
+        return b"ok"
+
+    async def execute_command(self, *args, **kwargs):  # noqa: D401, ARG002
+        # Simulate RedisSearch available
+        return [b"orka_enhanced_memory"]
+
+    async def close(self):
+        return None
+
+
+class DummyRedisModule:
+    def from_url(self, *args, **kwargs):  # noqa: D401, ARG002
+        return DummyRedisClient()
+
+
+@pytest.mark.asyncio
+async def test_api_health_without_redis_module(monkeypatch):
+    # Simulate missing redis.asyncio module
+    import orka.server as srv
+
+    monkeypatch.setattr(srv, "aioredis", None, raising=False)
+
+    response = await api_health()
+    assert isinstance(response, JSONResponse)
+    body = json.loads(response.body)
+    assert body["status"] in {"critical", "degraded", "healthy"}
+    # Without redis module we expect not connected and critical status or degraded
+    assert body["memory"]["connected"] is False
+    assert response.status_code in (200, 503)
+
+
+@pytest.mark.asyncio
+async def test_api_health_with_redis_ok(monkeypatch):
+    import orka.server as srv
+
+    monkeypatch.setattr(srv, "aioredis", DummyRedisModule(), raising=False)
+
+    response = await api_health()
+    assert isinstance(response, JSONResponse)
+    assert response.status_code == 200
+    body = json.loads(response.body)
+    assert body["status"] == "healthy"
+    assert body["memory"]["connected"] is True
+    assert body["memory"]["search_module"] is True
+    assert "orka_enhanced_memory" in body["memory"].get("index_list", [])
+
+
+@pytest.mark.asyncio
+async def test_health_basic_status_codes(monkeypatch):
+    # Critical path: make ping fail
+    class FailingClient(DummyRedisClient):
+        async def ping(self):
+            raise RuntimeError("no connection")
+
+    class FailingModule(DummyRedisModule):
+        def from_url(self, *args, **kwargs):  # noqa: ARG002
+            return FailingClient()
+
+    import orka.server as srv
+    monkeypatch.setattr(srv, "aioredis", FailingModule(), raising=False)
+
+    resp = await health_basic()
+    assert isinstance(resp, JSONResponse)
+    assert resp.status_code == 503
+    body = json.loads(resp.body)
+    assert body["status"] == "critical"

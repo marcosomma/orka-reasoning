@@ -64,6 +64,15 @@ agents:
     params:
       vector: true  # Enable semantic search
     prompt: |
-      Question: {{ input }}
-      Answer: {{ previous_outputs.answer_generator }}
-      Classification: {{ previous_outputs.question_processor }}
+      {
+        "type": "interaction",
+        "question": {{ input | tojson }},
+        "answer": {{ previous_outputs.answer_generator | tojson }},
+        "classification": {{ previous_outputs.question_processor | tojson }},
+        "context": {{ previous_outputs.memory_search | tojson }},
+        "confidence": 0.9
+      }
+    metadata:
+      category: conversation
+      source: simple_memory_preset_demo
+    key_template: "{{ input | truncate(80) }}"

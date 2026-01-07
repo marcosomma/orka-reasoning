@@ -449,3 +449,226 @@ class TestBudgetController:
 
         assert exhausted is False
 
+
+class TestBudgetControllerEnhancements:
+    """Test suite for budget controller enhancements."""
+
+    def create_mock_config(
+        self, cost_budget_tokens=1000, latency_budget_ms=10000, max_cost_usd=1.0
+    ):
+        """Helper to create a mock config object."""
+        config = Mock()
+        config.cost_budget_tokens = cost_budget_tokens
+        config.latency_budget_ms = latency_budget_ms
+        config.max_cost_usd = max_cost_usd
+        return config
+
+    def test_configurable_max_cost_usd(self):
+        """Test that max_cost_usd is configurable via config."""
+        config = self.create_mock_config(max_cost_usd=5.0)
+        controller = BudgetController(config)
+
+        assert controller.max_cost_usd == 5.0
+
+    def test_configurable_max_cost_usd_default(self):
+        """Test that max_cost_usd defaults to 1.0 if not specified."""
+        config = Mock(spec=["cost_budget_tokens", "latency_budget_ms"])
+        config.cost_budget_tokens = 1000
+        config.latency_budget_ms = 10000
+        # spec ensures no auto-creation of max_cost_usd
+
+        controller = BudgetController(config)
+
+        assert controller.max_cost_usd == 1.0
+
+    @pytest.mark.asyncio
+    async def test_get_remaining_budget_uses_max_cost_usd(self):
+        """Test _get_remaining_budget uses configurable max_cost_usd."""
+        config = self.create_mock_config(max_cost_usd=2.5)
+        controller = BudgetController(config)
+        controller.current_usage = {"tokens": 0, "cost_usd": 0.5, "latency_ms": 0}
+
+        remaining = await controller._get_remaining_budget({})
+
+        assert remaining["cost_usd"] == 2.0  # 2.5 - 0.5
+
+    @pytest.mark.asyncio
+    async def test_get_remaining_budget_from_metrics(self):
+        """Test _get_remaining_budget reads from orchestrator metrics."""
+        config = self.create_mock_config()
+        controller = BudgetController(config)
+
+        mock_metrics = Mock()
+        mock_metrics.get_usage = Mock(
+            return_value={
+                "total_tokens": 500,
+                "total_cost": 0.3,
+                "total_latency_ms": 2000,
+            }
+        )
+
+        mock_orchestrator = Mock()
+        mock_orchestrator.metrics = mock_metrics
+        mock_orchestrator.memory = None
+
+        context = {"orchestrator": mock_orchestrator}
+        remaining = await controller._get_remaining_budget(context)
+
+        assert controller.current_usage["tokens"] == 500
+        assert controller.current_usage["cost_usd"] == 0.3
+
+    @pytest.mark.asyncio
+    async def test_get_remaining_budget_from_memory(self):
+        """Test _get_remaining_budget reads from memory run metrics."""
+        config = self.create_mock_config()
+        controller = BudgetController(config)
+
+        mock_memory = Mock()
+        mock_memory.get_run_metrics = Mock(return_value={"tokens_used": 300})
+
+        mock_orchestrator = Mock()
+        mock_orchestrator.memory = mock_memory
+        mock_orchestrator.run_id = "test_run"
+        del mock_orchestrator.metrics
+
+        context = {"orchestrator": mock_orchestrator}
+        remaining = await controller._get_remaining_budget(context)
+
+        assert controller.current_usage["tokens"] == 300
+
+    @pytest.mark.asyncio
+    async def test_estimate_tokens_with_agent_config(self):
+        """Test _estimate_tokens uses agent config for estimates."""
+        config = self.create_mock_config()
+        controller = BudgetController(config)
+
+        mock_agent = Mock()
+        mock_agent.config = {"estimated_tokens": 500}
+
+        mock_orchestrator = Mock()
+        mock_orchestrator.agents = {"agent1": mock_agent}
+
+        candidate = {"node_id": "agent1", "path": ["agent1"]}
+        context = {"orchestrator": mock_orchestrator}
+
+        tokens = await controller._estimate_tokens(candidate, context)
+
+        assert tokens == 600  # 500 * 1.2 buffer
+
+    @pytest.mark.asyncio
+    async def test_estimate_tokens_with_prompt_length(self):
+        """Test _estimate_tokens estimates based on prompt length."""
+        config = self.create_mock_config()
+        controller = BudgetController(config)
+
+        mock_agent = Mock()
+        mock_agent.config = {}
+        mock_agent.prompt = "A" * 400  # 400 chars = ~100 tokens
+        mock_agent.model = "gpt-3.5"
+
+        mock_orchestrator = Mock()
+        mock_orchestrator.agents = {"agent1": mock_agent}
+
+        candidate = {"node_id": "agent1", "path": ["agent1"]}
+        context = {"orchestrator": mock_orchestrator}
+
+        tokens = await controller._estimate_tokens(candidate, context)
+
+        # max(100 base, 400//4=100) * 1.2 = 120
+        assert tokens == 120
+
+    @pytest.mark.asyncio
+    async def test_estimate_tokens_gpt4_multiplier(self):
+        """Test _estimate_tokens applies GPT-4 multiplier."""
+        config = self.create_mock_config()
+        controller = BudgetController(config)
+
+        mock_agent = Mock()
+        mock_agent.config = {"estimated_tokens": 100}
+        mock_agent.model = "openai-gpt-4"
+
+        mock_orchestrator = Mock()
+        mock_orchestrator.agents = {"agent1": mock_agent}
+
+        candidate = {"node_id": "agent1", "path": ["agent1"]}
+        context = {"orchestrator": mock_orchestrator}
+
+        tokens = await controller._estimate_tokens(candidate, context)
+
+        # 100 * 1.5 (gpt-4) * 1.2 (buffer) = 180
+        assert tokens == 180
+
+    @pytest.mark.asyncio
+    async def test_estimate_latency_with_agent_config(self):
+        """Test _estimate_latency uses agent config for estimates."""
+        config = self.create_mock_config()
+        controller = BudgetController(config)
+
+        mock_agent = Mock()
+        mock_agent.config = {"estimated_latency_ms": 500}
+        mock_agent.agent_type = ""
+
+        mock_orchestrator = Mock()
+        mock_orchestrator.agents = {"agent1": mock_agent}
+
+        candidate = {"node_id": "agent1", "path": ["agent1"]}
+        context = {"orchestrator": mock_orchestrator}
+
+        latency = await controller._estimate_latency(candidate, context)
+
+        assert latency == 500.0
+
+    @pytest.mark.asyncio
+    async def test_estimate_latency_local_llm_faster(self):
+        """Test _estimate_latency applies local LLM speed bonus."""
+        config = self.create_mock_config()
+        controller = BudgetController(config)
+
+        mock_agent = Mock()
+        mock_agent.config = {}
+        mock_agent.agent_type = "local_llm"
+        del mock_agent.timeout
+
+        mock_orchestrator = Mock()
+        mock_orchestrator.agents = {"agent1": mock_agent}
+
+        candidate = {"node_id": "agent1", "path": ["agent1"]}
+        context = {"orchestrator": mock_orchestrator}
+
+        latency = await controller._estimate_latency(candidate, context)
+
+        # 1000 base * 0.5 (local) = 500
+        assert latency == 500.0
+
+    @pytest.mark.asyncio
+    async def test_estimate_latency_gpt4_slower(self):
+        """Test _estimate_latency applies GPT-4 slowdown."""
+        config = self.create_mock_config()
+        controller = BudgetController(config)
+
+        mock_agent = Mock()
+        mock_agent.config = {}
+        mock_agent.agent_type = "openai-gpt-4"
+        del mock_agent.timeout
+
+        mock_orchestrator = Mock()
+        mock_orchestrator.agents = {"agent1": mock_agent}
+
+        candidate = {"node_id": "agent1", "path": ["agent1"]}
+        context = {"orchestrator": mock_orchestrator}
+
+        latency = await controller._estimate_latency(candidate, context)
+
+        # 1000 base * 2.0 (gpt-4) = 2000
+        assert latency == 2000.0
+
+    def test_get_usage_summary_uses_configurable_cost(self):
+        """Test get_usage_summary uses configurable max_cost_usd."""
+        config = self.create_mock_config(max_cost_usd=5.0)
+        controller = BudgetController(config)
+        controller.current_usage = {"tokens": 500, "cost_usd": 2.0, "latency_ms": 5000}
+
+        summary = controller.get_usage_summary()
+
+        assert summary["budget_limits"]["cost_usd"] == 5.0
+        assert summary["utilization"]["cost"] == 0.4  # 2.0 / 5.0

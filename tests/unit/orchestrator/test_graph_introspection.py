@@ -968,3 +968,357 @@ class TestMultiHopPathDiscovery:
         # Regular agents should still be present
         assert "search_agent" in neighbors
         assert "analysis_agent" in neighbors
+
+
+class TestEdgeConditionEvaluation:
+    """Test suite for edge condition evaluation implementation."""
+
+    def create_mock_config(self):
+        """Helper to create mock config."""
+        config = Mock()
+        config.max_depth = 4
+        config.k_beam = 3
+        return config
+
+    def create_graph_state_with_runtime(self, runtime_state: dict) -> GraphState:
+        """Helper to create graph state with specific runtime state."""
+        return GraphState(
+            nodes={},
+            edges=[],
+            current_node="node1",
+            visited_nodes=set(),
+            runtime_state=runtime_state,
+            budgets={},
+            constraints={},
+        )
+
+    def test_edge_condition_no_condition(self):
+        """Test edge with no condition always passes."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+
+        edge = EdgeDescriptor(src="node1", dst="node2", condition=None)
+        graph_state = self.create_graph_state_with_runtime({})
+
+        result = introspector._check_edge_condition(edge, graph_state)
+        assert result is True
+
+    def test_edge_condition_simple_match(self):
+        """Test simple key-value condition matching."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+
+        edge = EdgeDescriptor(
+            src="node1",
+            dst="node2",
+            condition={"type": "simple", "key": "status", "value": "ready"},
+        )
+        graph_state = self.create_graph_state_with_runtime({"status": "ready"})
+
+        result = introspector._check_edge_condition(edge, graph_state)
+        assert result is True
+
+    def test_edge_condition_simple_no_match(self):
+        """Test simple condition when value doesn't match."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+
+        edge = EdgeDescriptor(
+            src="node1",
+            dst="node2",
+            condition={"type": "simple", "key": "status", "value": "ready"},
+        )
+        graph_state = self.create_graph_state_with_runtime({"status": "pending"})
+
+        result = introspector._check_edge_condition(edge, graph_state)
+        assert result is False
+
+    def test_edge_condition_threshold_gte(self):
+        """Test threshold condition with >= operator."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+
+        edge = EdgeDescriptor(
+            src="node1",
+            dst="node2",
+            condition={
+                "type": "threshold",
+                "key": "confidence",
+                "threshold": 0.8,
+                "operator": ">=",
+            },
+        )
+        graph_state = self.create_graph_state_with_runtime({"confidence": 0.9})
+
+        result = introspector._check_edge_condition(edge, graph_state)
+        assert result is True
+
+    def test_edge_condition_threshold_lt(self):
+        """Test threshold condition with < operator."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+
+        edge = EdgeDescriptor(
+            src="node1",
+            dst="node2",
+            condition={
+                "type": "threshold",
+                "key": "error_rate",
+                "threshold": 0.1,
+                "operator": "<",
+            },
+        )
+        graph_state = self.create_graph_state_with_runtime({"error_rate": 0.05})
+
+        result = introspector._check_edge_condition(edge, graph_state)
+        assert result is True
+
+    def test_edge_condition_visited(self):
+        """Test visited condition type."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+
+        edge = EdgeDescriptor(
+            src="node1",
+            dst="node2",
+            condition={"type": "visited", "node": "prereq_node"},
+        )
+        graph_state = GraphState(
+            nodes={},
+            edges=[],
+            current_node="node1",
+            visited_nodes={"prereq_node"},
+            runtime_state={},
+            budgets={},
+            constraints={},
+        )
+
+        result = introspector._check_edge_condition(edge, graph_state)
+        assert result is True
+
+    def test_edge_condition_visited_not_met(self):
+        """Test visited condition when node not visited."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+
+        edge = EdgeDescriptor(
+            src="node1",
+            dst="node2",
+            condition={"type": "visited", "node": "prereq_node"},
+        )
+        graph_state = GraphState(
+            nodes={},
+            edges=[],
+            current_node="node1",
+            visited_nodes=set(),
+            runtime_state={},
+            budgets={},
+            constraints={},
+        )
+
+        result = introspector._check_edge_condition(edge, graph_state)
+        assert result is False
+
+    def test_edge_condition_budget(self):
+        """Test budget condition type."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+
+        edge = EdgeDescriptor(
+            src="node1",
+            dst="node2",
+            condition={"type": "budget", "budget_key": "tokens", "min_remaining": 100},
+        )
+        graph_state = GraphState(
+            nodes={},
+            edges=[],
+            current_node="node1",
+            visited_nodes=set(),
+            runtime_state={},
+            budgets={"tokens": 500},
+            constraints={},
+        )
+
+        result = introspector._check_edge_condition(edge, graph_state)
+        assert result is True
+
+    def test_edge_condition_expression(self):
+        """Test expression condition type."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+
+        edge = EdgeDescriptor(
+            src="node1",
+            dst="node2",
+            condition={"type": "expression", "expression": "score >= 0.5"},
+        )
+        graph_state = self.create_graph_state_with_runtime({"score": 0.7})
+
+        result = introspector._check_edge_condition(edge, graph_state)
+        assert result is True
+
+    def test_edge_condition_unknown_type(self):
+        """Test unknown condition type defaults to allowing."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+
+        edge = EdgeDescriptor(
+            src="node1",
+            dst="node2",
+            condition={"type": "unknown_type"},
+        )
+        graph_state = self.create_graph_state_with_runtime({})
+
+        result = introspector._check_edge_condition(edge, graph_state)
+        assert result is True
+
+
+class TestJoinFeasibilityAnalysis:
+    """Test suite for join feasibility analysis implementation."""
+
+    def create_mock_config(self):
+        """Helper to create mock config."""
+        config = Mock()
+        config.max_depth = 4
+        config.k_beam = 3
+        return config
+
+    def create_join_graph_state(self) -> GraphState:
+        """Helper to create graph state with join nodes."""
+        nodes = {
+            "fork1": NodeDescriptor(
+                id="fork1",
+                type="ForkNode",
+                prompt_summary="Fork",
+                capabilities=[],
+                contract={},
+                cost_model={},
+                safety_tags=[],
+                metadata={"type": "fork"},
+            ),
+            "branch_a": NodeDescriptor(
+                id="branch_a",
+                type="LocalLLMAgent",
+                prompt_summary="Branch A",
+                capabilities=[],
+                contract={},
+                cost_model={},
+                safety_tags=[],
+                metadata={},
+            ),
+            "branch_b": NodeDescriptor(
+                id="branch_b",
+                type="LocalLLMAgent",
+                prompt_summary="Branch B",
+                capabilities=[],
+                contract={},
+                cost_model={},
+                safety_tags=[],
+                metadata={},
+            ),
+            "join1": NodeDescriptor(
+                id="join1",
+                type="JoinNode",
+                prompt_summary="Join",
+                capabilities=[],
+                contract={},
+                cost_model={},
+                safety_tags=[],
+                metadata={
+                    "type": "join",
+                    "join_config": {
+                        "strategy": "all",
+                        "required_inputs": ["branch_a", "branch_b"],
+                        "min_inputs": 2,
+                    },
+                },
+            ),
+        }
+        edges = [
+            EdgeDescriptor(src="fork1", dst="branch_a"),
+            EdgeDescriptor(src="fork1", dst="branch_b"),
+            EdgeDescriptor(src="branch_a", dst="join1"),
+            EdgeDescriptor(src="branch_b", dst="join1"),
+        ]
+        return GraphState(
+            nodes=nodes,
+            edges=edges,
+            current_node="fork1",
+            visited_nodes=set(),
+            runtime_state={},
+            budgets={},
+            constraints={},
+        )
+
+    def test_join_feasibility_all_satisfied(self):
+        """Test join feasibility when all inputs are in path."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+
+        graph_state = self.create_join_graph_state()
+        candidate = {"path": ["fork1", "branch_a", "branch_b", "join1"]}
+
+        result = introspector._check_join_feasibility(candidate, graph_state)
+        assert result is True
+
+    def test_join_feasibility_partial_path(self):
+        """Test join feasibility when only one branch in path but other visited."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+
+        graph_state = self.create_join_graph_state()
+        graph_state.visited_nodes = {"branch_a"}
+        candidate = {"path": ["branch_b", "join1"]}
+
+        result = introspector._check_join_feasibility(candidate, graph_state)
+        assert result is True
+
+    def test_join_feasibility_any_strategy(self):
+        """Test join feasibility with 'any' strategy."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+
+        graph_state = self.create_join_graph_state()
+        # Change to 'any' strategy
+        graph_state.nodes["join1"].metadata["join_config"]["strategy"] = "any"
+        candidate = {"path": ["branch_a", "join1"]}
+
+        result = introspector._check_join_feasibility(candidate, graph_state)
+        assert result is True
+
+    def test_join_feasibility_empty_path(self):
+        """Test join feasibility with empty path."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+
+        graph_state = self.create_join_graph_state()
+        candidate = {"path": []}
+
+        result = introspector._check_join_feasibility(candidate, graph_state)
+        assert result is True
+
+    def test_is_reachable_from_parallel(self):
+        """Test _is_reachable_from_parallel helper."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+
+        graph_state = self.create_join_graph_state()
+
+        result = introspector._is_reachable_from_parallel("branch_a", graph_state)
+        assert result is True
+
+        result = introspector._is_reachable_from_parallel("nonexistent", graph_state)
+        assert result is False
+
+    def test_has_parallel_paths_to_join(self):
+        """Test _has_parallel_paths_to_join helper."""
+        config = self.create_mock_config()
+        introspector = GraphIntrospector(config)
+
+        graph_state = self.create_join_graph_state()
+
+        result = introspector._has_parallel_paths_to_join("join1", graph_state)
+        assert result is True
+
+        result = introspector._has_parallel_paths_to_join("branch_a", graph_state)
+        assert result is False

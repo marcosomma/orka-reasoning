@@ -14,12 +14,15 @@ Custom Textual widgets for OrKa memory monitoring.
 """
 
 import json
+import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional, cast
 
 from textual.containers import Container
 from textual.message import Message
 from textual.widgets import DataTable, Static
+
+logger = logging.getLogger(__name__)
 
 
 def _ensure_dict(data: Optional[Dict[str, Any]]) -> Dict[str, Any]:
@@ -274,7 +277,8 @@ class MemoryTableWidget(DataTable):
             else:  # More than 1 day
                 days = int(diff.total_seconds() / 86400)
                 return f"[red]{dt.strftime('%m/%d')}[/red] [dim](-{days}d)[/dim]"
-        except Exception:
+        except Exception as e:
+            logger.debug(f"TUI timestamp formatting error (non-fatal): {e}")
             return "[dim]Unknown[/dim]"
 
     def _format_enhanced_ttl(self, ttl_formatted: Any) -> str:
@@ -366,8 +370,8 @@ class MemoryTableWidget(DataTable):
                         if data.get(key):
                             content_str = str(data[key])
                             break
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"TUI content JSON parse failed (using raw string): {e}")
 
         # Intelligent truncation
         if len(content_str) <= 35:
@@ -421,7 +425,8 @@ class MemoryTableWidget(DataTable):
             else:
                 dt = datetime.fromisoformat(str(timestamp))
             return dt.strftime("%H:%M:%S")
-        except Exception:
+        except Exception as e:
+            logger.debug(f"TUI timestamp format error (non-fatal): {e}")
             return str(timestamp)[:8]
 
     def _format_type(self, log_type: str) -> str:
@@ -651,7 +656,8 @@ class LogsWidget(DataTable):
                     else:  # seconds
                         dt = datetime.fromtimestamp(timestamp)
                     time_display = dt.strftime("%H:%M:%S")
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"TUI system log timestamp format error (non-fatal): {e}")
                     time_display = "Unknown"
 
                 content_overview = content[:35] + "..." if len(content) > 35 else content

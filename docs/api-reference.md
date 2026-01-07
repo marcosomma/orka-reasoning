@@ -15,6 +15,7 @@ Complete API documentation for OrKa's core components, including classes, method
 3. [Memory Backend](#memory-backend)
    - [RedisStack](#redisstack)
 4. [CLI Reference](#cli-reference)
+5. [HTTP API](#http-api)
 
 ## Core Components
 
@@ -366,3 +367,70 @@ For more detailed information about specific components or features, check the f
 - [Agent Development Guide](./agents.md)
 - [Production Deployment Guide](./runtime-modes.md)
 - [Security Guide](./security.md)
+
+## HTTP API
+
+The OrKa FastAPI server exposes endpoints for orchestration and health monitoring. Default port is 8001 (configurable via `ORKA_PORT`).
+
+### POST /api/run
+
+Execute a workflow.
+
+Request body:
+
+```json
+{
+    "input": "Your input text here",
+    "yaml_config": "orchestrator:\n  id: example\n  agents: [agent1]\nagents:\n  - id: agent1\n    type: openai-answer"
+}
+```
+
+Response: JSON object containing sanitized execution logs.
+
+### GET /api/health
+
+Deep health report for server and memory backend.
+
+Example response:
+
+```json
+{
+    "status": "healthy",
+    "version": { "orka": "unknown" },
+    "system": {
+        "python": "3.12.12",
+        "platform": "Windows-10-10.0.19045-SP0",
+        "pid": 12345,
+        "uptime_seconds": 42,
+        "rss_mb": 123.45,
+        "threads": 12,
+        "cpu_percent": 3.1,
+        "memory": { "percent": 45.6, "total_mb": 16384.0, "available_mb": 8921.2 },
+        "disk": { "percent": 70.2, "total_mb": 512000.0, "free_mb": 152000.0 }
+    },
+    "memory": {
+        "backend": "redisstack",
+        "url": "redis://localhost:6380/0",
+        "connected": true,
+        "ping_ms": 2.1,
+        "set_get_ms": 3.4,
+        "roundtrip_ok": true,
+        "search_module": true,
+        "index_list": ["orka_enhanced_memory"],
+        "errors": []
+    }
+}
+```
+
+Status rules:
+- `critical`: Redis not connected
+- `degraded`: Connected but SET/GET roundtrip failed
+- `healthy`: Connected and roundtrip OK
+
+Notes:
+- Redis URL is sanitized (credentials removed).
+- Extended metrics are best-effort and may be omitted if `psutil` is unavailable.
+
+### GET /health
+
+Lightweight liveness probe. Returns `{ "status": "healthy|degraded|critical" }` with HTTP 200 unless `critical` (503).

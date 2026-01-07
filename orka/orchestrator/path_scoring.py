@@ -597,28 +597,141 @@ class PathScorer:
             return 0.5
 
     def _check_domain_overlap(self, candidate: Dict[str, Any], question: str) -> float:
-        """Check domain overlap between candidate and question."""
+        """Check domain overlap between candidate and question using semantic similarity."""
         try:
-            # TODO: Implement semantic similarity checking
-            # For now, use simple keyword overlap
+            node_id = candidate["node_id"]
 
-            node_id = candidate["node_id"].lower()
-            question_words = set(question.lower().split())
-            node_words = set(node_id.split("_"))
+            # Try semantic similarity first (if embedder available)
+            if self._has_embedder():
+                semantic_score = self._compute_semantic_similarity(node_id, question)
+                if semantic_score is not None:
+                    return semantic_score
 
-            overlap = len(question_words & node_words)
-            max_possible = min(len(question_words), len(node_words))
-
-            if max_possible == 0:
-                return 0.5
-
-            return overlap / max_possible
+            # Fallback to enhanced keyword matching
+            return self._keyword_overlap_score(node_id, question, candidate)
 
         except KeyError as e:
             logger.warning(f"Missing node_id in candidate: {e}")
             return 0.5
         except Exception as e:
-            logger.warning(f"Error checking domain overlap for {candidate.get('node_id', 'unknown')}: {e}")
+            logger.warning(
+                f"Error checking domain overlap for {candidate.get('node_id', 'unknown')}: {e}"
+            )
+            return 0.5
+
+    def _has_embedder(self) -> bool:
+        """Check if embedder is available for semantic search."""
+        try:
+            from orka.utils.embedder import get_embedder
+
+            embedder = get_embedder()
+            return embedder is not None
+        except ImportError:
+            return False
+        except Exception:
+            return False
+
+    def _compute_semantic_similarity(
+        self, node_id: str, question: str
+    ) -> Optional[float]:
+        """Compute semantic similarity using embeddings."""
+        try:
+            from orka.utils.embedder import get_embedder
+
+            embedder = get_embedder()
+            if embedder is None:
+                return None
+
+            # Build node description from ID and metadata
+            node_text = node_id.replace("_", " ").replace("-", " ")
+
+            # Get embeddings
+            node_embedding = embedder.embed(node_text)
+            question_embedding = embedder.embed(question)
+
+            if node_embedding is None or question_embedding is None:
+                return None
+
+            # Compute cosine similarity
+            import numpy as np
+
+            dot_product = np.dot(node_embedding, question_embedding)
+            norm_a = np.linalg.norm(node_embedding)
+            norm_b = np.linalg.norm(question_embedding)
+
+            if norm_a == 0 or norm_b == 0:
+                return 0.5
+
+            similarity = dot_product / (norm_a * norm_b)
+
+            # Normalize to [0, 1] range (cosine similarity is [-1, 1])
+            normalized = (similarity + 1) / 2
+
+            return float(max(0.0, min(1.0, normalized)))
+
+        except ImportError:
+            logger.debug("NumPy not available for semantic similarity computation")
+            return None
+        except Exception as e:
+            logger.debug(f"Semantic similarity computation failed: {e}")
+            return None
+
+    def _keyword_overlap_score(
+        self, node_id: str, question: str, candidate: Dict[str, Any]
+    ) -> float:
+        """Enhanced keyword-based overlap scoring."""
+        try:
+            # Normalize texts
+            node_text = node_id.lower().replace("_", " ").replace("-", " ")
+            question_lower = question.lower()
+
+            # Extract words
+            question_words = set(question_lower.split())
+            node_words = set(node_text.split())
+
+            # Remove common stopwords
+            stopwords = {
+                "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
+                "have", "has", "had", "do", "does", "did", "will", "would", "could",
+                "should", "may", "might", "must", "shall", "can", "to", "of", "in",
+                "for", "on", "with", "at", "by", "from", "as", "into", "through",
+            }
+
+            question_words -= stopwords
+            node_words -= stopwords
+
+            if not question_words or not node_words:
+                return 0.5
+
+            # Direct overlap
+            direct_overlap = len(question_words & node_words)
+
+            # Partial match (substring matching)
+            partial_matches = 0.0
+            for qw in question_words:
+                for nw in node_words:
+                    if len(qw) >= 3 and len(nw) >= 3:
+                        if qw in nw or nw in qw:
+                            partial_matches += 0.5
+
+            # Include node metadata if available
+            metadata_bonus = 0.0
+            if "description" in candidate:
+                desc_words = set(str(candidate["description"]).lower().split()) - stopwords
+                desc_overlap = len(question_words & desc_words)
+                metadata_bonus = desc_overlap * 0.1
+
+            # Calculate weighted score
+            total_score = direct_overlap + partial_matches + metadata_bonus
+            max_possible = max(len(question_words), len(node_words))
+
+            if max_possible == 0:
+                return 0.5
+
+            normalized = total_score / max_possible
+            return float(max(0.0, min(1.0, normalized)))
+
+        except Exception:
             return 0.5
 
     def _check_safety_fit(self, candidate: Dict[str, Any], context: Dict[str, Any]) -> float:

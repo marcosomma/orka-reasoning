@@ -13,6 +13,7 @@
 Screen implementations for OrKa Textual TUI application.
 """
 
+import logging
 from datetime import datetime
 from typing import Any
 
@@ -23,6 +24,8 @@ from textual.widgets import Footer, Header, Static
 
 from .textual_widgets import LogsWidget, MemoryTableWidget, StatsWidget
 from .message_renderer import VintageMessageRenderer
+
+logger = logging.getLogger(__name__)
 
 
 class BaseOrKaScreen(Screen):
@@ -109,9 +112,9 @@ class DashboardScreen(BaseOrKaScreen):
             logs_widget = self.query_one("#dashboard-logs", LogsWidget)
             logs_widget.update_data()  # Changed from update_logs() to update_data()
 
-        except Exception:
+        except Exception as e:
             # Handle refresh errors gracefully
-            pass
+            logger.debug(f"TUI dashboard refresh error (non-fatal): {e}")
 
 
 class ShortMemoryScreen(BaseOrKaScreen):
@@ -150,8 +153,9 @@ class ShortMemoryScreen(BaseOrKaScreen):
         content_widget = None
         try:
             content_widget = self.query_one("#short-content-text", Static)
-        except Exception:
+        except Exception as e:
             # If we can't find the widget, log error and return
+            logger.debug(f"TUI short-content-text widget not found (non-fatal): {e}")
             return
 
         if not content_widget:
@@ -192,8 +196,8 @@ class ShortMemoryScreen(BaseOrKaScreen):
             table_widget = self.query_one("#short-memory-table", MemoryTableWidget)
             table_widget.update_data("short")
 
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"TUI short memory refresh error (non-fatal): {e}")
 
 
 class LongMemoryScreen(BaseOrKaScreen):
@@ -232,8 +236,9 @@ class LongMemoryScreen(BaseOrKaScreen):
         content_widget = None
         try:
             content_widget = self.query_one("#long-content-text", Static)
-        except Exception:
+        except Exception as e:
             # If we can't find the widget, log error and return
+            logger.debug(f"TUI long-content-text widget not found (non-fatal): {e}")
             return
 
         if not content_widget:
@@ -274,8 +279,8 @@ class LongMemoryScreen(BaseOrKaScreen):
             table_widget = self.query_one("#long-memory-table", MemoryTableWidget)
             table_widget.update_data("long")
 
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"TUI long memory refresh error (non-fatal): {e}")
 
 
 class MemoryLogsScreen(BaseOrKaScreen):
@@ -310,8 +315,9 @@ class MemoryLogsScreen(BaseOrKaScreen):
         content_widget = None
         try:
             content_widget = self.query_one("#logs-content-text", Static)
-        except Exception:
+        except Exception as e:
             # If we can't find the widget, log error and return
+            logger.debug(f"TUI logs-content-text widget not found (non-fatal): {e}")
             return
 
         if not content_widget:
@@ -367,8 +373,8 @@ class MemoryLogsScreen(BaseOrKaScreen):
             logs_table = self.query_one("#orchestration-logs-table", MemoryTableWidget)
             logs_table.update_data("logs")
 
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"TUI memory logs refresh error (non-fatal): {e}")
 
 
 class HealthScreen(BaseOrKaScreen):

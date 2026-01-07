@@ -217,7 +217,19 @@ agents:
       vector_field_name: "content_vector"
       force_recreate_index: false
     namespace: fact_validator
-    prompt: "{{ safe_get_response('openai-answer_14', get_agent_response('openai-answer_15')) }}"
+    prompt: |
+      {
+        "type": "final_result",
+        "question": {{ get_input() | tojson }},
+        "final_answer": {{ safe_get_response('openai-answer_14', get_agent_response('openai-answer_15')) | tojson }},
+        "coherent": {{ (get_agent_response('openai-binary_10') == 'true') | tojson }},
+        "sources": {{ {
+          'memory': get_agent_response('memory-read_0'),
+          'analysis': get_agent_response('openai-answer_2'),
+          'classification': get_agent_response('openai-classification_5'),
+          'alternative': get_agent_response('openai-answer_6')
+        } | tojson }}
+      }
     metadata:
       source: '{{ "openai-answer_14" if get_agent_response("openai-answer_14") else "openai-answer_15" }}'
       result: "{{ safe_get_response('openai-answer_14', get_agent_response('openai-answer_15')) }}"

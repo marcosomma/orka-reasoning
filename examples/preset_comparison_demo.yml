@@ -56,7 +56,15 @@ agents:
     namespace: conversations
     params:
       vector: true
-    prompt: "Store conversation: {{ input }}"
+    prompt: |
+      {
+        "type": "conversation",
+        "message": {{ input | tojson }}
+      }
+    metadata:
+      category: conversation
+      source: preset_comparison_demo
+    key_template: "conversation_{{ input | truncate(60) }}"
 
   # Knowledge agent with semantic memory (perfect for facts)  
   - id: knowledge_agent
@@ -67,7 +75,15 @@ agents:
     namespace: knowledge
     params:
       vector: true
-    prompt: "Extract and store knowledge from: {{ input }}"
+    prompt: |
+      {
+        "type": "knowledge",
+        "fact": {{ input | tojson }}
+      }
+    metadata:
+      category: stored
+      source: preset_comparison_demo
+    key_template: "fact_{{ input | truncate(60) }}"
 
   # System agent with meta memory (perfect for system insights)
   - id: system_agent
@@ -78,7 +94,15 @@ agents:
     namespace: system
     params:
       vector: true
-    prompt: "System analysis: {{ input }}"
+    prompt: |
+      {
+        "type": "system_insight",
+        "insight": {{ input | tojson }}
+      }
+    metadata:
+      category: meta
+      source: preset_comparison_demo
+    key_template: "system_{{ input | truncate(60) }}"
 
   - id: comparison_summary
     type: local_llm

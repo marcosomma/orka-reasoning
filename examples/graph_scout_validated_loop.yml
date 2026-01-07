@@ -149,8 +149,15 @@ agents:
       operation: write
       vector: true
     prompt: |
-      Query: {{ input }}
-      Analysis: {{ previous_outputs.analysis_agent.response | default('None') }}
+      {
+        "type": "validated_path_record",
+        "query": {{ input | tojson }},
+        "analysis": {{ safe_get_response('analysis_agent', 'None', previous_outputs) | tojson }}
+      }
+    metadata:
+      category: stored
+      source: graph_scout_validated_loop
+    key_template: "validated_{{ input | truncate(60) }}"
   
   - id: response_builder
     type: local_llm
