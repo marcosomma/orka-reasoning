@@ -1,0 +1,84 @@
+{
+  "schema_version": "1.0",
+  "request_id": "req_2026_01_06_0002",
+  "tenant": {
+    "id": "acme_us",
+    "environment": "prod"
+  },
+  "task": {
+    "type": "support_ticket",
+    "goal": "draft_reply_and_plan",
+    "locale": "en-US",
+    "priority_hint": "high"
+  },
+  "case": {
+    "ticket_id": "ZD-12346",
+    "channel": "zendesk",
+    "subject": "URGENT: Cannot access my account",
+    "customer_message": {
+      "text": "I've been locked out of my account for 3 days now. I've tried resetting my password but the email never arrives. This is affecting my business operations. Please help ASAP! My email is john.smith@company.com and my phone is 555-123-4567.",
+      "source": "zendesk",
+      "trust": "untrusted",
+      "received_at": "2026-01-06T14:30:00Z"
+    },
+    "attachments": [],
+    "thread_history": [
+      {
+        "text": "I first noticed the issue on Monday morning when I couldn't log in.",
+        "source": "zendesk",
+        "trust": "untrusted",
+        "received_at": "2026-01-05T09:15:00Z"
+      }
+    ]
+  },
+  "context": {
+    "customer_profile": {
+      "customer_id": "cust_1205",
+      "plan": "enterprise",
+      "region": "US",
+      "source": "crm",
+      "trust": "trusted",
+      "last_updated_at": "2026-01-06T14:29:00Z",
+      "custom_fields": {
+        "company_size": "50-200",
+        "industry": "technology"
+      }
+    },
+    "entitlements": {
+      "refund_allowed": true,
+      "max_refund_amount_eur": 500,
+      "source": "billing",
+      "trust": "trusted",
+      "last_updated_at": "2026-01-06T14:29:00Z",
+      "features": ["priority_support", "dedicated_account_manager", "sla_guarantee"]
+    },
+    "extra": {
+      "sla_response_time_hours": 4
+    }
+  },
+  "evidence": {
+    "retrieval_handles": [],
+    "tool_results": []
+  },
+  "constraints": {
+    "policy_id": "enterprise_support_policy_v2",
+    "privacy": {
+      "pii_redacted": true,
+      "redaction_level": "strict"
+    },
+    "token_budgets": {
+      "max_input_tokens": 8000,
+      "max_output_tokens": 1500
+    },
+    "max_latency_ms": 20000
+  },
+  "permissions": {
+    "allowed_actions": ["draft_reply", "request_more_info", "escalate", "assign_agent"],
+    "blocked_actions": ["close_ticket"]
+  },
+  "desired_output": {
+    "format": "json",
+    "require_citations": true
+  },
+  "created_at": "2026-01-06T14:30:00Z"
+}

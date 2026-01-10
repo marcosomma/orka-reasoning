@@ -98,12 +98,83 @@ Benefits of Modular Design
     Existing code continues to work without modification
 """
 
+import logging
+import os
+
 from .agent_factory import AGENT_TYPES, AgentFactory
 from .base import OrchestratorBase
 from .error_handling import ErrorHandler
 from .execution_engine import ExecutionEngine
 from .metrics import MetricsCollector
 from .simplified_prompt_rendering import SimplifiedPromptRenderer
+
+logger = logging.getLogger(__name__)
+
+# Feature registry for optional modules
+_FEATURE_REGISTRY = {
+    "support_triage": "orka.support_triage",
+}
+
+_loaded_features: set = set()
+
+
+def load_feature(feature_name: str) -> bool:
+    """
+    Load an optional feature module and register its agents.
+
+    Args:
+        feature_name: Name of the feature (e.g., "support_triage")
+
+    Returns:
+        True if feature was loaded successfully, False otherwise
+    """
+    if feature_name in _loaded_features:
+        return True
+
+    if feature_name not in _FEATURE_REGISTRY:
+        logger.warning(f"Unknown feature: {feature_name}")
+        return False
+
+    module_path = _FEATURE_REGISTRY[feature_name]
+    try:
+        import importlib
+
+        module = importlib.import_module(module_path)
+        if hasattr(module, "register_agents"):
+            module.register_agents()
+            _loaded_features.add(feature_name)
+            logger.info(f"Loaded feature: {feature_name}")
+            return True
+        else:
+            logger.warning(f"Feature {feature_name} has no register_agents function")
+            return False
+    except ImportError as e:
+        logger.error(f"Failed to import feature {feature_name}: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"Failed to load feature {feature_name}: {e}")
+        return False
+
+
+def load_features_from_env() -> None:
+    """
+    Load features specified in ORKA_FEATURES environment variable.
+
+    Set ORKA_FEATURES to a comma-separated list of feature names:
+        export ORKA_FEATURES=support_triage,other_feature
+    """
+    features_str = os.environ.get("ORKA_FEATURES", "")
+    if not features_str:
+        return
+
+    features = [f.strip() for f in features_str.split(",") if f.strip()]
+    for feature in features:
+        load_feature(feature)
+
+
+def get_loaded_features() -> set:
+    """Get the set of currently loaded features."""
+    return _loaded_features.copy()
 
 
 # Create the main Orchestrator class using multiple inheritance
@@ -121,6 +192,17 @@ class Orchestrator(
 
     This class now inherits from multiple mixins to provide all functionality
     while maintaining the same public interface.
+
+    Features:
+        Optional feature modules can be loaded by setting the ORKA_FEATURES
+        environment variable to a comma-separated list of feature names:
+
+            export ORKA_FEATURES=support_triage
+
+        Or by calling load_feature() before creating an Orchestrator:
+
+            from orka.orchestrator import load_feature
+            load_feature("support_triage")
     """
 
     def __init__(self, config_path: str) -> None:
@@ -128,6 +210,9 @@ class Orchestrator(
         Initialize the Orchestrator with a YAML config file.
         Loads orchestrator and agent configs, sets up memory and fork management.
         """
+        # Load features from environment variable (auto-discovery)
+        load_features_from_env()
+
         # Initialize all parent classes
         ExecutionEngine.__init__(self, config_path)
         OrchestratorBase.__init__(self, config_path)
@@ -148,4 +233,8 @@ __all__ = [
     "Orchestrator",
     "OrchestratorBase",
     "SimplifiedPromptRenderer",
+    # Feature loading
+    "load_feature",
+    "load_features_from_env",
+    "get_loaded_features",
 ]

@@ -145,6 +145,16 @@ from .local_llm_agents import LocalLLMAgent
 from .plan_validator import PlanValidatorAgent
 from .validation_and_structuring_agent import ValidationAndStructuringAgent
 
+# Support triage agents
+from ..support_triage.agents import (
+    DecisionRecorderAgent,
+    EnvelopeValidatorAgent,
+    OutputVerificationAgent,
+    PermissionGateAgent,
+    RedactionAgent,
+    TrustBoundaryAgent,
+)
+
 # Register all available agent types
 AGENT_REGISTRY = {
     "binary": BinaryAgent,
@@ -156,4 +166,11 @@ AGENT_REGISTRY = {
     "openai-classification": OpenAIClassificationAgent,
     "plan_validator": PlanValidatorAgent,
     "validate_and_structure": ValidationAndStructuringAgent,
+    # Support triage agents
+    "envelope_validator": EnvelopeValidatorAgent,
+    "redaction": RedactionAgent,
+    "trust_boundary": TrustBoundaryAgent,
+    "permission_gate": PermissionGateAgent,
+    "output_verification": OutputVerificationAgent,
+    "decision_recorder": DecisionRecorderAgent,
 }

@@ -14,10 +14,24 @@ Agent Factory
 =============
 
 Factory for creating and initializing agents and nodes based on configuration.
+
+Extensibility
+-------------
+Custom agents can be registered using `register_agent_type()`:
+
+    from orka.orchestrator.agent_factory import register_agent_type
+    from my_module import MyCustomAgent
+
+    register_agent_type("my-custom", MyCustomAgent)
+
+Or via entry points in pyproject.toml:
+
+    [project.entry-points."orka.agents"]
+    my-custom = "my_module:MyCustomAgent"
 """
 
 import logging
-from typing import Any, Dict, List, Type, Union, cast
+from typing import Any, Callable, Dict, List, Optional, Type, Union, cast
 
 from ..agents import (
     agents,
@@ -71,10 +85,12 @@ AgentClass = Union[
     Type[GraphScoutAgent],
     Type[MemoryReaderNode],
     Type[MemoryWriterNode],
+    Type,  # Generic type for dynamically registered agents
     str,  # For "special_handler" and "path_executor"
 ]
 
-AGENT_TYPES: Dict[str, AgentClass] = {
+# Core agent types - built-in to OrKa
+_CORE_AGENT_TYPES: Dict[str, AgentClass] = {
     "binary": agents.BinaryAgent,
     "classification": agents.ClassificationAgent,
     "invariant_validator": invariant_validator_agent.InvariantValidatorAgent,
@@ -97,6 +113,128 @@ AGENT_TYPES: Dict[str, AgentClass] = {
     "graph-scout": GraphScoutAgent,
     "memory": "special_handler",  # This will be handled specially in init_single_agent
 }
+
+# Extended agent types - registered by plugins/features
+_EXTENDED_AGENT_TYPES: Dict[str, AgentClass] = {}
+
+# Combined view for backward compatibility
+AGENT_TYPES: Dict[str, AgentClass] = {**_CORE_AGENT_TYPES}
+
+
+def register_agent_type(
+    type_name: str,
+    agent_class: Type,
+    *,
+    overwrite: bool = False,
+) -> None:
+    """
+    Register a custom agent type for use in YAML workflows.
+
+    This allows feature modules and plugins to extend OrKa with custom agents
+    without modifying the core agent factory.
+
+    Args:
+        type_name: The type identifier used in YAML configs (e.g., "envelope_validator")
+        agent_class: The agent class to instantiate for this type
+        overwrite: If True, allows overwriting existing types (default: False)
+
+    Raises:
+        ValueError: If type_name already exists and overwrite=False
+
+    Example:
+        >>> from orka.orchestrator.agent_factory import register_agent_type
+        >>> from my_feature.agents import MyAgent
+        >>> register_agent_type("my-agent", MyAgent)
+
+        Then in YAML:
+        ```yaml
+        agents:
+          - id: my_agent_instance
+            type: my-agent
+            params: {...}
+        ```
+    """
+    if type_name in AGENT_TYPES and not overwrite:
+        raise ValueError(
+            f"Agent type '{type_name}' is already registered. "
+            f"Use overwrite=True to replace it."
+        )
+
+    _EXTENDED_AGENT_TYPES[type_name] = agent_class
+    AGENT_TYPES[type_name] = agent_class
+    logger.info(f"Registered agent type: {type_name} -> {agent_class.__name__}")
+
+
+def register_agent_types(
+    agents: Dict[str, Type],
+    *,
+    overwrite: bool = False,
+) -> None:
+    """
+    Register multiple agent types at once.
+
+    Args:
+        agents: Dict mapping type names to agent classes
+        overwrite: If True, allows overwriting existing types
+
+    Example:
+        >>> register_agent_types({
+        ...     "envelope_validator": EnvelopeValidatorAgent,
+        ...     "redaction": RedactionAgent,
+        ... })
+    """
+    for type_name, agent_class in agents.items():
+        register_agent_type(type_name, agent_class, overwrite=overwrite)
+
+
+def unregister_agent_type(type_name: str) -> bool:
+    """
+    Unregister a custom agent type.
+
+    Only extended (non-core) agents can be unregistered.
+
+    Args:
+        type_name: The type identifier to remove
+
+    Returns:
+        True if the agent was unregistered, False if it wasn't found or is a core type
+    """
+    if type_name in _CORE_AGENT_TYPES:
+        logger.warning(f"Cannot unregister core agent type: {type_name}")
+        return False
+
+    if type_name in _EXTENDED_AGENT_TYPES:
+        del _EXTENDED_AGENT_TYPES[type_name]
+        del AGENT_TYPES[type_name]
+        logger.info(f"Unregistered agent type: {type_name}")
+        return True
+
+    return False
+
+
+def get_registered_agent_types() -> Dict[str, AgentClass]:
+    """
+    Get all registered agent types.
+
+    Returns:
+        Dict mapping type names to agent classes
+    """
+    return AGENT_TYPES.copy()
+
+
+def get_extended_agent_types() -> Dict[str, AgentClass]:
+    """
+    Get only the extended (non-core) agent types.
+
+    Returns:
+        Dict mapping type names to agent classes for extended agents only
+    """
+    return _EXTENDED_AGENT_TYPES.copy()
+
+
+def is_core_agent_type(type_name: str) -> bool:
+    """Check if an agent type is a core (built-in) type."""
+    return type_name in _CORE_AGENT_TYPES
 
 
 class AgentFactory:
