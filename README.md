@@ -19,6 +19,40 @@
 [![Pepy Total Downloads](https://img.shields.io/pepy/dt/orka-reasoning?style=for-the-badge&amp;label=Downloads%20from%20April%202025&amp;color=blue&amp;link=https%3A%2F%2Fpiptrends.com%2Fpackage%2Forka-reasoning)](https://clickpy.clickhouse.com/dashboard/orka-reasoning)
 </p>
 
+## Maintainer note
+
+People have been reaching out to me lately about Orka-reasoning.
+
+I stopped development last month. Not because I lost interest, and not because I changed my mind about orchestration being the real key. I did not.
+
+Orka was never meant to be a product. It was mostly a playground for me.
+
+2025 was a hard year professionally. I saw the weaknesses of AI demos in real life. I saw the lack of scalability, the overuse of single-agent patterns, and often no real agent design at all. The prompt-and-go strategy worked for demos, but it was not scalable.
+
+That is where Orka came from.
+
+My first commit was just a small POC with two agents processing one input in a linear flow. From there, I added routing, branching, loops, and more. I built it in public because I wanted to show that there was a better path.
+
+Some people engaged from the beginning. Others arrived later. Over the year, I saw around 50k downloads across GitHub and PyPI. Some people came back with feedback. Some contributed. Many criticized it. All of that helped.
+
+Orka kept growing and became a sort of personal AI ecosystem for me. A place where I could build agentic flows with no boundaries, and where critical thinking was part of the pipeline before producing a final output.
+
+It was fun.
+
+Then, slowly, I became a maintainer.
+
+The pressure from download growth started creating expectations. I did not want to release new versions without testing properly, checking backward compatibility, and making sure things were stable. That made me slower, and it also tied me to a narrower problem than the one I actually wanted to explore.
+
+Then 2026 arrived, and more people started catching up with the limitations of AI demos. Investors began asking for real results, not just flashy prototypes. Many products had to rewrite themselves completely. They learned, but from a business perspective, many also burned money and are now dealing with expectations that do not match the real cost of AI.
+
+In my view, this is the silent AI pop. The bubble is not exploding loudly. It is slowly deflating and hitting the ground.
+
+So this is the point.
+
+Orka was fun, and I am quite sure it is full of small gold stones if you want to dig. But it was my playground, not a production-ready product, and it will never be.
+
+You are free to fork it, branch it, and build on top of it. But there will be no maintenance from my side.
+
 ## Overview
 OrKA-reasoning is a open-source, local‑first, YAML‑driven system for composing AI workflows. Define agents and control‑flow in configuration, run them with a single command, and keep everything observable and reproducible.
 
