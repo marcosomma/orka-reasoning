@@ -1,4 +1,4 @@
-# From Tools to Farming: Procedural Skill Memory for Durable Adaptive Cognition in AI Agent Systems
+# Procedural Skill Memory for LLM Agent Systems: Architecture, Benchmark, and Honest Limits of a First Implementation
 
 **Marco Somma**
 Independent Researcher, Barcelona, Spain
@@ -8,47 +8,45 @@ Creator of OrKa (Orchestrator Kit Agents)
 
 ## Abstract
 
-Current AI agent systems operate primarily as stateless tool executors: they predict, generate, and respond, but they do not retain procedural experience across tasks. This paper identifies five architectural requirements for what I term *durable adaptive cognition*, the capacity of an AI system to compound intelligence over time through persistent feedback loops rather than isolated inference. I present OrKa Brain, an open-source procedural skill memory system integrated into an LLM agent orchestration framework, implementing the complete cognitive loop: *learn, persist, retrieve, apply, feedback, and decay*. I evaluate the system on a 30-task benchmark across two tracks (cross-domain transfer and same-domain accumulation) using an LLM-as-judge evaluation protocol. Results show a consistent but modest advantage for the Brain-augmented condition: 63.3% pairwise win rate, with the strongest signal in perceived trustworthiness (19/28 wins). Absolute rubric deltas remain small (+0.10 overall), revealing a ceiling effect where the underlying LLM already possesses the procedural knowledge the Brain recalls. I discuss the findings honestly, identify the limitations of rule-based skill abstraction, and outline a roadmap toward embedding-based retrieval and LLM-powered generalization that the architecture is designed to support.
+Current AI agent systems operate primarily as stateless executors: they do not retain procedural experience across tasks. I propose five desirable properties for experience-driven agent systems and present OrKa Brain, an open-source prototype that implements a procedural skill memory loop (learn, persist, retrieve, apply, feedback, decay) within a YAML-based LLM agent orchestration framework. I evaluate the system on a 30-task benchmark across two tracks (cross-domain transfer and same-domain accumulation) using an LLM-as-judge evaluation protocol. Results show a consistent but modest advantage for the Brain-augmented condition: 63.3% pairwise win rate, with the strongest signal in perceived trustworthiness (19/28 wins). Absolute rubric deltas remain small (+0.10 overall on a 10-point scale), revealing a ceiling effect: the underlying LLM already possesses the procedural knowledge the Brain recalls. The current implementation uses rule-based keyword extraction rather than semantic understanding, and the benchmark carries significant confounds (unequal pipeline lengths, single model, single run). I report both the positive signals and the negative ones, identify the bottlenecks, and outline the architectural slots designed for progressive upgrade.
 
 ---
 
 ## 1. Introduction
 
-### 1.1 The Tool Phase Problem
+### 1.1 The Statelessness Problem
 
-Artificial intelligence systems today are remarkably capable predictors. Large language models generate coherent text, classify images, write code, and reason through multi-step problems. Yet these systems share a fundamental limitation: they operate as *stateless tools*. Each invocation starts fresh. No experience persists. No skill compounds. No feedback loop refines future performance based on past outcomes.
+Large language models generate coherent text, write code, and reason through multi-step problems. Yet current LLM-based agent systems share a structural limitation: they are *stateless across invocations*. Each workflow starts fresh. No experience persists. No feedback loop refines future performance based on past outcomes.
 
-This is analogous to hunting in pre-agricultural human societies. Hunting requires intelligence: pattern recognition, spatial reasoning, social coordination, improvisation. But hunting is *reactive*. Each hunt is largely independent. The knowledge stays in the hunter's head and does not reshape the environment for future advantage.
+A useful analogy comes from human economic history. Hunting requires genuine intelligence (pattern recognition, spatial reasoning, improvisation) but each hunt is largely independent. Agriculture introduced a qualitatively different dynamic: *delayed feedback loops*. The farmer acts now, evaluates later, and modifies the environment to encode accumulated knowledge for the next cycle. Intelligence stops being a momentary capability and becomes infrastructure.
 
-Agriculture introduced something qualitatively different: *delayed feedback loops*. The farmer acts now and evaluates months later. Lessons from one season inform the next. The environment itself is modified to encode accumulated knowledge (irrigation channels, terraced hillsides, selected seed varieties). Intelligence stops being a momentary capability and becomes *infrastructure*.
+This analogy is motivating, not a claim. I do not argue that the system presented here achieves "farming-phase AI." I use the analogy to identify a structural gap: current multi-agent orchestrators (CrewAI, LangChain, AutoGen) do not accumulate procedural experience across invocations. Each workflow starts from zero. The question this paper explores is whether a persistent skill memory loop can begin to close that gap, and what happens when it does.
 
-Current AI agent systems, including multi-agent orchestrators like CrewAI, LangChain, and AutoGen, remain in the hunting phase. They execute tasks competently but do not accumulate procedural experience across invocations. Each workflow starts from zero.
+### 1.2 Five Desirable Properties for Experience-Driven Agent Systems
 
-### 1.2 Durable Adaptive Cognition: Five Requirements
+I propose five properties that an experience-driven agent system should aim for. These are design goals, not proven requirements. No claim is made that all five are necessary, that this list is exhaustive, or that achieving them guarantees improved outcomes.
 
-I propose that the transition from tool-phase to farming-phase AI requires five architectural capabilities operating together:
+1. **Long feedback loops.** The system should act, observe outcomes, and incorporate that feedback into future behavior across a time horizon longer than a single invocation.
 
-1. **Long feedback loops.** The system must act, observe outcomes, and incorporate that feedback into future behavior across a time horizon longer than a single invocation.
+2. **Persistent memory.** Useful state should survive across sessions, not just within a conversation window. Memory should be durable, queryable, and managed (not unbounded growth).
 
-2. **Persistent memory.** Useful state must survive across sessions, not just within a conversation window. Memory must be durable, queryable, and managed (not unbounded growth).
+3. **Reusable skill from experience.** The system should extract transferable procedures from concrete execution traces, not merely store raw transcripts.
 
-3. **Reusable skill from experience.** The system must extract abstract, transferable procedures from concrete execution traces, not merely store raw transcripts.
+4. **Cross-domain transfer.** A procedure learned in one domain should be retrievable and applicable in a structurally similar but semantically different domain.
 
-4. **Cross-domain transfer.** A procedure learned in one domain must be retrievable and applicable in a structurally similar but semantically different domain.
+5. **Compounding over time.** Performance should improve as experience accumulates. Unused or unsuccessful patterns should decay.
 
-5. **Compounding over time.** Performance must improve as experience accumulates. Unused or unsuccessful patterns must decay. The system must get better, not just bigger.
-
-No single component is novel in isolation. Episodic memory systems exist (MemGPT/Letta). Skill libraries exist (Voyager, in Minecraft). Reflection mechanisms exist (Reflexion). Classical cognitive architectures have procedural memory (ACT-R, SOAR). But no existing system integrates all five requirements into a working, general-purpose LLM agent framework.
+No single component is novel in isolation. Episodic memory systems exist (MemGPT/Letta). Skill libraries exist (Voyager, in Minecraft). Reflection mechanisms exist (Reflexion). Classical cognitive architectures have procedural memory (ACT-R, SOAR). The combination of all five in a general-purpose LLM agent framework is, to my knowledge, underexplored, but this claim is difficult to verify exhaustively and should not be read as a strong novelty statement.
 
 ### 1.3 Contribution
 
 This paper makes three contributions:
 
-1. A *taxonomy* of architectural requirements for durable adaptive cognition, derived from first-principles analysis of what separates tool-phase from farming-phase intelligence.
+1. A *checklist* of five desirable properties for experience-driven agent systems, intended as a design guide rather than a theoretical framework.
 
-2. *OrKa Brain*, an open-source implementation of the complete cognitive loop (learn, persist, retrieve, apply, feedback, decay) integrated into the OrKa agent orchestration framework.
+2. *OrKa Brain*, an open-source prototype of a procedural skill memory loop (learn, persist, retrieve, apply, feedback, decay) integrated into the OrKa agent orchestration framework. The current implementation uses rule-based extraction and keyword-based retrieval.
 
-3. An *honest empirical evaluation* on a 30-task benchmark, reporting both the strengths and the limitations of the current implementation, with a clear roadmap for progressive enhancement.
+3. An *empirical evaluation* on a 30-task benchmark, reporting both positive signals (consistent pairwise preference) and negative signals (flat rubric scores, ceiling effect, untested failure path), with a discussion of confounds and a roadmap for progressive enhancement.
 
 ---
 
@@ -70,7 +68,7 @@ This paper makes three contributions:
 
 ### 2.3 The Gap
 
-The intersection of *procedural skill persistence*, *cross-domain retrieval*, *feedback-driven calibration*, and *temporal management* in a general-purpose LLM agent framework remains unexplored. Table 1 summarizes the landscape.
+The combination of *procedural skill persistence*, *cross-domain retrieval*, *feedback-driven calibration*, and *temporal management* in a general-purpose LLM agent framework appears underexplored, though absence of evidence is not evidence of absence. Table 1 summarizes the landscape as I understand it.
 
 **Table 1: Memory Capabilities in Existing Agent Systems**
 
@@ -91,7 +89,7 @@ The intersection of *procedural skill persistence*, *cross-domain retrieval*, *f
 
 OrKa Brain is a procedural skill memory module within the OrKa agent orchestration framework. OrKa is a YAML-first system where workflows are defined declaratively and executed by composing typed agents (LLM, memory, search, brain, router, etc.) in sequential or parallel pipelines. Brain integrates into this pipeline as three agent steps: `brain_learn`, `brain_recall`, and `brain_feedback`.
 
-The full cognitive loop operates as follows:
+The skill memory loop operates as follows:
 
 ```
 Input Task
@@ -115,7 +113,7 @@ Input Task
 [task_result]    -- Format structured output
 ```
 
-Skills persist in Redis across invocations. The feedback step adjusts confidence scores and builds transfer history records, creating the compounding mechanism.
+Skills persist in Redis across invocations. The feedback step adjusts confidence scores and builds transfer history records, creating a potential compounding mechanism (though in this benchmark, feedback never recorded a failure, so compounding was not fully exercised).
 
 ### 3.2 Skill Data Model
 
@@ -377,13 +375,13 @@ The 100% success rate is a limitation: the feedback mechanism never recorded a f
 
 ### 6.1 What the Results Show
 
-The benchmark provides three findings:
+The benchmark provides three findings, all of which should be read with the confounds in Section 6.2 in mind:
 
-**Finding 1: The architecture works end-to-end.** Skills are learned, persisted, retrieved across domains, applied, and tracked with feedback. TTL decay and deduplication function as designed. 21 distinct skills emerged from 30 tasks with a working transfer history. This validates the cognitive loop as an implementable architecture, not merely a theoretical framework.
+**Finding 1: The loop runs end-to-end.** Skills are learned, persisted, retrieved across domains, applied, and tracked with feedback. TTL decay and deduplication function as designed. 21 distinct skills emerged from 30 tasks with a working transfer history. This establishes that the architecture is *implementable*. It does not, by itself, establish that the architecture is *useful*.
 
-**Finding 2: The quality advantage is real but small.** The pairwise judge preferred Brain outputs 63.3% of the time, with the strongest signal in trustworthiness. The rubric shows near-parity (+0.10 overall). Both evaluation methods agree that both conditions produce competent output. The Brain does not produce dramatically better results; it produces slightly more preferred results.
+**Finding 2: The quality advantage is small and ambiguous.** The pairwise judge preferred Brain outputs 63.3% of the time, with the strongest signal in trustworthiness. The rubric shows near-parity (+0.10 overall). Both evaluation methods agree that both conditions produce competent output. The pairwise preference is a real signal, but its cause is ambiguous: it could reflect skill recall, additional context injection, or simply pipeline length effects.
 
-**Finding 3: The LLM already knows what the Brain recalls.** The marginal rubric deltas, especially the zero delta on Depth of Analysis, suggest a ceiling effect. The underlying LLM (gpt-oss-20b) has already internalized procedural patterns like decompose-analyze-synthesize and validate-classify-route through pre-training. The Brain is recalling knowledge the LLM already possesses. The Brain's contribution is prompting the LLM to *apply* that knowledge more consistently, not teaching it something new.
+**Finding 3: The LLM already knows what the Brain recalls.** The marginal rubric deltas, especially the zero delta on Depth of Analysis, suggest a ceiling effect. The underlying LLM (gpt-oss-20b) has already internalized procedural patterns like decompose-analyze-synthesize and validate-classify-route through pre-training. The Brain is recalling knowledge the LLM already possesses. Its contribution, if any, is prompting the LLM to *apply* that knowledge more consistently, not teaching it something new.
 
 ### 6.2 Confounding Variables
 
@@ -395,17 +393,17 @@ The benchmark provides three findings:
 
 **100% feedback success.** The feedback mechanism never recorded a failure, preventing the system from demonstrating error-correction behavior. A more granular feedback mechanism that can assess transfer quality (not just task success) is needed.
 
-### 6.3 Why These Results Are Honest and Useful
+### 6.3 What Can and Cannot Be Claimed
 
 It would be easy to cherry-pick the a_09 result (+7.00 delta) and the 70% Track A pairwise win rate and present them as proof of cross-domain transfer. I choose not to do that. The a_09 result is a brainless generation failure, not a brain success story. The rubric data shows near-parity once outliers are removed.
 
 What the results *do* support:
 
-1. **Procedural skill memory is implementable** as a practical architecture for LLM agent systems. The cognitive loop runs reliably, skills persist, and retrieval works.
+1. **The architecture is implementable and runs reliably.** The skill memory loop completes end-to-end without failures across 30 tasks. Skills persist, deduplicate, decay, and transfer. This is an engineering result, not a cognitive one.
 
-2. **Even a rule-based implementation produces a detectable signal.** The keyword-based context analyzer and Jaccard retrieval, while unsophisticated, are sufficient to recall relevant skills and inject them into task execution in a way that the pairwise judge consistently prefers.
+2. **A detectable pairwise signal exists, but its cause is ambiguous.** The 63.3% pairwise win rate is above chance, but the confounds (pipeline length, position bias, single run) make it impossible to attribute this to skill recall specifically.
 
-3. **The bottleneck is not the architecture but the abstraction mechanism.** The loop works. What limits the system is that skills are stored as verbatim copies of execution trace actions rather than generalized, domain-independent procedures. This is an implementation limitation, not an architectural one.
+3. **The bottleneck is abstraction, not plumbing.** The loop works. What limits the system is that skills are stored as verbatim copies of execution trace actions rather than generalized, domain-independent procedures. The context analyzer uses keyword matching, not comprehension. These are implementation limitations of a v1 prototype.
 
 ### 6.4 The Ceiling Effect Hypothesis
 
@@ -458,11 +456,13 @@ The architecture is explicitly designed for progressive enhancement in three are
 
 ## 8. Conclusion
 
-This paper presents three contributions. First, a taxonomy of five requirements for durable adaptive cognition: long feedback loops, persistent memory, reusable skill from experience, cross-domain transfer, and compounding over time. Second, OrKa Brain, a working open-source implementation of the complete cognitive loop in a general-purpose LLM agent framework. Third, an honest empirical evaluation that reports both the system's strengths (consistent pairwise preference, working persistence and decay, successful retrieval across domains) and its limitations (marginal rubric improvement, rule-based extraction, ceiling effect from LLM pre-training).
+This paper presents three contributions. First, a checklist of five desirable properties for experience-driven agent systems: long feedback loops, persistent memory, reusable skill from experience, cross-domain transfer, and compounding over time. Second, OrKa Brain, an open-source prototype that implements a procedural skill memory loop within a general-purpose LLM agent framework. Third, an empirical evaluation on 30 tasks that reports both the positive signals (consistent pairwise preference, working persistence and decay, retrieval across domains) and the negative ones (flat rubric scores, ceiling effect, untested failure path, pipeline length confound).
 
-The Brain does not yet produce dramatically better outcomes than a stateless baseline. But it demonstrates that the *architecture* for farming-phase AI is implementable, functional, and ready for the next generation of its core mechanisms. The loop works. The skills persist and decay appropriately. The retrieval finds relevant patterns across domains. What remains is to upgrade the abstraction and matching mechanisms from rule-based heuristics to semantic understanding.
+The prototype does not produce dramatically better outcomes than a stateless baseline. The rubric scores are nearly identical. The pairwise preference is real but ambiguous in its cause. The feedback loop never recorded a failure, leaving its error-correction capability untested.
 
-The transition from hunting to farming in human history was not a single invention. It was a gradual accumulation of techniques, infrastructure, and feedback loops. The same pattern applies to AI systems. OrKa Brain represents an early but concrete step in that transition: not the harvest, but the first furrow.
+What the work does establish is that the loop itself is buildable and functional. Skills are extracted, persisted, retrieved, applied, and tracked across 30 tasks without failure. The architecture has explicit slots for the components that would make it stronger: LLM-powered abstraction, embedding-based retrieval, and vector-indexed search. Whether filling those slots produces meaningfully better outcomes is an open question.
+
+The farming analogy that motivated this work remains an analogy. This system does not prove a phase transition in AI capability. It shows that the plumbing for persistent procedural memory can be built, that it runs, and that filling it with better mechanisms is the next question worth asking.
 
 ---
 
