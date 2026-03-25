@@ -199,6 +199,7 @@ class RedisStackMemoryLogger(
         importance_score: float = 1.0,
         memory_type: str = "short_term",
         expiry_hours: float | None = None,
+        content_vector: Any | None = None,
     ) -> str:
         """Store memory with vector embedding for enhanced search."""
         try:
@@ -243,7 +244,15 @@ class RedisStackMemoryLogger(
             if orka_expire_time is not None:
                 memory_data["orka_expire_time"] = str(orka_expire_time)
 
-            if self.embedder:
+            if content_vector is not None:
+                try:
+                    if hasattr(content_vector, "tobytes"):
+                        memory_data["content_vector"] = content_vector.astype("float32").tobytes()  # type: ignore[attr-defined]
+                    elif isinstance(content_vector, (bytes, bytearray)):
+                        memory_data["content_vector"] = bytes(content_vector)
+                except Exception as e:
+                    logger.warning(f"Failed to use provided content vector: {e}")
+            elif self.embedder:
                 try:
                     embedding = self._get_embedding_sync(content)
                     if embedding is not None:

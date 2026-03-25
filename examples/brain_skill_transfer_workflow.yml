@@ -1,0 +1,209 @@
+# ═══════════════════════════════════════════════════════════════════════
+# OrKa Brain — Skill Transfer Workflow
+# ═══════════════════════════════════════════════════════════════════════
+#
+# This workflow demonstrates the Brain's core capability:
+#   1. An LLM reasons about a task in Domain A
+#   2. The Brain learns the reasoning pattern as an abstract skill
+#   3. An LLM is given a task in a completely different Domain B
+#   4. The Brain recalls the skill learned from Domain A
+#   5. A final LLM applies the transferred skill to Domain B
+#
+# Produces 2 separate outputs for validation:
+#   - domain_a_result: the original reasoning + learned skill
+#   - domain_b_result: the transferred skill applied in the new field
+#
+# Usage:
+#   orka run examples/brain_skill_transfer_workflow.yml "$(cat examples/inputs/brain_transfer_input.json)"
+#
+# Requirements:
+#   - Local LLM (Ollama or LM Studio)
+#   - Redis (orka-start)
+# ═══════════════════════════════════════════════════════════════════════
+
+orchestrator:
+  id: brain-skill-transfer
+  strategy: sequential
+  agents:
+    # Phase 1: Learn a skill from Domain A
+    - domain_a_reasoner
+    - brain_learn
+    - domain_a_result
+
+    # Phase 2: Apply the learned skill to Domain B
+    - domain_b_context
+    - brain_recall
+    - domain_b_applier
+    - brain_feedback
+    - domain_b_result
+
+agents:
+  # ─────────────────────────────────────────────────────────────────────
+  # Phase 1: Reason about Domain A and learn a skill
+  # ─────────────────────────────────────────────────────────────────────
+
+  - id: domain_a_reasoner
+    type: local_llm
+    prompt: |
+      You are an expert analyst. You have been given a task in a specific domain.
+      
+      DOMAIN: {{ previous_outputs.domain_a.domain if previous_outputs.domain_a is defined else 'unknown' }}
+      TASK: {{ input }}
+
+      Think step by step about how to solve this task. For each step:
+      1. State what you need to do
+      2. Explain WHY this step is necessary
+      3. Describe the expected output of this step
+
+      After your analysis, return your response as JSON with these EXACT fields:
+      - "domain": the domain of the task
+      - "task": brief description of the full task
+      - "response": your complete analysis
+      - "steps": array of objects, each with "action" (what to do) and "result" (expected outcome)
+      - "confidence": your confidence score 0.0-1.0
+      - "internal_reasoning": brief explanation of your overall approach
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3
+
+  - id: brain_learn
+    type: brain
+    operation: learn
+    prompt: "{{ previous_outputs.domain_a_reasoner }}"
+
+  - id: domain_a_result
+    type: local_llm
+    prompt: |
+      Summarize the learning outcome from Domain A.
+
+      The original task was: {{ input }}
+
+      The LLM produced this reasoning:
+      {{ previous_outputs.domain_a_reasoner.response | default('No reasoning available') }}
+
+      The Brain extracted this skill:
+      Skill name: {{ previous_outputs.brain_learn.skill_name | default('Unknown') }}
+      Skill steps: {{ previous_outputs.brain_learn.skill_steps | default([]) }}
+
+      Produce a structured summary as JSON with:
+      - "response": A clear summary of what was analyzed and what abstract skill was learned
+      - "domain": "{{ previous_outputs.domain_a_reasoner.domain | default('domain_a') }}"
+      - "skill_learned": the name of the skill
+      - "abstract_steps": the abstract steps that form the skill
+      - "confidence": your confidence that this skill is genuinely transferable (0.0-1.0)
+      - "internal_reasoning": why you think this pattern could apply elsewhere
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Phase 2: Apply the learned skill to Domain B
+  # ─────────────────────────────────────────────────────────────────────
+
+  - id: domain_b_context
+    type: local_llm
+    prompt: |
+      You are given a new task in a COMPLETELY DIFFERENT domain from the previous work.
+
+      NEW TASK (Domain B): Analyze and debug a complex software system that has been experiencing 
+      intermittent failures in production. The system has multiple microservices communicating 
+      via message queues. Some messages are being dropped, causing data inconsistency. 
+      Diagnose the root cause and propose a fix.
+
+      Describe the problem space as JSON with:
+      - "domain": "software_debugging"
+      - "task": brief description of the debugging task
+      - "input_description": what kind of input you're working with
+      - "response": your initial assessment of the problem
+      - "confidence": how well you understand the problem space (0.0-1.0)
+      - "internal_reasoning": your initial approach to this problem
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3
+
+  - id: brain_recall
+    type: brain
+    operation: recall
+    prompt: "{{ previous_outputs.domain_b_context }}"
+
+  - id: domain_b_applier
+    type: local_llm
+    prompt: |
+      You are now solving a software debugging problem, but you have access to a skill
+      that was learned in a COMPLETELY DIFFERENT DOMAIN.
+
+      THE PROBLEM: Analyze and debug a complex software system with intermittent failures.
+      Microservices communicating via message queues are dropping messages, causing data inconsistency.
+
+      A SKILL THAT WAS TRANSFERRED FROM ANOTHER DOMAIN:
+      Skill: {{ previous_outputs.brain_recall.skill_name | default('No skill recalled') }}
+      Abstract steps: {{ previous_outputs.brain_recall.skill_steps | default([]) }}
+      Transfer score: {{ previous_outputs.brain_recall.combined_score | default('N/A') }}
+      Adaptations needed: {{ previous_outputs.brain_recall.adaptations | default({}) }}
+
+      ORIGINAL DOMAIN A REASONING (for reference):
+      {{ previous_outputs.domain_a_result.response | default('No reference available') }}
+
+      YOUR TASK: Apply the transferred skill's abstract pattern to THIS software debugging problem.
+      For EACH step in the transferred skill, explain:
+      1. How you ADAPT it from the original domain to software debugging
+      2. What CONCRETE actions you take in this new context
+      3. What the expected outcome is
+
+      Return as JSON with:
+      - "response": your complete adapted analysis following the transferred skill pattern
+      - "domain": "software_debugging"
+      - "transferred_skill": the name of the skill you applied
+      - "original_domain": the domain the skill came from
+      - "adapted_steps": array of objects with "original_step", "adapted_action", and "expected_outcome"
+      - "confidence": how effective the transfer was (0.0-1.0)
+      - "internal_reasoning": reflection on how well the cross-domain transfer worked
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.4
+
+  - id: brain_feedback
+    type: brain
+    operation: feedback
+    prompt: "{{ previous_outputs.brain_recall }}"
+
+  - id: domain_b_result
+    type: local_llm
+    prompt: |
+      Create the FINAL validation report for the skill transfer experiment.
+
+      DOMAIN A (source):
+      {{ previous_outputs.domain_a_result.response | default('No summary') }}
+      Skill learned: {{ previous_outputs.brain_learn.skill_name | default('Unknown') }}
+
+      DOMAIN B (target):
+      {{ previous_outputs.domain_b_applier.response | default('No analysis') }}
+      Transferred skill: {{ previous_outputs.domain_b_applier.transferred_skill | default('Unknown') }}
+
+      BRAIN RECALL METRICS:
+      Combined score: {{ previous_outputs.brain_recall.combined_score | default('N/A') }}
+      Structural score: {{ previous_outputs.brain_recall.structural_score | default('N/A') }}
+      Semantic score: {{ previous_outputs.brain_recall.semantic_score | default('N/A') }}
+
+      Produce a final validation report as JSON with:
+      - "response": a comprehensive report on whether the skill transfer was successful
+      - "transfer_successful": true or false
+      - "source_domain": the domain the skill was learned from
+      - "target_domain": "software_debugging"
+      - "skill_name": the name of the transferred skill
+      - "quality_assessment": brief evaluation of how well the abstract pattern fit the new domain
+      - "confidence": overall confidence in the transfer quality (0.0-1.0)
+      - "internal_reasoning": final thoughts on cross-domain skill transfer viability
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3

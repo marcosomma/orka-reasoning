@@ -1,0 +1,160 @@
+[
+  {
+    "id": "scenario_01_learn_decompose",
+    "phase": "learn",
+    "title": "Learn: Decompose-Analyze-Synthesize (Text Analysis)",
+    "context": {
+      "domain": "text_analysis",
+      "task": "Break down a long research paper into sections, analyze each section for key findings, then synthesize a coherent summary",
+      "strategy": "sequential",
+      "input": "A 40-page research paper on climate change impacts",
+      "output_format": "structured"
+    },
+    "execution_trace": {
+      "steps": [
+        {"action": "decompose input into logical sections", "result": "success", "description": "Split the document by headings and topic boundaries"},
+        {"action": "analyze each section independently", "result": "success", "description": "Extract key claims, evidence, and conclusions from each part"},
+        {"action": "identify cross-section relationships", "result": "success", "description": "Find themes, contradictions, and supporting evidence across sections"},
+        {"action": "synthesize findings into unified output", "result": "success", "description": "Combine individual analyses into a coherent structured summary"}
+      ],
+      "agents": ["splitter", "section_analyzer", "cross_referencer", "synthesizer"]
+    },
+    "outcome": {"success": true, "quality": 0.93}
+  },
+
+  {
+    "id": "scenario_02_learn_validate_route",
+    "phase": "learn",
+    "title": "Learn: Validate-Classify-Route (Customer Support)",
+    "context": {
+      "domain": "customer_support",
+      "task": "Validate incoming support ticket format, classify the issue type, then route to the appropriate specialist team",
+      "strategy": "sequential",
+      "input": "Incoming customer support ticket with subject and body",
+      "output_format": "json"
+    },
+    "execution_trace": {
+      "steps": [
+        {"action": "validate input completeness and format", "result": "success", "description": "Check that required fields are present and well-formed"},
+        {"action": "classify input into categories", "result": "success", "description": "Determine the type/category of the request"},
+        {"action": "evaluate priority and urgency", "result": "success", "description": "Score the request's priority based on content signals"},
+        {"action": "route to appropriate handler based on classification", "result": "success", "description": "Direct to the right processing path"}
+      ],
+      "agents": ["validator", "classifier", "priority_scorer", "router"]
+    },
+    "outcome": {"success": true, "quality": 0.88}
+  },
+
+  {
+    "id": "scenario_03_learn_iterative_refinement",
+    "phase": "learn",
+    "title": "Learn: Iterative Refinement (Creative Writing)",
+    "context": {
+      "domain": "creative_writing",
+      "task": "Generate a draft, evaluate it against criteria, refine weak areas, and repeat until quality threshold is met",
+      "strategy": "sequential",
+      "input": "Write a compelling product description for a new tech gadget",
+      "output_format": "text"
+    },
+    "execution_trace": {
+      "steps": [
+        {"action": "generate initial draft from input requirements", "result": "success", "description": "Produce a first attempt based on the brief"},
+        {"action": "evaluate draft against quality criteria", "result": "success", "description": "Score the draft on clarity, persuasiveness, and accuracy"},
+        {"action": "identify specific weaknesses to address", "result": "success", "description": "Pinpoint which parts fall below threshold"},
+        {"action": "refine weak sections while preserving strengths", "result": "success", "description": "Targeted improvement of identified weak areas"},
+        {"action": "re-evaluate until convergence", "result": "success", "description": "Check if quality threshold is met, loop if not"}
+      ],
+      "agents": ["generator", "evaluator", "weakness_detector", "refiner", "convergence_checker"]
+    },
+    "outcome": {"success": true, "quality": 0.91}
+  },
+
+  {
+    "id": "scenario_04_transfer_decompose_to_code_review",
+    "phase": "recall",
+    "title": "Transfer: Code Review (should recall Decompose-Analyze-Synthesize)",
+    "context": {
+      "domain": "code_review",
+      "task": "Break down a large pull request into individual file changes, analyze each file for issues and improvements, then synthesize an overall review",
+      "input": "A PR with 25 changed files across 4 modules",
+      "output_format": "structured"
+    },
+    "expected_skill_pattern": "Decompose-Analyze-Synthesize"
+  },
+
+  {
+    "id": "scenario_05_transfer_validate_to_content_moderation",
+    "phase": "recall",
+    "title": "Transfer: Content Moderation (should recall Validate-Classify-Route)",
+    "context": {
+      "domain": "content_moderation",
+      "task": "Validate that user-submitted content meets format requirements, classify the content type and risk level, then route to appropriate review queue",
+      "input": "User-generated post with text, images, and links",
+      "output_format": "json"
+    },
+    "expected_skill_pattern": "Validate-Classify-Route"
+  },
+
+  {
+    "id": "scenario_06_transfer_refine_to_code_optimization",
+    "phase": "recall",
+    "title": "Transfer: Code Optimization (should recall Iterative Refinement)",
+    "context": {
+      "domain": "code_optimization",
+      "task": "Generate an initial optimization, benchmark it against performance criteria, identify bottlenecks, refine the hot paths, and repeat until performance target is met",
+      "input": "A slow database query module needing 3x throughput improvement"
+    },
+    "expected_skill_pattern": "Iterative Refinement"
+  },
+
+  {
+    "id": "scenario_07_transfer_decompose_to_financial_analysis",
+    "phase": "recall",
+    "title": "Transfer: Financial Analysis (should recall Decompose-Analyze-Synthesize)",
+    "context": {
+      "domain": "financial_analysis",
+      "task": "Break down a company's annual report into financial segments, analyze each segment's performance metrics independently, then synthesize an investment recommendation",
+      "input": "Annual report with revenue, expenses, growth metrics across 6 business units",
+      "output_format": "structured"
+    },
+    "expected_skill_pattern": "Decompose-Analyze-Synthesize"
+  },
+
+  {
+    "id": "scenario_08_transfer_validate_to_api_gateway",
+    "phase": "recall",
+    "title": "Transfer: API Gateway (should recall Validate-Classify-Route)",
+    "context": {
+      "domain": "api_infrastructure",
+      "task": "Validate incoming API request schema and auth tokens, classify the request type and rate-limit tier, then route to the correct microservice",
+      "input": "Incoming HTTP request with headers, body, and query params",
+      "output_format": "json"
+    },
+    "expected_skill_pattern": "Validate-Classify-Route"
+  },
+
+  {
+    "id": "scenario_09_transfer_refine_to_essay_grading",
+    "phase": "recall",
+    "title": "Transfer: Essay Grading Feedback (should recall Iterative Refinement)",
+    "context": {
+      "domain": "education",
+      "task": "Generate initial feedback on a student essay, evaluate it against rubric criteria, identify areas where feedback is vague or unhelpful, refine the feedback, repeat until it meets pedagogical standards",
+      "input": "A 1500-word student essay on the causes of World War I"
+    },
+    "expected_skill_pattern": "Iterative Refinement"
+  },
+
+  {
+    "id": "scenario_10_transfer_decompose_to_incident_response",
+    "phase": "recall",
+    "title": "Transfer: Incident Response (should recall Decompose-Analyze-Synthesize)",
+    "context": {
+      "domain": "devops_incident_response",
+      "task": "Break down a production incident into affected components, analyze each component's logs and metrics independently, then synthesize a root cause analysis report",
+      "input": "Production outage affecting 3 services with cascading failures",
+      "output_format": "structured"
+    },
+    "expected_skill_pattern": "Decompose-Analyze-Synthesize"
+  }
+]

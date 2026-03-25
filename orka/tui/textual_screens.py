@@ -18,11 +18,11 @@ from datetime import datetime
 from typing import Any
 
 from textual.app import ComposeResult
-from textual.containers import Container, Vertical
+from textual.containers import Container, Vertical, VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Footer, Header, Static
 
-from .textual_widgets import LogsWidget, MemoryTableWidget, StatsWidget
+from .textual_widgets import LogsWidget, MemoryTableWidget, SkillsTableWidget, StatsWidget
 from .message_renderer import VintageMessageRenderer
 
 logger = logging.getLogger(__name__)
@@ -470,6 +470,201 @@ class HealthScreen(BaseOrKaScreen):
         return datetime.now().strftime("%H:%M:%S")
 
 
+class BrainSkillsScreen(BaseOrKaScreen):
+    """Screen for viewing brain-learned skills."""
+
+    def compose_content(self) -> ComposeResult:
+        """Compose the brain skills layout."""
+        with Vertical():
+            # Compact 1-line header with title + stats
+            yield Static("[AI] Brain — Learned Skills", id="brain-skills-info")
+
+            # Skills table (gets most of the space)
+            with Container(id="brain-skills-content"):
+                yield SkillsTableWidget(
+                    self.data_manager,
+                    id="brain-skills-table",
+                )
+
+            # Bottom section: Scrollable skill detail viewer
+            with VerticalScroll(classes="content-panel", id="brain-skills-detail-panel"):
+                yield Static("[FILE] Skill Details", classes="container-compact")
+                yield Static(
+                    "[dim]Select a skill to view its procedure, conditions, and transfer history[/dim]",
+                    id="brain-skill-text",
+                )
+
+    def on_skills_table_widget_skill_selected(
+        self,
+        message: SkillsTableWidget.SkillSelected,
+    ) -> None:
+        """Handle skill selection to show details in lower panel."""
+        try:
+            content_widget = self.query_one("#brain-skill-text", Static)
+        except Exception as e:
+            logger.debug(f"TUI brain-skill-text widget not found (non-fatal): {e}")
+            return
+
+        if not message.skill_data:
+            content_widget.update(
+                "[dim]Select a skill to view its procedure, conditions, and transfer history[/dim]"
+            )
+            return
+
+        try:
+            s = message.skill_data
+            name = s.get("name", "unnamed")
+            description = s.get("description", "")
+            confidence = s.get("confidence", 0.0)
+            usage_count = s.get("usage_count", 0)
+            success_rate = s.get("success_rate", 0.0)
+            tags = ", ".join(s.get("tags", [])) or "none"
+            created = s.get("created_at", "unknown")[:19]
+            updated = s.get("updated_at", "unknown")[:19]
+
+            # Format procedure steps
+            procedure = s.get("procedure", [])
+            if procedure:
+                steps_lines = []
+                for step in procedure:
+                    order = step.get("order", 0)
+                    action = step.get("action", "")
+                    desc = step.get("description", "")
+                    optional = " [dim](optional)[/dim]" if step.get("is_optional") else ""
+                    step_text = f"  {order}. [cyan]{action}[/cyan]{optional}"
+                    if desc:
+                        step_text += f"\n     [dim]{desc}[/dim]"
+                    steps_lines.append(step_text)
+                procedure_text = "\n".join(steps_lines)
+            else:
+                procedure_text = "  [dim]No procedure recorded[/dim]"
+
+            # Format preconditions
+            preconditions = s.get("preconditions", [])
+            if preconditions:
+                pre_lines = []
+                for c in preconditions:
+                    req = "[red]*[/red]" if c.get("required") else " "
+                    pre_lines.append(f"  {req} {c.get('predicate', '')}")
+                pre_text = "\n".join(pre_lines)
+            else:
+                pre_text = "  [dim]None[/dim]"
+
+            # Format transfer history
+            transfers = s.get("transfer_history", [])
+            if transfers:
+                tx_lines = []
+                for t in transfers[-5:]:  # Show last 5
+                    status = "[green]OK[/green]" if t.get("success") else "[red]FAIL[/red]"
+                    ts = t.get("timestamp", "")[:10]
+                    conf = t.get("confidence", 0.0)
+                    tx_lines.append(f"  {status} conf={conf:.0%} [dim]{ts}[/dim]")
+                tx_text = "\n".join(tx_lines)
+            else:
+                tx_text = "  [dim]No transfers yet[/dim]"
+
+            formatted = f"""[bold blue]{name}[/bold blue]
+{description}
+
+[bold green][LIST] PROCEDURE:[/bold green]
+{procedure_text}
+
+[bold yellow][CONF] PRECONDITIONS:[/bold yellow]
+{pre_text}
+
+[bold magenta][SYNC] TRANSFER HISTORY ({len(transfers)} total):[/bold magenta]
+{tx_text}
+
+[bold cyan][TAG] INFO:[/bold cyan]
+[cyan]Confidence:[/cyan] {confidence:.0%}
+[cyan]Uses:[/cyan] {usage_count}
+[cyan]Success Rate:[/cyan] {success_rate:.0%}
+[cyan]Tags:[/cyan] {tags}
+[cyan]Created:[/cyan] {created}
+[cyan]Updated:[/cyan] {updated}
+[cyan]TTL:[/cyan] {self._format_ttl_detail(s)}"""
+
+            content_widget.update(formatted)
+        except Exception as e:
+            content_widget.update(f"[red]Error loading skill details: {e!s}[/red]")
+
+    @staticmethod
+    def _format_ttl_detail(skill_data: dict) -> str:
+        """Format TTL for the detail panel."""
+        from datetime import UTC, datetime
+
+        expires_at = skill_data.get("expires_at", "")
+        if not expires_at:
+            return "∞ Never expires"
+        try:
+            expires_dt = datetime.fromisoformat(expires_at)
+            remaining = expires_dt - datetime.now(UTC)
+            total_seconds = remaining.total_seconds()
+            if total_seconds <= 0:
+                return "EXPIRED"
+            hours = total_seconds / 3600
+            if hours < 1:
+                return f"{int(total_seconds / 60)}m remaining (expires {expires_at[:19]})"
+            elif hours < 24:
+                return f"{int(hours)}h remaining (expires {expires_at[:19]})"
+            else:
+                days = int(hours / 24)
+                return f"{days}d {int(hours % 24)}h remaining (expires {expires_at[:19]})"
+        except (ValueError, TypeError):
+            return "Unknown"
+
+    @staticmethod
+    def _is_expiring_soon(skill: Any) -> bool:
+        """Check if a skill expires within 24 hours."""
+        from datetime import UTC, datetime
+
+        try:
+            expires_dt = datetime.fromisoformat(skill.expires_at)
+            remaining_hours = (expires_dt - datetime.now(UTC)).total_seconds() / 3600
+            return 0 < remaining_hours < 24
+        except (ValueError, TypeError, AttributeError):
+            return False
+
+    def refresh_data(self) -> None:
+        """Refresh brain skills data."""
+        try:
+            skills = self.data_manager.get_brain_skills()
+
+            # Update info section — single compact line
+            info_widget = self.query_one("#brain-skills-info", Static)
+            count = len(skills)
+            if count > 0:
+                avg_conf = sum(s.confidence for s in skills) / count
+                total_tx = sum(len(s.transfer_history) for s in skills)
+                expiring_soon = sum(
+                    1 for s in skills
+                    if s.expires_at and not s.is_expired and self._is_expiring_soon(s)
+                )
+                expiring_part = (
+                    f" [dim]│[/dim] [yellow]{expiring_soon} expiring soon[/yellow]"
+                    if expiring_soon else ""
+                )
+                info_content = (
+                    f"[bold][AI] Brain — Learned Skills[/bold] [dim]│[/dim] "
+                    f"[cyan]{count}[/cyan] skills [dim]│[/dim] "
+                    f"Avg conf: [cyan]{avg_conf:.0%}[/cyan] [dim]│[/dim] "
+                    f"Transfers: [cyan]{total_tx}[/cyan]"
+                    f"{expiring_part}"
+                )
+            else:
+                info_content = (
+                    "[bold][AI] Brain — Learned Skills[/bold] [dim]│[/dim] "
+                    "[dim]No skills yet — run brain workflows to learn[/dim]"
+                )
+            info_widget.update(info_content)
+
+            # Update table
+            table_widget = self.query_one("#brain-skills-table", SkillsTableWidget)
+            table_widget.update_skills()
+        except Exception as e:
+            logger.debug(f"TUI brain skills refresh error (non-fatal): {e}")
+
+
 class HelpScreen(Screen):
     """Help screen with vintage-style keybinding reference."""
     
@@ -503,6 +698,7 @@ class HelpScreen(Screen):
 ║  │ 3          Long-term memory                     │   ║
 ║  │ 4          Memory logs                          │   ║
 ║  │ 5          Health & diagnostics                 │   ║
+║  │ 6          Brain skills (learned)               │   ║
 ║  └─────────────────────────────────────────────────┘   ║
 ║                                                         ║
 ║  [bold cyan]ACTIONS:[/bold cyan]                                             ║

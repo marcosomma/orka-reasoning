@@ -1,3 +1,101 @@
+# [0.9.15] · 2026-03-25 🧠
+OrKa v0.9.15 – Brain: Procedural Skill Memory with Cross-Context Transfer & TTL
+
+### Summary
+This release delivers the **Brain module** — OrKa's procedural skill memory system enabling cross-context knowledge transfer. Agents learn abstract skills from successful executions, recall them in structurally similar but domain-different contexts, and record transfer outcomes via a feedback loop. Skills have usage-based TTL with automatic expiry. This release fixes **6 integration bugs** discovered through execution trace analysis and adds **27 new TTL tests** plus **4 feedback tests**. The TUI Brain Skills tab now displays TTL with urgency color-coding. Total: **2854 tests passing, 84.64% coverage**.
+
+### Added
+* **🧠 Skill TTL with Usage-Based Renewal**
+  - `expires_at` field on `Skill` dataclass — ISO 8601 UTC timestamp, empty string for backward-compatible no-expiry
+  - `DEFAULT_SKILL_TTL_HOURS = 168.0` (1 week base), scaled by formula: `168 × (1 + log₂(usage_count)) × (0.5 + confidence)`
+  - `ttl_hours` property — dynamic effective TTL calculation
+  - `is_expired` property — checks `expires_at` against current UTC time
+  - `renew_ttl()` method — recalculates and sets expiry; called automatically on successful usage
+  - `record_usage(success=True)` now triggers `renew_ttl()` — failed usage does NOT renew
+  - Files: [orka/brain/skill.py](orka/brain/skill.py)
+
+* **🗑️ Expired Skill Cleanup**
+  - `SkillGraph.cleanup_expired_skills()` — scans all skills, hard-deletes expired (skill key + index + tag sets + edges), returns `{deleted, checked}`
+  - `Brain.cleanup_expired_skills()` — public delegate to graph cleanup
+  - Lazy cleanup in `Brain.recall()` — runs at most once per hour via `_last_cleanup` timestamp
+  - `SkillGraph.list_skills()` now filters out expired skills defensively
+  - `SkillGraph.save_skill()` sets Redis native TTL via `expire()` for automatic eviction
+  - Files: [orka/brain/skill_graph.py](orka/brain/skill_graph.py), [orka/brain/brain.py](orka/brain/brain.py)
+
+* **🔄 Feedback Loop (Bug #6 Fix)**
+  - `BrainAgent._handle_feedback()` — extracts `skill_id`, `success`, `adaptations` from LLM payload, calls `Brain.feedback()`
+  - Updated `_run_impl()` dispatcher to route `operation == "feedback"` to feedback handler
+  - Added `brain_feedback` agent step to workflow YAML between `domain_b_applier` and `domain_b_result`
+  - Files: [orka/agents/brain_agent.py](orka/agents/brain_agent.py), [examples/brain_skill_transfer_workflow.yml](examples/brain_skill_transfer_workflow.yml)
+
+* **📊 TUI Brain Skills TTL Display**
+  - "TTL" column added to `SkillsTableWidget` with urgency color-coding: red (<1h), yellow (<1d), green (>1d), blue (∞ Never)
+  - TTL info in skill detail panel showing remaining time and expiry timestamp
+  - "expiring soon" count in header info line
+  - `_format_skill_ttl()` static method on `SkillsTableWidget`
+  - `_format_ttl_detail()` and `_is_expiring_soon()` helpers on `BrainSkillsScreen`
+  - Files: [orka/tui/textual_widgets.py](orka/tui/textual_widgets.py), [orka/tui/textual_screens.py](orka/tui/textual_screens.py)
+
+### Fixed
+* **Bug #1 — Factory Dispatch** — Brain agent type `"brain"` was caught by the memory handler catch-all before reaching its own handler; moved brain handler before memory catch-all
+  - File: [orka/orchestrator/agent_factory.py](orka/orchestrator/agent_factory.py)
+
+* **Bug #2 — Output Propagation** — Sequential `if` blocks in `build_previous_outputs()` let `"response"` branch overwrite `"result"` branch; converted to `elif` chain
+  - File: [orka/orchestrator/metrics.py](orka/orchestrator/metrics.py)
+
+* **Bug #3 — LoopNode Regression** — The `elif` fix from Bug #2 broke LoopNode output handling; added LoopNode-specific branch detecting `"past_loops"` at top of chain
+  - File: [orka/orchestrator/metrics.py](orka/orchestrator/metrics.py)
+
+* **Bug #4 — Jinja2 Dict Parsing** — `_parse_json_field()` only tried `json.loads()` which fails on Python repr dicts from Jinja2; added `ast.literal_eval` fallback
+  - File: [orka/agents/brain_agent.py](orka/agents/brain_agent.py)
+
+* **Bug #5 — Skill Deduplication Too Strict** — `_find_existing_skill()` used exact SHA256 fingerprint match only; added `similarity_to() >= 0.70` threshold fallback so structurally similar skills get reinforced instead of duplicated
+  - File: [orka/brain/brain.py](orka/brain/brain.py)
+
+* **Bug #6 — Missing Feedback Loop** — `BrainAgent._run_impl()` only dispatched to `learn` and `recall`; `Brain.feedback()` existed but was unreachable from production workflows. Added `_handle_feedback()` handler + `brain_feedback` workflow step
+  - Files: [orka/agents/brain_agent.py](orka/agents/brain_agent.py), [examples/brain_skill_transfer_workflow.yml](examples/brain_skill_transfer_workflow.yml)
+
+* **TUI Skill Details Error** — `[{dim}]` Rich markup in skill detail panel transfer history was interpreted as f-string variable; fixed to `[dim]`
+  - File: [orka/tui/textual_screens.py](orka/tui/textual_screens.py)
+
+### Enhanced
+* **Step Extraction Improvement** — `_handle_learn()` fallback now picks the longer of `response` vs `internal_reasoning` and filters to sentences >20 chars for better skill procedure quality
+  - File: [orka/agents/brain_agent.py](orka/agents/brain_agent.py)
+
+* **Initial TTL on Learn** — `Brain.learn()` calls `skill.renew_ttl()` on newly created skills, setting expiry from creation
+  - File: [orka/brain/brain.py](orka/brain/brain.py)
+
+* **Serialization** — `Skill.to_dict()` and `Skill.from_dict()` include `expires_at`; old skills without the field default to empty string (no expiry, never expires)
+  - File: [orka/brain/skill.py](orka/brain/skill.py)
+
+### Testing
+* **31 new tests** across Brain, SkillGraph, and TUI modules:
+  - 14 TTL tests in `test_brain.py`: formula correctness, renewal, expiry, serialization, backward compat, learn integration
+  - 5 TTL tests in `test_skill_graph.py`: expired filtering, cleanup, Redis TTL setting
+  - 8 TTL display tests in `test_brain_skills_screen.py`: formatting for days/hours/minutes/expired/never, detail panel
+  - 4 feedback tests in `test_brain_agent.py`: successful transfer, missing skill_id, failed transfer, full lifecycle
+* Full suite: **2854 passed**, 84.64% coverage (≥80% threshold met)
+
+### Compatibility
+* **Backward compatible** — Skills without `expires_at` field default to no-expiry (never expires), no crash
+* **Brain workflow** now runs 8 agents: `domain_a_reasoner` → `brain_learn` → `domain_a_result` → `domain_b_context` → `brain_recall` → `domain_b_applier` → `brain_feedback` → `domain_b_result`
+
+### Files Changed
+* Modified: [orka/brain/skill.py](orka/brain/skill.py) — `expires_at` field, `ttl_hours`, `is_expired`, `renew_ttl()`, updated `record_usage()`, `to_dict()`, `from_dict()`
+* Modified: [orka/brain/brain.py](orka/brain/brain.py) — `renew_ttl()` on learn, lazy cleanup in recall, `cleanup_expired_skills()`, `_last_cleanup` init
+* Modified: [orka/brain/skill_graph.py](orka/brain/skill_graph.py) — Redis TTL in `save_skill()`, expired filtering in `list_skills()`, `cleanup_expired_skills()`
+* Modified: [orka/agents/brain_agent.py](orka/agents/brain_agent.py) — `_handle_feedback()`, updated `_run_impl()` dispatcher, `_parse_json_field` fallback, step extraction
+* Modified: [orka/orchestrator/agent_factory.py](orka/orchestrator/agent_factory.py) — Brain handler ordering
+* Modified: [orka/orchestrator/metrics.py](orka/orchestrator/metrics.py) — `elif` chain + LoopNode branch
+* Modified: [orka/tui/textual_widgets.py](orka/tui/textual_widgets.py) — TTL column + `_format_skill_ttl()`
+* Modified: [orka/tui/textual_screens.py](orka/tui/textual_screens.py) — TTL detail, expiring-soon count, dim markup fix
+* Modified: [examples/brain_skill_transfer_workflow.yml](examples/brain_skill_transfer_workflow.yml) — Added `brain_feedback` agent
+* Modified: [tests/unit/brain/test_brain.py](tests/unit/brain/test_brain.py) — 14 TTL + 2 learn-TTL tests
+* Modified: [tests/unit/brain/test_skill_graph.py](tests/unit/brain/test_skill_graph.py) — 5 TTL tests
+* Modified: [tests/unit/tui/test_brain_skills_screen.py](tests/unit/tui/test_brain_skills_screen.py) — 8 TTL display tests
+* Modified: [tests/unit/agents/test_brain_agent.py](tests/unit/agents/test_brain_agent.py) — 4 feedback tests
+* Added: [scripts/check_traces.py](scripts/check_traces.py), [scripts/check_traces2.py](scripts/check_traces2.py), [scripts/check_payload.py](scripts/check_payload.py), [scripts/check_payload2.py](scripts/check_payload2.py) — Diagnostic trace analysis scripts
+
 # [0.9.14] · 2026-01-06 ✅
 OrKa v0.9.14 – Deterministic Invariants, Compliance Scoring, Code Quality & Stability Fixes
 

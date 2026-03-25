@@ -739,3 +739,139 @@ class BreadcrumbWidget(Static):
                 formatted_segments.append(f"[cyan]{segment}[/cyan]")
         
         return " [dim]>[/dim] ".join(formatted_segments)
+
+
+class SkillsTableWidget(DataTable):
+    """Data table for displaying brain-learned skills."""
+
+    class SkillSelected(Message):
+        """Message sent when a skill row is selected."""
+
+        def __init__(self, skill_data: Optional[Dict[str, Any]], row_index: int) -> None:
+            super().__init__()
+            self.skill_data: Dict[str, Any] = skill_data if skill_data is not None else {}
+            self.row_index = row_index
+
+    def __init__(self, data_manager: Any, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.data_manager = data_manager
+        self.current_skills: List[Dict[str, Any]] = []
+        self.selected_skill_id: Optional[str] = None
+
+        self.cursor_type = "row"
+        self.zebra_stripes = True
+
+        self.add_columns(
+            "TTL",
+            "Name",
+            "Confidence",
+            "Uses",
+            "Success",
+            "Transfers",
+            "Tags",
+            "Created",
+        )
+
+    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        """Handle row selection."""
+        try:
+            row_index = self.cursor_row
+            if row_index is not None and 0 <= row_index < len(self.current_skills):
+                skill = self.current_skills[row_index]
+                skill_id = skill.get("id", "")
+                if self.selected_skill_id == skill_id:
+                    self.selected_skill_id = None
+                    self.post_message(self.SkillSelected(None, -1))
+                else:
+                    self.selected_skill_id = skill_id
+                    self.post_message(self.SkillSelected(skill, row_index))
+                self.update_skills()
+        except Exception as e:
+            logger.debug(f"TUI skill selection error (non-fatal): {e}")
+
+    def update_skills(self) -> None:
+        """Refresh the table with current brain skills."""
+        self.clear()
+
+        skills = self.data_manager.get_brain_skills()
+        self.current_skills = [s.to_dict() for s in skills]
+
+        if not self.current_skills:
+            self.add_row(
+                "[dim]No learned skills yet[/dim]",
+                "[dim]--[/dim]",
+                "[dim]--[/dim]",
+                "[dim]--[/dim]",
+                "[dim]--[/dim]",
+                "[dim]--[/dim]",
+                "[dim]Run brain workflows to learn[/dim]",
+                "[dim]--[/dim]",
+            )
+            return
+
+        for skill_dict in self.current_skills:
+            name = skill_dict.get("name", "unnamed")[:30]
+            confidence = skill_dict.get("confidence", 0.0)
+            usage_count = skill_dict.get("usage_count", 0)
+            success_rate = skill_dict.get("success_rate", 0.0)
+            transfers = len(skill_dict.get("transfer_history", []))
+            tags = ", ".join(skill_dict.get("tags", [])[:3])
+            created = skill_dict.get("created_at", "")[:10]
+
+            # Colour-code confidence
+            if confidence >= 0.7:
+                conf_display = f"[green]{confidence:.0%}[/green]"
+            elif confidence >= 0.4:
+                conf_display = f"[yellow]{confidence:.0%}[/yellow]"
+            else:
+                conf_display = f"[red]{confidence:.0%}[/red]"
+
+            # Colour-code success rate
+            if success_rate >= 0.7:
+                sr_display = f"[green]{success_rate:.0%}[/green]"
+            elif success_rate >= 0.4:
+                sr_display = f"[yellow]{success_rate:.0%}[/yellow]"
+            else:
+                sr_display = f"[red]{success_rate:.0%}[/red]"
+
+            selected = self.selected_skill_id == skill_dict.get("id")
+            checkbox_name = f"[bold cyan]> {name}[/bold cyan]" if selected else name
+
+            # Format TTL
+            ttl_display = self._format_skill_ttl(skill_dict.get("expires_at", ""))
+
+            self.add_row(
+                ttl_display,
+                checkbox_name,
+                conf_display,
+                str(usage_count),
+                sr_display,
+                str(transfers),
+                f"[dim]{tags}[/dim]" if tags else "[dim]--[/dim]",
+                f"[dim]{created}[/dim]",
+            )
+
+    @staticmethod
+    def _format_skill_ttl(expires_at: str) -> str:
+        """Format TTL with urgency color-coding."""
+        if not expires_at:
+            return "[blue]∞ Never[/blue]"
+        try:
+            from datetime import UTC, datetime
+
+            expires_dt = datetime.fromisoformat(expires_at)
+            remaining = expires_dt - datetime.now(UTC)
+            total_seconds = remaining.total_seconds()
+            if total_seconds <= 0:
+                return "[red]EXPIRED[/red]"
+            hours = total_seconds / 3600
+            if hours < 1:
+                mins = int(total_seconds / 60)
+                return f"[red]{mins}m[/red]"
+            elif hours < 24:
+                return f"[yellow]{int(hours)}h[/yellow]"
+            else:
+                days = int(hours / 24)
+                return f"[green]{days}d[/green]"
+        except (ValueError, TypeError):
+            return "[dim]--[/dim]"

@@ -1,0 +1,16 @@
+{
+  "description": "Skill Transfer Workflow — Medical Diagnosis → Software Debugging",
+  "usage": "orka run examples/brain_skill_transfer_workflow.yml \"<domain_a_task>\"",
+  "domain_a": {
+    "name": "Medical Diagnosis",
+    "task": "A 45-year-old patient presents with recurring headaches, fatigue, occasional dizziness, and blurred vision. Lab results show elevated blood pressure and slightly elevated blood glucose. Family history includes diabetes and hypertension. Analyze the symptoms systematically, identify potential diagnoses, evaluate the likelihood of each, and recommend a diagnostic plan with prioritized tests."
+  },
+  "domain_b": {
+    "name": "Software Debugging",
+    "task": "Analyze and debug a complex software system with multiple microservices communicating via message queues. Some messages are being dropped intermittently, causing data inconsistency across services. The system uses RabbitMQ, has 12 microservices, and the failures correlate with peak traffic periods. Diagnose the root cause and propose a fix."
+  },
+  "expected_transfer": {
+    "skill_pattern": "Systematic analysis through decomposition, differential evaluation, and prioritized action plan",
+    "how_it_should_transfer": "The medical diagnostic reasoning (gather symptoms → differential diagnosis → rank by likelihood → prioritized testing) should map to software debugging (gather symptoms/logs → list possible causes → rank by evidence → prioritized investigation). The abstract pattern is identical even though the domains are completely different."
+  }
+}

@@ -22,6 +22,7 @@ from textual.app import App
 from textual.binding import Binding
 
 from .textual_screens import (
+    BrainSkillsScreen,
     DashboardScreen,
     HealthScreen,
     LongMemoryScreen,
@@ -49,6 +50,7 @@ class OrKaTextualApp(App):
         Binding("3", "show_long_memory", "Long Memory", show=True),
         Binding("4", "show_memory_logs", "Memory Logs", show=True),
         Binding("5", "show_health", "Health", show=True),
+        Binding("6", "show_brain_skills", "Brain Skills", show=True),
         Binding("q", "quit", "Quit", show=True),
         Binding("?", "show_help", "Help", show=True),
         Binding("e", "export_memory", "Export", show=True),
@@ -82,6 +84,7 @@ class OrKaTextualApp(App):
             "long_memory": LongMemoryScreen(self.data_manager),
             "memory_logs": MemoryLogsScreen(self.data_manager),
             "health": HealthScreen(self.data_manager),
+            "brain_skills": BrainSkillsScreen(self.data_manager),
             "help": HelpScreen(),
         }
 
@@ -123,6 +126,10 @@ class OrKaTextualApp(App):
     def action_show_health(self) -> None:
         """Switch to health monitoring view."""
         self.push_screen("health")
+
+    def action_show_brain_skills(self) -> None:
+        """Switch to brain skills view."""
+        self.push_screen("brain_skills")
 
     def action_refresh(self) -> None:
         """Force refresh current screen."""

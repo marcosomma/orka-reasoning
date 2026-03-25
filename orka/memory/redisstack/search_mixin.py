@@ -163,6 +163,7 @@ class MemorySearchMixin:
         min_importance: float | None = None,
         log_type: str = "memory",
         namespace: str | None = None,
+        query_vector: Any | None = None,
     ) -> list[dict[str, Any]]:
         """
         Search memories using enhanced vector search with filtering.
@@ -181,10 +182,12 @@ class MemorySearchMixin:
             List of matching memory entries with scores
         """
         try:
-            # Try vector search if embedder is available and query is not empty
-            if self.embedder and query.strip():
+            # Try vector search if we have a precomputed vector or can embed
+            if (query_vector is not None) or (self.embedder and query.strip()):
                 try:
-                    query_vector = self._get_embedding_sync(query)
+                    # Use provided query vector if available; otherwise compute
+                    if query_vector is None:
+                        query_vector = self._get_embedding_sync(query)
                     if query_vector is None:
                         logger.warning(
                             "Failed to get embedding, falling back to text search"

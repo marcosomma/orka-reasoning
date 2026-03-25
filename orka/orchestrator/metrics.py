@@ -314,18 +314,31 @@ class MetricsCollector:
             agent_id = log["agent_id"]
             payload = log.get("payload", {})
 
-            # Case: regular agent output
-            if "result" in payload:
+            # Case: LoopNode output (has past_loops/loops_completed alongside result)
+            if "result" in payload and "past_loops" in payload:
+                outputs[agent_id] = {
+                    "response": payload.get("response", payload["result"]),
+                    "result": payload["result"],
+                    "past_loops": payload.get("past_loops", []),
+                    "loops_completed": payload.get("loops_completed"),
+                    "final_score": payload.get("final_score"),
+                    "threshold_met": payload.get("threshold_met"),
+                    "confidence": payload.get("confidence", 0.0),
+                    "internal_reasoning": payload.get("internal_reasoning", ""),
+                }
+
+            # Case: regular agent output (includes all structured fields)
+            elif "result" in payload:
                 outputs[agent_id] = payload["result"]
 
-            # Case: JoinNode with merged dict
-            if "result" in payload and isinstance(payload["result"], dict):
-                merged = payload["result"].get("merged")
-                if isinstance(merged, dict):
-                    outputs.update(merged)
+                # Case: JoinNode with merged dict
+                if isinstance(payload["result"], dict):
+                    merged = payload["result"].get("merged")
+                    if isinstance(merged, dict):
+                        outputs.update(merged)
 
-            # Case: Current run agent responses
-            if "response" in payload:
+            # Case: Current run agent responses (only when no "result" key)
+            elif "response" in payload:
                 outputs[agent_id] = {
                     "response": payload["response"],
                     "confidence": payload.get("confidence", "0.0"),
@@ -334,8 +347,8 @@ class MetricsCollector:
                     "formatted_prompt": payload.get("formatted_prompt", ""),
                 }
 
-            # Case: Memory agent responses
-            if "memories" in payload:
+            # Case: Memory agent responses (only when no "result" or "response" key)
+            elif "memories" in payload:
                 outputs[agent_id] = {
                     "memories": payload["memories"],
                     "query": payload.get("query", ""),

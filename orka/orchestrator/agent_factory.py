@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Type, Union, cast
 
 from ..agents import (
     agents,
+    brain_agent,
     invariant_validator_agent,
     llm_agents,
     local_llm_agents,
@@ -71,6 +72,7 @@ AgentClass = Union[
     Type[GraphScoutAgent],
     Type[MemoryReaderNode],
     Type[MemoryWriterNode],
+    Type[brain_agent.BrainAgent],
     str,  # For "special_handler" and "path_executor"
 ]
 
@@ -96,6 +98,7 @@ AGENT_TYPES: Dict[str, AgentClass] = {
     "path_executor": "special_handler",  # [DEBUG] Bug #1: Lazy loaded to avoid circular imports
     "graph-scout": GraphScoutAgent,
     "memory": "special_handler",  # This will be handled specially in init_single_agent
+    "brain": "special_handler",  # Handled specially with memory injection
 }
 
 
@@ -280,6 +283,25 @@ class AgentFactory:
                 clean_cfg.pop("prompt", None)
                 clean_cfg.pop("queue", None)
                 return path_executor_node.PathExecutorNode(node_id=agent_id, **clean_cfg)
+
+            # Special handling for Brain agent (must be before memory catch-all)
+            if agent_type == "brain":
+                prompt = cfg.get("prompt", None)
+                queue = cfg.get("queue", None)
+                operation = cfg.get("operation", "learn")
+                nested_params = clean_cfg.pop("params", None)
+                if isinstance(nested_params, dict):
+                    for key, value in nested_params.items():
+                        clean_cfg.setdefault(key, value)
+                operation = clean_cfg.pop("operation", operation)
+                return brain_agent.BrainAgent(
+                    agent_id=agent_id,
+                    operation=operation,
+                    prompt=prompt,
+                    queue=queue,
+                    memory_logger=self.memory,
+                    **clean_cfg,
+                )
 
             # Special handling for memory agent type
             if agent_type == "memory" or agent_cls == "special_handler":

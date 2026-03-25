@@ -63,6 +63,7 @@ import logging as std_logging
 import os
 import random
 from typing import Any, Optional, Union, cast
+from collections import OrderedDict
 
 import numpy as np
 from sentence_transformers import SentenceTransformer
@@ -130,6 +131,11 @@ class AsyncEmbedder:
         self.embedding_dim = EMBEDDING_DIMENSIONS.get(base_name, DEFAULT_EMBEDDING_DIM)
 
         logger.info(f"Using embedding dimension: {self.embedding_dim}")
+
+        # Lightweight in-memory LRU cache for embeddings
+        # Avoids recomputing vectors for repeated texts within a run
+        self._cache_max_entries = 4096
+        self._cache: "OrderedDict[str, np.ndarray]" = OrderedDict()
 
         # Try to load the model
         self._load_model()
@@ -248,18 +254,27 @@ class AsyncEmbedder:
             logger.warning("Empty text provided for encoding. Using zero vector.")
             return np.zeros(self.embedding_dim, dtype=np.float32)
 
+        # Check cache first
+        cached = self._cache_get(text)
+        if cached is not None:
+            return cached
+
         # Try using the primary model
         if self.model_loaded and self.model is not None:
             try:
                 # Get the embedding and ensure it's a numpy array
                 result = self.model.encode(text)
-                return _ensure_numpy_array(result)
+                vec = _ensure_numpy_array(result)
+                self._cache_put(text, vec)
+                return vec
             except Exception as e:
                 logger.error(f"Error encoding text with model: {str(e)}. Using fallback.")
 
         # If we get here, we need to use the fallback
         logger.warning("Using fallback pseudo-random encoding based on text hash")
-        return self._fallback_encode(text)
+        vec = self._fallback_encode(text)
+        self._cache_put(text, vec)
+        return vec
 
     def embed(self, text: str) -> np.ndarray:
         """
@@ -278,15 +293,28 @@ class AsyncEmbedder:
             logger.warning("Empty text provided for embedding. Using zero vector.")
             return np.zeros(self.embedding_dim, dtype=np.float32)
 
+        # Check cache first
+        cached = self._cache_get(text)
+        if cached is not None:
+            return cached
+
         if self.model_loaded and self.model is not None:
             try:
                 result = self.model.encode(text)
-                return _ensure_numpy_array(result)
+                vec = _ensure_numpy_array(result)
+                self._cache_put(text, vec)
+                return vec
             except Exception as e:
                 logger.error(f"Error embedding text with model: {str(e)}. Using fallback.")
 
         logger.warning("Using fallback pseudo-random embedding based on text hash")
-        return self._fallback_encode(text)
+        vec = self._fallback_encode(text)
+        self._cache_put(text, vec)
+        return vec
+
+    # Synchronous encode variant for use in sync/async-unsafe paths
+    def encode_sync(self, text: str) -> np.ndarray:
+        return self.embed(text)
 
     def _fallback_encode(self, text: str) -> np.ndarray:
         """
@@ -330,6 +358,32 @@ class AsyncEmbedder:
             logger.error(f"Error in fallback encoding: {str(e)}. Using zeros vector.")
             # Last resort - return zeros
             return np.zeros(self.embedding_dim, dtype=np.float32)
+
+    # --- simple LRU cache helpers ---
+    def _cache_get(self, key: str) -> Optional[np.ndarray]:
+        try:
+            vec = self._cache.pop(key)
+            # move to end as most recently used
+            self._cache[key] = vec
+            return vec
+        except KeyError:
+            return None
+
+    def _cache_put(self, key: str, vec: np.ndarray) -> None:
+        try:
+            # Normalize to float32 and unit length before caching
+            vec = vec.astype(np.float32)
+            norm = np.linalg.norm(vec)
+            if norm > 0:
+                vec = vec / norm
+            if key in self._cache:
+                self._cache.pop(key)
+            self._cache[key] = vec
+            if len(self._cache) > self._cache_max_entries:
+                self._cache.popitem(last=False)
+        except Exception:
+            # Cache should never break the flow
+            pass
 
 
 # Global embedder instance for singleton pattern

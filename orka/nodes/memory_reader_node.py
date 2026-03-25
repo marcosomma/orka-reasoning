@@ -169,7 +169,16 @@ class MemoryReaderNode(
             f"SEARCHING: query='{query}', namespace='{self.namespace}', log_type='memory'"
         )
 
-        # Primary search
+        # If embedder is available, precompute query vector once
+        precomputed_vec = None
+        try:
+            if getattr(self, "embedder", None) is not None and query.strip():
+                precomputed_vec = await self.embedder.encode(query)  # type: ignore[attr-defined]
+        except Exception as e:
+            logger.debug(f"Failed to precompute query embedding: {e}")
+            precomputed_vec = None
+
+        # Primary search (pass precomputed vector when available)
         memories = self.memory_logger.search_memories(
             query=query,
             num_results=self.limit,
@@ -179,6 +188,7 @@ class MemoryReaderNode(
             min_importance=context.get("min_importance", 0.0),
             log_type="memory",
             namespace=self.namespace,
+            query_vector=precomputed_vec,
         )
 
         # Fallback search if no results

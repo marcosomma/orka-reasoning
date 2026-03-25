@@ -135,6 +135,7 @@ Module Components
 # Import all agent types from their respective modules
 from .agents import BinaryAgent, ClassificationAgent
 from .base_agent import BaseAgent
+from .brain_agent import BrainAgent
 from .invariant_validator_agent import InvariantValidatorAgent
 from .llm_agents import (
     OpenAIAnswerBuilder,
@@ -156,4 +157,5 @@ AGENT_REGISTRY = {
     "openai-classification": OpenAIClassificationAgent,
     "plan_validator": PlanValidatorAgent,
     "validate_and_structure": ValidationAndStructuringAgent,
+    "brain": BrainAgent,
 }

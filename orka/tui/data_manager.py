@@ -19,6 +19,8 @@ import time
 from collections import deque
 from typing import Any, Deque, Dict, List, Optional, Protocol, TypeVar, Union, cast
 
+from ..brain.skill import Skill
+from ..brain.skill_graph import SkillGraph
 from ..memory_logger import BaseMemoryLogger, create_memory_logger
 
 # Type aliases for clarity
@@ -128,6 +130,7 @@ class DataManager:
         self.stats = MemoryStats()
         self.memory_data: MemoryList = []
         self.performance_history: Deque[StatsDict] = deque(maxlen=60)  # 1 minute at 1s intervals
+        self.brain_skills: List[Skill] = []
 
     def init_memory_logger(self, args: Any) -> None:
         """Initialize the memory logger."""
@@ -241,6 +244,25 @@ class DataManager:
             return ttl_val < 3600  # Less than 1 hour
         except (ValueError, TypeError):
             return False
+
+    def get_brain_skills(self) -> List[Skill]:
+        """Retrieve learned skills from the Brain's SkillGraph.
+
+        Uses the existing memory_logger connection to query the skill graph.
+        Results are cached in self.brain_skills and refreshed each cycle.
+        """
+        if not self.memory_logger:
+            self.brain_skills = []
+            return self.brain_skills
+
+        try:
+            graph = SkillGraph(memory=self.memory_logger)
+            self.brain_skills = graph.list_skills()
+        except Exception:
+            # Graceful degradation — keep previous cache on transient errors
+            pass
+
+        return self.brain_skills
 
     def _get_memory_type(self, memory: dict[str, Any]) -> str:
         """Get the actual memory_type field from memory entry."""
