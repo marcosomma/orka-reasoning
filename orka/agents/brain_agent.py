@@ -37,6 +37,7 @@ from typing import Any, Dict
 
 from .base_agent import BaseAgent
 from ..brain import Brain
+from ..contracts import Context
 
 logger = logging.getLogger(__name__)
 
@@ -302,7 +303,7 @@ class BrainAgent(BaseAgent):
     # main dispatch
     # ------------------------------------------------------------------ #
 
-    async def _run_impl(self, ctx: Dict[str, Any]) -> Dict[str, Any]:
+    async def _run_impl(self, ctx: Context) -> Dict[str, Any]:
         operation = ctx.get("operation", self.operation)
         if operation == "recall":
             return await self._handle_recall(ctx)
