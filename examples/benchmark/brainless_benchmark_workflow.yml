@@ -1,0 +1,129 @@
+# ═══════════════════════════════════════════════════════════════════════
+# OrKa Brain Benchmark — Brainless Baseline Workflow
+# ═══════════════════════════════════════════════════════════════════════
+#
+# This workflow processes a single task WITHOUT the Brain:
+#   1. task_reasoner — LLM reasons step-by-step (identical prompt to brain version)
+#   2. task_applier  — LLM solves the task with NO recalled skill
+#   3. task_result   — LLM produces a final structured output
+#
+# The output format is identical to the brain-enabled workflow so the
+# LLM-as-judge can compare apples to apples.
+#
+# Usage (single task):
+#   orka run examples/benchmark/brainless_benchmark_workflow.yml \
+#     '{"domain":"code_review","task":"Review a pull request..."}'
+#
+# Usage (full benchmark — via runner script):
+#   python scripts/run_benchmark.py
+#
+# Requirements:
+#   - LM Studio running on localhost:1234
+#   - Redis (orka-start) — still needed for OrKa memory logging
+# ═══════════════════════════════════════════════════════════════════════
+
+orchestrator:
+  id: brainless-benchmark
+  strategy: sequential
+  agents:
+    - task_reasoner
+    - task_applier
+    - task_result
+
+agents:
+  # ─────────────────────────────────────────────────────────────────────
+  # Step 1: Reason about the task step-by-step
+  # (IDENTICAL prompt to the brain-enabled workflow)
+  # ─────────────────────────────────────────────────────────────────────
+  - id: task_reasoner
+    type: local_llm
+    prompt: |
+      You are an expert analyst. Analyze the following task step by step.
+
+      DOMAIN: {{ input.domain | default('general') }}
+      TASK: {{ input.task | default(input) }}
+
+      Think carefully about how to solve this task. For each step:
+      1. State what you need to do
+      2. Explain WHY this step is necessary
+      3. Describe the expected output of this step
+
+      Return your response as JSON with these EXACT fields:
+      - "domain": the domain of the task
+      - "task": brief description of the full task
+      - "response": your complete step-by-step analysis
+      - "steps": array of objects, each with "action" (what to do) and "result" (expected outcome)
+      - "confidence": your confidence score 0.0-1.0
+      - "internal_reasoning": brief explanation of your overall approach
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Step 2: Apply the task with NO recalled skill
+  # (Same structure as brain version, but skill fields are always empty)
+  # ─────────────────────────────────────────────────────────────────────
+  - id: task_applier
+    type: local_llm
+    prompt: |
+      You are solving a task. You have your own step-by-step analysis.
+      You have NO prior experience with similar tasks and NO recalled skills.
+
+      DOMAIN: {{ previous_outputs.task_reasoner.domain | default('general') }}
+      TASK: {{ previous_outputs.task_reasoner.task | default(input) }}
+
+      YOUR OWN ANALYSIS:
+      {{ previous_outputs.task_reasoner.response | default('No analysis available') }}
+
+      INSTRUCTIONS:
+      Solve the task using only your own analysis. You are starting from scratch
+      with no prior patterns or learned procedures to draw upon.
+
+      Return as JSON with:
+      - "response": your complete solution
+      - "domain": the domain of the task
+      - "task": brief task description
+      - "steps": array of objects with "action" and "expected_outcome"
+      - "used_recalled_skill": false
+      - "recalled_skill_name": "none"
+      - "adaptation_notes": "N/A"
+      - "confidence": your confidence in the solution quality (0.0-1.0)
+      - "internal_reasoning": reflection on your approach
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Step 3: Final structured output
+  # (Same output format as brain version for fair comparison)
+  # ─────────────────────────────────────────────────────────────────────
+  - id: task_result
+    type: local_llm
+    prompt: |
+      Produce the FINAL structured output for this task.
+
+      DOMAIN: {{ previous_outputs.task_applier.domain | default('general') }}
+      TASK: {{ previous_outputs.task_applier.task | default(input) }}
+
+      SOLUTION:
+      {{ previous_outputs.task_applier.response | default('No solution available') }}
+
+      Produce a final report as JSON with:
+      - "response": comprehensive structured solution to the original task
+      - "domain": the domain
+      - "task": brief task description
+      - "solution_steps": array of the concrete steps in your solution
+      - "quality_self_assessment": rate the quality of your solution 0.0-1.0 with brief justification
+      - "brain_assisted": false
+      - "recalled_skill": "none"
+      - "confidence": overall confidence 0.0-1.0
+      - "internal_reasoning": final reflection on the solution quality
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3

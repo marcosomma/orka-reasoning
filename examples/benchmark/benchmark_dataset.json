@@ -1,0 +1,407 @@
+{
+  "name": "OrKa Brain Benchmark Dataset",
+  "version": "1.0.0",
+  "description": "Unified dataset for evaluating procedural skill memory (Brain) vs stateless baseline. Two tracks: cross-domain transfer (Track A) and same-domain accumulation (Track B).",
+  "tracks": {
+    "A": {
+      "name": "Cross-Domain Transfer",
+      "description": "3 learn phases followed by 7 recall phases in unrelated domains. Measures cross-domain procedural transfer.",
+      "task_count": 10
+    },
+    "B": {
+      "name": "Same-Domain Accumulation",
+      "description": "20 veterinary diagnostic cases run sequentially. Measures within-domain skill refinement over time.",
+      "task_count": 20
+    }
+  },
+  "tasks": [
+    {
+      "task_id": "track_a_01",
+      "track": "A",
+      "phase": "learn",
+      "domain": "text_analysis",
+      "title": "Learn: Decompose-Analyze-Synthesize (Text Analysis)",
+      "task": "Break down a long research paper into sections, analyze each section for key findings, then synthesize a coherent summary.",
+      "input_description": "A 40-page research paper on climate change impacts",
+      "execution_trace": {
+        "steps": [
+          {"action": "decompose input into logical sections", "result": "success"},
+          {"action": "analyze each section independently", "result": "success"},
+          {"action": "identify cross-section relationships", "result": "success"},
+          {"action": "synthesize findings into unified output", "result": "success"}
+        ],
+        "agents": ["splitter", "section_analyzer", "cross_referencer", "synthesizer"],
+        "strategy": "sequential"
+      },
+      "outcome": {"success": true, "quality": 0.93},
+      "expected_skill_pattern": null
+    },
+    {
+      "task_id": "track_a_02",
+      "track": "A",
+      "phase": "learn",
+      "domain": "customer_support",
+      "title": "Learn: Validate-Classify-Route (Customer Support)",
+      "task": "Validate incoming support ticket format, classify the issue type, then route to the appropriate specialist team.",
+      "input_description": "Incoming customer support ticket with subject and body",
+      "execution_trace": {
+        "steps": [
+          {"action": "validate input completeness and format", "result": "success"},
+          {"action": "classify input into categories", "result": "success"},
+          {"action": "evaluate priority and urgency", "result": "success"},
+          {"action": "route to appropriate handler based on classification", "result": "success"}
+        ],
+        "agents": ["validator", "classifier", "priority_scorer", "router"],
+        "strategy": "sequential"
+      },
+      "outcome": {"success": true, "quality": 0.88},
+      "expected_skill_pattern": null
+    },
+    {
+      "task_id": "track_a_03",
+      "track": "A",
+      "phase": "learn",
+      "domain": "creative_writing",
+      "title": "Learn: Iterative Refinement (Creative Writing)",
+      "task": "Generate a draft, evaluate it against criteria, refine weak areas, and repeat until quality threshold is met.",
+      "input_description": "Write a compelling product description for a new tech gadget",
+      "execution_trace": {
+        "steps": [
+          {"action": "generate initial draft from input requirements", "result": "success"},
+          {"action": "evaluate draft against quality criteria", "result": "success"},
+          {"action": "identify specific weaknesses to address", "result": "success"},
+          {"action": "refine weak sections while preserving strengths", "result": "success"},
+          {"action": "re-evaluate until convergence", "result": "success"}
+        ],
+        "agents": ["generator", "evaluator", "weakness_detector", "refiner", "convergence_checker"],
+        "strategy": "sequential"
+      },
+      "outcome": {"success": true, "quality": 0.91},
+      "expected_skill_pattern": null
+    },
+    {
+      "task_id": "track_a_04",
+      "track": "A",
+      "phase": "recall",
+      "domain": "code_review",
+      "title": "Transfer: Code Review",
+      "task": "Break down a large pull request into individual file changes, analyze each file for issues and improvements, then synthesize an overall review.",
+      "input_description": "A PR with 25 changed files across 4 modules",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": "Decompose-Analyze-Synthesize"
+    },
+    {
+      "task_id": "track_a_05",
+      "track": "A",
+      "phase": "recall",
+      "domain": "content_moderation",
+      "title": "Transfer: Content Moderation",
+      "task": "Validate that user-submitted content meets format requirements, classify the content type and risk level, then route to appropriate review queue.",
+      "input_description": "User-generated post with text, images, and links",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": "Validate-Classify-Route"
+    },
+    {
+      "task_id": "track_a_06",
+      "track": "A",
+      "phase": "recall",
+      "domain": "code_optimization",
+      "title": "Transfer: Code Optimization",
+      "task": "Generate an initial optimization, benchmark it against performance criteria, identify bottlenecks, refine the hot paths, and repeat until performance target is met.",
+      "input_description": "A slow database query module needing 3x throughput improvement",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": "Iterative Refinement"
+    },
+    {
+      "task_id": "track_a_07",
+      "track": "A",
+      "phase": "recall",
+      "domain": "financial_analysis",
+      "title": "Transfer: Financial Analysis",
+      "task": "Break down a company's annual report into financial segments, analyze each segment's performance metrics independently, then synthesize an investment recommendation.",
+      "input_description": "Annual report with revenue, expenses, growth metrics across 6 business units",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": "Decompose-Analyze-Synthesize"
+    },
+    {
+      "task_id": "track_a_08",
+      "track": "A",
+      "phase": "recall",
+      "domain": "api_infrastructure",
+      "title": "Transfer: API Gateway",
+      "task": "Validate incoming API request schema and auth tokens, classify the request type and rate-limit tier, then route to the correct microservice.",
+      "input_description": "Incoming HTTP request with headers, body, and query params",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": "Validate-Classify-Route"
+    },
+    {
+      "task_id": "track_a_09",
+      "track": "A",
+      "phase": "recall",
+      "domain": "education",
+      "title": "Transfer: Essay Grading Feedback",
+      "task": "Generate initial feedback on a student essay, evaluate it against rubric criteria, identify areas where feedback is vague or unhelpful, refine the feedback, repeat until it meets pedagogical standards.",
+      "input_description": "A 1500-word student essay on the causes of World War I",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": "Iterative Refinement"
+    },
+    {
+      "task_id": "track_a_10",
+      "track": "A",
+      "phase": "recall",
+      "domain": "devops_incident_response",
+      "title": "Transfer: Incident Response",
+      "task": "Break down a production incident into affected components, analyze each component's logs and metrics independently, then synthesize a root cause analysis report.",
+      "input_description": "Production outage affecting 3 services with cascading failures",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": "Decompose-Analyze-Synthesize"
+    },
+    {
+      "task_id": "track_b_01",
+      "track": "B",
+      "phase": "solve",
+      "domain": "veterinary_diagnostics",
+      "title": "Vet Case 01: Canine — Lethargy and decreased appetite",
+      "task": "Diagnose a 7-year-old male Labrador Retriever with lethargy and decreased appetite for 3 days, mild cough onset 1 day ago. History of hypothyroidism on levothyroxine. Indoor/outdoor, dog park exposure.",
+      "input_file": "examples/inputs/input_case_01.json",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": null
+    },
+    {
+      "task_id": "track_b_02",
+      "track": "B",
+      "phase": "solve",
+      "domain": "veterinary_diagnostics",
+      "title": "Vet Case 02: Feline — Vomiting and weight loss",
+      "task": "Diagnose a 3-year-old female European Shorthair with intermittent vomiting for 2 weeks, gradual weight loss for 1 month, increased thirst for 1 week. Penicillin allergy. Not up to date on vaccinations.",
+      "input_file": "examples/inputs/input_case_02.json",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": null
+    },
+    {
+      "task_id": "track_b_03",
+      "track": "B",
+      "phase": "solve",
+      "domain": "veterinary_diagnostics",
+      "title": "Vet Case 03: Canine — Acute dyspnea",
+      "task": "Diagnose a 12-year-old Yorkshire Terrier with severe acute dyspnea for 2 hours, worsening cough for 1 week. History of mitral valve disease on enalapril and furosemide.",
+      "input_file": "examples/inputs/input_case_03.json",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": null
+    },
+    {
+      "task_id": "track_b_04",
+      "track": "B",
+      "phase": "solve",
+      "domain": "veterinary_diagnostics",
+      "title": "Vet Case 04: Feline — Sudden lameness",
+      "task": "Diagnose a 5-year-old male Maine Coon with sudden severe left hind lameness today. No chronic diseases, no witnessed trauma.",
+      "input_file": "examples/inputs/input_case_04.json",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": null
+    },
+    {
+      "task_id": "track_b_05",
+      "track": "B",
+      "phase": "solve",
+      "domain": "veterinary_diagnostics",
+      "title": "Vet Case 05: Canine — Acute GI upset",
+      "task": "Diagnose a 2-year-old female Golden Retriever with vomiting for 12 hours, diarrhea for 10 hours, lethargy for 8 hours. Lake exposure, contact with other dogs.",
+      "input_file": "examples/inputs/input_case_05.json",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": null
+    },
+    {
+      "task_id": "track_b_06",
+      "track": "B",
+      "phase": "solve",
+      "domain": "veterinary_diagnostics",
+      "title": "Vet Case 06: Feline — Increased drinking and urination",
+      "task": "Diagnose a 10-year-old female Persian with polydipsia and polyuria for 2 months, gradual weight loss for 1 month. History of chronic kidney disease on renal diet.",
+      "input_file": "examples/inputs/input_case_06.json",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": null
+    },
+    {
+      "task_id": "track_b_07",
+      "track": "B",
+      "phase": "solve",
+      "domain": "veterinary_diagnostics",
+      "title": "Vet Case 07",
+      "task": "Veterinary diagnostic case 07.",
+      "input_file": "examples/inputs/input_case_07.json",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": null
+    },
+    {
+      "task_id": "track_b_08",
+      "track": "B",
+      "phase": "solve",
+      "domain": "veterinary_diagnostics",
+      "title": "Vet Case 08",
+      "task": "Veterinary diagnostic case 08.",
+      "input_file": "examples/inputs/input_case_08.json",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": null
+    },
+    {
+      "task_id": "track_b_09",
+      "track": "B",
+      "phase": "solve",
+      "domain": "veterinary_diagnostics",
+      "title": "Vet Case 09",
+      "task": "Veterinary diagnostic case 09.",
+      "input_file": "examples/inputs/input_case_09.json",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": null
+    },
+    {
+      "task_id": "track_b_10",
+      "track": "B",
+      "phase": "solve",
+      "domain": "veterinary_diagnostics",
+      "title": "Vet Case 10: Feline — Acute blindness",
+      "task": "Diagnose an 8-year-old female Bengal with acute blindness and disorientation today. History of hypertension on amlodipine.",
+      "input_file": "examples/inputs/input_case_10.json",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": null
+    },
+    {
+      "task_id": "track_b_11",
+      "track": "B",
+      "phase": "solve",
+      "domain": "veterinary_diagnostics",
+      "title": "Vet Case 11",
+      "task": "Veterinary diagnostic case 11.",
+      "input_file": "examples/inputs/input_case_11.json",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": null
+    },
+    {
+      "task_id": "track_b_12",
+      "track": "B",
+      "phase": "solve",
+      "domain": "veterinary_diagnostics",
+      "title": "Vet Case 12",
+      "task": "Veterinary diagnostic case 12.",
+      "input_file": "examples/inputs/input_case_12.json",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": null
+    },
+    {
+      "task_id": "track_b_13",
+      "track": "B",
+      "phase": "solve",
+      "domain": "veterinary_diagnostics",
+      "title": "Vet Case 13",
+      "task": "Veterinary diagnostic case 13.",
+      "input_file": "examples/inputs/input_case_13.json",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": null
+    },
+    {
+      "task_id": "track_b_14",
+      "track": "B",
+      "phase": "solve",
+      "domain": "veterinary_diagnostics",
+      "title": "Vet Case 14",
+      "task": "Veterinary diagnostic case 14.",
+      "input_file": "examples/inputs/input_case_14.json",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": null
+    },
+    {
+      "task_id": "track_b_15",
+      "track": "B",
+      "phase": "solve",
+      "domain": "veterinary_diagnostics",
+      "title": "Vet Case 15: Canine — Acute lameness",
+      "task": "Diagnose a 2-year-old male Border Collie with acute severe lameness for 2 days, joint swelling. Radiographs show osteolytic lesion on femur.",
+      "input_file": "examples/inputs/input_case_15.json",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": null
+    },
+    {
+      "task_id": "track_b_16",
+      "track": "B",
+      "phase": "solve",
+      "domain": "veterinary_diagnostics",
+      "title": "Vet Case 16",
+      "task": "Veterinary diagnostic case 16.",
+      "input_file": "examples/inputs/input_case_16.json",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": null
+    },
+    {
+      "task_id": "track_b_17",
+      "track": "B",
+      "phase": "solve",
+      "domain": "veterinary_diagnostics",
+      "title": "Vet Case 17",
+      "task": "Veterinary diagnostic case 17.",
+      "input_file": "examples/inputs/input_case_17.json",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": null
+    },
+    {
+      "task_id": "track_b_18",
+      "track": "B",
+      "phase": "solve",
+      "domain": "veterinary_diagnostics",
+      "title": "Vet Case 18",
+      "task": "Veterinary diagnostic case 18.",
+      "input_file": "examples/inputs/input_case_18.json",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": null
+    },
+    {
+      "task_id": "track_b_19",
+      "track": "B",
+      "phase": "solve",
+      "domain": "veterinary_diagnostics",
+      "title": "Vet Case 19",
+      "task": "Veterinary diagnostic case 19.",
+      "input_file": "examples/inputs/input_case_19.json",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": null
+    },
+    {
+      "task_id": "track_b_20",
+      "track": "B",
+      "phase": "solve",
+      "domain": "veterinary_diagnostics",
+      "title": "Vet Case 20: Feline — Chronic diarrhea",
+      "task": "Diagnose a 3-year-old female Bengal with chronic diarrhea for 4 months, gradual weight loss for 2 months. Ultrasound shows mild intestinal wall thickening.",
+      "input_file": "examples/inputs/input_case_20.json",
+      "execution_trace": null,
+      "outcome": null,
+      "expected_skill_pattern": null
+    }
+  ]
+}

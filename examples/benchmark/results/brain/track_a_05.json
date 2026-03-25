@@ -1,0 +1,49 @@
+{
+  "task_id": "track_a_05",
+  "condition": "brain",
+  "elapsed_s": 15.45,
+  "success": true,
+  "output": {
+    "domain": "content_moderation",
+    "task": "Validate that user-submitted content meets format requirements, classify the content type and risk level, then route to appropriate review queue.",
+    "solution_steps": [
+      {
+        "step_number": 1,
+        "action": "Extract metadata",
+        "description": "Parse the submission payload to retrieve title, body, tags, media list, and any other relevant fields."
+      },
+      {
+        "step_number": 2,
+        "action": "Validate format compliance",
+        "description": "Check that all required fields are present and conform to expected patterns (e.g., title length, tag count). Return pass/fail with details of missing or malformed fields."
+      },
+      {
+        "step_number": 3,
+        "action": "Detect content type",
+        "description": "Determine the primary media type(s) in the submission: text, image, video, audio, or mixed. Use file extensions and MIME types for accuracy."
+      },
+      {
+        "step_number": 4,
+        "action": "Assess risk level",
+        "description": "Apply a rule\u2011based or ML model to score content on safety dimensions (hate speech, violence, sexual content, misinformation). Map the score to an enum: low, medium, high."
+      },
+      {
+        "step_number": 5,
+        "action": "Route to queue",
+        "description": "Assign the submission to a review queue identified by content type and risk level (e.g., 'text_high', 'image_low')."
+      },
+      {
+        "step_number": 6,
+        "action": "Generate audit log entry",
+        "description": "Create a JSON record containing timestamp, user ID, metadata summary, validation result, classification, risk score, and assigned queue. Persist to the audit store."
+      }
+    ],
+    "quality_self_assessment": {
+      "score": 0.98,
+      "justification": "The solution follows all task requirements with clear, actionable steps and includes necessary outputs for each stage."
+    },
+    "brain_assisted": true,
+    "recalled_skill": "Evaluation via Filtering (general)",
+    "confidence": 0.95
+  }
+}

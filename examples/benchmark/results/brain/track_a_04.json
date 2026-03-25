@@ -1,0 +1,38 @@
+{
+  "task_id": "track_a_04",
+  "condition": "brain",
+  "elapsed_s": 15.01,
+  "success": true,
+  "output": {
+    "domain": "general",
+    "task": "Break down a large pull request into individual file changes, analyze each file for issues and improvements, then synthesize an overall review.",
+    "solution_steps": [
+      "List all modified files in the PR and group them by component (core service, database layer, UI components, configuration, documentation).",
+      "For each file, perform a line\u2011by\u2011line analysis to identify potential bugs, security vulnerabilities, performance issues, missing tests, and style inconsistencies.",
+      "Summarize findings per category: authentication logic, SQL handling, UI accessibility, environment variable usage, and migration documentation.",
+      "Highlight critical risks (e.g., raw SQL without parameterization, hardcoded secrets) and suggest concrete mitigations (prepared statements, dotenv, middleware).",
+      "Compile a consolidated review that prioritizes fixes, adds missing tests, and recommends documentation updates before merging."
+    ],
+    "overall_review": {
+      "strengths": [
+        "Adds JWT validation and new UI components.",
+        "Extends README with feature overview."
+      ],
+      "weaknesses": [
+        "Missing error handling for expired tokens.",
+        "Raw SQL strings expose injection risk.",
+        "Hardcoded secrets in config.",
+        "UI lacks accessibility attributes and unit tests.",
+        "Documentation omits migration steps."
+      ],
+      "recommendations": [
+        "Implement a dedicated auth middleware with proper error handling.",
+        "Replace raw queries with parameterized statements or ORM methods.",
+        "Move secrets to environment variables using dotenv.",
+        "Add Jest/Storybook tests for new UI components and ARIA labels.",
+        "Create a migration guide in the docs."
+      ],
+      "merge_decision": "Conditional \u2013 proceed after addressing security, testing, and documentation gaps."
+    }
+  }
+}

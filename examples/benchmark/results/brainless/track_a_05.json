@@ -1,0 +1,44 @@
+{
+  "task_id": "track_a_05",
+  "condition": "brainless",
+  "elapsed_s": 13.08,
+  "success": true,
+  "output": {
+    "domain": "content_moderation",
+    "task": "Validate that user-submitted content meets format requirements, classify the content type and risk level, then route to appropriate review queue.",
+    "solution_steps": [
+      {
+        "step_number": 1,
+        "action": "Extract metadata",
+        "details": "Parse title, body, tags, media links, author info, timestamps."
+      },
+      {
+        "step_number": 2,
+        "action": "Validate format",
+        "details": "Check required fields present, length limits, allowed character sets, media type compatibility."
+      },
+      {
+        "step_number": 3,
+        "action": "Content type classification",
+        "details": "Use NLP for text, image recognition for media; assign primary type and subcategories."
+      },
+      {
+        "step_number": 4,
+        "action": "Risk assessment",
+        "details": "Apply policy rules (e.g., hate speech, nudity) combined with ML confidence scores to produce risk level: low, medium, high."
+      },
+      {
+        "step_number": 5,
+        "action": "Queue mapping",
+        "details": "Low \u2192 automated compliance check; Medium \u2192 human moderator queue; High \u2192 escalation to senior review or legal team."
+      }
+    ],
+    "quality_self_assessment": {
+      "score": 0.95,
+      "justification": "All required steps are covered, clear actions and expected outcomes defined, aligns with industry best practices."
+    },
+    "brain_assisted": false,
+    "recalled_skill": "none",
+    "confidence": 0.97
+  }
+}
