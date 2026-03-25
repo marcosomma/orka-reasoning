@@ -64,7 +64,7 @@ class BrainAgent(BaseAgent):
         self._brain: Brain | None = None
         self._memory_logger = memory_logger
 
-    def _ensure_brain(self, ctx: Dict[str, Any]) -> Brain:
+    def _ensure_brain(self, ctx: Context) -> Brain:
         """Lazy-init the Brain using the memory logger."""
         if self._brain is None:
             mem = self._memory_logger
@@ -109,7 +109,7 @@ class BrainAgent(BaseAgent):
                 pass
         return {}
 
-    def _extract_llm_payload(self, ctx: Dict[str, Any]) -> Dict[str, Any]:
+    def _extract_llm_payload(self, ctx: Context) -> Dict[str, Any]:
         """Extract the LLM reasoning payload from the orchestrator context.
 
         The agent looks for data in this order:
@@ -130,7 +130,7 @@ class BrainAgent(BaseAgent):
     # learn
     # ------------------------------------------------------------------ #
 
-    async def _handle_learn(self, ctx: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_learn(self, ctx: Context) -> Dict[str, Any]:
         brain = self._ensure_brain(ctx)
         payload = self._extract_llm_payload(ctx)
 
@@ -198,7 +198,7 @@ class BrainAgent(BaseAgent):
     # recall
     # ------------------------------------------------------------------ #
 
-    async def _handle_recall(self, ctx: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_recall(self, ctx: Context) -> Dict[str, Any]:
         brain = self._ensure_brain(ctx)
         payload = self._extract_llm_payload(ctx)
 
@@ -253,7 +253,7 @@ class BrainAgent(BaseAgent):
     # feedback
     # ------------------------------------------------------------------ #
 
-    async def _handle_feedback(self, ctx: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_feedback(self, ctx: Context) -> Dict[str, Any]:
         brain = self._ensure_brain(ctx)
         payload = self._extract_llm_payload(ctx)
 

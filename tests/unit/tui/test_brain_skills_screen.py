@@ -160,7 +160,7 @@ class TestSkillTTLDisplay:
     def test_format_skill_ttl_future_days(self):
         from datetime import UTC, datetime, timedelta
 
-        future = (datetime.now(UTC) + timedelta(days=3)).isoformat()
+        future = (datetime.now(UTC) + timedelta(days=3, minutes=1)).isoformat()
         result = SkillsTableWidget._format_skill_ttl(future)
         assert "3d" in result
         assert "green" in result
@@ -168,7 +168,7 @@ class TestSkillTTLDisplay:
     def test_format_skill_ttl_future_hours(self):
         from datetime import UTC, datetime, timedelta
 
-        future = (datetime.now(UTC) + timedelta(hours=5)).isoformat()
+        future = (datetime.now(UTC) + timedelta(hours=5, minutes=1)).isoformat()
         result = SkillsTableWidget._format_skill_ttl(future)
         assert "5h" in result
         assert "yellow" in result
@@ -176,7 +176,7 @@ class TestSkillTTLDisplay:
     def test_format_skill_ttl_future_minutes(self):
         from datetime import UTC, datetime, timedelta
 
-        future = (datetime.now(UTC) + timedelta(minutes=30)).isoformat()
+        future = (datetime.now(UTC) + timedelta(minutes=30, seconds=30)).isoformat()
         result = SkillsTableWidget._format_skill_ttl(future)
         assert "30m" in result
         assert "red" in result
