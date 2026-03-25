@@ -16,6 +16,14 @@ Agents that use language models for processing and generation.
 | **validate_and_structure** | Answer validation with structured output | [📖 View](./agents/validate-and-structure.md) |
 | **plan_validator** | Validate and critique execution paths | [📖 View](./agents/plan-validator.md) |
 
+## 🧠 Brain Agent
+
+Procedural skill memory — learn, recall, and transfer problem-solving patterns across domains.
+
+| Agent | Purpose | Documentation |
+|-------|---------|---------------|
+| **brain** | Learn/recall/feedback on transferable skills | [📖 View](./BRAIN_SYSTEM_GUIDE.md) |
+
 ## 💾 Memory Agents
 
 Intelligent memory storage and retrieval with RedisStack HNSW (100x faster).
@@ -88,6 +96,11 @@ External tools and integrations.
 - `memory` (read) - Semantic search
 - `memory` (write) - Store memories
 - Memory presets - Pre-configured settings
+
+### Procedural Learning
+- `brain` (learn) - Extract transferable skills from execution traces
+- `brain` (recall) - Find applicable skills for new contexts
+- `brain` (feedback) - Record transfer outcomes
 
 ### Search & Retrieval
 - `duckduckgo` - Near real-time web search (depends on API)

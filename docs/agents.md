@@ -14,7 +14,38 @@ The OrKa framework uses a unified agent base implementation that supports both m
 
 ## 🧱 Core Agent Types
 
-### 🧭 `graph-scout`
+### � `brain`
+
+Procedural skill memory — learns abstract, transferable skills from LLM reasoning traces and re-applies them across domains.
+
+**Use case:** Cross-domain knowledge transfer, continuous learning, skill accumulation.
+
+**Operations:**
+- `learn` — Extract a transferable skill from an execution trace
+- `recall` — Find applicable skills for a new context
+- `feedback` — Record whether a transferred skill succeeded
+
+**Example config:**
+```yaml
+- id: brain_learn
+  type: brain
+  operation: learn
+  prompt: "{{ previous_outputs.llm_reasoner }}"
+
+- id: brain_recall
+  type: brain
+  operation: recall
+  prompt: "{{ previous_outputs.new_context }}"
+
+- id: brain_feedback
+  type: brain
+  operation: feedback
+  prompt: "{{ previous_outputs.brain_recall }}"
+```
+
+**📖 [Complete Brain Documentation](./BRAIN_SYSTEM_GUIDE.md)**
+
+### �🧭 `graph-scout`
 
 Intelligent workflow graph inspection and optimal multi-agent path execution. GraphScout automatically discovers, evaluates, and executes the best sequence of agents for any given input.
 
