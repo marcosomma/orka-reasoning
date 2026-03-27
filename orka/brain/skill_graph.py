@@ -54,6 +54,8 @@ _SKILL_PREFIX = "orka:brain:skill:"
 _GRAPH_EDGES_PREFIX = "orka:brain:edges:"
 _SKILL_INDEX = "orka:brain:skill_index"
 _SKILL_TAGS_PREFIX = "orka:brain:tags:"
+_SKILL_TYPE_INDEX_PREFIX = "orka:brain:type_index:"
+_SKILL_DOMAIN_INDEX_PREFIX = "orka:brain:domain_index:"
 
 
 class SkillGraph:
@@ -105,6 +107,14 @@ class SkillGraph:
         for tag in skill.tags:
             self._memory.sadd(f"{_SKILL_TAGS_PREFIX}{tag}", skill.id)
 
+        # Index by skill type for two-stage retrieval
+        if skill.skill_type:
+            self._memory.sadd(f"{_SKILL_TYPE_INDEX_PREFIX}{skill.skill_type}", skill.id)
+
+        # Index by domain keywords for fast domain filtering
+        for domain in skill.domain_keywords:
+            self._memory.sadd(f"{_SKILL_DOMAIN_INDEX_PREFIX}{domain}", skill.id)
+
         logger.debug(f"Saved skill '{skill.name}' ({skill.id})")
         return skill.id
 
@@ -140,6 +150,12 @@ class SkillGraph:
         # Remove from tag indexes
         for tag in skill.tags:
             self._memory.srem(f"{_SKILL_TAGS_PREFIX}{tag}", skill_id)
+
+        # Remove from type and domain indexes
+        if skill.skill_type:
+            self._memory.srem(f"{_SKILL_TYPE_INDEX_PREFIX}{skill.skill_type}", skill_id)
+        for domain in skill.domain_keywords:
+            self._memory.srem(f"{_SKILL_DOMAIN_INDEX_PREFIX}{domain}", skill_id)
 
         # Remove from name index
         self._memory.hdel(_SKILL_INDEX, skill_id)
@@ -195,6 +211,82 @@ class SkillGraph:
             sid_str = sid if isinstance(sid, str) else sid.decode("utf-8")
             skill = self.get_skill(sid_str)
             if skill:
+                skills.append(skill)
+        return skills
+
+    def find_by_type(self, skill_type: str) -> list[Skill]:
+        """Find skills of a given type (e.g. ``execution_recipe``).
+
+        Args:
+            skill_type: The :class:`SkillType` value to filter on.
+
+        Returns:
+            Non-expired skills matching *skill_type*.
+        """
+        skill_ids = self._memory.smembers(f"{_SKILL_TYPE_INDEX_PREFIX}{skill_type}")
+        skills = []
+        for sid in skill_ids:
+            sid_str = sid if isinstance(sid, str) else sid.decode("utf-8")
+            skill = self.get_skill(sid_str)
+            if skill and not skill.is_expired:
+                skills.append(skill)
+        return skills
+
+    def find_by_domain(self, domain: str) -> list[Skill]:
+        """Find skills indexed under a domain keyword.
+
+        Args:
+            domain: A domain keyword (e.g. ``"security"``, ``"code-review"``).
+
+        Returns:
+            Non-expired skills matching *domain*.
+        """
+        skill_ids = self._memory.smembers(f"{_SKILL_DOMAIN_INDEX_PREFIX}{domain}")
+        skills = []
+        for sid in skill_ids:
+            sid_str = sid if isinstance(sid, str) else sid.decode("utf-8")
+            skill = self.get_skill(sid_str)
+            if skill and not skill.is_expired:
+                skills.append(skill)
+        return skills
+
+    def find_filtered(
+        self,
+        skill_type: str | None = None,
+        domain: str | None = None,
+    ) -> list[Skill]:
+        """Two-stage retrieval: narrow by type/domain indexes, then return.
+
+        When both *skill_type* and *domain* are provided the result is the
+        intersection of both index sets.  Falls back to ``list_skills()``
+        when neither filter is given.
+
+        Args:
+            skill_type: Optional skill type filter.
+            domain: Optional domain keyword filter.
+
+        Returns:
+            Non-expired skills matching the provided filters.
+        """
+        candidate_ids: set[str] | None = None
+
+        if skill_type:
+            raw = self._memory.smembers(f"{_SKILL_TYPE_INDEX_PREFIX}{skill_type}")
+            type_ids = {s if isinstance(s, str) else s.decode("utf-8") for s in raw}
+            candidate_ids = type_ids
+
+        if domain:
+            raw = self._memory.smembers(f"{_SKILL_DOMAIN_INDEX_PREFIX}{domain}")
+            domain_ids = {s if isinstance(s, str) else s.decode("utf-8") for s in raw}
+            candidate_ids = candidate_ids & domain_ids if candidate_ids is not None else domain_ids
+
+        if candidate_ids is None:
+            return self.list_skills()
+
+        skills: list[Skill] = []
+        for sid in candidate_ids:
+            skill = self.get_skill(sid)
+            if skill and not skill.is_expired:
                 skills.append(skill)
         return skills
 

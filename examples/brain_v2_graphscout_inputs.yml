@@ -1,0 +1,137 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Test Inputs for brain_v2_graphscout_integration.yml
+# ═══════════════════════════════════════════════════════════════════════
+#
+# Each run creates/updates 5 skills:
+#   1. anti:ticket-classification:using-expensive-model-for-trivial
+#   2. anti:ticket-classification:skipping-classification-sending
+#   3. anti:escalation:auto-escalating-without-severity-check
+#   4. path:ticket-classification:classifier→responder
+#   5. path:escalation:classifier→escalator
+#
+# Then GraphScout routes with brain boost/penalty from those skills.
+# Budget: 50k tokens / 30s latency (generous to avoid budget_exceeded).
+#
+# The 12 inputs range from trivial (should use standard path) to
+# critical (should use escalation path), testing routing discrimination.
+# ═══════════════════════════════════════════════════════════════════════
+
+test_inputs:
+
+  # ─── Trivial/Simple — should strongly prefer standard path ────────
+
+  - id: 1
+    label: "Trivial — business hours"
+    input: "What are your business hours for phone support?"
+    expect:
+      expected_path: ["classifier", "responder"]
+      notes: "Simplest possible ticket — anti-pattern #1 should discourage expensive models"
+
+  - id: 2
+    label: "Simple billing — wrong charge"
+    input: >
+      I was charged $49.99 but my plan is Basic at $19.99/month.
+      Please refund the $30 difference.
+    expect:
+      expected_path: ["classifier", "responder"]
+      notes: "Standard billing — no escalation needed"
+
+  - id: 3
+    label: "FAQ — password reset"
+    input: "How do I reset my password?"
+    expect:
+      expected_path: ["classifier", "responder"]
+      notes: "Self-service question — definitely standard path"
+
+  # ─── Medium complexity — standard path but richer context ─────────
+
+  - id: 4
+    label: "Technical — API 503 errors"
+    input: >
+      Our integration gets HTTP 503 from /api/v2/users since 3am UTC.
+      API key is valid, request format unchanged. Blocking production.
+    expect:
+      expected_path: ["classifier", "responder"]
+      notes: "Technical but not escalation-worthy — standard classify+respond"
+
+  - id: 5
+    label: "Account — update payment method"
+    input: >
+      My credit card expired and I can't update payment. Keep getting
+      'payment failed' emails but settings page has no option to change card.
+    expect:
+      expected_path: ["classifier", "responder"]
+      notes: "Account issue — standard path with billing context"
+
+  - id: 6
+    label: "Technical — webhook duplicates"
+    input: >
+      Webhook at https://hooks.ourapp.com/sync receives duplicate events.
+      Same order_created event delivered 3-4 times in 10 seconds.
+      Transaction IDs are unique but payload identical.
+    expect:
+      expected_path: ["classifier", "responder"]
+      notes: "Technical debugging — classifier provides useful context for responder"
+
+  # ─── High severity — should prefer escalation path ────────────────
+
+  - id: 7
+    label: "Security — account breach"
+    input: >
+      Someone logged into my account from a foreign country. I changed
+      my password but worried about data access. I need a full audit log
+      of all account activity for the past 30 days immediately.
+    expect:
+      expected_path: ["classifier", "escalator"]
+      notes: "Security incident — classifier should mark high severity, route to escalation"
+
+  - id: 8
+    label: "Critical — data leak between customers"
+    input: >
+      URGENT: Our API export contains records from OTHER customers.
+      Serious data isolation breach. Affected: EXP-92831, EXP-92832.
+      We are SOC2-certified — this triggers our incident response.
+      Need your security team NOW.
+    expect:
+      expected_path: ["classifier", "escalator"]
+      notes: "Critical severity — escalation path should be strongly preferred"
+
+  - id: 9
+    label: "Critical — production outage for enterprise"
+    input: >
+      PRODUCTION DOWN. Your entire platform is unreachable for our 50,000
+      users since 14:00 UTC. We're an enterprise customer paying $200k/year.
+      Our SLA guarantees 99.99% uptime. Every minute costs us $10,000.
+      Need executive escalation immediately.
+    expect:
+      expected_path: ["classifier", "escalator"]
+      notes: "Enterprise outage — escalation is the only appropriate path"
+
+  # ─── Ambiguous — tests routing discrimination ─────────────────────
+
+  - id: 10
+    label: "Multi-issue ticket"
+    input: >
+      Three problems: (1) double-charged in February, (2) export feature
+      throws 500 for date ranges over 90 days, (3) team member can't
+      access shared workspace though I added them as editor.
+    expect:
+      notes: "Mixed severity — router must decide standard vs escalation"
+
+  - id: 11
+    label: "Churn risk — feature complaint"
+    input: >
+      Your product doesn't support Okta SSO. Every competitor has it.
+      We're an enterprise customer at $50k/year and this is a dealbreaker.
+      If not on Q2 roadmap, we switch to CompetitorX. Escalate to product.
+    expect:
+      notes: "Business escalation — not technical but high business impact"
+
+  - id: 12
+    label: "Mobile crash with workaround"
+    input: >
+      iOS app crashes on launch after update v3.2.1 on iPhone 14 Pro
+      (iOS 17.4). Crash: EXC_BAD_ACCESS in AuthModule. Tried reinstall,
+      cache clear, restart. But I can use the web app as workaround.
+    expect:
+      notes: "Has workaround — may not need escalation despite crash"

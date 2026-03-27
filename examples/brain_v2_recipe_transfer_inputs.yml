@@ -1,0 +1,146 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Test Inputs for brain_v2_recipe_transfer.yml
+# ═══════════════════════════════════════════════════════════════════════
+#
+# Each run creates 3 new skills (or updates existing ones):
+#   1. recipe:code-review:sequential-code_linter+code_analyzer
+#   2. recipe:data-pipeline:sequential-data_validator+data_transformer
+#   3. anti:code-review:running-full-analysis-on-trivial
+#
+# Then recalls from compliance-audit domain (cross-domain transfer).
+# Then degrades skill 1 via failure.
+#
+# The 12 inputs below exercise BOTH agent pipelines with varied content.
+# ═══════════════════════════════════════════════════════════════════════
+
+test_inputs:
+
+  # ─── Code-heavy inputs (Pipeline A dominates, Pipeline B adapts) ───
+
+  - id: 1
+    label: "Python function — pricing module"
+    input: >
+      Review this pull request that adds a 'calculate_discount' function
+      to the pricing module. It takes base_price and discount_code,
+      looks up the code in a database, returns the discounted price.
+    expect:
+      skills_created: 3
+      code_recipe: "recipe:code-review:sequential-code_linter+code_analyzer"
+      data_recipe: "recipe:data-pipeline:sequential-data_validator+data_transformer"
+      anti_pattern: "anti:code-review:running-full-analysis-on-trivial"
+      transfer_target: "compliance-audit"
+
+  - id: 2
+    label: "Strategy pattern refactor"
+    input: >
+      Review this refactoring that replaces the PaymentProcessor class
+      hierarchy with a Strategy pattern. Removes CreditCardProcessor,
+      PayPalProcessor, StripeProcessor subclasses. Introduces injectable
+      PaymentStrategy objects. Also updates the payment_transactions
+      table schema to add a strategy_type column.
+    expect:
+      notes: "Touches both code structure AND data schema — exercises both pipelines"
+
+  - id: 3
+    label: "REST API with data validation"
+    input: >
+      Review this PR adding POST /api/v2/orders endpoint. Validates
+      order items against the product catalog (schema check), transforms
+      prices to base currency using exchange rate lookups, and stores
+      the normalized order in the orders table.
+    expect:
+      notes: "Natural fit for both code-review and data-pipeline domains"
+
+  - id: 4
+    label: "Database migration with code changes"
+    input: >
+      Review this PR: adds an audit_log table with (id, user_id, action,
+      entity_type, entity_id, old_value JSON, new_value JSON, timestamp).
+      Python code adds AuditLogger class that intercepts ORM saves and
+      writes diffs. Includes data migration backfilling existing records.
+    expect:
+      notes: "Code quality for AuditLogger + data quality for migration/schema"
+
+  # ─── Data-heavy inputs (Pipeline B dominates) ─────────────────────
+
+  - id: 5
+    label: "ETL pipeline configuration"
+    input: >
+      Review this ETL pipeline config: extracts CSV from S3, validates
+      schema (column types, null constraints, value ranges), transforms
+      dates from US to ISO format, normalizes phone numbers to E.164,
+      deduplicates on customer_id, and loads into Redshift.
+    expect:
+      notes: "Data-pipeline recipe should score high on transfer"
+
+  - id: 6
+    label: "Data quality framework"
+    input: >
+      Review this PR adding a data quality framework. Includes schema
+      validators for JSON payloads, null-rate checkers, freshness monitors,
+      and drift detectors comparing current distributions to baseline.
+      Also adds a DataQualityReport class for generating reports.
+    expect:
+      notes: "Both pipelines relevant — data validation + code structure"
+
+  # ─── Cross-domain transfer stress tests ───────────────────────────
+
+  - id: 7
+    label: "Terraform infrastructure"
+    input: >
+      Review this Terraform PR: provisions EKS cluster with 3 node groups,
+      VPC peering to shared-services, ALB ingress controller, Datadog
+      monitoring as DaemonSet. Includes variable validation rules for
+      CIDR blocks and instance types.
+    expect:
+      notes: "Distant domain — transfer score should be lower but non-zero"
+
+  - id: 8
+    label: "ML model training pipeline"
+    input: >
+      Review this ML pipeline: loads training data from Parquet, validates
+      feature distributions against expected ranges, applies feature
+      engineering transforms (normalization, one-hot encoding), trains
+      a gradient boosted classifier, and validates predictions against
+      a holdout set. Code uses scikit-learn with custom estimators.
+    expect:
+      notes: "Strong overlap with both domains — code for estimators, data for features"
+
+  - id: 9
+    label: "Event-driven microservice"
+    input: >
+      Review this Kafka consumer microservice: deserializes Avro messages,
+      validates against the schema registry, transforms events into
+      normalized domain objects, enriches with customer data from gRPC
+      service, and publishes transformed events to output topic.
+    expect:
+      notes: "Code review for service + data pipeline for schema/transform"
+
+  - id: 10
+    label: "GraphQL API with input validation"
+    input: >
+      Review this GraphQL schema and resolvers: adds mutations for
+      creating and updating user profiles. Includes input type validation
+      (email format, phone E.164, date ranges), transforms nested input
+      objects into flat database records, and handles partial updates
+      with field-level merge logic.
+    expect:
+      notes: "Both code and data aspects well represented"
+
+  # ─── Success rate verification ────────────────────────────────────
+
+  - id: 11
+    label: "Trivial fix — success rate check"
+    input: "Fix typo: changed 'recieve' to 'receive' in error message string."
+    expect:
+      notes: "After many runs, the failure phase should show success_rate dropping"
+
+  - id: 12
+    label: "Large rewrite — cumulative effect"
+    input: >
+      Complete rewrite of authentication from sessions to JWT. Touches
+      47 files, removes sessions table, adds token refresh, updates all
+      middleware, changes login/logout API contracts, migrates existing
+      session data to token format.
+    expect:
+      notes: "Final run — check cumulative success_rate degradation on code recipe"

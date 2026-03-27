@@ -139,10 +139,10 @@ class TestAppBrainSkillsBinding:
 
     def test_binding_exists(self):
         bindings = {b.key for b in OrKaTextualApp.BINDINGS}
-        assert "6" in bindings
+        assert "5" in bindings
 
     def test_binding_action_name(self):
-        binding = next(b for b in OrKaTextualApp.BINDINGS if b.key == "6")
+        binding = next(b for b in OrKaTextualApp.BINDINGS if b.key == "5")
         assert binding.action == "show_brain_skills"
 
     def test_action_method_exists(self):
@@ -218,3 +218,56 @@ class TestSkillTTLDisplay:
             app.on_mount()
         assert "brain_skills" in app.screens
         assert isinstance(app.screens["brain_skills"], BrainSkillsScreen)
+
+
+# ── Skill Type Display ──────────────────────────────────────────────────
+
+class TestSkillTypeDisplay:
+
+    def test_format_execution_recipe(self):
+        result = SkillsTableWidget._format_skill_type("execution_recipe")
+        assert "RECIPE" in result
+        assert "green" in result
+
+    def test_format_anti_pattern(self):
+        result = SkillsTableWidget._format_skill_type("anti_pattern")
+        assert "ANTI" in result
+        assert "red" in result
+
+    def test_format_graph_path(self):
+        result = SkillsTableWidget._format_skill_type("graph_path")
+        assert "PATH" in result
+        assert "cyan" in result
+
+    def test_format_procedural(self):
+        result = SkillsTableWidget._format_skill_type("procedural")
+        assert "PROC" in result
+        assert "blue" in result
+
+    def test_format_prompt_template(self):
+        result = SkillsTableWidget._format_skill_type("prompt_template")
+        assert "PROMPT" in result
+
+    def test_format_parameter_config(self):
+        result = SkillsTableWidget._format_skill_type("parameter_config")
+        assert "CONFIG" in result
+
+    def test_format_domain_heuristic(self):
+        result = SkillsTableWidget._format_skill_type("domain_heuristic")
+        assert "DOMAIN" in result
+
+    def test_format_unknown_type(self):
+        result = SkillsTableWidget._format_skill_type("custom_thing")
+        assert "CUSTOM" in result
+
+    def test_skill_to_dict_has_skill_type(self):
+        skill = _make_skill()
+        d = skill.to_dict()
+        assert "skill_type" in d
+        assert d["skill_type"] == "procedural"
+
+    def test_skill_to_dict_has_v2_fields(self):
+        skill = _make_skill()
+        d = skill.to_dict()
+        for field in ["domain_keywords", "search_tokens", "anti_signals", "recipe"]:
+            assert field in d, f"Missing v2 field: {field}"

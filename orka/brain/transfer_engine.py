@@ -109,12 +109,14 @@ class SkillTransferEngine:
         target_context: dict[str, Any],
         top_k: int = 5,
         min_score: float = 0.3,
+        skill_types: list[str] | None = None,
+        domain_filter: str | None = None,
     ) -> list[TransferCandidate]:
         """Find skills that could apply to a new context.
 
         This is the main entry point. It:
         1. Analyzes the target context into abstract features
-        2. Retrieves all known skills
+        2. Retrieves candidate skills (optionally pre-filtered by type/domain)
         3. Scores each skill's transferability
         4. Returns the top candidates above the threshold
 
@@ -122,14 +124,38 @@ class SkillTransferEngine:
             target_context: Dictionary describing the new execution context.
             top_k: Maximum number of candidates to return.
             min_score: Minimum combined score to be considered (0.0-1.0).
+            skill_types: Optional list of skill type values to pre-filter
+                (e.g. ``["execution_recipe", "graph_path"]``).
+            domain_filter: Optional domain keyword to pre-filter.
 
         Returns:
             List of TransferCandidate objects, sorted by score descending.
         """
         target_features = self._analyzer.analyze(target_context)
 
-        # Get all skills from the graph
-        all_skills = self._graph.list_skills()
+        # Two-stage retrieval: narrow first if filters provided
+        if skill_types or domain_filter:
+            all_skills: list[Skill] = []
+            if skill_types:
+                for st in skill_types:
+                    all_skills.extend(self._graph.find_by_type(st))
+                if domain_filter:
+                    # Intersect with domain
+                    domain_ids = {s.id for s in self._graph.find_by_domain(domain_filter)}
+                    all_skills = [s for s in all_skills if s.id in domain_ids]
+            elif domain_filter:
+                all_skills = self._graph.find_by_domain(domain_filter)
+            # Deduplicate
+            seen: set[str] = set()
+            unique: list[Skill] = []
+            for s in all_skills:
+                if s.id not in seen:
+                    seen.add(s.id)
+                    unique.append(s)
+            all_skills = unique
+        else:
+            all_skills = self._graph.list_skills()
+
         if not all_skills:
             logger.debug("No skills in graph, nothing to transfer")
             return []

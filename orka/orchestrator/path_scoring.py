@@ -263,6 +263,12 @@ class PathScorer:
             if "compliance" in self.score_weights or self._has_compliance_policy(context):
                 components["compliance"] = self._score_compliance(candidate, context)
 
+            # Brain-assisted component (injected by GraphScout when brain_assisted=True)
+            brain_boost = candidate.get("brain_boost", 0.0)
+            brain_penalty = candidate.get("brain_penalty", 0.0)
+            if brain_boost or brain_penalty:
+                components["brain"] = max(0.0, min(1.0, 0.5 + brain_boost - brain_penalty))
+
             return components
 
         except Exception as e:

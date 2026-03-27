@@ -40,12 +40,13 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import uuid
 from datetime import UTC, datetime
 from typing import Any
 
 from .context_analyzer import ContextAnalyzer, ContextFeatures
-from .skill import Skill, SkillCondition, SkillStep, SkillTransferRecord
+from .skill import Skill, SkillCondition, SkillStep, SkillTransferRecord, SkillType, generate_search_tokens
 from .skill_graph import SkillGraph
 from .transfer_engine import SkillTransferEngine, TransferCandidate
 
@@ -166,12 +167,25 @@ class Brain:
             The newly created Skill, or None if the outcome was not successful
             or no skill could be abstracted.
         """
-        if not outcome.get("success", False):
+        # Analyze context early so we can look up existing skills
+        features = self._analyzer.analyze(context)
+        name = skill_name or self._generate_skill_name(features)
+        success = outcome.get("success", False)
+
+        # Check for existing similar skill — record both successes AND failures
+        existing = self._find_existing_skill(features, name)
+        if existing:
+            existing.record_usage(success=bool(success))
+            self._graph.save_skill(existing)
+            if success:
+                logger.info(f"Reinforced existing skill '{existing.name}' ({existing.id})")
+            else:
+                logger.info(f"Recorded failure for skill '{existing.name}' ({existing.id})")
+            return existing
+
+        if not success:
             logger.debug("Outcome was not successful, not learning")
             return None
-
-        # Analyze context
-        features = self._analyzer.analyze(context)
 
         # Extract abstract procedure from execution trace
         procedure = self._extract_procedure(execution_trace)
@@ -183,27 +197,18 @@ class Brain:
         preconditions = self._extract_preconditions(features, execution_trace)
         postconditions = self._extract_postconditions(features, outcome)
 
-        # Generate name and description
-        name = skill_name or self._generate_skill_name(features)
+        # Generate description
         description = self._generate_description(features, procedure)
 
         # Generate tags
         tags = list(set(features.task_structures + features.cognitive_patterns + features.domain_hints))
-
-        # Check for existing similar skill
-        existing = self._find_existing_skill(features, name)
-        if existing:
-            # Reinforce existing skill instead of duplicating
-            existing.record_usage(success=True)
-            self._graph.save_skill(existing)
-            logger.info(f"Reinforced existing skill '{existing.name}' ({existing.id})")
-            return existing
 
         # Create new skill
         skill = Skill(
             id=str(uuid.uuid4()),
             name=name,
             description=description,
+            skill_type=SkillType.PROCEDURAL.value,
             procedure=procedure,
             preconditions=preconditions,
             postconditions=postconditions,
@@ -212,6 +217,10 @@ class Brain:
             success_rate=1.0,
             usage_count=1,
             tags=tags,
+            task_description=context.get("task", ""),
+            domain_keywords=features.domain_hints or [context.get("domain", "general")],
+            output_description=context.get("output_format", ""),
+            search_tokens=generate_search_tokens(name),
         )
         skill.renew_ttl()
 
@@ -231,6 +240,8 @@ class Brain:
         context: dict[str, Any],
         top_k: int = 5,
         min_score: float = 0.3,
+        skill_types: list[str] | None = None,
+        domain_filter: str | None = None,
     ) -> list[TransferCandidate]:
         """Recall skills that might apply to a new context.
 
@@ -242,6 +253,9 @@ class Brain:
             context: The new execution context.
             top_k: Maximum number of candidates to return.
             min_score: Minimum applicability score (0.0-1.0).
+            skill_types: Optional list of :class:`SkillType` values to
+                restrict retrieval (two-stage filter).
+            domain_filter: Optional domain keyword to pre-filter.
 
         Returns:
             List of TransferCandidate objects, ranked by applicability.
@@ -250,6 +264,8 @@ class Brain:
             target_context=context,
             top_k=top_k,
             min_score=min_score,
+            skill_types=skill_types,
+            domain_filter=domain_filter,
         )
 
         # Lazy cleanup: run at most once per hour
@@ -372,6 +388,236 @@ class Brain:
             ],
         }
 
+    # ========== Specialised Learning ==========
+
+    async def learn_recipe(
+        self,
+        agents: list[dict[str, Any]],
+        pattern: str,
+        context: dict[str, Any],
+        outcome: dict[str, Any],
+        skill_name: str | None = None,
+    ) -> Skill | None:
+        """Learn an execution recipe from a successful multi-agent run.
+
+        Stores which agents were composed and how as deployment-specific
+        knowledge the LLM cannot derive from its weights.
+
+        Args:
+            agents: List of agent descriptors (dicts with at least ``id``).
+            pattern: Composition pattern (e.g. ``"sequential"``, ``"fork-join"``).
+            context: Execution context (``domain``, ``task``, …).
+            outcome: Must contain ``success`` (bool). Optional: ``quality``.
+            skill_name: Optional explicit name.
+
+        Returns:
+            Newly created Skill, or None.
+        """
+        if not agents:
+            return None
+
+        features = self._analyzer.analyze(context)
+        domain = context.get("domain", "general")
+        agent_ids = [a["id"] if isinstance(a, dict) else str(a) for a in agents]
+        name = skill_name or f"recipe:{domain}:{pattern}-{'+'.join(agent_ids[:3])}"
+        success = outcome.get("success", False)
+
+        # Record success or failure against existing skill
+        existing = self._find_existing_skill(features, name)
+        if existing:
+            existing.record_usage(success=bool(success))
+            self._graph.save_skill(existing)
+            return existing
+
+        if not success:
+            return None
+
+        desc = f"Agent composition for {domain}: {' → '.join(agent_ids)}"
+
+        recipe_data: dict[str, Any] = {
+            "pattern": pattern,
+            "agents": agents,
+            "total_agents": len(agents),
+        }
+        if "duration_ms" in outcome:
+            recipe_data["avg_latency_ms"] = outcome["duration_ms"]
+        if "quality" in outcome:
+            recipe_data["success_rate"] = float(outcome["quality"])
+
+        preconditions = [
+            SkillCondition(
+                predicate=f"agent '{aid}' is available",
+                description=f"Requires agent '{aid}' in the workflow",
+                required=True,
+            )
+            for aid in agent_ids
+        ]
+        preconditions.append(
+            SkillCondition(
+                predicate=f"pattern is {pattern}",
+                description=f"Agents must be composed in '{pattern}' pattern",
+                required=False,
+            )
+        )
+
+        skill = Skill(
+            name=name,
+            description=desc,
+            skill_type=SkillType.EXECUTION_RECIPE.value,
+            procedure=[
+                SkillStep(action=f"execute {aid}", description=f"Run agent {aid}", order=i)
+                for i, aid in enumerate(agent_ids)
+            ],
+            preconditions=preconditions,
+            source_context=features.to_dict(),
+            confidence=min(0.7, 0.5 + outcome.get("quality", 0.5) * 0.2),
+            success_rate=1.0,
+            usage_count=1,
+            tags=list(set(features.domain_hints + [pattern])),
+            task_description=context.get("task", ""),
+            domain_keywords=features.domain_hints or [domain],
+            output_description=context.get("output_format", ""),
+            search_tokens=generate_search_tokens(name),
+            recipe=recipe_data,
+        )
+        skill.renew_ttl()
+        self._graph.save_skill(skill)
+        self._log_learning_event(skill, context, outcome)
+        logger.info(f"Learned recipe '{skill.name}' ({skill.id})")
+        return skill
+
+    async def learn_anti_pattern(
+        self,
+        what_failed: str,
+        why: str,
+        context: dict[str, Any],
+        severity: str = "warning",
+    ) -> Skill:
+        """Record a failure anti-pattern so the Brain avoids repeating it.
+
+        Args:
+            what_failed: Short description of the failed configuration.
+            why: Root-cause explanation.
+            context: Execution context (``domain``, ``task``, …).
+            severity: ``"warning"`` or ``"critical"``.
+
+        Returns:
+            The anti-pattern skill (always created).
+        """
+        domain = context.get("domain", "general")
+        # Slugify what_failed to produce a clean, compact identifier
+        slug = re.sub(r"[^a-z0-9]+", "-", what_failed.lower()).strip("-")[:40]
+        name = f"anti:{domain}:{slug}"
+        features = self._analyzer.analyze(context)
+
+        # Check for existing anti-pattern — reinforce instead of duplicating
+        existing = self._find_existing_skill(features, name)
+        if existing:
+            existing.record_usage(success=False)
+            self._graph.save_skill(existing)
+            logger.info(f"Reinforced existing anti-pattern '{existing.name}' ({existing.id})")
+            return existing
+
+        skill = Skill(
+            name=name,
+            description=f"AVOID: {what_failed}. Reason: {why}",
+            skill_type=SkillType.ANTI_PATTERN.value,
+            source_context=features.to_dict(),
+            confidence=0.9,
+            success_rate=0.0,
+            usage_count=1,
+            tags=["anti-pattern", severity] + features.domain_hints,
+            task_description=what_failed,
+            domain_keywords=features.domain_hints or [domain],
+            anti_signals=[why],
+            search_tokens=generate_search_tokens(name),
+        )
+        skill.renew_ttl()
+        self._graph.save_skill(skill)
+        logger.info(f"Learned anti-pattern '{skill.name}' ({skill.id})")
+        return skill
+
+    async def learn_path(
+        self,
+        path_nodes: list[str],
+        score: float,
+        context: dict[str, Any],
+        outcome: dict[str, Any],
+        budget_used: dict[str, Any] | None = None,
+    ) -> Skill | None:
+        """Learn a GraphScout-discovered path as a reusable skill.
+
+        Args:
+            path_nodes: Ordered list of agent/node IDs in the path.
+            score: GraphScout score for this path.
+            context: Execution context.
+            outcome: Execution outcome (must include ``success``).
+            budget_used: Optional budget consumption (tokens, latency).
+
+        Returns:
+            Newly created Skill, or None if outcome was not successful.
+        """
+        if not path_nodes:
+            return None
+
+        domain = context.get("domain", "general")
+        name = f"path:{domain}:{'→'.join(path_nodes[:4])}"
+        features = self._analyzer.analyze(context)
+        success = outcome.get("success", False)
+
+        # Record success or failure against existing skill
+        existing = self._find_existing_skill(features, name)
+        if existing:
+            existing.record_usage(success=bool(success))
+            self._graph.save_skill(existing)
+            return existing
+
+        if not success:
+            return None
+
+        recipe: dict[str, Any] = {
+            "pattern": "graphscout-path",
+            "agents": [{"id": nid} for nid in path_nodes],
+            "total_agents": len(path_nodes),
+            "graphscout_score": score,
+        }
+        if budget_used:
+            recipe["budget_used"] = budget_used
+
+        preconditions = [
+            SkillCondition(
+                predicate=f"agent '{nid}' is available",
+                description=f"Requires agent '{nid}' in the workflow",
+                required=True,
+            )
+            for nid in path_nodes
+        ]
+
+        skill = Skill(
+            name=name,
+            description=f"GraphScout path for {domain}: {' → '.join(path_nodes)}",
+            skill_type=SkillType.GRAPH_PATH.value,
+            procedure=[
+                SkillStep(action=f"execute {nid}", order=i)
+                for i, nid in enumerate(path_nodes)
+            ],
+            preconditions=preconditions,
+            source_context=features.to_dict(),
+            confidence=min(0.8, score),
+            success_rate=1.0,
+            usage_count=1,
+            tags=features.domain_hints + ["graphscout"],
+            task_description=context.get("task", ""),
+            domain_keywords=features.domain_hints or [domain],
+            search_tokens=generate_search_tokens(name),
+            recipe=recipe,
+        )
+        skill.renew_ttl()
+        self._graph.save_skill(skill)
+        self._log_learning_event(skill, context, outcome)
+        logger.info(f"Learned path '{skill.name}' ({skill.id})")
+        return skill
+
     # ========== Internal Helpers ==========
 
     def _extract_procedure(self, trace: dict[str, Any]) -> list[SkillStep]:
@@ -467,18 +713,27 @@ class Brain:
         return conditions
 
     def _generate_skill_name(self, features: ContextFeatures) -> str:
-        """Generate a descriptive skill name from features."""
-        parts: list[str] = []
+        """Generate a descriptive skill name from features.
 
+        Uses the v2 ``type:domain:specifics`` format when domain hints are
+        available, otherwise falls back to the legacy cognitive-pattern name.
+        """
+        domain = features.domain_hints[0] if features.domain_hints else None
+        pattern = features.cognitive_patterns[0].lower() if features.cognitive_patterns else None
+        structure = features.task_structures[0].lower() if features.task_structures else None
+
+        if domain and pattern:
+            specifics = f"{pattern}-{structure}" if structure else pattern
+            return f"procedural:{domain}:{specifics}"
+
+        # Legacy fallback
+        parts: list[str] = []
         if features.cognitive_patterns:
             parts.append(features.cognitive_patterns[0].title())
-
         if features.task_structures:
             parts.append(f"via {features.task_structures[0].title()}")
-
         if features.domain_hints:
             parts.append(f"({features.domain_hints[0]})")
-
         return " ".join(parts) if parts else "Unnamed Skill"
 
     def _generate_description(

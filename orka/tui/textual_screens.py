@@ -14,6 +14,8 @@ Screen implementations for OrKa Textual TUI application.
 """
 
 import logging
+import platform
+import sys
 from datetime import datetime
 from typing import Any
 
@@ -24,8 +26,30 @@ from textual.widgets import Footer, Header, Static
 
 from .textual_widgets import LogsWidget, MemoryTableWidget, SkillsTableWidget, StatsWidget
 from .message_renderer import VintageMessageRenderer
+from ..startup.banner import get_version
 
 logger = logging.getLogger(__name__)
+
+# Compact OrKa ASCII branding (4 lines, fits in a TUI header strip)
+ORKA_LOGO = (
+    "[bold cyan] ██████╗  ██╗ ██╗ ██╗  ██╗  █████╗ [/bold cyan]\n"
+    "[bold cyan]██╔═══██╗ ████╔═╝ █████╔╝  ██╔══██╗[/bold cyan]\n"
+    "[bold cyan]██║   ██║ ██║     ██╔═██╗  ███████║[/bold cyan]\n"
+    "[bold cyan]╚██████╔╝ ██║     ██║  ██╗ ██║  ██║[/bold cyan]\n"
+    "[bold cyan] ╚═════╝  ╚═╝     ╚═╝  ╚═╝ ╚═╝  ╚═╝[/bold cyan]"
+)
+
+
+def _build_logo_banner() -> str:
+    """Build a branded logo banner with version."""
+    version = get_version()
+    return (
+        f"{ORKA_LOGO}\n"
+        f"[dim]{'─' * 38}[/dim]\n"
+        f"[bold magenta]  Orchestrator Kit Agents[/bold magenta]  "
+        f"[dim]·[/dim] [bold white]v{version}[/bold white]  "
+        f"[dim]· Reasoning Framework[/dim]"
+    )
 
 
 class BaseOrKaScreen(Screen):
@@ -58,28 +82,42 @@ class DashboardScreen(BaseOrKaScreen):
 
     def compose_content(self) -> ComposeResult:
         """Compose the dashboard layout."""
+        # Branded logo header
+        yield Static(_build_logo_banner(), id="dashboard-logo", classes="logo-banner")
+
         with Container(classes="dashboard-grid"):
-            # Top row: Stats and quick health
+            # Row 1 left: Memory stats
             with Container(classes="stats-container"):
                 yield StatsWidget(self.data_manager, id="dashboard-stats")
 
+            # Row 1 right: Brain skills overview
             with Container(classes="health-container"):
-                yield Static("[HEALTH] Quick Health", classes="container")
-                yield Static("", id="quick-health")
+                yield Static("[AI] Brain Skills", classes="container-compact")
+                yield Static("", id="dashboard-skills")
 
-            # Middle row: Recent memories table (spanning 2 columns)
+            # Row 2 left: Recent memories
             with Container(classes="memory-container"):
-                yield Static("[LIST] Recent Memories", classes="container")
+                yield Static("[LIST] Recent Memories", classes="container-compact")
                 yield MemoryTableWidget(
                     self.data_manager,
                     memory_type="all",
                     id="dashboard-memories",
                 )
 
-            # Bottom row: Recent logs
+            # Row 2 right: Recent logs
             with Container(classes="logs-container"):
-                yield Static("[LIST] System Memory", classes="container")
+                yield Static("[LIST] Recent Logs", classes="container-compact")
                 yield LogsWidget(self.data_manager, id="dashboard-logs")
+
+            # Row 3 left: Quick health
+            with Container(classes="health-container"):
+                yield Static("[HEALTH] System", classes="container-compact")
+                yield Static("", id="quick-health")
+
+            # Row 3 right: Environment
+            with Container(classes="stats-container"):
+                yield Static("[CONF] Environment", classes="container-compact")
+                yield Static("", id="dashboard-env")
 
     def refresh_data(self) -> None:
         """Refresh dashboard data."""
@@ -88,32 +126,83 @@ class DashboardScreen(BaseOrKaScreen):
             stats_widget = self.query_one("#dashboard-stats", StatsWidget)
             stats_widget.update_stats()
 
-            # Update quick health using unified stats
-            health_widget = self.query_one("#quick-health", Static)
             unified = self.data_manager.get_unified_stats()
             health = unified["health"]
             backend = unified["backend"]
 
-            # Format health status with icons
+            # ── Brain skills panel ──
+            skills_widget = self.query_one("#dashboard-skills", Static)
+            brain_skills = self.data_manager.get_brain_skills()
+            skills_count = len(brain_skills)
+            if skills_count > 0:
+                avg_conf = sum(s.confidence for s in brain_skills) / skills_count
+                total_uses = sum(s.usage_count for s in brain_skills)
+                total_tx = sum(len(s.transfer_history) for s in brain_skills)
+                avg_success = (
+                    sum(s.success_rate for s in brain_skills) / skills_count
+                )
+                # Count by type
+                type_counts: dict[str, int] = {}
+                for sk in brain_skills:
+                    st = getattr(sk, "skill_type", "procedural")
+                    label = st.replace("_", " ").title()
+                    type_counts[label] = type_counts.get(label, 0) + 1
+                type_lines = "\n".join(
+                    f"  [cyan]{cnt}[/cyan] {typ}" for typ, cnt in type_counts.items()
+                )
+                skills_content = (
+                    f"[bold cyan]{skills_count}[/bold cyan] skills  "
+                    f"[dim]│[/dim] avg conf [cyan]{avg_conf:.0%}[/cyan]  "
+                    f"[dim]│[/dim] success [cyan]{avg_success:.0%}[/cyan]\n"
+                    f"Uses: [cyan]{total_uses}[/cyan]  "
+                    f"[dim]│[/dim] Transfers: [cyan]{total_tx}[/cyan]\n\n"
+                    f"{type_lines}"
+                )
+            else:
+                skills_content = (
+                    "[dim]No skills yet[/dim]\n"
+                    "[dim]Run brain workflows to start learning[/dim]"
+                )
+            skills_widget.update(skills_content)
+
+            # ── Quick health panel ──
+            health_widget = self.query_one("#quick-health", Static)
+            overall = health["overall"]
             connection_status = f"{health['backend']['icon']} {health['backend']['message']}"
-            health_content = f"""
-{connection_status}
-[STATS] Total: {unified["total_entries"]:,} entries
-[FAST] Active: {backend["active_entries"]:,} entries  
-[PERF] Backend: {backend["type"]}
-"""
+            perf = health["performance"]
+            health_content = (
+                f"{overall['icon']} Overall: {overall['message']}\n"
+                f"{connection_status}\n"
+                f"{perf['icon']} Perf: {perf['message']}\n"
+                f"Active: [cyan]{backend['active_entries']:,}[/cyan]  "
+                f"[dim]│[/dim] Expired: [cyan]{backend['expired_entries']:,}[/cyan]"
+            )
             health_widget.update(health_content)
 
-            # Update memories table
+            # ── Environment panel ──
+            env_widget = self.query_one("#dashboard-env", Static)
+            os_name = platform.system()
+            os_ver = platform.release()
+            py_ver = (
+                f"{sys.version_info.major}.{sys.version_info.minor}"
+                f".{sys.version_info.micro}"
+            )
+            env_content = (
+                f"OS: [cyan]{os_name} {os_ver}[/cyan]\n"
+                f"Python: [cyan]{py_ver}[/cyan]\n"
+                f"Backend: [cyan]{backend['type']}[/cyan]\n"
+                f"Entries: [cyan]{unified['total_entries']:,}[/cyan]"
+            )
+            env_widget.update(env_content)
+
+            # ── Tables ──
             memories_widget = self.query_one("#dashboard-memories", MemoryTableWidget)
             memories_widget.update_data("all")
 
-            # [TARGET] FIX: Update logs using correct method name
             logs_widget = self.query_one("#dashboard-logs", LogsWidget)
-            logs_widget.update_data()  # Changed from update_logs() to update_data()
+            logs_widget.update_data()
 
         except Exception as e:
-            # Handle refresh errors gracefully
             logger.debug(f"TUI dashboard refresh error (non-fatal): {e}")
 
 
@@ -381,26 +470,41 @@ class HealthScreen(BaseOrKaScreen):
     """Screen for system health monitoring."""
 
     def compose_content(self) -> ComposeResult:
-        """Compose the health monitoring layout - single unified box with styled sections."""
-        with Container(classes="health-main-container"):
-            # Header with overall status
-            yield Static("[HEALTH] System Health Monitor", classes="container")
+        """Compose the health monitoring layout as a 2×2 grid with summary bar."""
+        with Vertical():
+            # Branded logo header
+            yield Static(_build_logo_banner(), id="health-logo", classes="logo-banner")
+
+            # Top: 1-line summary bar
             yield Static("", id="health-summary")
-            
-            # All sections in one container
-            yield Static("", id="health-details")
+
+            # 2×2 grid of health panels
+            with Container(classes="health-grid"):
+                with Container(classes="health-panel"):
+                    yield Static("[CONN] Connection", classes="container-compact")
+                    yield Static("", id="health-connection")
+
+                with Container(classes="health-panel"):
+                    yield Static("[FAST] Performance", classes="container-compact")
+                    yield Static("", id="health-performance")
+
+                with Container(classes="health-panel"):
+                    yield Static("[AI] Memory & Brain", classes="container-compact")
+                    yield Static("", id="health-memory")
+
+                with Container(classes="health-panel"):
+                    yield Static("[CONF] System", classes="container-compact")
+                    yield Static("", id="health-system")
 
     def refresh_data(self) -> None:
         """Refresh health monitoring data."""
         try:
-            # Get all health data from centralized calculation
             unified = self.data_manager.get_unified_stats()
             health = unified["health"]
             backend = unified["backend"]
             stored_memories = unified["stored_memories"]
             log_entries = unified["log_entries"]
 
-            # Calculate metrics
             overall = health["overall"]
             backend_health = health["backend"]
             memory_health = health["memory"]
@@ -409,61 +513,89 @@ class HealthScreen(BaseOrKaScreen):
             search_time = unified["performance"]["search_time"]
             stored_total = stored_memories["total"]
             logs_total = log_entries["orchestration"]
-            usage_pct = (backend["active_entries"] / total_entries * 100) if total_entries > 0 else 0
+            usage_pct = (
+                (backend["active_entries"] / total_entries * 100) if total_entries > 0 else 0
+            )
             data_points = len(self.data_manager.stats.history)
             trend = unified["trends"]["total_entries"]
 
-            # Update summary
-            summary_widget = self.query_one("#health-summary", Static)
-            summary_content = f"""[bold]Overall:[/bold] {overall["icon"]} {overall["message"]} [dim]│[/dim] [cyan]Total:[/cyan] {total_entries:,} [dim]│[/dim] [green]Active:[/green] {backend["active_entries"]:,} [dim]│[/dim] [red]Expired:[/red] {backend["expired_entries"]:,}
-[dim]Last Update: {self._format_current_time()} │ Auto-refresh: 2s │ Backend: {backend["type"]}[/dim]"""
-            summary_widget.update(summary_content)
+            # ── Summary bar ──
+            summary = self.query_one("#health-summary", Static)
+            summary.update(
+                f"[bold]{overall['icon']} {overall['message']}[/bold]  "
+                f"[dim]│[/dim] [cyan]{total_entries:,}[/cyan] total  "
+                f"[dim]│[/dim] [green]{backend['active_entries']:,}[/green] active  "
+                f"[dim]│[/dim] [red]{backend['expired_entries']:,}[/red] expired  "
+                f"[dim]│[/dim] {self._format_current_time()}  "
+                f"[dim]│ 2s refresh │ {backend['type']}[/dim]"
+            )
 
-            # Build unified details content with visual headers
-            details_content = f"""
-[bold yellow][CONN] CONNECTION[/bold yellow]
-   Status: {backend_health["icon"]} {backend_health["message"]}
-   Backend: {backend["type"]}
-   Protocol: Redis
+            # ── Connection panel ──
+            conn = self.query_one("#health-connection", Static)
+            conn.update(
+                f"{backend_health['icon']} {backend_health['message']}\n\n"
+                f"[cyan]Backend:[/cyan]  {backend['type']}\n"
+                f"[cyan]Protocol:[/cyan] Redis\n"
+                f"[cyan]Decay:[/cyan]    "
+                f"{'[green]Active[/green]' if backend.get('decay_enabled') else '[yellow]Inactive[/yellow]'}"
+            )
 
-[bold magenta][AI] MEMORY SYSTEM[/bold magenta]
-   Health: {memory_health["icon"]} {memory_health["message"]}
-   Total: {total_entries:,} entries
-   Active: {backend["active_entries"]:,} entries
-   Expired: {backend["expired_entries"]:,} entries
+            # ── Performance panel ──
+            perf = self.query_one("#health-performance", Static)
+            if search_time < 0.01:
+                time_color = "green"
+            elif search_time < 0.1:
+                time_color = "yellow"
+            else:
+                time_color = "red"
+            perf.update(
+                f"{perf_health['icon']} {perf_health['message']}\n\n"
+                f"[cyan]Response:[/cyan]   [{time_color}]{search_time:.3f}s[/{time_color}]\n"
+                f"[cyan]Data pts:[/cyan]   {data_points:,}\n"
+                f"[cyan]Trend:[/cyan]      {trend}\n"
+                f"[cyan]Retention:[/cyan]  100 points"
+            )
 
-[bold green][FAST] PERFORMANCE[/bold green]
-   Status: {perf_health["icon"]} {perf_health["message"]}
-   Response Time: {search_time:.3f}s
-   Throughput: Normal
-   Errors: < 0.1%
+            # ── Memory & Brain panel ──
+            mem = self.query_one("#health-memory", Static)
+            brain_skills = self.data_manager.get_brain_skills()
+            skills_count = len(brain_skills)
+            if skills_count > 0:
+                avg_conf = sum(s.confidence for s in brain_skills) / skills_count
+                brain_line = (
+                    f"[cyan]Skills:[/cyan]   [green]{skills_count}[/green] "
+                    f"(avg conf {avg_conf:.0%})"
+                )
+            else:
+                brain_line = "[cyan]Skills:[/cyan]   [dim]none yet[/dim]"
+            mem.update(
+                f"{memory_health['icon']} {memory_health['message']}\n\n"
+                f"[cyan]Active:[/cyan]   [green]{backend['active_entries']:,}[/green]\n"
+                f"[cyan]Expired:[/cyan]  [red]{backend['expired_entries']:,}[/red]\n"
+                f"[cyan]Stored:[/cyan]   {stored_total:,}  "
+                f"[dim]│[/dim] Logs: {logs_total:,}\n"
+                f"[cyan]Usage:[/cyan]    {usage_pct:.0f}%\n"
+                f"{brain_line}"
+            )
 
-[bold blue][CONF] BACKEND INFO[/bold blue]
-   Type: {backend["type"]}
-   Version: Latest
-   Features: TTL, Search, Indexing
-   Config: Auto-detected
-
-[bold white][STATS] SYSTEM METRICS[/bold white]
-   Stored Memories: {stored_total:,}
-   Orchestration Logs: {logs_total:,}
-   Memory Usage: {usage_pct:.1f}%
-   Cache Hit Rate: 95%
-
-[bold cyan][PERF] HISTORICAL[/bold cyan]
-   Data Points: {data_points:,}
-   Trends: {trend}
-   Performance: Stable
-   Retention: 100 points"""
-
-            # Update the details widget
-            details_widget = self.query_one("#health-details", Static)
-            details_widget.update(details_content)
+            # ── System panel ──
+            sys_widget = self.query_one("#health-system", Static)
+            os_name = platform.system()
+            os_ver = platform.release()
+            py_ver = (
+                f"{sys.version_info.major}.{sys.version_info.minor}"
+                f".{sys.version_info.micro}"
+            )
+            sys_widget.update(
+                f"[cyan]OS:[/cyan]       {os_name} {os_ver}\n"
+                f"[cyan]Python:[/cyan]   {py_ver}\n"
+                f"[cyan]Backend:[/cyan]  {backend['type']}\n"
+                f"[cyan]Features:[/cyan] TTL, Search, Indexing\n"
+                f"[cyan]Config:[/cyan]   Auto-detected"
+            )
 
         except Exception as e:
-            # Log error to help diagnose issues
-            import logging
-            logging.getLogger(__name__).warning(f"HealthScreen refresh_data error: {e}")
+            logger.warning(f"HealthScreen refresh_data error: {e}")
 
     def _format_current_time(self) -> str:
         """Format current time for display."""
@@ -515,12 +647,31 @@ class BrainSkillsScreen(BaseOrKaScreen):
             s = message.skill_data
             name = s.get("name", "unnamed")
             description = s.get("description", "")
+            skill_type = s.get("skill_type", "procedural")
             confidence = s.get("confidence", 0.0)
             usage_count = s.get("usage_count", 0)
             success_rate = s.get("success_rate", 0.0)
             tags = ", ".join(s.get("tags", [])) or "none"
             created = s.get("created_at", "unknown")[:19]
             updated = s.get("updated_at", "unknown")[:19]
+            domain_keywords = s.get("domain_keywords", [])
+            search_tokens = s.get("search_tokens", [])
+            anti_signals = s.get("anti_signals", [])
+            recipe = s.get("recipe", {})
+            task_description = s.get("task_description", "")
+            output_description = s.get("output_description", "")
+
+            # Format skill type with colour
+            type_labels = {
+                "execution_recipe": "[green]Execution Recipe[/green]",
+                "anti_pattern": "[red]Anti-Pattern[/red]",
+                "graph_path": "[cyan]Graph Path[/cyan]",
+                "procedural": "[blue]Procedural[/blue]",
+                "prompt_template": "[yellow]Prompt Template[/yellow]",
+                "parameter_config": "[magenta]Parameter Config[/magenta]",
+                "domain_heuristic": "[white]Domain Heuristic[/white]",
+            }
+            type_display = type_labels.get(skill_type, skill_type)
 
             # Format procedure steps
             procedure = s.get("procedure", [])
@@ -563,26 +714,82 @@ class BrainSkillsScreen(BaseOrKaScreen):
             else:
                 tx_text = "  [dim]No transfers yet[/dim]"
 
-            formatted = f"""[bold blue]{name}[/bold blue]
-{description}
+            # Format recipe (for execution_recipe type)
+            recipe_text = ""
+            if recipe:
+                agents_raw = recipe.get("agents", [])
+                strategy = recipe.get("strategy", recipe.get("pattern", ""))
+                recipe_parts = []
+                if strategy:
+                    recipe_parts.append(f"  Strategy: [cyan]{strategy}[/cyan]")
+                if agents_raw:
+                    agent_names = [
+                        a.get("id", str(a)) if isinstance(a, dict) else str(a)
+                        for a in agents_raw
+                    ]
+                    recipe_parts.append(f"  Agents: [cyan]{', '.join(agent_names)}[/cyan]")
+                recipe_text = "\n".join(recipe_parts) if recipe_parts else "  [dim]Empty[/dim]"
+            else:
+                recipe_text = "  [dim]N/A[/dim]"
 
-[bold green][LIST] PROCEDURE:[/bold green]
-{procedure_text}
+            # Format domain keywords and search tokens
+            kw_text = ", ".join(domain_keywords) if domain_keywords else "[dim]none[/dim]"
+            tokens_text = ", ".join(search_tokens[:10]) if search_tokens else "[dim]none[/dim]"
+            anti_text = ", ".join(anti_signals) if anti_signals else "[dim]none[/dim]"
 
-[bold yellow][CONF] PRECONDITIONS:[/bold yellow]
-{pre_text}
+            # Build sections — only show relevant sections per type
+            sections = [
+                f"[bold blue]{name}[/bold blue]  {type_display}",
+                f"{description}" if description else "",
+                "",
+                "[bold green][LIST] PROCEDURE:[/bold green]",
+                procedure_text,
+                "",
+                "[bold yellow][CONF] PRECONDITIONS:[/bold yellow]",
+                pre_text,
+            ]
 
-[bold magenta][SYNC] TRANSFER HISTORY ({len(transfers)} total):[/bold magenta]
-{tx_text}
+            # Recipe section — only for execution_recipe type
+            if skill_type == "execution_recipe":
+                sections += [
+                    "",
+                    "[bold green][SYNC] RECIPE:[/bold green]",
+                    recipe_text,
+                ]
 
-[bold cyan][TAG] INFO:[/bold cyan]
-[cyan]Confidence:[/cyan] {confidence:.0%}
-[cyan]Uses:[/cyan] {usage_count}
-[cyan]Success Rate:[/cyan] {success_rate:.0%}
-[cyan]Tags:[/cyan] {tags}
-[cyan]Created:[/cyan] {created}
-[cyan]Updated:[/cyan] {updated}
-[cyan]TTL:[/cyan] {self._format_ttl_detail(s)}"""
+            # Anti-signals — only for anti_pattern type
+            if skill_type == "anti_pattern" and anti_signals:
+                sections += [
+                    "",
+                    "[bold red][WARN] ANTI-SIGNALS:[/bold red]",
+                    f"  {anti_text}",
+                ]
+
+            sections += [
+                "",
+                f"[bold magenta][SYNC] TRANSFER HISTORY ({len(transfers)} total):[/bold magenta]",
+                tx_text,
+                "",
+                "[bold cyan][TAG] INFO:[/bold cyan]",
+                f"[cyan]Type:[/cyan] {type_display}",
+                f"[cyan]Confidence:[/cyan] {confidence:.0%}",
+                f"[cyan]Uses:[/cyan] {usage_count}",
+                f"[cyan]Success Rate:[/cyan] {success_rate:.0%}",
+                f"[cyan]Tags:[/cyan] {tags}",
+                f"[cyan]Domain:[/cyan] {kw_text}",
+                f"[cyan]Tokens:[/cyan] {tokens_text}",
+                f"[cyan]Created:[/cyan] {created}",
+                f"[cyan]Updated:[/cyan] {updated}",
+                f"[cyan]TTL:[/cyan] {self._format_ttl_detail(s)}",
+            ]
+
+            # Task/output descriptions if present
+            if task_description:
+                sections.append(f"[cyan]Task:[/cyan] {task_description}")
+            if output_description:
+                sections.append(f"[cyan]Output:[/cyan] {output_description}")
+
+            formatted = "\n".join(sections)
 
             content_widget.update(formatted)
         except Exception as e:
@@ -683,7 +890,7 @@ class HelpScreen(Screen):
 ║                                                         ║
 ║  [bold cyan]NAVIGATION:[/bold cyan]                                          ║
 ║  ┌─────────────────────────────────────────────────┐   ║
-║  │ 1-5        Switch views                         │   ║
+║  │ 1-5,0      Switch views                         │   ║
 ║  │ j/k        Navigate up/down (vim-style)         │   ║
 ║  │ g/G        Jump to top/bottom                   │   ║
 ║  │ tab        Focus next widget                    │   ║
@@ -697,8 +904,8 @@ class HelpScreen(Screen):
 ║  │ 2          Short-term memory                    │   ║
 ║  │ 3          Long-term memory                     │   ║
 ║  │ 4          Memory logs                          │   ║
-║  │ 5          Health & diagnostics                 │   ║
-║  │ 6          Brain skills (learned)               │   ║
+║  │ 5          Brain skills (learned)               │   ║
+║  │ 0          Health & diagnostics                 │   ║
 ║  └─────────────────────────────────────────────────┘   ║
 ║                                                         ║
 ║  [bold cyan]ACTIONS:[/bold cyan]                                             ║

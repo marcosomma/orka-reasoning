@@ -764,12 +764,12 @@ class SkillsTableWidget(DataTable):
         self.add_columns(
             "TTL",
             "Name",
+            "Type",
             "Confidence",
             "Uses",
             "Success",
             "Transfers",
             "Tags",
-            "Created",
         )
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
@@ -804,19 +804,22 @@ class SkillsTableWidget(DataTable):
                 "[dim]--[/dim]",
                 "[dim]--[/dim]",
                 "[dim]--[/dim]",
-                "[dim]Run brain workflows to learn[/dim]",
                 "[dim]--[/dim]",
+                "[dim]Run brain workflows to learn[/dim]",
             )
             return
 
         for skill_dict in self.current_skills:
             name = skill_dict.get("name", "unnamed")[:30]
+            skill_type = skill_dict.get("skill_type", "procedural")
             confidence = skill_dict.get("confidence", 0.0)
             usage_count = skill_dict.get("usage_count", 0)
             success_rate = skill_dict.get("success_rate", 0.0)
             transfers = len(skill_dict.get("transfer_history", []))
             tags = ", ".join(skill_dict.get("tags", [])[:3])
-            created = skill_dict.get("created_at", "")[:10]
+
+            # Colour-code and abbreviate skill type
+            type_display = self._format_skill_type(skill_type)
 
             # Colour-code confidence
             if confidence >= 0.7:
@@ -843,12 +846,12 @@ class SkillsTableWidget(DataTable):
             self.add_row(
                 ttl_display,
                 checkbox_name,
+                type_display,
                 conf_display,
                 str(usage_count),
                 sr_display,
                 str(transfers),
                 f"[dim]{tags}[/dim]" if tags else "[dim]--[/dim]",
-                f"[dim]{created}[/dim]",
             )
 
     @staticmethod
@@ -875,3 +878,18 @@ class SkillsTableWidget(DataTable):
                 return f"[green]{days}d[/green]"
         except (ValueError, TypeError):
             return "[dim]--[/dim]"
+
+    @staticmethod
+    def _format_skill_type(skill_type: str) -> str:
+        """Format skill type with color-coded abbreviation."""
+        type_map = {
+            "execution_recipe": ("[green]RECIPE[/green]", "Execution recipe"),
+            "anti_pattern": ("[red]ANTI[/red]", "Anti-pattern"),
+            "graph_path": ("[cyan]PATH[/cyan]", "Graph path"),
+            "procedural": ("[blue]PROC[/blue]", "Procedural"),
+            "prompt_template": ("[yellow]PROMPT[/yellow]", "Prompt template"),
+            "parameter_config": ("[magenta]CONFIG[/magenta]", "Parameter config"),
+            "domain_heuristic": ("[white]DOMAIN[/white]", "Domain heuristic"),
+        }
+        display, _ = type_map.get(skill_type, (f"[dim]{skill_type[:6].upper()}[/dim]", skill_type))
+        return display

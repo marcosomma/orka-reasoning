@@ -1,0 +1,241 @@
+# ═══════════════════════════════════════════════════════════════════════
+# OrKa Brain v2 — Multi-Skill Anti-Pattern + Brain-Assisted GraphScout
+# ═══════════════════════════════════════════════════════════════════════
+#
+# Creates 5 DISTINCT skills per run, then uses brain-assisted routing.
+#
+#   Phase 1 — Seed 3 anti-patterns + 2 paths:
+#     → Skill 1: anti:ticket-classification:using-expensive-model-for-trivial
+#     → Skill 2: anti:ticket-classification:skipping-classification-sending
+#     → Skill 3: anti:escalation:auto-escalating-without-severity-check
+#     → Skill 4: path:ticket-classification:classifier→responder
+#     → Skill 5: path:escalation:classifier→escalator
+#
+#   Phase 2 — Brain-assisted GraphScout routing
+#     Routes with brain boost/penalty from the 5 learned skills
+#
+#   Phase 3 — Learn executed path (creates or updates path skill)
+#
+# Usage:
+#   orka run examples/brain_v2_graphscout_integration.yml "I can't login"
+#
+# Requirements: local LLM (Ollama / LM Studio), Redis (orka-start)
+# ═══════════════════════════════════════════════════════════════════════
+
+orchestrator:
+  id: brain-v2-graphscout-integration
+  strategy: sequential
+  agents:
+    # Phase 1: Seed brain with 3 anti-patterns + 2 paths
+    - brain_anti_expensive
+    - brain_anti_no_classify
+    - brain_anti_auto_escalate
+    - brain_path_standard
+    - brain_path_escalation
+
+    # Phase 2: Brain-assisted GraphScout routing
+    - smart_router
+    - result_summarizer
+
+    # Phase 3: Learn the executed path + record transfer feedback
+    - brain_learn_executed_path
+    - brain_feedback_routing
+
+agents:
+  # ─────────────────────────────────────────────────────────────────────
+  # Phase 1: Seed the Brain with 5 distinct skills
+  # ─────────────────────────────────────────────────────────────────────
+
+  # Anti-pattern 1: Using expensive model for simple tasks
+  - id: brain_anti_expensive
+    type: brain
+    operation: learn_anti
+    prompt: |
+      {
+        "what_failed": "Using expensive model for trivial classification",
+        "why": "GPT-4 class models cost 10x more than needed for keyword routing",
+        "domain": "ticket-classification",
+        "severity": "warning"
+      }
+
+  # Anti-pattern 2: Skipping classification entirely
+  - id: brain_anti_no_classify
+    type: brain
+    operation: learn_anti
+    prompt: |
+      {
+        "what_failed": "Skipping classification sending directly to responder",
+        "why": "Without classification the responder lacks context and gives generic answers",
+        "domain": "ticket-classification",
+        "severity": "critical"
+      }
+
+  # Anti-pattern 3: Auto-escalating without severity check
+  - id: brain_anti_auto_escalate
+    type: brain
+    operation: learn_anti
+    prompt: |
+      {
+        "what_failed": "Auto escalating without severity check",
+        "why": "Floods the escalation queue with low-severity tickets that waste human time",
+        "domain": "escalation",
+        "severity": "warning"
+      }
+
+  # Path 1: Standard classify → respond flow
+  - id: brain_path_standard
+    type: brain
+    operation: learn_path
+    prompt: |
+      {
+        "path_nodes": ["classifier", "responder"],
+        "score": 0.92,
+        "domain": "ticket-classification",
+        "task": "classify and respond to support tickets",
+        "quality": 0.88
+      }
+
+  # Path 2: Escalation flow — classify first, then escalate
+  - id: brain_path_escalation
+    type: brain
+    operation: learn_path
+    prompt: |
+      {
+        "path_nodes": ["classifier", "escalator"],
+        "score": 0.85,
+        "domain": "escalation",
+        "task": "classify then escalate high-severity tickets",
+        "quality": 0.80
+      }
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Phase 2: Available agents + Brain-assisted GraphScout routing
+  # ─────────────────────────────────────────────────────────────────────
+
+  - id: classifier
+    type: local_llm
+    prompt: |
+      Classify this customer support ticket into one of:
+      billing, technical, account, general.
+      Also assign a severity: low, medium, high, critical.
+
+      TICKET: {{ input }}
+
+      Return JSON:
+      - "response": the category
+      - "severity": low/medium/high/critical
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": why this category and severity
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.1
+
+  - id: responder
+    type: local_llm
+    prompt: |
+      Draft a response to this customer support ticket.
+
+      TICKET: {{ input }}
+      CATEGORY: {{ previous_outputs.classifier.response | default('general') }}
+
+      Return JSON:
+      - "response": your draft response to the customer
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": response strategy
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3
+
+  - id: escalator
+    type: local_llm
+    prompt: |
+      This ticket requires escalation. Prepare an escalation summary.
+
+      TICKET: {{ input }}
+      SEVERITY: {{ previous_outputs.classifier.severity | default('unknown') }}
+
+      Return JSON:
+      - "response": escalation summary with severity and recommended team
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": why this needs human escalation
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.2
+
+  - id: smart_router
+    type: graph-scout
+    prompt: |
+      Given this customer support ticket, find the best processing path.
+      {{ input }}
+    params:
+      k_beam: 3
+      max_depth: 2
+      brain_assisted: true
+      brain_boost_weight: 0.15
+      scoring_mode: "numeric"
+      cost_budget_tokens: 50000
+      latency_budget_ms: 30000
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      evaluation_model_name: "openai/gpt-oss-20b"
+      llm_evaluation_enabled: false
+      fallback_to_heuristics: true
+
+  - id: result_summarizer
+    type: local_llm
+    prompt: |
+      Summarize the routing decision and ticket handling.
+
+      GraphScout decision: {{ previous_outputs.smart_router.decision | default('unknown') }}
+      Target path: {{ previous_outputs.smart_router.target | default('unknown') }}
+      Confidence: {{ previous_outputs.smart_router.confidence | default(0) }}
+      Reasoning: {{ previous_outputs.smart_router.reasoning | default('') }}
+
+      Return JSON:
+      - "response": summary of the routing and handling decision
+      - "confidence": "0.8"
+      - "internal_reasoning": "Brain-assisted routing complete"
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.1
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Phase 3: Learn the executed path for future runs
+  # ─────────────────────────────────────────────────────────────────────
+
+  - id: brain_learn_executed_path
+    type: brain
+    operation: learn_path
+    prompt: |
+      {
+        "path_nodes": {{ previous_outputs.smart_router.target | default('["classifier", "responder"]') | tojson }},
+        "score": {{ previous_outputs.smart_router.confidence | default(0.7) }},
+        "domain": "ticket-classification",
+        "task": "classify and respond to support tickets",
+        "quality": {{ previous_outputs.smart_router.confidence | default(0.7) }}
+      }
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Phase 3b: Record transfer feedback for the recalled path skill
+  # ─────────────────────────────────────────────────────────────────────
+
+  - id: brain_feedback_routing
+    type: brain
+    operation: feedback
+    prompt: |
+      {
+        "skill_id": "{{ previous_outputs.brain_learn_executed_path.skill_id | default('') }}",
+        "skill_name": "{{ previous_outputs.brain_learn_executed_path.skill_name | default('') }}",
+        "domain": "ticket-classification",
+        "task": "classify and respond to support tickets",
+        "success": true,
+        "adaptations": {"routing_confidence": {{ previous_outputs.smart_router.confidence | default(0.7) }}}
+      }

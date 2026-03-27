@@ -1,0 +1,284 @@
+# ═══════════════════════════════════════════════════════════════════════
+# OrKa Brain v2 — Multi-Skill Recipe Learning & Cross-Domain Transfer
+# ═══════════════════════════════════════════════════════════════════════
+#
+# Creates 4 DISTINCT skills per run, then demonstrates cross-domain transfer.
+#
+#   Phase 1 — Pipeline A: Code Review (linter → analyzer)
+#     → Skill 1: recipe:code-review:sequential-code_linter+code_analyzer
+#
+#   Phase 2 — Pipeline B: Data Validation (validator → transformer)
+#     → Skill 2: recipe:data-pipeline:sequential-data_validator+data_transformer
+#
+#   Phase 3 — Anti-pattern: record a failure
+#     → Skill 3: anti:code-review:running-full-analysis-on-trivial
+#
+#   Phase 4 — Transfer: recall recipes from a NEW domain (compliance-audit)
+#     → Tests cross-domain retrieval of Skill 1 and Skill 2
+#
+#   Phase 5 — Failure: degrade Skill 1 success_rate
+#     → Skill 1 updated: success_rate drops below 1.0
+#
+# Usage:
+#   orka run examples/brain_v2_recipe_transfer.yml "Analyze this code change"
+#
+# Requirements: local LLM (Ollama / LM Studio), Redis (orka-start)
+# ═══════════════════════════════════════════════════════════════════════
+
+orchestrator:
+  id: brain-v2-recipe-transfer
+  strategy: sequential
+  agents:
+    # Phase 1: Pipeline A — code review
+    - code_linter
+    - code_analyzer
+    - brain_learn_recipe_code
+
+    # Phase 2: Pipeline B — data pipeline
+    - data_validator
+    - data_transformer
+    - brain_learn_recipe_data
+
+    # Phase 3: Anti-pattern
+    - brain_learn_anti_trivial
+
+    # Phase 4: Transfer — recall from compliance domain
+    - brain_recall_all
+    - compliance_applier
+    - brain_feedback_transfer
+
+    # Phase 5: Failure degradation
+    - brain_fail_code_recipe
+    - summary
+
+agents:
+  # ─────────────────────────────────────────────────────────────────────
+  # Phase 1: Code Review pipeline → Skill 1 (execution_recipe)
+  # ─────────────────────────────────────────────────────────────────────
+
+  - id: code_linter
+    type: local_llm
+    prompt: |
+      You are a code linter. Analyze for code quality issues.
+
+      INPUT: {{ input }}
+
+      Return JSON:
+      - "response": list of lint findings (style, naming, complexity)
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": your linting approach
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.2
+
+  - id: code_analyzer
+    type: local_llm
+    prompt: |
+      You are a code analyzer. Deepen these lint findings.
+
+      LINT RESULTS: {{ previous_outputs.code_linter.response | default('No lint results') }}
+      ORIGINAL INPUT: {{ input }}
+
+      Return JSON:
+      - "response": structured analysis with severity, fix suggestions
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": how you expanded the findings
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.2
+
+  - id: brain_learn_recipe_code
+    type: brain
+    operation: learn_recipe
+    prompt: |
+      {
+        "agents": [
+          {"id": "code_linter", "role": "surface-level scan"},
+          {"id": "code_analyzer", "role": "deep analysis"}
+        ],
+        "pattern": "sequential",
+        "domain": "code-review",
+        "task": "multi-stage code quality assessment",
+        "output_format": "structured quality report",
+        "quality": {{ previous_outputs.code_analyzer.confidence | default(0.75) }}
+      }
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Phase 2: Data Pipeline → Skill 2 (execution_recipe, different domain)
+  # ─────────────────────────────────────────────────────────────────────
+
+  - id: data_validator
+    type: local_llm
+    prompt: |
+      You are a data quality validator. Check this data-related request for
+      schema violations, type mismatches, and missing fields.
+
+      INPUT: {{ input }}
+
+      Return JSON:
+      - "response": list of validation findings
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": validation approach
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.2
+
+  - id: data_transformer
+    type: local_llm
+    prompt: |
+      You are a data transformer. Given validation findings, suggest
+      transformations, normalizations, and enrichments.
+
+      VALIDATION RESULTS: {{ previous_outputs.data_validator.response | default('No results') }}
+      ORIGINAL INPUT: {{ input }}
+
+      Return JSON:
+      - "response": transform/normalization plan
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": transformation strategy
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.2
+
+  - id: brain_learn_recipe_data
+    type: brain
+    operation: learn_recipe
+    prompt: |
+      {
+        "agents": [
+          {"id": "data_validator", "role": "schema and type checking"},
+          {"id": "data_transformer", "role": "normalization and enrichment"}
+        ],
+        "pattern": "sequential",
+        "domain": "data-pipeline",
+        "task": "multi-stage data quality and transformation",
+        "output_format": "transform plan",
+        "quality": {{ previous_outputs.data_transformer.confidence | default(0.70) }}
+      }
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Phase 3: Anti-pattern → Skill 3 (anti_pattern)
+  # ─────────────────────────────────────────────────────────────────────
+
+  - id: brain_learn_anti_trivial
+    type: brain
+    operation: learn_anti
+    prompt: |
+      {
+        "what_failed": "Running full analysis on trivial one-line changes",
+        "why": "Wastes compute on obvious fixes that need no deep analysis",
+        "domain": "code-review",
+        "severity": "warning"
+      }
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Phase 4: Transfer — recall ALL recipes from compliance-audit domain
+  # ─────────────────────────────────────────────────────────────────────
+
+  - id: brain_recall_all
+    type: brain
+    operation: recall
+    prompt: |
+      {
+        "domain": "compliance-audit",
+        "task": "multi-stage compliance assessment of a system",
+        "skill_types": ["execution_recipe"],
+        "min_score": 0.0
+      }
+
+  - id: compliance_applier
+    type: local_llm
+    prompt: |
+      You need to perform a compliance audit. The Brain recalled skills
+      from other domains that might transfer:
+
+      Recalled skill: {{ previous_outputs.brain_recall_all.skill_name | default('No skill') }}
+      Steps: {{ previous_outputs.brain_recall_all.skill_steps | default([]) }}
+      Transfer score: {{ previous_outputs.brain_recall_all.combined_score | default(0) }}
+      All candidates: {{ previous_outputs.brain_recall_all.all_candidates | default([]) }}
+
+      Adapt whichever pattern best fits compliance auditing.
+
+      Return JSON:
+      - "response": your adapted compliance audit plan using transferred recipes
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": which recipe you chose and how you adapted it
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Phase 4b: Feedback — record the transfer result
+  # ─────────────────────────────────────────────────────────────────────
+
+  - id: brain_feedback_transfer
+    type: brain
+    operation: feedback
+    prompt: |
+      {
+        "skill_id": "{{ previous_outputs.brain_recall_all.skill_id | default('') }}",
+        "skill_name": "{{ previous_outputs.brain_recall_all.skill_name | default('') }}",
+        "domain": "compliance-audit",
+        "task": "multi-stage compliance assessment",
+        "success": true,
+        "adaptations": {"adapted_from": "code-review", "adapted_to": "compliance-audit"}
+      }
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Phase 5: Failure → degrade Skill 1 success_rate
+  # ─────────────────────────────────────────────────────────────────────
+
+  - id: brain_fail_code_recipe
+    type: brain
+    operation: learn_recipe
+    prompt: |
+      {
+        "agents": [
+          {"id": "code_linter", "role": "surface-level scan"},
+          {"id": "code_analyzer", "role": "deep analysis"}
+        ],
+        "pattern": "sequential",
+        "domain": "code-review",
+        "task": "multi-stage code quality assessment",
+        "quality": 0.0,
+        "success": false
+      }
+
+  - id: summary
+    type: local_llm
+    prompt: |
+      Summary of all Brain v2 operations this run:
+
+      Skill 1 (code recipe): {{ previous_outputs.brain_learn_recipe_code.skill_name | default('?') }}
+        type: {{ previous_outputs.brain_learn_recipe_code.skill_type | default('?') }}
+
+      Skill 2 (data recipe): {{ previous_outputs.brain_learn_recipe_data.skill_name | default('?') }}
+        type: {{ previous_outputs.brain_learn_recipe_data.skill_type | default('?') }}
+
+      Skill 3 (anti-pattern): {{ previous_outputs.brain_learn_anti_trivial.skill_name | default('?') }}
+        type: {{ previous_outputs.brain_learn_anti_trivial.skill_type | default('?') }}
+
+      Transfer recall: {{ previous_outputs.brain_recall_all.skill_name | default('none recalled') }}
+        score: {{ previous_outputs.brain_recall_all.combined_score | default(0) }}
+
+      Degradation: {{ previous_outputs.brain_fail_code_recipe.response | default('?') }}
+
+      Return JSON:
+      - "response": concise summary of all 4 skills created and the transfer result
+      - "confidence": "0.9"
+      - "internal_reasoning": "Brain v2 multi-skill run complete"
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.1

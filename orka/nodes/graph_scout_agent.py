@@ -134,6 +134,10 @@ class GraphScoutConfig:
     required_safety_markers: Optional[Set[str]] = None  # Auto-initialized in post_init
     safe_default_score: float = 0.70  # Unknown safety default
 
+    # Brain integration
+    brain_assisted: bool = False
+    brain_boost_weight: float = 0.15
+
     def __post_init__(self) -> None:
         """Set default score weights and safety sets if not provided."""
         if self.score_weights is None:
@@ -144,6 +148,10 @@ class GraphScoutConfig:
                 "cost": 0.10,
                 "latency": 0.05,
             }
+
+        # When brain-assisted mode is active, add a brain weight component
+        if self.brain_assisted and "brain" not in self.score_weights:
+            self.score_weights["brain"] = self.brain_boost_weight
 
         # Initialize safety sets if not provided
         if self.risky_capabilities is None:
@@ -268,6 +276,8 @@ class GraphScoutAgent(BaseNode):
             ttl_days=params.get("ttl_days", 21),
             log_previews=params.get("log_previews", "head64"),
             log_components=params.get("log_components", True),
+            brain_assisted=params.get("brain_assisted", kwargs.get("brain_assisted", False)),
+            brain_boost_weight=params.get("brain_boost_weight", kwargs.get("brain_boost_weight", 0.15)),
         )
 
         # Initialize modular components
@@ -371,6 +381,12 @@ class GraphScoutAgent(BaseNode):
 
             if not safe_candidates:
                 return self._handle_safety_violation(context)
+
+            # Step 4b: Brain-assisted boosting/penalizing (optional)
+            if self.config.brain_assisted:
+                safe_candidates = await self._apply_brain_insights(
+                    safe_candidates, question, context
+                )
 
             # Step 5: Path Scoring - Evaluate all criteria
             # Extract required agents from question if specified (e.g., REQUIRED_AGENTS: [a, b, c])
@@ -478,6 +494,67 @@ class GraphScoutAgent(BaseNode):
             question = str(question)
 
         return str(question.strip())
+
+    async def _apply_brain_insights(
+        self,
+        candidates: List[Dict[str, Any]],
+        question: str,
+        context: Dict[str, Any],
+    ) -> List[Dict[str, Any]]:
+        """Apply Brain skill recall to boost or penalize candidate paths."""
+        try:
+            from ..brain.brain import Brain
+            from ..brain.skill import SkillType
+
+            memory = context.get("memory")
+            if memory is None:
+                return candidates
+
+            brain = Brain(memory=memory)
+            recalled = await brain.recall(
+                context={"task": question},
+                skill_types=[
+                    SkillType.EXECUTION_RECIPE.value,
+                    SkillType.GRAPH_PATH.value,
+                    SkillType.ANTI_PATTERN.value,
+                ],
+                min_score=0.0,
+            )
+            if not recalled:
+                return candidates
+
+            weight = self.config.brain_boost_weight
+            for candidate in candidates:
+                path_agents = {
+                    n.get("agent_id", n.get("id", ""))
+                    for n in candidate.get("path", candidate.get("nodes", []))
+                }
+                boost = 0.0
+                penalty = 0.0
+                for tc in recalled:
+                    skill = tc.skill
+                    st = skill.skill_type
+                    recipe = skill.recipe or {}
+                    raw_agents = recipe.get("agents", [])
+                    recipe_agent_ids = {
+                        a["id"] if isinstance(a, dict) else str(a)
+                        for a in raw_agents
+                    }
+                    if st == SkillType.ANTI_PATTERN.value:
+                        anti_signals = skill.anti_signals or []
+                        if any(sig in question.lower() for sig in anti_signals if sig):
+                            penalty += weight
+                    elif recipe_agent_ids and recipe_agent_ids & path_agents:
+                        overlap = len(recipe_agent_ids & path_agents) / max(
+                            len(recipe_agent_ids), 1
+                        )
+                        boost += weight * overlap
+                candidate["brain_boost"] = boost
+                candidate["brain_penalty"] = penalty
+            return candidates
+        except Exception as e:
+            logger.debug(f"Brain recall skipped: {e}")
+            return candidates
 
     def _handle_no_candidates(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Handle case where no candidate paths are found."""

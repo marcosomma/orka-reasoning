@@ -209,10 +209,16 @@ class BrainAgent(BaseAgent):
             "input": payload.get("input_description", str(payload.get("response", ""))[:100]),
         }
 
+        # V2 filters
+        skill_types = payload.get("skill_types")
+        domain_filter = payload.get("domain_filter")
+
         candidates = await brain.recall(
             context=context,
             top_k=int(payload.get("top_k", 3)),
             min_score=float(payload.get("min_score", 0.0)),
+            skill_types=skill_types if isinstance(skill_types, list) else None,
+            domain_filter=domain_filter if isinstance(domain_filter, str) else None,
         )
 
         if candidates:
@@ -300,6 +306,162 @@ class BrainAgent(BaseAgent):
         }
 
     # ------------------------------------------------------------------ #
+    # learn_recipe
+    # ------------------------------------------------------------------ #
+
+    async def _handle_learn_recipe(self, ctx: Context) -> Dict[str, Any]:
+        brain = self._ensure_brain(ctx)
+        payload = self._extract_llm_payload(ctx)
+
+        agents_raw = payload.get("agents", [])
+        if isinstance(agents_raw, str):
+            try:
+                agents_raw = json.loads(agents_raw)
+            except (json.JSONDecodeError, TypeError):
+                agents_raw = [{"id": agents_raw}]
+
+        agents = [
+            a if isinstance(a, dict) else {"id": str(a)} for a in agents_raw
+        ]
+
+        pattern = str(payload.get("pattern", payload.get("strategy", "sequential")))
+
+        context = {
+            "domain": payload.get("domain", "general"),
+            "task": payload.get("task", ""),
+            "output_format": payload.get("output_format", ""),
+        }
+
+        success = payload.get("success", True)
+        if isinstance(success, str):
+            success = success.lower() not in ("false", "0", "no")
+
+        outcome = {
+            "success": bool(success),
+            "quality": float(payload.get("quality", payload.get("confidence", 0.7))),
+        }
+        if "duration_ms" in payload:
+            outcome["duration_ms"] = int(payload["duration_ms"])
+
+        skill = await brain.learn_recipe(
+            agents=agents,
+            pattern=pattern,
+            context=context,
+            outcome=outcome,
+            skill_name=payload.get("skill_name"),
+        )
+
+        if skill:
+            return {
+                "response": f"Learned recipe: {skill.name}",
+                "confidence": str(skill.confidence),
+                "internal_reasoning": f"Stored execution recipe with {len(skill.recipe.get('agents', []))} agents",
+                "skill_id": skill.id,
+                "skill_name": skill.name,
+                "skill_type": skill.skill_type,
+            }
+        return {
+            "response": "No recipe could be learned (missing agents or failed outcome).",
+            "confidence": "0.0",
+        }
+
+    # ------------------------------------------------------------------ #
+    # learn_anti_pattern
+    # ------------------------------------------------------------------ #
+
+    async def _handle_learn_anti(self, ctx: Context) -> Dict[str, Any]:
+        brain = self._ensure_brain(ctx)
+        payload = self._extract_llm_payload(ctx)
+
+        what_failed = str(payload.get("what_failed", payload.get("response", "")))
+        why = str(payload.get("why", payload.get("reason", "unknown")))
+        severity = str(payload.get("severity", "warning"))
+
+        context = {
+            "domain": payload.get("domain", "general"),
+            "task": payload.get("task", what_failed[:200]),
+        }
+
+        skill = await brain.learn_anti_pattern(
+            what_failed=what_failed,
+            why=why,
+            context=context,
+            severity=severity,
+        )
+        return {
+            "response": f"Recorded anti-pattern: {skill.name}",
+            "confidence": str(skill.confidence),
+            "internal_reasoning": f"Anti-pattern stored: {why}",
+            "skill_id": skill.id,
+            "skill_name": skill.name,
+            "skill_type": skill.skill_type,
+        }
+
+    # ------------------------------------------------------------------ #
+    # learn_path
+    # ------------------------------------------------------------------ #
+
+    async def _handle_learn_path(self, ctx: Context) -> Dict[str, Any]:
+        brain = self._ensure_brain(ctx)
+        payload = self._extract_llm_payload(ctx)
+
+        path_nodes_raw = payload.get("path_nodes", payload.get("path", []))
+        if isinstance(path_nodes_raw, str):
+            path_nodes = [n.strip() for n in path_nodes_raw.split("→") if n.strip()]
+        else:
+            # Normalise: the LLM may return dicts (e.g. {"id": "agent1"}) instead of plain strings
+            path_nodes = []
+            for item in path_nodes_raw:
+                if isinstance(item, str):
+                    path_nodes.append(item)
+                elif isinstance(item, dict):
+                    path_nodes.append(
+                        str(item.get("id") or item.get("name") or item.get("node_id") or item)
+                    )
+                else:
+                    path_nodes.append(str(item))
+
+        score = float(payload.get("score", payload.get("confidence", 0.5)))
+
+        context = {
+            "domain": payload.get("domain", "general"),
+            "task": payload.get("task", ""),
+        }
+
+        success = payload.get("success", True)
+        if isinstance(success, str):
+            success = success.lower() not in ("false", "0", "no")
+
+        outcome = {
+            "success": bool(success),
+            "quality": float(payload.get("quality", score)),
+        }
+
+        budget_used = payload.get("budget_used")
+
+        skill = await brain.learn_path(
+            path_nodes=path_nodes,
+            score=score,
+            context=context,
+            outcome=outcome,
+            budget_used=budget_used if isinstance(budget_used, dict) else None,
+        )
+
+        if skill:
+            return {
+                "response": f"Learned path: {skill.name}",
+                "confidence": str(skill.confidence),
+                "internal_reasoning": f"GraphScout path stored with {len(path_nodes)} nodes",
+                "skill_id": skill.id,
+                "skill_name": skill.name,
+                "skill_type": skill.skill_type,
+            }
+        return {
+            "response": "No path could be learned (empty path or failed outcome).",
+            "confidence": "0.0",
+        }
+
+    # ------------------------------------------------------------------ #
     # main dispatch
     # ------------------------------------------------------------------ #
 
@@ -309,4 +471,10 @@ class BrainAgent(BaseAgent):
             return await self._handle_recall(ctx)
         if operation == "feedback":
             return await self._handle_feedback(ctx)
+        if operation == "learn_recipe":
+            return await self._handle_learn_recipe(ctx)
+        if operation == "learn_anti":
+            return await self._handle_learn_anti(ctx)
+        if operation == "learn_path":
+            return await self._handle_learn_path(ctx)
         return await self._handle_learn(ctx)

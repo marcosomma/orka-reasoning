@@ -22,12 +22,51 @@ can transfer across domains.
 from __future__ import annotations
 
 import math
+import re
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+from enum import Enum
 from typing import Any
 
 DEFAULT_SKILL_TTL_HOURS: float = 168.0
+
+
+class SkillType(str, Enum):
+    """Classification of learned skills by what they capture.
+
+    The Brain stores knowledge the LLM cannot derive from its weights.
+    Each type captures a different kind of deployment-specific knowledge.
+    """
+
+    PROCEDURAL = "procedural"  # Legacy: abstract cognitive patterns
+    EXECUTION_RECIPE = "execution_recipe"  # Agent composition that worked
+    PROMPT_TEMPLATE = "prompt_template"  # Prompt structure that worked
+    PARAMETER_CONFIG = "parameter_config"  # Model/temp/token settings
+    GRAPH_PATH = "graph_path"  # GraphScout-discovered path
+    ANTI_PATTERN = "anti_pattern"  # What NOT to do
+    DOMAIN_HEURISTIC = "domain_heuristic"  # Domain-specific rules
+
+
+def generate_search_tokens(name: str) -> list[str]:
+    """Extract searchable tokens from a structured skill name.
+
+    Splits on ``:``, ``-``, ``+``, ``→``, ``/``, ``_``, and whitespace
+    to produce individual lowercase tokens suitable for Redis TAG indexing.
+
+    Example::
+
+        >>> generate_search_tokens("recipe:code-review:parallel-linter+scanner→merge")
+        ['code', 'code-review', 'linter', 'merge', 'parallel', 'recipe', 'review', 'scanner']
+    """
+    raw = re.split(r"[:+→/\-_\s]+", name)
+    tokens = [t.lower().strip() for t in raw if t.strip()]
+    if ":" in name:
+        parts = name.split(":")
+        tokens.append(parts[0].lower().strip())
+        if len(parts) > 1:
+            tokens.append(parts[1].lower().strip())
+    return sorted(set(tokens))
 
 
 @dataclass
@@ -182,6 +221,7 @@ class Skill:
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     name: str = ""
     description: str = ""
+    skill_type: str = SkillType.PROCEDURAL.value
     procedure: list[SkillStep] = field(default_factory=list)
     preconditions: list[SkillCondition] = field(default_factory=list)
     postconditions: list[SkillCondition] = field(default_factory=list)
@@ -194,6 +234,13 @@ class Skill:
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     expires_at: str = ""
+    # --- Brain v2 fields ---
+    task_description: str = ""
+    domain_keywords: list[str] = field(default_factory=list)
+    output_description: str = ""
+    search_tokens: list[str] = field(default_factory=list)
+    recipe: dict[str, Any] = field(default_factory=dict)
+    anti_signals: list[str] = field(default_factory=list)
 
     @property
     def ttl_hours(self) -> float:
@@ -256,6 +303,7 @@ class Skill:
             "id": self.id,
             "name": self.name,
             "description": self.description,
+            "skill_type": self.skill_type,
             "procedure": [s.to_dict() for s in self.procedure],
             "preconditions": [c.to_dict() for c in self.preconditions],
             "postconditions": [c.to_dict() for c in self.postconditions],
@@ -268,6 +316,12 @@ class Skill:
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
             "expires_at": self.expires_at,
+            "task_description": self.task_description,
+            "domain_keywords": self.domain_keywords,
+            "output_description": self.output_description,
+            "search_tokens": self.search_tokens,
+            "recipe": self.recipe,
+            "anti_signals": self.anti_signals,
         }
 
     @classmethod
@@ -279,6 +333,7 @@ class Skill:
             id=data.get("id", str(uuid.uuid4())),
             name=data.get("name", ""),
             description=data.get("description", ""),
+            skill_type=data.get("skill_type", SkillType.PROCEDURAL.value),
             procedure=[SkillStep.from_dict(s) for s in data.get("procedure", [])],
             preconditions=[SkillCondition.from_dict(c) for c in data.get("preconditions", [])],
             postconditions=[SkillCondition.from_dict(c) for c in data.get("postconditions", [])],
@@ -293,16 +348,48 @@ class Skill:
             created_at=datetime.fromisoformat(created) if isinstance(created, str) else datetime.now(UTC),
             updated_at=datetime.fromisoformat(updated) if isinstance(updated, str) else datetime.now(UTC),
             expires_at=data.get("expires_at", ""),
+            task_description=data.get("task_description", ""),
+            domain_keywords=data.get("domain_keywords", []),
+            output_description=data.get("output_description", ""),
+            search_tokens=data.get("search_tokens", []),
+            recipe=data.get("recipe", {}),
+            anti_signals=data.get("anti_signals", []),
         )
 
     def to_embedding_text(self) -> str:
         """Generate text representation for vector embedding.
 
-        Combines name, description, tags, and procedure actions into a single
-        string optimized for semantic similarity search.
+        For v2 skills with ``task_description`` or ``domain_keywords``, produces
+        a high-discrimination embedding using concrete task/domain/agent terms.
+        Falls back to the legacy format (name + tags + procedure actions) for
+        backward-compatible procedural skills.
         """
-        parts = [self.name, self.description]
-        parts.extend(self.tags)
-        parts.extend(step.action for step in self.procedure)
-        parts.extend(c.predicate for c in self.preconditions)
-        return " | ".join(part for part in parts if part)
+        # V2 path: use concrete fields when available
+        if self.task_description or self.domain_keywords:
+            parts: list[str] = []
+            if self.task_description:
+                parts.append(self.task_description)
+            if self.skill_type == SkillType.EXECUTION_RECIPE.value and self.recipe:
+                agents = self.recipe.get("agents", [])
+                agent_names = [
+                    a["id"] if isinstance(a, dict) else str(a) for a in agents
+                ]
+                if agent_names:
+                    parts.append(f"agents: {' → '.join(agent_names)}")
+                pattern = self.recipe.get("pattern", "")
+                if pattern:
+                    parts.append(f"pattern: {pattern}")
+            if self.domain_keywords:
+                parts.extend(self.domain_keywords)
+            if self.output_description:
+                parts.append(f"produces: {self.output_description}")
+            if self.anti_signals:
+                parts.append(f"not: {', '.join(self.anti_signals)}")
+            return " ".join(parts)
+
+        # Legacy path: generic descriptors
+        parts_legacy = [self.name, self.description]
+        parts_legacy.extend(self.tags)
+        parts_legacy.extend(step.action for step in self.procedure)
+        parts_legacy.extend(c.predicate for c in self.preconditions)
+        return " | ".join(part for part in parts_legacy if part)

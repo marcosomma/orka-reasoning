@@ -74,7 +74,7 @@ Usage
     )
 """
 
-from .skill import Skill, SkillStep, SkillCondition, SkillTransferRecord
+from .skill import Skill, SkillStep, SkillCondition, SkillTransferRecord, SkillType, generate_search_tokens
 from .skill_graph import SkillGraph
 from .context_analyzer import ContextAnalyzer, ContextFeatures
 from .transfer_engine import SkillTransferEngine, TransferCandidate
@@ -90,5 +90,7 @@ __all__ = [
     "SkillStep",
     "SkillTransferEngine",
     "SkillTransferRecord",
+    "SkillType",
     "TransferCandidate",
+    "generate_search_tokens",
 ]
