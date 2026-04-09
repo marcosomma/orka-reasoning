@@ -1,0 +1,103 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Benchmark v2 — Track B: Anti-Pattern Avoidance (Brainless)
+# ═══════════════════════════════════════════════════════════════════════
+#
+# Identical LLM prompts to the brain version, but NO brain operations.
+# No anti-pattern seeding/recall. LLM must avoid pitfalls on its own.
+# ═══════════════════════════════════════════════════════════════════════
+
+orchestrator:
+  id: bench-v2-brainless-track-b
+  strategy: sequential
+  agents:
+    - task_reasoner
+    - task_applier
+    - task_result
+
+agents:
+  # ── Step 1: Reason about the task ─────────────────────────────────
+  - id: task_reasoner
+    type: local_llm
+    prompt: |
+      You are an expert analyst. Analyze the following task step by step.
+
+      DOMAIN: {{ input.domain | default('general') }}
+      TASK: {{ input.task | default(input.title | default(input)) }}
+
+      Think carefully about how to solve this task. For each step:
+      1. State what you need to do
+      2. Explain WHY this step is necessary
+      3. Describe the expected output
+
+      Return JSON with:
+      - "domain": the domain
+      - "task": brief task description
+      - "response": your complete step-by-step analysis
+      - "steps": array of {"action": "...", "result": "expected outcome"}
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": brief approach explanation
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3
+
+  # ── Step 2: Apply (no anti-pattern warnings) ──────────────────────
+  - id: task_applier
+    type: local_llm
+    prompt: |
+      You are solving a task. You have your own analysis.
+      You have NO warnings about known failure modes or anti-patterns.
+
+      DOMAIN: {{ previous_outputs.task_reasoner.domain | default('general') }}
+      TASK: {{ previous_outputs.task_reasoner.task | default(input) }}
+
+      YOUR ANALYSIS:
+      {{ previous_outputs.task_reasoner.response | default('No analysis available') }}
+
+      Solve the task using only your own analysis.
+
+      Return JSON with:
+      - "response": your complete solution
+      - "domain": the domain
+      - "task": brief description
+      - "steps": array of {"action": "...", "expected_outcome": "..."}
+      - "anti_patterns_avoided": []
+      - "used_recalled_skill": false
+      - "recalled_skill_name": "none"
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": reflection on approach
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3
+
+  # ── Step 3: Final structured output ───────────────────────────────
+  - id: task_result
+    type: local_llm
+    prompt: |
+      Produce the FINAL structured output for this task.
+
+      DOMAIN: {{ previous_outputs.task_applier.domain | default(input.domain | default('general')) }}
+      TASK: {{ previous_outputs.task_applier.task | default(input.task | default(input)) }}
+
+      SOLUTION:
+      {{ previous_outputs.task_applier.response | default('No solution available') }}
+
+      Return JSON with:
+      - "response": comprehensive structured solution
+      - "domain": the domain
+      - "task": brief description
+      - "solution_steps": array of concrete steps
+      - "anti_patterns_avoided": []
+      - "quality_self_assessment": 0.0-1.0 with justification
+      - "brain_assisted": false
+      - "recalled_skill": "none"
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": final reflection
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3

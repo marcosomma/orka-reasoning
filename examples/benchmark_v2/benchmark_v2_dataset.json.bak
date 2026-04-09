@@ -1,0 +1,2789 @@
+{
+  "name": "OrKa Brain v2 Benchmark Dataset",
+  "version": "2.0.0",
+  "description": "Comprehensive benchmark evaluating Brain v2 skills + GraphScout routing vs stateless baseline. Five tracks: cross-domain transfer, anti-pattern avoidance, GraphScout routing, multi-skill composition, and longitudinal learning curves. 250 tasks x 2 conditions = 500+ execution runs.",
+  "tracks": {
+    "A": {
+      "name": "Cross-Domain Skill Transfer",
+      "description": "Learn procedural patterns in seed domains, then test transfer to 40 novel domains. Measures whether brain-recalled skills improve output quality in unseen contexts.",
+      "task_count": 50,
+      "phases": {"learn": 10, "recall": 40}
+    },
+    "B": {
+      "name": "Anti-Pattern Avoidance",
+      "description": "Seed 10 anti-patterns, then present 40 tasks that could trigger them. Measures whether the brain prevents known bad patterns.",
+      "task_count": 50,
+      "phases": {"seed_anti": 10, "test_avoid": 40}
+    },
+    "C": {
+      "name": "GraphScout Brain-Assisted Routing",
+      "description": "Seed path skills, then use GraphScout with brain_assisted=true for routing decisions. Measures routing quality and confidence with vs without brain path knowledge.",
+      "task_count": 50,
+      "phases": {"seed_path": 10, "route": 40}
+    },
+    "D": {
+      "name": "Multi-Skill Composition",
+      "description": "Tasks requiring recall and composition of multiple skill types (recipe + anti-pattern + path). Measures combined skill application.",
+      "task_count": 50,
+      "phases": {"seed": 10, "compose": 40}
+    },
+    "E": {
+      "name": "Longitudinal Learning Curve",
+      "description": "50 sequential software engineering tasks in the same domain. Measures whether brain condition improves over time via skill accumulation and feedback loops.",
+      "task_count": 50,
+      "phases": {"sequential": 50}
+    }
+  },
+  "tasks": [
+    {
+      "task_id": "track_a_01",
+      "track": "A",
+      "phase": "learn",
+      "domain": "data_engineering",
+      "title": "Learn: Extract-Transform-Load Pipeline",
+      "task": "Design and implement an ETL pipeline that extracts data from multiple CSV sources, transforms it by cleaning nulls, normalizing date formats, and deduplicating records, then loads the results into a structured data warehouse schema.",
+      "execution_trace": {
+        "steps": [
+          {"action": "identify and catalog all data sources with schema inspection", "result": "success"},
+          {"action": "extract raw data with error handling for malformed rows", "result": "success"},
+          {"action": "apply type coercion and null-handling transformations", "result": "success"},
+          {"action": "normalize date formats to ISO 8601 across all sources", "result": "success"},
+          {"action": "deduplicate records using composite key matching", "result": "success"},
+          {"action": "validate transformed data against target schema constraints", "result": "success"},
+          {"action": "load validated records into warehouse with transaction safety", "result": "success"}
+        ],
+        "agents": ["source_scanner", "extractor", "type_coercer", "date_normalizer", "deduplicator", "schema_validator", "loader"],
+        "strategy": "sequential"
+      },
+      "outcome": {"success": true, "quality": 0.92}
+    },
+    {
+      "task_id": "track_a_02",
+      "track": "A",
+      "phase": "learn",
+      "domain": "security_audit",
+      "title": "Learn: Scan-Classify-Remediate Vulnerability Flow",
+      "task": "Scan an application for security vulnerabilities, classify each finding by CVSS severity and exploitability, then generate prioritized remediation plans with code-level fix suggestions.",
+      "execution_trace": {
+        "steps": [
+          {"action": "run static analysis scanners against the codebase", "result": "success"},
+          {"action": "run dynamic analysis and penetration test probes", "result": "success"},
+          {"action": "classify each finding by CVSS score and exploitability", "result": "success"},
+          {"action": "prioritize findings combining severity and business impact", "result": "success"},
+          {"action": "generate remediation plan with code-level fixes for each finding", "result": "success"},
+          {"action": "validate remediation suggestions against security best practices", "result": "success"}
+        ],
+        "agents": ["static_scanner", "dynamic_scanner", "cvss_classifier", "prioritizer", "fix_generator", "fix_validator"],
+        "strategy": "sequential"
+      },
+      "outcome": {"success": true, "quality": 0.90}
+    },
+    {
+      "task_id": "track_a_03",
+      "track": "A",
+      "phase": "learn",
+      "domain": "content_strategy",
+      "title": "Learn: Research-Draft-Refine Content Creation",
+      "task": "Research a topic thoroughly, draft long-form content with proper structure and evidence, then iteratively refine it based on readability metrics, SEO optimization, and audience engagement criteria.",
+      "execution_trace": {
+        "steps": [
+          {"action": "research topic gathering authoritative sources and key data points", "result": "success"},
+          {"action": "create content outline with logical section progression", "result": "success"},
+          {"action": "draft each section integrating evidence and examples", "result": "success"},
+          {"action": "evaluate draft against readability and SEO metrics", "result": "success"},
+          {"action": "refine weak sections while preserving content strengths", "result": "success"},
+          {"action": "final review for consistency and audience alignment", "result": "success"}
+        ],
+        "agents": ["researcher", "outliner", "drafter", "evaluator", "refiner", "reviewer"],
+        "strategy": "sequential"
+      },
+      "outcome": {"success": true, "quality": 0.91}
+    },
+    {
+      "task_id": "track_a_04",
+      "track": "A",
+      "phase": "learn",
+      "domain": "infrastructure_ops",
+      "title": "Learn: Monitor-Diagnose-Recover Incident Response",
+      "task": "Monitor system health metrics, diagnose the root cause of performance degradation by correlating logs across services, then execute a recovery plan with rollback safety.",
+      "execution_trace": {
+        "steps": [
+          {"action": "collect and aggregate health metrics from all monitored services", "result": "success"},
+          {"action": "detect anomalies using baseline deviation analysis", "result": "success"},
+          {"action": "correlate anomalies with log events across affected services", "result": "success"},
+          {"action": "isolate root cause through dependency graph traversal", "result": "success"},
+          {"action": "design recovery plan with rollback checkpoints", "result": "success"},
+          {"action": "execute recovery with continuous health monitoring", "result": "success"}
+        ],
+        "agents": ["metric_collector", "anomaly_detector", "log_correlator", "rca_analyzer", "recovery_planner", "executor"],
+        "strategy": "sequential"
+      },
+      "outcome": {"success": true, "quality": 0.93}
+    },
+    {
+      "task_id": "track_a_05",
+      "track": "A",
+      "phase": "learn",
+      "domain": "quality_assurance",
+      "title": "Learn: Analyze-Generate-Validate Test Design",
+      "task": "Analyze a software specification for testable requirements, generate comprehensive test cases with boundary conditions, then validate test coverage completeness and independence.",
+      "execution_trace": {
+        "steps": [
+          {"action": "parse specification extracting functional and non-functional requirements", "result": "success"},
+          {"action": "identify boundary conditions and edge cases for each requirement", "result": "success"},
+          {"action": "generate test cases covering normal, boundary, and error paths", "result": "success"},
+          {"action": "assess coverage matrix against requirement traceability", "result": "success"},
+          {"action": "validate test independence and eliminate redundant cases", "result": "success"},
+          {"action": "prioritize test cases by risk and business impact", "result": "success"}
+        ],
+        "agents": ["spec_parser", "boundary_finder", "test_generator", "coverage_assessor", "independence_validator", "prioritizer"],
+        "strategy": "sequential"
+      },
+      "outcome": {"success": true, "quality": 0.89}
+    },
+    {
+      "task_id": "track_a_06",
+      "track": "A",
+      "phase": "learn",
+      "domain": "project_management",
+      "title": "Learn: Scope-Estimate-Plan Project Planning",
+      "task": "Define project scope from stakeholder requirements, estimate effort using historical data and complexity analysis, then create a realistic schedule with risk buffers and dependency chains.",
+      "execution_trace": {
+        "steps": [
+          {"action": "gather and categorize stakeholder requirements by priority", "result": "success"},
+          {"action": "define scope boundaries with explicit in-scope and out-of-scope items", "result": "success"},
+          {"action": "decompose scope into work breakdown structure tasks", "result": "success"},
+          {"action": "estimate effort using complexity-weighted historical comparisons", "result": "success"},
+          {"action": "identify task dependencies and critical path", "result": "success"},
+          {"action": "build schedule with risk buffers on critical path items", "result": "success"}
+        ],
+        "agents": ["requirements_gatherer", "scope_definer", "wbs_builder", "effort_estimator", "dependency_mapper", "scheduler"],
+        "strategy": "sequential"
+      },
+      "outcome": {"success": true, "quality": 0.87}
+    },
+    {
+      "task_id": "track_a_07",
+      "track": "A",
+      "phase": "learn",
+      "domain": "machine_learning",
+      "title": "Learn: Explore-Model-Evaluate ML Pipeline",
+      "task": "Explore a dataset through statistical profiling and visualization, select and train appropriate models with hyperparameter tuning, then evaluate performance using cross-validation and interpretability analysis.",
+      "execution_trace": {
+        "steps": [
+          {"action": "profile dataset statistics: distributions, correlations, missing values", "result": "success"},
+          {"action": "engineer features based on domain knowledge and statistical analysis", "result": "success"},
+          {"action": "select candidate model architectures based on data characteristics", "result": "success"},
+          {"action": "train models with hyperparameter optimization using cross-validation", "result": "success"},
+          {"action": "evaluate model performance on held-out test set with multiple metrics", "result": "success"},
+          {"action": "generate interpretability analysis: feature importance, SHAP values", "result": "success"}
+        ],
+        "agents": ["data_profiler", "feature_engineer", "model_selector", "trainer", "evaluator", "interpreter"],
+        "strategy": "sequential"
+      },
+      "outcome": {"success": true, "quality": 0.94}
+    },
+    {
+      "task_id": "track_a_08",
+      "track": "A",
+      "phase": "learn",
+      "domain": "compliance",
+      "title": "Learn: Audit-Assess-Report Compliance Review",
+      "task": "Audit organizational processes against regulatory requirements, assess compliance gaps with risk scoring, then produce a structured report with remediation timelines and evidence mapping.",
+      "execution_trace": {
+        "steps": [
+          {"action": "catalog applicable regulatory requirements and controls", "result": "success"},
+          {"action": "audit current processes against each control requirement", "result": "success"},
+          {"action": "identify compliance gaps and score risk exposure", "result": "success"},
+          {"action": "design remediation actions for each gap with priority ranking", "result": "success"},
+          {"action": "map evidence to controls for audit trail completeness", "result": "success"},
+          {"action": "produce structured compliance report with executive summary", "result": "success"}
+        ],
+        "agents": ["control_cataloger", "process_auditor", "gap_analyzer", "remediation_planner", "evidence_mapper", "reporter"],
+        "strategy": "sequential"
+      },
+      "outcome": {"success": true, "quality": 0.91}
+    },
+    {
+      "task_id": "track_a_09",
+      "track": "A",
+      "phase": "learn",
+      "domain": "ux_design",
+      "title": "Learn: Discover-Prototype-Test User-Centered Design",
+      "task": "Discover user needs through research synthesis, prototype interface solutions matching those needs, then test prototypes with usability heuristics and predict user behavior patterns.",
+      "execution_trace": {
+        "steps": [
+          {"action": "synthesize user research data into personas and journey maps", "result": "success"},
+          {"action": "identify key pain points and opportunity areas from research", "result": "success"},
+          {"action": "generate design concepts addressing identified needs", "result": "success"},
+          {"action": "prototype highest-potential concepts with interaction flows", "result": "success"},
+          {"action": "evaluate prototypes against Nielsen usability heuristics", "result": "success"},
+          {"action": "predict user behavior patterns and iterate on weak areas", "result": "success"}
+        ],
+        "agents": ["research_synthesizer", "pain_point_finder", "concept_generator", "prototyper", "heuristic_evaluator", "behavior_predictor"],
+        "strategy": "sequential"
+      },
+      "outcome": {"success": true, "quality": 0.90}
+    },
+    {
+      "task_id": "track_a_10",
+      "track": "A",
+      "phase": "learn",
+      "domain": "technical_writing",
+      "title": "Learn: Gather-Structure-Polish Documentation",
+      "task": "Gather technical information from code and interviews, structure it into a logical documentation hierarchy, then polish with examples, cross-references, and consistency checks.",
+      "execution_trace": {
+        "steps": [
+          {"action": "extract technical details from codebase and API signatures", "result": "success"},
+          {"action": "interview domain experts for context and use cases", "result": "success"},
+          {"action": "organize information into a logical hierarchy with clear sections", "result": "success"},
+          {"action": "write each section with code examples and diagrams", "result": "success"},
+          {"action": "add cross-references and navigation aids between sections", "result": "success"},
+          {"action": "review for consistency, accuracy, and completeness", "result": "success"}
+        ],
+        "agents": ["code_extractor", "expert_interviewer", "organizer", "writer", "cross_referencer", "reviewer"],
+        "strategy": "sequential"
+      },
+      "outcome": {"success": true, "quality": 0.88}
+    },
+    {
+      "task_id": "track_a_11",
+      "track": "A",
+      "phase": "recall",
+      "domain": "supply_chain",
+      "title": "Transfer: Supply Chain ETL Optimization",
+      "task": "Extract inventory data from 12 regional warehouse systems, transform it by reconciling unit formats, currency conversions, and removing stale entries, then load a unified inventory dashboard dataset.",
+      "expected_skill_pattern": "Extract-Transform-Load"
+    },
+    {
+      "task_id": "track_a_12",
+      "track": "A",
+      "phase": "recall",
+      "domain": "healthcare_data",
+      "title": "Transfer: Patient Records Migration",
+      "task": "Extract patient records from a legacy HL7 v2 system, transform them into FHIR R4 resources with proper coding and terminology mapping, then load into a modern EHR platform with referential integrity checks.",
+      "expected_skill_pattern": "Extract-Transform-Load"
+    },
+    {
+      "task_id": "track_a_13",
+      "track": "A",
+      "phase": "recall",
+      "domain": "network_security",
+      "title": "Transfer: Network Vulnerability Assessment",
+      "task": "Scan a corporate network infrastructure for misconfigurations and open ports, classify findings by threat level and attack surface exposure, then generate a hardening plan with firewall rule changes.",
+      "expected_skill_pattern": "Scan-Classify-Remediate"
+    },
+    {
+      "task_id": "track_a_14",
+      "track": "A",
+      "phase": "recall",
+      "domain": "cloud_security",
+      "title": "Transfer: Cloud IAM Permission Audit",
+      "task": "Scan AWS IAM policies for over-permissive roles and unused credentials, classify risk severity by blast radius and data sensitivity, then recommend least-privilege policy replacements.",
+      "expected_skill_pattern": "Scan-Classify-Remediate"
+    },
+    {
+      "task_id": "track_a_15",
+      "track": "A",
+      "phase": "recall",
+      "domain": "marketing",
+      "title": "Transfer: Marketing Campaign Content",
+      "task": "Research target audience demographics and trending topics, draft a multi-channel campaign with email sequences, social posts, and landing page copy, then refine based on engagement score predictions.",
+      "expected_skill_pattern": "Research-Draft-Refine"
+    },
+    {
+      "task_id": "track_a_16",
+      "track": "A",
+      "phase": "recall",
+      "domain": "legal_writing",
+      "title": "Transfer: Contract Clause Drafting",
+      "task": "Research applicable jurisdiction and regulatory constraints, draft contract clauses covering liability, indemnification, and IP assignment, then refine for enforceability and mutual fairness.",
+      "expected_skill_pattern": "Research-Draft-Refine"
+    },
+    {
+      "task_id": "track_a_17",
+      "track": "A",
+      "phase": "recall",
+      "domain": "database_ops",
+      "title": "Transfer: Database Performance Incident",
+      "task": "Monitor database query latencies and connection pool metrics, diagnose the root cause of a 10x latency spike by correlating slow query logs with lock contention events, then execute a recovery plan involving index rebuilds and query rewrites.",
+      "expected_skill_pattern": "Monitor-Diagnose-Recover"
+    },
+    {
+      "task_id": "track_a_18",
+      "track": "A",
+      "phase": "recall",
+      "domain": "microservices",
+      "title": "Transfer: Microservice Cascade Failure",
+      "task": "Monitor service mesh telemetry across 15 microservices, diagnose a cascading timeout failure by tracing distributed request flows, then implement circuit breaker recovery with gradual traffic ramp-up.",
+      "expected_skill_pattern": "Monitor-Diagnose-Recover"
+    },
+    {
+      "task_id": "track_a_19",
+      "track": "A",
+      "phase": "recall",
+      "domain": "mobile_development",
+      "title": "Transfer: Mobile App Test Suite Design",
+      "task": "Analyze a mobile app's feature specification for testable user flows, generate test cases covering touch gestures, screen transitions, offline mode, and push notification handling, then validate test coverage across device form factors.",
+      "expected_skill_pattern": "Analyze-Generate-Validate"
+    },
+    {
+      "task_id": "track_a_20",
+      "track": "A",
+      "phase": "recall",
+      "domain": "embedded_systems",
+      "title": "Transfer: Firmware Test Harness",
+      "task": "Analyze firmware specifications for safety-critical requirements in an automotive ECU, generate hardware-in-the-loop test cases covering fault injection and timing constraints, then validate test independence and functional safety coverage.",
+      "expected_skill_pattern": "Analyze-Generate-Validate"
+    },
+    {
+      "task_id": "track_a_21",
+      "track": "A",
+      "phase": "recall",
+      "domain": "construction",
+      "title": "Transfer: Construction Project Schedule",
+      "task": "Define scope for a commercial building renovation from stakeholder and architect requirements, estimate effort for electrical, plumbing, and structural work packages, then create a Gantt schedule with weather risk buffers and permit dependency chains.",
+      "expected_skill_pattern": "Scope-Estimate-Plan"
+    },
+    {
+      "task_id": "track_a_22",
+      "track": "A",
+      "phase": "recall",
+      "domain": "event_planning",
+      "title": "Transfer: Tech Conference Planning",
+      "task": "Define scope for a 2000-attendee tech conference including tracks, workshops, and networking events, estimate costs and staffing needs, then plan a timeline with vendor booking deadlines and speaker confirmation milestones.",
+      "expected_skill_pattern": "Scope-Estimate-Plan"
+    },
+    {
+      "task_id": "track_a_23",
+      "track": "A",
+      "phase": "recall",
+      "domain": "genomics",
+      "title": "Transfer: Genomic Variant Analysis Pipeline",
+      "task": "Explore a genomic sequencing dataset profiling read quality and coverage statistics, select variant calling algorithms appropriate for the sequencing platform, then evaluate variant calls using concordance with known truth sets.",
+      "expected_skill_pattern": "Explore-Model-Evaluate"
+    },
+    {
+      "task_id": "track_a_24",
+      "track": "A",
+      "phase": "recall",
+      "domain": "predictive_maintenance",
+      "title": "Transfer: Industrial Equipment Failure Prediction",
+      "task": "Explore sensor telemetry from manufacturing equipment profiling vibration, temperature, and pressure distributions, train failure prediction models with imbalanced class handling, then evaluate prediction accuracy with precision-recall and lead-time analysis.",
+      "expected_skill_pattern": "Explore-Model-Evaluate"
+    },
+    {
+      "task_id": "track_a_25",
+      "track": "A",
+      "phase": "recall",
+      "domain": "banking",
+      "title": "Transfer: Banking AML Compliance Audit",
+      "task": "Audit transaction monitoring processes against anti-money laundering regulations, assess compliance gaps in KYC procedures and suspicious activity reporting, then produce a regulatory submission report with remediation timelines.",
+      "expected_skill_pattern": "Audit-Assess-Report"
+    },
+    {
+      "task_id": "track_a_26",
+      "track": "A",
+      "phase": "recall",
+      "domain": "environmental",
+      "title": "Transfer: Environmental Impact Assessment",
+      "task": "Audit a proposed manufacturing facility against environmental regulations covering emissions, water discharge, and waste disposal, assess compliance gaps and ecological risk, then produce an EIA report with mitigation plans and monitoring schedules.",
+      "expected_skill_pattern": "Audit-Assess-Report"
+    },
+    {
+      "task_id": "track_a_27",
+      "track": "A",
+      "phase": "recall",
+      "domain": "e_commerce",
+      "title": "Transfer: E-Commerce Checkout Redesign",
+      "task": "Discover customer frustration points in the checkout funnel through analytics and survey data, prototype a streamlined checkout flow reducing steps from 5 to 3, then test against usability heuristics and predict conversion rate impact.",
+      "expected_skill_pattern": "Discover-Prototype-Test"
+    },
+    {
+      "task_id": "track_a_28",
+      "track": "A",
+      "phase": "recall",
+      "domain": "healthcare_ux",
+      "title": "Transfer: Patient Portal Interface",
+      "task": "Discover patient needs for accessing medical records, scheduling appointments, and messaging providers, prototype an accessible interface meeting WCAG 2.1 AA standards, then test with elderly and vision-impaired user personas.",
+      "expected_skill_pattern": "Discover-Prototype-Test"
+    },
+    {
+      "task_id": "track_a_29",
+      "track": "A",
+      "phase": "recall",
+      "domain": "api_documentation",
+      "title": "Transfer: REST API Reference Documentation",
+      "task": "Gather endpoint specifications from OpenAPI schemas and developer usage patterns, structure into a navigation-friendly reference with getting-started guide, then polish with request/response examples and error handling guides.",
+      "expected_skill_pattern": "Gather-Structure-Polish"
+    },
+    {
+      "task_id": "track_a_30",
+      "track": "A",
+      "phase": "recall",
+      "domain": "onboarding",
+      "title": "Transfer: Employee Onboarding Handbook",
+      "task": "Gather onboarding information from HR policies, team leads, and IT setup procedures, structure into a week-by-week onboarding guide with checklists, then polish with role-specific paths and FAQ cross-references.",
+      "expected_skill_pattern": "Gather-Structure-Polish"
+    },
+    {
+      "task_id": "track_a_31",
+      "track": "A",
+      "phase": "recall",
+      "domain": "logistics",
+      "title": "Transfer: Global Logistics Data Consolidation",
+      "task": "Extract shipment tracking data from 8 carrier APIs with different schemas, transform by normalizing tracking statuses, converting weight and dimension units, and merging duplicate shipments, then load into a real-time logistics dashboard.",
+      "expected_skill_pattern": "Extract-Transform-Load"
+    },
+    {
+      "task_id": "track_a_32",
+      "track": "A",
+      "phase": "recall",
+      "domain": "iot_security",
+      "title": "Transfer: IoT Fleet Security Assessment",
+      "task": "Scan a fleet of 500 IoT devices for firmware vulnerabilities and default credentials, classify risk by device criticality and network exposure, then generate a patching plan with staged rollout and rollback procedures.",
+      "expected_skill_pattern": "Scan-Classify-Remediate"
+    },
+    {
+      "task_id": "track_a_33",
+      "track": "A",
+      "phase": "recall",
+      "domain": "scientific_writing",
+      "title": "Transfer: Research Grant Proposal",
+      "task": "Research the funding agency's priorities and recent awards, draft a grant proposal with specific aims, methodology, and budget justification, then refine based on review criteria scores and narrative clarity.",
+      "expected_skill_pattern": "Research-Draft-Refine"
+    },
+    {
+      "task_id": "track_a_34",
+      "track": "A",
+      "phase": "recall",
+      "domain": "kubernetes",
+      "title": "Transfer: Kubernetes Cluster Outage Recovery",
+      "task": "Monitor Kubernetes cluster health via node conditions, pod evictions, and etcd latency, diagnose a control plane failure by correlating API server logs with certificate expiration events, then recover via etcd snapshot restore with rolling node restart.",
+      "expected_skill_pattern": "Monitor-Diagnose-Recover"
+    },
+    {
+      "task_id": "track_a_35",
+      "track": "A",
+      "phase": "recall",
+      "domain": "game_testing",
+      "title": "Transfer: Game Physics Engine Test Suite",
+      "task": "Analyze a physics engine specification for collision detection, rigid body dynamics, and particle system behaviors, generate test scenarios including extreme velocities, multi-body collisions, and numerical stability edge cases, then validate test coverage across determinism and performance regression dimensions.",
+      "expected_skill_pattern": "Analyze-Generate-Validate"
+    },
+    {
+      "task_id": "track_a_36",
+      "track": "A",
+      "phase": "recall",
+      "domain": "film_production",
+      "title": "Transfer: Film Production Schedule",
+      "task": "Define scope for a 90-day film shoot from the script breakdown and location requirements, estimate crew sizes and equipment needs per scene, then build a shooting schedule with weather contingency days and talent availability constraints.",
+      "expected_skill_pattern": "Scope-Estimate-Plan"
+    },
+    {
+      "task_id": "track_a_37",
+      "track": "A",
+      "phase": "recall",
+      "domain": "climate_science",
+      "title": "Transfer: Climate Model Evaluation",
+      "task": "Explore historical climate observation datasets profiling temperature, precipitation, and CO2 concentration distributions, train ensemble climate projection models with uncertainty quantification, then evaluate projections against observed trends using skill scores and reliability diagrams.",
+      "expected_skill_pattern": "Explore-Model-Evaluate"
+    },
+    {
+      "task_id": "track_a_38",
+      "track": "A",
+      "phase": "recall",
+      "domain": "pharma_compliance",
+      "title": "Transfer: GxP Compliance Audit",
+      "task": "Audit pharmaceutical manufacturing processes against FDA 21 CFR Part 11 and EU Annex 11 requirements for electronic records, assess gaps in data integrity, audit trails, and e-signatures, then produce a CAPA report with validation timelines.",
+      "expected_skill_pattern": "Audit-Assess-Report"
+    },
+    {
+      "task_id": "track_a_39",
+      "track": "A",
+      "phase": "recall",
+      "domain": "fintech",
+      "title": "Transfer: Trading Platform Dashboard Redesign",
+      "task": "Discover trader needs for real-time portfolio monitoring, order execution, and risk exposure visualization, prototype a dashboard with customizable widgets and alert management, then test with latency-sensitive interaction patterns and color-blind accessibility.",
+      "expected_skill_pattern": "Discover-Prototype-Test"
+    },
+    {
+      "task_id": "track_a_40",
+      "track": "A",
+      "phase": "recall",
+      "domain": "sdk_docs",
+      "title": "Transfer: Mobile SDK Integration Guide",
+      "task": "Gather SDK integration details from the source code, sample apps, and migration guides, structure into a platform-specific guide with iOS and Android sections, then polish with copy-paste code snippets and troubleshooting FAQs.",
+      "expected_skill_pattern": "Gather-Structure-Polish"
+    },
+    {
+      "task_id": "track_a_41",
+      "track": "A",
+      "phase": "recall",
+      "domain": "telecom",
+      "title": "Transfer: Telecom CDR Data Integration",
+      "task": "Extract call detail records from 5 network switches with proprietary binary formats, transform by parsing protocol headers, normalizing phone number formats to E.164, and correlating call legs, then load into a billing analytics warehouse.",
+      "expected_skill_pattern": "Extract-Transform-Load"
+    },
+    {
+      "task_id": "track_a_42",
+      "track": "A",
+      "phase": "recall",
+      "domain": "container_security",
+      "title": "Transfer: Container Image Supply Chain Audit",
+      "task": "Scan container images in a registry for known CVEs and unauthorized base images, classify vulnerabilities by runtime exploitability and SBOM completeness, then generate a remediation plan with image rebuild priorities and admission policy updates.",
+      "expected_skill_pattern": "Scan-Classify-Remediate"
+    },
+    {
+      "task_id": "track_a_43",
+      "track": "A",
+      "phase": "recall",
+      "domain": "journalism",
+      "title": "Transfer: Investigative Report Writing",
+      "task": "Research public records, financial filings, and court documents for story leads, draft an investigative article with evidence chains and source attribution, then refine for legal risk, narrative clarity, and fact-checking completeness.",
+      "expected_skill_pattern": "Research-Draft-Refine"
+    },
+    {
+      "task_id": "track_a_44",
+      "track": "A",
+      "phase": "recall",
+      "domain": "cdn_ops",
+      "title": "Transfer: CDN Origin Failure Recovery",
+      "task": "Monitor CDN edge node hit ratios and origin error rates across 40 PoPs, diagnose increased origin load by correlating cache purge events with deployment timestamps, then recover by implementing stale-while-revalidate policies and origin shield failover.",
+      "expected_skill_pattern": "Monitor-Diagnose-Recover"
+    },
+    {
+      "task_id": "track_a_45",
+      "track": "A",
+      "phase": "recall",
+      "domain": "blockchain",
+      "title": "Transfer: Smart Contract Test Coverage",
+      "task": "Analyze Solidity smart contract specifications for state-transition invariants, generate test cases covering reentrancy guards, integer overflow, and gas limit edge cases, then validate coverage across all state-machine paths and access control branches.",
+      "expected_skill_pattern": "Analyze-Generate-Validate"
+    },
+    {
+      "task_id": "track_a_46",
+      "track": "A",
+      "phase": "recall",
+      "domain": "product_launch",
+      "title": "Transfer: Product Launch GTM Plan",
+      "task": "Define scope for a SaaS product launch covering beta program, press outreach, and partner enablement, estimate marketing spend and headcount per channel, then plan a 12-week timeline with launch milestones and go/no-go decision gates.",
+      "expected_skill_pattern": "Scope-Estimate-Plan"
+    },
+    {
+      "task_id": "track_a_47",
+      "track": "A",
+      "phase": "recall",
+      "domain": "fraud_detection",
+      "title": "Transfer: Transaction Fraud Model",
+      "task": "Explore transaction datasets profiling amount distributions, geographic patterns, and velocity features, train anomaly detection and supervised classification models with cost-sensitive learning, then evaluate using precision at fixed false-positive rates and financial loss curves.",
+      "expected_skill_pattern": "Explore-Model-Evaluate"
+    },
+    {
+      "task_id": "track_a_48",
+      "track": "A",
+      "phase": "recall",
+      "domain": "data_privacy",
+      "title": "Transfer: GDPR Data Processing Audit",
+      "task": "Audit data processing activities against GDPR Articles 5-9 and 44-49, assess gaps in lawful basis documentation, data subject rights workflows, and cross-border transfer mechanisms, then produce a DPA-ready compliance report with ROPA updates.",
+      "expected_skill_pattern": "Audit-Assess-Report"
+    },
+    {
+      "task_id": "track_a_49",
+      "track": "A",
+      "phase": "recall",
+      "domain": "automotive_ux",
+      "title": "Transfer: In-Vehicle Infotainment UX",
+      "task": "Discover driver interaction needs for navigation, media, and climate controls while minimizing distraction, prototype a voice-first interface with glanceable displays, then test against NHTSA distraction guidelines and driver cognitive load thresholds.",
+      "expected_skill_pattern": "Discover-Prototype-Test"
+    },
+    {
+      "task_id": "track_a_50",
+      "track": "A",
+      "phase": "recall",
+      "domain": "data_platform_docs",
+      "title": "Transfer: Data Platform Architecture Guide",
+      "task": "Gather architecture decisions from ADRs, infrastructure-as-code configs, and team retrospectives, structure into a living architecture guide with data flow diagrams and runbook links, then polish with decision rationale, trade-off tables, and change log cross-references.",
+      "expected_skill_pattern": "Gather-Structure-Polish"
+    },
+
+    {
+      "task_id": "track_b_01",
+      "track": "B",
+      "phase": "seed_anti",
+      "domain": "software_engineering",
+      "title": "Anti-Pattern: Premature Optimization",
+      "anti_pattern": {
+        "what_failed": "Optimizing code before profiling showed a bottleneck",
+        "why": "Wasted 3 days rewriting a function that accounted for 0.1% of execution time, introducing bugs in the process",
+        "domain": "software_engineering",
+        "severity": "warning"
+      }
+    },
+    {
+      "task_id": "track_b_02",
+      "track": "B",
+      "phase": "seed_anti",
+      "domain": "software_engineering",
+      "title": "Anti-Pattern: Ignoring Error Handling",
+      "anti_pattern": {
+        "what_failed": "Catching all exceptions with a bare except clause and logging nothing",
+        "why": "Silent failures masked a data corruption issue for 2 weeks before a customer reported invalid reports",
+        "domain": "software_engineering",
+        "severity": "critical"
+      }
+    },
+    {
+      "task_id": "track_b_03",
+      "track": "B",
+      "phase": "seed_anti",
+      "domain": "software_engineering",
+      "title": "Anti-Pattern: Monolithic Deployment",
+      "anti_pattern": {
+        "what_failed": "Deploying the entire application as a single artifact when only one module changed",
+        "why": "Full deployment took 45 minutes and required full regression testing, turning a 5-line bugfix into a 4-hour release cycle",
+        "domain": "software_engineering",
+        "severity": "warning"
+      }
+    },
+    {
+      "task_id": "track_b_04",
+      "track": "B",
+      "phase": "seed_anti",
+      "domain": "software_engineering",
+      "title": "Anti-Pattern: Hardcoded Configuration",
+      "anti_pattern": {
+        "what_failed": "Embedding database connection strings and API keys directly in source code",
+        "why": "Credentials leaked to GitHub, required emergency rotation of all production secrets and a security incident report",
+        "domain": "software_engineering",
+        "severity": "critical"
+      }
+    },
+    {
+      "task_id": "track_b_05",
+      "track": "B",
+      "phase": "seed_anti",
+      "domain": "software_engineering",
+      "title": "Anti-Pattern: No Integration Tests",
+      "anti_pattern": {
+        "what_failed": "Relying solely on unit tests with mocked dependencies, never testing actual service interactions",
+        "why": "A serialization format change in an upstream service went undetected for a sprint, causing a production data loss incident",
+        "domain": "software_engineering",
+        "severity": "critical"
+      }
+    },
+    {
+      "task_id": "track_b_06",
+      "track": "B",
+      "phase": "seed_anti",
+      "domain": "software_engineering",
+      "title": "Anti-Pattern: Over-Engineering Abstractions",
+      "anti_pattern": {
+        "what_failed": "Creating a 5-layer abstraction hierarchy for a feature with exactly one implementation",
+        "why": "Added 800 lines of boilerplate, tripled onboarding time for new developers, and all predicted extension points were never used",
+        "domain": "software_engineering",
+        "severity": "warning"
+      }
+    },
+    {
+      "task_id": "track_b_07",
+      "track": "B",
+      "phase": "seed_anti",
+      "domain": "software_engineering",
+      "title": "Anti-Pattern: Unbounded Batch Processing",
+      "anti_pattern": {
+        "what_failed": "Processing an entire queue of messages in a single transaction without batch size limits",
+        "why": "Memory exhaustion crashed the worker when queue depth spiked to 500K messages during a marketing campaign",
+        "domain": "software_engineering",
+        "severity": "critical"
+      }
+    },
+    {
+      "task_id": "track_b_08",
+      "track": "B",
+      "phase": "seed_anti",
+      "domain": "software_engineering",
+      "title": "Anti-Pattern: Skipping Code Review for Hotfixes",
+      "anti_pattern": {
+        "what_failed": "Pushing a production hotfix directly to main without code review",
+        "why": "The fix introduced a SQL injection vulnerability that was exploited within 48 hours",
+        "domain": "software_engineering",
+        "severity": "critical"
+      }
+    },
+    {
+      "task_id": "track_b_09",
+      "track": "B",
+      "phase": "seed_anti",
+      "domain": "software_engineering",
+      "title": "Anti-Pattern: N+1 Query Pattern",
+      "anti_pattern": {
+        "what_failed": "Loading child records one-by-one inside a loop instead of using batch/join queries",
+        "why": "API response time degraded from 200ms to 12 seconds as the dataset grew from 100 to 10K records",
+        "domain": "software_engineering",
+        "severity": "warning"
+      }
+    },
+    {
+      "task_id": "track_b_10",
+      "track": "B",
+      "phase": "seed_anti",
+      "domain": "software_engineering",
+      "title": "Anti-Pattern: Feature Flag Debt",
+      "anti_pattern": {
+        "what_failed": "Accumulating 200+ feature flags without a cleanup process or expiry dates",
+        "why": "Impossible to reason about code paths, 30% of flags protected dead code, and flag interaction bugs appeared in production",
+        "domain": "software_engineering",
+        "severity": "warning"
+      }
+    },
+    {
+      "task_id": "track_b_11",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Optimize Slow Report Generator",
+      "task": "A report generation endpoint takes 45 seconds. Optimize it to run under 5 seconds. The codebase has a slow SQL query, unnecessary data transformations, and an unindexed join.",
+      "avoidable_anti_patterns": ["Premature Optimization"],
+      "expected_approach": "Profile first with actual production queries before optimizing. Focus on the measured bottleneck, not guesses."
+    },
+    {
+      "task_id": "track_b_12",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Add Payment Processing Error Handling",
+      "task": "Add error handling to the payment processing module. Current code has bare try/except blocks that silently swallow errors. Implement proper error handling with logging, retry logic, and user-facing error messages.",
+      "avoidable_anti_patterns": ["Ignoring Error Handling"],
+      "expected_approach": "Implement specific exception types, structured logging, and appropriate retry policies with circuit breakers."
+    },
+    {
+      "task_id": "track_b_13",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Deploy Authentication Module Update",
+      "task": "Deploy an update to the authentication module that adds OAuth 2.0 PKCE support. The module is part of a monolithic application. Design the deployment strategy.",
+      "avoidable_anti_patterns": ["Monolithic Deployment"],
+      "expected_approach": "Extract the auth module for independent deployment, use feature flags, and implement rolling deployment with canary releases."
+    },
+    {
+      "task_id": "track_b_14",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Configure Multi-Environment Database Access",
+      "task": "Set up database connections for dev, staging, and production environments. Each environment has different credentials and connection pool sizes.",
+      "avoidable_anti_patterns": ["Hardcoded Configuration"],
+      "expected_approach": "Use environment variables, secrets management (e.g., Vault), and configuration files excluded from source control."
+    },
+    {
+      "task_id": "track_b_15",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Test Strategy for Notification Service",
+      "task": "Design a test strategy for a notification service that sends emails via SendGrid, SMS via Twilio, and push notifications via Firebase. Ensure reliability without incurring API costs in CI.",
+      "avoidable_anti_patterns": ["No Integration Tests"],
+      "expected_approach": "Use contract tests and integration tests with service stubs, supplement unit tests with real-service smoke tests in staging."
+    },
+    {
+      "task_id": "track_b_16",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Design User Preferences Storage",
+      "task": "Design a storage layer for user preferences (theme, language, notification settings). Currently 3 preference types, may grow to 10 within a year.",
+      "avoidable_anti_patterns": ["Over-Engineering Abstractions"],
+      "expected_approach": "Keep it simple: a single preferences table with a JSON column, accessed via a straightforward service class. Add abstractions only when complexity warrants it."
+    },
+    {
+      "task_id": "track_b_17",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Process Bulk CSV Import",
+      "task": "Implement a CSV import feature that processes user-uploaded files. Files range from 100 rows to 2 million rows. The system must handle the full range reliably.",
+      "avoidable_anti_patterns": ["Unbounded Batch Processing"],
+      "expected_approach": "Use chunked processing with configurable batch sizes, streaming parsers, progress tracking, and backpressure mechanisms."
+    },
+    {
+      "task_id": "track_b_18",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Fix Critical Login Bug in Production",
+      "task": "Users are reporting 'Session Expired' immediately after login. The bug is in the session token generation code. Design the hotfix and deployment process.",
+      "avoidable_anti_patterns": ["Skipping Code Review for Hotfixes"],
+      "expected_approach": "Create a hotfix branch, implement fix with tests, get expedited peer review, deploy with rollback plan."
+    },
+    {
+      "task_id": "track_b_19",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Build Product Catalog API",
+      "task": "Build a REST API for a product catalog. Products have categories, tags, and reviews. The API must support listing products with filters and including related data.",
+      "avoidable_anti_patterns": ["N+1 Query Pattern"],
+      "expected_approach": "Use eager loading with JOIN queries, implement pagination, and consider GraphQL or sparse fieldsets for flexible includes."
+    },
+    {
+      "task_id": "track_b_20",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Implement Feature Rollout System",
+      "task": "Design a feature flag system for gradual rollouts. The system must support percentage-based rollouts, user targeting, and A/B testing. Currently there are 15 active flags.",
+      "avoidable_anti_patterns": ["Feature Flag Debt"],
+      "expected_approach": "Include flag lifecycle management with expiry dates, ownership, cleanup automation, and a dashboard showing flag status and staleness."
+    },
+    {
+      "task_id": "track_b_21",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Refactor Legacy Authentication",
+      "task": "Refactor a 3000-line authentication module to support SSO. The module has inline SQL queries, hardcoded role strings, and no dependency injection.",
+      "avoidable_anti_patterns": ["Hardcoded Configuration", "Over-Engineering Abstractions", "Skipping Code Review for Hotfixes"],
+      "expected_approach": "Extract configuration to env vars, add practical abstractions where needed, ensure each refactoring step goes through code review."
+    },
+    {
+      "task_id": "track_b_22",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Scale Event Processing Pipeline",
+      "task": "The event processing pipeline handles 10K events/sec. Business wants to support 500K events/sec. Design the scaling strategy for the existing single-worker architecture.",
+      "avoidable_anti_patterns": ["Unbounded Batch Processing", "Premature Optimization"],
+      "expected_approach": "Profile current bottlenecks first, then implement partitioned processing with bounded batch sizes and backpressure."
+    },
+    {
+      "task_id": "track_b_23",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Implement Real-Time Dashboard",
+      "task": "Build a real-time analytics dashboard showing user activity, system health, and business KPIs. Data comes from 5 different microservices. Target: sub-second updates.",
+      "avoidable_anti_patterns": ["N+1 Query Pattern", "Monolithic Deployment"],
+      "expected_approach": "Use event streaming for data aggregation, deploy the dashboard as an independent service, use batch data fetching."
+    },
+    {
+      "task_id": "track_b_24",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Migrate Database Schema",
+      "task": "Migrate a PostgreSQL database from v12 to v16 with schema changes affecting 15 tables. The database has 500GB of data and serves production traffic 24/7.",
+      "avoidable_anti_patterns": ["Monolithic Deployment", "Ignoring Error Handling"],
+      "expected_approach": "Use online migration tools, implement dual-write with shadow testing, deploy schema changes incrementally with proper rollback scripts."
+    },
+    {
+      "task_id": "track_b_25",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Build CI/CD Pipeline for Microservices",
+      "task": "Design a CI/CD pipeline for a system with 12 microservices, shared libraries, and a mono-repo structure. Ensure fast feedback loops and reliable deployments.",
+      "avoidable_anti_patterns": ["Monolithic Deployment", "No Integration Tests", "Skipping Code Review for Hotfixes"],
+      "expected_approach": "Use change-based triggering for affected services, add integration test gates, enforce review requirements even for urgent changes."
+    },
+    {
+      "task_id": "track_b_26",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Implement API Rate Limiting",
+      "task": "Add rate limiting to a public API serving 50M requests/day. Requirements: per-client limits, burst allowance, and graceful degradation under extreme load.",
+      "avoidable_anti_patterns": ["Unbounded Batch Processing", "Hardcoded Configuration"],
+      "expected_approach": "Use token bucket or sliding window algorithm with configurable limits via external config, not hardcoded values."
+    },
+    {
+      "task_id": "track_b_27",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Design Data Pipeline Monitoring",
+      "task": "Set up monitoring and alerting for an ETL pipeline processing financial transactions. Must detect data quality issues, processing delays, and schema drift.",
+      "avoidable_anti_patterns": ["Ignoring Error Handling", "No Integration Tests"],
+      "expected_approach": "Implement structured logging, data quality checks at each stage, end-to-end integration tests with realistic data, and alerting thresholds."
+    },
+    {
+      "task_id": "track_b_28",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Build Multi-Tenant SaaS Architecture",
+      "task": "Design the multi-tenancy layer for a SaaS application. Requirements: data isolation between tenants, per-tenant configuration, and fair resource allocation.",
+      "avoidable_anti_patterns": ["Hardcoded Configuration", "Over-Engineering Abstractions"],
+      "expected_approach": "Use tenant-scoped database schemas or row-level security, external configuration per tenant, and keep the initial design simple."
+    },
+    {
+      "task_id": "track_b_29",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Optimize Search Performance",
+      "task": "The full-text search feature returns results in 8 seconds for a 10M document corpus. Optimize to under 500ms while maintaining relevance quality.",
+      "avoidable_anti_patterns": ["Premature Optimization", "N+1 Query Pattern"],
+      "expected_approach": "Profile the current search pipeline, use a dedicated search engine like Elasticsearch, implement query optimization based on actual slow queries."
+    },
+    {
+      "task_id": "track_b_30",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Implement Webhook Delivery System",
+      "task": "Build a webhook delivery system for notifying external integrations. Must support retries with exponential backoff, delivery guarantees, and payload signing.",
+      "avoidable_anti_patterns": ["Ignoring Error Handling", "Unbounded Batch Processing", "Feature Flag Debt"],
+      "expected_approach": "Use a persistent queue with bounded batch processing, implement specific error handling per failure type, and manage webhook configurations externally."
+    },
+    {
+      "task_id": "track_b_31",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Design Cache Invalidation Strategy",
+      "task": "Design a caching layer for an e-commerce product catalog. Products are updated by sellers, prices change frequently, and inventory levels must be accurate to prevent overselling.",
+      "avoidable_anti_patterns": ["Premature Optimization", "Ignoring Error Handling"],
+      "expected_approach": "Use event-driven cache invalidation, TTL-based expiry for non-critical data, and direct database reads for critical fields like inventory."
+    },
+    {
+      "task_id": "track_b_32",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Build Internationalization Framework",
+      "task": "Add i18n support to a web application currently serving English only. The app has 300 UI screens and serves users in 15 countries with RTL language support needed.",
+      "avoidable_anti_patterns": ["Over-Engineering Abstractions", "Hardcoded Configuration"],
+      "expected_approach": "Use a standard i18n library, externalize strings to resource bundles, keep the framework simple, store locale preferences in user config."
+    },
+    {
+      "task_id": "track_b_33",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Implement Audit Logging System",
+      "task": "Build an audit logging system for a financial application. Must capture who did what, when, on which resource, with before/after values. Logs must be tamper-evident and queryable.",
+      "avoidable_anti_patterns": ["Ignoring Error Handling", "N+1 Query Pattern", "Hardcoded Configuration"],
+      "expected_approach": "Use append-only event store with cryptographic chaining, batch writes efficiently, externalize retention and archival configuration."
+    },
+    {
+      "task_id": "track_b_34",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Design Graceful Degradation System",
+      "task": "Implement graceful degradation for a ride-sharing app's pricing engine. When the real-time demand model is unavailable, the system must still serve reasonable prices without confusing users.",
+      "avoidable_anti_patterns": ["Ignoring Error Handling", "Premature Optimization"],
+      "expected_approach": "Implement fallback pricing tiers, detect service availability properly with circuit breakers, profile actual failure modes before over-engineering."
+    },
+    {
+      "task_id": "track_b_35",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Build Data Export Feature",
+      "task": "Implement a data export feature that lets users download their data in CSV, JSON, and PDF formats. Users may have up to 5 million records. Must comply with GDPR data portability requirements.",
+      "avoidable_anti_patterns": ["Unbounded Batch Processing", "Ignoring Error Handling"],
+      "expected_approach": "Use streaming exports with progress tracking, chunked file generation, proper error handling for partial failures, and async processing for large exports."
+    },
+    {
+      "task_id": "track_b_36",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Migrate from REST to GraphQL",
+      "task": "Migrate a REST API with 40 endpoints to GraphQL while maintaining backward compatibility. The API serves 100 client applications with different data needs.",
+      "avoidable_anti_patterns": ["Monolithic Deployment", "Over-Engineering Abstractions", "N+1 Query Pattern"],
+      "expected_approach": "Implement GraphQL alongside REST using the BFF pattern, use DataLoader for batch loading, deploy incrementally, keep resolvers simple."
+    },
+    {
+      "task_id": "track_b_37",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Implement Distributed Locking",
+      "task": "Build a distributed locking mechanism for coordinating scheduled batch jobs across 8 worker nodes. Must handle leader election, lock renewal, and automatic lock release on node failure.",
+      "avoidable_anti_patterns": ["Ignoring Error Handling", "Hardcoded Configuration"],
+      "expected_approach": "Use a proven distributed lock implementation (Redis Redlock or ZooKeeper), implement proper heartbeating, externalize lock TTL configuration."
+    },
+    {
+      "task_id": "track_b_38",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Build Content Delivery Pipeline",
+      "task": "Implement a content delivery pipeline for a media platform. Content (articles, images, videos) must be published, versioned, and delivered with regional edge caching.",
+      "avoidable_anti_patterns": ["Monolithic Deployment", "Unbounded Batch Processing"],
+      "expected_approach": "Use event-driven architecture for content updates, deploy content services independently, implement bounded processing for batch media transcoding."
+    },
+    {
+      "task_id": "track_b_39",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Design Permission System",
+      "task": "Design a role-based access control system with hierarchical permissions for an enterprise application. Must support role inheritance, resource-level permissions, and permission delegation.",
+      "avoidable_anti_patterns": ["Over-Engineering Abstractions", "Hardcoded Configuration"],
+      "expected_approach": "Start with a standard RBAC model, use externalized permission definitions, add complexity (ABAC) only when RBAC is insufficient."
+    },
+    {
+      "task_id": "track_b_40",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Implement Zero-Downtime Migration",
+      "task": "Migrate a critical user authentication service from session-based to JWT-based auth without any user-facing downtime. 50K concurrent users at peak.",
+      "avoidable_anti_patterns": ["Monolithic Deployment", "Skipping Code Review for Hotfixes", "Feature Flag Debt"],
+      "expected_approach": "Use dual-auth support with feature flags that have expiry dates, deploy changes incrementally with reviews, run both auth systems in parallel during transition."
+    },
+    {
+      "task_id": "track_b_41",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Build Email Template System",
+      "task": "Implement a dynamic email template system for transactional emails (order confirmation, password reset, etc.) with support for localization and A/B testing of subject lines.",
+      "avoidable_anti_patterns": ["Hardcoded Configuration", "Feature Flag Debt"],
+      "expected_approach": "Use a template engine with externalized templates, store A/B test variants with lifecycle management and automatic winner selection."
+    },
+    {
+      "task_id": "track_b_42",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Design Retry and Dead-Letter Queue Strategy",
+      "task": "Design a message retry strategy for an order fulfillment pipeline. Failed messages must be retried with exponential backoff and eventually moved to a dead-letter queue for manual investigation.",
+      "avoidable_anti_patterns": ["Ignoring Error Handling", "Unbounded Batch Processing"],
+      "expected_approach": "Implement bounded retries with exponential backoff and jitter, use DLQ with alerting, add structured error logging for diagnosability."
+    },
+    {
+      "task_id": "track_b_43",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Implement API Versioning Strategy",
+      "task": "Design and implement API versioning for a public REST API used by 500+ third-party integrations. Must support at least 2 major versions concurrently with a deprecation policy.",
+      "avoidable_anti_patterns": ["Monolithic Deployment", "Over-Engineering Abstractions"],
+      "expected_approach": "Use URL path versioning with independent version deployments, keep version routing simple, document a clear deprecation timeline."
+    },
+    {
+      "task_id": "track_b_44",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Build User Activity Feed",
+      "task": "Implement a real-time activity feed showing actions of followed users. The social graph has 2M users with average 150 follows. Feed must load in under 200ms.",
+      "avoidable_anti_patterns": ["N+1 Query Pattern", "Premature Optimization", "Unbounded Batch Processing"],
+      "expected_approach": "Use fan-out-on-write for active users, fan-out-on-read for celebrities, profile actual query patterns, use bounded page sizes."
+    },
+    {
+      "task_id": "track_b_45",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Implement Data Archival System",
+      "task": "Build a data archival system that moves records older than 2 years from the primary database to cold storage while maintaining queryability for compliance. Database has 50TB of data.",
+      "avoidable_anti_patterns": ["Unbounded Batch Processing", "Ignoring Error Handling"],
+      "expected_approach": "Use bounded batch archival with checkpointing, implement proper error handling for partial batch failures, stream data to cold storage."
+    },
+    {
+      "task_id": "track_b_46",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Design Service Health Check System",
+      "task": "Design a health check system for 25 microservices. Must distinguish between readiness and liveness, support deep health checks including downstream dependencies, and prevent cascading failures.",
+      "avoidable_anti_patterns": ["N+1 Query Pattern", "Ignoring Error Handling"],
+      "expected_approach": "Implement tiered health checks (shallow liveness, deep readiness), batch dependency checks, use appropriate timeouts, and circuit-break failing deep checks."
+    },
+    {
+      "task_id": "track_b_47",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Build Configuration Management System",
+      "task": "Build a centralized configuration management system for a platform with 20 services. Must support dynamic config updates, environment-specific overrides, and audit trails.",
+      "avoidable_anti_patterns": ["Hardcoded Configuration", "Over-Engineering Abstractions"],
+      "expected_approach": "Use a proven config service (Consul, etcd), externalize all config, implement change notifications, keep the client simple."
+    },
+    {
+      "task_id": "track_b_48",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Implement End-to-End Testing Framework",
+      "task": "Set up an end-to-end testing framework for a complex web application with 50 user flows. Tests must run in CI in under 15 minutes and be reliable enough for release gating.",
+      "avoidable_anti_patterns": ["No Integration Tests", "Premature Optimization"],
+      "expected_approach": "Select test scenarios based on business risk, implement parallelized test execution, use proper wait strategies over arbitrary sleeps, profile flaky tests."
+    },
+    {
+      "task_id": "track_b_49",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Design Database Sharding Strategy",
+      "task": "Design a sharding strategy for a user database that has outgrown a single node at 2TB. Queries are both user-scoped and cross-user aggregation. Current QPS: 50K reads, 5K writes.",
+      "avoidable_anti_patterns": ["Premature Optimization", "N+1 Query Pattern", "Over-Engineering Abstractions"],
+      "expected_approach": "Profile actual query patterns first, choose shard key based on real access patterns, handle cross-shard queries with dedicated aggregation layer, keep initial design simple."
+    },
+    {
+      "task_id": "track_b_50",
+      "track": "B",
+      "phase": "test_avoid",
+      "domain": "software_engineering",
+      "title": "Task: Build Secrets Rotation System",
+      "task": "Implement automatic secrets rotation for database credentials, API keys, and TLS certificates. The system must rotate credentials without downtime and handle rotation failures gracefully.",
+      "avoidable_anti_patterns": ["Hardcoded Configuration", "Ignoring Error Handling", "Skipping Code Review for Hotfixes"],
+      "expected_approach": "Use a secrets manager with rotation policies, implement dual-credential support during rotation windows, add proper error handling and alerting for rotation failures."
+    },
+
+    {
+      "task_id": "track_c_01",
+      "track": "C",
+      "phase": "seed_path",
+      "domain": "customer_support",
+      "title": "Path: Tier-1 Standard Support Flow",
+      "path_skill": {
+        "path_nodes": ["ticket_classifier", "knowledge_base_search", "response_drafter", "quality_checker"],
+        "score": 0.92,
+        "domain": "customer_support",
+        "task": "Handle standard support tickets through classification, knowledge lookup, response drafting, and quality check",
+        "quality": 0.90
+      }
+    },
+    {
+      "task_id": "track_c_02",
+      "track": "C",
+      "phase": "seed_path",
+      "domain": "customer_support",
+      "title": "Path: Escalation Flow",
+      "path_skill": {
+        "path_nodes": ["ticket_classifier", "severity_assessor", "escalation_router", "manager_notifier"],
+        "score": 0.88,
+        "domain": "customer_support",
+        "task": "Escalate high-severity tickets through classification, severity assessment, intelligent routing, and management notification",
+        "quality": 0.85
+      }
+    },
+    {
+      "task_id": "track_c_03",
+      "track": "C",
+      "phase": "seed_path",
+      "domain": "customer_support",
+      "title": "Path: Refund Processing Flow",
+      "path_skill": {
+        "path_nodes": ["ticket_classifier", "order_lookup", "refund_eligibility_checker", "refund_processor", "confirmation_sender"],
+        "score": 0.90,
+        "domain": "customer_support",
+        "task": "Process refund requests through classification, order verification, eligibility check, processing, and confirmation",
+        "quality": 0.88
+      }
+    },
+    {
+      "task_id": "track_c_04",
+      "track": "C",
+      "phase": "seed_path",
+      "domain": "customer_support",
+      "title": "Path: Technical Troubleshooting Flow",
+      "path_skill": {
+        "path_nodes": ["ticket_classifier", "symptom_analyzer", "diagnostic_runner", "solution_generator", "verification_checker"],
+        "score": 0.86,
+        "domain": "customer_support",
+        "task": "Troubleshoot technical issues through classification, symptom analysis, diagnostics, solution generation, and verification",
+        "quality": 0.83
+      }
+    },
+    {
+      "task_id": "track_c_05",
+      "track": "C",
+      "phase": "seed_path",
+      "domain": "customer_support",
+      "title": "Path: Account Recovery Flow",
+      "path_skill": {
+        "path_nodes": ["ticket_classifier", "identity_verifier", "account_recoverer", "security_auditor", "confirmation_sender"],
+        "score": 0.91,
+        "domain": "customer_support",
+        "task": "Handle account recovery through classification, identity verification, account restoration, security audit, and confirmation",
+        "quality": 0.89
+      }
+    },
+    {
+      "task_id": "track_c_06",
+      "track": "C",
+      "phase": "seed_path",
+      "domain": "customer_support",
+      "title": "Anti-Pattern: Skip Classification Direct Response",
+      "anti_pattern": {
+        "what_failed": "Sending tickets directly to response drafting without classification",
+        "why": "Generic responses that miss the actual issue type, leading to 40% re-open rate",
+        "domain": "customer_support",
+        "severity": "critical"
+      }
+    },
+    {
+      "task_id": "track_c_07",
+      "track": "C",
+      "phase": "seed_path",
+      "domain": "customer_support",
+      "title": "Anti-Pattern: Over-Escalation",
+      "anti_pattern": {
+        "what_failed": "Auto-escalating all tickets with negative sentiment regardless of actual severity",
+        "why": "Floods the escalation queue with low-severity complaints that waste human agent time",
+        "domain": "customer_support",
+        "severity": "warning"
+      }
+    },
+    {
+      "task_id": "track_c_08",
+      "track": "C",
+      "phase": "seed_path",
+      "domain": "customer_support",
+      "title": "Anti-Pattern: Process Refund Without Verification",
+      "anti_pattern": {
+        "what_failed": "Processing refunds without verifying order existence and eligibility",
+        "why": "Led to fraudulent refund claims totaling $50K before detection",
+        "domain": "customer_support",
+        "severity": "critical"
+      }
+    },
+    {
+      "task_id": "track_c_09",
+      "track": "C",
+      "phase": "seed_path",
+      "domain": "customer_support",
+      "title": "Anti-Pattern: Skip Diagnostic Steps",
+      "anti_pattern": {
+        "what_failed": "Suggesting solutions without running diagnostics first",
+        "why": "Solutions addressed symptoms not root causes, requiring 3+ support rounds per ticket",
+        "domain": "customer_support",
+        "severity": "warning"
+      }
+    },
+    {
+      "task_id": "track_c_10",
+      "track": "C",
+      "phase": "seed_path",
+      "domain": "customer_support",
+      "title": "Anti-Pattern: Skip Identity Verification for Account Changes",
+      "anti_pattern": {
+        "what_failed": "Performing account recovery without verifying the requester's identity",
+        "why": "Account takeover incidents increased 300%, requiring mandatory password resets for all users",
+        "domain": "customer_support",
+        "severity": "critical"
+      }
+    },
+    {
+      "task_id": "track_c_11",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Simple Password Reset Request",
+      "task": "I forgot my password and can't log into my account. My email is john@example.com. Can you help me reset it?",
+      "expected_route": "account_recovery",
+      "complexity": "simple"
+    },
+    {
+      "task_id": "track_c_12",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Order Not Delivered",
+      "task": "I placed order #ORD-98234 three weeks ago and it still hasn't arrived. The tracking page says 'in transit' but the estimated delivery was 10 days ago. I want a refund.",
+      "expected_route": "refund_processing",
+      "complexity": "medium"
+    },
+    {
+      "task_id": "track_c_13",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: App Crash on Checkout",
+      "task": "Your mobile app crashes every time I try to complete a purchase. I've tried clearing cache and reinstalling. I'm on iOS 17.4 with iPhone 15 Pro. Error code: PAYMENT_INIT_FAILED.",
+      "expected_route": "technical_troubleshooting",
+      "complexity": "medium"
+    },
+    {
+      "task_id": "track_c_14",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Billing Discrepancy",
+      "task": "I was charged $149.99 but my subscription plan is $99.99/month. I see two charges on my credit card statement from last Tuesday. Please investigate and refund the overcharge.",
+      "expected_route": "refund_processing",
+      "complexity": "medium"
+    },
+    {
+      "task_id": "track_c_15",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Feature Question",
+      "task": "Does your enterprise plan include SSO integration with Azure AD? We're evaluating your product for a 500-person organization and need SAML 2.0 support.",
+      "expected_route": "standard_support",
+      "complexity": "simple"
+    },
+    {
+      "task_id": "track_c_16",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Data Export Request",
+      "task": "Under GDPR Article 20, I'm requesting a complete export of all my personal data including purchase history, profile information, and any tracking data. I need this within 30 days.",
+      "expected_route": "standard_support",
+      "complexity": "medium"
+    },
+    {
+      "task_id": "track_c_17",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Critical Production Outage",
+      "task": "URGENT: Our entire production environment is down. We're losing $50K/hour in revenue. All API calls are returning 503. Our monitoring shows your infrastructure region us-east-1 is having issues. We need immediate response from your engineering team.",
+      "expected_route": "escalation",
+      "complexity": "critical"
+    },
+    {
+      "task_id": "track_c_18",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Suspicious Account Activity",
+      "task": "I received an email saying my account password was changed, but I didn't do it. I also see purchases I didn't make. Please lock my account immediately and investigate.",
+      "expected_route": "account_recovery",
+      "complexity": "critical"
+    },
+    {
+      "task_id": "track_c_19",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Integration API Error",
+      "task": "Our webhook endpoint is receiving malformed JSON payloads from your API. The content-type header says application/json but the body is truncated at 64KB. This started after your v2.3 API update yesterday.",
+      "expected_route": "technical_troubleshooting",
+      "complexity": "medium"
+    },
+    {
+      "task_id": "track_c_20",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Subscription Cancellation with Refund",
+      "task": "I want to cancel my annual subscription and get a prorated refund. I've only used 3 months of my 12-month plan. Order #SUB-44521. I'm switching to a competitor because your API reliability has been poor.",
+      "expected_route": "refund_processing",
+      "complexity": "medium"
+    },
+    {
+      "task_id": "track_c_21",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Performance Issue Report",
+      "task": "Our dashboard has become extremely slow over the past week. Pages that used to load in 2 seconds now take 30+ seconds. We have 500 active users and this is affecting our entire team's productivity.",
+      "expected_route": "technical_troubleshooting",
+      "complexity": "medium"
+    },
+    {
+      "task_id": "track_c_22",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Multi-Factor Authentication Problem",
+      "task": "I lost my phone and can't receive 2FA codes. I have my backup codes but they're not working either. I need access to my admin account urgently to manage my team's access.",
+      "expected_route": "account_recovery",
+      "complexity": "critical"
+    },
+    {
+      "task_id": "track_c_23",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Bulk License Pricing inquiry",
+      "task": "We're interested in purchasing 200 enterprise licenses for our organization. Can you provide volume pricing and information about dedicated support SLAs for large deployments?",
+      "expected_route": "standard_support",
+      "complexity": "simple"
+    },
+    {
+      "task_id": "track_c_24",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Data Migration Failure",
+      "task": "We're migrating from your legacy platform to the new version. The migration tool failed at 60% completion with error 'SCHEMA_MISMATCH_v2'. We have 500 users already onboarded on the legacy system and a hard deadline next Friday.",
+      "expected_route": "escalation",
+      "complexity": "critical"
+    },
+    {
+      "task_id": "track_c_25",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Wrong Item Received",
+      "task": "I ordered a Bluetooth headset (SKU: BT-PRO-100) but received a phone case instead. Order #ORD-77123. I need the correct item shipped ASAP for a business trip next week.",
+      "expected_route": "refund_processing",
+      "complexity": "simple"
+    },
+    {
+      "task_id": "track_c_26",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: SOC 2 Compliance Documentation",
+      "task": "Our security team needs your SOC 2 Type II report and data processing agreement for our vendor risk assessment. Is this available for enterprise customers? We need it by end of month.",
+      "expected_route": "standard_support",
+      "complexity": "simple"
+    },
+    {
+      "task_id": "track_c_27",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Intermittent API Timeout",
+      "task": "Our integration experiences intermittent timeouts on the /api/v2/analytics endpoint. Happens about 20% of the time. We've increased timeout to 30 seconds but still see failures. Request IDs: req_abc123, req_def456, req_ghi789.",
+      "expected_route": "technical_troubleshooting",
+      "complexity": "medium"
+    },
+    {
+      "task_id": "track_c_28",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Team Member Access Removal",
+      "task": "We need to immediately revoke access for a terminated employee: jane.smith@company.com. They had admin access to our organization's account, billing information, and API keys.",
+      "expected_route": "account_recovery",
+      "complexity": "critical"
+    },
+    {
+      "task_id": "track_c_29",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Contract Renewal Question",
+      "task": "Our enterprise contract is up for renewal next month. We'd like to discuss adding 50 more seats, upgrading to the premium tier, and negotiating a multi-year discount.",
+      "expected_route": "standard_support",
+      "complexity": "simple"
+    },
+    {
+      "task_id": "track_c_30",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Security Incident Report",
+      "task": "We believe there has been unauthorized access to our organization's data through your platform. We detected anomalous API calls from IP addresses in a country where we have no employees. Need immediate investigation and incident report.",
+      "expected_route": "escalation",
+      "complexity": "critical"
+    },
+    {
+      "task_id": "track_c_31",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Mobile App Notification Bug",
+      "task": "Push notifications stopped working on Android 14 devices since your last app update 3 days ago. iOS is fine. About 30% of our team uses Android and they're missing critical alerts.",
+      "expected_route": "technical_troubleshooting",
+      "complexity": "medium"
+    },
+    {
+      "task_id": "track_c_32",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Duplicate Charges on Card",
+      "task": "I see 3 identical charges of $299 on my credit card from your platform, all dated March 15. I only authorized one subscription payment. Please reverse the duplicates immediately.",
+      "expected_route": "refund_processing",
+      "complexity": "medium"
+    },
+    {
+      "task_id": "track_c_33",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Compliance-Critical Data Deletion",
+      "task": "Under CCPA, I am requesting the deletion of all personal data associated with my account (user ID: USR-88901). Please confirm deletion within 45 days and provide written confirmation.",
+      "expected_route": "standard_support",
+      "complexity": "medium"
+    },
+    {
+      "task_id": "track_c_34",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: SLA Violation Complaint",
+      "task": "Your platform has been below the 99.9% uptime SLA for 3 consecutive months. We've documented 14 hours of downtime this quarter. We're requesting SLA credits per our enterprise agreement section 7.2.",
+      "expected_route": "escalation",
+      "complexity": "critical"
+    },
+    {
+      "task_id": "track_c_35",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Email Delivery Failure",
+      "task": "Transactional emails from your platform (order confirmations, password resets) are being flagged as spam by our corporate email filter. Our IT team says the SPF/DKIM records need updating.",
+      "expected_route": "technical_troubleshooting",
+      "complexity": "medium"
+    },
+    {
+      "task_id": "track_c_36",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Account Merge Request",
+      "task": "I accidentally created two accounts with different email addresses. I need to merge user_old@gmail.com into user_new@company.com, preserving all purchase history and preferences from both accounts.",
+      "expected_route": "account_recovery",
+      "complexity": "medium"
+    },
+    {
+      "task_id": "track_c_37",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Warranty Claim",
+      "task": "My premium wireless earbuds (SKU: WE-500) stopped working after 8 months. They're still under the 12-month warranty. The right earbud produces crackling sounds and won't hold a charge beyond 30 minutes.",
+      "expected_route": "refund_processing",
+      "complexity": "simple"
+    },
+    {
+      "task_id": "track_c_38",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: API Rate Limit Increase",
+      "task": "Our application is hitting the 1000 requests/minute API rate limit during peak hours. We need this increased to 5000/min. We're on the Business plan and willing to discuss enterprise pricing if needed.",
+      "expected_route": "standard_support",
+      "complexity": "simple"
+    },
+    {
+      "task_id": "track_c_39",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Database Connection Pool Exhaustion",
+      "task": "Our dedicated instance is showing 'too many connections' errors starting 2 hours ago. Current connections: 450/500. We can see connection leaks in your admin panel but can't reset them ourselves.",
+      "expected_route": "escalation",
+      "complexity": "critical"
+    },
+    {
+      "task_id": "track_c_40",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Organization Ownership Transfer",
+      "task": "Our company's CEO (and account owner) has left. We need to transfer organization ownership to our new CTO: new.cto@company.com. The departing owner is unresponsive. We have company legal documentation proving the change.",
+      "expected_route": "account_recovery",
+      "complexity": "critical"
+    },
+    {
+      "task_id": "track_c_41",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Accessibility Complaint",
+      "task": "Your checkout page is not accessible with screen readers. The payment form fields lack ARIA labels and the color contrast on error messages fails WCAG 2.1 AA standards. We need this fixed for our ADA compliance requirements.",
+      "expected_route": "technical_troubleshooting",
+      "complexity": "medium"
+    },
+    {
+      "task_id": "track_c_42",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: International Tax Documentation",
+      "task": "We need W-8BEN-E tax forms for our international billing. Our accounting department requires this for our quarterly tax filing due in 2 weeks. Account: ENT-55001.",
+      "expected_route": "standard_support",
+      "complexity": "simple"
+    },
+    {
+      "task_id": "track_c_43",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Bulk Import Error",
+      "task": "Trying to import 50,000 contacts via CSV upload. The import hangs at 15,000 records with error 'BATCH_TIMEOUT'. I've tried splitting the file but same issue occurs. This is blocking our launch campaign.",
+      "expected_route": "technical_troubleshooting",
+      "complexity": "medium"
+    },
+    {
+      "task_id": "track_c_44",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Partial Refund for Defective Feature",
+      "task": "The analytics module we're paying $200/month extra for has been broken for 6 weeks. Support tickets were opened but the bug hasn't been fixed. I want a refund for those 6 weeks of the analytics add-on.",
+      "expected_route": "refund_processing",
+      "complexity": "medium"
+    },
+    {
+      "task_id": "track_c_45",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Regulatory Investigation Data Request",
+      "task": "We have received a regulatory investigation request that requires us to preserve and produce all data, communications, and audit logs associated with accounts belonging to XYZ Corp Ltd from 2024-01-01 to present. This is a legal hold.",
+      "expected_route": "escalation",
+      "complexity": "critical"
+    },
+    {
+      "task_id": "track_c_46",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: SSL Certificate Renewal Issue",
+      "task": "Our custom domain SSL certificate expired last night and now all our customers see security warnings when visiting our branded portal at app.ourcompany.com. Auto-renewal was supposed to handle this.",
+      "expected_route": "technical_troubleshooting",
+      "complexity": "critical"
+    },
+    {
+      "task_id": "track_c_47",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Team Plan to Enterprise Upgrade",
+      "task": "We need to upgrade our 25-seat team plan to enterprise with SSO, dedicated support, and custom data retention. Can we do this mid-billing-cycle? What's the prorated cost?",
+      "expected_route": "standard_support",
+      "complexity": "simple"
+    },
+    {
+      "task_id": "track_c_48",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Cross-Region Data Residency Issue",
+      "task": "We just discovered our data is being stored in US-East region but our contract specifies EU-only data residency for GDPR compliance. This is a potential regulatory violation and needs immediate resolution.",
+      "expected_route": "escalation",
+      "complexity": "critical"
+    },
+    {
+      "task_id": "track_c_49",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Inherited Account Password Recovery",
+      "task": "I recently acquired a business that uses your platform. The previous owner set up the account but I don't have any login credentials. I have the business purchase agreement and domain ownership proof.",
+      "expected_route": "account_recovery",
+      "complexity": "medium"
+    },
+    {
+      "task_id": "track_c_50",
+      "track": "C",
+      "phase": "route",
+      "domain": "customer_support",
+      "title": "Route: Return Damaged Product with Express Replacement",
+      "task": "My laptop (order #ORD-11234, SKU: LP-PRO-16) arrived with a cracked screen. I need an immediate replacement shipped overnight for my conference presentation this Friday. The damage was clearly from shipping.",
+      "expected_route": "refund_processing",
+      "complexity": "medium"
+    },
+
+    {
+      "task_id": "track_d_01",
+      "track": "D",
+      "phase": "seed",
+      "domain": "devops",
+      "title": "Seed Recipe: CI/CD Pipeline Pattern",
+      "recipe": {
+        "agents": ["code_linter", "test_runner", "security_scanner", "artifact_builder", "deployer"],
+        "strategy": "sequential",
+        "domain": "devops",
+        "task": "Build and deploy code through a quality-gated CI/CD pipeline"
+      },
+      "anti_pattern": {
+        "what_failed": "Deploying without running security scans",
+        "why": "Introduced a critical XSS vulnerability that was exploited within hours",
+        "domain": "devops",
+        "severity": "critical"
+      },
+      "path_skill": {
+        "path_nodes": ["linter", "tester", "scanner", "builder", "deployer"],
+        "score": 0.93,
+        "domain": "devops",
+        "task": "Standard CI/CD pipeline execution path",
+        "quality": 0.91
+      }
+    },
+    {
+      "task_id": "track_d_02",
+      "track": "D",
+      "phase": "seed",
+      "domain": "data_science",
+      "title": "Seed Recipe: Data Analysis Pipeline Pattern",
+      "recipe": {
+        "agents": ["data_cleaner", "feature_engineer", "model_trainer", "evaluator", "reporter"],
+        "strategy": "sequential",
+        "domain": "data_science",
+        "task": "Transform raw data into actionable insights through a structured analysis pipeline"
+      },
+      "anti_pattern": {
+        "what_failed": "Training models on uncleaned data with outliers and missing values",
+        "why": "Model appeared to perform well on training data but failed dramatically in production due to data leakage from improperly handled NaN values",
+        "domain": "data_science",
+        "severity": "critical"
+      },
+      "path_skill": {
+        "path_nodes": ["cleaner", "engineer", "trainer", "evaluator", "reporter"],
+        "score": 0.91,
+        "domain": "data_science",
+        "task": "Standard data analysis pipeline execution path",
+        "quality": 0.89
+      }
+    },
+    {
+      "task_id": "track_d_03",
+      "track": "D",
+      "phase": "seed",
+      "domain": "incident_management",
+      "title": "Seed Recipe: Incident Response Pattern",
+      "recipe": {
+        "agents": ["alert_triager", "impact_assessor", "root_cause_analyzer", "fix_implementer", "post_mortem_writer"],
+        "strategy": "sequential",
+        "domain": "incident_management",
+        "task": "Respond to production incidents through structured triage, analysis, and resolution"
+      },
+      "anti_pattern": {
+        "what_failed": "Applying fixes without understanding root cause",
+        "why": "Quick fixes masked the real issue, which recurred 3 times in a week with increasing severity",
+        "domain": "incident_management",
+        "severity": "critical"
+      },
+      "path_skill": {
+        "path_nodes": ["triager", "assessor", "analyzer", "implementer", "post_mortem"],
+        "score": 0.89,
+        "domain": "incident_management",
+        "task": "Standard incident response execution path",
+        "quality": 0.87
+      }
+    },
+    {
+      "task_id": "track_d_04",
+      "track": "D",
+      "phase": "seed",
+      "domain": "content_pipeline",
+      "title": "Seed Recipe: Content Publishing Pattern",
+      "recipe": {
+        "agents": ["content_reviewer", "seo_optimizer", "accessibility_checker", "format_converter", "publisher"],
+        "strategy": "sequential",
+        "domain": "content_pipeline",
+        "task": "Review, optimize, and publish content through quality and compliance gates"
+      },
+      "anti_pattern": {
+        "what_failed": "Publishing content without accessibility review",
+        "why": "Received ADA compliance complaint and legal threat from a visually impaired user who couldn't navigate the published documents",
+        "domain": "content_pipeline",
+        "severity": "warning"
+      },
+      "path_skill": {
+        "path_nodes": ["reviewer", "seo", "a11y_checker", "converter", "publisher"],
+        "score": 0.88,
+        "domain": "content_pipeline",
+        "task": "Standard content publishing execution path",
+        "quality": 0.85
+      }
+    },
+    {
+      "task_id": "track_d_05",
+      "track": "D",
+      "phase": "seed",
+      "domain": "user_onboarding",
+      "title": "Seed Recipe: User Onboarding Pattern",
+      "recipe": {
+        "agents": ["profile_builder", "preference_collector", "tutorial_selector", "progress_tracker", "feedback_collector"],
+        "strategy": "sequential",
+        "domain": "user_onboarding",
+        "task": "Guide new users through personalized onboarding with adaptive content and progress tracking"
+      },
+      "anti_pattern": {
+        "what_failed": "Showing the same generic tutorial to all users regardless of experience level",
+        "why": "Expert users abandoned the product during forced beginner tutorials. 60% churn in first week for enterprise users",
+        "domain": "user_onboarding",
+        "severity": "warning"
+      },
+      "path_skill": {
+        "path_nodes": ["profiler", "preference", "tutorial", "tracker", "feedback"],
+        "score": 0.87,
+        "domain": "user_onboarding",
+        "task": "Standard user onboarding execution path",
+        "quality": 0.84
+      }
+    },
+    {
+      "task_id": "track_d_06",
+      "track": "D",
+      "phase": "seed",
+      "domain": "code_review",
+      "title": "Seed Recipe: Code Review Pipeline Pattern",
+      "recipe": {
+        "agents": ["diff_analyzer", "style_checker", "logic_reviewer", "security_auditor", "summary_writer"],
+        "strategy": "sequential",
+        "domain": "code_review",
+        "task": "Automate code review through style, logic, security analysis and actionable summaries"
+      },
+      "anti_pattern": {
+        "what_failed": "Focusing only on style issues while ignoring logic and security concerns",
+        "why": "Pedantic style comments buried the critical SQL injection vulnerability that a human reviewer missed too",
+        "domain": "code_review",
+        "severity": "critical"
+      },
+      "path_skill": {
+        "path_nodes": ["diff", "style", "logic", "security", "summary"],
+        "score": 0.90,
+        "domain": "code_review",
+        "task": "Comprehensive code review execution path",
+        "quality": 0.88
+      }
+    },
+    {
+      "task_id": "track_d_07",
+      "track": "D",
+      "phase": "seed",
+      "domain": "api_design",
+      "title": "Seed Recipe: API Design Review Pattern",
+      "recipe": {
+        "agents": ["schema_validator", "naming_reviewer", "consistency_checker", "security_reviewer", "doc_generator"],
+        "strategy": "sequential",
+        "domain": "api_design",
+        "task": "Review and validate API designs for consistency, security, and developer experience"
+      },
+      "anti_pattern": {
+        "what_failed": "Designing API endpoints with inconsistent naming conventions and response formats",
+        "why": "Client developers spent 3x longer integrating due to unpredictable response shapes and naming patterns",
+        "domain": "api_design",
+        "severity": "warning"
+      },
+      "path_skill": {
+        "path_nodes": ["schema", "naming", "consistency", "security", "docs"],
+        "score": 0.89,
+        "domain": "api_design",
+        "task": "API design review execution path",
+        "quality": 0.86
+      }
+    },
+    {
+      "task_id": "track_d_08",
+      "track": "D",
+      "phase": "seed",
+      "domain": "testing_strategy",
+      "title": "Seed Recipe: Test Strategy Design Pattern",
+      "recipe": {
+        "agents": ["risk_analyzer", "test_planner", "case_generator", "coverage_analyzer", "automation_recommender"],
+        "strategy": "sequential",
+        "domain": "testing_strategy",
+        "task": "Design comprehensive test strategies based on risk analysis and coverage gaps"
+      },
+      "anti_pattern": {
+        "what_failed": "Writing only happy-path tests and ignoring error scenarios and edge cases",
+        "why": "Production crashes from unhandled edge cases cost 2 days of downtime every quarter",
+        "domain": "testing_strategy",
+        "severity": "warning"
+      },
+      "path_skill": {
+        "path_nodes": ["risk", "planner", "generator", "coverage", "automation"],
+        "score": 0.88,
+        "domain": "testing_strategy",
+        "task": "Test strategy design execution path",
+        "quality": 0.85
+      }
+    },
+    {
+      "task_id": "track_d_09",
+      "track": "D",
+      "phase": "seed",
+      "domain": "database_design",
+      "title": "Seed Recipe: Database Design Review Pattern",
+      "recipe": {
+        "agents": ["schema_analyzer", "normalization_checker", "index_advisor", "query_optimizer", "migration_planner"],
+        "strategy": "sequential",
+        "domain": "database_design",
+        "task": "Review and optimize database schemas for performance, normalization, and migration safety"
+      },
+      "anti_pattern": {
+        "what_failed": "Adding indexes on every column expecting universal query speedup",
+        "why": "Write performance degraded 5x from excessive index maintenance, insert-heavy workloads caused lock contention and storage bloat",
+        "domain": "database_design",
+        "severity": "warning"
+      },
+      "path_skill": {
+        "path_nodes": ["schema", "normalization", "index", "query", "migration"],
+        "score": 0.90,
+        "domain": "database_design",
+        "task": "Database design review execution path",
+        "quality": 0.88
+      }
+    },
+    {
+      "task_id": "track_d_10",
+      "track": "D",
+      "phase": "seed",
+      "domain": "monitoring",
+      "title": "Seed Recipe: Observability Setup Pattern",
+      "recipe": {
+        "agents": ["metric_designer", "dashboard_builder", "alert_configurer", "runbook_writer", "slo_definer"],
+        "strategy": "sequential",
+        "domain": "monitoring",
+        "task": "Design comprehensive observability with metrics, dashboards, alerts, and runbooks"
+      },
+      "anti_pattern": {
+        "what_failed": "Setting alert thresholds without baselining normal behavior",
+        "why": "Alert fatigue from 500+ daily false positives led the team to ignore alerts, missing a real outage for 4 hours",
+        "domain": "monitoring",
+        "severity": "critical"
+      },
+      "path_skill": {
+        "path_nodes": ["metrics", "dashboard", "alerts", "runbook", "slo"],
+        "score": 0.91,
+        "domain": "monitoring",
+        "task": "Observability setup execution path",
+        "quality": 0.89
+      }
+    },
+    {
+      "task_id": "track_d_11",
+      "track": "D",
+      "phase": "compose",
+      "domain": "devops",
+      "title": "Compose: Deploy ML Model to Production",
+      "task": "Deploy a new fraud detection ML model to production. The model requires data preprocessing, model serving, monitoring, and a rollback plan. There was a previous incident where deploying without security scans introduced vulnerabilities.",
+      "required_skills": ["ci_cd_recipe", "data_analysis_recipe", "monitoring_recipe"],
+      "avoidable_anti_patterns": ["deploy_without_security_scan", "deploy_without_data_cleaning"]
+    },
+    {
+      "task_id": "track_d_12",
+      "track": "D",
+      "phase": "compose",
+      "domain": "incident_management",
+      "title": "Compose: Respond to Data Pipeline Outage",
+      "task": "A critical data pipeline has stopped processing. Customer reports indicate stale data in dashboards. Triage the incident, analyze root cause, implement fix, and write a post-mortem. Previous incidents caused by applying fixes without root cause analysis recurred multiple times.",
+      "required_skills": ["incident_response_recipe", "monitoring_recipe", "data_analysis_recipe"],
+      "avoidable_anti_patterns": ["fix_without_rca", "alert_without_baseline"]
+    },
+    {
+      "task_id": "track_d_13",
+      "track": "D",
+      "phase": "compose",
+      "domain": "content_pipeline",
+      "title": "Compose: Launch Documentation Site",
+      "task": "Launch a new developer documentation site. Content needs to be reviewed, optimized for search, checked for accessibility, and published. The API docs section requires design review for consistency.",
+      "required_skills": ["content_publishing_recipe", "api_design_recipe"],
+      "avoidable_anti_patterns": ["publish_without_a11y", "inconsistent_api_naming"]
+    },
+    {
+      "task_id": "track_d_14",
+      "track": "D",
+      "phase": "compose",
+      "domain": "platform_engineering",
+      "title": "Compose: Build Internal Developer Platform",
+      "task": "Design an internal developer platform with CI/CD pipelines, monitoring dashboards, and code review automation. The platform must serve 50 development teams with different technology stacks.",
+      "required_skills": ["ci_cd_recipe", "monitoring_recipe", "code_review_recipe"],
+      "avoidable_anti_patterns": ["deploy_without_security_scan", "style_only_review", "alert_without_baseline"]
+    },
+    {
+      "task_id": "track_d_15",
+      "track": "D",
+      "phase": "compose",
+      "domain": "data_science",
+      "title": "Compose: End-to-End ML Experiment",
+      "task": "Run a complete ML experiment: clean the raw customer churn dataset, engineer features, train a gradient boosting model, evaluate it against the existing logistic regression baseline, and create a report with deployment recommendations and observability setup.",
+      "required_skills": ["data_analysis_recipe", "monitoring_recipe", "testing_strategy_recipe"],
+      "avoidable_anti_patterns": ["train_on_dirty_data", "happy_path_tests_only"]
+    },
+    {
+      "task_id": "track_d_16",
+      "track": "D",
+      "phase": "compose",
+      "domain": "code_review",
+      "title": "Compose: Security-Focused Code Review",
+      "task": "Conduct a comprehensive code review of a payment processing module. The review must cover code style, business logic correctness, security vulnerabilities (OWASP Top 10), and generate actionable feedback. Previous reviews that focused only on style missed critical security issues.",
+      "required_skills": ["code_review_recipe", "testing_strategy_recipe"],
+      "avoidable_anti_patterns": ["style_only_review", "happy_path_tests_only"]
+    },
+    {
+      "task_id": "track_d_17",
+      "track": "D",
+      "phase": "compose",
+      "domain": "database_design",
+      "title": "Compose: Database Optimization for Scale",
+      "task": "Optimize a PostgreSQL database serving 100M records with degrading query performance. Analyze the schema, review normalization, recommend index changes, optimize top 10 slow queries, and plan the migration with zero-downtime deployment.",
+      "required_skills": ["database_design_recipe", "ci_cd_recipe", "monitoring_recipe"],
+      "avoidable_anti_patterns": ["index_everything", "deploy_without_security_scan"]
+    },
+    {
+      "task_id": "track_d_18",
+      "track": "D",
+      "phase": "compose",
+      "domain": "user_onboarding",
+      "title": "Compose: Enterprise Onboarding Redesign",
+      "task": "Redesign the enterprise user onboarding to reduce time-to-value from 2 weeks to 3 days. Needs adaptive tutorials based on role, progress tracking with analytics, content review for the tutorial materials, and integration testing for the onboarding API.",
+      "required_skills": ["onboarding_recipe", "content_publishing_recipe", "testing_strategy_recipe"],
+      "avoidable_anti_patterns": ["generic_tutorial", "happy_path_tests_only", "publish_without_a11y"]
+    },
+    {
+      "task_id": "track_d_19",
+      "track": "D",
+      "phase": "compose",
+      "domain": "api_design",
+      "title": "Compose: Design and Test New API Version",
+      "task": "Design v3 of the product catalog API with GraphQL support. The API needs schema validation, consistent naming, security review, comprehensive test strategy, and auto-generated documentation.",
+      "required_skills": ["api_design_recipe", "testing_strategy_recipe", "code_review_recipe"],
+      "avoidable_anti_patterns": ["inconsistent_api_naming", "happy_path_tests_only", "style_only_review"]
+    },
+    {
+      "task_id": "track_d_20",
+      "track": "D",
+      "phase": "compose",
+      "domain": "incident_management",
+      "title": "Compose: Post-Incident Reliability Improvement",
+      "task": "After a major payment processing outage, implement reliability improvements: code review the hotfix, set up comprehensive monitoring with proper alert baselines, design new test scenarios for failure modes, and plan database schema changes to prevent recurrence.",
+      "required_skills": ["incident_response_recipe", "code_review_recipe", "monitoring_recipe", "testing_strategy_recipe", "database_design_recipe"],
+      "avoidable_anti_patterns": ["fix_without_rca", "style_only_review", "alert_without_baseline", "happy_path_tests_only"]
+    },
+    {
+      "task_id": "track_d_21",
+      "track": "D",
+      "phase": "compose",
+      "domain": "platform_engineering",
+      "title": "Compose: Migrate Monolith to Microservices",
+      "task": "Plan the migration of a monolithic e-commerce application to microservices. Define CI/CD pipelines per service, design observability for distributed tracing, create database schemas for each bounded context, and design API contracts between services.",
+      "required_skills": ["ci_cd_recipe", "monitoring_recipe", "database_design_recipe", "api_design_recipe"],
+      "avoidable_anti_patterns": ["deploy_without_security_scan", "alert_without_baseline", "index_everything", "inconsistent_api_naming"]
+    },
+    {
+      "task_id": "track_d_22",
+      "track": "D",
+      "phase": "compose",
+      "domain": "data_science",
+      "title": "Compose: Real-Time Recommendation Engine",
+      "task": "Build a real-time product recommendation engine. Clean interaction data, engineer user and item features, train a collaborative filtering model, deploy with CI/CD, set up latency monitoring, and design A/B test framework for measuring business impact.",
+      "required_skills": ["data_analysis_recipe", "ci_cd_recipe", "monitoring_recipe", "testing_strategy_recipe"],
+      "avoidable_anti_patterns": ["train_on_dirty_data", "deploy_without_security_scan", "alert_without_baseline", "happy_path_tests_only"]
+    },
+    {
+      "task_id": "track_d_23",
+      "track": "D",
+      "phase": "compose",
+      "domain": "content_pipeline",
+      "title": "Compose: Multi-Language Content Launch",
+      "task": "Launch product documentation in 5 languages. Each version needs content review, SEO optimization for the target locale, accessibility compliance, consistent API reference translation, and CI/CD for the documentation site.",
+      "required_skills": ["content_publishing_recipe", "api_design_recipe", "ci_cd_recipe"],
+      "avoidable_anti_patterns": ["publish_without_a11y", "inconsistent_api_naming", "deploy_without_security_scan"]
+    },
+    {
+      "task_id": "track_d_24",
+      "track": "D",
+      "phase": "compose",
+      "domain": "testing_strategy",
+      "title": "Compose: Comprehensive QA Transformation",
+      "task": "Transform a team's manual QA process into automated testing. Analyze risk areas, generate test cases, design database test fixtures, set up CI/CD test stages, and create monitoring for test infrastructure health.",
+      "required_skills": ["testing_strategy_recipe", "database_design_recipe", "ci_cd_recipe", "monitoring_recipe"],
+      "avoidable_anti_patterns": ["happy_path_tests_only", "index_everything", "deploy_without_security_scan", "alert_without_baseline"]
+    },
+    {
+      "task_id": "track_d_25",
+      "track": "D",
+      "phase": "compose",
+      "domain": "devops",
+      "title": "Compose: Disaster Recovery Plan",
+      "task": "Design a comprehensive disaster recovery plan for a multi-region SaaS platform. Define incident response procedures, database backup and restore strategies, CI/CD for infrastructure-as-code, monitoring with SLO-based alerts, and documentation with runbooks.",
+      "required_skills": ["incident_response_recipe", "database_design_recipe", "ci_cd_recipe", "monitoring_recipe", "content_publishing_recipe"],
+      "avoidable_anti_patterns": ["fix_without_rca", "deploy_without_security_scan", "alert_without_baseline", "publish_without_a11y"]
+    },
+    {
+      "task_id": "track_d_26",
+      "track": "D",
+      "phase": "compose",
+      "domain": "code_review",
+      "title": "Compose: Review Microservice Communication Layer",
+      "task": "Review the inter-service communication layer including gRPC definitions, message queue consumers, and HTTP client implementations. Needs code review for correctness, API consistency check, security audit, and performance test design.",
+      "required_skills": ["code_review_recipe", "api_design_recipe", "testing_strategy_recipe"],
+      "avoidable_anti_patterns": ["style_only_review", "inconsistent_api_naming", "happy_path_tests_only"]
+    },
+    {
+      "task_id": "track_d_27",
+      "track": "D",
+      "phase": "compose",
+      "domain": "user_onboarding",
+      "title": "Compose: Developer SDK Onboarding",
+      "task": "Create a developer onboarding experience for a new SDK. Build adaptive tutorials based on programming language, create API reference docs, set up code review for example snippets, and design integration tests developers can run locally.",
+      "required_skills": ["onboarding_recipe", "api_design_recipe", "code_review_recipe", "testing_strategy_recipe"],
+      "avoidable_anti_patterns": ["generic_tutorial", "inconsistent_api_naming", "style_only_review", "happy_path_tests_only"]
+    },
+    {
+      "task_id": "track_d_28",
+      "track": "D",
+      "phase": "compose",
+      "domain": "monitoring",
+      "title": "Compose: Full-Stack Observability Implementation",
+      "task": "Implement observability for a 3-tier application (frontend SPA, API gateway, microservices). Design metrics and dashboards per tier, configure alerts with proper baselines, write runbooks for common issues, and design synthetic tests for SLO measurement.",
+      "required_skills": ["monitoring_recipe", "testing_strategy_recipe", "incident_response_recipe"],
+      "avoidable_anti_patterns": ["alert_without_baseline", "happy_path_tests_only", "fix_without_rca"]
+    },
+    {
+      "task_id": "track_d_29",
+      "track": "D",
+      "phase": "compose",
+      "domain": "platform_engineering",
+      "title": "Compose: Secure Software Supply Chain",
+      "task": "Implement a secure software supply chain: code review policy enforcement, CI/CD with SBOM generation and vulnerability scanning, database migration safety checks, container image signing, and deployment attestation monitoring.",
+      "required_skills": ["code_review_recipe", "ci_cd_recipe", "database_design_recipe", "monitoring_recipe"],
+      "avoidable_anti_patterns": ["style_only_review", "deploy_without_security_scan", "index_everything", "alert_without_baseline"]
+    },
+    {
+      "task_id": "track_d_30",
+      "track": "D",
+      "phase": "compose",
+      "domain": "data_science",
+      "title": "Compose: ML Model Governance Framework",
+      "task": "Build an ML model governance framework: data quality pipelines, model training CI/CD, performance monitoring with drift detection, incident response for model failures, and compliance documentation for audit readiness.",
+      "required_skills": ["data_analysis_recipe", "ci_cd_recipe", "monitoring_recipe", "incident_response_recipe", "content_publishing_recipe"],
+      "avoidable_anti_patterns": ["train_on_dirty_data", "deploy_without_security_scan", "alert_without_baseline", "fix_without_rca", "publish_without_a11y"]
+    },
+    {
+      "task_id": "track_d_31",
+      "track": "D",
+      "phase": "compose",
+      "domain": "testing_strategy",
+      "title": "Compose: Chaos Engineering Program",
+      "task": "Design a chaos engineering program for a distributed e-commerce platform. Identify system risks, design failure injection tests, set up monitoring to measure blast radius, create incident response procedures for experiments, and document operational runbooks.",
+      "required_skills": ["testing_strategy_recipe", "monitoring_recipe", "incident_response_recipe", "content_publishing_recipe"],
+      "avoidable_anti_patterns": ["happy_path_tests_only", "alert_without_baseline", "fix_without_rca", "publish_without_a11y"]
+    },
+    {
+      "task_id": "track_d_32",
+      "track": "D",
+      "phase": "compose",
+      "domain": "api_design",
+      "title": "Compose: API Gateway Modernization",
+      "task": "Modernize an API gateway from custom nginx configs to a managed solution. Design new API schemas with versioning, implement security review for auth flows, set up API analytics monitoring, plan database schema for rate limiting state, and create migration documentation.",
+      "required_skills": ["api_design_recipe", "monitoring_recipe", "database_design_recipe", "content_publishing_recipe"],
+      "avoidable_anti_patterns": ["inconsistent_api_naming", "alert_without_baseline", "index_everything", "publish_without_a11y"]
+    },
+    {
+      "task_id": "track_d_33",
+      "track": "D",
+      "phase": "compose",
+      "domain": "devops",
+      "title": "Compose: Multi-Cloud Deployment Strategy",
+      "task": "Design a multi-cloud deployment strategy across AWS and GCP. Create CI/CD pipelines supporting both clouds, set up unified monitoring, design database replication strategy, implement security scanning for cloud-specific configs, and create operational documentation.",
+      "required_skills": ["ci_cd_recipe", "monitoring_recipe", "database_design_recipe", "content_publishing_recipe"],
+      "avoidable_anti_patterns": ["deploy_without_security_scan", "alert_without_baseline", "index_everything", "publish_without_a11y"]
+    },
+    {
+      "task_id": "track_d_34",
+      "track": "D",
+      "phase": "compose",
+      "domain": "incident_management",
+      "title": "Compose: Automated Incident Triage System",
+      "task": "Build an automated incident triage system that classifies incoming alerts, assesses impact, routes to on-call teams, and kicks off diagnostic playbooks. Needs incident response patterns, monitoring integration, API design for the triage service, and test coverage for classification accuracy.",
+      "required_skills": ["incident_response_recipe", "monitoring_recipe", "api_design_recipe", "testing_strategy_recipe"],
+      "avoidable_anti_patterns": ["fix_without_rca", "alert_without_baseline", "inconsistent_api_naming", "happy_path_tests_only"]
+    },
+    {
+      "task_id": "track_d_35",
+      "track": "D",
+      "phase": "compose",
+      "domain": "content_pipeline",
+      "title": "Compose: Knowledge Base Migration and Redesign",
+      "task": "Migrate a legacy knowledge base to a modern platform. Review and update all content, optimize for search, ensure accessibility, design API for programmatic access, and set up content freshness monitoring with automated stale-content alerts.",
+      "required_skills": ["content_publishing_recipe", "api_design_recipe", "monitoring_recipe"],
+      "avoidable_anti_patterns": ["publish_without_a11y", "inconsistent_api_naming", "alert_without_baseline"]
+    },
+    {
+      "task_id": "track_d_36",
+      "track": "D",
+      "phase": "compose",
+      "domain": "code_review",
+      "title": "Compose: Legacy Codebase Modernization Review",
+      "task": "Review a 10-year-old PHP codebase being modernized to Python. Code review the migration approach, audit the database schema translation, design API schemas for the new microservice boundaries, and create a test strategy for verifying behavioral equivalence.",
+      "required_skills": ["code_review_recipe", "database_design_recipe", "api_design_recipe", "testing_strategy_recipe"],
+      "avoidable_anti_patterns": ["style_only_review", "index_everything", "inconsistent_api_naming", "happy_path_tests_only"]
+    },
+    {
+      "task_id": "track_d_37",
+      "track": "D",
+      "phase": "compose",
+      "domain": "user_onboarding",
+      "title": "Compose: Marketplace Seller Onboarding",
+      "task": "Design onboarding for marketplace sellers: adaptive setup wizard, content review for seller guides, API integration setup documentation, database design for seller profiles and inventory, and monitoring for onboarding funnel drop-off points.",
+      "required_skills": ["onboarding_recipe", "content_publishing_recipe", "api_design_recipe", "database_design_recipe", "monitoring_recipe"],
+      "avoidable_anti_patterns": ["generic_tutorial", "publish_without_a11y", "inconsistent_api_naming", "index_everything", "alert_without_baseline"]
+    },
+    {
+      "task_id": "track_d_38",
+      "track": "D",
+      "phase": "compose",
+      "domain": "database_design",
+      "title": "Compose: Event Sourcing System Design",
+      "task": "Design an event sourcing system for an order management domain. Design the event store schema, build projections, create a CI/CD pipeline for schema evolution, set up event replay monitoring, and design comprehensive test scenarios for event ordering and idempotency.",
+      "required_skills": ["database_design_recipe", "ci_cd_recipe", "monitoring_recipe", "testing_strategy_recipe"],
+      "avoidable_anti_patterns": ["index_everything", "deploy_without_security_scan", "alert_without_baseline", "happy_path_tests_only"]
+    },
+    {
+      "task_id": "track_d_39",
+      "track": "D",
+      "phase": "compose",
+      "domain": "monitoring",
+      "title": "Compose: Cost Optimization Monitoring",
+      "task": "Build a cloud cost optimization monitoring system. Design cost metrics per service, create dashboards for budget tracking, configure alerts for anomalous spending, write runbooks for cost investigation, and design tests for cost attribution accuracy.",
+      "required_skills": ["monitoring_recipe", "testing_strategy_recipe", "content_publishing_recipe"],
+      "avoidable_anti_patterns": ["alert_without_baseline", "happy_path_tests_only", "publish_without_a11y"]
+    },
+    {
+      "task_id": "track_d_40",
+      "track": "D",
+      "phase": "compose",
+      "domain": "platform_engineering",
+      "title": "Compose: Developer Experience Overhaul",
+      "task": "Overhaul the developer experience for an internal platform. Redesign onboarding for new engineers, automate code review for platform PRs, build CI/CD for the platform SDK, set up developer satisfaction monitoring, and design API contracts for platform services.",
+      "required_skills": ["onboarding_recipe", "code_review_recipe", "ci_cd_recipe", "monitoring_recipe", "api_design_recipe"],
+      "avoidable_anti_patterns": ["generic_tutorial", "style_only_review", "deploy_without_security_scan", "alert_without_baseline", "inconsistent_api_naming"]
+    },
+    {
+      "task_id": "track_d_41",
+      "track": "D",
+      "phase": "compose",
+      "domain": "data_science",
+      "title": "Compose: Automated Report Generation System",
+      "task": "Build an automated weekly business report system. Clean and transform data from 6 sources, generate insights with trend analysis, review content for accuracy, publish to executive dashboard, and monitor data freshness and report delivery.",
+      "required_skills": ["data_analysis_recipe", "content_publishing_recipe", "monitoring_recipe"],
+      "avoidable_anti_patterns": ["train_on_dirty_data", "publish_without_a11y", "alert_without_baseline"]
+    },
+    {
+      "task_id": "track_d_42",
+      "track": "D",
+      "phase": "compose",
+      "domain": "incident_management",
+      "title": "Compose: SRE Team Bootstrap",
+      "task": "Bootstrap an SRE team's operational procedures. Define incident response playbooks, set up monitoring with SLO-based alerts, create on-call documentation, design database performance baselines, and build CI/CD for infrastructure changes.",
+      "required_skills": ["incident_response_recipe", "monitoring_recipe", "content_publishing_recipe", "database_design_recipe", "ci_cd_recipe"],
+      "avoidable_anti_patterns": ["fix_without_rca", "alert_without_baseline", "publish_without_a11y", "index_everything", "deploy_without_security_scan"]
+    },
+    {
+      "task_id": "track_d_43",
+      "track": "D",
+      "phase": "compose",
+      "domain": "testing_strategy",
+      "title": "Compose: Contract Testing Implementation",
+      "task": "Implement contract testing between 8 microservices. Design test strategy based on service dependencies, generate contract tests from API schemas, review the pact broker CI/CD pipeline, set up test result monitoring, and document the contract testing workflow.",
+      "required_skills": ["testing_strategy_recipe", "api_design_recipe", "ci_cd_recipe", "monitoring_recipe", "content_publishing_recipe"],
+      "avoidable_anti_patterns": ["happy_path_tests_only", "inconsistent_api_naming", "deploy_without_security_scan", "alert_without_baseline", "publish_without_a11y"]
+    },
+    {
+      "task_id": "track_d_44",
+      "track": "D",
+      "phase": "compose",
+      "domain": "devops",
+      "title": "Compose: GitOps Workflow Implementation",
+      "task": "Implement a GitOps workflow for Kubernetes deployments. Design the CI/CD pipeline with ArgoCD, set up monitoring for deployment drift detection, create database migration safety gates, implement code review for infrastructure manifests, and document the GitOps operational model.",
+      "required_skills": ["ci_cd_recipe", "monitoring_recipe", "database_design_recipe", "code_review_recipe", "content_publishing_recipe"],
+      "avoidable_anti_patterns": ["deploy_without_security_scan", "alert_without_baseline", "index_everything", "style_only_review", "publish_without_a11y"]
+    },
+    {
+      "task_id": "track_d_45",
+      "track": "D",
+      "phase": "compose",
+      "domain": "code_review",
+      "title": "Compose: Open Source Library Security Audit",
+      "task": "Conduct a security audit of an open-source dependency. Code review the critical paths, analyze database interaction patterns, assess API surface for injection points, design fuzz testing strategy, and produce an audit report with findings.",
+      "required_skills": ["code_review_recipe", "database_design_recipe", "api_design_recipe", "testing_strategy_recipe", "content_publishing_recipe"],
+      "avoidable_anti_patterns": ["style_only_review", "index_everything", "inconsistent_api_naming", "happy_path_tests_only", "publish_without_a11y"]
+    },
+    {
+      "task_id": "track_d_46",
+      "track": "D",
+      "phase": "compose",
+      "domain": "user_onboarding",
+      "title": "Compose: SaaS Free Trial Optimization",
+      "task": "Optimize a SaaS free trial experience to increase conversion to paid. Analyze trial user behavior data, redesign onboarding with adaptive guidance, A/B test checkout flow changes, set up conversion funnel monitoring, and document the experimentation framework.",
+      "required_skills": ["onboarding_recipe", "data_analysis_recipe", "testing_strategy_recipe", "monitoring_recipe", "content_publishing_recipe"],
+      "avoidable_anti_patterns": ["generic_tutorial", "train_on_dirty_data", "happy_path_tests_only", "alert_without_baseline", "publish_without_a11y"]
+    },
+    {
+      "task_id": "track_d_47",
+      "track": "D",
+      "phase": "compose",
+      "domain": "database_design",
+      "title": "Compose: Multi-Tenant Database Architecture",
+      "task": "Design a multi-tenant database architecture for a B2B SaaS platform. Schema design with tenant isolation, index strategy for tenant-scoped queries, CI/CD for tenant provisioning, monitoring for per-tenant performance, and API design for tenant management.",
+      "required_skills": ["database_design_recipe", "ci_cd_recipe", "monitoring_recipe", "api_design_recipe"],
+      "avoidable_anti_patterns": ["index_everything", "deploy_without_security_scan", "alert_without_baseline", "inconsistent_api_naming"]
+    },
+    {
+      "task_id": "track_d_48",
+      "track": "D",
+      "phase": "compose",
+      "domain": "monitoring",
+      "title": "Compose: Security Operations Center Setup",
+      "task": "Set up a security operations center (SOC) monitoring system. Design security metrics and threat dashboards, configure SIEM alert rules with attack-pattern baselines, create incident response playbooks for common threats, and design penetration test scenarios to validate detection.",
+      "required_skills": ["monitoring_recipe", "incident_response_recipe", "testing_strategy_recipe", "content_publishing_recipe"],
+      "avoidable_anti_patterns": ["alert_without_baseline", "fix_without_rca", "happy_path_tests_only", "publish_without_a11y"]
+    },
+    {
+      "task_id": "track_d_49",
+      "track": "D",
+      "phase": "compose",
+      "domain": "api_design",
+      "title": "Compose: Payment Gateway Integration Layer",
+      "task": "Design a payment gateway integration layer supporting Stripe, PayPal, and bank transfers. API design with consistent schemas across providers, security code review, database design for transaction records, comprehensive test coverage including failure scenarios, and monitoring for payment health.",
+      "required_skills": ["api_design_recipe", "code_review_recipe", "database_design_recipe", "testing_strategy_recipe", "monitoring_recipe"],
+      "avoidable_anti_patterns": ["inconsistent_api_naming", "style_only_review", "index_everything", "happy_path_tests_only", "alert_without_baseline"]
+    },
+    {
+      "task_id": "track_d_50",
+      "track": "D",
+      "phase": "compose",
+      "domain": "platform_engineering",
+      "title": "Compose: Platform Golden Path Implementation",
+      "task": "Implement the 'golden path' for a platform engineering team. Standard CI/CD templates, code review bots, database migration tooling, observability stack, onboarding documentation, API design guidelines, and a testing framework. The golden path must be easy to adopt and hard to deviate from.",
+      "required_skills": ["ci_cd_recipe", "code_review_recipe", "database_design_recipe", "monitoring_recipe", "onboarding_recipe", "content_publishing_recipe", "api_design_recipe", "testing_strategy_recipe"],
+      "avoidable_anti_patterns": ["deploy_without_security_scan", "style_only_review", "index_everything", "alert_without_baseline", "generic_tutorial", "publish_without_a11y", "inconsistent_api_naming", "happy_path_tests_only"]
+    },
+
+    {
+      "task_id": "track_e_01",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 1,
+      "title": "Arch Review 01: Simple REST API Design",
+      "task": "Review the architecture of a simple REST API with 5 endpoints for a blog platform. Evaluate the endpoint design, data model, and authentication approach."
+    },
+    {
+      "task_id": "track_e_02",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 2,
+      "title": "Arch Review 02: Database Schema for E-Commerce",
+      "task": "Review the database schema for an e-commerce platform with products, orders, customers, and inventory. Evaluate normalization, indexing strategy, and referential integrity."
+    },
+    {
+      "task_id": "track_e_03",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 3,
+      "title": "Arch Review 03: Authentication Service",
+      "task": "Review the architecture of a JWT-based authentication service. Evaluate token lifecycle management, refresh token rotation, session invalidation, and security considerations."
+    },
+    {
+      "task_id": "track_e_04",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 4,
+      "title": "Arch Review 04: Message Queue Integration",
+      "task": "Review the architecture of a message queue integration using RabbitMQ for order processing. Evaluate message routing, dead letter handling, consumer scaling, and exactly-once semantics."
+    },
+    {
+      "task_id": "track_e_05",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 5,
+      "title": "Arch Review 05: Caching Layer Design",
+      "task": "Review the caching architecture using Redis for a content management system. Evaluate cache invalidation strategy, cache-aside pattern implementation, and failure handling when cache is unavailable."
+    },
+    {
+      "task_id": "track_e_06",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 6,
+      "title": "Arch Review 06: File Upload Service",
+      "task": "Review the architecture of a file upload service handling images and documents up to 100MB. Evaluate chunked upload support, virus scanning, thumbnail generation pipeline, and S3 storage integration."
+    },
+    {
+      "task_id": "track_e_07",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 7,
+      "title": "Arch Review 07: Search Engine Integration",
+      "task": "Review the architecture of Elasticsearch integration for a product catalog. Evaluate index design, mapping configuration, query optimization, and sync strategy with the primary database."
+    },
+    {
+      "task_id": "track_e_08",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 8,
+      "title": "Arch Review 08: Notification Service",
+      "task": "Review the architecture of a multi-channel notification service supporting email, SMS, push, and in-app notifications. Evaluate template management, delivery guarantees, preference handling, and rate limiting."
+    },
+    {
+      "task_id": "track_e_09",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 9,
+      "title": "Arch Review 09: API Gateway Design",
+      "task": "Review the API gateway architecture for a microservice platform with 15 backend services. Evaluate routing rules, rate limiting, authentication delegation, request transformation, and circuit breaking."
+    },
+    {
+      "task_id": "track_e_10",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 10,
+      "title": "Arch Review 10: Event-Driven Architecture",
+      "task": "Review an event-driven architecture using Kafka for a financial trading platform. Evaluate event schema design, partitioning strategy, consumer group management, and exactly-once processing guarantees."
+    },
+    {
+      "task_id": "track_e_11",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 11,
+      "title": "Arch Review 11: Service Mesh Implementation",
+      "task": "Review a service mesh implementation using Istio for inter-service communication. Evaluate traffic management policies, mutual TLS configuration, observability integration, and canary deployment support."
+    },
+    {
+      "task_id": "track_e_12",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 12,
+      "title": "Arch Review 12: CQRS Pattern Implementation",
+      "task": "Review a CQRS implementation for an inventory management system. Evaluate command and query model separation, eventual consistency handling, read model projections, and event store design."
+    },
+    {
+      "task_id": "track_e_13",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 13,
+      "title": "Arch Review 13: Multi-Region Deployment",
+      "task": "Review the multi-region deployment architecture for a global SaaS platform. Evaluate data replication strategy, failover mechanisms, latency routing, and data sovereignty compliance."
+    },
+    {
+      "task_id": "track_e_14",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 14,
+      "title": "Arch Review 14: GraphQL Federation",
+      "task": "Review a GraphQL federation architecture with 8 subgraph services. Evaluate schema composition, type resolution across boundaries, N+1 query prevention with DataLoader, and error propagation strategy."
+    },
+    {
+      "task_id": "track_e_15",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 15,
+      "title": "Arch Review 15: Workflow Engine Design",
+      "task": "Review the architecture of a workflow engine for business process automation. Evaluate state machine design, long-running process handling, compensation logic, and workflow versioning."
+    },
+    {
+      "task_id": "track_e_16",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 16,
+      "title": "Arch Review 16: Real-Time Collaboration",
+      "task": "Review the architecture for real-time collaborative document editing. Evaluate CRDT vs OT approach, WebSocket connection management, conflict resolution, and offline-first synchronization."
+    },
+    {
+      "task_id": "track_e_17",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 17,
+      "title": "Arch Review 17: Data Lake Architecture",
+      "task": "Review a data lake architecture on AWS with S3, Glue, and Athena. Evaluate storage tiering, partition strategy, data catalog organization, access control, and query performance optimization."
+    },
+    {
+      "task_id": "track_e_18",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 18,
+      "title": "Arch Review 18: Zero Trust Network Architecture",
+      "task": "Review a zero trust network architecture for a financial services company. Evaluate identity-based access, micro-segmentation, continuous verification, device posture assessment, and logging for compliance."
+    },
+    {
+      "task_id": "track_e_19",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 19,
+      "title": "Arch Review 19: Serverless Event Processing",
+      "task": "Review a serverless event processing architecture using Lambda, SQS, and DynamoDB. Evaluate cold start mitigation, concurrency control, idempotency guarantees, and cost optimization at 1M events/day."
+    },
+    {
+      "task_id": "track_e_20",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 20,
+      "title": "Arch Review 20: ML Feature Store",
+      "task": "Review the architecture of an ML feature store serving both batch training and real-time inference. Evaluate feature computation pipeline, online/offline store consistency, feature versioning, and backfill strategy."
+    },
+    {
+      "task_id": "track_e_21",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 21,
+      "title": "Arch Review 21: Content Delivery Network",
+      "task": "Review the CDN architecture for a media streaming platform serving 4K video. Evaluate origin shield design, edge cache warming, adaptive bitrate delivery, and geographic routing with latency-based failover."
+    },
+    {
+      "task_id": "track_e_22",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 22,
+      "title": "Arch Review 22: Distributed Tracing System",
+      "task": "Review the distributed tracing implementation using OpenTelemetry across 20 microservices. Evaluate context propagation, sampling strategy, trace storage and retention, and integration with alerting systems."
+    },
+    {
+      "task_id": "track_e_23",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 23,
+      "title": "Arch Review 23: Multi-Tenant Isolation",
+      "task": "Review the tenant isolation architecture for a healthcare SaaS platform handling PHI. Evaluate data isolation (shared vs dedicated schemas), compute isolation, network segmentation, and audit trail completeness."
+    },
+    {
+      "task_id": "track_e_24",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 24,
+      "title": "Arch Review 24: Batch Processing Pipeline",
+      "task": "Review a batch processing pipeline using Apache Spark for nightly ETL jobs processing 2TB of transaction data. Evaluate job scheduling, failure recovery, data partitioning, and resource allocation optimization."
+    },
+    {
+      "task_id": "track_e_25",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 25,
+      "title": "Arch Review 25: API Versioning Strategy",
+      "task": "Review the API versioning strategy for a public platform API with 2000 third-party consumers. Evaluate version negotiation, backward compatibility testing, deprecation workflows, and migration tooling for consumers."
+    },
+    {
+      "task_id": "track_e_26",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 26,
+      "title": "Arch Review 26: Secrets Management Architecture",
+      "task": "Review the secrets management architecture using HashiCorp Vault. Evaluate dynamic secret generation, secret rotation automation, access policies, audit logging, and disaster recovery for the Vault cluster itself."
+    },
+    {
+      "task_id": "track_e_27",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 27,
+      "title": "Arch Review 27: Blue-Green Deployment Pipeline",
+      "task": "Review a blue-green deployment architecture for a stateful web application with database migrations. Evaluate traffic switching mechanism, database schema compatibility, smoke test automation, and rollback procedure."
+    },
+    {
+      "task_id": "track_e_28",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 28,
+      "title": "Arch Review 28: Rate Limiting Architecture",
+      "task": "Review the rate limiting architecture for a public API serving 500M requests/day. Evaluate algorithm choice (sliding window vs token bucket), distributed state management, client identification, and graceful degradation under extreme load."
+    },
+    {
+      "task_id": "track_e_29",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 29,
+      "title": "Arch Review 29: Data Recovery Architecture",
+      "task": "Review the data recovery architecture for a financial platform. Evaluate backup strategy (full, incremental, continuous), point-in-time recovery capability, cross-region backup replication, and recovery time objective validation."
+    },
+    {
+      "task_id": "track_e_30",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 30,
+      "title": "Arch Review 30: Plugin Architecture Design",
+      "task": "Review a plugin architecture for an extensible development IDE. Evaluate plugin isolation (sandboxing), API surface stability, lifecycle management, dependency resolution, and security boundaries between plugins and core."
+    },
+    {
+      "task_id": "track_e_31",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 31,
+      "title": "Arch Review 31: Stream Processing Pipeline",
+      "task": "Review a stream processing architecture using Apache Flink for real-time fraud detection. Evaluate windowing strategies, state management, exactly-once guarantees, late data handling, and checkpointing."
+    },
+    {
+      "task_id": "track_e_32",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 32,
+      "title": "Arch Review 32: Microfront-End Architecture",
+      "task": "Review a micro-frontend architecture using Module Federation for a banking portal. Evaluate shared dependency management, independent deployment, cross-MFE communication, routing integration, and CSS isolation."
+    },
+    {
+      "task_id": "track_e_33",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 33,
+      "title": "Arch Review 33: Database Connection Pooling",
+      "task": "Review the database connection pooling architecture using PgBouncer for a high-traffic application. Evaluate pool sizing strategy, transaction vs session mode, connection overflow handling, and monitoring for pool exhaustion."
+    },
+    {
+      "task_id": "track_e_34",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 34,
+      "title": "Arch Review 34: A/B Testing Platform",
+      "task": "Review the A/B testing platform architecture. Evaluate experiment assignment consistency, statistical significance calculation, feature flag integration, experiment lifecycle management, and guardrail metrics."
+    },
+    {
+      "task_id": "track_e_35",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 35,
+      "title": "Arch Review 35: Audit Trail System",
+      "task": "Review an audit trail system for a compliance-heavy application. Evaluate event capture completeness, tamper-evident storage, query performance for investigation, retention policy enforcement, and cross-service event correlation."
+    },
+    {
+      "task_id": "track_e_36",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 36,
+      "title": "Arch Review 36: WebSocket Gateway",
+      "task": "Review a WebSocket gateway architecture for a real-time trading platform. Evaluate connection scaling to 100K concurrent users, heartbeat and reconnection logic, message ordering guarantees, and horizontal scaling with sticky sessions."
+    },
+    {
+      "task_id": "track_e_37",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 37,
+      "title": "Arch Review 37: Data Anonymization Pipeline",
+      "task": "Review a data anonymization pipeline for GDPR compliance. Evaluate anonymization techniques (k-anonymity, differential privacy), re-identification risk assessment, pipeline reversibility controls, and data utility preservation."
+    },
+    {
+      "task_id": "track_e_38",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 38,
+      "title": "Arch Review 38: gRPC Service Architecture",
+      "task": "Review a gRPC-based service architecture for a logistics platform. Evaluate proto schema design, service versioning, streaming vs unary RPCs, load balancing, and backward/forward compatibility of message evolution."
+    },
+    {
+      "task_id": "track_e_39",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 39,
+      "title": "Arch Review 39: Identity Provider Integration",
+      "task": "Review the identity provider integration architecture supporting SAML, OIDC, and LDAP for enterprise customers. Evaluate provider abstraction layer, session management, role mapping, and multi-tenant identity isolation."
+    },
+    {
+      "task_id": "track_e_40",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 40,
+      "title": "Arch Review 40: Log Aggregation Architecture",
+      "task": "Review the log aggregation architecture using ELK stack for 50 services producing 10TB/day of logs. Evaluate index lifecycle management, search performance, log parsing pipeline, retention policies, and cost optimization."
+    },
+    {
+      "task_id": "track_e_41",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 41,
+      "title": "Arch Review 41: Saga Pattern for Distributed Transactions",
+      "task": "Review a saga implementation for a travel booking system spanning flight, hotel, and car rental services. Evaluate compensating transaction design, saga orchestration vs choreography, failure recovery, and visibility into saga state."
+    },
+    {
+      "task_id": "track_e_42",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 42,
+      "title": "Arch Review 42: Container Orchestration Security",
+      "task": "Review the Kubernetes security architecture for a regulated environment. Evaluate pod security policies, network policies, RBAC configuration, image vulnerability scanning in CI, and runtime threat detection."
+    },
+    {
+      "task_id": "track_e_43",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 43,
+      "title": "Arch Review 43: Feature Store for Real-Time ML",
+      "task": "Review a real-time feature store architecture serving ML models at sub-10ms latency. Evaluate feature computation freshness, read replica consistency, feature drift detection, and storage cost optimization."
+    },
+    {
+      "task_id": "track_e_44",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 44,
+      "title": "Arch Review 44: Event Sourcing with Snapshots",
+      "task": "Review an event sourcing architecture with snapshot optimization for an entity with 10K+ events per aggregate. Evaluate snapshot scheduling, event replay performance, storage compression, and consistency during snapshot creation."
+    },
+    {
+      "task_id": "track_e_45",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 45,
+      "title": "Arch Review 45: Chaos Engineering Infrastructure",
+      "task": "Review the chaos engineering infrastructure for testing distributed system resilience. Evaluate blast radius control, experiment automation, steady-state hypothesis validation, abort conditions, and integration with observability."
+    },
+    {
+      "task_id": "track_e_46",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 46,
+      "title": "Arch Review 46: Global Load Balancer Design",
+      "task": "Review the global load balancer architecture for a content platform with PoPs in 30 countries. Evaluate geographic routing, health check propagation delay, weighted routing for canary deployments, and DDoS mitigation integration."
+    },
+    {
+      "task_id": "track_e_47",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 47,
+      "title": "Arch Review 47: Data Mesh Architecture",
+      "task": "Review a data mesh architecture for a large enterprise with 12 domain teams producing data products. Evaluate domain ownership boundaries, self-serve data infrastructure, federated governance, data product discoverability, and computational policies."
+    },
+    {
+      "task_id": "track_e_48",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 48,
+      "title": "Arch Review 48: Edge Computing Architecture",
+      "task": "Review an edge computing architecture for IoT analytics processing data from 10K sensors. Evaluate edge node processing logic, data compression and batching for WAN transfer, edge-cloud synchronization, and firmware update distribution."
+    },
+    {
+      "task_id": "track_e_49",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 49,
+      "title": "Arch Review 49: Platform Event Bus",
+      "task": "Review the shared event bus architecture connecting 25 microservices. Evaluate schema registry enforcement, event versioning compatibility, consumer lag monitoring, cross-domain event governance, and dead letter processing."
+    },
+    {
+      "task_id": "track_e_50",
+      "track": "E",
+      "phase": "sequential",
+      "domain": "software_architecture",
+      "sequence": 50,
+      "title": "Arch Review 50: Full-Stack Reliability Assessment",
+      "task": "Conduct a comprehensive reliability assessment of the entire platform architecture covered in reviews 01-49. Evaluate cross-cutting concerns: observability coverage, failure domain isolation, data consistency guarantees, security posture, and operational maturity."
+    }
+  ]
+}

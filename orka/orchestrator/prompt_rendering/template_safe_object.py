@@ -67,7 +67,45 @@ class TemplateSafeObject:
             if isinstance(val, (dict, list)):
                 return TemplateSafeObject(val)
             return val
-        raise TypeError("TemplateSafeObject is not subscriptable for non-dict values")
+        if isinstance(self._value, (list, tuple)):
+            val = self._value[key]
+            if isinstance(val, (dict, list)):
+                return TemplateSafeObject(val)
+            return val
+        raise TypeError("TemplateSafeObject is not subscriptable for non-dict/list values")
+
+    def __iter__(self):
+        if isinstance(self._value, dict):
+            return iter(self._value)
+        if isinstance(self._value, (list, tuple)):
+            for item in self._value:
+                if isinstance(item, (dict, list)):
+                    yield TemplateSafeObject(item)
+                else:
+                    yield item
+            return
+        raise TypeError(
+            f"TemplateSafeObject wrapping {type(self._value).__name__} is not iterable"
+        )
+
+    def __len__(self):
+        if isinstance(self._value, (dict, list, tuple, str)):
+            return len(self._value)
+        raise TypeError(
+            f"TemplateSafeObject wrapping {type(self._value).__name__} has no len()"
+        )
+
+    def __bool__(self):
+        if self._value is None:
+            return False
+        if isinstance(self._value, (dict, list, tuple, str, int, float)):
+            return bool(self._value)
+        return True
+
+    def __contains__(self, item):
+        if isinstance(self._value, (dict, list, tuple, str)):
+            return item in self._value
+        return False
 
     def startswith(self, prefix):
         """Safe startswith: only works for string-like values."""

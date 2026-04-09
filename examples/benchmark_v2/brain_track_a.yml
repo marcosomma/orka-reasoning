@@ -1,0 +1,158 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Benchmark v2 — Track A: Cross-Domain Skill Transfer (Brain-Enabled)
+# ═══════════════════════════════════════════════════════════════════════
+#
+# Phase "learn" tasks (1-10):
+#   1. task_reasoner   — LLM reasons about the task
+#   2. brain_learn     — Brain extracts an abstract procedural skill
+#   3. brain_recall    — Recall any matching skills (builds baseline)
+#   4. task_applier    — Solve guided by recalled skill
+#   5. brain_feedback  — Record transfer outcome
+#   6. task_result     — Final structured output
+#
+# Phase "recall" tasks (11-50):
+#   Same pipeline — brain_recall finds cross-domain matches from seed
+#   skills and the LLM adapts them to the novel domain.
+#
+# Skills persist across calls in Redis.
+# ═══════════════════════════════════════════════════════════════════════
+
+orchestrator:
+  id: bench-v2-brain-track-a
+  strategy: sequential
+  agents:
+    - task_reasoner
+    - brain_learn
+    - brain_recall
+    - task_applier
+    - brain_feedback
+    - task_result
+
+agents:
+  # ── Step 1: Reason about the task ─────────────────────────────────
+  - id: task_reasoner
+    type: local_llm
+    prompt: |
+      You are an expert analyst. Analyze the following task step by step.
+
+      DOMAIN: {{ input.domain | default('general') }}
+      TASK: {{ input.task | default(input) }}
+
+      {% if input.execution_trace %}
+      REFERENCE EXECUTION TRACE:
+      {% for step in input.execution_trace.steps %}
+        Step {{ loop.index }}: {{ step.action }} → {{ step.result }}
+      {% endfor %}
+      Strategy: {{ input.execution_trace.strategy | default('sequential') }}
+      {% endif %}
+
+      Think carefully about how to solve this task. For each step:
+      1. State what you need to do
+      2. Explain WHY this step is necessary
+      3. Describe the expected output
+
+      Return JSON with:
+      - "domain": the domain
+      - "task": brief task description
+      - "response": your complete step-by-step analysis
+      - "steps": array of {"action": "...", "result": "expected outcome"}
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": brief approach explanation
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3
+
+  # ── Step 2: Brain learns a skill ──────────────────────────────────
+  - id: brain_learn
+    type: brain
+    operation: learn
+    prompt: "{{ previous_outputs.task_reasoner }}"
+
+  # ── Step 3: Brain recalls matching skills ─────────────────────────
+  - id: brain_recall
+    type: brain
+    operation: recall
+    prompt: "{{ previous_outputs.task_reasoner }}"
+
+  # ── Step 4: Apply with recalled skill guidance ────────────────────
+  - id: task_applier
+    type: local_llm
+    prompt: |
+      You are solving a task. You have your own analysis AND access to a
+      previously learned skill from the Brain's memory.
+
+      DOMAIN: {{ previous_outputs.task_reasoner.domain | default('general') }}
+      TASK: {{ previous_outputs.task_reasoner.task | default(input) }}
+
+      YOUR ANALYSIS:
+      {{ previous_outputs.task_reasoner.response | default('No analysis available') }}
+
+      RECALLED SKILL FROM BRAIN:
+      Skill name: {{ previous_outputs.brain_recall.skill_name | default('No skill recalled') }}
+      Abstract steps: {{ previous_outputs.brain_recall.skill_steps | default([]) }}
+      Transfer score: {{ previous_outputs.brain_recall.combined_score | default('N/A') }}
+      Structural match: {{ previous_outputs.brain_recall.structural_score | default('N/A') }}
+      Semantic match: {{ previous_outputs.brain_recall.semantic_score | default('N/A') }}
+      Adaptations: {{ previous_outputs.brain_recall.adaptations | default({}) }}
+
+      INSTRUCTIONS:
+      If a skill was recalled, use its abstract pattern to GUIDE your solution.
+      For each abstract step, explain how you ADAPT it to the current domain.
+      If no skill was recalled, solve using only your own analysis.
+
+      Return JSON with:
+      - "response": your complete solution
+      - "domain": the domain
+      - "task": brief description
+      - "steps": array of {"action": "...", "expected_outcome": "..."}
+      - "used_recalled_skill": true or false
+      - "recalled_skill_name": skill name or "none"
+      - "adaptation_notes": how you adapted the skill (or "N/A")
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": reflection on approach
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3
+
+  # ── Step 5: Record transfer feedback ──────────────────────────────
+  - id: brain_feedback
+    type: brain
+    operation: feedback
+    prompt: "{{ previous_outputs.brain_recall }}"
+
+  # ── Step 6: Final structured output ───────────────────────────────
+  - id: task_result
+    type: local_llm
+    prompt: |
+      Produce the FINAL structured output for this task.
+
+      DOMAIN: {{ previous_outputs.task_applier.domain | default('general') }}
+      TASK: {{ previous_outputs.task_applier.task | default(input) }}
+
+      SOLUTION:
+      {{ previous_outputs.task_applier.response | default('No solution available') }}
+
+      BRAIN METRICS:
+      Skill recalled: {{ previous_outputs.brain_recall.skill_name | default('None') }}
+      Transfer score: {{ previous_outputs.brain_recall.combined_score | default('N/A') }}
+      Used recalled skill: {{ previous_outputs.task_applier.used_recalled_skill | default(false) }}
+
+      Return JSON with:
+      - "response": comprehensive structured solution
+      - "domain": the domain
+      - "task": brief description
+      - "solution_steps": array of concrete solution steps
+      - "quality_self_assessment": 0.0-1.0 with brief justification
+      - "brain_assisted": true if recalled skill contributed
+      - "recalled_skill": skill name or "none"
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": final reflection
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3

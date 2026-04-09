@@ -1,0 +1,104 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Benchmark v2 — Track D: Multi-Skill Composition (Brainless)
+# ═══════════════════════════════════════════════════════════════════════
+#
+# Same task structure, but NO brain skill seeding, recall, or composition.
+# LLM must solve complex multi-faceted tasks from scratch each time.
+# ═══════════════════════════════════════════════════════════════════════
+
+orchestrator:
+  id: bench-v2-brainless-track-d
+  strategy: sequential
+  agents:
+    - task_reasoner
+    - task_applier
+    - task_result
+
+agents:
+  # ── Step 1: Reason about the task ─────────────────────────────────
+  - id: task_reasoner
+    type: local_llm
+    prompt: |
+      You are an expert analyst. Analyze this complex task step by step.
+
+      DOMAIN: {{ input.domain | default('general') }}
+      TASK: {{ input.task | default(input.title | default(input)) }}
+
+      This task may require combining multiple patterns: procedural recipes,
+      anti-pattern avoidance, and path selection. Think holistically.
+
+      Return JSON with:
+      - "domain": the domain
+      - "task": brief task description
+      - "response": your complete multi-faceted analysis
+      - "steps": array of {"action": "...", "result": "expected outcome"}
+      - "required_capabilities": list of skill types needed
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": approach explanation
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3
+
+  # ── Step 2: Apply (no composed skills) ────────────────────────────
+  - id: task_applier
+    type: local_llm
+    prompt: |
+      You are solving a complex task from scratch with NO prior experience.
+
+      DOMAIN: {{ previous_outputs.task_reasoner.domain | default('general') }}
+      TASK: {{ previous_outputs.task_reasoner.task | default(input) }}
+
+      YOUR ANALYSIS:
+      {{ previous_outputs.task_reasoner.response | default('No analysis') }}
+
+      Solve the task using only your own analysis.
+      You have no previously learned recipes, anti-patterns, or path knowledge.
+
+      Return JSON with:
+      - "response": your complete solution
+      - "domain": the domain
+      - "task": brief description
+      - "steps": array of {"action": "...", "expected_outcome": "..."}
+      - "skills_composed": []
+      - "anti_patterns_avoided": []
+      - "composition_strategy": "N/A — no prior skills available"
+      - "used_recalled_skill": false
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": reflection on approach
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3
+
+  # ── Step 3: Final output ──────────────────────────────────────────
+  - id: task_result
+    type: local_llm
+    prompt: |
+      Produce the FINAL structured output for this complex task.
+
+      DOMAIN: {{ previous_outputs.task_applier.domain | default('general') }}
+      TASK: {{ previous_outputs.task_applier.task | default(input) }}
+
+      SOLUTION:
+      {{ previous_outputs.task_applier.response | default('No solution') }}
+
+      Return JSON with:
+      - "response": comprehensive structured solution
+      - "domain": the domain
+      - "task": brief description
+      - "solution_steps": array of concrete steps
+      - "skills_used": []
+      - "anti_patterns_avoided": []
+      - "quality_self_assessment": 0.0-1.0 with justification
+      - "brain_assisted": false
+      - "recalled_skill": "none"
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": final reflection
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3

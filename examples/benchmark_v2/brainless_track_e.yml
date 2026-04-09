@@ -1,0 +1,107 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Benchmark v2 — Track E: Longitudinal Learning Curve (Brainless)
+# ═══════════════════════════════════════════════════════════════════════
+#
+# Same 50 sequential architecture review tasks, but NO brain.
+# Each run is independent — no accumulated knowledge.
+# Performance should be roughly flat (no learning curve).
+# ═══════════════════════════════════════════════════════════════════════
+
+orchestrator:
+  id: bench-v2-brainless-track-e
+  strategy: sequential
+  agents:
+    - task_reasoner
+    - task_applier
+    - task_result
+
+agents:
+  # ── Step 1: Reason about the arch review task ─────────────────────
+  - id: task_reasoner
+    type: local_llm
+    prompt: |
+      You are a senior software architect. Analyze this architecture review task.
+
+      DOMAIN: software_architecture
+      TASK: {{ input.task | default(input) }}
+
+      Conduct a thorough analysis:
+      1. Identify the key architectural concerns
+      2. Evaluate against established principles (SOLID, DRY, KISS, etc.)
+      3. Consider scalability, maintainability, and security implications
+      4. Propose concrete improvements with trade-off analysis
+
+      Return JSON with:
+      - "domain": "software_architecture"
+      - "task": brief task description
+      - "response": your comprehensive architecture analysis
+      - "steps": array of {"action": "...", "result": "expected outcome"}
+      - "architectural_concerns": list of key concerns identified
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": your analytical approach
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3
+
+  # ── Step 2: Apply (no accumulated knowledge) ──────────────────────
+  - id: task_applier
+    type: local_llm
+    prompt: |
+      You are a senior software architect. You have your own analysis
+      but NO accumulated knowledge from previous reviews.
+
+      DOMAIN: software_architecture
+      TASK: {{ previous_outputs.task_reasoner.task | default(input) }}
+
+      YOUR ANALYSIS:
+      {{ previous_outputs.task_reasoner.response | default('No analysis') }}
+
+      Solve using only your own analysis. Each review is independent.
+
+      Return JSON with:
+      - "response": your complete architecture review
+      - "domain": "software_architecture"
+      - "task": brief description
+      - "steps": array of {"action": "...", "expected_outcome": "..."}
+      - "used_recalled_skill": false
+      - "recalled_skill_name": "none"
+      - "improvements_from_experience": "N/A — no accumulated knowledge"
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": reflection on approach
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3
+
+  # ── Step 3: Final output ──────────────────────────────────────────
+  - id: task_result
+    type: local_llm
+    prompt: |
+      Produce the FINAL structured architecture review output.
+
+      DOMAIN: software_architecture
+      TASK: {{ previous_outputs.task_applier.task | default(input) }}
+      SEQUENCE: {{ input.sequence | default(0) }}
+
+      REVIEW:
+      {{ previous_outputs.task_applier.response | default('No review') }}
+
+      Return JSON with:
+      - "response": comprehensive architecture review
+      - "domain": "software_architecture"
+      - "task": brief description
+      - "sequence_number": {{ input.sequence | default(0) }}
+      - "solution_steps": array of concrete review steps
+      - "quality_self_assessment": 0.0-1.0 with justification
+      - "brain_assisted": false
+      - "recalled_skill": "none"
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": final reflection
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3

@@ -26,11 +26,12 @@ import json
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
-from orka.cli.core import run_cli_entrypoint  # noqa: E402
+from orka.orchestrator import Orchestrator  # noqa: E402
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -291,6 +292,48 @@ WORKFLOWS = {
 # ── Result extraction ────────────────────────────────────────────────
 
 
+def _build_agent_outputs(logs: list[dict]) -> dict[str, Any]:
+    """Build a dict of agent_id -> output from full execution logs."""
+    outputs: dict[str, Any] = {}
+    for log in logs:
+        if not isinstance(log, dict):
+            continue
+        agent_id = log.get("agent_id", "")
+        if not agent_id or log.get("event_type") == "MetaReport":
+            continue
+        payload = log.get("payload", {})
+        if not isinstance(payload, dict):
+            continue
+        if "result" in payload:
+            outputs[agent_id] = payload["result"]
+        elif "response" in payload:
+            outputs[agent_id] = {
+                "response": payload["response"],
+                "confidence": payload.get("confidence", "0.0"),
+                "internal_reasoning": payload.get("internal_reasoning", ""),
+            }
+    return outputs
+
+
+def _extract_skill_name(agent_output: Any) -> str:
+    """Extract skill name from agent output (dict or response string)."""
+    if isinstance(agent_output, dict):
+        name = agent_output.get("skill_name")
+        if name:
+            return str(name)
+        resp = agent_output.get("response", "")
+    elif isinstance(agent_output, str):
+        resp = agent_output
+    else:
+        return "?"
+    # Parse from response string pattern: "Learned skill: <name>"
+    if "Learned skill:" in resp:
+        return resp.split("Learned skill:", 1)[1].strip()
+    if "Learned anti-pattern:" in resp:
+        return resp.split("Learned anti-pattern:", 1)[1].strip()
+    return "?"
+
+
 def _extract_key_results(result: dict | str | list | None, wtype: str) -> dict:
     """Pull out relevant fields for the summary."""
     info: dict[str, str] = {}
@@ -300,22 +343,16 @@ def _extract_key_results(result: dict | str | list | None, wtype: str) -> dict:
 
     if wtype == "recipe":
         # Skill 1: code recipe
-        r1 = result.get("brain_learn_recipe_code", {})
-        if isinstance(r1, dict):
-            info["skill1_name"] = str(r1.get("skill_name", "?"))
-            info["skill1_type"] = str(r1.get("skill_type", "?"))
+        r1 = result.get("brain_learn_recipe_code")
+        info["skill1_name"] = _extract_skill_name(r1)
 
         # Skill 2: data recipe
-        r2 = result.get("brain_learn_recipe_data", {})
-        if isinstance(r2, dict):
-            info["skill2_name"] = str(r2.get("skill_name", "?"))
-            info["skill2_type"] = str(r2.get("skill_type", "?"))
+        r2 = result.get("brain_learn_recipe_data")
+        info["skill2_name"] = _extract_skill_name(r2)
 
         # Skill 3: anti-pattern
-        r3 = result.get("brain_learn_anti_trivial", {})
-        if isinstance(r3, dict):
-            info["skill3_name"] = str(r3.get("skill_name", "?"))
-            info["skill3_type"] = str(r3.get("skill_type", "?"))
+        r3 = result.get("brain_learn_anti_trivial")
+        info["skill3_name"] = _extract_skill_name(r3)
 
         # Transfer
         recall = result.get("brain_recall_all", {})
@@ -337,18 +374,14 @@ def _extract_key_results(result: dict | str | list | None, wtype: str) -> dict:
             ("brain_anti_no_classify", "anti2"),
             ("brain_anti_auto_escalate", "anti3"),
         ]:
-            r = result.get(key, {})
-            if isinstance(r, dict):
-                info[f"{label}"] = str(r.get("skill_name", "?"))
+            info[label] = _extract_skill_name(result.get(key))
 
         # Paths created
         for key, label in [
             ("brain_path_standard", "path1"),
             ("brain_path_escalation", "path2"),
         ]:
-            r = result.get(key, {})
-            if isinstance(r, dict):
-                info[f"{label}"] = str(r.get("skill_name", "?"))
+            info[label] = _extract_skill_name(result.get(key))
 
         # Router decision
         router = result.get("smart_router", {})
@@ -359,9 +392,8 @@ def _extract_key_results(result: dict | str | list | None, wtype: str) -> dict:
             info["status"] = str(router.get("status", ""))[:30]
 
         # Learned path
-        learned = result.get("brain_learn_executed_path", {})
-        if isinstance(learned, dict):
-            info["learned"] = str(learned.get("skill_name", learned.get("response", "?")))[:60]
+        learned = result.get("brain_learn_executed_path")
+        info["learned"] = _extract_skill_name(learned) if learned else "?"
 
     return info
 
@@ -379,8 +411,10 @@ async def run_single(wtype: str, test_input: dict) -> dict:
 
     t0 = time.time()
     try:
-        result = await run_cli_entrypoint(config, input_text)
+        orchestrator = Orchestrator(config)
+        logs = await orchestrator.run(input_text, return_logs=True)
         elapsed = time.time() - t0
+        result = _build_agent_outputs(logs if isinstance(logs, list) else [])
         key = _extract_key_results(result, wtype)
         status = "PASS"
     except Exception as exc:

@@ -32,11 +32,13 @@ logger = logging.getLogger(__name__)
 
 # Compact OrKa ASCII branding (4 lines, fits in a TUI header strip)
 ORKA_LOGO = (
-    "[bold cyan] ██████╗  ██╗ ██╗ ██╗  ██╗  █████╗ [/bold cyan]\n"
-    "[bold cyan]██╔═══██╗ ████╔═╝ █████╔╝  ██╔══██╗[/bold cyan]\n"
-    "[bold cyan]██║   ██║ ██║     ██╔═██╗  ███████║[/bold cyan]\n"
-    "[bold cyan]╚██████╔╝ ██║     ██║  ██╗ ██║  ██║[/bold cyan]\n"
-    "[bold cyan] ╚═════╝  ╚═╝     ╚═╝  ╚═╝ ╚═╝  ╚═╝[/bold cyan]"
+    "\n"
+    "[bold cyan]   ██████╗          ██╗  ██╗  █████╗ [/bold cyan]\n"
+    "[bold blue]  ██╔═══██╗ ██╗ ██╗ ██║ ██╔╝ ██╔══██╗[/bold blue]\n"
+    "[bold purple]  ██║   ██║ ████╔═╝ █████╔╝  ███████║[/bold purple]\n"
+    "[bold magenta]  ██║   ██║ ██║     ██╔═██╗  ██╔══██║[/bold magenta]\n"
+    "[bold pink]  ╚██████╔╝ ██║     ██║  ██╗ ██║  ██║[/bold pink]\n"
+    "[bold yellow]   ╚═════╝  ╚═╝     ╚═╝  ╚═╝ ╚═╝  ╚═╝[/bold yellow]"
 )
 
 
@@ -45,10 +47,10 @@ def _build_logo_banner() -> str:
     version = get_version()
     return (
         f"{ORKA_LOGO}\n"
-        f"[dim]{'─' * 38}[/dim]\n"
-        f"[bold magenta]  Orchestrator Kit Agents[/bold magenta]  "
+        f"[bold magenta]  Orchestrator[/bold magenta] [bold yellow]Kit[/bold yellow] [bold cyan]Agents[/bold cyan]  "
         f"[dim]·[/dim] [bold white]v{version}[/bold white]  "
         f"[dim]· Reasoning Framework[/dim]"
+        f"\n"
     )
 
 

@@ -1,0 +1,248 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Benchmark v2 — Track C: GraphScout Brain-Assisted Routing (Brain)
+# ═══════════════════════════════════════════════════════════════════════
+#
+# Phase "seed_path" (tasks 1-10):
+#   1. brain_learn_path — Seed a path skill
+#   2. brain_learn_anti — Seed a related anti-pattern
+#   3. seed_confirm     — Confirm what was seeded
+#
+# Phase "route" (tasks 11-50):
+#   1. smart_router     — GraphScout with brain_assisted=true
+#   2. route_executor   — Execute the chosen path
+#   3. brain_learn_path — Learn the executed path
+#   4. brain_feedback   — Record routing outcome
+#   5. task_result      — Final output
+#
+# The graph-scout agent discovers available paths and uses brain
+# knowledge (path skills + anti-patterns) to boost/penalize routes.
+# ═══════════════════════════════════════════════════════════════════════
+
+orchestrator:
+  id: bench-v2-brain-track-c
+  strategy: sequential
+  agents:
+    - brain_learn_path
+    - brain_learn_anti
+    - smart_router
+    - route_executor
+    - brain_learn_executed
+    - brain_feedback
+    - task_result
+
+agents:
+  # ── Seed phase: learn path skill ──────────────────────────────────
+  - id: brain_learn_path
+    type: brain
+    operation: learn_path
+    prompt: |
+      {{ input.path_skill | default('{}') | tojson }}
+
+  # ── Seed phase: learn anti-pattern ────────────────────────────────
+  - id: brain_learn_anti
+    type: brain
+    operation: learn_anti
+    prompt: |
+      {{ input.anti_pattern | default('{}') | tojson }}
+
+  # ── Available target agents for routing ───────────────────────────
+  - id: ticket_classifier
+    type: local_llm
+    prompt: |
+      Classify this support request into a category.
+      REQUEST: {{ input.task | default(input) }}
+      Return JSON: {"response": "category", "confidence": 0.9, "internal_reasoning": "..."}
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.1
+
+  - id: knowledge_base_search
+    type: local_llm
+    prompt: |
+      Search knowledge base for relevant solutions.
+      QUERY: {{ input.task | default(input) }}
+      Return JSON: {"response": "relevant articles and solutions", "confidence": 0.8, "internal_reasoning": "..."}
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.1
+
+  - id: response_drafter
+    type: local_llm
+    prompt: |
+      Draft a response to this support request.
+      REQUEST: {{ input.task | default(input) }}
+      Return JSON: {"response": "draft response", "confidence": 0.8, "internal_reasoning": "..."}
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3
+
+  - id: quality_checker
+    type: local_llm
+    prompt: |
+      Check response quality and completeness.
+      REQUEST: {{ input.task | default(input) }}
+      Return JSON: {"response": "quality assessment", "confidence": 0.85, "internal_reasoning": "..."}
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.1
+
+  - id: escalation_handler
+    type: local_llm
+    prompt: |
+      Prepare escalation for complex request.
+      REQUEST: {{ input.task | default(input) }}
+      Return JSON: {"response": "escalation summary with priority", "confidence": 0.85, "internal_reasoning": "..."}
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.2
+
+  - id: account_recovery
+    type: local_llm
+    prompt: |
+      Handle account recovery request.
+      REQUEST: {{ input.task | default(input) }}
+      Return JSON: {"response": "account recovery steps", "confidence": 0.9, "internal_reasoning": "..."}
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.1
+
+  - id: billing_specialist
+    type: local_llm
+    prompt: |
+      Handle billing inquiry.
+      REQUEST: {{ input.task | default(input) }}
+      Return JSON: {"response": "billing resolution", "confidence": 0.85, "internal_reasoning": "..."}
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.2
+
+  - id: technical_support
+    type: local_llm
+    prompt: |
+      Provide technical troubleshooting.
+      REQUEST: {{ input.task | default(input) }}
+      Return JSON: {"response": "technical solution steps", "confidence": 0.85, "internal_reasoning": "..."}
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.2
+
+  # ── GraphScout router with brain assistance ───────────────────────
+  - id: smart_router
+    type: graph-scout
+    prompt: |
+      Given this support request, find the best processing path.
+      {{ input.task | default(input) }}
+    params:
+      k_beam: 3
+      max_depth: 2
+      brain_assisted: true
+      brain_boost_weight: 0.15
+      scoring_mode: "numeric"
+      cost_budget_tokens: 50000
+      latency_budget_ms: 30000
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      evaluation_model_name: "openai/gpt-oss-20b"
+      llm_evaluation_enabled: false
+      fallback_to_heuristics: true
+
+  # ── Execute chosen path ───────────────────────────────────────────
+  - id: route_executor
+    type: local_llm
+    prompt: |
+      Execute the routed task based on the GraphScout decision.
+
+      ORIGINAL REQUEST: {{ input.task | default(input) }}
+      ROUTING DECISION: {{ previous_outputs.smart_router.decision | default('fallback') }}
+      TARGET PATH: {{ previous_outputs.smart_router.target | default('unknown') }}
+      ROUTING CONFIDENCE: {{ previous_outputs.smart_router.confidence | default(0) }}
+      REASONING: {{ previous_outputs.smart_router.reasoning | default('No reasoning available') }}
+
+      Execute and produce a thorough response following the selected path.
+
+      Return JSON with:
+      - "response": your complete solution following the routed path
+      - "route_taken": the path/agent selected
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": how the routing decision guided your response
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3
+
+  # ── Learn executed path ───────────────────────────────────────────
+  - id: brain_learn_executed
+    type: brain
+    operation: learn_path
+    prompt: |
+      {
+        "path_nodes": {{ previous_outputs.smart_router.target | default('["response_drafter"]') | tojson }},
+        "score": {{ previous_outputs.smart_router.confidence | default(0.7) }},
+        "domain": "{{ input.domain | default('customer_support') }}",
+        "task": "{{ input.task | default(input) | truncate(200) }}",
+        "quality": {{ previous_outputs.smart_router.confidence | default(0.7) }}
+      }
+
+  # ── Record feedback ───────────────────────────────────────────────
+  - id: brain_feedback
+    type: brain
+    operation: feedback
+    prompt: |
+      {
+        "skill_id": "{{ previous_outputs.brain_learn_executed.skill_id | default('') }}",
+        "skill_name": "{{ previous_outputs.brain_learn_executed.skill_name | default('') }}",
+        "domain": "{{ input.domain | default('customer_support') }}",
+        "task": "{{ input.task | default(input) | truncate(200) }}",
+        "success": true,
+        "adaptations": {"routing_confidence": {{ previous_outputs.smart_router.confidence | default(0.7) }}}
+      }
+
+  # ── Final output ──────────────────────────────────────────────────
+  - id: task_result
+    type: local_llm
+    prompt: |
+      Produce the FINAL structured output.
+
+      DOMAIN: {{ input.domain | default('customer_support') }}
+      TASK: {{ input.task | default(input) }}
+
+      ROUTING DECISION: {{ previous_outputs.smart_router.decision | default('unknown') }}
+      TARGET: {{ previous_outputs.smart_router.target | default('unknown') }}
+      CONFIDENCE: {{ previous_outputs.smart_router.confidence | default(0) }}
+
+      EXECUTION RESULT:
+      {{ previous_outputs.route_executor.response | default('No result') }}
+
+      Return JSON with:
+      - "response": comprehensive solution
+      - "domain": the domain
+      - "task": brief description
+      - "solution_steps": array of concrete steps
+      - "route_decision": the routing decision made
+      - "route_target": selected path
+      - "quality_self_assessment": 0.0-1.0 with justification
+      - "brain_assisted": true
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": final reflection
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3

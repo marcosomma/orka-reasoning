@@ -1,0 +1,153 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Benchmark v2 — Track B: Anti-Pattern Avoidance (Brain-Enabled)
+# ═══════════════════════════════════════════════════════════════════════
+#
+# Phase "seed_anti" (tasks 1-10):
+#   1. brain_learn_anti — Seed an anti-pattern into the brain
+#   2. brain_recall     — Verify it was stored
+#   3. task_result      — Acknowledge the seeded anti-pattern
+#
+# Phase "test_avoid" (tasks 11-50):
+#   1. task_reasoner    — LLM reasons about the task
+#   2. brain_recall     — Brain recalls anti-patterns for this context
+#   3. task_applier     — LLM solves, warned about anti-patterns
+#   4. brain_feedback   — Record avoidance outcome
+#   5. task_result      — Final output
+#
+# Skills persist across calls in Redis.
+# ═══════════════════════════════════════════════════════════════════════
+
+orchestrator:
+  id: bench-v2-brain-track-b
+  strategy: sequential
+  agents:
+    - brain_learn_anti
+    - task_reasoner
+    - brain_recall
+    - task_applier
+    - brain_feedback
+    - task_result
+
+agents:
+  # ── Seed phase: learn anti-pattern ────────────────────────────────
+  # Only active when input contains anti_pattern payload
+  - id: brain_learn_anti
+    type: brain
+    operation: learn_anti
+    prompt: |
+      {{ input.anti_pattern | default('{}') | tojson }}
+
+  # ── Step 1: Reason about the task ─────────────────────────────────
+  - id: task_reasoner
+    type: local_llm
+    prompt: |
+      You are an expert analyst. Analyze the following task step by step.
+
+      DOMAIN: {{ input.domain | default('general') }}
+      TASK: {{ input.task | default(input.title | default(input)) }}
+
+      Think carefully about how to solve this task. For each step:
+      1. State what you need to do
+      2. Explain WHY this step is necessary
+      3. Describe the expected output
+
+      Return JSON with:
+      - "domain": the domain
+      - "task": brief task description
+      - "response": your complete step-by-step analysis
+      - "steps": array of {"action": "...", "result": "expected outcome"}
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": brief approach explanation
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3
+
+  # ── Step 2: Recall anti-patterns and skills ───────────────────────
+  - id: brain_recall
+    type: brain
+    operation: recall
+    prompt: "{{ previous_outputs.task_reasoner }}"
+
+  # ── Step 3: Apply the task, warned about anti-patterns ────────────
+  - id: task_applier
+    type: local_llm
+    prompt: |
+      You are solving a task. You have your own analysis AND warnings about
+      known anti-patterns from the Brain's memory.
+
+      DOMAIN: {{ previous_outputs.task_reasoner.domain | default('general') }}
+      TASK: {{ previous_outputs.task_reasoner.task | default(input) }}
+
+      YOUR ANALYSIS:
+      {{ previous_outputs.task_reasoner.response | default('No analysis available') }}
+
+      BRAIN RECALL — ANTI-PATTERNS AND SKILLS:
+      Skill name: {{ previous_outputs.brain_recall.skill_name | default('No skill recalled') }}
+      Skill type: {{ previous_outputs.brain_recall.skill_type | default('unknown') }}
+      Transfer score: {{ previous_outputs.brain_recall.combined_score | default('N/A') }}
+      Reasoning: {{ previous_outputs.brain_recall.internal_reasoning | default('No prior knowledge') }}
+
+      INSTRUCTIONS:
+      - If anti-patterns were recalled, explicitly AVOID those patterns.
+      - State which anti-patterns you are avoiding and why.
+      - If no anti-patterns were recalled, solve normally.
+
+      Return JSON with:
+      - "response": your complete solution
+      - "domain": the domain
+      - "task": brief description
+      - "steps": array of {"action": "...", "expected_outcome": "..."}
+      - "anti_patterns_avoided": list of anti-pattern names avoided
+      - "used_recalled_skill": true or false
+      - "recalled_skill_name": skill name or "none"
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": reflection including anti-pattern avoidance
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3
+
+  # ── Step 4: Record feedback ───────────────────────────────────────
+  - id: brain_feedback
+    type: brain
+    operation: feedback
+    prompt: "{{ previous_outputs.brain_recall }}"
+
+  # ── Step 5: Final structured output ───────────────────────────────
+  - id: task_result
+    type: local_llm
+    prompt: |
+      Produce the FINAL structured output for this task.
+
+      DOMAIN: {{ previous_outputs.task_applier.domain | default(input.domain | default('general')) }}
+      TASK: {{ previous_outputs.task_applier.task | default(input.task | default(input)) }}
+
+      SOLUTION:
+      {{ previous_outputs.task_applier.response | default('No solution available') }}
+
+      ANTI-PATTERNS AVOIDED:
+      {{ previous_outputs.task_applier.anti_patterns_avoided | default([]) }}
+
+      BRAIN METRICS:
+      Skill recalled: {{ previous_outputs.brain_recall.skill_name | default('None') }}
+      Transfer score: {{ previous_outputs.brain_recall.combined_score | default('N/A') }}
+
+      Return JSON with:
+      - "response": comprehensive structured solution
+      - "domain": the domain
+      - "task": brief description
+      - "solution_steps": array of concrete steps
+      - "anti_patterns_avoided": list of avoided patterns
+      - "quality_self_assessment": 0.0-1.0 with justification
+      - "brain_assisted": true if brain knowledge contributed
+      - "recalled_skill": skill name or "none"
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": final reflection
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3

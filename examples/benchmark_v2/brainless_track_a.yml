@@ -1,0 +1,110 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Benchmark v2 — Track A: Cross-Domain Skill Transfer (Brainless)
+# ═══════════════════════════════════════════════════════════════════════
+#
+# Identical LLM prompts to the brain version, but NO brain operations.
+# No skill learning, recall, or feedback. Pure LLM baseline.
+# ═══════════════════════════════════════════════════════════════════════
+
+orchestrator:
+  id: bench-v2-brainless-track-a
+  strategy: sequential
+  agents:
+    - task_reasoner
+    - task_applier
+    - task_result
+
+agents:
+  # ── Step 1: Reason about the task ─────────────────────────────────
+  - id: task_reasoner
+    type: local_llm
+    prompt: |
+      You are an expert analyst. Analyze the following task step by step.
+
+      DOMAIN: {{ input.domain | default('general') }}
+      TASK: {{ input.task | default(input) }}
+
+      {% if input.execution_trace %}
+      REFERENCE EXECUTION TRACE:
+      {% for step in input.execution_trace.steps %}
+        Step {{ loop.index }}: {{ step.action }} → {{ step.result }}
+      {% endfor %}
+      Strategy: {{ input.execution_trace.strategy | default('sequential') }}
+      {% endif %}
+
+      Think carefully about how to solve this task. For each step:
+      1. State what you need to do
+      2. Explain WHY this step is necessary
+      3. Describe the expected output
+
+      Return JSON with:
+      - "domain": the domain
+      - "task": brief task description
+      - "response": your complete step-by-step analysis
+      - "steps": array of {"action": "...", "result": "expected outcome"}
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": brief approach explanation
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3
+
+  # ── Step 2: Apply (no recalled skill) ─────────────────────────────
+  - id: task_applier
+    type: local_llm
+    prompt: |
+      You are solving a task. You have your own step-by-step analysis.
+      You have NO prior experience and NO recalled skills.
+
+      DOMAIN: {{ previous_outputs.task_reasoner.domain | default('general') }}
+      TASK: {{ previous_outputs.task_reasoner.task | default(input) }}
+
+      YOUR ANALYSIS:
+      {{ previous_outputs.task_reasoner.response | default('No analysis available') }}
+
+      Solve the task using only your own analysis.
+
+      Return JSON with:
+      - "response": your complete solution
+      - "domain": the domain
+      - "task": brief description
+      - "steps": array of {"action": "...", "expected_outcome": "..."}
+      - "used_recalled_skill": false
+      - "recalled_skill_name": "none"
+      - "adaptation_notes": "N/A"
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": reflection on approach
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3
+
+  # ── Step 3: Final structured output ───────────────────────────────
+  - id: task_result
+    type: local_llm
+    prompt: |
+      Produce the FINAL structured output for this task.
+
+      DOMAIN: {{ previous_outputs.task_applier.domain | default('general') }}
+      TASK: {{ previous_outputs.task_applier.task | default(input) }}
+
+      SOLUTION:
+      {{ previous_outputs.task_applier.response | default('No solution available') }}
+
+      Return JSON with:
+      - "response": comprehensive structured solution
+      - "domain": the domain
+      - "task": brief description
+      - "solution_steps": array of concrete solution steps
+      - "quality_self_assessment": 0.0-1.0 with brief justification
+      - "brain_assisted": false
+      - "recalled_skill": "none"
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": final reflection
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3

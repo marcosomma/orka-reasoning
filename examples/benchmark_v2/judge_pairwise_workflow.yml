@@ -1,0 +1,65 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Benchmark v2 — LLM-as-Judge: Pairwise Comparison
+# ═══════════════════════════════════════════════════════════════════════
+#
+# Compares TWO outputs side-by-side with randomized A/B labeling.
+# The judge does NOT know which is brain-enabled or brainless.
+#
+# Input (JSON):
+#   {
+#     "domain": "...",
+#     "task": "...",
+#     "track": "A|B|C|D|E",
+#     "output_a": { ... },
+#     "output_b": { ... }
+#   }
+# ═══════════════════════════════════════════════════════════════════════
+
+orchestrator:
+  id: bench-v2-judge-pairwise
+  strategy: sequential
+  agents:
+    - pairwise_judge
+
+agents:
+  - id: pairwise_judge
+    type: local_llm
+    prompt: |
+      You are an expert evaluator. You will be given two outputs (A and B) that
+      solve the same task. Compare them and state your preference for each quality.
+
+      DOMAIN: {{ input.domain | default('general') }}
+      TASK: {{ input.task | default('unknown') }}
+
+      ═══════════════════ OUTPUT A ═══════════════════
+      {{ input.output_a | default('No output provided') }}
+
+      ═══════════════════ OUTPUT B ═══════════════════
+      {{ input.output_b | default('No output provided') }}
+      ═══════════════════════════════════════════════
+
+      For EACH of the following three questions, choose "A", "B", or "TIE":
+
+      1. STRONGER REASONING: Which output demonstrates more logically coherent,
+         evidence-based reasoning with valid step ordering?
+
+      2. MORE STRUCTURALLY COMPLETE: Which output covers all necessary steps and
+         is better organized with nothing important missing?
+
+      3. MORE TRUSTWORTHY: Considering depth of analysis, domain adaptation, and
+         calibrated confidence, which output would you trust more in production?
+
+      Return ONLY a JSON object with:
+      - "stronger_reasoning": "A" or "B" or "TIE"
+      - "stronger_reasoning_justification": one to two sentences
+      - "more_complete": "A" or "B" or "TIE"
+      - "more_complete_justification": one to two sentences
+      - "more_trustworthy": "A" or "B" or "TIE"
+      - "more_trustworthy_justification": one to two sentences
+      - "overall_preference": "A" or "B" or "TIE"
+      - "overall_justification": two to three sentence summary
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.1

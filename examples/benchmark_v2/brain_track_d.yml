@@ -1,0 +1,179 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Benchmark v2 — Track D: Multi-Skill Composition (Brain-Enabled)
+# ═══════════════════════════════════════════════════════════════════════
+#
+# Phase "seed" (tasks 1-10):
+#   Seeds recipe + anti-pattern + path per task (3 skills each).
+#
+# Phase "compose" (tasks 11-50):
+#   1. task_reasoner    — LLM reasons about the complex task
+#   2. brain_recall     — Recall all relevant skills (multi-type)
+#   3. task_applier     — Compose multiple skills into a solution
+#   4. brain_learn      — Learn from the composed solution
+#   5. brain_feedback   — Record composition outcome
+#   6. task_result      — Final output
+#
+# Tests whether the brain can recall and compose skills of different
+# types (recipes, anti-patterns, paths) into coherent solutions.
+# ═══════════════════════════════════════════════════════════════════════
+
+orchestrator:
+  id: bench-v2-brain-track-d
+  strategy: sequential
+  agents:
+    - brain_learn_recipe
+    - brain_learn_anti
+    - brain_learn_path
+    - task_reasoner
+    - brain_recall
+    - task_applier
+    - brain_learn
+    - brain_feedback
+    - task_result
+
+agents:
+  # ── Seed phase: learn recipe ──────────────────────────────────────
+  - id: brain_learn_recipe
+    type: brain
+    operation: learn_recipe
+    prompt: |
+      {{ input.recipe | default('{}') | tojson }}
+
+  # ── Seed phase: learn anti-pattern ────────────────────────────────
+  - id: brain_learn_anti
+    type: brain
+    operation: learn_anti
+    prompt: |
+      {{ input.anti_pattern | default('{}') | tojson }}
+
+  # ── Seed phase: learn path ───────────────────────────────────────
+  - id: brain_learn_path
+    type: brain
+    operation: learn_path
+    prompt: |
+      {{ input.path_skill | default('{}') | tojson }}
+
+  # ── Step 1: Reason about the task ─────────────────────────────────
+  - id: task_reasoner
+    type: local_llm
+    prompt: |
+      You are an expert analyst. Analyze this complex task step by step.
+
+      DOMAIN: {{ input.domain | default('general') }}
+      TASK: {{ input.task | default(input.title | default(input)) }}
+
+      This task may require combining multiple patterns: procedural recipes,
+      anti-pattern avoidance, and path selection. Think holistically.
+
+      Return JSON with:
+      - "domain": the domain
+      - "task": brief task description
+      - "response": your complete multi-faceted analysis
+      - "steps": array of {"action": "...", "result": "expected outcome"}
+      - "required_capabilities": list of skill types needed
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": approach explanation
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3
+
+  # ── Step 2: Recall all relevant skills ────────────────────────────
+  - id: brain_recall
+    type: brain
+    operation: recall
+    prompt: "{{ previous_outputs.task_reasoner }}"
+
+  # ── Step 3: Compose skills into solution ──────────────────────────
+  - id: task_applier
+    type: local_llm
+    prompt: |
+      You are solving a complex task that requires COMPOSING multiple skills.
+
+      DOMAIN: {{ previous_outputs.task_reasoner.domain | default('general') }}
+      TASK: {{ previous_outputs.task_reasoner.task | default(input) }}
+
+      YOUR ANALYSIS:
+      {{ previous_outputs.task_reasoner.response | default('No analysis') }}
+
+      BRAIN RECALLED KNOWLEDGE:
+      Skill name: {{ previous_outputs.brain_recall.skill_name | default('No skill recalled') }}
+      Skill type: {{ previous_outputs.brain_recall.skill_type | default('unknown') }}
+      Abstract steps: {{ previous_outputs.brain_recall.skill_steps | default([]) }}
+      Transfer score: {{ previous_outputs.brain_recall.combined_score | default('N/A') }}
+      Adaptations: {{ previous_outputs.brain_recall.adaptations | default({}) }}
+      All candidates: {{ previous_outputs.brain_recall.all_candidates | default([]) }}
+
+      INSTRUCTIONS:
+      - Compose insights from ALL recalled skills into a unified solution.
+      - Use recipe patterns for structuring your approach.
+      - Use anti-pattern knowledge to AVOID known failure modes.
+      - Use path knowledge to select the optimal execution sequence.
+      - Clearly note which skills contributed and how you composed them.
+
+      Return JSON with:
+      - "response": your complete composed solution
+      - "domain": the domain
+      - "task": brief description
+      - "steps": array of {"action": "...", "expected_outcome": "..."}
+      - "skills_composed": list of skill names/types used
+      - "anti_patterns_avoided": list of anti-patterns avoided
+      - "composition_strategy": how you combined multiple skills
+      - "used_recalled_skill": true or false
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": reflection on composition
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3
+
+  # ── Step 4: Learn from composed solution ──────────────────────────
+  - id: brain_learn
+    type: brain
+    operation: learn
+    prompt: "{{ previous_outputs.task_applier }}"
+
+  # ── Step 5: Record feedback ───────────────────────────────────────
+  - id: brain_feedback
+    type: brain
+    operation: feedback
+    prompt: "{{ previous_outputs.brain_recall }}"
+
+  # ── Step 6: Final output ──────────────────────────────────────────
+  - id: task_result
+    type: local_llm
+    prompt: |
+      Produce the FINAL structured output for this complex task.
+
+      DOMAIN: {{ previous_outputs.task_applier.domain | default('general') }}
+      TASK: {{ previous_outputs.task_applier.task | default(input) }}
+
+      COMPOSED SOLUTION:
+      {{ previous_outputs.task_applier.response | default('No solution') }}
+
+      COMPOSITION STRATEGY:
+      {{ previous_outputs.task_applier.composition_strategy | default('N/A') }}
+
+      BRAIN METRICS:
+      Skills composed: {{ previous_outputs.task_applier.skills_composed | default([]) }}
+      Anti-patterns avoided: {{ previous_outputs.task_applier.anti_patterns_avoided | default([]) }}
+
+      Return JSON with:
+      - "response": comprehensive structured solution
+      - "domain": the domain
+      - "task": brief description
+      - "solution_steps": array of concrete steps
+      - "skills_used": list of skills that contributed
+      - "anti_patterns_avoided": list of avoided patterns
+      - "quality_self_assessment": 0.0-1.0 with justification
+      - "brain_assisted": true if brain knowledge contributed
+      - "recalled_skill": primary skill or "none"
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": final reflection
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3
