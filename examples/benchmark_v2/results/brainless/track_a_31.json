@@ -1,0 +1,285 @@
+{
+  "task_id": "track_a_31",
+  "condition": "brainless",
+  "elapsed_s": 17.44,
+  "success": true,
+  "output": {
+    "response": {
+      "domain": "subsea_engineering",
+      "task": "Extract, reconcile, transform and load diverse telemetry into a WITSML-like asset integrity platform.",
+      "solution_steps": [
+        {
+          "step_number": 1,
+          "action": "Ingest raw data from all sources (Modbus registers, SCADA historians, ROV JSON, sonar binary).",
+          "expected_outcome": "Raw datasets stored in a secure staging area with source metadata and timestamps."
+        },
+        {
+          "step_number": 2,
+          "action": "Parse proprietary Modbus register maps for each of the six Christmas tree control modules, applying vendor\u2011specific byte\u2011order conversions.",
+          "expected_outcome": "Normalized numeric values (pressure, temperature, valve status) ready for further processing."
+        },
+        {
+          "step_number": 3,
+          "action": "Map SCADA historian tags to ISO\u202f14224 equipment hierarchy using a master lookup table that resolves naming conflicts and duplicates.",
+          "expected_outcome": "Consistent tag identifiers linked to facility assets with provenance information."
+        },
+        {
+          "step_number": 4,
+          "action": "Standardize ROV inspection JSON by normalizing confidence thresholds, adding source metadata (ROV ID, capture time), and converting timestamps to UTC.",
+          "expected_outcome": "Uniform anomaly records with calibrated confidence scores."
+        },
+        {
+          "step_number": 5,
+          "action": "Decode vendor\u2011specific sonar binary into bathymetric point clouds, converting coordinates to the facility\u2019s common datum (e.g., WGS\u202f84) and applying any required elevation offsets.",
+          "expected_outcome": "Point cloud data in a standardized spatial reference."
+        },
+        {
+          "step_number": 6,
+          "action": "Convert all timestamps to UTC. Handle three local time zones via offset tables and GPS week numbers by converting to Unix epoch using the known GPS\u2011UTC offset.",
+          "expected_outcome": "Unified timestamp field for every record."
+        },
+        {
+          "step_number": 7,
+          "action": "Normalize pressure readings to a common reference datum (sea level) by applying vendor\u2011specific offsets and unit conversions.",
+          "expected_outcome": "Pressure values expressed in consistent units (Pa) relative to sea level."
+        },
+        {
+          "step_number": 8,
+          "action": "Calculate sensor drift by comparing current readings against the most recent calibration data stored per API\u202f17F. Flag any reading where drift exceeds the threshold.",
+          "expected_outcome": "Flagged records with a drift status field and alert metadata."
+        },
+        {
+          "step_number": 9,
+          "action": "Transform reconciled, normalized data into the required WITSML\u2011like schema (e.g., pressure, temperature, anomaly, bathymetry elements) using XML or JSON templates.",
+          "expected_outcome": "Structured payloads ready for ingestion."
+        },
+        {
+          "step_number": 10,
+          "action": "Load payloads into the asset integrity management platform via its API, ensuring transactional integrity, audit logging, and lineage tracking back to the original source files.",
+          "expected_outcome": "Telemetry successfully stored with traceable provenance."
+        }
+      ],
+      "quality_self_assessment": {
+        "score": 0.95,
+        "justification": "All steps are directly derived from the task requirements, use standard industry practices, and cover every data source and transformation needed."
+      },
+      "brain_assisted": false,
+      "recalled_skill": "none",
+      "confidence": 0.95
+    },
+    "confidence": "0.95",
+    "internal_reasoning": "I mapped each source to a concrete ingestion step, then added detailed transformations for timestamp, pressure, and drift handling, ensuring alignment with ISO\u202f14224 and API\u202f17F. The final load step satisfies the WITSML\u2011like schema requirement.",
+    "_metrics": {
+      "tokens": 1877,
+      "prompt_tokens": 1038,
+      "completion_tokens": 839,
+      "latency_ms": 6932.54,
+      "cost_usd": 0.000427,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'subsea_engineering', 'task': \"Extract condition-monitoring telemetry from 6 subsea Christmas tree control modules (each vendor uses a proprietary Modbus register map with different byte-ordering conventions), 4 pipeline SCADA historians with overlapping but inconsistent tag naming, 2 ROV inspection video analytics systems producing structured anomaly JSON at different confidence thresholds, and a marine growth monitoring sonar system delivering bathymetric point clouds in vendor-specific binary format. Transform by reconciling equipment tag IDs against the facility's ISO 14224 equipment hierarchy, converting all timestamps to UTC (sources span 3 time zones and one system uses GPS week numbers), normalizing pressure readings to a common reference datum, and flagging readings where sensor drift exceeds API 17F calibration thresholds. Load into an asset integrity management platform that requires a specific WITSML-like schema.\"}\n\nSOLUTION:\n{'domain': 'subsea_engineering', 'task': 'Extract, reconcile, transform and load diverse telemetry into a WITSML-like asset integrity platform.', 'steps': [{'action': 'Ingest raw data from all sources (Modbus registers, SCADA historians, ROV JSON, sonar binary).', 'expected_outcome': 'Raw datasets stored in a staging area with source metadata.'}, {'action': 'Parse proprietary Modbus register maps and apply vendor-specific byte-order conversions.', 'expected_outcome': 'Normalized numeric values for each Christmas tree control module.'}, {'action': 'Map SCADA historian tags to ISO 14224 equipment hierarchy, resolving naming conflicts via a lookup table.', 'expected_outcome': 'Consistent tag identifiers linked to facility assets.'}, {'action': 'Transform ROV JSON anomaly outputs by standardizing confidence thresholds and adding source metadata.', 'expected_outcome': 'Uniform anomaly records with calibrated confidence scores.'}, {'action': 'Decode vendor-specific sonar binary into bathymetric point clouds, converting coordinates to a common datum.', 'expected_outcome': 'Point cloud data in standardized spatial reference.'}, {'action': 'Convert all timestamps to UTC, handling 3 time zones and GPS week numbers via epoch conversion.', 'expected_outcome': 'Unified timestamp field for every record.'}, {'action': 'Normalize pressure readings to a common reference datum (e.g., sea level), applying vendor-specific offsets.', 'expected_outcome': 'Pressure values expressed in consistent units and datum.'}, {'action': 'Calculate sensor drift by comparing current readings against last calibration data; flag any exceeding API 17F thresholds.', 'expected_outcome': 'Flagged records with drift status.'}, {'action': 'Transform reconciled, normalized data into the required WITSML-like schema (e.g., pressure, temperature, anomaly, bathymetry elements).', 'expected_outcome': 'Structured XML/JSON payloads ready for ingestion.'}, {'action': 'Load payloads into the asset integrity management platform via its API, ensuring transactional integrity and audit logging.', 'expected_outcome': 'Telemetry successfully stored with traceable lineage.'}], 'used_recalled_skill': False, 'recalled_skill_name': 'none', 'adaptation_notes': 'N/A'}\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": {
+        "domain": "subsea_engineering",
+        "task": "Extract, reconcile, transform and load diverse telemetry into a WITSML-like asset integrity platform.",
+        "steps": [
+          {
+            "action": "Ingest raw data from all sources (Modbus registers, SCADA historians, ROV JSON, sonar binary).",
+            "result": "Raw datasets stored in a staging area with source metadata."
+          },
+          {
+            "action": "Parse proprietary Modbus register maps and apply vendor-specific byte-order conversions.",
+            "result": "Normalized numeric values for each Christmas tree control module."
+          },
+          {
+            "action": "Map SCADA historian tags to ISO 14224 equipment hierarchy, resolving naming conflicts via a lookup table.",
+            "result": "Consistent tag identifiers linked to facility assets."
+          },
+          {
+            "action": "Transform ROV JSON anomaly outputs by standardizing confidence thresholds and adding source metadata.",
+            "result": "Uniform anomaly records with calibrated confidence scores."
+          },
+          {
+            "action": "Decode vendor-specific sonar binary into bathymetric point clouds, converting coordinates to a common datum.",
+            "result": "Point cloud data in standardized spatial reference."
+          },
+          {
+            "action": "Convert all timestamps to UTC, handling 3 time zones and GPS week numbers via epoch conversion.",
+            "result": "Unified timestamp field for every record."
+          },
+          {
+            "action": "Normalize pressure readings to a common reference datum (e.g., sea level), applying vendor-specific offsets.",
+            "result": "Pressure values expressed in consistent units and datum."
+          },
+          {
+            "action": "Calculate sensor drift by comparing current readings against last calibration data; flag any exceeding API 17F thresholds.",
+            "result": "Flagged records with drift status."
+          },
+          {
+            "action": "Transform reconciled, normalized data into the required WITSML-like schema (e.g., pressure, temperature, anomaly, bathymetry elements).",
+            "result": "Structured XML/JSON payloads ready for ingestion."
+          },
+          {
+            "action": "Load payloads into the asset integrity management platform via its API, ensuring transactional integrity and audit logging.",
+            "result": "Telemetry successfully stored with traceable lineage."
+          }
+        ]
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "I identified each source type, determined necessary parsing and normalization steps, mapped to ISO 14224 hierarchy, handled time zone conversions including GPS week numbers, applied pressure datum corrections, flagged drift per API 17F, and outlined final schema transformation and load.",
+      "_metrics": {
+        "tokens": 1133,
+        "prompt_tokens": 579,
+        "completion_tokens": 554,
+        "latency_ms": 4744.26,
+        "cost_usd": 0.000293,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: subsea_engineering\nTASK: Extract condition-monitoring telemetry from 6 subsea Christmas tree control modules (each vendor uses a proprietary Modbus register map with different byte-ordering conventions), 4 pipeline SCADA historians with overlapping but inconsistent tag naming, 2 ROV inspection video analytics systems producing structured anomaly JSON at different confidence thresholds, and a marine growth monitoring sonar system delivering bathymetric point clouds in vendor-specific binary format. Transform by reconciling equipment tag IDs against the facility's ISO 14224 equipment hierarchy, converting all timestamps to UTC (sources span 3 time zones and one system uses GPS week numbers), normalizing pressure readings to a common reference datum, and flagging readings where sensor drift exceeds API 17F calibration thresholds. Load into an asset integrity management platform that requires a specific WITSML-like schema.\n\n\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+    },
+    "task_applier": {
+      "response": {
+        "domain": "subsea_engineering",
+        "task": "Extract, reconcile, transform and load diverse telemetry into a WITSML-like asset integrity platform.",
+        "steps": [
+          {
+            "action": "Ingest raw data from all sources (Modbus registers, SCADA historians, ROV JSON, sonar binary).",
+            "expected_outcome": "Raw datasets stored in a staging area with source metadata."
+          },
+          {
+            "action": "Parse proprietary Modbus register maps and apply vendor-specific byte-order conversions.",
+            "expected_outcome": "Normalized numeric values for each Christmas tree control module."
+          },
+          {
+            "action": "Map SCADA historian tags to ISO 14224 equipment hierarchy, resolving naming conflicts via a lookup table.",
+            "expected_outcome": "Consistent tag identifiers linked to facility assets."
+          },
+          {
+            "action": "Transform ROV JSON anomaly outputs by standardizing confidence thresholds and adding source metadata.",
+            "expected_outcome": "Uniform anomaly records with calibrated confidence scores."
+          },
+          {
+            "action": "Decode vendor-specific sonar binary into bathymetric point clouds, converting coordinates to a common datum.",
+            "expected_outcome": "Point cloud data in standardized spatial reference."
+          },
+          {
+            "action": "Convert all timestamps to UTC, handling 3 time zones and GPS week numbers via epoch conversion.",
+            "expected_outcome": "Unified timestamp field for every record."
+          },
+          {
+            "action": "Normalize pressure readings to a common reference datum (e.g., sea level), applying vendor-specific offsets.",
+            "expected_outcome": "Pressure values expressed in consistent units and datum."
+          },
+          {
+            "action": "Calculate sensor drift by comparing current readings against last calibration data; flag any exceeding API 17F thresholds.",
+            "expected_outcome": "Flagged records with drift status."
+          },
+          {
+            "action": "Transform reconciled, normalized data into the required WITSML-like schema (e.g., pressure, temperature, anomaly, bathymetry elements).",
+            "expected_outcome": "Structured XML/JSON payloads ready for ingestion."
+          },
+          {
+            "action": "Load payloads into the asset integrity management platform via its API, ensuring transactional integrity and audit logging.",
+            "expected_outcome": "Telemetry successfully stored with traceable lineage."
+          }
+        ],
+        "used_recalled_skill": false,
+        "recalled_skill_name": "none",
+        "adaptation_notes": "N/A"
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "The solution follows a logical ETL pipeline: ingest, parse, map, normalize, flag, transform to schema, and load. Each step addresses the specific heterogeneity issues mentioned (byte order, tag naming, time zones, GPS weeks, datum conversion, drift detection). Confidence is high because the approach directly matches the task requirements.",
+      "_metrics": {
+        "tokens": 1638,
+        "prompt_tokens": 1020,
+        "completion_tokens": 618,
+        "latency_ms": 5500.66,
+        "cost_usd": 0.000339,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a task. You have your own step-by-step analysis.\nYou have NO prior experience and NO recalled skills.\n\nDOMAIN: general\nTASK: {'domain': 'subsea_engineering', 'task': \"Extract condition-monitoring telemetry from 6 subsea Christmas tree control modules (each vendor uses a proprietary Modbus register map with different byte-ordering conventions), 4 pipeline SCADA historians with overlapping but inconsistent tag naming, 2 ROV inspection video analytics systems producing structured anomaly JSON at different confidence thresholds, and a marine growth monitoring sonar system delivering bathymetric point clouds in vendor-specific binary format. Transform by reconciling equipment tag IDs against the facility's ISO 14224 equipment hierarchy, converting all timestamps to UTC (sources span 3 time zones and one system uses GPS week numbers), normalizing pressure readings to a common reference datum, and flagging readings where sensor drift exceeds API 17F calibration thresholds. Load into an asset integrity management platform that requires a specific WITSML-like schema.\"}\n\nYOUR ANALYSIS:\n{'domain': 'subsea_engineering', 'task': 'Extract, reconcile, transform and load diverse telemetry into a WITSML-like asset integrity platform.', 'steps': [{'action': 'Ingest raw data from all sources (Modbus registers, SCADA historians, ROV JSON, sonar binary).', 'result': 'Raw datasets stored in a staging area with source metadata.'}, {'action': 'Parse proprietary Modbus register maps and apply vendor-specific byte-order conversions.', 'result': 'Normalized numeric values for each Christmas tree control module.'}, {'action': 'Map SCADA historian tags to ISO 14224 equipment hierarchy, resolving naming conflicts via a lookup table.', 'result': 'Consistent tag identifiers linked to facility assets.'}, {'action': 'Transform ROV JSON anomaly outputs by standardizing confidence thresholds and adding source metadata.', 'result': 'Uniform anomaly records with calibrated confidence scores.'}, {'action': 'Decode vendor-specific sonar binary into bathymetric point clouds, converting coordinates to a common datum.', 'result': 'Point cloud data in standardized spatial reference.'}, {'action': 'Convert all timestamps to UTC, handling 3 time zones and GPS week numbers via epoch conversion.', 'result': 'Unified timestamp field for every record.'}, {'action': 'Normalize pressure readings to a common reference datum (e.g., sea level), applying vendor-specific offsets.', 'result': 'Pressure values expressed in consistent units and datum.'}, {'action': 'Calculate sensor drift by comparing current readings against last calibration data; flag any exceeding API 17F thresholds.', 'result': 'Flagged records with drift status.'}, {'action': 'Transform reconciled, normalized data into the required WITSML-like schema (e.g., pressure, temperature, anomaly, bathymetry elements).', 'result': 'Structured XML/JSON payloads ready for ingestion.'}, {'action': 'Load payloads into the asset integrity management platform via its API, ensuring transactional integrity and audit logging.', 'result': 'Telemetry successfully stored with traceable lineage.'}]}\n\nSolve the task using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": false\n- \"recalled_skill_name\": \"none\"\n- \"adaptation_notes\": \"N/A\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+    },
+    "task_result": {
+      "response": {
+        "domain": "subsea_engineering",
+        "task": "Extract, reconcile, transform and load diverse telemetry into a WITSML-like asset integrity platform.",
+        "solution_steps": [
+          {
+            "step_number": 1,
+            "action": "Ingest raw data from all sources (Modbus registers, SCADA historians, ROV JSON, sonar binary).",
+            "expected_outcome": "Raw datasets stored in a secure staging area with source metadata and timestamps."
+          },
+          {
+            "step_number": 2,
+            "action": "Parse proprietary Modbus register maps for each of the six Christmas tree control modules, applying vendor\u2011specific byte\u2011order conversions.",
+            "expected_outcome": "Normalized numeric values (pressure, temperature, valve status) ready for further processing."
+          },
+          {
+            "step_number": 3,
+            "action": "Map SCADA historian tags to ISO\u202f14224 equipment hierarchy using a master lookup table that resolves naming conflicts and duplicates.",
+            "expected_outcome": "Consistent tag identifiers linked to facility assets with provenance information."
+          },
+          {
+            "step_number": 4,
+            "action": "Standardize ROV inspection JSON by normalizing confidence thresholds, adding source metadata (ROV ID, capture time), and converting timestamps to UTC.",
+            "expected_outcome": "Uniform anomaly records with calibrated confidence scores."
+          },
+          {
+            "step_number": 5,
+            "action": "Decode vendor\u2011specific sonar binary into bathymetric point clouds, converting coordinates to the facility\u2019s common datum (e.g., WGS\u202f84) and applying any required elevation offsets.",
+            "expected_outcome": "Point cloud data in a standardized spatial reference."
+          },
+          {
+            "step_number": 6,
+            "action": "Convert all timestamps to UTC. Handle three local time zones via offset tables and GPS week numbers by converting to Unix epoch using the known GPS\u2011UTC offset.",
+            "expected_outcome": "Unified timestamp field for every record."
+          },
+          {
+            "step_number": 7,
+            "action": "Normalize pressure readings to a common reference datum (sea level) by applying vendor\u2011specific offsets and unit conversions.",
+            "expected_outcome": "Pressure values expressed in consistent units (Pa) relative to sea level."
+          },
+          {
+            "step_number": 8,
+            "action": "Calculate sensor drift by comparing current readings against the most recent calibration data stored per API\u202f17F. Flag any reading where drift exceeds the threshold.",
+            "expected_outcome": "Flagged records with a drift status field and alert metadata."
+          },
+          {
+            "step_number": 9,
+            "action": "Transform reconciled, normalized data into the required WITSML\u2011like schema (e.g., pressure, temperature, anomaly, bathymetry elements) using XML or JSON templates.",
+            "expected_outcome": "Structured payloads ready for ingestion."
+          },
+          {
+            "step_number": 10,
+            "action": "Load payloads into the asset integrity management platform via its API, ensuring transactional integrity, audit logging, and lineage tracking back to the original source files.",
+            "expected_outcome": "Telemetry successfully stored with traceable provenance."
+          }
+        ],
+        "quality_self_assessment": {
+          "score": 0.95,
+          "justification": "All steps are directly derived from the task requirements, use standard industry practices, and cover every data source and transformation needed."
+        },
+        "brain_assisted": false,
+        "recalled_skill": "none",
+        "confidence": 0.95
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "I mapped each source to a concrete ingestion step, then added detailed transformations for timestamp, pressure, and drift handling, ensuring alignment with ISO\u202f14224 and API\u202f17F. The final load step satisfies the WITSML\u2011like schema requirement.",
+      "_metrics": {
+        "tokens": 1877,
+        "prompt_tokens": 1038,
+        "completion_tokens": 839,
+        "latency_ms": 6932.54,
+        "cost_usd": 0.000427,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'subsea_engineering', 'task': \"Extract condition-monitoring telemetry from 6 subsea Christmas tree control modules (each vendor uses a proprietary Modbus register map with different byte-ordering conventions), 4 pipeline SCADA historians with overlapping but inconsistent tag naming, 2 ROV inspection video analytics systems producing structured anomaly JSON at different confidence thresholds, and a marine growth monitoring sonar system delivering bathymetric point clouds in vendor-specific binary format. Transform by reconciling equipment tag IDs against the facility's ISO 14224 equipment hierarchy, converting all timestamps to UTC (sources span 3 time zones and one system uses GPS week numbers), normalizing pressure readings to a common reference datum, and flagging readings where sensor drift exceeds API 17F calibration thresholds. Load into an asset integrity management platform that requires a specific WITSML-like schema.\"}\n\nSOLUTION:\n{'domain': 'subsea_engineering', 'task': 'Extract, reconcile, transform and load diverse telemetry into a WITSML-like asset integrity platform.', 'steps': [{'action': 'Ingest raw data from all sources (Modbus registers, SCADA historians, ROV JSON, sonar binary).', 'expected_outcome': 'Raw datasets stored in a staging area with source metadata.'}, {'action': 'Parse proprietary Modbus register maps and apply vendor-specific byte-order conversions.', 'expected_outcome': 'Normalized numeric values for each Christmas tree control module.'}, {'action': 'Map SCADA historian tags to ISO 14224 equipment hierarchy, resolving naming conflicts via a lookup table.', 'expected_outcome': 'Consistent tag identifiers linked to facility assets.'}, {'action': 'Transform ROV JSON anomaly outputs by standardizing confidence thresholds and adding source metadata.', 'expected_outcome': 'Uniform anomaly records with calibrated confidence scores.'}, {'action': 'Decode vendor-specific sonar binary into bathymetric point clouds, converting coordinates to a common datum.', 'expected_outcome': 'Point cloud data in standardized spatial reference.'}, {'action': 'Convert all timestamps to UTC, handling 3 time zones and GPS week numbers via epoch conversion.', 'expected_outcome': 'Unified timestamp field for every record.'}, {'action': 'Normalize pressure readings to a common reference datum (e.g., sea level), applying vendor-specific offsets.', 'expected_outcome': 'Pressure values expressed in consistent units and datum.'}, {'action': 'Calculate sensor drift by comparing current readings against last calibration data; flag any exceeding API 17F thresholds.', 'expected_outcome': 'Flagged records with drift status.'}, {'action': 'Transform reconciled, normalized data into the required WITSML-like schema (e.g., pressure, temperature, anomaly, bathymetry elements).', 'expected_outcome': 'Structured XML/JSON payloads ready for ingestion.'}, {'action': 'Load payloads into the asset integrity management platform via its API, ensuring transactional integrity and audit logging.', 'expected_outcome': 'Telemetry successfully stored with traceable lineage.'}], 'used_recalled_skill': False, 'recalled_skill_name': 'none', 'adaptation_notes': 'N/A'}\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

@@ -1,0 +1,202 @@
+{
+  "task_id": "track_a_42",
+  "condition": "brainless",
+  "elapsed_s": 20.88,
+  "success": true,
+  "output": {
+    "response": {
+      "project_overview": "A systematic assessment of 4,500 textile objects (tapestries, garments, vestments, ethnographic textiles) using visual raking light, PLM fiber ID, pH strips, and micro\u2011fading tests. Composite CCI scores are calculated for each object, weighted by exhibition/loan demand and insurance value. The top 300 high\u2011risk items are earmarked for treatment in the next fiscal year, with immediate isolation of six insect\u2011infested pieces. Light\u2011sensitive objects displayed above recommended lux levels are flagged for temporary relocation or UV\u2011blocking glazing after two years. A storage improvement plan establishes controlled RH/temperature and acid\u2011neutral packaging for high\u2011risk items.",
+      "methodology": [
+        {
+          "step": 1,
+          "description": "Build master database (ID, type, provenance, exhibition/loan forecast, insurance value)."
+        },
+        {
+          "step": 2,
+          "description": "Rapid visual raking\u2011light survey to flag obvious deterioration."
+        },
+        {
+          "step": 3,
+          "description": "Perform PLM fiber identification on representative samples per textile type."
+        },
+        {
+          "step": 4,
+          "description": "Apply pH indicator strips to accessible areas; record acidity."
+        },
+        {
+          "step": 5,
+          "description": "Conduct micro\u2011fading tests on dye classes to quantify light sensitivity."
+        },
+        {
+          "step": 6,
+          "description": "Calculate composite CCI score for each object using the 10 deterioration agents (light, humidity, temperature, pests, mechanical stress, chemical, biological, handling, storage conditions, institutional factors)."
+        },
+        {
+          "step": 7,
+          "description": "Adjust CCI by exposure multiplier (exhibition/loan forecast) and insurance value multiplier to produce final risk index."
+        },
+        {
+          "step": 8,
+          "description": "Rank all objects; select top 300 for treatment in next fiscal year."
+        },
+        {
+          "step": 9,
+          "description": "Immediately isolate six insect\u2011infested items with quarantine protocols."
+        },
+        {
+          "step": 10,
+          "description": "Flag light\u2011sensitive objects displayed above recommended lux; propose temporary relocation or UV\u2011blocking glazing after donor agreement expires (2 years)."
+        },
+        {
+          "step": 11,
+          "description": "Develop storage improvement plan: controlled environment (RH 45\u201355%, T 18\u201320\u00b0C) for high\u2011risk low\u2011exposure items; acid\u2011neutral, anti\u2011pest packaging for others."
+        },
+        {
+          "step": 12,
+          "description": "Create action matrix with object ID, risk score, priority, required treatment (cleaning, mending, deacidification), storage recommendation, cost/time estimates."
+        },
+        {
+          "step": 13,
+          "description": "Present plan to curatorial, finance, and donor stakeholders; adjust as needed."
+        },
+        {
+          "step": 14,
+          "description": "Implement monitoring: re\u2011assess treated objects quarterly and update scores."
+        }
+      ],
+      "budget_and_timeline_constraints": {
+        "treatment_backlog": "18 months",
+        "budget_next_fiscal_year": "300 objects",
+        "light_sensitive_objects": "12 currently displayed above recommended lux; gallery cannot be modified for 2 years due to donor naming agreement"
+      },
+      "risk_classification_framework": "CCI Framework for Preserving Heritage Collections (10 agents of deterioration)",
+      "output_format": "JSON with detailed action matrix and priority list"
+    },
+    "confidence": "0.95",
+    "internal_reasoning": "The response follows the task requirements: it outlines a comprehensive, step\u2011by\u2011step methodology, incorporates all specified assessment techniques, applies the CCI framework, addresses constraints (budget, backlog, light sensitivity, insect infestation), and presents a structured plan. All elements are evidence\u2011based and aligned with best practices in textile conservation.",
+    "_metrics": {
+      "tokens": 1829,
+      "prompt_tokens": 966,
+      "completion_tokens": 863,
+      "latency_ms": 7648.32,
+      "cost_usd": 0.000472,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'textile_conservation', 'task': \"Scan a museum textile collection of 4,500 objects (tapestries, garments, ecclesiastical vestments, ethnographic textiles) for deterioration risks using a combination of visual assessment with raking light, fiber identification by PLM, pH indicator strips on accessible areas, and micro-fading testing on representative dye classes. Classify each risk by a composite score using the CCI Framework for Preserving Heritage Collections (10 agents of deterioration), cross-referenced with the object's exhibition/loan demand forecast and insurance valuation. Generate a prioritized conservation treatment and storage improvement plan that accounts for: the conservation lab's 18-month treatment backlog, 6 objects with active insect infestation requiring immediate isolation, 12 light-sensitive objects currently displayed above recommended lux levels in a gallery that cannot be modified for 2 years due to a donor naming agreement, and a budget that can fund treatment of only 300 objects in the next fiscal year.\"}\n\nSOLUTION:\n1. Create a master database of all 4,500 textiles with metadata (type, provenance, exhibition/loan forecast, insurance value). 2. Perform rapid visual raking\u2011light survey to flag obvious deterioration. 3. Conduct PLM fiber identification on representative samples for each textile type. 4. Apply pH strips to accessible areas; record acidity levels. 5. Run micro\u2011fading tests on dye classes to quantify light sensitivity. 6. Calculate a composite CCI score for each object, weighting the 10 deterioration agents (light, humidity, temperature, pests, mechanical stress, chemical, biological, handling, storage conditions, institutional factors). 7. Multiply the CCI score by exposure and insurance value multipliers to produce a final risk index. 8. Rank all objects by this index; identify the top 300 for treatment in the next fiscal year. 9. Isolate the 6 insect\u2011infested items immediately with quarantine protocols. 10. For light\u2011sensitive objects displayed above recommended lux, propose temporary relocation to lower\u2011lux areas or install UV\u2011blocking glazing once donor agreement expires (2\u2011year window). 11. Develop a storage improvement plan: controlled environment (RH 45\u201355\u202f%, T 18\u201320\u202f\u00b0C) for high\u2011risk but low\u2011exposure items; use acid\u2011neutral, anti\u2011pest packaging for others. 12. Draft an action matrix listing object ID, risk score, priority, required treatment (cleaning, mending, deacidification), storage recommendation, and cost/time estimates. 13. Present the plan to curatorial, finance, and donor stakeholders; adjust as needed. 14. Implement monitoring: re\u2011assess treated objects quarterly and update scores.\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": "Step\u2011by\u2011step plan for scanning and prioritising the textile collection:\n\n1. **Create a master inventory database** \u2013 Import all 4,500 objects with metadata (type, provenance, exhibition/loan forecast, insurance value). This ensures every item can be tracked through assessment, scoring, and treatment planning.\n\n2. **Conduct rapid visual raking\u2011light survey** \u2013 Assign a preliminary deterioration flag (0\u20133) to each object based on visible tears, fraying, discoloration, or mold. This quick screen identifies obvious high\u2011risk items before deeper tests.\n\n3. **Perform PLM fiber identification on representative samples** \u2013 For each textile type, determine fiber composition (cotton, wool, silk, synthetic). Knowing the fiber informs specific degradation agents and appropriate conservation methods.\n\n4. **Apply pH indicator strips to accessible areas** \u2013 Record acidity levels; objects with pH < 5.5 are flagged for acid\u2011related deterioration risk.\n\n5. **Run micro\u2011fading tests on dye classes** \u2013 Test a small sample of each dye type (e.g., natural indigo, synthetic azo) to quantify light sensitivity. Assign a fading score (0\u201310).\n\n6. **Calculate composite CCI scores** \u2013 For every object, integrate the 10 agents of deterioration (light, humidity, temperature, pests, mechanical stress, chemical, biological, handling, storage conditions, and institutional factors). Weight each agent by its relevance to the object's type and condition.\n\n7. **Cross\u2011reference with exhibition/loan forecast and insurance value** \u2013 Multiply the CCI score by a risk multiplier derived from projected public exposure (high for frequently displayed items) and by the monetary value to prioritize objects that are both at high physical risk and high cultural/economic importance.\n\n8. **Generate a ranked list of 4,500 objects** \u2013 Sort by composite risk score descending. This list will guide treatment sequencing and storage decisions.\n\n9. **Identify immediate isolation needs** \u2013 Flag the 6 insect\u2011infested items; they must be quarantined before any other work to prevent spread.\n\n10. **Allocate treatment slots within the 18\u2011month backlog** \u2013 Using the ranked list, assign the top 300 objects (highest risk \u00d7 exposure/valuation) to the next fiscal year\u2019s budget. Schedule lower\u2011risk items for later phases.\n\n11. **Develop storage improvement plan** \u2013 For high\u2011risk but low\u2011exposure items, recommend controlled environment storage (stable RH 45\u201355%, temperature 18\u201320\u00b0C). For light\u2011sensitive objects displayed above recommended lux levels, propose temporary relocation to a lower\u2011lux area or installation of UV\u2011blocking glazing once donor agreement expires.\n\n12. **Create an action matrix** \u2013 Include: object ID, risk score, treatment priority, required conservation intervention (e.g., cleaning, mending, deacidification), storage recommendation, and estimated cost/time.\n\n13. **Review with stakeholders** \u2013 Present the plan to curatorial staff, finance, and donor representatives to confirm feasibility and adjust priorities if necessary.\n\n14. **Implement monitoring protocol** \u2013 After treatment, re\u2011assess treated objects quarterly for condition changes; update risk scores accordingly.\n\n15. **Document all findings and decisions** \u2013 Maintain a digital log linked to the master inventory for future reference and audit compliance.\n\nThis structured workflow ensures that limited resources are directed toward objects with the greatest conservation need while respecting exhibition commitments, budget constraints, and institutional agreements.",
+      "confidence": "0.9",
+      "internal_reasoning": "I outlined each necessary action, justified its importance, and described expected outputs, ensuring a comprehensive yet concise plan.",
+      "_metrics": {
+        "tokens": 1395,
+        "prompt_tokens": 607,
+        "completion_tokens": 788,
+        "latency_ms": 8577.41,
+        "cost_usd": 0.000529,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: textile_conservation\nTASK: Scan a museum textile collection of 4,500 objects (tapestries, garments, ecclesiastical vestments, ethnographic textiles) for deterioration risks using a combination of visual assessment with raking light, fiber identification by PLM, pH indicator strips on accessible areas, and micro-fading testing on representative dye classes. Classify each risk by a composite score using the CCI Framework for Preserving Heritage Collections (10 agents of deterioration), cross-referenced with the object's exhibition/loan demand forecast and insurance valuation. Generate a prioritized conservation treatment and storage improvement plan that accounts for: the conservation lab's 18-month treatment backlog, 6 objects with active insect infestation requiring immediate isolation, 12 light-sensitive objects currently displayed above recommended lux levels in a gallery that cannot be modified for 2 years due to a donor naming agreement, and a budget that can fund treatment of only 300 objects in the next fiscal year.\n\n\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+    },
+    "task_applier": {
+      "response": "1. Create a master database of all 4,500 textiles with metadata (type, provenance, exhibition/loan forecast, insurance value). 2. Perform rapid visual raking\u2011light survey to flag obvious deterioration. 3. Conduct PLM fiber identification on representative samples for each textile type. 4. Apply pH strips to accessible areas; record acidity levels. 5. Run micro\u2011fading tests on dye classes to quantify light sensitivity. 6. Calculate a composite CCI score for each object, weighting the 10 deterioration agents (light, humidity, temperature, pests, mechanical stress, chemical, biological, handling, storage conditions, institutional factors). 7. Multiply the CCI score by exposure and insurance value multipliers to produce a final risk index. 8. Rank all objects by this index; identify the top 300 for treatment in the next fiscal year. 9. Isolate the 6 insect\u2011infested items immediately with quarantine protocols. 10. For light\u2011sensitive objects displayed above recommended lux, propose temporary relocation to lower\u2011lux areas or install UV\u2011blocking glazing once donor agreement expires (2\u2011year window). 11. Develop a storage improvement plan: controlled environment (RH 45\u201355\u202f%, T 18\u201320\u202f\u00b0C) for high\u2011risk but low\u2011exposure items; use acid\u2011neutral, anti\u2011pest packaging for others. 12. Draft an action matrix listing object ID, risk score, priority, required treatment (cleaning, mending, deacidification), storage recommendation, and cost/time estimates. 13. Present the plan to curatorial, finance, and donor stakeholders; adjust as needed. 14. Implement monitoring: re\u2011assess treated objects quarterly and update scores.",
+      "confidence": "0.95",
+      "internal_reasoning": "I mapped each requirement of the task to a concrete step, ensuring all constraints (backlog, infestation, light sensitivity, budget) are addressed while using evidence-based methods (visual survey, PLM, pH strips, micro\u2011fading, CCI). The plan follows a logical sequence from data collection to prioritization and action.",
+      "_metrics": {
+        "tokens": 1794,
+        "prompt_tokens": 1337,
+        "completion_tokens": 457,
+        "latency_ms": 4389.99,
+        "cost_usd": 0.000271,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a task. You have your own step-by-step analysis.\nYou have NO prior experience and NO recalled skills.\n\nDOMAIN: general\nTASK: {'domain': 'textile_conservation', 'task': \"Scan a museum textile collection of 4,500 objects (tapestries, garments, ecclesiastical vestments, ethnographic textiles) for deterioration risks using a combination of visual assessment with raking light, fiber identification by PLM, pH indicator strips on accessible areas, and micro-fading testing on representative dye classes. Classify each risk by a composite score using the CCI Framework for Preserving Heritage Collections (10 agents of deterioration), cross-referenced with the object's exhibition/loan demand forecast and insurance valuation. Generate a prioritized conservation treatment and storage improvement plan that accounts for: the conservation lab's 18-month treatment backlog, 6 objects with active insect infestation requiring immediate isolation, 12 light-sensitive objects currently displayed above recommended lux levels in a gallery that cannot be modified for 2 years due to a donor naming agreement, and a budget that can fund treatment of only 300 objects in the next fiscal year.\"}\n\nYOUR ANALYSIS:\nStep\u2011by\u2011step plan for scanning and prioritising the textile collection:\n\n1. **Create a master inventory database** \u2013 Import all 4,500 objects with metadata (type, provenance, exhibition/loan forecast, insurance value). This ensures every item can be tracked through assessment, scoring, and treatment planning.\n\n2. **Conduct rapid visual raking\u2011light survey** \u2013 Assign a preliminary deterioration flag (0\u20133) to each object based on visible tears, fraying, discoloration, or mold. This quick screen identifies obvious high\u2011risk items before deeper tests.\n\n3. **Perform PLM fiber identification on representative samples** \u2013 For each textile type, determine fiber composition (cotton, wool, silk, synthetic). Knowing the fiber informs specific degradation agents and appropriate conservation methods.\n\n4. **Apply pH indicator strips to accessible areas** \u2013 Record acidity levels; objects with pH < 5.5 are flagged for acid\u2011related deterioration risk.\n\n5. **Run micro\u2011fading tests on dye classes** \u2013 Test a small sample of each dye type (e.g., natural indigo, synthetic azo) to quantify light sensitivity. Assign a fading score (0\u201310).\n\n6. **Calculate composite CCI scores** \u2013 For every object, integrate the 10 agents of deterioration (light, humidity, temperature, pests, mechanical stress, chemical, biological, handling, storage conditions, and institutional factors). Weight each agent by its relevance to the object's type and condition.\n\n7. **Cross\u2011reference with exhibition/loan forecast and insurance value** \u2013 Multiply the CCI score by a risk multiplier derived from projected public exposure (high for frequently displayed items) and by the monetary value to prioritize objects that are both at high physical risk and high cultural/economic importance.\n\n8. **Generate a ranked list of 4,500 objects** \u2013 Sort by composite risk score descending. This list will guide treatment sequencing and storage decisions.\n\n9. **Identify immediate isolation needs** \u2013 Flag the 6 insect\u2011infested items; they must be quarantined before any other work to prevent spread.\n\n10. **Allocate treatment slots within the 18\u2011month backlog** \u2013 Using the ranked list, assign the top 300 objects (highest risk \u00d7 exposure/valuation) to the next fiscal year\u2019s budget. Schedule lower\u2011risk items for later phases.\n\n11. **Develop storage improvement plan** \u2013 For high\u2011risk but low\u2011exposure items, recommend controlled environment storage (stable RH 45\u201355%, temperature 18\u201320\u00b0C). For light\u2011sensitive objects displayed above recommended lux levels, propose temporary relocation to a lower\u2011lux area or installation of UV\u2011blocking glazing once donor agreement expires.\n\n12. **Create an action matrix** \u2013 Include: object ID, risk score, treatment priority, required conservation intervention (e.g., cleaning, mending, deacidification), storage recommendation, and estimated cost/time.\n\n13. **Review with stakeholders** \u2013 Present the plan to curatorial staff, finance, and donor representatives to confirm feasibility and adjust priorities if necessary.\n\n14. **Implement monitoring protocol** \u2013 After treatment, re\u2011assess treated objects quarterly for condition changes; update risk scores accordingly.\n\n15. **Document all findings and decisions** \u2013 Maintain a digital log linked to the master inventory for future reference and audit compliance.\n\nThis structured workflow ensures that limited resources are directed toward objects with the greatest conservation need while respecting exhibition commitments, budget constraints, and institutional agreements.\n\nSolve the task using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": false\n- \"recalled_skill_name\": \"none\"\n- \"adaptation_notes\": \"N/A\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+    },
+    "task_result": {
+      "response": {
+        "project_overview": "A systematic assessment of 4,500 textile objects (tapestries, garments, vestments, ethnographic textiles) using visual raking light, PLM fiber ID, pH strips, and micro\u2011fading tests. Composite CCI scores are calculated for each object, weighted by exhibition/loan demand and insurance value. The top 300 high\u2011risk items are earmarked for treatment in the next fiscal year, with immediate isolation of six insect\u2011infested pieces. Light\u2011sensitive objects displayed above recommended lux levels are flagged for temporary relocation or UV\u2011blocking glazing after two years. A storage improvement plan establishes controlled RH/temperature and acid\u2011neutral packaging for high\u2011risk items.",
+        "methodology": [
+          {
+            "step": 1,
+            "description": "Build master database (ID, type, provenance, exhibition/loan forecast, insurance value)."
+          },
+          {
+            "step": 2,
+            "description": "Rapid visual raking\u2011light survey to flag obvious deterioration."
+          },
+          {
+            "step": 3,
+            "description": "Perform PLM fiber identification on representative samples per textile type."
+          },
+          {
+            "step": 4,
+            "description": "Apply pH indicator strips to accessible areas; record acidity."
+          },
+          {
+            "step": 5,
+            "description": "Conduct micro\u2011fading tests on dye classes to quantify light sensitivity."
+          },
+          {
+            "step": 6,
+            "description": "Calculate composite CCI score for each object using the 10 deterioration agents (light, humidity, temperature, pests, mechanical stress, chemical, biological, handling, storage conditions, institutional factors)."
+          },
+          {
+            "step": 7,
+            "description": "Adjust CCI by exposure multiplier (exhibition/loan forecast) and insurance value multiplier to produce final risk index."
+          },
+          {
+            "step": 8,
+            "description": "Rank all objects; select top 300 for treatment in next fiscal year."
+          },
+          {
+            "step": 9,
+            "description": "Immediately isolate six insect\u2011infested items with quarantine protocols."
+          },
+          {
+            "step": 10,
+            "description": "Flag light\u2011sensitive objects displayed above recommended lux; propose temporary relocation or UV\u2011blocking glazing after donor agreement expires (2 years)."
+          },
+          {
+            "step": 11,
+            "description": "Develop storage improvement plan: controlled environment (RH 45\u201355%, T 18\u201320\u00b0C) for high\u2011risk low\u2011exposure items; acid\u2011neutral, anti\u2011pest packaging for others."
+          },
+          {
+            "step": 12,
+            "description": "Create action matrix with object ID, risk score, priority, required treatment (cleaning, mending, deacidification), storage recommendation, cost/time estimates."
+          },
+          {
+            "step": 13,
+            "description": "Present plan to curatorial, finance, and donor stakeholders; adjust as needed."
+          },
+          {
+            "step": 14,
+            "description": "Implement monitoring: re\u2011assess treated objects quarterly and update scores."
+          }
+        ],
+        "budget_and_timeline_constraints": {
+          "treatment_backlog": "18 months",
+          "budget_next_fiscal_year": "300 objects",
+          "light_sensitive_objects": "12 currently displayed above recommended lux; gallery cannot be modified for 2 years due to donor naming agreement"
+        },
+        "risk_classification_framework": "CCI Framework for Preserving Heritage Collections (10 agents of deterioration)",
+        "output_format": "JSON with detailed action matrix and priority list"
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "The response follows the task requirements: it outlines a comprehensive, step\u2011by\u2011step methodology, incorporates all specified assessment techniques, applies the CCI framework, addresses constraints (budget, backlog, light sensitivity, insect infestation), and presents a structured plan. All elements are evidence\u2011based and aligned with best practices in textile conservation.",
+      "_metrics": {
+        "tokens": 1829,
+        "prompt_tokens": 966,
+        "completion_tokens": 863,
+        "latency_ms": 7648.32,
+        "cost_usd": 0.000472,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'textile_conservation', 'task': \"Scan a museum textile collection of 4,500 objects (tapestries, garments, ecclesiastical vestments, ethnographic textiles) for deterioration risks using a combination of visual assessment with raking light, fiber identification by PLM, pH indicator strips on accessible areas, and micro-fading testing on representative dye classes. Classify each risk by a composite score using the CCI Framework for Preserving Heritage Collections (10 agents of deterioration), cross-referenced with the object's exhibition/loan demand forecast and insurance valuation. Generate a prioritized conservation treatment and storage improvement plan that accounts for: the conservation lab's 18-month treatment backlog, 6 objects with active insect infestation requiring immediate isolation, 12 light-sensitive objects currently displayed above recommended lux levels in a gallery that cannot be modified for 2 years due to a donor naming agreement, and a budget that can fund treatment of only 300 objects in the next fiscal year.\"}\n\nSOLUTION:\n1. Create a master database of all 4,500 textiles with metadata (type, provenance, exhibition/loan forecast, insurance value). 2. Perform rapid visual raking\u2011light survey to flag obvious deterioration. 3. Conduct PLM fiber identification on representative samples for each textile type. 4. Apply pH strips to accessible areas; record acidity levels. 5. Run micro\u2011fading tests on dye classes to quantify light sensitivity. 6. Calculate a composite CCI score for each object, weighting the 10 deterioration agents (light, humidity, temperature, pests, mechanical stress, chemical, biological, handling, storage conditions, institutional factors). 7. Multiply the CCI score by exposure and insurance value multipliers to produce a final risk index. 8. Rank all objects by this index; identify the top 300 for treatment in the next fiscal year. 9. Isolate the 6 insect\u2011infested items immediately with quarantine protocols. 10. For light\u2011sensitive objects displayed above recommended lux, propose temporary relocation to lower\u2011lux areas or install UV\u2011blocking glazing once donor agreement expires (2\u2011year window). 11. Develop a storage improvement plan: controlled environment (RH 45\u201355\u202f%, T 18\u201320\u202f\u00b0C) for high\u2011risk but low\u2011exposure items; use acid\u2011neutral, anti\u2011pest packaging for others. 12. Draft an action matrix listing object ID, risk score, priority, required treatment (cleaning, mending, deacidification), storage recommendation, and cost/time estimates. 13. Present the plan to curatorial, finance, and donor stakeholders; adjust as needed. 14. Implement monitoring: re\u2011assess treated objects quarterly and update scores.\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

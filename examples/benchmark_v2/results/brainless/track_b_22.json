@@ -1,0 +1,232 @@
+{
+  "task_id": "track_b_22",
+  "condition": "brainless",
+  "elapsed_s": 21.32,
+  "success": true,
+  "output": {
+    "response": {
+      "domain": "software_engineering",
+      "task": "Scale event pipeline from 10K to 500K events/sec while reducing cost and avoiding hidden bottlenecks.",
+      "solution_steps": [
+        {
+          "step": 1,
+          "title": "Baseline & Metrics",
+          "actions": [
+            "Deploy Prometheus/Grafana dashboards capturing per\u2011worker event counts, queue depth, CPU/GC usage, network I/O.",
+            "Validate current 10K/sec throughput and identify outliers."
+          ]
+        },
+        {
+          "step": 2,
+          "title": "Single Worker Profiling",
+          "actions": [
+            "Run a worker in isolation with synthetic load to reach the observed 800\u202fevents/sec ceiling.",
+            "Collect flamegraphs (pprof), heap snapshots, and lock\u2011contention metrics.",
+            "Identify GC pauses or synchronized blocks around shared data structures."
+          ]
+        },
+        {
+          "step": 3,
+          "title": "Queue Instrumentation",
+          "actions": [
+            "Add counters for enqueue/dequeue latency and a histogram of queue lengths.",
+            "Verify that unbounded in\u2011memory queues grow during peak load, causing memory pressure and frequent full GCs."
+          ]
+        },
+        {
+          "step": 4,
+          "title": "Controlled Scaling Tests",
+          "actions": [
+            "Incrementally add workers (2, 3, 5, 6) while observing throughput, CPU, memory, GC pause times.",
+            "Reproduce the drop when a 6th worker is added to uncover thresholds of concurrent GC or lock contention."
+          ]
+        },
+        {
+          "step": 5,
+          "title": "Back\u2011pressure & Bounded Queues",
+          "actions": [
+            "Replace unbounded queues with bounded ones (e.g., ArrayBlockingQueue or reactive streams).",
+            "Implement back\u2011pressure signals so upstream producers pause when downstream workers are saturated, preventing runaway memory usage."
+          ]
+        },
+        {
+          "step": 6,
+          "title": "Re\u2011profile After Fixes",
+          "actions": [
+            "Run the same single\u2011worker test; expect ~2\u202fK events/sec per worker once GC and lock contention are mitigated.",
+            "Validate that adding workers now yields near\u2011linear scaling up to at least 10 workers."
+          ]
+        },
+        {
+          "step": 7,
+          "title": "Capacity Planning Update",
+          "actions": [
+            "With ~2\u202fK events/sec per worker, calculate 250 workers for 500\u202fK events/sec.",
+            "Recalculate cost: $0.50/hr ($360/month) \u00d7 250 \u2248 $90k/month\u2014half the original estimate."
+          ]
+        },
+        {
+          "step": 8,
+          "title": "Documentation & Stakeholder Communication",
+          "actions": [
+            "Produce a concise report detailing discovered bottlenecks, implemented fixes, and new cost model.",
+            "Highlight that linear scaling is achievable only after addressing GC/queue issues."
+          ]
+        },
+        {
+          "step": 9,
+          "title": "Operational Safeguards",
+          "actions": [
+            "Set up alerts for queue depth thresholds, GC pause durations, and worker CPU saturation to catch regressions early."
+          ]
+        }
+      ],
+      "anti_patterns_avoided": [],
+      "quality_self_assessment": 0.95,
+      "brain_assisted": false,
+      "recalled_skill": "none",
+      "confidence": 0.95
+    },
+    "confidence": "0.95",
+    "internal_reasoning": "The solution follows a systematic approach: baseline metrics, profiling, queue instrumentation, controlled scaling, back\u2011pressure implementation, re\u2011profiling, updated capacity planning, documentation, and safeguards. Each step addresses the evidence of GC/queue bottlenecks and aligns with best practices for scalable event processing.",
+    "_metrics": {
+      "tokens": 1893,
+      "prompt_tokens": 1056,
+      "completion_tokens": 837,
+      "latency_ms": 7847.58,
+      "cost_usd": 0.000484,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: software_engineering\nTASK: The event pipeline handles 10K events/sec and needs to reach 500K. The VP of Engineering says 'just add 50x more workers \u2014 the cloud scales linearly, that's the whole point.' A capacity planning spreadsheet shows cost projections for 50x horizontal scaling at $180K/month. However, you suspect the current 10K/sec throughput is not worker-bound \u2014 you've noticed that a single worker in isolation can only process 800 events/sec (not the expected 2000/sec based on CPU profiling), and adding a 6th worker actually DECREASED throughput from 10K to 9.2K/sec before the issue was 'fixed' by removing the 6th worker. Nobody profiled why. The pipeline uses unbounded in-memory queues between processing stages.\n\nSOLUTION:\n1. **Baseline & Metrics** \u2013 Deploy Prometheus/Grafana dashboards that capture per\u2011worker event counts, queue depth, CPU/GC usage, and network I/O. Confirm the current 10\u202fK/sec figure and identify any outliers.\n\n2. **Single Worker Profiling** \u2013 Run a worker in isolation with a synthetic load that reaches the observed 800\u202fevents/sec ceiling. Use flamegraphs (e.g., pprof), heap snapshots, and lock contention monitors to pinpoint bottlenecks: likely GC pauses or synchronized blocks around shared data structures.\n\n3. **Queue Instrumentation** \u2013 Add counters for enqueue/dequeue latency and a histogram of queue lengths. Verify that unbounded in\u2011memory queues are growing during peak load, causing memory pressure and frequent full GCs.\n\n4. **Controlled Scaling Tests** \u2013 Incrementally add workers (2, 3, 5, 6) while observing throughput, CPU, memory, and GC pause times. Reproduce the drop when a 6th worker is added; this will reveal whether a threshold of concurrent GC or lock contention is being crossed.\n\n5. **Back\u2011pressure & Bounded Queues** \u2013 Replace unbounded queues with bounded ones (e.g., using `java.util.concurrent.ArrayBlockingQueue` or reactive streams). Implement back\u2011pressure signals so upstream producers pause when downstream workers are saturated, preventing runaway memory usage.\n\n6. **Re\u2011profile After Fixes** \u2013 Run the same single\u2011worker test; expect a per\u2011worker throughput of ~2\u202fK events/sec once GC and lock contention are mitigated. Validate that adding workers now yields near\u2011linear scaling up to at least 10 workers.\n\n7. **Capacity Planning Update** \u2013 With 2\u202fK events/sec per worker, 250 workers are needed for 500\u202fK events/sec. Recalculate cost: if a worker instance costs $0.50/hr ($360/month), total \u2248$90\u202fk/month\u2014half the original estimate.\n\n8. **Documentation & Stakeholder Communication** \u2013 Produce a concise report detailing the discovered bottlenecks, the implemented fixes, and the new cost model. Highlight that linear scaling is achievable only after addressing GC/queue issues.\n\n9. **Operational Safeguards** \u2013 Set up alerts for queue depth thresholds, GC pause durations, and worker CPU saturation to catch regressions early.\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"anti_patterns_avoided\": []\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": "{\"domain\":\"software_engineering\",\"task\":\"Scale event pipeline from 10K to 500K events/sec while avoiding hidden bottlenecks and cost blowup.\",\"steps\":[{\"action\":\"Establish a reliable baseline of current throughput and latency using instrumented metrics (e.g., Prometheus counters, histograms).\",\"result\":\"Accurate measurement of per-worker processing rate, queue depth, and system resource utilization.\"},{\"action\":\"Profile a single worker under load with CPU, memory, GC, and I/O traces to confirm the 800 events/sec limit and identify any hidden contention or blocking points.\",\"result\":\"Concrete evidence of the true per-worker capacity and root causes (e.g., lock contention, serialization overhead).\"},{\"action\":\"Instrument inter-stage queues to expose backpressure: record queue size over time, enqueue/dequeue latency, and any dropped events.\",\"result\":\"Visibility into whether unbounded in-memory queues are causing memory pressure or GC spikes that throttle workers.\"},{\"action\":\"Run controlled experiments adding 2-3 workers incrementally while monitoring throughput, CPU, and memory to detect non-linear scaling effects.\",\"result\":\"Reproduce the observed drop when a 6th worker is added and pinpoint whether it triggers GC pauses, lock contention, or queue saturation.\"},{\"action\":\"Implement bounded queues or backpressure mechanisms (e.g., using a token bucket or reactive streams) to prevent runaway memory usage.\",\"result\":\"Stabilized throughput that scales predictably with workers without exhausting resources.\"},{\"action\":\"Validate the new design by scaling up to 10 workers and measuring per-worker throughput; confirm it approaches the expected 2000 events/sec.\",\"result\":\"Evidence that horizontal scaling now yields near-linear gains, justifying cost projections.\"},{\"action\":\"Recalculate cost projections based on the verified worker capacity (e.g., 250 workers for 500K events/sec) and compare to the original $180K/month estimate.\",\"result\":\"Updated budget plan showing realistic spend or alternative optimizations (e.g., spot instances, autoscaling thresholds).\"},{\"action\":\"Document findings, assumptions, and mitigation strategies in a capacity planning report for stakeholders.\",\"result\":\"Transparent communication that informs VP of Engineering and aligns expectations with technical reality.\"}]}",
+      "confidence": "0.95",
+      "internal_reasoning": "I followed the task requirements by outlining concrete diagnostic steps to uncover hidden bottlenecks, validate worker limits, and ensure scalable design before committing to costly horizontal scaling.",
+      "_metrics": {
+        "tokens": 1102,
+        "prompt_tokens": 579,
+        "completion_tokens": 523,
+        "latency_ms": 7561.74,
+        "cost_usd": 0.000466,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: software_engineering\nTASK: The event pipeline handles 10K events/sec and needs to reach 500K. The VP of Engineering says 'just add 50x more workers \u2014 the cloud scales linearly, that's the whole point.' A capacity planning spreadsheet shows cost projections for 50x horizontal scaling at $180K/month. However, you suspect the current 10K/sec throughput is not worker-bound \u2014 you've noticed that a single worker in isolation can only process 800 events/sec (not the expected 2000/sec based on CPU profiling), and adding a 6th worker actually DECREASED throughput from 10K to 9.2K/sec before the issue was 'fixed' by removing the 6th worker. Nobody profiled why. The pipeline uses unbounded in-memory queues between processing stages.\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+    },
+    "task_applier": {
+      "response": "1. **Baseline & Metrics** \u2013 Deploy Prometheus/Grafana dashboards that capture per\u2011worker event counts, queue depth, CPU/GC usage, and network I/O. Confirm the current 10\u202fK/sec figure and identify any outliers.\n\n2. **Single Worker Profiling** \u2013 Run a worker in isolation with a synthetic load that reaches the observed 800\u202fevents/sec ceiling. Use flamegraphs (e.g., pprof), heap snapshots, and lock contention monitors to pinpoint bottlenecks: likely GC pauses or synchronized blocks around shared data structures.\n\n3. **Queue Instrumentation** \u2013 Add counters for enqueue/dequeue latency and a histogram of queue lengths. Verify that unbounded in\u2011memory queues are growing during peak load, causing memory pressure and frequent full GCs.\n\n4. **Controlled Scaling Tests** \u2013 Incrementally add workers (2, 3, 5, 6) while observing throughput, CPU, memory, and GC pause times. Reproduce the drop when a 6th worker is added; this will reveal whether a threshold of concurrent GC or lock contention is being crossed.\n\n5. **Back\u2011pressure & Bounded Queues** \u2013 Replace unbounded queues with bounded ones (e.g., using `java.util.concurrent.ArrayBlockingQueue` or reactive streams). Implement back\u2011pressure signals so upstream producers pause when downstream workers are saturated, preventing runaway memory usage.\n\n6. **Re\u2011profile After Fixes** \u2013 Run the same single\u2011worker test; expect a per\u2011worker throughput of ~2\u202fK events/sec once GC and lock contention are mitigated. Validate that adding workers now yields near\u2011linear scaling up to at least 10 workers.\n\n7. **Capacity Planning Update** \u2013 With 2\u202fK events/sec per worker, 250 workers are needed for 500\u202fK events/sec. Recalculate cost: if a worker instance costs $0.50/hr ($360/month), total \u2248$90\u202fk/month\u2014half the original estimate.\n\n8. **Documentation & Stakeholder Communication** \u2013 Produce a concise report detailing the discovered bottlenecks, the implemented fixes, and the new cost model. Highlight that linear scaling is achievable only after addressing GC/queue issues.\n\n9. **Operational Safeguards** \u2013 Set up alerts for queue depth thresholds, GC pause durations, and worker CPU saturation to catch regressions early.",
+      "confidence": "0.92",
+      "internal_reasoning": "I followed the analysis steps: establish metrics, profile single worker, instrument queues, test scaling, apply back\u2011pressure, re\u2011profile, update capacity plan, document findings. All actions are evidence\u2011based and avoid hidden bottlenecks.",
+      "_metrics": {
+        "tokens": 1614,
+        "prompt_tokens": 1037,
+        "completion_tokens": 577,
+        "latency_ms": 5715.67,
+        "cost_usd": 0.000352,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a task. You have your own analysis.\nYou have NO warnings about known failure modes or anti-patterns.\n\nDOMAIN: general\nTASK: {'domain': 'software_engineering', 'task': \"The event pipeline handles 10K events/sec and needs to reach 500K. The VP of Engineering says 'just add 50x more workers \u2014 the cloud scales linearly, that's the whole point.' A capacity planning spreadsheet shows cost projections for 50x horizontal scaling at $180K/month. However, you suspect the current 10K/sec throughput is not worker-bound \u2014 you've noticed that a single worker in isolation can only process 800 events/sec (not the expected 2000/sec based on CPU profiling), and adding a 6th worker actually DECREASED throughput from 10K to 9.2K/sec before the issue was 'fixed' by removing the 6th worker. Nobody profiled why. The pipeline uses unbounded in-memory queues between processing stages.\"}\n\nYOUR ANALYSIS:\n{\"domain\":\"software_engineering\",\"task\":\"Scale event pipeline from 10K to 500K events/sec while avoiding hidden bottlenecks and cost blowup.\",\"steps\":[{\"action\":\"Establish a reliable baseline of current throughput and latency using instrumented metrics (e.g., Prometheus counters, histograms).\",\"result\":\"Accurate measurement of per-worker processing rate, queue depth, and system resource utilization.\"},{\"action\":\"Profile a single worker under load with CPU, memory, GC, and I/O traces to confirm the 800 events/sec limit and identify any hidden contention or blocking points.\",\"result\":\"Concrete evidence of the true per-worker capacity and root causes (e.g., lock contention, serialization overhead).\"},{\"action\":\"Instrument inter-stage queues to expose backpressure: record queue size over time, enqueue/dequeue latency, and any dropped events.\",\"result\":\"Visibility into whether unbounded in-memory queues are causing memory pressure or GC spikes that throttle workers.\"},{\"action\":\"Run controlled experiments adding 2-3 workers incrementally while monitoring throughput, CPU, and memory to detect non-linear scaling effects.\",\"result\":\"Reproduce the observed drop when a 6th worker is added and pinpoint whether it triggers GC pauses, lock contention, or queue saturation.\"},{\"action\":\"Implement bounded queues or backpressure mechanisms (e.g., using a token bucket or reactive streams) to prevent runaway memory usage.\",\"result\":\"Stabilized throughput that scales predictably with workers without exhausting resources.\"},{\"action\":\"Validate the new design by scaling up to 10 workers and measuring per-worker throughput; confirm it approaches the expected 2000 events/sec.\",\"result\":\"Evidence that horizontal scaling now yields near-linear gains, justifying cost projections.\"},{\"action\":\"Recalculate cost projections based on the verified worker capacity (e.g., 250 workers for 500K events/sec) and compare to the original $180K/month estimate.\",\"result\":\"Updated budget plan showing realistic spend or alternative optimizations (e.g., spot instances, autoscaling thresholds).\"},{\"action\":\"Document findings, assumptions, and mitigation strategies in a capacity planning report for stakeholders.\",\"result\":\"Transparent communication that informs VP of Engineering and aligns expectations with technical reality.\"}]}\n\nSolve the task using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"anti_patterns_avoided\": []\n- \"used_recalled_skill\": false\n- \"recalled_skill_name\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+    },
+    "task_result": {
+      "response": {
+        "domain": "software_engineering",
+        "task": "Scale event pipeline from 10K to 500K events/sec while reducing cost and avoiding hidden bottlenecks.",
+        "solution_steps": [
+          {
+            "step": 1,
+            "title": "Baseline & Metrics",
+            "actions": [
+              "Deploy Prometheus/Grafana dashboards capturing per\u2011worker event counts, queue depth, CPU/GC usage, network I/O.",
+              "Validate current 10K/sec throughput and identify outliers."
+            ]
+          },
+          {
+            "step": 2,
+            "title": "Single Worker Profiling",
+            "actions": [
+              "Run a worker in isolation with synthetic load to reach the observed 800\u202fevents/sec ceiling.",
+              "Collect flamegraphs (pprof), heap snapshots, and lock\u2011contention metrics.",
+              "Identify GC pauses or synchronized blocks around shared data structures."
+            ]
+          },
+          {
+            "step": 3,
+            "title": "Queue Instrumentation",
+            "actions": [
+              "Add counters for enqueue/dequeue latency and a histogram of queue lengths.",
+              "Verify that unbounded in\u2011memory queues grow during peak load, causing memory pressure and frequent full GCs."
+            ]
+          },
+          {
+            "step": 4,
+            "title": "Controlled Scaling Tests",
+            "actions": [
+              "Incrementally add workers (2, 3, 5, 6) while observing throughput, CPU, memory, GC pause times.",
+              "Reproduce the drop when a 6th worker is added to uncover thresholds of concurrent GC or lock contention."
+            ]
+          },
+          {
+            "step": 5,
+            "title": "Back\u2011pressure & Bounded Queues",
+            "actions": [
+              "Replace unbounded queues with bounded ones (e.g., ArrayBlockingQueue or reactive streams).",
+              "Implement back\u2011pressure signals so upstream producers pause when downstream workers are saturated, preventing runaway memory usage."
+            ]
+          },
+          {
+            "step": 6,
+            "title": "Re\u2011profile After Fixes",
+            "actions": [
+              "Run the same single\u2011worker test; expect ~2\u202fK events/sec per worker once GC and lock contention are mitigated.",
+              "Validate that adding workers now yields near\u2011linear scaling up to at least 10 workers."
+            ]
+          },
+          {
+            "step": 7,
+            "title": "Capacity Planning Update",
+            "actions": [
+              "With ~2\u202fK events/sec per worker, calculate 250 workers for 500\u202fK events/sec.",
+              "Recalculate cost: $0.50/hr ($360/month) \u00d7 250 \u2248 $90k/month\u2014half the original estimate."
+            ]
+          },
+          {
+            "step": 8,
+            "title": "Documentation & Stakeholder Communication",
+            "actions": [
+              "Produce a concise report detailing discovered bottlenecks, implemented fixes, and new cost model.",
+              "Highlight that linear scaling is achievable only after addressing GC/queue issues."
+            ]
+          },
+          {
+            "step": 9,
+            "title": "Operational Safeguards",
+            "actions": [
+              "Set up alerts for queue depth thresholds, GC pause durations, and worker CPU saturation to catch regressions early."
+            ]
+          }
+        ],
+        "anti_patterns_avoided": [],
+        "quality_self_assessment": 0.95,
+        "brain_assisted": false,
+        "recalled_skill": "none",
+        "confidence": 0.95
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "The solution follows a systematic approach: baseline metrics, profiling, queue instrumentation, controlled scaling, back\u2011pressure implementation, re\u2011profiling, updated capacity planning, documentation, and safeguards. Each step addresses the evidence of GC/queue bottlenecks and aligns with best practices for scalable event processing.",
+      "_metrics": {
+        "tokens": 1893,
+        "prompt_tokens": 1056,
+        "completion_tokens": 837,
+        "latency_ms": 7847.58,
+        "cost_usd": 0.000484,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: software_engineering\nTASK: The event pipeline handles 10K events/sec and needs to reach 500K. The VP of Engineering says 'just add 50x more workers \u2014 the cloud scales linearly, that's the whole point.' A capacity planning spreadsheet shows cost projections for 50x horizontal scaling at $180K/month. However, you suspect the current 10K/sec throughput is not worker-bound \u2014 you've noticed that a single worker in isolation can only process 800 events/sec (not the expected 2000/sec based on CPU profiling), and adding a 6th worker actually DECREASED throughput from 10K to 9.2K/sec before the issue was 'fixed' by removing the 6th worker. Nobody profiled why. The pipeline uses unbounded in-memory queues between processing stages.\n\nSOLUTION:\n1. **Baseline & Metrics** \u2013 Deploy Prometheus/Grafana dashboards that capture per\u2011worker event counts, queue depth, CPU/GC usage, and network I/O. Confirm the current 10\u202fK/sec figure and identify any outliers.\n\n2. **Single Worker Profiling** \u2013 Run a worker in isolation with a synthetic load that reaches the observed 800\u202fevents/sec ceiling. Use flamegraphs (e.g., pprof), heap snapshots, and lock contention monitors to pinpoint bottlenecks: likely GC pauses or synchronized blocks around shared data structures.\n\n3. **Queue Instrumentation** \u2013 Add counters for enqueue/dequeue latency and a histogram of queue lengths. Verify that unbounded in\u2011memory queues are growing during peak load, causing memory pressure and frequent full GCs.\n\n4. **Controlled Scaling Tests** \u2013 Incrementally add workers (2, 3, 5, 6) while observing throughput, CPU, memory, and GC pause times. Reproduce the drop when a 6th worker is added; this will reveal whether a threshold of concurrent GC or lock contention is being crossed.\n\n5. **Back\u2011pressure & Bounded Queues** \u2013 Replace unbounded queues with bounded ones (e.g., using `java.util.concurrent.ArrayBlockingQueue` or reactive streams). Implement back\u2011pressure signals so upstream producers pause when downstream workers are saturated, preventing runaway memory usage.\n\n6. **Re\u2011profile After Fixes** \u2013 Run the same single\u2011worker test; expect a per\u2011worker throughput of ~2\u202fK events/sec once GC and lock contention are mitigated. Validate that adding workers now yields near\u2011linear scaling up to at least 10 workers.\n\n7. **Capacity Planning Update** \u2013 With 2\u202fK events/sec per worker, 250 workers are needed for 500\u202fK events/sec. Recalculate cost: if a worker instance costs $0.50/hr ($360/month), total \u2248$90\u202fk/month\u2014half the original estimate.\n\n8. **Documentation & Stakeholder Communication** \u2013 Produce a concise report detailing the discovered bottlenecks, the implemented fixes, and the new cost model. Highlight that linear scaling is achievable only after addressing GC/queue issues.\n\n9. **Operational Safeguards** \u2013 Set up alerts for queue depth thresholds, GC pause durations, and worker CPU saturation to catch regressions early.\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"anti_patterns_avoided\": []\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

@@ -1,0 +1,1176 @@
+{
+  "task_id": "track_c_34",
+  "condition": "brain",
+  "elapsed_s": 4.11,
+  "success": true,
+  "output": {
+    "response": "",
+    "confidence": "0.0",
+    "internal_reasoning": "The task requires a comprehensive solution with multiple detailed steps and a routing decision, yet the provided routing options are not valid for generating such an answer. The system cannot produce a correct response under the constraints given.",
+    "_metrics": {
+      "tokens": 2201,
+      "prompt_tokens": 2133,
+      "completion_tokens": 68,
+      "latency_ms": 1388.7,
+      "cost_usd": 8.7e-05,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output.\n\nDOMAIN: customer_support\nTASK: Your platform has been below the 99.9% uptime SLA for 3 consecutive months. We've documented everything: Jan: 99.4% (3.6 hrs downtime from your database migration), Feb: 99.7% (2.2 hrs from your CDN outage + 0.8 hrs from API degradation during your 'zero-downtime' deployment), March: 99.1% (6.5 hrs across 4 separate incidents). Total: 13.1 hours of downtime in Q1. HOWEVER \u2014 your SLA credits clause (section 7.2) caps credits at 30% of monthly fees regardless of actual downtime. For our $45K/quarter contract, that's $13,500 maximum \u2014 or roughly $1,030/hr of downtime versus our estimated $8,500/hr revenue loss. We are requesting: (1) SLA credits at the full contractual rate (yes, we know it's capped), (2) A formal RCA bundle for all 7 incidents, (3) A concrete remediation plan with committed SLA improvement targets, (4) A contract renegotiation to increase the credit cap and add financial penalties for repeat SLA misses, and (5) A frank assessment from your VP of Engineering on whether your platform can actually meet 99.9% for our tier \u2014 because if not, we need to know now rather than after another quarter of missed SLAs. Our board has asked for a vendor risk assessment by April 30.\n\nROUTING DECISION: shortlist\nTARGET: [{'node_id': 'billing_specialist', 'path': ['billing_specialist', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['legal_content'], 'safety_details': {'content': {'legal_matches': ['\\\\b(contract|agreement|liability|damages)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6988694024086, 'score_components': {'llm': 0.5, 'heuristics': 0.7793470120429993, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7653701998434828}, {'node_id': 'billing_specialist', 'path': ['billing_specialist', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['legal_content'], 'safety_details': {'content': {'legal_matches': ['\\\\b(contract|agreement|liability|damages)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6988694024086, 'score_components': {'llm': 0.5, 'heuristics': 0.7793470120429993, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7653701998434828}, {'node_id': 'billing_specialist', 'path': ['billing_specialist', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['legal_content'], 'safety_details': {'content': {'legal_matches': ['\\\\b(contract|agreement|liability|damages)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6988694024086, 'score_components': {'llm': 0.5, 'heuristics': 0.7793470120429993, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7653701998434828}]\nCONFIDENCE: 0.5653701998434826\n\nEXECUTION RESULT:\n\n\nReturn JSON with:\n- \"response\": comprehensive solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"route_decision\": the routing decision made\n- \"route_target\": selected path\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "brain_learn_path": {
+      "response": "No path could be learned (empty path or failed outcome).",
+      "confidence": "0.0"
+    },
+    "brain_learn_anti": {
+      "response": "Recorded anti-pattern: anti:general:",
+      "confidence": "0.177044160059106",
+      "internal_reasoning": "Anti-pattern stored: unknown",
+      "skill_id": "f42517a9-466a-468c-b484-752689e42297",
+      "skill_name": "anti:general:",
+      "skill_type": "anti_pattern"
+    },
+    "smart_router": {
+      "decision": "shortlist",
+      "target": [
+        {
+          "node_id": "billing_specialist",
+          "path": [
+            "billing_specialist",
+            "knowledge_base_search"
+          ],
+          "depth": 2,
+          "feasible": true,
+          "constraints_met": true,
+          "graphscout_generated": true,
+          "estimated_cost": 0.002,
+          "estimated_latency": 2000.0,
+          "budget_assessment": {
+            "compliant": true,
+            "violations": [],
+            "estimates": {
+              "tokens": 240,
+              "cost_usd": 0.002,
+              "latency_ms": 2000.0
+            },
+            "remaining_budget": {
+              "tokens": 50000,
+              "cost_usd": 1.0,
+              "latency_ms": 30000.0
+            }
+          },
+          "fits_budget": true,
+          "llm_evaluation": {
+            "relevance_score": 0.5,
+            "confidence": 0.8,
+            "reasoning": "Heuristic evaluation: billing_specialist matched question keywords",
+            "expected_output": "Agent execution result",
+            "estimated_tokens": 500,
+            "estimated_cost": 0.001,
+            "estimated_latency_ms": 1000,
+            "risk_factors": [],
+            "efficiency_rating": "medium",
+            "is_deterministic_fallback": true
+          },
+          "llm_validation": {
+            "is_valid": false,
+            "confidence": 0.8,
+            "efficiency_score": 0.9,
+            "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+            "suggested_improvements": [],
+            "risk_assessment": "low",
+            "is_deterministic_fallback": true
+          },
+          "safety_score": 0.9,
+          "safety_risks": [
+            "legal_content"
+          ],
+          "safety_details": {
+            "content": {
+              "legal_matches": [
+                "\\b(contract|agreement|liability|damages)\\b"
+              ]
+            },
+            "capabilities": {
+              "forbidden_capabilities": []
+            },
+            "policy": {}
+          },
+          "score": 0.6988694024086,
+          "score_components": {
+            "llm": 0.5,
+            "heuristics": 0.7793470120429993,
+            "prior": 0.9,
+            "cost": 0.98,
+            "latency": 0.8
+          },
+          "confidence": 0.7653701998434828
+        },
+        {
+          "node_id": "billing_specialist",
+          "path": [
+            "billing_specialist",
+            "knowledge_base_search"
+          ],
+          "depth": 2,
+          "feasible": true,
+          "constraints_met": true,
+          "graphscout_generated": true,
+          "estimated_cost": 0.002,
+          "estimated_latency": 2000.0,
+          "budget_assessment": {
+            "compliant": true,
+            "violations": [],
+            "estimates": {
+              "tokens": 240,
+              "cost_usd": 0.002,
+              "latency_ms": 2000.0
+            },
+            "remaining_budget": {
+              "tokens": 50000,
+              "cost_usd": 1.0,
+              "latency_ms": 30000.0
+            }
+          },
+          "fits_budget": true,
+          "llm_evaluation": {
+            "relevance_score": 0.5,
+            "confidence": 0.8,
+            "reasoning": "Heuristic evaluation: billing_specialist matched question keywords",
+            "expected_output": "Agent execution result",
+            "estimated_tokens": 500,
+            "estimated_cost": 0.001,
+            "estimated_latency_ms": 1000,
+            "risk_factors": [],
+            "efficiency_rating": "medium",
+            "is_deterministic_fallback": true
+          },
+          "llm_validation": {
+            "is_valid": false,
+            "confidence": 0.8,
+            "efficiency_score": 0.9,
+            "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+            "suggested_improvements": [],
+            "risk_assessment": "low",
+            "is_deterministic_fallback": true
+          },
+          "safety_score": 0.9,
+          "safety_risks": [
+            "legal_content"
+          ],
+          "safety_details": {
+            "content": {
+              "legal_matches": [
+                "\\b(contract|agreement|liability|damages)\\b"
+              ]
+            },
+            "capabilities": {
+              "forbidden_capabilities": []
+            },
+            "policy": {}
+          },
+          "score": 0.6988694024086,
+          "score_components": {
+            "llm": 0.5,
+            "heuristics": 0.7793470120429993,
+            "prior": 0.9,
+            "cost": 0.98,
+            "latency": 0.8
+          },
+          "confidence": 0.7653701998434828
+        },
+        {
+          "node_id": "billing_specialist",
+          "path": [
+            "billing_specialist",
+            "response_drafter"
+          ],
+          "depth": 2,
+          "feasible": true,
+          "constraints_met": true,
+          "graphscout_generated": true,
+          "estimated_cost": 0.002,
+          "estimated_latency": 2000.0,
+          "budget_assessment": {
+            "compliant": true,
+            "violations": [],
+            "estimates": {
+              "tokens": 240,
+              "cost_usd": 0.002,
+              "latency_ms": 2000.0
+            },
+            "remaining_budget": {
+              "tokens": 50000,
+              "cost_usd": 1.0,
+              "latency_ms": 30000.0
+            }
+          },
+          "fits_budget": true,
+          "llm_evaluation": {
+            "relevance_score": 0.5,
+            "confidence": 0.8,
+            "reasoning": "Heuristic evaluation: billing_specialist matched question keywords",
+            "expected_output": "Agent execution result",
+            "estimated_tokens": 500,
+            "estimated_cost": 0.001,
+            "estimated_latency_ms": 1000,
+            "risk_factors": [],
+            "efficiency_rating": "medium",
+            "is_deterministic_fallback": true
+          },
+          "llm_validation": {
+            "is_valid": false,
+            "confidence": 0.8,
+            "efficiency_score": 0.9,
+            "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+            "suggested_improvements": [],
+            "risk_assessment": "low",
+            "is_deterministic_fallback": true
+          },
+          "safety_score": 0.9,
+          "safety_risks": [
+            "legal_content"
+          ],
+          "safety_details": {
+            "content": {
+              "legal_matches": [
+                "\\b(contract|agreement|liability|damages)\\b"
+              ]
+            },
+            "capabilities": {
+              "forbidden_capabilities": []
+            },
+            "policy": {}
+          },
+          "score": 0.6988694024086,
+          "score_components": {
+            "llm": 0.5,
+            "heuristics": 0.7793470120429993,
+            "prior": 0.9,
+            "cost": 0.98,
+            "latency": 0.8
+          },
+          "confidence": 0.7653701998434828
+        }
+      ],
+      "confidence": 0.5653701998434826,
+      "reasoning": "Close competition with margin 0.000 - returning top 3 options",
+      "trace": {
+        "graph_scout_version": "1.0.0",
+        "timestamp": "2026-04-11T00:22:58.293326+00:00",
+        "question": "Given this support request, find the best processing path.\nYour platform has been below the 99.9% uptime SLA for 3 consecutive months. We've documented everything: Jan: 99.4% (3.6 hrs downtime from your database migration), Feb: 99.7% (2.2 hrs from your CDN outage + 0.8 hrs from API degradation during your 'zero-downtime' deployment), March: 99.1% (6.5 hrs across 4 separate incidents). Total: 13.1 hours of downtime in Q1. HOWEVER \u2014 your SLA credits clause (section 7.2) caps credits at 30% of monthly fees regardless of actual downtime. For our $45K/quarter contract, that's $13,500 maximum \u2014 or roughly $1,030/hr of downtime versus our estimated $8,500/hr revenue loss. We are requesting: (1) SLA credits at the full contractual rate (yes, we know it's capped), (2) A formal RCA bundle for all 7 incidents, (3) A concrete remediation plan with committed SLA improvement targets, (4) A contract renegotiation to increase the credit cap and add financial penalties for repeat SLA misses, and (5) A frank assessment from your VP of Engineering on whether your platform can actually meet 99.9% for our tier \u2014 because if not, we need to know now rather than after another quarter of missed SLAs. Our board has asked for a vendor risk assessment by April 30.",
+        "config": {
+          "k_beam": 3,
+          "max_depth": 2,
+          "commit_margin": 0.15,
+          "score_weights": {
+            "llm": 0.45,
+            "heuristics": 0.2,
+            "prior": 0.2,
+            "cost": 0.1,
+            "latency": 0.05,
+            "brain": 0.15
+          }
+        },
+        "discovery": {
+          "total_candidates": 91,
+          "candidate_nodes": [
+            "knowledge_base_search",
+            "response_drafter",
+            "quality_checker",
+            "escalation_handler",
+            "account_recovery",
+            "billing_specialist",
+            "technical_support",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support"
+          ]
+        },
+        "scoring": {
+          "scored_candidates": 3,
+          "top_scores": [
+            {
+              "node_id": "billing_specialist",
+              "score": 0.6988694024086,
+              "components": {}
+            },
+            {
+              "node_id": "billing_specialist",
+              "score": 0.6988694024086,
+              "components": {}
+            },
+            {
+              "node_id": "billing_specialist",
+              "score": 0.6988694024086,
+              "components": {}
+            }
+          ]
+        },
+        "decision": {
+          "type": "shortlist",
+          "target": [
+            {
+              "node_id": "billing_specialist",
+              "path": [
+                "billing_specialist",
+                "knowledge_base_search"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: billing_specialist matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 0.9,
+              "safety_risks": [
+                "legal_content"
+              ],
+              "safety_details": {
+                "content": {
+                  "legal_matches": [
+                    "\\b(contract|agreement|liability|damages)\\b"
+                  ]
+                },
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6988694024086,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.7793470120429993,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7653701998434828
+            },
+            {
+              "node_id": "billing_specialist",
+              "path": [
+                "billing_specialist",
+                "knowledge_base_search"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: billing_specialist matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 0.9,
+              "safety_risks": [
+                "legal_content"
+              ],
+              "safety_details": {
+                "content": {
+                  "legal_matches": [
+                    "\\b(contract|agreement|liability|damages)\\b"
+                  ]
+                },
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6988694024086,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.7793470120429993,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7653701998434828
+            },
+            {
+              "node_id": "billing_specialist",
+              "path": [
+                "billing_specialist",
+                "response_drafter"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: billing_specialist matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 0.9,
+              "safety_risks": [
+                "legal_content"
+              ],
+              "safety_details": {
+                "content": {
+                  "legal_matches": [
+                    "\\b(contract|agreement|liability|damages)\\b"
+                  ]
+                },
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6988694024086,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.7793470120429993,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7653701998434828
+            }
+          ],
+          "confidence": 0.5653701998434826,
+          "reasoning": "Close competition with margin 0.000 - returning top 3 options"
+        },
+        "execution_metadata": {
+          "node_id": "smart_router",
+          "run_id": "unknown",
+          "step_index": 0
+        }
+      },
+      "status": "success",
+      "metrics": {
+        "run_id": "unknown",
+        "timestamp": "2026-04-11T02:22:58.152015",
+        "path_discovery": {
+          "candidates_discovered": 91,
+          "candidates_after_budget": 0,
+          "candidates_after_safety": 0,
+          "reduction_rate": 1.0
+        },
+        "evaluation": {
+          "llm_evaluation_time_ms": 0.0,
+          "llm_evaluation_failed": false,
+          "used_deterministic_fallback": false
+        },
+        "selection": {
+          "selected_path": [
+            {
+              "node_id": "billing_specialist",
+              "path": [
+                "billing_specialist",
+                "knowledge_base_search"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: billing_specialist matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 0.9,
+              "safety_risks": [
+                "legal_content"
+              ],
+              "safety_details": {
+                "content": {
+                  "legal_matches": [
+                    "\\b(contract|agreement|liability|damages)\\b"
+                  ]
+                },
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6988694024086,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.7793470120429993,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7653701998434828
+            },
+            {
+              "node_id": "billing_specialist",
+              "path": [
+                "billing_specialist",
+                "knowledge_base_search"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: billing_specialist matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 0.9,
+              "safety_risks": [
+                "legal_content"
+              ],
+              "safety_details": {
+                "content": {
+                  "legal_matches": [
+                    "\\b(contract|agreement|liability|damages)\\b"
+                  ]
+                },
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6988694024086,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.7793470120429993,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7653701998434828
+            },
+            {
+              "node_id": "billing_specialist",
+              "path": [
+                "billing_specialist",
+                "response_drafter"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: billing_specialist matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 0.9,
+              "safety_risks": [
+                "legal_content"
+              ],
+              "safety_details": {
+                "content": {
+                  "legal_matches": [
+                    "\\b(contract|agreement|liability|damages)\\b"
+                  ]
+                },
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6988694024086,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.7793470120429993,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7653701998434828
+            }
+          ],
+          "confidence": 0.5653701998434826,
+          "reasoning_preview": "Close competition with margin 0.000 - returning top 3 options"
+        },
+        "performance": {
+          "total_time_ms": 141.3106918334961,
+          "breakdown": {
+            "budget_filter_ms": 0.0,
+            "safety_filter_ms": 0.0,
+            "scoring_ms": 0.0,
+            "decision_ms": 0.0
+          }
+        },
+        "resources": {
+          "estimated_cost_usd": 0.0,
+          "estimated_latency_ms": 0
+        },
+        "issues": {
+          "error_count": 0,
+          "warning_count": 0,
+          "errors": [],
+          "warnings": []
+        }
+      },
+      "input": "Given this support request, find the best processing path.\nYour platform has been below the 99.9% uptime SLA for 3 consecutive months. We've documented everything: Jan: 99.4% (3.6 hrs downtime from your database migration), Feb: 99.7% (2.2 hrs from your CDN outage + 0.8 hrs from API degradation during your 'zero-downtime' deployment), March: 99.1% (6.5 hrs across 4 separate incidents). Total: 13.1 hours of downtime in Q1. HOWEVER \u2014 your SLA credits clause (section 7.2) caps credits at 30% of monthly fees regardless of actual downtime. For our $45K/quarter contract, that's $13,500 maximum \u2014 or roughly $1,030/hr of downtime versus our estimated $8,500/hr revenue loss. We are requesting: (1) SLA credits at the full contractual rate (yes, we know it's capped), (2) A formal RCA bundle for all 7 incidents, (3) A concrete remediation plan with committed SLA improvement targets, (4) A contract renegotiation to increase the credit cap and add financial penalties for repeat SLA misses, and (5) A frank assessment from your VP of Engineering on whether your platform can actually meet 99.9% for our tier \u2014 because if not, we need to know now rather than after another quarter of missed SLAs. Our board has asked for a vendor risk assessment by April 30.",
+      "previous_outputs": {
+        "brain_learn_path": {
+          "response": "No path could be learned (empty path or failed outcome).",
+          "confidence": "0.0"
+        },
+        "brain_learn_anti": {
+          "response": "Recorded anti-pattern: anti:general:",
+          "confidence": "0.177044160059106",
+          "internal_reasoning": "Anti-pattern stored: unknown",
+          "skill_id": "f42517a9-466a-468c-b484-752689e42297",
+          "skill_name": "anti:general:",
+          "skill_type": "anti_pattern"
+        }
+      },
+      "result": {
+        "decision": "shortlist",
+        "target": [
+          {
+            "node_id": "billing_specialist",
+            "path": [
+              "billing_specialist",
+              "knowledge_base_search"
+            ],
+            "depth": 2,
+            "feasible": true,
+            "constraints_met": true,
+            "graphscout_generated": true,
+            "estimated_cost": 0.002,
+            "estimated_latency": 2000.0,
+            "budget_assessment": {
+              "compliant": true,
+              "violations": [],
+              "estimates": {
+                "tokens": 240,
+                "cost_usd": 0.002,
+                "latency_ms": 2000.0
+              },
+              "remaining_budget": {
+                "tokens": 50000,
+                "cost_usd": 1.0,
+                "latency_ms": 30000.0
+              }
+            },
+            "fits_budget": true,
+            "llm_evaluation": {
+              "relevance_score": 0.5,
+              "confidence": 0.8,
+              "reasoning": "Heuristic evaluation: billing_specialist matched question keywords",
+              "expected_output": "Agent execution result",
+              "estimated_tokens": 500,
+              "estimated_cost": 0.001,
+              "estimated_latency_ms": 1000,
+              "risk_factors": [],
+              "efficiency_rating": "medium",
+              "is_deterministic_fallback": true
+            },
+            "llm_validation": {
+              "is_valid": false,
+              "confidence": 0.8,
+              "efficiency_score": 0.9,
+              "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+              "suggested_improvements": [],
+              "risk_assessment": "low",
+              "is_deterministic_fallback": true
+            },
+            "safety_score": 0.9,
+            "safety_risks": [
+              "legal_content"
+            ],
+            "safety_details": {
+              "content": {
+                "legal_matches": [
+                  "\\b(contract|agreement|liability|damages)\\b"
+                ]
+              },
+              "capabilities": {
+                "forbidden_capabilities": []
+              },
+              "policy": {}
+            },
+            "score": 0.6988694024086,
+            "score_components": {
+              "llm": 0.5,
+              "heuristics": 0.7793470120429993,
+              "prior": 0.9,
+              "cost": 0.98,
+              "latency": 0.8
+            },
+            "confidence": 0.7653701998434828
+          },
+          {
+            "node_id": "billing_specialist",
+            "path": [
+              "billing_specialist",
+              "knowledge_base_search"
+            ],
+            "depth": 2,
+            "feasible": true,
+            "constraints_met": true,
+            "graphscout_generated": true,
+            "estimated_cost": 0.002,
+            "estimated_latency": 2000.0,
+            "budget_assessment": {
+              "compliant": true,
+              "violations": [],
+              "estimates": {
+                "tokens": 240,
+                "cost_usd": 0.002,
+                "latency_ms": 2000.0
+              },
+              "remaining_budget": {
+                "tokens": 50000,
+                "cost_usd": 1.0,
+                "latency_ms": 30000.0
+              }
+            },
+            "fits_budget": true,
+            "llm_evaluation": {
+              "relevance_score": 0.5,
+              "confidence": 0.8,
+              "reasoning": "Heuristic evaluation: billing_specialist matched question keywords",
+              "expected_output": "Agent execution result",
+              "estimated_tokens": 500,
+              "estimated_cost": 0.001,
+              "estimated_latency_ms": 1000,
+              "risk_factors": [],
+              "efficiency_rating": "medium",
+              "is_deterministic_fallback": true
+            },
+            "llm_validation": {
+              "is_valid": false,
+              "confidence": 0.8,
+              "efficiency_score": 0.9,
+              "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+              "suggested_improvements": [],
+              "risk_assessment": "low",
+              "is_deterministic_fallback": true
+            },
+            "safety_score": 0.9,
+            "safety_risks": [
+              "legal_content"
+            ],
+            "safety_details": {
+              "content": {
+                "legal_matches": [
+                  "\\b(contract|agreement|liability|damages)\\b"
+                ]
+              },
+              "capabilities": {
+                "forbidden_capabilities": []
+              },
+              "policy": {}
+            },
+            "score": 0.6988694024086,
+            "score_components": {
+              "llm": 0.5,
+              "heuristics": 0.7793470120429993,
+              "prior": 0.9,
+              "cost": 0.98,
+              "latency": 0.8
+            },
+            "confidence": 0.7653701998434828
+          },
+          {
+            "node_id": "billing_specialist",
+            "path": [
+              "billing_specialist",
+              "response_drafter"
+            ],
+            "depth": 2,
+            "feasible": true,
+            "constraints_met": true,
+            "graphscout_generated": true,
+            "estimated_cost": 0.002,
+            "estimated_latency": 2000.0,
+            "budget_assessment": {
+              "compliant": true,
+              "violations": [],
+              "estimates": {
+                "tokens": 240,
+                "cost_usd": 0.002,
+                "latency_ms": 2000.0
+              },
+              "remaining_budget": {
+                "tokens": 50000,
+                "cost_usd": 1.0,
+                "latency_ms": 30000.0
+              }
+            },
+            "fits_budget": true,
+            "llm_evaluation": {
+              "relevance_score": 0.5,
+              "confidence": 0.8,
+              "reasoning": "Heuristic evaluation: billing_specialist matched question keywords",
+              "expected_output": "Agent execution result",
+              "estimated_tokens": 500,
+              "estimated_cost": 0.001,
+              "estimated_latency_ms": 1000,
+              "risk_factors": [],
+              "efficiency_rating": "medium",
+              "is_deterministic_fallback": true
+            },
+            "llm_validation": {
+              "is_valid": false,
+              "confidence": 0.8,
+              "efficiency_score": 0.9,
+              "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+              "suggested_improvements": [],
+              "risk_assessment": "low",
+              "is_deterministic_fallback": true
+            },
+            "safety_score": 0.9,
+            "safety_risks": [
+              "legal_content"
+            ],
+            "safety_details": {
+              "content": {
+                "legal_matches": [
+                  "\\b(contract|agreement|liability|damages)\\b"
+                ]
+              },
+              "capabilities": {
+                "forbidden_capabilities": []
+              },
+              "policy": {}
+            },
+            "score": 0.6988694024086,
+            "score_components": {
+              "llm": 0.5,
+              "heuristics": 0.7793470120429993,
+              "prior": 0.9,
+              "cost": 0.98,
+              "latency": 0.8
+            },
+            "confidence": 0.7653701998434828
+          }
+        ],
+        "confidence": 0.5653701998434826,
+        "reasoning": "Close competition with margin 0.000 - returning top 3 options",
+        "candidates_evaluated": 91,
+        "top_score": 0.6988694024086
+      }
+    },
+    "route_executor": {
+      "response": "",
+      "confidence": "0.0",
+      "internal_reasoning": "The routed decision confidence (0.565) is below the required minimum of 0.9, so it is not possible to comply with the constraints.",
+      "_metrics": {
+        "tokens": 2174,
+        "prompt_tokens": 2116,
+        "completion_tokens": 58,
+        "latency_ms": 1415.41,
+        "cost_usd": 8.9e-05,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Execute the routed task based on the GraphScout decision.\n\nORIGINAL REQUEST: Your platform has been below the 99.9% uptime SLA for 3 consecutive months. We've documented everything: Jan: 99.4% (3.6 hrs downtime from your database migration), Feb: 99.7% (2.2 hrs from your CDN outage + 0.8 hrs from API degradation during your 'zero-downtime' deployment), March: 99.1% (6.5 hrs across 4 separate incidents). Total: 13.1 hours of downtime in Q1. HOWEVER \u2014 your SLA credits clause (section 7.2) caps credits at 30% of monthly fees regardless of actual downtime. For our $45K/quarter contract, that's $13,500 maximum \u2014 or roughly $1,030/hr of downtime versus our estimated $8,500/hr revenue loss. We are requesting: (1) SLA credits at the full contractual rate (yes, we know it's capped), (2) A formal RCA bundle for all 7 incidents, (3) A concrete remediation plan with committed SLA improvement targets, (4) A contract renegotiation to increase the credit cap and add financial penalties for repeat SLA misses, and (5) A frank assessment from your VP of Engineering on whether your platform can actually meet 99.9% for our tier \u2014 because if not, we need to know now rather than after another quarter of missed SLAs. Our board has asked for a vendor risk assessment by April 30.\nROUTING DECISION: shortlist\nTARGET PATH: [{'node_id': 'billing_specialist', 'path': ['billing_specialist', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['legal_content'], 'safety_details': {'content': {'legal_matches': ['\\\\b(contract|agreement|liability|damages)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6988694024086, 'score_components': {'llm': 0.5, 'heuristics': 0.7793470120429993, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7653701998434828}, {'node_id': 'billing_specialist', 'path': ['billing_specialist', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['legal_content'], 'safety_details': {'content': {'legal_matches': ['\\\\b(contract|agreement|liability|damages)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6988694024086, 'score_components': {'llm': 0.5, 'heuristics': 0.7793470120429993, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7653701998434828}, {'node_id': 'billing_specialist', 'path': ['billing_specialist', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['legal_content'], 'safety_details': {'content': {'legal_matches': ['\\\\b(contract|agreement|liability|damages)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6988694024086, 'score_components': {'llm': 0.5, 'heuristics': 0.7793470120429993, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7653701998434828}]\nROUTING CONFIDENCE: 0.5653701998434826\nREASONING: Close competition with margin 0.000 - returning top 3 options\n\nExecute and produce a thorough response following the selected path.\n\nReturn JSON with:\n- \"response\": your complete solution following the routed path\n- \"route_taken\": the path/agent selected\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": how the routing decision guided your response"
+    },
+    "brain_learn_executed": {
+      "response": "Learned path: anti:general:",
+      "confidence": "0.21819195205615072",
+      "internal_reasoning": "GraphScout path stored with 3 nodes",
+      "skill_id": "f42517a9-466a-468c-b484-752689e42297",
+      "skill_name": "anti:general:",
+      "skill_type": "anti_pattern"
+    },
+    "brain_feedback": {
+      "response": "Recorded successful transfer for skill 'anti:general:'.",
+      "confidence": "0.2572823544533432",
+      "internal_reasoning": "Transfer feedback recorded. Skill now has 12 transfer(s).",
+      "skill_id": "f42517a9-466a-468c-b484-752689e42297",
+      "skill_name": "anti:general:",
+      "transfer_count": 12,
+      "transfer_success": true
+    },
+    "task_result": {
+      "response": "",
+      "confidence": "0.0",
+      "internal_reasoning": "The task requires a comprehensive solution with multiple detailed steps and a routing decision, yet the provided routing options are not valid for generating such an answer. The system cannot produce a correct response under the constraints given.",
+      "_metrics": {
+        "tokens": 2201,
+        "prompt_tokens": 2133,
+        "completion_tokens": 68,
+        "latency_ms": 1388.7,
+        "cost_usd": 8.7e-05,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output.\n\nDOMAIN: customer_support\nTASK: Your platform has been below the 99.9% uptime SLA for 3 consecutive months. We've documented everything: Jan: 99.4% (3.6 hrs downtime from your database migration), Feb: 99.7% (2.2 hrs from your CDN outage + 0.8 hrs from API degradation during your 'zero-downtime' deployment), March: 99.1% (6.5 hrs across 4 separate incidents). Total: 13.1 hours of downtime in Q1. HOWEVER \u2014 your SLA credits clause (section 7.2) caps credits at 30% of monthly fees regardless of actual downtime. For our $45K/quarter contract, that's $13,500 maximum \u2014 or roughly $1,030/hr of downtime versus our estimated $8,500/hr revenue loss. We are requesting: (1) SLA credits at the full contractual rate (yes, we know it's capped), (2) A formal RCA bundle for all 7 incidents, (3) A concrete remediation plan with committed SLA improvement targets, (4) A contract renegotiation to increase the credit cap and add financial penalties for repeat SLA misses, and (5) A frank assessment from your VP of Engineering on whether your platform can actually meet 99.9% for our tier \u2014 because if not, we need to know now rather than after another quarter of missed SLAs. Our board has asked for a vendor risk assessment by April 30.\n\nROUTING DECISION: shortlist\nTARGET: [{'node_id': 'billing_specialist', 'path': ['billing_specialist', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['legal_content'], 'safety_details': {'content': {'legal_matches': ['\\\\b(contract|agreement|liability|damages)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6988694024086, 'score_components': {'llm': 0.5, 'heuristics': 0.7793470120429993, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7653701998434828}, {'node_id': 'billing_specialist', 'path': ['billing_specialist', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['legal_content'], 'safety_details': {'content': {'legal_matches': ['\\\\b(contract|agreement|liability|damages)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6988694024086, 'score_components': {'llm': 0.5, 'heuristics': 0.7793470120429993, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7653701998434828}, {'node_id': 'billing_specialist', 'path': ['billing_specialist', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['legal_content'], 'safety_details': {'content': {'legal_matches': ['\\\\b(contract|agreement|liability|damages)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6988694024086, 'score_components': {'llm': 0.5, 'heuristics': 0.7793470120429993, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7653701998434828}]\nCONFIDENCE: 0.5653701998434826\n\nEXECUTION RESULT:\n\n\nReturn JSON with:\n- \"response\": comprehensive solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"route_decision\": the routing decision made\n- \"route_target\": selected path\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

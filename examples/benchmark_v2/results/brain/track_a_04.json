@@ -1,0 +1,261 @@
+{
+  "task_id": "track_a_04",
+  "condition": "brain",
+  "elapsed_s": 15.53,
+  "success": true,
+  "output": {
+    "response": {
+      "domain": "infrastructure_ops",
+      "task": "Monitor system health metrics, diagnose the root cause of performance degradation by correlating logs across services, then execute a recovery plan with rollback safety.",
+      "solution_steps": [
+        {
+          "step_number": 1,
+          "action": "Collect and aggregate health metrics from all monitored services",
+          "expected_outcome": "Unified dataset of CPU, memory, latency, error rates, etc., ready for analysis."
+        },
+        {
+          "step_number": 2,
+          "action": "Detect anomalies using baseline deviation analysis",
+          "expected_outcome": "Identification of metric spikes or drops that deviate significantly from historical baselines."
+        },
+        {
+          "step_number": 3,
+          "action": "Correlate detected anomalies with log events across affected services",
+          "expected_outcome": "Mapping between anomalous metrics and specific log entries (errors, warnings, stack traces)."
+        },
+        {
+          "step_number": 4,
+          "action": "Traverse the dependency graph to isolate the root cause",
+          "expected_outcome": "Determination of the originating service/component that triggered cascading performance issues."
+        },
+        {
+          "step_number": 5,
+          "action": "Design a recovery plan with rollback checkpoints",
+          "expected_outcome": "Step\u2011by\u2011step action list (e.g., restart service, roll back config change) and defined health checks to verify success or revert if needed."
+        },
+        {
+          "step_number": 6,
+          "action": "Execute the recovery plan while continuously monitoring health metrics",
+          "expected_outcome": "Restoration of normal performance levels with automatic rollback if any metric re\u2011deviates beyond thresholds."
+        }
+      ],
+      "quality_self_assessment": 0.93,
+      "brain_assisted": false,
+      "recalled_skill": "none",
+      "confidence": 0.95
+    },
+    "confidence": "0.95",
+    "internal_reasoning": "The solution follows the provided execution trace and aligns with best practices for infrastructure ops incident response. All steps are concrete, sequential, and include expected outcomes, matching the task requirements.",
+    "_metrics": {
+      "tokens": 1430,
+      "prompt_tokens": 960,
+      "completion_tokens": 470,
+      "latency_ms": 4848.52,
+      "cost_usd": 0.000299,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'infrastructure_ops', 'task': 'Monitor system health metrics, diagnose the root cause of performance degradation by correlating logs across services, then execute a recovery plan with rollback safety.', 'execution_trace': {'steps': [{'action': 'collect and aggregate health metrics from all monitored services', 'result': 'success'}, {'action': 'detect anomalies using baseline deviation analysis', 'result': 'success'}, {'action': 'correlate anomalies with log events across affected services', 'result': 'success'}, {'action': 'isolate root cause through dependency graph traversal', 'result': 'success'}, {'action': 'design recovery plan with rollback checkpoints', 'result': 'success'}, {'action': 'execute recovery with continuous health monitoring', 'result': 'success'}], 'agents': ['metric_collector', 'anomaly_detector', 'log_correlator', 'rca_analyzer', 'recovery_planner', 'executor'], 'strategy': 'sequential'}, 'outcome': {'success': True, 'quality': 0.93}}\n\nSOLUTION:\n{'domain': 'infrastructure_ops', 'task': 'Monitor system health metrics, diagnose the root cause of performance degradation by correlating logs across services, then execute a recovery plan with rollback safety.', 'steps': [{'action': 'Collect and aggregate health metrics from all monitored services', 'expected_outcome': 'Unified dataset of CPU, memory, latency, error rates, etc., ready for analysis.'}, {'action': 'Detect anomalies using baseline deviation analysis', 'expected_outcome': 'Identification of metric spikes or drops that deviate significantly from historical baselines.'}, {'action': 'Correlate detected anomalies with log events across affected services', 'expected_outcome': 'Mapping between anomalous metrics and specific log entries (errors, warnings, stack traces).'}, {'action': 'Traverse the dependency graph to isolate the root cause', 'expected_outcome': 'Determination of the originating service/component that triggered cascading performance issues.'}, {'action': 'Design a recovery plan with rollback checkpoints', 'expected_outcome': 'Step\u2011by\u2011step action list (e.g., restart service, roll back config change) and defined health checks to verify success or revert if needed.'}, {'action': 'Execute the recovery plan while continuously monitoring health metrics', 'expected_outcome': 'Restoration of normal performance levels with automatic rollback if any metric re\u2011deviates beyond thresholds.'}], 'used_recalled_skill': False, 'recalled_skill_name': 'none', 'adaptation_notes': 'N/A'}\n\nBRAIN METRICS:\nSkill recalled: procedural:general:planning-sequential\nTransfer score: 0.5785\nUsed recalled skill: False\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": true if recalled skill contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": {
+        "domain": "infrastructure_ops",
+        "task": "Monitor system health metrics, diagnose the root cause of performance degradation by correlating logs across services, then execute a recovery plan with rollback safety.",
+        "steps": [
+          {
+            "action": "Collect and aggregate health metrics from all monitored services",
+            "result": "A unified dataset of CPU, memory, latency, error rates, etc., ready for analysis."
+          },
+          {
+            "action": "Detect anomalies using baseline deviation analysis",
+            "result": "Identification of metric spikes or drops that deviate significantly from historical baselines."
+          },
+          {
+            "action": "Correlate detected anomalies with log events across affected services",
+            "result": "A mapping between anomalous metrics and specific log entries (errors, warnings, stack traces)."
+          },
+          {
+            "action": "Traverse the dependency graph to isolate the root cause",
+            "result": "Determination of the originating service/component that triggered cascading performance issues."
+          },
+          {
+            "action": "Design a recovery plan with rollback checkpoints",
+            "result": "A step\u2011by\u2011step action list (e.g., restart service, roll back config change) and defined health checks to verify success or revert if needed."
+          },
+          {
+            "action": "Execute the recovery plan while continuously monitoring health metrics",
+            "result": "Restoration of normal performance levels with automatic rollback if any metric re\u2011deviates beyond thresholds."
+          }
+        ],
+        "confidence": 0.95,
+        "internal_reasoning": "The approach follows a proven sequential strategy: gather data, detect anomalies, correlate logs, isolate root cause via dependency analysis, plan recovery with safety nets, and execute while monitoring to ensure rollback if failure occurs."
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "All steps are derived from the reference execution trace and standard incident response practices in infrastructure operations.",
+      "_metrics": {
+        "tokens": 956,
+        "prompt_tokens": 543,
+        "completion_tokens": 413,
+        "latency_ms": 4107.55,
+        "cost_usd": 0.000248,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: infrastructure_ops\nTASK: Monitor system health metrics, diagnose the root cause of performance degradation by correlating logs across services, then execute a recovery plan with rollback safety.\n\n\nREFERENCE EXECUTION TRACE:\n\n  Step 1: collect and aggregate health metrics from all monitored services \u2192 success\n\n  Step 2: detect anomalies using baseline deviation analysis \u2192 success\n\n  Step 3: correlate anomalies with log events across affected services \u2192 success\n\n  Step 4: isolate root cause through dependency graph traversal \u2192 success\n\n  Step 5: design recovery plan with rollback checkpoints \u2192 success\n\n  Step 6: execute recovery with continuous health monitoring \u2192 success\n\nStrategy: sequential\n\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+    },
+    "brain_learn": {
+      "response": "Learned skill: procedural:general:planning-sequential",
+      "confidence": "0.69",
+      "internal_reasoning": "Abstracted 1 steps into transferable skill 'procedural:general:planning-sequential'",
+      "skill_id": "cf4e1aac-3acc-4154-bc73-60723e0486a8",
+      "skill_name": "procedural:general:planning-sequential",
+      "skill_steps": [
+        "aggregate [target]"
+      ],
+      "skill_tags": [
+        "sequential",
+        "planning",
+        "{'domain': 'infrastructure_ops', 'task': 'Monitor system health metrics, diagnose the root cause of performance degradation by correlating logs across services, then execute a recovery plan with rollb",
+        "general"
+      ]
+    },
+    "brain_recall": {
+      "response": "Found applicable skill: 'procedural:general:planning-sequential' (score: 0.58). Steps: aggregate [target]",
+      "confidence": "0.5785",
+      "internal_reasoning": "Skill 'procedural:general:planning-sequential'. has very similar task structure. shares structures: sequential. shares patterns: planning.",
+      "skill_id": "cf4e1aac-3acc-4154-bc73-60723e0486a8",
+      "skill_name": "procedural:general:planning-sequential",
+      "skill_steps": [
+        "aggregate [target]"
+      ],
+      "skill_tags": [
+        "sequential",
+        "planning",
+        "{'domain': 'infrastructure_ops', 'task': 'Monitor system health metrics, diagnose the root cause of performance degradation by correlating logs across services, then execute a recovery plan with rollb",
+        "general"
+      ],
+      "combined_score": 0.5785,
+      "structural_score": 1.0,
+      "semantic_score": 0.0,
+      "adaptations": {},
+      "all_candidates": [
+        {
+          "skill_name": "procedural:general:planning-sequential",
+          "score": 0.5785,
+          "reasoning": "Skill 'procedural:general:planning-sequential'. has very similar task structure. shares structures: sequential. shares patterns: planning."
+        }
+      ]
+    },
+    "task_applier": {
+      "response": {
+        "domain": "infrastructure_ops",
+        "task": "Monitor system health metrics, diagnose the root cause of performance degradation by correlating logs across services, then execute a recovery plan with rollback safety.",
+        "steps": [
+          {
+            "action": "Collect and aggregate health metrics from all monitored services",
+            "expected_outcome": "Unified dataset of CPU, memory, latency, error rates, etc., ready for analysis."
+          },
+          {
+            "action": "Detect anomalies using baseline deviation analysis",
+            "expected_outcome": "Identification of metric spikes or drops that deviate significantly from historical baselines."
+          },
+          {
+            "action": "Correlate detected anomalies with log events across affected services",
+            "expected_outcome": "Mapping between anomalous metrics and specific log entries (errors, warnings, stack traces)."
+          },
+          {
+            "action": "Traverse the dependency graph to isolate the root cause",
+            "expected_outcome": "Determination of the originating service/component that triggered cascading performance issues."
+          },
+          {
+            "action": "Design a recovery plan with rollback checkpoints",
+            "expected_outcome": "Step\u2011by\u2011step action list (e.g., restart service, roll back config change) and defined health checks to verify success or revert if needed."
+          },
+          {
+            "action": "Execute the recovery plan while continuously monitoring health metrics",
+            "expected_outcome": "Restoration of normal performance levels with automatic rollback if any metric re\u2011deviates beyond thresholds."
+          }
+        ],
+        "used_recalled_skill": false,
+        "recalled_skill_name": "none",
+        "adaptation_notes": "N/A"
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "I followed the proven sequential strategy from my analysis: gather data, detect anomalies, correlate logs, isolate root cause via dependency graph, plan recovery with safety nets, and execute while monitoring for rollback.",
+      "_metrics": {
+        "tokens": 1495,
+        "prompt_tokens": 1080,
+        "completion_tokens": 415,
+        "latency_ms": 4935.01,
+        "cost_usd": 0.000304,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a task. You have your own analysis AND access to a\npreviously learned skill from the Brain's memory.\n\nDOMAIN: general\nTASK: {'domain': 'infrastructure_ops', 'task': 'Monitor system health metrics, diagnose the root cause of performance degradation by correlating logs across services, then execute a recovery plan with rollback safety.', 'execution_trace': {'steps': [{'action': 'collect and aggregate health metrics from all monitored services', 'result': 'success'}, {'action': 'detect anomalies using baseline deviation analysis', 'result': 'success'}, {'action': 'correlate anomalies with log events across affected services', 'result': 'success'}, {'action': 'isolate root cause through dependency graph traversal', 'result': 'success'}, {'action': 'design recovery plan with rollback checkpoints', 'result': 'success'}, {'action': 'execute recovery with continuous health monitoring', 'result': 'success'}], 'agents': ['metric_collector', 'anomaly_detector', 'log_correlator', 'rca_analyzer', 'recovery_planner', 'executor'], 'strategy': 'sequential'}, 'outcome': {'success': True, 'quality': 0.93}}\n\nYOUR ANALYSIS:\n{'domain': 'infrastructure_ops', 'task': 'Monitor system health metrics, diagnose the root cause of performance degradation by correlating logs across services, then execute a recovery plan with rollback safety.', 'steps': [{'action': 'Collect and aggregate health metrics from all monitored services', 'result': 'A unified dataset of CPU, memory, latency, error rates, etc., ready for analysis.'}, {'action': 'Detect anomalies using baseline deviation analysis', 'result': 'Identification of metric spikes or drops that deviate significantly from historical baselines.'}, {'action': 'Correlate detected anomalies with log events across affected services', 'result': 'A mapping between anomalous metrics and specific log entries (errors, warnings, stack traces).'}, {'action': 'Traverse the dependency graph to isolate the root cause', 'result': 'Determination of the originating service/component that triggered cascading performance issues.'}, {'action': 'Design a recovery plan with rollback checkpoints', 'result': 'A step\u2011by\u2011step action list (e.g., restart service, roll back config change) and defined health checks to verify success or revert if needed.'}, {'action': 'Execute the recovery plan while continuously monitoring health metrics', 'result': 'Restoration of normal performance levels with automatic rollback if any metric re\u2011deviates beyond thresholds.'}], 'confidence': 0.95, 'internal_reasoning': 'The approach follows a proven sequential strategy: gather data, detect anomalies, correlate logs, isolate root cause via dependency analysis, plan recovery with safety nets, and execute while monitoring to ensure rollback if failure occurs.'}\n\nRECALLED SKILL FROM BRAIN:\nSkill name: procedural:general:planning-sequential\nAbstract steps: ['aggregate [target]']\nTransfer score: 0.5785\nStructural match: 1.0\nSemantic match: 0.0\nAdaptations: {}\n\nINSTRUCTIONS:\nIf a skill was recalled, use its abstract pattern to GUIDE your solution.\nFor each abstract step, explain how you ADAPT it to the current domain.\nIf no skill was recalled, solve using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": true or false\n- \"recalled_skill_name\": skill name or \"none\"\n- \"adaptation_notes\": how you adapted the skill (or \"N/A\")\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+    },
+    "brain_feedback": {
+      "response": "Recorded successful transfer for skill 'procedural:general:planning-sequential'.",
+      "confidence": "0.7054999999999999",
+      "internal_reasoning": "Transfer feedback recorded. Skill now has 1 transfer(s).",
+      "skill_id": "cf4e1aac-3acc-4154-bc73-60723e0486a8",
+      "skill_name": "procedural:general:planning-sequential",
+      "transfer_count": 1,
+      "transfer_success": true
+    },
+    "task_result": {
+      "response": {
+        "domain": "infrastructure_ops",
+        "task": "Monitor system health metrics, diagnose the root cause of performance degradation by correlating logs across services, then execute a recovery plan with rollback safety.",
+        "solution_steps": [
+          {
+            "step_number": 1,
+            "action": "Collect and aggregate health metrics from all monitored services",
+            "expected_outcome": "Unified dataset of CPU, memory, latency, error rates, etc., ready for analysis."
+          },
+          {
+            "step_number": 2,
+            "action": "Detect anomalies using baseline deviation analysis",
+            "expected_outcome": "Identification of metric spikes or drops that deviate significantly from historical baselines."
+          },
+          {
+            "step_number": 3,
+            "action": "Correlate detected anomalies with log events across affected services",
+            "expected_outcome": "Mapping between anomalous metrics and specific log entries (errors, warnings, stack traces)."
+          },
+          {
+            "step_number": 4,
+            "action": "Traverse the dependency graph to isolate the root cause",
+            "expected_outcome": "Determination of the originating service/component that triggered cascading performance issues."
+          },
+          {
+            "step_number": 5,
+            "action": "Design a recovery plan with rollback checkpoints",
+            "expected_outcome": "Step\u2011by\u2011step action list (e.g., restart service, roll back config change) and defined health checks to verify success or revert if needed."
+          },
+          {
+            "step_number": 6,
+            "action": "Execute the recovery plan while continuously monitoring health metrics",
+            "expected_outcome": "Restoration of normal performance levels with automatic rollback if any metric re\u2011deviates beyond thresholds."
+          }
+        ],
+        "quality_self_assessment": 0.93,
+        "brain_assisted": false,
+        "recalled_skill": "none",
+        "confidence": 0.95
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "The solution follows the provided execution trace and aligns with best practices for infrastructure ops incident response. All steps are concrete, sequential, and include expected outcomes, matching the task requirements.",
+      "_metrics": {
+        "tokens": 1430,
+        "prompt_tokens": 960,
+        "completion_tokens": 470,
+        "latency_ms": 4848.52,
+        "cost_usd": 0.000299,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'infrastructure_ops', 'task': 'Monitor system health metrics, diagnose the root cause of performance degradation by correlating logs across services, then execute a recovery plan with rollback safety.', 'execution_trace': {'steps': [{'action': 'collect and aggregate health metrics from all monitored services', 'result': 'success'}, {'action': 'detect anomalies using baseline deviation analysis', 'result': 'success'}, {'action': 'correlate anomalies with log events across affected services', 'result': 'success'}, {'action': 'isolate root cause through dependency graph traversal', 'result': 'success'}, {'action': 'design recovery plan with rollback checkpoints', 'result': 'success'}, {'action': 'execute recovery with continuous health monitoring', 'result': 'success'}], 'agents': ['metric_collector', 'anomaly_detector', 'log_correlator', 'rca_analyzer', 'recovery_planner', 'executor'], 'strategy': 'sequential'}, 'outcome': {'success': True, 'quality': 0.93}}\n\nSOLUTION:\n{'domain': 'infrastructure_ops', 'task': 'Monitor system health metrics, diagnose the root cause of performance degradation by correlating logs across services, then execute a recovery plan with rollback safety.', 'steps': [{'action': 'Collect and aggregate health metrics from all monitored services', 'expected_outcome': 'Unified dataset of CPU, memory, latency, error rates, etc., ready for analysis.'}, {'action': 'Detect anomalies using baseline deviation analysis', 'expected_outcome': 'Identification of metric spikes or drops that deviate significantly from historical baselines.'}, {'action': 'Correlate detected anomalies with log events across affected services', 'expected_outcome': 'Mapping between anomalous metrics and specific log entries (errors, warnings, stack traces).'}, {'action': 'Traverse the dependency graph to isolate the root cause', 'expected_outcome': 'Determination of the originating service/component that triggered cascading performance issues.'}, {'action': 'Design a recovery plan with rollback checkpoints', 'expected_outcome': 'Step\u2011by\u2011step action list (e.g., restart service, roll back config change) and defined health checks to verify success or revert if needed.'}, {'action': 'Execute the recovery plan while continuously monitoring health metrics', 'expected_outcome': 'Restoration of normal performance levels with automatic rollback if any metric re\u2011deviates beyond thresholds.'}], 'used_recalled_skill': False, 'recalled_skill_name': 'none', 'adaptation_notes': 'N/A'}\n\nBRAIN METRICS:\nSkill recalled: procedural:general:planning-sequential\nTransfer score: 0.5785\nUsed recalled skill: False\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": true if recalled skill contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

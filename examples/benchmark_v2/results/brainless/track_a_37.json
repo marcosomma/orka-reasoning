@@ -1,0 +1,317 @@
+{
+  "task_id": "track_a_37",
+  "condition": "brainless",
+  "elapsed_s": 24.56,
+  "success": true,
+  "output": {
+    "response": {
+      "domain": "volcanology",
+      "task": "Profile a multi\u2011parameter volcano monitoring dataset and build an ensemble forecasting model combining Bayesian Event Tree (BET_EF) with machine\u2011learning precursory pattern recognition, then evaluate forecast skill against four historical eruptions.",
+      "solution_steps": [
+        {
+          "step_id": 1,
+          "action": "Compile and harmonize raw data streams",
+          "details": "Create a unified time series database (SQL/Parquet) with consistent timestamps (UTC), units, and metadata for seismicity (VT/LP counts, RSAM), deformation (InSAR, tiltmeter, GPS), gas fluxes (DOAS, MultiGAS), thermal IR anomalies, and historical eruption logs."
+        },
+        {
+          "step_id": 2,
+          "action": "Identify seismometer saturation periods during swarm activity",
+          "details": "Implement a flagging algorithm that marks windows where VT/LP counts exceed instrument dynamic range or RSAM peaks saturate. Output a catalog of saturated intervals with start/end times and affected stations."
+        },
+        {
+          "step_id": 3,
+          "action": "Detect GPS antenna offsets caused by lahar damage to monuments",
+          "details": "Cross\u2011reference GPS station metadata with known monument locations; apply quality control to flag sudden position jumps (>5\u202fcm) coincident with documented lahars, yielding a catalog of offset events and affected antennas."
+        },
+        {
+          "step_id": 4,
+          "action": "Map gas measurement gaps during adverse wind conditions",
+          "details": "Overlay wind speed/direction data on DOAS/MultiGAS timestamps; periods where wind exceeds 10\u202fm/s or is directed away from the sensor are marked as unreliable, generating a gap map for each gas species."
+        },
+        {
+          "step_id": 5,
+          "action": "Assess reliability of historical eruption records",
+          "details": "Apply NLP to eyewitness accounts to score credibility; cross\u2011check reported parameters (VEI, plume height) against contemporaneous instrumental data where available, producing a weighted confidence metric for each record."
+        },
+        {
+          "step_id": 6,
+          "action": "Preprocess features for machine\u2011learning model",
+          "details": "Create lagged and rolling statistics (24\u202fh, 7\u202fd, 30\u202fd windows) of seismicity, deformation, gas fluxes, and thermal anomalies; impute missing values using interpolation or multiple imputation; standardize features."
+        },
+        {
+          "step_id": 7,
+          "action": "Train Bayesian Event Tree (BET_EF)",
+          "details": "Define nodes for key precursors (e.g., VT surge, GPS uplift) with conditional probabilities derived from historical data and expert elicitation; generate posterior eruption probability time series."
+        },
+        {
+          "step_id": 8,
+          "action": "Train machine\u2011learning precursory pattern recognizer",
+          "details": "Fit a random forest / XGBoost model on the preprocessed features to predict binary eruption occurrence within each forecast window, outputting probability estimates."
+        },
+        {
+          "step_id": 9,
+          "action": "Combine BET_EF and ML outputs into an ensemble forecast",
+          "details": "Apply weighted averaging or Bayesian model averaging (weights tuned via cross\u2011validation) to produce final eruption probability for each time step and forecast horizon."
+        },
+        {
+          "step_id": 10,
+          "action": "Retrospective hindcasting against the four known eruptions",
+          "details": "Run the ensemble model on historical data leading up to each eruption, generating probability series for 24\u202fh, 7\u202fd, and 30\u202fd windows."
+        },
+        {
+          "step_id": 11,
+          "action": "Calculate probability gain over a base\u2011rate model",
+          "details": "Compute the ratio of ensemble forecast probabilities to the unconditional eruption frequency (base rate) for each window, summarizing mean gain."
+        },
+        {
+          "step_id": 12,
+          "action": "Compute Brier skill scores per forecast window",
+          "details": "For each horizon, calculate Brier score of the ensemble and compare to base\u2011rate Brier score; skill = 1 \u2013 (Brier_ensemble / Brier_base). Report values for 24\u202fh, 7\u202fd, 30\u202fd."
+        }
+      ],
+      "quality_self_assessment": 0.95,
+      "brain_assisted": false,
+      "recalled_skill": "none",
+      "confidence": 0.95
+    },
+    "confidence": "0.95",
+    "internal_reasoning": "The solution follows the task requirements step\u2011by\u2011step, providing concrete actions and expected outcomes for each part of the dataset profiling and model building process.",
+    "_metrics": {
+      "tokens": 2482,
+      "prompt_tokens": 1439,
+      "completion_tokens": 1043,
+      "latency_ms": 8333.53,
+      "cost_usd": 0.000524,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'volcanology', 'task': 'Explore a multi-parameter volcano monitoring dataset combining seismicity catalogs (VT and LP event counts, RSAM amplitudes), ground deformation (InSAR, tiltmeter, continuous GPS), SO\u2082 and CO\u2082 flux measurements (DOAS traverses and MultiGAS), thermal infrared anomaly maps, and historical eruption records spanning 300 years with variable data quality. Profile the dataset for: seismometer saturation periods during swarm activity, GPS antenna offsets from lahar damage to monuments, gas measurement gaps during adverse wind conditions, and historical records that conflate eruption parameters from eyewitness accounts of unknown reliability. Train an ensemble forecasting model combining a Bayesian Event Tree (BET_EF) with machine-learning precursory pattern recognition, then evaluate forecast skill using retrospective hindcasting against the 4 known eruptions in the historical record, reporting probability gain over a simple base-rate model and calculating Brier skill scores per forecast window (24h, 7d, 30d).'}\n\nSOLUTION:\n{'domain': 'volcanology', 'task': 'Profile a multi\u2011parameter volcano monitoring dataset and build an ensemble forecasting model combining Bayesian Event Tree (BET_EF) with machine\u2011learning precursory pattern recognition, then evaluate forecast skill against four historical eruptions.', 'steps': [{'action': 'Compile and harmonize raw data streams', 'expected_outcome': 'A unified time series database with consistent timestamps, units, and metadata for seismicity (VT/LP counts, RSAM), deformation (InSAR, tiltmeter, GPS), gas fluxes (DOAS, MultiGAS), thermal IR anomalies, and historical eruption logs.'}, {'action': 'Identify seismometer saturation periods during swarm activity', 'expected_outcome': 'A flagging algorithm that marks time windows where VT/LP counts exceed instrument dynamic range or RSAM peaks saturate, producing a list of saturated intervals with start/end times and affected stations.'}, {'action': 'Detect GPS antenna offsets caused by lahar damage to monuments', 'expected_outcome': 'Cross\u2011reference GPS station metadata with known monument locations; apply quality control to flag sudden position jumps (>5\\u202fcm) coincident with documented lahars, yielding a catalog of offset events and affected antennas.'}, {'action': 'Map gas measurement gaps during adverse wind conditions', 'expected_outcome': 'Wind speed/direction data are overlaid on DOAS/MultiGAS timestamps; periods where wind exceeds 10\\u202fm/s or is directed away from the sensor are marked as unreliable, generating a gap map for each gas species.'}, {'action': 'Assess reliability of historical eruption records', 'expected_outcome': 'Textual analysis of eyewitness accounts using NLP to score credibility; cross\u2011check reported parameters (e.g., VEI, plume height) against contemporaneous instrumental data where available, producing a weighted confidence metric for each record.'}, {'action': 'Preprocess features for machine\u2011learning model', 'expected_outcome': 'Create lagged and rolling statistics (24\\u202fh, 7\\u202fd, 30\\u202fd windows) of seismicity, deformation, gas fluxes, and thermal anomalies; impute missing values using interpolation or multiple imputation; standardize features.'}, {'action': 'Train Bayesian Event Tree (BET_EF)', 'expected_outcome': 'Define nodes for key precursors (e.g., VT surge, GPS uplift) with conditional probabilities derived from historical data and expert elicitation; generate posterior eruption probability time series.'}, {'action': 'Train machine\u2011learning precursory pattern recognizer', 'expected_outcome': 'Fit a random forest / XGBoost model on the preprocessed features to predict binary eruption occurrence within each forecast window, outputting probability estimates.'}, {'action': 'Combine BET_EF and ML outputs into an ensemble forecast', 'expected_outcome': 'Apply weighted averaging or Bayesian model averaging (weights tuned via cross\u2011validation) to produce final eruption probability for each time step and forecast horizon.'}, {'action': 'Retrospective hindcasting against the four known eruptions', 'expected_outcome': 'Run the ensemble model on historical data leading up to each eruption, generating probability series for 24\\u202fh, 7\\u202fd, and 30\\u202fd windows.'}, {'action': 'Calculate probability gain over a base\u2011rate model', 'expected_outcome': 'Compute the ratio of ensemble forecast probabilities to the unconditional eruption frequency (base rate) for each window, summarizing mean gain.'}, {'action': 'Compute Brier skill scores per forecast window', 'expected_outcome': 'For each horizon, calculate Brier score of the ensemble and compare to base\u2011rate Brier score; skill = 1 \u2013 (Brier_ensemble / Brier_base). Report values for 24\\u202fh, 7\\u202fd, 30\\u202fd.'}], 'used_recalled_skill': False, 'recalled_skill_name': 'none', 'adaptation_notes': 'N/A'}\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": {
+        "domain": "volcanology",
+        "task": "Profile a multi-parameter volcano monitoring dataset and build an ensemble forecasting model combining Bayesian Event Tree (BET_EF) with machine\u2011learning precursory pattern recognition, then evaluate forecast skill against four historical eruptions.",
+        "steps": [
+          {
+            "action": "Compile and harmonize raw data streams",
+            "result": "A unified time series database with consistent timestamps, units, and metadata for seismicity (VT/LP counts, RSAM), deformation (InSAR, tiltmeter, GPS), gas fluxes (DOAS, MultiGAS), thermal IR anomalies, and historical eruption logs."
+          },
+          {
+            "action": "Identify seismometer saturation periods during swarm activity",
+            "result": "A flagging algorithm that marks time windows where VT/LP counts exceed instrument dynamic range or RSAM peaks saturate, producing a list of saturated intervals with start/end times and affected stations."
+          },
+          {
+            "action": "Detect GPS antenna offsets caused by lahar damage to monuments",
+            "result": "Cross\u2011reference GPS station metadata with known monument locations; apply quality control to flag sudden position jumps (>5\u202fcm) coincident with documented lahars, yielding a catalog of offset events and affected antennas."
+          },
+          {
+            "action": "Map gas measurement gaps during adverse wind conditions",
+            "result": "Wind speed/ direction data are overlaid on DOAS/MultiGAS timestamps; periods where wind exceeds 10\u202fm/s or is directed away from the sensor are marked as unreliable, generating a gap map for each gas species."
+          },
+          {
+            "action": "Assess reliability of historical eruption records",
+            "result": "Textual analysis of eyewitness accounts using natural language processing to score credibility; cross\u2011check reported parameters (e.g., VEI, plume height) against contemporaneous instrumental data where available, producing a weighted confidence metric for each record."
+          },
+          {
+            "action": "Preprocess features for machine\u2011learning model",
+            "result": "Create lagged and rolling statistics (e.g., 24\u202fh, 7\u202fd, 30\u202fd windows) of seismicity, deformation, gas fluxes, and thermal anomalies; impute missing values using interpolation or multiple imputation; standardize features."
+          },
+          {
+            "action": "Train Bayesian Event Tree (BET_EF)",
+            "result": "Define nodes for key precursors (e.g., VT surge, GPS uplift) with conditional probabilities derived from historical data and expert elicitation; generate posterior eruption probability time series."
+          },
+          {
+            "action": "Train machine\u2011learning precursory pattern recognizer",
+            "result": "Fit a random forest / XGBoost model on the preprocessed features to predict binary eruption occurrence within each forecast window, outputting probability estimates."
+          },
+          {
+            "action": "Combine BET_EF and ML outputs into an ensemble forecast",
+            "result": "Apply weighted averaging or Bayesian model averaging (weights tuned via cross\u2011validation) to produce final eruption probability for each time step and forecast horizon."
+          },
+          {
+            "action": "Retrospective hindcasting against the four known eruptions",
+            "result": "Run the ensemble model on historical data leading up to each eruption, generating probability series for 24\u202fh, 7\u202fd, and 30\u202fd windows."
+          },
+          {
+            "action": "Calculate probability gain over a base\u2011rate model",
+            "result": "Compute the ratio of ensemble forecast probabilities to the unconditional eruption frequency (base rate) for each window, summarizing mean gain."
+          },
+          {
+            "action": "Compute Brier skill scores per forecast window",
+            "result": "For each horizon, calculate Brier score of the ensemble and compare to base\u2011rate Brier score; skill = 1 \u2013 (Brier_ensemble / Brier_base). Report values for 24\u202fh, 7\u202fd, 30\u202fd."
+          }
+        ],
+        "confidence": "0.95",
+        "internal_reasoning": "The plan follows a logical sequence: data harmonization, quality control, feature engineering, model training, ensemble creation, and rigorous skill assessment using standard metrics (probability gain, Brier score). All steps are grounded in established volcanological monitoring practices."
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "The outlined approach is comprehensive, evidence\u2011based, and aligns with domain standards; thus confidence exceeds the required threshold.",
+      "_metrics": {
+        "tokens": 1580,
+        "prompt_tokens": 610,
+        "completion_tokens": 970,
+        "latency_ms": 8267.19,
+        "cost_usd": 0.00051,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: volcanology\nTASK: Explore a multi-parameter volcano monitoring dataset combining seismicity catalogs (VT and LP event counts, RSAM amplitudes), ground deformation (InSAR, tiltmeter, continuous GPS), SO\u2082 and CO\u2082 flux measurements (DOAS traverses and MultiGAS), thermal infrared anomaly maps, and historical eruption records spanning 300 years with variable data quality. Profile the dataset for: seismometer saturation periods during swarm activity, GPS antenna offsets from lahar damage to monuments, gas measurement gaps during adverse wind conditions, and historical records that conflate eruption parameters from eyewitness accounts of unknown reliability. Train an ensemble forecasting model combining a Bayesian Event Tree (BET_EF) with machine-learning precursory pattern recognition, then evaluate forecast skill using retrospective hindcasting against the 4 known eruptions in the historical record, reporting probability gain over a simple base-rate model and calculating Brier skill scores per forecast window (24h, 7d, 30d).\n\n\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+    },
+    "task_applier": {
+      "response": {
+        "domain": "volcanology",
+        "task": "Profile a multi\u2011parameter volcano monitoring dataset and build an ensemble forecasting model combining Bayesian Event Tree (BET_EF) with machine\u2011learning precursory pattern recognition, then evaluate forecast skill against four historical eruptions.",
+        "steps": [
+          {
+            "action": "Compile and harmonize raw data streams",
+            "expected_outcome": "A unified time series database with consistent timestamps, units, and metadata for seismicity (VT/LP counts, RSAM), deformation (InSAR, tiltmeter, GPS), gas fluxes (DOAS, MultiGAS), thermal IR anomalies, and historical eruption logs."
+          },
+          {
+            "action": "Identify seismometer saturation periods during swarm activity",
+            "expected_outcome": "A flagging algorithm that marks time windows where VT/LP counts exceed instrument dynamic range or RSAM peaks saturate, producing a list of saturated intervals with start/end times and affected stations."
+          },
+          {
+            "action": "Detect GPS antenna offsets caused by lahar damage to monuments",
+            "expected_outcome": "Cross\u2011reference GPS station metadata with known monument locations; apply quality control to flag sudden position jumps (>5\u202fcm) coincident with documented lahars, yielding a catalog of offset events and affected antennas."
+          },
+          {
+            "action": "Map gas measurement gaps during adverse wind conditions",
+            "expected_outcome": "Wind speed/direction data are overlaid on DOAS/MultiGAS timestamps; periods where wind exceeds 10\u202fm/s or is directed away from the sensor are marked as unreliable, generating a gap map for each gas species."
+          },
+          {
+            "action": "Assess reliability of historical eruption records",
+            "expected_outcome": "Textual analysis of eyewitness accounts using NLP to score credibility; cross\u2011check reported parameters (e.g., VEI, plume height) against contemporaneous instrumental data where available, producing a weighted confidence metric for each record."
+          },
+          {
+            "action": "Preprocess features for machine\u2011learning model",
+            "expected_outcome": "Create lagged and rolling statistics (24\u202fh, 7\u202fd, 30\u202fd windows) of seismicity, deformation, gas fluxes, and thermal anomalies; impute missing values using interpolation or multiple imputation; standardize features."
+          },
+          {
+            "action": "Train Bayesian Event Tree (BET_EF)",
+            "expected_outcome": "Define nodes for key precursors (e.g., VT surge, GPS uplift) with conditional probabilities derived from historical data and expert elicitation; generate posterior eruption probability time series."
+          },
+          {
+            "action": "Train machine\u2011learning precursory pattern recognizer",
+            "expected_outcome": "Fit a random forest / XGBoost model on the preprocessed features to predict binary eruption occurrence within each forecast window, outputting probability estimates."
+          },
+          {
+            "action": "Combine BET_EF and ML outputs into an ensemble forecast",
+            "expected_outcome": "Apply weighted averaging or Bayesian model averaging (weights tuned via cross\u2011validation) to produce final eruption probability for each time step and forecast horizon."
+          },
+          {
+            "action": "Retrospective hindcasting against the four known eruptions",
+            "expected_outcome": "Run the ensemble model on historical data leading up to each eruption, generating probability series for 24\u202fh, 7\u202fd, and 30\u202fd windows."
+          },
+          {
+            "action": "Calculate probability gain over a base\u2011rate model",
+            "expected_outcome": "Compute the ratio of ensemble forecast probabilities to the unconditional eruption frequency (base rate) for each window, summarizing mean gain."
+          },
+          {
+            "action": "Compute Brier skill scores per forecast window",
+            "expected_outcome": "For each horizon, calculate Brier score of the ensemble and compare to base\u2011rate Brier score; skill = 1 \u2013 (Brier_ensemble / Brier_base). Report values for 24\u202fh, 7\u202fd, 30\u202fd."
+          }
+        ],
+        "used_recalled_skill": false,
+        "recalled_skill_name": "none",
+        "adaptation_notes": "N/A"
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "The plan follows a logical sequence: data harmonization, quality control, feature engineering, model training, ensemble creation, and rigorous skill assessment using standard metrics (probability gain, Brier score). All steps are grounded in established volcanological monitoring practices.",
+      "_metrics": {
+        "tokens": 2463,
+        "prompt_tokens": 1484,
+        "completion_tokens": 979,
+        "latency_ms": 7620.05,
+        "cost_usd": 0.000479,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a task. You have your own step-by-step analysis.\nYou have NO prior experience and NO recalled skills.\n\nDOMAIN: general\nTASK: {'domain': 'volcanology', 'task': 'Explore a multi-parameter volcano monitoring dataset combining seismicity catalogs (VT and LP event counts, RSAM amplitudes), ground deformation (InSAR, tiltmeter, continuous GPS), SO\u2082 and CO\u2082 flux measurements (DOAS traverses and MultiGAS), thermal infrared anomaly maps, and historical eruption records spanning 300 years with variable data quality. Profile the dataset for: seismometer saturation periods during swarm activity, GPS antenna offsets from lahar damage to monuments, gas measurement gaps during adverse wind conditions, and historical records that conflate eruption parameters from eyewitness accounts of unknown reliability. Train an ensemble forecasting model combining a Bayesian Event Tree (BET_EF) with machine-learning precursory pattern recognition, then evaluate forecast skill using retrospective hindcasting against the 4 known eruptions in the historical record, reporting probability gain over a simple base-rate model and calculating Brier skill scores per forecast window (24h, 7d, 30d).'}\n\nYOUR ANALYSIS:\n{'domain': 'volcanology', 'task': 'Profile a multi-parameter volcano monitoring dataset and build an ensemble forecasting model combining Bayesian Event Tree (BET_EF) with machine\u2011learning precursory pattern recognition, then evaluate forecast skill against four historical eruptions.', 'steps': [{'action': 'Compile and harmonize raw data streams', 'result': 'A unified time series database with consistent timestamps, units, and metadata for seismicity (VT/LP counts, RSAM), deformation (InSAR, tiltmeter, GPS), gas fluxes (DOAS, MultiGAS), thermal IR anomalies, and historical eruption logs.'}, {'action': 'Identify seismometer saturation periods during swarm activity', 'result': 'A flagging algorithm that marks time windows where VT/LP counts exceed instrument dynamic range or RSAM peaks saturate, producing a list of saturated intervals with start/end times and affected stations.'}, {'action': 'Detect GPS antenna offsets caused by lahar damage to monuments', 'result': 'Cross\u2011reference GPS station metadata with known monument locations; apply quality control to flag sudden position jumps (>5\\u202fcm) coincident with documented lahars, yielding a catalog of offset events and affected antennas.'}, {'action': 'Map gas measurement gaps during adverse wind conditions', 'result': 'Wind speed/ direction data are overlaid on DOAS/MultiGAS timestamps; periods where wind exceeds 10\\u202fm/s or is directed away from the sensor are marked as unreliable, generating a gap map for each gas species.'}, {'action': 'Assess reliability of historical eruption records', 'result': 'Textual analysis of eyewitness accounts using natural language processing to score credibility; cross\u2011check reported parameters (e.g., VEI, plume height) against contemporaneous instrumental data where available, producing a weighted confidence metric for each record.'}, {'action': 'Preprocess features for machine\u2011learning model', 'result': 'Create lagged and rolling statistics (e.g., 24\\u202fh, 7\\u202fd, 30\\u202fd windows) of seismicity, deformation, gas fluxes, and thermal anomalies; impute missing values using interpolation or multiple imputation; standardize features.'}, {'action': 'Train Bayesian Event Tree (BET_EF)', 'result': 'Define nodes for key precursors (e.g., VT surge, GPS uplift) with conditional probabilities derived from historical data and expert elicitation; generate posterior eruption probability time series.'}, {'action': 'Train machine\u2011learning precursory pattern recognizer', 'result': 'Fit a random forest / XGBoost model on the preprocessed features to predict binary eruption occurrence within each forecast window, outputting probability estimates.'}, {'action': 'Combine BET_EF and ML outputs into an ensemble forecast', 'result': 'Apply weighted averaging or Bayesian model averaging (weights tuned via cross\u2011validation) to produce final eruption probability for each time step and forecast horizon.'}, {'action': 'Retrospective hindcasting against the four known eruptions', 'result': 'Run the ensemble model on historical data leading up to each eruption, generating probability series for 24\\u202fh, 7\\u202fd, and 30\\u202fd windows.'}, {'action': 'Calculate probability gain over a base\u2011rate model', 'result': 'Compute the ratio of ensemble forecast probabilities to the unconditional eruption frequency (base rate) for each window, summarizing mean gain.'}, {'action': 'Compute Brier skill scores per forecast window', 'result': 'For each horizon, calculate Brier score of the ensemble and compare to base\u2011rate Brier score; skill = 1 \u2013 (Brier_ensemble / Brier_base). Report values for 24\\u202fh, 7\\u202fd, 30\\u202fd.'}], 'confidence': '0.95', 'internal_reasoning': 'The plan follows a logical sequence: data harmonization, quality control, feature engineering, model training, ensemble creation, and rigorous skill assessment using standard metrics (probability gain, Brier score). All steps are grounded in established volcanological monitoring practices.'}\n\nSolve the task using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": false\n- \"recalled_skill_name\": \"none\"\n- \"adaptation_notes\": \"N/A\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+    },
+    "task_result": {
+      "response": {
+        "domain": "volcanology",
+        "task": "Profile a multi\u2011parameter volcano monitoring dataset and build an ensemble forecasting model combining Bayesian Event Tree (BET_EF) with machine\u2011learning precursory pattern recognition, then evaluate forecast skill against four historical eruptions.",
+        "solution_steps": [
+          {
+            "step_id": 1,
+            "action": "Compile and harmonize raw data streams",
+            "details": "Create a unified time series database (SQL/Parquet) with consistent timestamps (UTC), units, and metadata for seismicity (VT/LP counts, RSAM), deformation (InSAR, tiltmeter, GPS), gas fluxes (DOAS, MultiGAS), thermal IR anomalies, and historical eruption logs."
+          },
+          {
+            "step_id": 2,
+            "action": "Identify seismometer saturation periods during swarm activity",
+            "details": "Implement a flagging algorithm that marks windows where VT/LP counts exceed instrument dynamic range or RSAM peaks saturate. Output a catalog of saturated intervals with start/end times and affected stations."
+          },
+          {
+            "step_id": 3,
+            "action": "Detect GPS antenna offsets caused by lahar damage to monuments",
+            "details": "Cross\u2011reference GPS station metadata with known monument locations; apply quality control to flag sudden position jumps (>5\u202fcm) coincident with documented lahars, yielding a catalog of offset events and affected antennas."
+          },
+          {
+            "step_id": 4,
+            "action": "Map gas measurement gaps during adverse wind conditions",
+            "details": "Overlay wind speed/direction data on DOAS/MultiGAS timestamps; periods where wind exceeds 10\u202fm/s or is directed away from the sensor are marked as unreliable, generating a gap map for each gas species."
+          },
+          {
+            "step_id": 5,
+            "action": "Assess reliability of historical eruption records",
+            "details": "Apply NLP to eyewitness accounts to score credibility; cross\u2011check reported parameters (VEI, plume height) against contemporaneous instrumental data where available, producing a weighted confidence metric for each record."
+          },
+          {
+            "step_id": 6,
+            "action": "Preprocess features for machine\u2011learning model",
+            "details": "Create lagged and rolling statistics (24\u202fh, 7\u202fd, 30\u202fd windows) of seismicity, deformation, gas fluxes, and thermal anomalies; impute missing values using interpolation or multiple imputation; standardize features."
+          },
+          {
+            "step_id": 7,
+            "action": "Train Bayesian Event Tree (BET_EF)",
+            "details": "Define nodes for key precursors (e.g., VT surge, GPS uplift) with conditional probabilities derived from historical data and expert elicitation; generate posterior eruption probability time series."
+          },
+          {
+            "step_id": 8,
+            "action": "Train machine\u2011learning precursory pattern recognizer",
+            "details": "Fit a random forest / XGBoost model on the preprocessed features to predict binary eruption occurrence within each forecast window, outputting probability estimates."
+          },
+          {
+            "step_id": 9,
+            "action": "Combine BET_EF and ML outputs into an ensemble forecast",
+            "details": "Apply weighted averaging or Bayesian model averaging (weights tuned via cross\u2011validation) to produce final eruption probability for each time step and forecast horizon."
+          },
+          {
+            "step_id": 10,
+            "action": "Retrospective hindcasting against the four known eruptions",
+            "details": "Run the ensemble model on historical data leading up to each eruption, generating probability series for 24\u202fh, 7\u202fd, and 30\u202fd windows."
+          },
+          {
+            "step_id": 11,
+            "action": "Calculate probability gain over a base\u2011rate model",
+            "details": "Compute the ratio of ensemble forecast probabilities to the unconditional eruption frequency (base rate) for each window, summarizing mean gain."
+          },
+          {
+            "step_id": 12,
+            "action": "Compute Brier skill scores per forecast window",
+            "details": "For each horizon, calculate Brier score of the ensemble and compare to base\u2011rate Brier score; skill = 1 \u2013 (Brier_ensemble / Brier_base). Report values for 24\u202fh, 7\u202fd, 30\u202fd."
+          }
+        ],
+        "quality_self_assessment": 0.95,
+        "brain_assisted": false,
+        "recalled_skill": "none",
+        "confidence": 0.95
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "The solution follows the task requirements step\u2011by\u2011step, providing concrete actions and expected outcomes for each part of the dataset profiling and model building process.",
+      "_metrics": {
+        "tokens": 2482,
+        "prompt_tokens": 1439,
+        "completion_tokens": 1043,
+        "latency_ms": 8333.53,
+        "cost_usd": 0.000524,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'volcanology', 'task': 'Explore a multi-parameter volcano monitoring dataset combining seismicity catalogs (VT and LP event counts, RSAM amplitudes), ground deformation (InSAR, tiltmeter, continuous GPS), SO\u2082 and CO\u2082 flux measurements (DOAS traverses and MultiGAS), thermal infrared anomaly maps, and historical eruption records spanning 300 years with variable data quality. Profile the dataset for: seismometer saturation periods during swarm activity, GPS antenna offsets from lahar damage to monuments, gas measurement gaps during adverse wind conditions, and historical records that conflate eruption parameters from eyewitness accounts of unknown reliability. Train an ensemble forecasting model combining a Bayesian Event Tree (BET_EF) with machine-learning precursory pattern recognition, then evaluate forecast skill using retrospective hindcasting against the 4 known eruptions in the historical record, reporting probability gain over a simple base-rate model and calculating Brier skill scores per forecast window (24h, 7d, 30d).'}\n\nSOLUTION:\n{'domain': 'volcanology', 'task': 'Profile a multi\u2011parameter volcano monitoring dataset and build an ensemble forecasting model combining Bayesian Event Tree (BET_EF) with machine\u2011learning precursory pattern recognition, then evaluate forecast skill against four historical eruptions.', 'steps': [{'action': 'Compile and harmonize raw data streams', 'expected_outcome': 'A unified time series database with consistent timestamps, units, and metadata for seismicity (VT/LP counts, RSAM), deformation (InSAR, tiltmeter, GPS), gas fluxes (DOAS, MultiGAS), thermal IR anomalies, and historical eruption logs.'}, {'action': 'Identify seismometer saturation periods during swarm activity', 'expected_outcome': 'A flagging algorithm that marks time windows where VT/LP counts exceed instrument dynamic range or RSAM peaks saturate, producing a list of saturated intervals with start/end times and affected stations.'}, {'action': 'Detect GPS antenna offsets caused by lahar damage to monuments', 'expected_outcome': 'Cross\u2011reference GPS station metadata with known monument locations; apply quality control to flag sudden position jumps (>5\\u202fcm) coincident with documented lahars, yielding a catalog of offset events and affected antennas.'}, {'action': 'Map gas measurement gaps during adverse wind conditions', 'expected_outcome': 'Wind speed/direction data are overlaid on DOAS/MultiGAS timestamps; periods where wind exceeds 10\\u202fm/s or is directed away from the sensor are marked as unreliable, generating a gap map for each gas species.'}, {'action': 'Assess reliability of historical eruption records', 'expected_outcome': 'Textual analysis of eyewitness accounts using NLP to score credibility; cross\u2011check reported parameters (e.g., VEI, plume height) against contemporaneous instrumental data where available, producing a weighted confidence metric for each record.'}, {'action': 'Preprocess features for machine\u2011learning model', 'expected_outcome': 'Create lagged and rolling statistics (24\\u202fh, 7\\u202fd, 30\\u202fd windows) of seismicity, deformation, gas fluxes, and thermal anomalies; impute missing values using interpolation or multiple imputation; standardize features.'}, {'action': 'Train Bayesian Event Tree (BET_EF)', 'expected_outcome': 'Define nodes for key precursors (e.g., VT surge, GPS uplift) with conditional probabilities derived from historical data and expert elicitation; generate posterior eruption probability time series.'}, {'action': 'Train machine\u2011learning precursory pattern recognizer', 'expected_outcome': 'Fit a random forest / XGBoost model on the preprocessed features to predict binary eruption occurrence within each forecast window, outputting probability estimates.'}, {'action': 'Combine BET_EF and ML outputs into an ensemble forecast', 'expected_outcome': 'Apply weighted averaging or Bayesian model averaging (weights tuned via cross\u2011validation) to produce final eruption probability for each time step and forecast horizon.'}, {'action': 'Retrospective hindcasting against the four known eruptions', 'expected_outcome': 'Run the ensemble model on historical data leading up to each eruption, generating probability series for 24\\u202fh, 7\\u202fd, and 30\\u202fd windows.'}, {'action': 'Calculate probability gain over a base\u2011rate model', 'expected_outcome': 'Compute the ratio of ensemble forecast probabilities to the unconditional eruption frequency (base rate) for each window, summarizing mean gain.'}, {'action': 'Compute Brier skill scores per forecast window', 'expected_outcome': 'For each horizon, calculate Brier score of the ensemble and compare to base\u2011rate Brier score; skill = 1 \u2013 (Brier_ensemble / Brier_base). Report values for 24\\u202fh, 7\\u202fd, 30\\u202fd.'}], 'used_recalled_skill': False, 'recalled_skill_name': 'none', 'adaptation_notes': 'N/A'}\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "task_id": "track_d_05",
+  "condition": "brain",
+  "elapsed_s": 11.68,
+  "success": true,
+  "output": {
+    "response": "The onboarding flow is a sequential pipeline that adapts content based on user profile and preferences while tracking progress and collecting feedback. 1) **Profile Builder** captures basic data, skill level, and key goals. 2) **Preference Collector** asks about learning style (video vs text), feature priorities, and time availability. 3) **Tutorial Selector** uses the two previous outputs to choose a tailored set of micro\u2011tasks: quick interactive demo for novices, focused advanced walkthrough for power users, or optional skip for experts. 4) **Progress Tracker** logs completion of each micro\u2011task, shows a progress bar, and triggers contextual nudges when a milestone is reached. 5) **Feedback Collector** pops up after every major step to gauge satisfaction and surface pain points. The system avoids the anti\u2011pattern of generic tutorials by routing users through the preference\u2011driven path; it also prevents forced sign\u2011ups and information overload by offering optional deep dives and limiting simultaneous prompts. Continuous A/B testing on messaging, UI placement, and timing refines the experience.",
+    "confidence": "0.92",
+    "internal_reasoning": "I synthesized the provided recipe steps into a coherent, sequential onboarding flow that explicitly addresses the anti\u2011pattern of generic tutorials. The solution aligns with the domain requirements and includes all agents in order, ensuring adaptive content and progress tracking.",
+    "_metrics": {
+      "tokens": 1166,
+      "prompt_tokens": 874,
+      "completion_tokens": 292,
+      "latency_ms": 2659.52,
+      "cost_usd": 0.000164,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'user_onboarding', 'recipe': {'agents': ['profile_builder', 'preference_collector', 'tutorial_selector', 'progress_tracker', 'feedback_collector'], 'strategy': 'sequential', 'domain': 'user_onboarding', 'task': 'Guide new users through personalized onboarding with adaptive content and progress tracking'}, 'anti_pattern': {'what_failed': 'Showing the same generic tutorial to all users regardless of experience level', 'why': 'Expert users abandoned the product during forced beginner tutorials. 60% churn in first week for enterprise users', 'domain': 'user_onboarding', 'severity': 'warning'}, 'path_skill': {'path_nodes': ['profiler', 'preference', 'tutorial', 'tracker', 'feedback'], 'score': 0.87, 'domain': 'user_onboarding', 'task': 'Standard user onboarding execution path', 'quality': 0.84}, 'task': 'Seed Recipe: User Onboarding Pattern'}\n\nCOMPOSED SOLUTION:\nThe onboarding flow is a sequential pipeline that adapts content based on user profile and preferences while tracking progress and collecting feedback. 1) **Profile Builder** captures basic data, skill level, and key goals. 2) **Preference Collector** asks about learning style (video vs text), feature priorities, and time availability. 3) **Tutorial Selector** uses the two previous outputs to choose a tailored set of micro\u2011tasks: quick interactive demo for novices, focused advanced walkthrough for power users, or optional skip for experts. 4) **Progress Tracker** logs completion of each micro\u2011task, shows a progress bar, and triggers contextual nudges when a milestone is reached. 5) **Feedback Collector** pops up after every major step to gauge satisfaction and surface pain points. The system avoids the anti\u2011pattern of generic tutorials by routing users through the preference\u2011driven path; it also prevents forced sign\u2011ups and information overload by offering optional deep dives and limiting simultaneous prompts. Continuous A/B testing on messaging, UI placement, and timing refines the experience.\n\nCOMPOSITION STRATEGY:\nN/A\n\nBRAIN METRICS:\nSkills composed: []\nAnti-patterns avoided: []\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": list of skills that contributed\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"recalled_skill\": primary skill or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "brain_learn_recipe": {
+      "response": "Learned recipe: anti:devops:deploying-without-running-security-scans",
+      "confidence": "0.8452438125",
+      "internal_reasoning": "Stored execution recipe with 0 agents",
+      "skill_id": "a182cf09-c14d-4302-938f-5565af1c8cdd",
+      "skill_name": "anti:devops:deploying-without-running-security-scans",
+      "skill_type": "anti_pattern"
+    },
+    "brain_learn_anti": {
+      "response": "Recorded anti-pattern: anti:devops:deploying-without-running-security-scans",
+      "confidence": "0.7607194312500001",
+      "internal_reasoning": "Anti-pattern stored: Expert users abandoned the product during forced beginner tutorials. 60% churn in first week for enterprise users",
+      "skill_id": "a182cf09-c14d-4302-938f-5565af1c8cdd",
+      "skill_name": "anti:devops:deploying-without-running-security-scans",
+      "skill_type": "anti_pattern"
+    },
+    "brain_learn_path": {
+      "response": "Learned path: anti:devops:deploying-without-running-security-scans",
+      "confidence": "0.7726834596875001",
+      "internal_reasoning": "GraphScout path stored with 5 nodes",
+      "skill_id": "a182cf09-c14d-4302-938f-5565af1c8cdd",
+      "skill_name": "anti:devops:deploying-without-running-security-scans",
+      "skill_type": "anti_pattern"
+    },
+    "task_reasoner": {
+      "response": "A comprehensive Seed Recipe for a User Onboarding Pattern in the domain of user_onboarding:\n\n1. **Goal Definition** \u2013 Clearly state the objective: to guide new users through initial setup, feature discovery, and first value realization while minimizing friction.\n\n2. **User Segmentation & Personas** \u2013 Identify key segments (e.g., power users, occasional users, admins) and create personas that capture motivations, pain points, and success metrics.\n\n3. **Journey Mapping** \u2013 Outline the end\u2011to\u2011end onboarding journey: welcome \u2192 account creation \u2192 profile completion \u2192 core feature walkthrough \u2192 first successful action \u2192 retention check.\n\n4. **Micro\u2011tasks & Milestones** \u2013 Break each stage into micro\u2011tasks with explicit success criteria (e.g., \"User completes profile picture upload in 2 minutes\"). Assign time\u2011bound milestones to keep momentum.\n\n5. **Content & Guidance Strategy** \u2013 Choose the right mix of onboarding methods:\n   - *Interactive tutorials* for core features.\n   - *Progressive disclosure* to avoid overload.\n   - *Tooltips & contextual help* that appear only when needed.\n   - *Gamified checkpoints* (badges, streaks) to reinforce learning.\n\n6. **Data\u2011Driven Feedback Loop** \u2013 Instrument events for each micro\u2011task, collect telemetry, and set up dashboards to monitor drop\u2011off points. Use A/B testing to iterate on messaging, UI placement, and timing.\n\n7. **Anti\u2011Pattern Avoidance** \u2013 Explicitly guard against:\n   - *Over\u2011promising*: keep feature promises realistic.\n   - *Information overload*: limit the number of simultaneous prompts.\n   - *Forced sign\u2011ups*: offer guest or social login options.\n   - *Hidden costs*: transparently disclose any paid tiers early.\n\n8. **Path Selection & Personalization** \u2013 Implement a lightweight decision engine that adapts the onboarding path based on user responses (e.g., if a user selects \"I need help with X\", route them to a focused tutorial).\n\n9. **Post\u2011Onboarding Engagement** \u2013 After the initial journey, trigger contextual nudges (email or in\u2011app) reminding users of advanced features they haven\u2019t tried yet.\n\n10. **Continuous Improvement Cadence** \u2013 Schedule quarterly reviews of onboarding metrics, incorporate user feedback, and refine micro\u2011tasks accordingly.\n\nThis seed recipe combines procedural steps, anti\u2011pattern safeguards, and dynamic path selection to create a robust, data\u2011driven onboarding experience that scales across user segments.",
+      "confidence": "0.95",
+      "internal_reasoning": "I synthesized best practices from product management literature, UX research on onboarding friction points, and empirical evidence from successful SaaS onboarding frameworks. The recipe is structured to cover goal setting, segmentation, journey mapping, micro\u2011tasks, content strategy, data loops, anti\u2011patterns, personalization, post\u2011onboarding engagement, and continuous improvement\u2014all essential for a holistic onboarding pattern.",
+      "_metrics": {
+        "tokens": 1068,
+        "prompt_tokens": 421,
+        "completion_tokens": 647,
+        "latency_ms": 5540.04,
+        "cost_usd": 0.000342,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze this complex task step by step.\n\nDOMAIN: user_onboarding\nTASK: Seed Recipe: User Onboarding Pattern\n\nThis task may require combining multiple patterns: procedural recipes,\nanti-pattern avoidance, and path selection. Think holistically.\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete multi-faceted analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"required_capabilities\": list of skill types needed\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": approach explanation"
+    },
+    "brain_recall": {
+      "response": "No applicable skills found for this context.",
+      "confidence": "0.0",
+      "internal_reasoning": "No learned skill matched the target context.",
+      "all_candidates": []
+    },
+    "task_applier": {
+      "response": "The onboarding flow is a sequential pipeline that adapts content based on user profile and preferences while tracking progress and collecting feedback. 1) **Profile Builder** captures basic data, skill level, and key goals. 2) **Preference Collector** asks about learning style (video vs text), feature priorities, and time availability. 3) **Tutorial Selector** uses the two previous outputs to choose a tailored set of micro\u2011tasks: quick interactive demo for novices, focused advanced walkthrough for power users, or optional skip for experts. 4) **Progress Tracker** logs completion of each micro\u2011task, shows a progress bar, and triggers contextual nudges when a milestone is reached. 5) **Feedback Collector** pops up after every major step to gauge satisfaction and surface pain points. The system avoids the anti\u2011pattern of generic tutorials by routing users through the preference\u2011driven path; it also prevents forced sign\u2011ups and information overload by offering optional deep dives and limiting simultaneous prompts. Continuous A/B testing on messaging, UI placement, and timing refines the experience.",
+      "confidence": "0.95",
+      "internal_reasoning": "I combined the sequential recipe with the anti\u2011pattern guardrails and path nodes to produce a concise yet complete onboarding flow that satisfies all constraints.",
+      "_metrics": {
+        "tokens": 1516,
+        "prompt_tokens": 1242,
+        "completion_tokens": 274,
+        "latency_ms": 2979.83,
+        "cost_usd": 0.000184,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a complex task that requires COMPOSING multiple skills.\n\nDOMAIN: general\nTASK: {'domain': 'user_onboarding', 'recipe': {'agents': ['profile_builder', 'preference_collector', 'tutorial_selector', 'progress_tracker', 'feedback_collector'], 'strategy': 'sequential', 'domain': 'user_onboarding', 'task': 'Guide new users through personalized onboarding with adaptive content and progress tracking'}, 'anti_pattern': {'what_failed': 'Showing the same generic tutorial to all users regardless of experience level', 'why': 'Expert users abandoned the product during forced beginner tutorials. 60% churn in first week for enterprise users', 'domain': 'user_onboarding', 'severity': 'warning'}, 'path_skill': {'path_nodes': ['profiler', 'preference', 'tutorial', 'tracker', 'feedback'], 'score': 0.87, 'domain': 'user_onboarding', 'task': 'Standard user onboarding execution path', 'quality': 0.84}, 'task': 'Seed Recipe: User Onboarding Pattern'}\n\nYOUR ANALYSIS:\nA comprehensive Seed Recipe for a User Onboarding Pattern in the domain of user_onboarding:\n\n1. **Goal Definition** \u2013 Clearly state the objective: to guide new users through initial setup, feature discovery, and first value realization while minimizing friction.\n\n2. **User Segmentation & Personas** \u2013 Identify key segments (e.g., power users, occasional users, admins) and create personas that capture motivations, pain points, and success metrics.\n\n3. **Journey Mapping** \u2013 Outline the end\u2011to\u2011end onboarding journey: welcome \u2192 account creation \u2192 profile completion \u2192 core feature walkthrough \u2192 first successful action \u2192 retention check.\n\n4. **Micro\u2011tasks & Milestones** \u2013 Break each stage into micro\u2011tasks with explicit success criteria (e.g., \"User completes profile picture upload in 2 minutes\"). Assign time\u2011bound milestones to keep momentum.\n\n5. **Content & Guidance Strategy** \u2013 Choose the right mix of onboarding methods:\n   - *Interactive tutorials* for core features.\n   - *Progressive disclosure* to avoid overload.\n   - *Tooltips & contextual help* that appear only when needed.\n   - *Gamified checkpoints* (badges, streaks) to reinforce learning.\n\n6. **Data\u2011Driven Feedback Loop** \u2013 Instrument events for each micro\u2011task, collect telemetry, and set up dashboards to monitor drop\u2011off points. Use A/B testing to iterate on messaging, UI placement, and timing.\n\n7. **Anti\u2011Pattern Avoidance** \u2013 Explicitly guard against:\n   - *Over\u2011promising*: keep feature promises realistic.\n   - *Information overload*: limit the number of simultaneous prompts.\n   - *Forced sign\u2011ups*: offer guest or social login options.\n   - *Hidden costs*: transparently disclose any paid tiers early.\n\n8. **Path Selection & Personalization** \u2013 Implement a lightweight decision engine that adapts the onboarding path based on user responses (e.g., if a user selects \"I need help with X\", route them to a focused tutorial).\n\n9. **Post\u2011Onboarding Engagement** \u2013 After the initial journey, trigger contextual nudges (email or in\u2011app) reminding users of advanced features they haven\u2019t tried yet.\n\n10. **Continuous Improvement Cadence** \u2013 Schedule quarterly reviews of onboarding metrics, incorporate user feedback, and refine micro\u2011tasks accordingly.\n\nThis seed recipe combines procedural steps, anti\u2011pattern safeguards, and dynamic path selection to create a robust, data\u2011driven onboarding experience that scales across user segments.\n\nBRAIN RECALLED KNOWLEDGE:\nSkill name: No skill recalled\nSkill type: unknown\nAbstract steps: []\nTransfer score: N/A\nAdaptations: {}\nAll candidates: []\n\nINSTRUCTIONS:\n- Compose insights from ALL recalled skills into a unified solution.\n- Use recipe patterns for structuring your approach.\n- Use anti-pattern knowledge to AVOID known failure modes.\n- Use path knowledge to select the optimal execution sequence.\n- Clearly note which skills contributed and how you composed them.\n\nReturn JSON with:\n- \"response\": your complete composed solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"skills_composed\": list of skill names/types used\n- \"anti_patterns_avoided\": list of anti-patterns avoided\n- \"composition_strategy\": how you combined multiple skills\n- \"used_recalled_skill\": true or false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on composition"
+    },
+    "brain_learn": {
+      "response": "Learned skill: procedural:general:synthesis-sequential",
+      "confidence": "0.69",
+      "internal_reasoning": "Abstracted 8 steps into transferable skill 'procedural:general:synthesis-sequential'",
+      "skill_id": "cd7ce854-e3e3-40e9-af98-92ca7e569811",
+      "skill_name": "procedural:general:synthesis-sequential",
+      "skill_steps": [
+        "profile [target]",
+        "profile [target]",
+        "collect [target]",
+        "select [target]",
+        "trigger [target]",
+        "collect [target]",
+        "offer [target]",
+        "test [target]"
+      ],
+      "skill_tags": [
+        "The onboarding flow is a sequential pipeline that adapts content based on user profile and preferences while tracking progress and collecting feedback. 1) **Profile Builder** captures basic data, skil",
+        "sequential",
+        "general",
+        "aggregation",
+        "synthesis"
+      ]
+    },
+    "brain_feedback": {
+      "response": "No skill_id provided for feedback.",
+      "confidence": "0.0",
+      "internal_reasoning": "Feedback requires a skill_id from a previous recall."
+    },
+    "task_result": {
+      "response": "The onboarding flow is a sequential pipeline that adapts content based on user profile and preferences while tracking progress and collecting feedback. 1) **Profile Builder** captures basic data, skill level, and key goals. 2) **Preference Collector** asks about learning style (video vs text), feature priorities, and time availability. 3) **Tutorial Selector** uses the two previous outputs to choose a tailored set of micro\u2011tasks: quick interactive demo for novices, focused advanced walkthrough for power users, or optional skip for experts. 4) **Progress Tracker** logs completion of each micro\u2011task, shows a progress bar, and triggers contextual nudges when a milestone is reached. 5) **Feedback Collector** pops up after every major step to gauge satisfaction and surface pain points. The system avoids the anti\u2011pattern of generic tutorials by routing users through the preference\u2011driven path; it also prevents forced sign\u2011ups and information overload by offering optional deep dives and limiting simultaneous prompts. Continuous A/B testing on messaging, UI placement, and timing refines the experience.",
+      "confidence": "0.92",
+      "internal_reasoning": "I synthesized the provided recipe steps into a coherent, sequential onboarding flow that explicitly addresses the anti\u2011pattern of generic tutorials. The solution aligns with the domain requirements and includes all agents in order, ensuring adaptive content and progress tracking.",
+      "_metrics": {
+        "tokens": 1166,
+        "prompt_tokens": 874,
+        "completion_tokens": 292,
+        "latency_ms": 2659.52,
+        "cost_usd": 0.000164,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'user_onboarding', 'recipe': {'agents': ['profile_builder', 'preference_collector', 'tutorial_selector', 'progress_tracker', 'feedback_collector'], 'strategy': 'sequential', 'domain': 'user_onboarding', 'task': 'Guide new users through personalized onboarding with adaptive content and progress tracking'}, 'anti_pattern': {'what_failed': 'Showing the same generic tutorial to all users regardless of experience level', 'why': 'Expert users abandoned the product during forced beginner tutorials. 60% churn in first week for enterprise users', 'domain': 'user_onboarding', 'severity': 'warning'}, 'path_skill': {'path_nodes': ['profiler', 'preference', 'tutorial', 'tracker', 'feedback'], 'score': 0.87, 'domain': 'user_onboarding', 'task': 'Standard user onboarding execution path', 'quality': 0.84}, 'task': 'Seed Recipe: User Onboarding Pattern'}\n\nCOMPOSED SOLUTION:\nThe onboarding flow is a sequential pipeline that adapts content based on user profile and preferences while tracking progress and collecting feedback. 1) **Profile Builder** captures basic data, skill level, and key goals. 2) **Preference Collector** asks about learning style (video vs text), feature priorities, and time availability. 3) **Tutorial Selector** uses the two previous outputs to choose a tailored set of micro\u2011tasks: quick interactive demo for novices, focused advanced walkthrough for power users, or optional skip for experts. 4) **Progress Tracker** logs completion of each micro\u2011task, shows a progress bar, and triggers contextual nudges when a milestone is reached. 5) **Feedback Collector** pops up after every major step to gauge satisfaction and surface pain points. The system avoids the anti\u2011pattern of generic tutorials by routing users through the preference\u2011driven path; it also prevents forced sign\u2011ups and information overload by offering optional deep dives and limiting simultaneous prompts. Continuous A/B testing on messaging, UI placement, and timing refines the experience.\n\nCOMPOSITION STRATEGY:\nN/A\n\nBRAIN METRICS:\nSkills composed: []\nAnti-patterns avoided: []\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": list of skills that contributed\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"recalled_skill\": primary skill or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

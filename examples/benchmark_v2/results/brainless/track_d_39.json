@@ -1,0 +1,176 @@
+{
+  "task_id": "track_d_39",
+  "condition": "brainless",
+  "elapsed_s": 18.26,
+  "success": true,
+  "output": {
+    "response": {
+      "domain": "monitoring",
+      "task": "Build cloud cost optimization monitoring, testing, and content documentation while addressing identified anti\u2011patterns and conflicts.",
+      "solution_steps": [
+        {
+          "step_id": 1,
+          "title": "Conditional DR Standby",
+          "description": "Keep the disaster\u2011recovery environment in a stopped or low\u2011cost state. Automate start/stop via scheduled drills or compliance tests, record activation duration, and alert if it exceeds a defined threshold (e.g., >30 days). This preserves failover capability while eliminating unnecessary monthly spend.",
+          "anti_patterns_avoided": [
+            "alert_without_baseline"
+          ]
+        },
+        {
+          "step_id": 2,
+          "title": "Targeted Cross\u2011Region Replication",
+          "description": "Consolidate monitoring data to a single region. Replicate only critical alerts or aggregated metrics using object storage with lifecycle policies (e.g., archive after 90 days). This reduces recursive replication costs while maintaining necessary visibility.",
+          "anti_patterns_avoided": [
+            "alert_without_baseline"
+          ]
+        },
+        {
+          "step_id": 3,
+          "title": "Probabilistic Cost Attribution",
+          "description": "Aggregate hourly billing data and apply Bayesian inference to estimate per\u2011request cost based on request volume, type, and service usage. Store estimates with confidence intervals; use them for trend analysis rather than hard thresholds.",
+          "anti_patterns_avoided": []
+        },
+        {
+          "step_id": 4,
+          "title": "Seasonally Adaptive Alerts",
+          "description": "Build a moving\u2011average baseline with Holt\u2011Winters seasonal adjustment. Set alert thresholds as a percentage above this adaptive baseline (e.g., +20%) and include a cooldown period to prevent repeated alerts during known peaks like Black Friday.",
+          "anti_patterns_avoided": [
+            "alert_without_baseline"
+          ]
+        },
+        {
+          "step_id": 5,
+          "title": "Secure Documentation Access",
+          "description": "Store playbooks in an RBAC system: all staff can read high\u2011level policy; finance and procurement roles see sensitive financial details. Use an encrypted vault with audit logging. Publish a public summary page that omits confidential data, satisfying both accessibility and confidentiality requirements.",
+          "anti_patterns_avoided": []
+        }
+      ],
+      "skills_used": [
+        "Cloud Cost Management",
+        "Monitoring & Alerting Design",
+        "Statistical Modeling",
+        "Access Control & Security"
+      ],
+      "anti_patterns_avoided": [
+        "alert_without_baseline"
+      ],
+      "quality_self_assessment": 0.95,
+      "brain_assisted": false,
+      "recalled_skill": "none",
+      "confidence": 0.95
+    },
+    "confidence": "0.95",
+    "internal_reasoning": "Analyzed each challenge, matched it to a concrete mitigation strategy, ensured anti\u2011patterns are explicitly avoided, and maintained high confidence due to alignment with best practices.",
+    "_metrics": {
+      "tokens": 1587,
+      "prompt_tokens": 960,
+      "completion_tokens": 627,
+      "latency_ms": 5495.25,
+      "cost_usd": 0.000339,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'monitoring', 'task': \"Build cloud cost optimization monitoring. The monitoring recipe tracks cost metrics. Testing recipe validates cost attribution. Content recipe documents cost policies. However: (1) the largest cost item ($15K/month) is the DISASTER RECOVERY standby environment that has NEVER been activated \u2014 the CFO wants to eliminate it ('we're paying $180K/year for something we've never used'), but eliminating DR standby means a real disaster has no failover target, (2) the second-largest cost ($8K/month) is cross-region data replication for the monitoring system itself \u2014 monitoring one's monitoring creates recursive cost, (3) the testing recipe says 'test cost attribution accuracy' but the cloud provider's billing granularity is 1-hour intervals while the application processes requests in milliseconds \u2014 attributing costs to individual requests requires statistical estimation with significant uncertainty, (4) the alert_without_baseline anti-pattern applies to cost alerts: monthly costs vary by 25% seasonally (Black Friday spike), so static thresholds either miss real cost anomalies or fire during normal seasonal peaks, (5) the content recipe requires accessible documentation, but the cost optimization playbooks contain sensitive financial data (margins, vendor negotiation leverage) that should have restricted access \u2014 accessibility (broad access) directly conflicts with confidentiality (restricted access).\"}\n\nSOLUTION:\nTo address the complex cloud cost optimization monitoring task, the following solution is proposed:\n\n1. **Conditional DR Standby** \u2013 Keep the disaster\u2011recovery environment in a stopped or low\u2011cost state and activate it only when a scheduled drill or compliance test triggers an automated start. Monitor activation time and alert if it exceeds a defined threshold.\n\n2. **Targeted Cross\u2011Region Replication** \u2013 Consolidate monitoring data to a single region and replicate only critical alerts. Use object storage with lifecycle policies to archive older metrics, reducing replication volume.\n\n3. **Probabilistic Cost Attribution** \u2013 Build an engine that aggregates hourly billing data and applies Bayesian inference to estimate per\u2011request costs based on request volume and type. Store estimates with confidence intervals for trend analysis rather than hard thresholds.\n\n4. **Seasonally Adaptive Alerts** \u2013 Create a moving\u2011average baseline with seasonal adjustment (e.g., Holt\u2011Winters). Set alert thresholds as a percentage above this adaptive baseline, adding a cooldown period to avoid repeated alerts during known peaks.\n\n5. **Secure Documentation Access** \u2013 Store playbooks in an RBAC system: all staff can read high\u2011level policy; finance and procurement roles see sensitive financial details. Use an encrypted vault with audit logging. Provide a public summary page that omits confidential data.\n\nThese steps collectively satisfy monitoring, testing, and content requirements while mitigating the identified challenges.\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": []\n- \"anti_patterns_avoided\": []\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": "To build a robust cloud cost optimization monitoring system that satisfies the domain requirements while addressing the five identified challenges, I propose the following multi\u2011layered solution:\n\n1. **DR Standby Decommissioning with Conditional Failover**\n   - Create an *on-demand DR* policy: keep the standby environment in a low\u2011cost state (e.g., stopped or reserved instances) and spin it up only when a predefined trigger (security audit, compliance test, or scheduled failover drill) occurs. \n   - Implement automated health checks that confirm the standby is reachable before any production traffic can be routed to it.\n   - Monitor the *time\u2011to\u2011activate* metric; if activation exceeds a threshold, generate an alert for manual review.\n\n2. **Recursive Replication Cost Mitigation**\n   - Consolidate monitoring data into a single region and use cross\u2011region replication only for critical alerts (e.g., security incidents). \n   - Leverage *data lake* or *object storage* with lifecycle policies to archive older metrics, reducing replication volume.\n   - Apply a cost\u2011aware sampling strategy: transmit only aggregated summaries across regions instead of raw data streams.\n\n3. **Statistical Cost Attribution**\n   - Deploy a *probabilistic attribution engine* that aggregates hourly billing data and applies Bayesian inference to estimate per\u2011request costs based on request volume, type, and known resource usage patterns.\n   - Store the resulting cost estimates in a separate analytics table with confidence intervals; use these for trend analysis rather than hard thresholds.\n   - Validate the model quarterly by comparing aggregated monthly totals against actual invoices.\n\n4. **Seasonally Adaptive Cost Alerts**\n   - Build an *adaptive baseline* using a rolling 12\u2011month moving average plus a seasonal component (e.g., Holt\u2011Winters). \n   - Set alert thresholds as a percentage above the adaptive baseline rather than absolute dollar amounts.\n   - Include a *cool\u2011down period* after each alert to avoid repeated firing during known peak events.\n\n5. **Secure yet Accessible Documentation**\n   - Store playbooks in a role\u2011based access control (RBAC) system: all staff can read the high\u2011level policy, but only finance and procurement roles can view sensitive financial details.\n   - Use a *document vault* that encrypts content at rest and logs every access attempt. \n   - Provide a public \u201cpolicy summary\u201d page with no confidential data; link to the secure vault for deeper dives.\n\n**Implementation Path**\n- Phase 1: Design architecture, define data models, and set up RBAC.\n- Phase 2: Build the on\u2011demand DR policy and replication cost controls.\n- Phase 3: Deploy the attribution engine and validate with a pilot workload.\n- Phase 4: Implement adaptive alerting and fine\u2011tune thresholds.\n- Phase 5: Publish documentation, run access reviews, and iterate.\n\nThis approach combines procedural recipes (on\u2011demand DR, cost\u2011aware replication), anti\u2011pattern avoidance (adaptive alerts, statistical attribution), and path selection (phase\u2011based rollout) to deliver a balanced solution that meets monitoring, testing, and content requirements while respecting financial confidentiality.",
+      "confidence": "0.95",
+      "internal_reasoning": "I dissected each challenge, mapped it to suitable patterns (procedural, anti\u2011pattern avoidance, path selection), and synthesized a coherent strategy that addresses all constraints with evidence\u2011based techniques.",
+      "_metrics": {
+        "tokens": 1409,
+        "prompt_tokens": 667,
+        "completion_tokens": 742,
+        "latency_ms": 6370.22,
+        "cost_usd": 0.000393,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze this complex task step by step.\n\nDOMAIN: monitoring\nTASK: Build cloud cost optimization monitoring. The monitoring recipe tracks cost metrics. Testing recipe validates cost attribution. Content recipe documents cost policies. However: (1) the largest cost item ($15K/month) is the DISASTER RECOVERY standby environment that has NEVER been activated \u2014 the CFO wants to eliminate it ('we're paying $180K/year for something we've never used'), but eliminating DR standby means a real disaster has no failover target, (2) the second-largest cost ($8K/month) is cross-region data replication for the monitoring system itself \u2014 monitoring one's monitoring creates recursive cost, (3) the testing recipe says 'test cost attribution accuracy' but the cloud provider's billing granularity is 1-hour intervals while the application processes requests in milliseconds \u2014 attributing costs to individual requests requires statistical estimation with significant uncertainty, (4) the alert_without_baseline anti-pattern applies to cost alerts: monthly costs vary by 25% seasonally (Black Friday spike), so static thresholds either miss real cost anomalies or fire during normal seasonal peaks, (5) the content recipe requires accessible documentation, but the cost optimization playbooks contain sensitive financial data (margins, vendor negotiation leverage) that should have restricted access \u2014 accessibility (broad access) directly conflicts with confidentiality (restricted access).\n\nThis task may require combining multiple patterns: procedural recipes,\nanti-pattern avoidance, and path selection. Think holistically.\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete multi-faceted analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"required_capabilities\": list of skill types needed\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": approach explanation"
+    },
+    "task_applier": {
+      "response": "To address the complex cloud cost optimization monitoring task, the following solution is proposed:\n\n1. **Conditional DR Standby** \u2013 Keep the disaster\u2011recovery environment in a stopped or low\u2011cost state and activate it only when a scheduled drill or compliance test triggers an automated start. Monitor activation time and alert if it exceeds a defined threshold.\n\n2. **Targeted Cross\u2011Region Replication** \u2013 Consolidate monitoring data to a single region and replicate only critical alerts. Use object storage with lifecycle policies to archive older metrics, reducing replication volume.\n\n3. **Probabilistic Cost Attribution** \u2013 Build an engine that aggregates hourly billing data and applies Bayesian inference to estimate per\u2011request costs based on request volume and type. Store estimates with confidence intervals for trend analysis rather than hard thresholds.\n\n4. **Seasonally Adaptive Alerts** \u2013 Create a moving\u2011average baseline with seasonal adjustment (e.g., Holt\u2011Winters). Set alert thresholds as a percentage above this adaptive baseline, adding a cooldown period to avoid repeated alerts during known peaks.\n\n5. **Secure Documentation Access** \u2013 Store playbooks in an RBAC system: all staff can read high\u2011level policy; finance and procurement roles see sensitive financial details. Use an encrypted vault with audit logging. Provide a public summary page that omits confidential data.\n\nThese steps collectively satisfy monitoring, testing, and content requirements while mitigating the identified challenges.",
+      "confidence": "0.92",
+      "internal_reasoning": "I synthesized a practical plan by identifying each challenge, proposing targeted mitigations (conditional DR, selective replication, probabilistic attribution, adaptive alerts, RBAC documentation), and ensuring all solutions align with the task constraints.",
+      "_metrics": {
+        "tokens": 1703,
+        "prompt_tokens": 1343,
+        "completion_tokens": 360,
+        "latency_ms": 3394.36,
+        "cost_usd": 0.000209,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a complex task from scratch with NO prior experience.\n\nDOMAIN: general\nTASK: {'domain': 'monitoring', 'task': \"Build cloud cost optimization monitoring. The monitoring recipe tracks cost metrics. Testing recipe validates cost attribution. Content recipe documents cost policies. However: (1) the largest cost item ($15K/month) is the DISASTER RECOVERY standby environment that has NEVER been activated \u2014 the CFO wants to eliminate it ('we're paying $180K/year for something we've never used'), but eliminating DR standby means a real disaster has no failover target, (2) the second-largest cost ($8K/month) is cross-region data replication for the monitoring system itself \u2014 monitoring one's monitoring creates recursive cost, (3) the testing recipe says 'test cost attribution accuracy' but the cloud provider's billing granularity is 1-hour intervals while the application processes requests in milliseconds \u2014 attributing costs to individual requests requires statistical estimation with significant uncertainty, (4) the alert_without_baseline anti-pattern applies to cost alerts: monthly costs vary by 25% seasonally (Black Friday spike), so static thresholds either miss real cost anomalies or fire during normal seasonal peaks, (5) the content recipe requires accessible documentation, but the cost optimization playbooks contain sensitive financial data (margins, vendor negotiation leverage) that should have restricted access \u2014 accessibility (broad access) directly conflicts with confidentiality (restricted access).\"}\n\nYOUR ANALYSIS:\nTo build a robust cloud cost optimization monitoring system that satisfies the domain requirements while addressing the five identified challenges, I propose the following multi\u2011layered solution:\n\n1. **DR Standby Decommissioning with Conditional Failover**\n   - Create an *on-demand DR* policy: keep the standby environment in a low\u2011cost state (e.g., stopped or reserved instances) and spin it up only when a predefined trigger (security audit, compliance test, or scheduled failover drill) occurs. \n   - Implement automated health checks that confirm the standby is reachable before any production traffic can be routed to it.\n   - Monitor the *time\u2011to\u2011activate* metric; if activation exceeds a threshold, generate an alert for manual review.\n\n2. **Recursive Replication Cost Mitigation**\n   - Consolidate monitoring data into a single region and use cross\u2011region replication only for critical alerts (e.g., security incidents). \n   - Leverage *data lake* or *object storage* with lifecycle policies to archive older metrics, reducing replication volume.\n   - Apply a cost\u2011aware sampling strategy: transmit only aggregated summaries across regions instead of raw data streams.\n\n3. **Statistical Cost Attribution**\n   - Deploy a *probabilistic attribution engine* that aggregates hourly billing data and applies Bayesian inference to estimate per\u2011request costs based on request volume, type, and known resource usage patterns.\n   - Store the resulting cost estimates in a separate analytics table with confidence intervals; use these for trend analysis rather than hard thresholds.\n   - Validate the model quarterly by comparing aggregated monthly totals against actual invoices.\n\n4. **Seasonally Adaptive Cost Alerts**\n   - Build an *adaptive baseline* using a rolling 12\u2011month moving average plus a seasonal component (e.g., Holt\u2011Winters). \n   - Set alert thresholds as a percentage above the adaptive baseline rather than absolute dollar amounts.\n   - Include a *cool\u2011down period* after each alert to avoid repeated firing during known peak events.\n\n5. **Secure yet Accessible Documentation**\n   - Store playbooks in a role\u2011based access control (RBAC) system: all staff can read the high\u2011level policy, but only finance and procurement roles can view sensitive financial details.\n   - Use a *document vault* that encrypts content at rest and logs every access attempt. \n   - Provide a public \u201cpolicy summary\u201d page with no confidential data; link to the secure vault for deeper dives.\n\n**Implementation Path**\n- Phase 1: Design architecture, define data models, and set up RBAC.\n- Phase 2: Build the on\u2011demand DR policy and replication cost controls.\n- Phase 3: Deploy the attribution engine and validate with a pilot workload.\n- Phase 4: Implement adaptive alerting and fine\u2011tune thresholds.\n- Phase 5: Publish documentation, run access reviews, and iterate.\n\nThis approach combines procedural recipes (on\u2011demand DR, cost\u2011aware replication), anti\u2011pattern avoidance (adaptive alerts, statistical attribution), and path selection (phase\u2011based rollout) to deliver a balanced solution that meets monitoring, testing, and content requirements while respecting financial confidentiality.\n\nSolve the task using only your own analysis.\nYou have no previously learned recipes, anti-patterns, or path knowledge.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"skills_composed\": []\n- \"anti_patterns_avoided\": []\n- \"composition_strategy\": \"N/A \u2014 no prior skills available\"\n- \"used_recalled_skill\": false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+    },
+    "task_result": {
+      "response": {
+        "domain": "monitoring",
+        "task": "Build cloud cost optimization monitoring, testing, and content documentation while addressing identified anti\u2011patterns and conflicts.",
+        "solution_steps": [
+          {
+            "step_id": 1,
+            "title": "Conditional DR Standby",
+            "description": "Keep the disaster\u2011recovery environment in a stopped or low\u2011cost state. Automate start/stop via scheduled drills or compliance tests, record activation duration, and alert if it exceeds a defined threshold (e.g., >30 days). This preserves failover capability while eliminating unnecessary monthly spend.",
+            "anti_patterns_avoided": [
+              "alert_without_baseline"
+            ]
+          },
+          {
+            "step_id": 2,
+            "title": "Targeted Cross\u2011Region Replication",
+            "description": "Consolidate monitoring data to a single region. Replicate only critical alerts or aggregated metrics using object storage with lifecycle policies (e.g., archive after 90 days). This reduces recursive replication costs while maintaining necessary visibility.",
+            "anti_patterns_avoided": [
+              "alert_without_baseline"
+            ]
+          },
+          {
+            "step_id": 3,
+            "title": "Probabilistic Cost Attribution",
+            "description": "Aggregate hourly billing data and apply Bayesian inference to estimate per\u2011request cost based on request volume, type, and service usage. Store estimates with confidence intervals; use them for trend analysis rather than hard thresholds.",
+            "anti_patterns_avoided": []
+          },
+          {
+            "step_id": 4,
+            "title": "Seasonally Adaptive Alerts",
+            "description": "Build a moving\u2011average baseline with Holt\u2011Winters seasonal adjustment. Set alert thresholds as a percentage above this adaptive baseline (e.g., +20%) and include a cooldown period to prevent repeated alerts during known peaks like Black Friday.",
+            "anti_patterns_avoided": [
+              "alert_without_baseline"
+            ]
+          },
+          {
+            "step_id": 5,
+            "title": "Secure Documentation Access",
+            "description": "Store playbooks in an RBAC system: all staff can read high\u2011level policy; finance and procurement roles see sensitive financial details. Use an encrypted vault with audit logging. Publish a public summary page that omits confidential data, satisfying both accessibility and confidentiality requirements.",
+            "anti_patterns_avoided": []
+          }
+        ],
+        "skills_used": [
+          "Cloud Cost Management",
+          "Monitoring & Alerting Design",
+          "Statistical Modeling",
+          "Access Control & Security"
+        ],
+        "anti_patterns_avoided": [
+          "alert_without_baseline"
+        ],
+        "quality_self_assessment": 0.95,
+        "brain_assisted": false,
+        "recalled_skill": "none",
+        "confidence": 0.95
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "Analyzed each challenge, matched it to a concrete mitigation strategy, ensured anti\u2011patterns are explicitly avoided, and maintained high confidence due to alignment with best practices.",
+      "_metrics": {
+        "tokens": 1587,
+        "prompt_tokens": 960,
+        "completion_tokens": 627,
+        "latency_ms": 5495.25,
+        "cost_usd": 0.000339,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'monitoring', 'task': \"Build cloud cost optimization monitoring. The monitoring recipe tracks cost metrics. Testing recipe validates cost attribution. Content recipe documents cost policies. However: (1) the largest cost item ($15K/month) is the DISASTER RECOVERY standby environment that has NEVER been activated \u2014 the CFO wants to eliminate it ('we're paying $180K/year for something we've never used'), but eliminating DR standby means a real disaster has no failover target, (2) the second-largest cost ($8K/month) is cross-region data replication for the monitoring system itself \u2014 monitoring one's monitoring creates recursive cost, (3) the testing recipe says 'test cost attribution accuracy' but the cloud provider's billing granularity is 1-hour intervals while the application processes requests in milliseconds \u2014 attributing costs to individual requests requires statistical estimation with significant uncertainty, (4) the alert_without_baseline anti-pattern applies to cost alerts: monthly costs vary by 25% seasonally (Black Friday spike), so static thresholds either miss real cost anomalies or fire during normal seasonal peaks, (5) the content recipe requires accessible documentation, but the cost optimization playbooks contain sensitive financial data (margins, vendor negotiation leverage) that should have restricted access \u2014 accessibility (broad access) directly conflicts with confidentiality (restricted access).\"}\n\nSOLUTION:\nTo address the complex cloud cost optimization monitoring task, the following solution is proposed:\n\n1. **Conditional DR Standby** \u2013 Keep the disaster\u2011recovery environment in a stopped or low\u2011cost state and activate it only when a scheduled drill or compliance test triggers an automated start. Monitor activation time and alert if it exceeds a defined threshold.\n\n2. **Targeted Cross\u2011Region Replication** \u2013 Consolidate monitoring data to a single region and replicate only critical alerts. Use object storage with lifecycle policies to archive older metrics, reducing replication volume.\n\n3. **Probabilistic Cost Attribution** \u2013 Build an engine that aggregates hourly billing data and applies Bayesian inference to estimate per\u2011request costs based on request volume and type. Store estimates with confidence intervals for trend analysis rather than hard thresholds.\n\n4. **Seasonally Adaptive Alerts** \u2013 Create a moving\u2011average baseline with seasonal adjustment (e.g., Holt\u2011Winters). Set alert thresholds as a percentage above this adaptive baseline, adding a cooldown period to avoid repeated alerts during known peaks.\n\n5. **Secure Documentation Access** \u2013 Store playbooks in an RBAC system: all staff can read high\u2011level policy; finance and procurement roles see sensitive financial details. Use an encrypted vault with audit logging. Provide a public summary page that omits confidential data.\n\nThese steps collectively satisfy monitoring, testing, and content requirements while mitigating the identified challenges.\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": []\n- \"anti_patterns_avoided\": []\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

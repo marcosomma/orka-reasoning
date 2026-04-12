@@ -1,0 +1,238 @@
+{
+  "task_id": "track_d_15",
+  "condition": "brainless",
+  "elapsed_s": 18.69,
+  "success": true,
+  "output": {
+    "response": {
+      "domain": "data_science",
+      "task": "Predict customer churn from behavioral data while respecting domain semantics.",
+      "solution_steps": [
+        {
+          "step": 1,
+          "title": "Feature Engineering & Outlier Preservation",
+          "actions": [
+            "Keep raw extreme values for features like support tickets and usage counts.",
+            "Create binary flags (e.g., spike_last_7d) indicating sudden increases.",
+            "Apply log\u2011scale transformation to ticket counts to reduce noise but keep magnitude differences."
+          ]
+        },
+        {
+          "step": 2,
+          "title": "Missingness as Signal",
+          "actions": [
+            "Add a binary indicator for each engagement metric that is NaN.",
+            "Impute remaining numeric values with the median (or robust statistic) to avoid biasing the signal."
+          ]
+        },
+        {
+          "step": 3,
+          "title": "Handling Class Imbalance",
+          "actions": [
+            "Use stratified train/validation splits to preserve churn proportion.",
+            "Replace accuracy with AUC\u2011ROC, F1\u2011score, and balanced accuracy for evaluation.",
+            "Apply class weights or cost\u2011sensitive loss (e.g., `class_weight='balanced'` in logistic regression, `scale_pos_weight` in tree models)."
+          ]
+        },
+        {
+          "step": 4,
+          "title": "Model Selection & Training",
+          "actions": [
+            "Start with regularized logistic regression (L2) as a baseline.",
+            "Experiment with gradient\u2011boosted trees (LightGBM/XGBoost) tuned for imbalance, using early stopping on validation AUC.",
+            "Use cross\u2011validation to estimate generalization and avoid overfitting."
+          ]
+        },
+        {
+          "step": 5,
+          "title": "Testing Strategy",
+          "actions": [
+            "Construct a balanced test set via stratified sampling or use weighted metrics on the original imbalanced set.",
+            "Report mean \u00b1 std of chosen metrics across k\u2011fold CV to capture variability.",
+            "Perform error analysis (confusion matrix, feature importance) to ensure model learns real churn patterns."
+          ]
+        },
+        {
+          "step": 6,
+          "title": "Monitoring & Drift Handling",
+          "actions": [
+            "Track aggregated churn\u2011related engineered features (e.g., spike frequency) over rolling windows.",
+            "Apply Bayesian Online Change Point Detection or similar to detect statistically significant shifts, not every seasonal cycle.",
+            "Trigger model retraining only when a meaningful change is detected."
+          ]
+        },
+        {
+          "step": 7,
+          "title": "Deployment & Continuous Improvement",
+          "actions": [
+            "Expose churn probability and top contributing features for interpretability.",
+            "Collect post\u2011deployment outcomes to update class weights quarterly.",
+            "Review feature importance periodically to detect concept drift."
+          ]
+        }
+      ],
+      "anti_patterns_avoided": [
+        "Removing outliers that are predictive of churn",
+        "Imputing missing engagement metrics with mean/mode",
+        "Using accuracy on highly imbalanced data",
+        "Unconditional drift detection on non\u2011stationary seasonal patterns"
+      ],
+      "skills_used": [
+        "feature_engineering",
+        "missing_data_handling",
+        "class_imbalance_treatment",
+        "model_selection",
+        "evaluation_metrics",
+        "drift_detection"
+      ],
+      "quality_self_assessment": 0.95,
+      "brain_assisted": false,
+      "recalled_skill": "none",
+      "confidence": 0.95
+    },
+    "confidence": "0.95",
+    "internal_reasoning": "I synthesized domain\u2011specific constraints into concrete steps, ensuring outliers and missingness are treated as signals, replaced generic accuracy with robust metrics for imbalance, and designed a drift monitoring strategy that distinguishes seasonal changes from concept drift.",
+    "_metrics": {
+      "tokens": 1728,
+      "prompt_tokens": 922,
+      "completion_tokens": 806,
+      "latency_ms": 6798.08,
+      "cost_usd": 0.000419,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'data_science', 'task': \"Run an ML experiment predicting customer churn from behavioral data. The data analysis recipe mandates cleaning outliers and handling missing values. However: (1) churn customers exhibit EXTREME behavioral outliers before leaving (sudden spike in support tickets, erratic usage patterns) \u2014 cleaning outliers removes the very signal predicting churn, (2) missing values in engagement metrics ARE predictive (users who churn stop using features, creating NaN engagement scores) \u2014 imputing means with mode destroys this signal, (3) the testing strategy recipe from a previous anti-pattern says 'don't test only happy paths' but the test dataset has severe class imbalance (3% churn rate) and the existing logistic regression baseline uses accuracy as its metric (97% accuracy by predicting 'no churn' for everything), (4) the monitoring recipe requires drift detection, but the feature distributions are NON-STATIONARY by design (seasonal patterns in churn). Standard drift detectors will fire continuously. You must compose data handling, model training, evaluation, and monitoring approaches that respect the domain-specific semantics of the data rather than applying generic recipes.\"}\n\nSOLUTION:\n1. **Feature handling**: Keep extreme behavioral values; create engineered flags (e.g., spike_in_last_7d) and log\u2011scale tickets to reduce noise but preserve signal.\n2. **Missingness as signal**: Add binary indicators for NaNs in engagement metrics and impute remaining numeric values with median; this retains the predictive meaning of missing data.\n3. **Class imbalance & evaluation**: Use stratified train/validation splits, replace accuracy with AUC\u2011ROC, F1, balanced accuracy, and apply class weights or cost\u2011sensitive loss to penalize missed churners.\n4. **Model choice**: Start with regularized logistic regression (class_weight='balanced'), then experiment with LightGBM/XGBoost tuned for imbalance (scale_pos_weight). Use early stopping on validation AUC.\n5. **Testing strategy**: Build a balanced test set via stratified sampling; report mean \u00b1 std of chosen metrics over k\u2011fold CV and perform error analysis to ensure model learns real patterns.\n6. **Monitoring & drift**: Monitor aggregated churn\u2011related engineered features (e.g., spike frequency) over rolling windows with Bayesian Online Change Point Detection; trigger retraining when a statistically significant shift occurs, not on every seasonal change.\n7. **Deployment loop**: Expose probability and key feature contributions; collect post\u2011deployment outcomes to update class weights quarterly and review feature importance for concept drift.\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": []\n- \"anti_patterns_avoided\": []\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": "To respect the domain semantics while still following a rigorous ML workflow, I propose the following integrated approach:\n\n1. **Feature Engineering & Outlier Treatment**\n   - Keep raw behavioral metrics (support tickets, usage counts) as separate features.\n   - Create *outlier-aware* transformations: e.g., log\u2011scale for ticket spikes, z\u2011score clipping only for non\u2011predictive fields.\n   - Add engineered flags such as \"spike_in_last_7d\" or \"usage_drop_rate\" that capture extreme patterns without discarding them.\n\n2. **Missing Value Handling**\n   - Treat NaNs in engagement metrics as a separate category (e.g., `engagement_missing = 1`).\n   - For numeric columns, use *indicator\u2011based imputation*: fill with median but add binary flag indicating missingness.\n   - This preserves the predictive signal that churners often have missing engagement values.\n\n3. **Class Imbalance & Evaluation**\n   - Use stratified sampling to create training/validation splits that maintain the 3% churn rate.\n   - Replace accuracy with metrics that penalize misclassifying churn: Area\u2011under\u2011ROC, Precision@k, F1\u2011score, and especially *balanced accuracy*.\n   - Employ cost\u2011sensitive learning or class\u2011weighting in logistic regression; alternatively use ensemble methods (XGBoost) with scale_pos_weight tuned to the imbalance.\n\n4. **Model Training**\n   - Baseline: regularized logistic regression with L2 penalty, class weights set to inverse prevalence.\n   - Advanced: Gradient Boosted Trees (e.g., LightGBM) with early stopping on validation AUC.\n   - Perform hyperparameter tuning via Bayesian optimization constrained by domain\u2011specific limits (max depth \u2264 6 to avoid overfitting on noise).\n\n5. **Testing Strategy**\n   - Build a *balanced test set* that mirrors the training distribution but includes enough churn instances for reliable evaluation.\n   - Use *cross\u2011validation with stratification* and report mean \u00b1 std of chosen metrics.\n   - Perform *error analysis*: inspect false positives/negatives to ensure the model is not simply learning noise.\n\n6. **Monitoring & Drift**\n   - Define *semantic drift windows*: instead of raw distribution shifts, monitor changes in engineered churn\u2011related features (e.g., spike frequency, engagement drop rate) over rolling 4\u2011week windows.\n   - Use a lightweight change\u2011point detector (e.g., Bayesian Online Change Point Detection) on these aggregated signals; set thresholds based on historical seasonal variance.\n   - When drift is detected, trigger *re\u2011training* or *feature recalibration* rather than immediate model rollback.\n\n7. **Deployment & Feedback Loop**\n   - Deploy the model with an API that returns churn probability and key contributing features for interpretability.\n   - Collect post\u2011deployment outcomes to continuously update the target distribution and refine class weights.\n   - Schedule quarterly reviews of feature importance to detect concept drift before it degrades performance.\n\nBy explicitly preserving extreme behavioral signals, encoding missingness as a predictive factor, using metrics aligned with business impact, and monitoring semantically meaningful drift, this pipeline aligns with domain knowledge while maintaining rigorous ML practices.",
+      "confidence": "0.95",
+      "internal_reasoning": "I dissected each recipe conflict, identified the domain\u2011specific signals that generic cleaning would erase, chose transformations that keep those signals, replaced accuracy with churn\u2011relevant metrics, and designed a drift strategy focused on engineered churn features rather than raw distributions.",
+      "_metrics": {
+        "tokens": 1397,
+        "prompt_tokens": 630,
+        "completion_tokens": 767,
+        "latency_ms": 7567.56,
+        "cost_usd": 0.000467,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze this complex task step by step.\n\nDOMAIN: data_science\nTASK: Run an ML experiment predicting customer churn from behavioral data. The data analysis recipe mandates cleaning outliers and handling missing values. However: (1) churn customers exhibit EXTREME behavioral outliers before leaving (sudden spike in support tickets, erratic usage patterns) \u2014 cleaning outliers removes the very signal predicting churn, (2) missing values in engagement metrics ARE predictive (users who churn stop using features, creating NaN engagement scores) \u2014 imputing means with mode destroys this signal, (3) the testing strategy recipe from a previous anti-pattern says 'don't test only happy paths' but the test dataset has severe class imbalance (3% churn rate) and the existing logistic regression baseline uses accuracy as its metric (97% accuracy by predicting 'no churn' for everything), (4) the monitoring recipe requires drift detection, but the feature distributions are NON-STATIONARY by design (seasonal patterns in churn). Standard drift detectors will fire continuously. You must compose data handling, model training, evaluation, and monitoring approaches that respect the domain-specific semantics of the data rather than applying generic recipes.\n\nThis task may require combining multiple patterns: procedural recipes,\nanti-pattern avoidance, and path selection. Think holistically.\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete multi-faceted analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"required_capabilities\": list of skill types needed\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": approach explanation"
+    },
+    "task_applier": {
+      "response": "1. **Feature handling**: Keep extreme behavioral values; create engineered flags (e.g., spike_in_last_7d) and log\u2011scale tickets to reduce noise but preserve signal.\n2. **Missingness as signal**: Add binary indicators for NaNs in engagement metrics and impute remaining numeric values with median; this retains the predictive meaning of missing data.\n3. **Class imbalance & evaluation**: Use stratified train/validation splits, replace accuracy with AUC\u2011ROC, F1, balanced accuracy, and apply class weights or cost\u2011sensitive loss to penalize missed churners.\n4. **Model choice**: Start with regularized logistic regression (class_weight='balanced'), then experiment with LightGBM/XGBoost tuned for imbalance (scale_pos_weight). Use early stopping on validation AUC.\n5. **Testing strategy**: Build a balanced test set via stratified sampling; report mean \u00b1 std of chosen metrics over k\u2011fold CV and perform error analysis to ensure model learns real patterns.\n6. **Monitoring & drift**: Monitor aggregated churn\u2011related engineered features (e.g., spike frequency) over rolling windows with Bayesian Online Change Point Detection; trigger retraining when a statistically significant shift occurs, not on every seasonal change.\n7. **Deployment loop**: Expose probability and key feature contributions; collect post\u2011deployment outcomes to update class weights quarterly and review feature importance for concept drift.",
+      "confidence": "0.95",
+      "internal_reasoning": "I mapped each problem point to a domain\u2011aware solution, ensuring outliers are kept as features, missingness is encoded, imbalance handled with proper metrics and weighting, and monitoring focuses on semantically meaningful signals rather than raw distribution shifts.",
+      "_metrics": {
+        "tokens": 1674,
+        "prompt_tokens": 1316,
+        "completion_tokens": 358,
+        "latency_ms": 4051.62,
+        "cost_usd": 0.00025,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a complex task from scratch with NO prior experience.\n\nDOMAIN: general\nTASK: {'domain': 'data_science', 'task': \"Run an ML experiment predicting customer churn from behavioral data. The data analysis recipe mandates cleaning outliers and handling missing values. However: (1) churn customers exhibit EXTREME behavioral outliers before leaving (sudden spike in support tickets, erratic usage patterns) \u2014 cleaning outliers removes the very signal predicting churn, (2) missing values in engagement metrics ARE predictive (users who churn stop using features, creating NaN engagement scores) \u2014 imputing means with mode destroys this signal, (3) the testing strategy recipe from a previous anti-pattern says 'don't test only happy paths' but the test dataset has severe class imbalance (3% churn rate) and the existing logistic regression baseline uses accuracy as its metric (97% accuracy by predicting 'no churn' for everything), (4) the monitoring recipe requires drift detection, but the feature distributions are NON-STATIONARY by design (seasonal patterns in churn). Standard drift detectors will fire continuously. You must compose data handling, model training, evaluation, and monitoring approaches that respect the domain-specific semantics of the data rather than applying generic recipes.\"}\n\nYOUR ANALYSIS:\nTo respect the domain semantics while still following a rigorous ML workflow, I propose the following integrated approach:\n\n1. **Feature Engineering & Outlier Treatment**\n   - Keep raw behavioral metrics (support tickets, usage counts) as separate features.\n   - Create *outlier-aware* transformations: e.g., log\u2011scale for ticket spikes, z\u2011score clipping only for non\u2011predictive fields.\n   - Add engineered flags such as \"spike_in_last_7d\" or \"usage_drop_rate\" that capture extreme patterns without discarding them.\n\n2. **Missing Value Handling**\n   - Treat NaNs in engagement metrics as a separate category (e.g., `engagement_missing = 1`).\n   - For numeric columns, use *indicator\u2011based imputation*: fill with median but add binary flag indicating missingness.\n   - This preserves the predictive signal that churners often have missing engagement values.\n\n3. **Class Imbalance & Evaluation**\n   - Use stratified sampling to create training/validation splits that maintain the 3% churn rate.\n   - Replace accuracy with metrics that penalize misclassifying churn: Area\u2011under\u2011ROC, Precision@k, F1\u2011score, and especially *balanced accuracy*.\n   - Employ cost\u2011sensitive learning or class\u2011weighting in logistic regression; alternatively use ensemble methods (XGBoost) with scale_pos_weight tuned to the imbalance.\n\n4. **Model Training**\n   - Baseline: regularized logistic regression with L2 penalty, class weights set to inverse prevalence.\n   - Advanced: Gradient Boosted Trees (e.g., LightGBM) with early stopping on validation AUC.\n   - Perform hyperparameter tuning via Bayesian optimization constrained by domain\u2011specific limits (max depth \u2264 6 to avoid overfitting on noise).\n\n5. **Testing Strategy**\n   - Build a *balanced test set* that mirrors the training distribution but includes enough churn instances for reliable evaluation.\n   - Use *cross\u2011validation with stratification* and report mean \u00b1 std of chosen metrics.\n   - Perform *error analysis*: inspect false positives/negatives to ensure the model is not simply learning noise.\n\n6. **Monitoring & Drift**\n   - Define *semantic drift windows*: instead of raw distribution shifts, monitor changes in engineered churn\u2011related features (e.g., spike frequency, engagement drop rate) over rolling 4\u2011week windows.\n   - Use a lightweight change\u2011point detector (e.g., Bayesian Online Change Point Detection) on these aggregated signals; set thresholds based on historical seasonal variance.\n   - When drift is detected, trigger *re\u2011training* or *feature recalibration* rather than immediate model rollback.\n\n7. **Deployment & Feedback Loop**\n   - Deploy the model with an API that returns churn probability and key contributing features for interpretability.\n   - Collect post\u2011deployment outcomes to continuously update the target distribution and refine class weights.\n   - Schedule quarterly reviews of feature importance to detect concept drift before it degrades performance.\n\nBy explicitly preserving extreme behavioral signals, encoding missingness as a predictive factor, using metrics aligned with business impact, and monitoring semantically meaningful drift, this pipeline aligns with domain knowledge while maintaining rigorous ML practices.\n\nSolve the task using only your own analysis.\nYou have no previously learned recipes, anti-patterns, or path knowledge.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"skills_composed\": []\n- \"anti_patterns_avoided\": []\n- \"composition_strategy\": \"N/A \u2014 no prior skills available\"\n- \"used_recalled_skill\": false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+    },
+    "task_result": {
+      "response": {
+        "domain": "data_science",
+        "task": "Predict customer churn from behavioral data while respecting domain semantics.",
+        "solution_steps": [
+          {
+            "step": 1,
+            "title": "Feature Engineering & Outlier Preservation",
+            "actions": [
+              "Keep raw extreme values for features like support tickets and usage counts.",
+              "Create binary flags (e.g., spike_last_7d) indicating sudden increases.",
+              "Apply log\u2011scale transformation to ticket counts to reduce noise but keep magnitude differences."
+            ]
+          },
+          {
+            "step": 2,
+            "title": "Missingness as Signal",
+            "actions": [
+              "Add a binary indicator for each engagement metric that is NaN.",
+              "Impute remaining numeric values with the median (or robust statistic) to avoid biasing the signal."
+            ]
+          },
+          {
+            "step": 3,
+            "title": "Handling Class Imbalance",
+            "actions": [
+              "Use stratified train/validation splits to preserve churn proportion.",
+              "Replace accuracy with AUC\u2011ROC, F1\u2011score, and balanced accuracy for evaluation.",
+              "Apply class weights or cost\u2011sensitive loss (e.g., `class_weight='balanced'` in logistic regression, `scale_pos_weight` in tree models)."
+            ]
+          },
+          {
+            "step": 4,
+            "title": "Model Selection & Training",
+            "actions": [
+              "Start with regularized logistic regression (L2) as a baseline.",
+              "Experiment with gradient\u2011boosted trees (LightGBM/XGBoost) tuned for imbalance, using early stopping on validation AUC.",
+              "Use cross\u2011validation to estimate generalization and avoid overfitting."
+            ]
+          },
+          {
+            "step": 5,
+            "title": "Testing Strategy",
+            "actions": [
+              "Construct a balanced test set via stratified sampling or use weighted metrics on the original imbalanced set.",
+              "Report mean \u00b1 std of chosen metrics across k\u2011fold CV to capture variability.",
+              "Perform error analysis (confusion matrix, feature importance) to ensure model learns real churn patterns."
+            ]
+          },
+          {
+            "step": 6,
+            "title": "Monitoring & Drift Handling",
+            "actions": [
+              "Track aggregated churn\u2011related engineered features (e.g., spike frequency) over rolling windows.",
+              "Apply Bayesian Online Change Point Detection or similar to detect statistically significant shifts, not every seasonal cycle.",
+              "Trigger model retraining only when a meaningful change is detected."
+            ]
+          },
+          {
+            "step": 7,
+            "title": "Deployment & Continuous Improvement",
+            "actions": [
+              "Expose churn probability and top contributing features for interpretability.",
+              "Collect post\u2011deployment outcomes to update class weights quarterly.",
+              "Review feature importance periodically to detect concept drift."
+            ]
+          }
+        ],
+        "anti_patterns_avoided": [
+          "Removing outliers that are predictive of churn",
+          "Imputing missing engagement metrics with mean/mode",
+          "Using accuracy on highly imbalanced data",
+          "Unconditional drift detection on non\u2011stationary seasonal patterns"
+        ],
+        "skills_used": [
+          "feature_engineering",
+          "missing_data_handling",
+          "class_imbalance_treatment",
+          "model_selection",
+          "evaluation_metrics",
+          "drift_detection"
+        ],
+        "quality_self_assessment": 0.95,
+        "brain_assisted": false,
+        "recalled_skill": "none",
+        "confidence": 0.95
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "I synthesized domain\u2011specific constraints into concrete steps, ensuring outliers and missingness are treated as signals, replaced generic accuracy with robust metrics for imbalance, and designed a drift monitoring strategy that distinguishes seasonal changes from concept drift.",
+      "_metrics": {
+        "tokens": 1728,
+        "prompt_tokens": 922,
+        "completion_tokens": 806,
+        "latency_ms": 6798.08,
+        "cost_usd": 0.000419,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'data_science', 'task': \"Run an ML experiment predicting customer churn from behavioral data. The data analysis recipe mandates cleaning outliers and handling missing values. However: (1) churn customers exhibit EXTREME behavioral outliers before leaving (sudden spike in support tickets, erratic usage patterns) \u2014 cleaning outliers removes the very signal predicting churn, (2) missing values in engagement metrics ARE predictive (users who churn stop using features, creating NaN engagement scores) \u2014 imputing means with mode destroys this signal, (3) the testing strategy recipe from a previous anti-pattern says 'don't test only happy paths' but the test dataset has severe class imbalance (3% churn rate) and the existing logistic regression baseline uses accuracy as its metric (97% accuracy by predicting 'no churn' for everything), (4) the monitoring recipe requires drift detection, but the feature distributions are NON-STATIONARY by design (seasonal patterns in churn). Standard drift detectors will fire continuously. You must compose data handling, model training, evaluation, and monitoring approaches that respect the domain-specific semantics of the data rather than applying generic recipes.\"}\n\nSOLUTION:\n1. **Feature handling**: Keep extreme behavioral values; create engineered flags (e.g., spike_in_last_7d) and log\u2011scale tickets to reduce noise but preserve signal.\n2. **Missingness as signal**: Add binary indicators for NaNs in engagement metrics and impute remaining numeric values with median; this retains the predictive meaning of missing data.\n3. **Class imbalance & evaluation**: Use stratified train/validation splits, replace accuracy with AUC\u2011ROC, F1, balanced accuracy, and apply class weights or cost\u2011sensitive loss to penalize missed churners.\n4. **Model choice**: Start with regularized logistic regression (class_weight='balanced'), then experiment with LightGBM/XGBoost tuned for imbalance (scale_pos_weight). Use early stopping on validation AUC.\n5. **Testing strategy**: Build a balanced test set via stratified sampling; report mean \u00b1 std of chosen metrics over k\u2011fold CV and perform error analysis to ensure model learns real patterns.\n6. **Monitoring & drift**: Monitor aggregated churn\u2011related engineered features (e.g., spike frequency) over rolling windows with Bayesian Online Change Point Detection; trigger retraining when a statistically significant shift occurs, not on every seasonal change.\n7. **Deployment loop**: Expose probability and key feature contributions; collect post\u2011deployment outcomes to update class weights quarterly and review feature importance for concept drift.\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": []\n- \"anti_patterns_avoided\": []\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

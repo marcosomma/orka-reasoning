@@ -1,0 +1,1133 @@
+{
+  "task_id": "track_c_09",
+  "condition": "brain",
+  "elapsed_s": 8.54,
+  "success": true,
+  "output": {
+    "response": "The \"Skip Diagnostic Steps\" anti\u2011pattern occurs when a team bypasses essential troubleshooting procedures\u2014such as logging, unit tests, or systematic debugging\u2014before attempting to fix an issue. This leads to incomplete understanding of the root cause, repeated failures, and wasted effort.\n\n**Key characteristics**:\n1. Omission of diagnostics (e.g., missing error logs, stack traces, test coverage).\n2. Assumption of familiarity without verifying current context.\n3. Immediate code changes or deployments without validation.\n\n**Consequences**:\n- Hidden side effects may surface later.\n- Difficulty reproducing the problem.\n- Increased maintenance cost.\n\n**Mitigation strategies**:\n1. Enforce a diagnostic checklist in CI pipelines to ensure all diagnostics are captured before merges.\n2. Require unit and integration tests to run automatically, with failures blocking progress.\n3. Implement automated logging and monitoring tools that capture failure data for analysis.\n4. Conduct post\u2011mortems after incidents to review skipped steps and update processes.\n5. Educate teams on the importance of systematic debugging through training and documentation.\n\nBy adopting these practices, teams can avoid the pitfalls associated with skipping diagnostic steps and improve overall software reliability.",
+    "confidence": "0.95",
+    "internal_reasoning": "The answer is based directly on the provided execution result and standard best\u2011practice guidelines for avoiding diagnostic omissions. All statements are factual and supported by evidence from the task description.",
+    "_metrics": {
+      "tokens": 2303,
+      "prompt_tokens": 1987,
+      "completion_tokens": 316,
+      "latency_ms": 3378.44,
+      "cost_usd": 0.000212,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output.\n\nDOMAIN: customer_support\nTASK: Anti-Pattern: Skip Diagnostic Steps\n\nROUTING DECISION: shortlist\nTARGET: [{'node_id': 'quality_checker', 'path': ['quality_checker', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: quality_checker matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6986478900909424, 'score_components': {'llm': 0.5, 'heuristics': 0.778239450454712, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7651429435275727}, {'node_id': 'quality_checker', 'path': ['quality_checker', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: quality_checker matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6986478900909424, 'score_components': {'llm': 0.5, 'heuristics': 0.778239450454712, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7651429435275727}, {'node_id': 'quality_checker', 'path': ['quality_checker', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: quality_checker matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6986478900909424, 'score_components': {'llm': 0.5, 'heuristics': 0.778239450454712, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7651429435275727}]\nCONFIDENCE: 0.5651429435275728\n\nEXECUTION RESULT:\nThe anti\u2011pattern \"Skip Diagnostic Steps\" occurs when a system or developer bypasses essential troubleshooting procedures\u2014such as logging, unit tests, or systematic debugging\u2014before attempting to fix an issue. This can lead to incomplete understanding of the root cause, repeated failures, and wasted effort.\n\n**Key characteristics**:\n1. **Omission of diagnostics** \u2013 Skipping steps like error\u2011logging, stack traces, or test coverage checks.\n2. **Assumption of familiarity** \u2013 Believing that prior knowledge suffices without verifying current context.\n3. **Immediate code changes** \u2013 Making quick edits or deploying fixes without validation.\n\n**Consequences**:\n- Hidden side effects may surface later.\n- Difficulty reproducing the problem.\n- Increased maintenance cost.\n\n**Mitigation strategies**:\n1. Enforce a diagnostic checklist in CI pipelines.\n2. Require unit/ integration tests to run before merges.\n3. Use automated logging and monitoring tools to capture failure data.\n4. Conduct post\u2011mortems to review skipped steps.\n5. Educate teams on the importance of systematic debugging.\n\nBy addressing these points, teams can avoid the pitfalls associated with skipping diagnostic steps and improve overall software reliability.\n\nReturn JSON with:\n- \"response\": comprehensive solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"route_decision\": the routing decision made\n- \"route_target\": selected path\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "brain_learn_path": {
+      "response": "No path could be learned (empty path or failed outcome).",
+      "confidence": "0.0"
+    },
+    "brain_learn_anti": {
+      "response": "Recorded anti-pattern: anti:customer_support:suggesting-solutions-without-running-dia",
+      "confidence": "0.9",
+      "internal_reasoning": "Anti-pattern stored: Solutions addressed symptoms not root causes, requiring 3+ support rounds per ticket",
+      "skill_id": "ffc0b3a3-cfaa-4e99-9d25-53462c7757df",
+      "skill_name": "anti:customer_support:suggesting-solutions-without-running-dia",
+      "skill_type": "anti_pattern"
+    },
+    "smart_router": {
+      "decision": "shortlist",
+      "target": [
+        {
+          "node_id": "quality_checker",
+          "path": [
+            "quality_checker",
+            "knowledge_base_search"
+          ],
+          "depth": 2,
+          "feasible": true,
+          "constraints_met": true,
+          "graphscout_generated": true,
+          "estimated_cost": 0.002,
+          "estimated_latency": 2000.0,
+          "budget_assessment": {
+            "compliant": true,
+            "violations": [],
+            "estimates": {
+              "tokens": 240,
+              "cost_usd": 0.002,
+              "latency_ms": 2000.0
+            },
+            "remaining_budget": {
+              "tokens": 50000,
+              "cost_usd": 1.0,
+              "latency_ms": 30000.0
+            }
+          },
+          "fits_budget": true,
+          "llm_evaluation": {
+            "relevance_score": 0.5,
+            "confidence": 0.8,
+            "reasoning": "Heuristic evaluation: quality_checker matched question keywords",
+            "expected_output": "Agent execution result",
+            "estimated_tokens": 500,
+            "estimated_cost": 0.001,
+            "estimated_latency_ms": 1000,
+            "risk_factors": [],
+            "efficiency_rating": "medium",
+            "is_deterministic_fallback": true
+          },
+          "llm_validation": {
+            "is_valid": false,
+            "confidence": 0.8,
+            "efficiency_score": 0.9,
+            "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+            "suggested_improvements": [],
+            "risk_assessment": "low",
+            "is_deterministic_fallback": true
+          },
+          "safety_score": 1.0,
+          "safety_risks": [],
+          "safety_details": {
+            "content": {},
+            "capabilities": {
+              "forbidden_capabilities": []
+            },
+            "policy": {}
+          },
+          "score": 0.6986478900909424,
+          "score_components": {
+            "llm": 0.5,
+            "heuristics": 0.778239450454712,
+            "prior": 0.9,
+            "cost": 0.98,
+            "latency": 0.8
+          },
+          "confidence": 0.7651429435275727
+        },
+        {
+          "node_id": "quality_checker",
+          "path": [
+            "quality_checker",
+            "knowledge_base_search"
+          ],
+          "depth": 2,
+          "feasible": true,
+          "constraints_met": true,
+          "graphscout_generated": true,
+          "estimated_cost": 0.002,
+          "estimated_latency": 2000.0,
+          "budget_assessment": {
+            "compliant": true,
+            "violations": [],
+            "estimates": {
+              "tokens": 240,
+              "cost_usd": 0.002,
+              "latency_ms": 2000.0
+            },
+            "remaining_budget": {
+              "tokens": 50000,
+              "cost_usd": 1.0,
+              "latency_ms": 30000.0
+            }
+          },
+          "fits_budget": true,
+          "llm_evaluation": {
+            "relevance_score": 0.5,
+            "confidence": 0.8,
+            "reasoning": "Heuristic evaluation: quality_checker matched question keywords",
+            "expected_output": "Agent execution result",
+            "estimated_tokens": 500,
+            "estimated_cost": 0.001,
+            "estimated_latency_ms": 1000,
+            "risk_factors": [],
+            "efficiency_rating": "medium",
+            "is_deterministic_fallback": true
+          },
+          "llm_validation": {
+            "is_valid": false,
+            "confidence": 0.8,
+            "efficiency_score": 0.9,
+            "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+            "suggested_improvements": [],
+            "risk_assessment": "low",
+            "is_deterministic_fallback": true
+          },
+          "safety_score": 1.0,
+          "safety_risks": [],
+          "safety_details": {
+            "content": {},
+            "capabilities": {
+              "forbidden_capabilities": []
+            },
+            "policy": {}
+          },
+          "score": 0.6986478900909424,
+          "score_components": {
+            "llm": 0.5,
+            "heuristics": 0.778239450454712,
+            "prior": 0.9,
+            "cost": 0.98,
+            "latency": 0.8
+          },
+          "confidence": 0.7651429435275727
+        },
+        {
+          "node_id": "quality_checker",
+          "path": [
+            "quality_checker",
+            "response_drafter"
+          ],
+          "depth": 2,
+          "feasible": true,
+          "constraints_met": true,
+          "graphscout_generated": true,
+          "estimated_cost": 0.002,
+          "estimated_latency": 2000.0,
+          "budget_assessment": {
+            "compliant": true,
+            "violations": [],
+            "estimates": {
+              "tokens": 240,
+              "cost_usd": 0.002,
+              "latency_ms": 2000.0
+            },
+            "remaining_budget": {
+              "tokens": 50000,
+              "cost_usd": 1.0,
+              "latency_ms": 30000.0
+            }
+          },
+          "fits_budget": true,
+          "llm_evaluation": {
+            "relevance_score": 0.5,
+            "confidence": 0.8,
+            "reasoning": "Heuristic evaluation: quality_checker matched question keywords",
+            "expected_output": "Agent execution result",
+            "estimated_tokens": 500,
+            "estimated_cost": 0.001,
+            "estimated_latency_ms": 1000,
+            "risk_factors": [],
+            "efficiency_rating": "medium",
+            "is_deterministic_fallback": true
+          },
+          "llm_validation": {
+            "is_valid": false,
+            "confidence": 0.8,
+            "efficiency_score": 0.9,
+            "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+            "suggested_improvements": [],
+            "risk_assessment": "low",
+            "is_deterministic_fallback": true
+          },
+          "safety_score": 1.0,
+          "safety_risks": [],
+          "safety_details": {
+            "content": {},
+            "capabilities": {
+              "forbidden_capabilities": []
+            },
+            "policy": {}
+          },
+          "score": 0.6986478900909424,
+          "score_components": {
+            "llm": 0.5,
+            "heuristics": 0.778239450454712,
+            "prior": 0.9,
+            "cost": 0.98,
+            "latency": 0.8
+          },
+          "confidence": 0.7651429435275727
+        }
+      ],
+      "confidence": 0.5651429435275728,
+      "reasoning": "Close competition with margin 0.000 - returning top 3 options",
+      "trace": {
+        "graph_scout_version": "1.0.0",
+        "timestamp": "2026-04-11T00:19:56.043534+00:00",
+        "question": "Given this support request, find the best processing path.\nAnti-Pattern: Skip Diagnostic Steps",
+        "config": {
+          "k_beam": 3,
+          "max_depth": 2,
+          "commit_margin": 0.15,
+          "score_weights": {
+            "llm": 0.45,
+            "heuristics": 0.2,
+            "prior": 0.2,
+            "cost": 0.1,
+            "latency": 0.05,
+            "brain": 0.15
+          }
+        },
+        "discovery": {
+          "total_candidates": 120,
+          "candidate_nodes": [
+            "knowledge_base_search",
+            "response_drafter",
+            "quality_checker",
+            "escalation_handler",
+            "account_recovery",
+            "billing_specialist",
+            "technical_support",
+            "route_executor",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "route_executor",
+            "route_executor",
+            "route_executor",
+            "route_executor",
+            "route_executor",
+            "route_executor",
+            "route_executor",
+            "route_executor",
+            "route_executor",
+            "route_executor",
+            "route_executor",
+            "route_executor",
+            "route_executor",
+            "route_executor"
+          ]
+        },
+        "scoring": {
+          "scored_candidates": 3,
+          "top_scores": [
+            {
+              "node_id": "quality_checker",
+              "score": 0.6986478900909424,
+              "components": {}
+            },
+            {
+              "node_id": "quality_checker",
+              "score": 0.6986478900909424,
+              "components": {}
+            },
+            {
+              "node_id": "quality_checker",
+              "score": 0.6986478900909424,
+              "components": {}
+            }
+          ]
+        },
+        "decision": {
+          "type": "shortlist",
+          "target": [
+            {
+              "node_id": "quality_checker",
+              "path": [
+                "quality_checker",
+                "knowledge_base_search"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: quality_checker matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 1.0,
+              "safety_risks": [],
+              "safety_details": {
+                "content": {},
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6986478900909424,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.778239450454712,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7651429435275727
+            },
+            {
+              "node_id": "quality_checker",
+              "path": [
+                "quality_checker",
+                "knowledge_base_search"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: quality_checker matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 1.0,
+              "safety_risks": [],
+              "safety_details": {
+                "content": {},
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6986478900909424,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.778239450454712,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7651429435275727
+            },
+            {
+              "node_id": "quality_checker",
+              "path": [
+                "quality_checker",
+                "response_drafter"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: quality_checker matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 1.0,
+              "safety_risks": [],
+              "safety_details": {
+                "content": {},
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6986478900909424,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.778239450454712,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7651429435275727
+            }
+          ],
+          "confidence": 0.5651429435275728,
+          "reasoning": "Close competition with margin 0.000 - returning top 3 options"
+        },
+        "execution_metadata": {
+          "node_id": "smart_router",
+          "run_id": "unknown",
+          "step_index": 0
+        }
+      },
+      "status": "success",
+      "metrics": {
+        "run_id": "unknown",
+        "timestamp": "2026-04-11T02:19:55.909863",
+        "path_discovery": {
+          "candidates_discovered": 120,
+          "candidates_after_budget": 0,
+          "candidates_after_safety": 0,
+          "reduction_rate": 1.0
+        },
+        "evaluation": {
+          "llm_evaluation_time_ms": 0.0,
+          "llm_evaluation_failed": false,
+          "used_deterministic_fallback": false
+        },
+        "selection": {
+          "selected_path": [
+            {
+              "node_id": "quality_checker",
+              "path": [
+                "quality_checker",
+                "knowledge_base_search"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: quality_checker matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 1.0,
+              "safety_risks": [],
+              "safety_details": {
+                "content": {},
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6986478900909424,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.778239450454712,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7651429435275727
+            },
+            {
+              "node_id": "quality_checker",
+              "path": [
+                "quality_checker",
+                "knowledge_base_search"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: quality_checker matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 1.0,
+              "safety_risks": [],
+              "safety_details": {
+                "content": {},
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6986478900909424,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.778239450454712,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7651429435275727
+            },
+            {
+              "node_id": "quality_checker",
+              "path": [
+                "quality_checker",
+                "response_drafter"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: quality_checker matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 1.0,
+              "safety_risks": [],
+              "safety_details": {
+                "content": {},
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6986478900909424,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.778239450454712,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7651429435275727
+            }
+          ],
+          "confidence": 0.5651429435275728,
+          "reasoning_preview": "Close competition with margin 0.000 - returning top 3 options"
+        },
+        "performance": {
+          "total_time_ms": 133.67128372192383,
+          "breakdown": {
+            "budget_filter_ms": 0.0,
+            "safety_filter_ms": 0.0,
+            "scoring_ms": 0.0,
+            "decision_ms": 0.0
+          }
+        },
+        "resources": {
+          "estimated_cost_usd": 0.0,
+          "estimated_latency_ms": 0
+        },
+        "issues": {
+          "error_count": 0,
+          "warning_count": 0,
+          "errors": [],
+          "warnings": []
+        }
+      },
+      "input": "Given this support request, find the best processing path.\nAnti-Pattern: Skip Diagnostic Steps",
+      "previous_outputs": {
+        "brain_learn_path": {
+          "response": "No path could be learned (empty path or failed outcome).",
+          "confidence": "0.0"
+        },
+        "brain_learn_anti": {
+          "response": "Recorded anti-pattern: anti:customer_support:suggesting-solutions-without-running-dia",
+          "confidence": "0.9",
+          "internal_reasoning": "Anti-pattern stored: Solutions addressed symptoms not root causes, requiring 3+ support rounds per ticket",
+          "skill_id": "ffc0b3a3-cfaa-4e99-9d25-53462c7757df",
+          "skill_name": "anti:customer_support:suggesting-solutions-without-running-dia",
+          "skill_type": "anti_pattern"
+        }
+      },
+      "result": {
+        "decision": "shortlist",
+        "target": [
+          {
+            "node_id": "quality_checker",
+            "path": [
+              "quality_checker",
+              "knowledge_base_search"
+            ],
+            "depth": 2,
+            "feasible": true,
+            "constraints_met": true,
+            "graphscout_generated": true,
+            "estimated_cost": 0.002,
+            "estimated_latency": 2000.0,
+            "budget_assessment": {
+              "compliant": true,
+              "violations": [],
+              "estimates": {
+                "tokens": 240,
+                "cost_usd": 0.002,
+                "latency_ms": 2000.0
+              },
+              "remaining_budget": {
+                "tokens": 50000,
+                "cost_usd": 1.0,
+                "latency_ms": 30000.0
+              }
+            },
+            "fits_budget": true,
+            "llm_evaluation": {
+              "relevance_score": 0.5,
+              "confidence": 0.8,
+              "reasoning": "Heuristic evaluation: quality_checker matched question keywords",
+              "expected_output": "Agent execution result",
+              "estimated_tokens": 500,
+              "estimated_cost": 0.001,
+              "estimated_latency_ms": 1000,
+              "risk_factors": [],
+              "efficiency_rating": "medium",
+              "is_deterministic_fallback": true
+            },
+            "llm_validation": {
+              "is_valid": false,
+              "confidence": 0.8,
+              "efficiency_score": 0.9,
+              "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+              "suggested_improvements": [],
+              "risk_assessment": "low",
+              "is_deterministic_fallback": true
+            },
+            "safety_score": 1.0,
+            "safety_risks": [],
+            "safety_details": {
+              "content": {},
+              "capabilities": {
+                "forbidden_capabilities": []
+              },
+              "policy": {}
+            },
+            "score": 0.6986478900909424,
+            "score_components": {
+              "llm": 0.5,
+              "heuristics": 0.778239450454712,
+              "prior": 0.9,
+              "cost": 0.98,
+              "latency": 0.8
+            },
+            "confidence": 0.7651429435275727
+          },
+          {
+            "node_id": "quality_checker",
+            "path": [
+              "quality_checker",
+              "knowledge_base_search"
+            ],
+            "depth": 2,
+            "feasible": true,
+            "constraints_met": true,
+            "graphscout_generated": true,
+            "estimated_cost": 0.002,
+            "estimated_latency": 2000.0,
+            "budget_assessment": {
+              "compliant": true,
+              "violations": [],
+              "estimates": {
+                "tokens": 240,
+                "cost_usd": 0.002,
+                "latency_ms": 2000.0
+              },
+              "remaining_budget": {
+                "tokens": 50000,
+                "cost_usd": 1.0,
+                "latency_ms": 30000.0
+              }
+            },
+            "fits_budget": true,
+            "llm_evaluation": {
+              "relevance_score": 0.5,
+              "confidence": 0.8,
+              "reasoning": "Heuristic evaluation: quality_checker matched question keywords",
+              "expected_output": "Agent execution result",
+              "estimated_tokens": 500,
+              "estimated_cost": 0.001,
+              "estimated_latency_ms": 1000,
+              "risk_factors": [],
+              "efficiency_rating": "medium",
+              "is_deterministic_fallback": true
+            },
+            "llm_validation": {
+              "is_valid": false,
+              "confidence": 0.8,
+              "efficiency_score": 0.9,
+              "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+              "suggested_improvements": [],
+              "risk_assessment": "low",
+              "is_deterministic_fallback": true
+            },
+            "safety_score": 1.0,
+            "safety_risks": [],
+            "safety_details": {
+              "content": {},
+              "capabilities": {
+                "forbidden_capabilities": []
+              },
+              "policy": {}
+            },
+            "score": 0.6986478900909424,
+            "score_components": {
+              "llm": 0.5,
+              "heuristics": 0.778239450454712,
+              "prior": 0.9,
+              "cost": 0.98,
+              "latency": 0.8
+            },
+            "confidence": 0.7651429435275727
+          },
+          {
+            "node_id": "quality_checker",
+            "path": [
+              "quality_checker",
+              "response_drafter"
+            ],
+            "depth": 2,
+            "feasible": true,
+            "constraints_met": true,
+            "graphscout_generated": true,
+            "estimated_cost": 0.002,
+            "estimated_latency": 2000.0,
+            "budget_assessment": {
+              "compliant": true,
+              "violations": [],
+              "estimates": {
+                "tokens": 240,
+                "cost_usd": 0.002,
+                "latency_ms": 2000.0
+              },
+              "remaining_budget": {
+                "tokens": 50000,
+                "cost_usd": 1.0,
+                "latency_ms": 30000.0
+              }
+            },
+            "fits_budget": true,
+            "llm_evaluation": {
+              "relevance_score": 0.5,
+              "confidence": 0.8,
+              "reasoning": "Heuristic evaluation: quality_checker matched question keywords",
+              "expected_output": "Agent execution result",
+              "estimated_tokens": 500,
+              "estimated_cost": 0.001,
+              "estimated_latency_ms": 1000,
+              "risk_factors": [],
+              "efficiency_rating": "medium",
+              "is_deterministic_fallback": true
+            },
+            "llm_validation": {
+              "is_valid": false,
+              "confidence": 0.8,
+              "efficiency_score": 0.9,
+              "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+              "suggested_improvements": [],
+              "risk_assessment": "low",
+              "is_deterministic_fallback": true
+            },
+            "safety_score": 1.0,
+            "safety_risks": [],
+            "safety_details": {
+              "content": {},
+              "capabilities": {
+                "forbidden_capabilities": []
+              },
+              "policy": {}
+            },
+            "score": 0.6986478900909424,
+            "score_components": {
+              "llm": 0.5,
+              "heuristics": 0.778239450454712,
+              "prior": 0.9,
+              "cost": 0.98,
+              "latency": 0.8
+            },
+            "confidence": 0.7651429435275727
+          }
+        ],
+        "confidence": 0.5651429435275728,
+        "reasoning": "Close competition with margin 0.000 - returning top 3 options",
+        "candidates_evaluated": 120,
+        "top_score": 0.6986478900909424
+      }
+    },
+    "route_executor": {
+      "response": "The anti\u2011pattern \"Skip Diagnostic Steps\" occurs when a system or developer bypasses essential troubleshooting procedures\u2014such as logging, unit tests, or systematic debugging\u2014before attempting to fix an issue. This can lead to incomplete understanding of the root cause, repeated failures, and wasted effort.\n\n**Key characteristics**:\n1. **Omission of diagnostics** \u2013 Skipping steps like error\u2011logging, stack traces, or test coverage checks.\n2. **Assumption of familiarity** \u2013 Believing that prior knowledge suffices without verifying current context.\n3. **Immediate code changes** \u2013 Making quick edits or deploying fixes without validation.\n\n**Consequences**:\n- Hidden side effects may surface later.\n- Difficulty reproducing the problem.\n- Increased maintenance cost.\n\n**Mitigation strategies**:\n1. Enforce a diagnostic checklist in CI pipelines.\n2. Require unit/ integration tests to run before merges.\n3. Use automated logging and monitoring tools to capture failure data.\n4. Conduct post\u2011mortems to review skipped steps.\n5. Educate teams on the importance of systematic debugging.\n\nBy addressing these points, teams can avoid the pitfalls associated with skipping diagnostic steps and improve overall software reliability.",
+      "confidence": "0.9",
+      "internal_reasoning": "The routed path selected a quality_checker followed by knowledge_base_search or response_drafter. I provided a comprehensive explanation of the anti\u2011pattern, its characteristics, consequences, and mitigation strategies based on documented best practices.",
+      "_metrics": {
+        "tokens": 2059,
+        "prompt_tokens": 1734,
+        "completion_tokens": 325,
+        "latency_ms": 3293.6,
+        "cost_usd": 0.000207,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Execute the routed task based on the GraphScout decision.\n\nORIGINAL REQUEST: Anti-Pattern: Skip Diagnostic Steps\nROUTING DECISION: shortlist\nTARGET PATH: [{'node_id': 'quality_checker', 'path': ['quality_checker', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: quality_checker matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6986478900909424, 'score_components': {'llm': 0.5, 'heuristics': 0.778239450454712, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7651429435275727}, {'node_id': 'quality_checker', 'path': ['quality_checker', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: quality_checker matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6986478900909424, 'score_components': {'llm': 0.5, 'heuristics': 0.778239450454712, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7651429435275727}, {'node_id': 'quality_checker', 'path': ['quality_checker', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: quality_checker matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6986478900909424, 'score_components': {'llm': 0.5, 'heuristics': 0.778239450454712, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7651429435275727}]\nROUTING CONFIDENCE: 0.5651429435275728\nREASONING: Close competition with margin 0.000 - returning top 3 options\n\nExecute and produce a thorough response following the selected path.\n\nReturn JSON with:\n- \"response\": your complete solution following the routed path\n- \"route_taken\": the path/agent selected\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": how the routing decision guided your response"
+    },
+    "brain_learn_executed": {
+      "response": "Learned path: path:customer_support:escalation_handler\u2192escalation_handler\u2192escalation_handler",
+      "confidence": "0.6107895361816391",
+      "internal_reasoning": "GraphScout path stored with 3 nodes",
+      "skill_id": "32c31852-00ba-4f0d-8157-379e2c3cb909",
+      "skill_name": "path:customer_support:escalation_handler\u2192escalation_handler\u2192escalation_handler",
+      "skill_type": "graph_path"
+    },
+    "brain_feedback": {
+      "response": "Recorded successful transfer for skill 'path:customer_support:escalation_handler\u2192escalation_handler\u2192escalation_handler'.",
+      "confidence": "0.6302500593725572",
+      "internal_reasoning": "Transfer feedback recorded. Skill now has 2 transfer(s).",
+      "skill_id": "32c31852-00ba-4f0d-8157-379e2c3cb909",
+      "skill_name": "path:customer_support:escalation_handler\u2192escalation_handler\u2192escalation_handler",
+      "transfer_count": 2,
+      "transfer_success": true
+    },
+    "task_result": {
+      "response": "The \"Skip Diagnostic Steps\" anti\u2011pattern occurs when a team bypasses essential troubleshooting procedures\u2014such as logging, unit tests, or systematic debugging\u2014before attempting to fix an issue. This leads to incomplete understanding of the root cause, repeated failures, and wasted effort.\n\n**Key characteristics**:\n1. Omission of diagnostics (e.g., missing error logs, stack traces, test coverage).\n2. Assumption of familiarity without verifying current context.\n3. Immediate code changes or deployments without validation.\n\n**Consequences**:\n- Hidden side effects may surface later.\n- Difficulty reproducing the problem.\n- Increased maintenance cost.\n\n**Mitigation strategies**:\n1. Enforce a diagnostic checklist in CI pipelines to ensure all diagnostics are captured before merges.\n2. Require unit and integration tests to run automatically, with failures blocking progress.\n3. Implement automated logging and monitoring tools that capture failure data for analysis.\n4. Conduct post\u2011mortems after incidents to review skipped steps and update processes.\n5. Educate teams on the importance of systematic debugging through training and documentation.\n\nBy adopting these practices, teams can avoid the pitfalls associated with skipping diagnostic steps and improve overall software reliability.",
+      "confidence": "0.95",
+      "internal_reasoning": "The answer is based directly on the provided execution result and standard best\u2011practice guidelines for avoiding diagnostic omissions. All statements are factual and supported by evidence from the task description.",
+      "_metrics": {
+        "tokens": 2303,
+        "prompt_tokens": 1987,
+        "completion_tokens": 316,
+        "latency_ms": 3378.44,
+        "cost_usd": 0.000212,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output.\n\nDOMAIN: customer_support\nTASK: Anti-Pattern: Skip Diagnostic Steps\n\nROUTING DECISION: shortlist\nTARGET: [{'node_id': 'quality_checker', 'path': ['quality_checker', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: quality_checker matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6986478900909424, 'score_components': {'llm': 0.5, 'heuristics': 0.778239450454712, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7651429435275727}, {'node_id': 'quality_checker', 'path': ['quality_checker', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: quality_checker matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6986478900909424, 'score_components': {'llm': 0.5, 'heuristics': 0.778239450454712, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7651429435275727}, {'node_id': 'quality_checker', 'path': ['quality_checker', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: quality_checker matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6986478900909424, 'score_components': {'llm': 0.5, 'heuristics': 0.778239450454712, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7651429435275727}]\nCONFIDENCE: 0.5651429435275728\n\nEXECUTION RESULT:\nThe anti\u2011pattern \"Skip Diagnostic Steps\" occurs when a system or developer bypasses essential troubleshooting procedures\u2014such as logging, unit tests, or systematic debugging\u2014before attempting to fix an issue. This can lead to incomplete understanding of the root cause, repeated failures, and wasted effort.\n\n**Key characteristics**:\n1. **Omission of diagnostics** \u2013 Skipping steps like error\u2011logging, stack traces, or test coverage checks.\n2. **Assumption of familiarity** \u2013 Believing that prior knowledge suffices without verifying current context.\n3. **Immediate code changes** \u2013 Making quick edits or deploying fixes without validation.\n\n**Consequences**:\n- Hidden side effects may surface later.\n- Difficulty reproducing the problem.\n- Increased maintenance cost.\n\n**Mitigation strategies**:\n1. Enforce a diagnostic checklist in CI pipelines.\n2. Require unit/ integration tests to run before merges.\n3. Use automated logging and monitoring tools to capture failure data.\n4. Conduct post\u2011mortems to review skipped steps.\n5. Educate teams on the importance of systematic debugging.\n\nBy addressing these points, teams can avoid the pitfalls associated with skipping diagnostic steps and improve overall software reliability.\n\nReturn JSON with:\n- \"response\": comprehensive solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"route_decision\": the routing decision made\n- \"route_target\": selected path\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

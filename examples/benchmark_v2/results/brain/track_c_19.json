@@ -1,0 +1,1104 @@
+{
+  "task_id": "track_c_19",
+  "condition": "brain",
+  "elapsed_s": 6.49,
+  "success": true,
+  "output": {
+    "response": "Your webhook delivery dashboard is reporting successful deliveries, but your logs show no inbound traffic. The most likely cause is that the DNS change to Fastly has not fully propagated or a stale DNS entry is being used by our servers. Here\u2019s what you should do:\n\n1. **Verify current A/AAAA records** \u2013 Use `dig +trace <your-domain>` from multiple locations (including your own server and an external public resolver) to confirm the IPs returned match Fastly\u2019s edge IP ranges.\n2. **Check TTL values** \u2013 If the previous Cloudflare record had a long TTL, it may still be cached in some resolvers. Lower the TTL on the new Fastly record to 60\u2011120 seconds and wait for propagation.\n3. **Inspect Fastly configuration** \u2013 Ensure that the service\u2019s domain is correctly mapped to your webhook URL and that no custom rules or caching policies are inadvertently dropping POST requests.\n4. **Enable raw logging in Fastly** \u2013 Turn on request logging (or use a test endpoint) to capture inbound traffic. This will confirm whether Fastly is receiving the events and forwarding them.\n5. **Cross\u2011check IP ranges** \u2013 Compare the source IPs logged by Fastly with our known webhook IP ranges. If they match, the requests are reaching Fastly but not your origin.\n6. **Confirm SSL/TLS handshake** \u2013 Use `openssl s_client -connect <your-domain>:443` to ensure the certificate presented matches what you expect and that no intermediate proxies alter it.\n7. **Re\u2011enable webhook in dashboard** \u2013 Temporarily delete and recreate the webhook URL in our dashboard, then monitor the delivery status again.\n8. **If still unresolved, open a support ticket** \u2013 Provide them with the Fastly logs, DNS trace results, and any relevant error messages so they can investigate from their side.\n\nBy following these steps you should be able to pinpoint whether the issue is DNS\u2011related, Fastly configuration, or an internal routing problem.",
+    "confidence": "0.92",
+    "internal_reasoning": "The user\u2019s logs show no traffic while dashboard shows success; DNS change likely not fully propagated. Steps focus on verifying DNS, TTL, Fastly config, and logging to isolate the issue.",
+    "_metrics": {
+      "tokens": 2418,
+      "prompt_tokens": 1941,
+      "completion_tokens": 477,
+      "latency_ms": 4352.59,
+      "cost_usd": 0.000274,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output.\n\nDOMAIN: customer_support\nTASK: Our webhook endpoint stopped receiving events 3 days ago. We initially thought it was our server, but our logs show NO incoming requests from your IP ranges since Tuesday. We checked: our firewall (no blocks), our server (HTTP endpoint returns 200 for manual curl), our DNS (resolves correctly), and our SSL cert (valid for 10 more months). We were about to open a ticket when today we noticed that your webhook delivery dashboard shows all events as 'delivered successfully' for the past 3 days, with 200 response codes. So either: (a) your dashboard is lying, (b) the webhooks are being delivered to a different URL, or (c) something in the middle is intercepting them. We recently changed our CDN provider (Cloudflare \u2192 Fastly) and updated DNS 4 days ago \u2014 could the webhook delivery be hitting a cached/old DNS entry? Our webhook URL config in your dashboard shows the correct URL.\n\nROUTING DECISION: shortlist\nTARGET: [{'node_id': 'technical_support', 'path': ['technical_support', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: technical_support matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6983008670806885, 'score_components': {'llm': 0.5, 'heuristics': 0.7765043354034424, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7647861327432696}, {'node_id': 'technical_support', 'path': ['technical_support', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: technical_support matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6983008670806885, 'score_components': {'llm': 0.5, 'heuristics': 0.7765043354034424, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7647861327432696}, {'node_id': 'technical_support', 'path': ['technical_support', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: technical_support matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6983008670806885, 'score_components': {'llm': 0.5, 'heuristics': 0.7765043354034424, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7647861327432696}]\nCONFIDENCE: 0.5647861327432695\n\nEXECUTION RESULT:\n\n\nReturn JSON with:\n- \"response\": comprehensive solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"route_decision\": the routing decision made\n- \"route_target\": selected path\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "brain_learn_path": {
+      "response": "No path could be learned (empty path or failed outcome).",
+      "confidence": "0.0"
+    },
+    "brain_learn_anti": {
+      "response": "Recorded anti-pattern: anti:general:",
+      "confidence": "0.37367213845702235",
+      "internal_reasoning": "Anti-pattern stored: unknown",
+      "skill_id": "f42517a9-466a-468c-b484-752689e42297",
+      "skill_name": "anti:general:",
+      "skill_type": "anti_pattern"
+    },
+    "smart_router": {
+      "decision": "shortlist",
+      "target": [
+        {
+          "node_id": "technical_support",
+          "path": [
+            "technical_support",
+            "knowledge_base_search"
+          ],
+          "depth": 2,
+          "feasible": true,
+          "constraints_met": true,
+          "graphscout_generated": true,
+          "estimated_cost": 0.002,
+          "estimated_latency": 2000.0,
+          "budget_assessment": {
+            "compliant": true,
+            "violations": [],
+            "estimates": {
+              "tokens": 240,
+              "cost_usd": 0.002,
+              "latency_ms": 2000.0
+            },
+            "remaining_budget": {
+              "tokens": 50000,
+              "cost_usd": 1.0,
+              "latency_ms": 30000.0
+            }
+          },
+          "fits_budget": true,
+          "llm_evaluation": {
+            "relevance_score": 0.5,
+            "confidence": 0.8,
+            "reasoning": "Heuristic evaluation: technical_support matched question keywords",
+            "expected_output": "Agent execution result",
+            "estimated_tokens": 500,
+            "estimated_cost": 0.001,
+            "estimated_latency_ms": 1000,
+            "risk_factors": [],
+            "efficiency_rating": "medium",
+            "is_deterministic_fallback": true
+          },
+          "llm_validation": {
+            "is_valid": false,
+            "confidence": 0.8,
+            "efficiency_score": 0.9,
+            "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+            "suggested_improvements": [],
+            "risk_assessment": "low",
+            "is_deterministic_fallback": true
+          },
+          "safety_score": 1.0,
+          "safety_risks": [],
+          "safety_details": {
+            "content": {},
+            "capabilities": {
+              "forbidden_capabilities": []
+            },
+            "policy": {}
+          },
+          "score": 0.6983008670806885,
+          "score_components": {
+            "llm": 0.5,
+            "heuristics": 0.7765043354034424,
+            "prior": 0.9,
+            "cost": 0.98,
+            "latency": 0.8
+          },
+          "confidence": 0.7647861327432696
+        },
+        {
+          "node_id": "technical_support",
+          "path": [
+            "technical_support",
+            "knowledge_base_search"
+          ],
+          "depth": 2,
+          "feasible": true,
+          "constraints_met": true,
+          "graphscout_generated": true,
+          "estimated_cost": 0.002,
+          "estimated_latency": 2000.0,
+          "budget_assessment": {
+            "compliant": true,
+            "violations": [],
+            "estimates": {
+              "tokens": 240,
+              "cost_usd": 0.002,
+              "latency_ms": 2000.0
+            },
+            "remaining_budget": {
+              "tokens": 50000,
+              "cost_usd": 1.0,
+              "latency_ms": 30000.0
+            }
+          },
+          "fits_budget": true,
+          "llm_evaluation": {
+            "relevance_score": 0.5,
+            "confidence": 0.8,
+            "reasoning": "Heuristic evaluation: technical_support matched question keywords",
+            "expected_output": "Agent execution result",
+            "estimated_tokens": 500,
+            "estimated_cost": 0.001,
+            "estimated_latency_ms": 1000,
+            "risk_factors": [],
+            "efficiency_rating": "medium",
+            "is_deterministic_fallback": true
+          },
+          "llm_validation": {
+            "is_valid": false,
+            "confidence": 0.8,
+            "efficiency_score": 0.9,
+            "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+            "suggested_improvements": [],
+            "risk_assessment": "low",
+            "is_deterministic_fallback": true
+          },
+          "safety_score": 1.0,
+          "safety_risks": [],
+          "safety_details": {
+            "content": {},
+            "capabilities": {
+              "forbidden_capabilities": []
+            },
+            "policy": {}
+          },
+          "score": 0.6983008670806885,
+          "score_components": {
+            "llm": 0.5,
+            "heuristics": 0.7765043354034424,
+            "prior": 0.9,
+            "cost": 0.98,
+            "latency": 0.8
+          },
+          "confidence": 0.7647861327432696
+        },
+        {
+          "node_id": "technical_support",
+          "path": [
+            "technical_support",
+            "response_drafter"
+          ],
+          "depth": 2,
+          "feasible": true,
+          "constraints_met": true,
+          "graphscout_generated": true,
+          "estimated_cost": 0.002,
+          "estimated_latency": 2000.0,
+          "budget_assessment": {
+            "compliant": true,
+            "violations": [],
+            "estimates": {
+              "tokens": 240,
+              "cost_usd": 0.002,
+              "latency_ms": 2000.0
+            },
+            "remaining_budget": {
+              "tokens": 50000,
+              "cost_usd": 1.0,
+              "latency_ms": 30000.0
+            }
+          },
+          "fits_budget": true,
+          "llm_evaluation": {
+            "relevance_score": 0.5,
+            "confidence": 0.8,
+            "reasoning": "Heuristic evaluation: technical_support matched question keywords",
+            "expected_output": "Agent execution result",
+            "estimated_tokens": 500,
+            "estimated_cost": 0.001,
+            "estimated_latency_ms": 1000,
+            "risk_factors": [],
+            "efficiency_rating": "medium",
+            "is_deterministic_fallback": true
+          },
+          "llm_validation": {
+            "is_valid": false,
+            "confidence": 0.8,
+            "efficiency_score": 0.9,
+            "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+            "suggested_improvements": [],
+            "risk_assessment": "low",
+            "is_deterministic_fallback": true
+          },
+          "safety_score": 1.0,
+          "safety_risks": [],
+          "safety_details": {
+            "content": {},
+            "capabilities": {
+              "forbidden_capabilities": []
+            },
+            "policy": {}
+          },
+          "score": 0.6983008670806885,
+          "score_components": {
+            "llm": 0.5,
+            "heuristics": 0.7765043354034424,
+            "prior": 0.9,
+            "cost": 0.98,
+            "latency": 0.8
+          },
+          "confidence": 0.7647861327432696
+        }
+      ],
+      "confidence": 0.5647861327432695,
+      "reasoning": "Close competition with margin 0.000 - returning top 3 options",
+      "trace": {
+        "graph_scout_version": "1.0.0",
+        "timestamp": "2026-04-11T00:21:12.609187+00:00",
+        "question": "Given this support request, find the best processing path.\nOur webhook endpoint stopped receiving events 3 days ago. We initially thought it was our server, but our logs show NO incoming requests from your IP ranges since Tuesday. We checked: our firewall (no blocks), our server (HTTP endpoint returns 200 for manual curl), our DNS (resolves correctly), and our SSL cert (valid for 10 more months). We were about to open a ticket when today we noticed that your webhook delivery dashboard shows all events as 'delivered successfully' for the past 3 days, with 200 response codes. So either: (a) your dashboard is lying, (b) the webhooks are being delivered to a different URL, or (c) something in the middle is intercepting them. We recently changed our CDN provider (Cloudflare \u2192 Fastly) and updated DNS 4 days ago \u2014 could the webhook delivery be hitting a cached/old DNS entry? Our webhook URL config in your dashboard shows the correct URL.",
+        "config": {
+          "k_beam": 3,
+          "max_depth": 2,
+          "commit_margin": 0.15,
+          "score_weights": {
+            "llm": 0.45,
+            "heuristics": 0.2,
+            "prior": 0.2,
+            "cost": 0.1,
+            "latency": 0.05,
+            "brain": 0.15
+          }
+        },
+        "discovery": {
+          "total_candidates": 91,
+          "candidate_nodes": [
+            "knowledge_base_search",
+            "response_drafter",
+            "quality_checker",
+            "escalation_handler",
+            "account_recovery",
+            "billing_specialist",
+            "technical_support",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support"
+          ]
+        },
+        "scoring": {
+          "scored_candidates": 3,
+          "top_scores": [
+            {
+              "node_id": "technical_support",
+              "score": 0.6983008670806885,
+              "components": {}
+            },
+            {
+              "node_id": "technical_support",
+              "score": 0.6983008670806885,
+              "components": {}
+            },
+            {
+              "node_id": "technical_support",
+              "score": 0.6983008670806885,
+              "components": {}
+            }
+          ]
+        },
+        "decision": {
+          "type": "shortlist",
+          "target": [
+            {
+              "node_id": "technical_support",
+              "path": [
+                "technical_support",
+                "knowledge_base_search"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: technical_support matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 1.0,
+              "safety_risks": [],
+              "safety_details": {
+                "content": {},
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6983008670806885,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.7765043354034424,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7647861327432696
+            },
+            {
+              "node_id": "technical_support",
+              "path": [
+                "technical_support",
+                "knowledge_base_search"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: technical_support matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 1.0,
+              "safety_risks": [],
+              "safety_details": {
+                "content": {},
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6983008670806885,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.7765043354034424,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7647861327432696
+            },
+            {
+              "node_id": "technical_support",
+              "path": [
+                "technical_support",
+                "response_drafter"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: technical_support matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 1.0,
+              "safety_risks": [],
+              "safety_details": {
+                "content": {},
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6983008670806885,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.7765043354034424,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7647861327432696
+            }
+          ],
+          "confidence": 0.5647861327432695,
+          "reasoning": "Close competition with margin 0.000 - returning top 3 options"
+        },
+        "execution_metadata": {
+          "node_id": "smart_router",
+          "run_id": "unknown",
+          "step_index": 0
+        }
+      },
+      "status": "success",
+      "metrics": {
+        "run_id": "unknown",
+        "timestamp": "2026-04-11T02:21:12.477125",
+        "path_discovery": {
+          "candidates_discovered": 91,
+          "candidates_after_budget": 0,
+          "candidates_after_safety": 0,
+          "reduction_rate": 1.0
+        },
+        "evaluation": {
+          "llm_evaluation_time_ms": 0.0,
+          "llm_evaluation_failed": false,
+          "used_deterministic_fallback": false
+        },
+        "selection": {
+          "selected_path": [
+            {
+              "node_id": "technical_support",
+              "path": [
+                "technical_support",
+                "knowledge_base_search"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: technical_support matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 1.0,
+              "safety_risks": [],
+              "safety_details": {
+                "content": {},
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6983008670806885,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.7765043354034424,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7647861327432696
+            },
+            {
+              "node_id": "technical_support",
+              "path": [
+                "technical_support",
+                "knowledge_base_search"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: technical_support matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 1.0,
+              "safety_risks": [],
+              "safety_details": {
+                "content": {},
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6983008670806885,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.7765043354034424,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7647861327432696
+            },
+            {
+              "node_id": "technical_support",
+              "path": [
+                "technical_support",
+                "response_drafter"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: technical_support matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 1.0,
+              "safety_risks": [],
+              "safety_details": {
+                "content": {},
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6983008670806885,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.7765043354034424,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7647861327432696
+            }
+          ],
+          "confidence": 0.5647861327432695,
+          "reasoning_preview": "Close competition with margin 0.000 - returning top 3 options"
+        },
+        "performance": {
+          "total_time_ms": 132.06219673156738,
+          "breakdown": {
+            "budget_filter_ms": 0.0,
+            "safety_filter_ms": 0.0,
+            "scoring_ms": 0.0,
+            "decision_ms": 0.0
+          }
+        },
+        "resources": {
+          "estimated_cost_usd": 0.0,
+          "estimated_latency_ms": 0
+        },
+        "issues": {
+          "error_count": 0,
+          "warning_count": 0,
+          "errors": [],
+          "warnings": []
+        }
+      },
+      "input": "Given this support request, find the best processing path.\nOur webhook endpoint stopped receiving events 3 days ago. We initially thought it was our server, but our logs show NO incoming requests from your IP ranges since Tuesday. We checked: our firewall (no blocks), our server (HTTP endpoint returns 200 for manual curl), our DNS (resolves correctly), and our SSL cert (valid for 10 more months). We were about to open a ticket when today we noticed that your webhook delivery dashboard shows all events as 'delivered successfully' for the past 3 days, with 200 response codes. So either: (a) your dashboard is lying, (b) the webhooks are being delivered to a different URL, or (c) something in the middle is intercepting them. We recently changed our CDN provider (Cloudflare \u2192 Fastly) and updated DNS 4 days ago \u2014 could the webhook delivery be hitting a cached/old DNS entry? Our webhook URL config in your dashboard shows the correct URL.",
+      "previous_outputs": {
+        "brain_learn_path": {
+          "response": "No path could be learned (empty path or failed outcome).",
+          "confidence": "0.0"
+        },
+        "brain_learn_anti": {
+          "response": "Recorded anti-pattern: anti:general:",
+          "confidence": "0.37367213845702235",
+          "internal_reasoning": "Anti-pattern stored: unknown",
+          "skill_id": "f42517a9-466a-468c-b484-752689e42297",
+          "skill_name": "anti:general:",
+          "skill_type": "anti_pattern"
+        }
+      },
+      "result": {
+        "decision": "shortlist",
+        "target": [
+          {
+            "node_id": "technical_support",
+            "path": [
+              "technical_support",
+              "knowledge_base_search"
+            ],
+            "depth": 2,
+            "feasible": true,
+            "constraints_met": true,
+            "graphscout_generated": true,
+            "estimated_cost": 0.002,
+            "estimated_latency": 2000.0,
+            "budget_assessment": {
+              "compliant": true,
+              "violations": [],
+              "estimates": {
+                "tokens": 240,
+                "cost_usd": 0.002,
+                "latency_ms": 2000.0
+              },
+              "remaining_budget": {
+                "tokens": 50000,
+                "cost_usd": 1.0,
+                "latency_ms": 30000.0
+              }
+            },
+            "fits_budget": true,
+            "llm_evaluation": {
+              "relevance_score": 0.5,
+              "confidence": 0.8,
+              "reasoning": "Heuristic evaluation: technical_support matched question keywords",
+              "expected_output": "Agent execution result",
+              "estimated_tokens": 500,
+              "estimated_cost": 0.001,
+              "estimated_latency_ms": 1000,
+              "risk_factors": [],
+              "efficiency_rating": "medium",
+              "is_deterministic_fallback": true
+            },
+            "llm_validation": {
+              "is_valid": false,
+              "confidence": 0.8,
+              "efficiency_score": 0.9,
+              "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+              "suggested_improvements": [],
+              "risk_assessment": "low",
+              "is_deterministic_fallback": true
+            },
+            "safety_score": 1.0,
+            "safety_risks": [],
+            "safety_details": {
+              "content": {},
+              "capabilities": {
+                "forbidden_capabilities": []
+              },
+              "policy": {}
+            },
+            "score": 0.6983008670806885,
+            "score_components": {
+              "llm": 0.5,
+              "heuristics": 0.7765043354034424,
+              "prior": 0.9,
+              "cost": 0.98,
+              "latency": 0.8
+            },
+            "confidence": 0.7647861327432696
+          },
+          {
+            "node_id": "technical_support",
+            "path": [
+              "technical_support",
+              "knowledge_base_search"
+            ],
+            "depth": 2,
+            "feasible": true,
+            "constraints_met": true,
+            "graphscout_generated": true,
+            "estimated_cost": 0.002,
+            "estimated_latency": 2000.0,
+            "budget_assessment": {
+              "compliant": true,
+              "violations": [],
+              "estimates": {
+                "tokens": 240,
+                "cost_usd": 0.002,
+                "latency_ms": 2000.0
+              },
+              "remaining_budget": {
+                "tokens": 50000,
+                "cost_usd": 1.0,
+                "latency_ms": 30000.0
+              }
+            },
+            "fits_budget": true,
+            "llm_evaluation": {
+              "relevance_score": 0.5,
+              "confidence": 0.8,
+              "reasoning": "Heuristic evaluation: technical_support matched question keywords",
+              "expected_output": "Agent execution result",
+              "estimated_tokens": 500,
+              "estimated_cost": 0.001,
+              "estimated_latency_ms": 1000,
+              "risk_factors": [],
+              "efficiency_rating": "medium",
+              "is_deterministic_fallback": true
+            },
+            "llm_validation": {
+              "is_valid": false,
+              "confidence": 0.8,
+              "efficiency_score": 0.9,
+              "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+              "suggested_improvements": [],
+              "risk_assessment": "low",
+              "is_deterministic_fallback": true
+            },
+            "safety_score": 1.0,
+            "safety_risks": [],
+            "safety_details": {
+              "content": {},
+              "capabilities": {
+                "forbidden_capabilities": []
+              },
+              "policy": {}
+            },
+            "score": 0.6983008670806885,
+            "score_components": {
+              "llm": 0.5,
+              "heuristics": 0.7765043354034424,
+              "prior": 0.9,
+              "cost": 0.98,
+              "latency": 0.8
+            },
+            "confidence": 0.7647861327432696
+          },
+          {
+            "node_id": "technical_support",
+            "path": [
+              "technical_support",
+              "response_drafter"
+            ],
+            "depth": 2,
+            "feasible": true,
+            "constraints_met": true,
+            "graphscout_generated": true,
+            "estimated_cost": 0.002,
+            "estimated_latency": 2000.0,
+            "budget_assessment": {
+              "compliant": true,
+              "violations": [],
+              "estimates": {
+                "tokens": 240,
+                "cost_usd": 0.002,
+                "latency_ms": 2000.0
+              },
+              "remaining_budget": {
+                "tokens": 50000,
+                "cost_usd": 1.0,
+                "latency_ms": 30000.0
+              }
+            },
+            "fits_budget": true,
+            "llm_evaluation": {
+              "relevance_score": 0.5,
+              "confidence": 0.8,
+              "reasoning": "Heuristic evaluation: technical_support matched question keywords",
+              "expected_output": "Agent execution result",
+              "estimated_tokens": 500,
+              "estimated_cost": 0.001,
+              "estimated_latency_ms": 1000,
+              "risk_factors": [],
+              "efficiency_rating": "medium",
+              "is_deterministic_fallback": true
+            },
+            "llm_validation": {
+              "is_valid": false,
+              "confidence": 0.8,
+              "efficiency_score": 0.9,
+              "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+              "suggested_improvements": [],
+              "risk_assessment": "low",
+              "is_deterministic_fallback": true
+            },
+            "safety_score": 1.0,
+            "safety_risks": [],
+            "safety_details": {
+              "content": {},
+              "capabilities": {
+                "forbidden_capabilities": []
+              },
+              "policy": {}
+            },
+            "score": 0.6983008670806885,
+            "score_components": {
+              "llm": 0.5,
+              "heuristics": 0.7765043354034424,
+              "prior": 0.9,
+              "cost": 0.98,
+              "latency": 0.8
+            },
+            "confidence": 0.7647861327432696
+          }
+        ],
+        "confidence": 0.5647861327432695,
+        "reasoning": "Close competition with margin 0.000 - returning top 3 options",
+        "candidates_evaluated": 91,
+        "top_score": 0.6983008670806885
+      }
+    },
+    "route_executor": {
+      "response": "",
+      "confidence": "0.0",
+      "internal_reasoning": "The routed path requires a technical support response, but the system\u2019s confidence is below the required threshold of 0.9 for safe execution.",
+      "_metrics": {
+        "tokens": 1979,
+        "prompt_tokens": 1924,
+        "completion_tokens": 55,
+        "latency_ms": 1213.14,
+        "cost_usd": 7.5e-05,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Execute the routed task based on the GraphScout decision.\n\nORIGINAL REQUEST: Our webhook endpoint stopped receiving events 3 days ago. We initially thought it was our server, but our logs show NO incoming requests from your IP ranges since Tuesday. We checked: our firewall (no blocks), our server (HTTP endpoint returns 200 for manual curl), our DNS (resolves correctly), and our SSL cert (valid for 10 more months). We were about to open a ticket when today we noticed that your webhook delivery dashboard shows all events as 'delivered successfully' for the past 3 days, with 200 response codes. So either: (a) your dashboard is lying, (b) the webhooks are being delivered to a different URL, or (c) something in the middle is intercepting them. We recently changed our CDN provider (Cloudflare \u2192 Fastly) and updated DNS 4 days ago \u2014 could the webhook delivery be hitting a cached/old DNS entry? Our webhook URL config in your dashboard shows the correct URL.\nROUTING DECISION: shortlist\nTARGET PATH: [{'node_id': 'technical_support', 'path': ['technical_support', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: technical_support matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6983008670806885, 'score_components': {'llm': 0.5, 'heuristics': 0.7765043354034424, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7647861327432696}, {'node_id': 'technical_support', 'path': ['technical_support', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: technical_support matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6983008670806885, 'score_components': {'llm': 0.5, 'heuristics': 0.7765043354034424, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7647861327432696}, {'node_id': 'technical_support', 'path': ['technical_support', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: technical_support matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6983008670806885, 'score_components': {'llm': 0.5, 'heuristics': 0.7765043354034424, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7647861327432696}]\nROUTING CONFIDENCE: 0.5647861327432695\nREASONING: Close competition with margin 0.000 - returning top 3 options\n\nExecute and produce a thorough response following the selected path.\n\nReturn JSON with:\n- \"response\": your complete solution following the routed path\n- \"route_taken\": the path/agent selected\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": how the routing decision guided your response"
+    },
+    "brain_learn_executed": {
+      "response": "Learned path: path:customer_support:technical_support\u2192technical_support\u2192technical_support",
+      "confidence": "0.5647861327432695",
+      "internal_reasoning": "GraphScout path stored with 3 nodes",
+      "skill_id": "84340761-87e9-439b-9fc5-3919915e802b",
+      "skill_name": "path:customer_support:technical_support\u2192technical_support\u2192technical_support",
+      "skill_type": "graph_path"
+    },
+    "brain_feedback": {
+      "response": "Recorded successful transfer for skill 'path:customer_support:technical_support\u2192technical_support\u2192technical_support'.",
+      "confidence": "0.586546826106106",
+      "internal_reasoning": "Transfer feedback recorded. Skill now has 1 transfer(s).",
+      "skill_id": "84340761-87e9-439b-9fc5-3919915e802b",
+      "skill_name": "path:customer_support:technical_support\u2192technical_support\u2192technical_support",
+      "transfer_count": 1,
+      "transfer_success": true
+    },
+    "task_result": {
+      "response": "Your webhook delivery dashboard is reporting successful deliveries, but your logs show no inbound traffic. The most likely cause is that the DNS change to Fastly has not fully propagated or a stale DNS entry is being used by our servers. Here\u2019s what you should do:\n\n1. **Verify current A/AAAA records** \u2013 Use `dig +trace <your-domain>` from multiple locations (including your own server and an external public resolver) to confirm the IPs returned match Fastly\u2019s edge IP ranges.\n2. **Check TTL values** \u2013 If the previous Cloudflare record had a long TTL, it may still be cached in some resolvers. Lower the TTL on the new Fastly record to 60\u2011120 seconds and wait for propagation.\n3. **Inspect Fastly configuration** \u2013 Ensure that the service\u2019s domain is correctly mapped to your webhook URL and that no custom rules or caching policies are inadvertently dropping POST requests.\n4. **Enable raw logging in Fastly** \u2013 Turn on request logging (or use a test endpoint) to capture inbound traffic. This will confirm whether Fastly is receiving the events and forwarding them.\n5. **Cross\u2011check IP ranges** \u2013 Compare the source IPs logged by Fastly with our known webhook IP ranges. If they match, the requests are reaching Fastly but not your origin.\n6. **Confirm SSL/TLS handshake** \u2013 Use `openssl s_client -connect <your-domain>:443` to ensure the certificate presented matches what you expect and that no intermediate proxies alter it.\n7. **Re\u2011enable webhook in dashboard** \u2013 Temporarily delete and recreate the webhook URL in our dashboard, then monitor the delivery status again.\n8. **If still unresolved, open a support ticket** \u2013 Provide them with the Fastly logs, DNS trace results, and any relevant error messages so they can investigate from their side.\n\nBy following these steps you should be able to pinpoint whether the issue is DNS\u2011related, Fastly configuration, or an internal routing problem.",
+      "confidence": "0.92",
+      "internal_reasoning": "The user\u2019s logs show no traffic while dashboard shows success; DNS change likely not fully propagated. Steps focus on verifying DNS, TTL, Fastly config, and logging to isolate the issue.",
+      "_metrics": {
+        "tokens": 2418,
+        "prompt_tokens": 1941,
+        "completion_tokens": 477,
+        "latency_ms": 4352.59,
+        "cost_usd": 0.000274,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output.\n\nDOMAIN: customer_support\nTASK: Our webhook endpoint stopped receiving events 3 days ago. We initially thought it was our server, but our logs show NO incoming requests from your IP ranges since Tuesday. We checked: our firewall (no blocks), our server (HTTP endpoint returns 200 for manual curl), our DNS (resolves correctly), and our SSL cert (valid for 10 more months). We were about to open a ticket when today we noticed that your webhook delivery dashboard shows all events as 'delivered successfully' for the past 3 days, with 200 response codes. So either: (a) your dashboard is lying, (b) the webhooks are being delivered to a different URL, or (c) something in the middle is intercepting them. We recently changed our CDN provider (Cloudflare \u2192 Fastly) and updated DNS 4 days ago \u2014 could the webhook delivery be hitting a cached/old DNS entry? Our webhook URL config in your dashboard shows the correct URL.\n\nROUTING DECISION: shortlist\nTARGET: [{'node_id': 'technical_support', 'path': ['technical_support', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: technical_support matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6983008670806885, 'score_components': {'llm': 0.5, 'heuristics': 0.7765043354034424, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7647861327432696}, {'node_id': 'technical_support', 'path': ['technical_support', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: technical_support matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6983008670806885, 'score_components': {'llm': 0.5, 'heuristics': 0.7765043354034424, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7647861327432696}, {'node_id': 'technical_support', 'path': ['technical_support', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: technical_support matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6983008670806885, 'score_components': {'llm': 0.5, 'heuristics': 0.7765043354034424, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7647861327432696}]\nCONFIDENCE: 0.5647861327432695\n\nEXECUTION RESULT:\n\n\nReturn JSON with:\n- \"response\": comprehensive solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"route_decision\": the routing decision made\n- \"route_target\": selected path\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

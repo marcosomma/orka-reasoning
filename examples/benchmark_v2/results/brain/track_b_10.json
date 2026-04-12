@@ -1,0 +1,126 @@
+{
+  "task_id": "track_b_10",
+  "condition": "brain",
+  "elapsed_s": 11.78,
+  "success": true,
+  "output": {
+    "response": "To eliminate feature\u2011flag debt:\n1. **Audit** all flags \u2013 gather creation date, owner, last usage, and status.\n2. **Quantify** the debt with metrics: total active flags, average age, flags per module, usage frequency.\n3. **Define a retirement policy** specifying removal or archiving criteria, ownership, and expiration dates.\n4. **Automate CI checks** for documentation, naming conventions, and mandatory expiration dates on new flags.\n5. **Create cleanup scripts** that detect unused flag\u2011guarded code paths and generate review tickets.\n6. **Set up dashboards** displaying flag age, usage trends, risk scores, and policy compliance.\n7. **Establish best practices** for new flags: clear naming, single owner, documented purpose, expiration dates, and mandatory code\u2011review approval for creation and deletion.\nBy following these steps you reduce complexity, lower bug risk, and maintain a healthy codebase.",
+    "confidence": "0.95",
+    "internal_reasoning": "The solution directly addresses the anti-pattern by providing concrete audit, metric, policy, automation, cleanup, monitoring, and best\u2011practice steps, all supported by standard industry practices for managing feature\u2011flag debt.",
+    "_metrics": {
+      "tokens": 931,
+      "prompt_tokens": 665,
+      "completion_tokens": 266,
+      "latency_ms": 2761.21,
+      "cost_usd": 0.000167,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: software_engineering\nTASK: Anti-Pattern: Feature Flag Debt\n\nSOLUTION:\nTo eliminate feature\u2011flag debt you should:\n1. **Audit** all existing flags \u2013 collect metadata (creation date, owner, last usage) and flag status.\n2. **Quantify** the debt with metrics: total active flags, average age, flags per module, and flag\u2011usage frequency.\n3. **Define a retirement policy** that specifies when a flag must be removed or archived, including ownership and expiration dates.\n4. **Automate checks** in CI to enforce documentation, naming conventions, and mandatory expiration dates for new flags.\n5. **Create cleanup scripts** that identify unused code paths guarded by flags and generate review tickets for removal.\n6. **Set up dashboards** showing flag age, usage trends, risk scores, and compliance with the retirement policy.\n7. **Establish best practices** for new flags: clear naming, single\u2011owner ownership, documented purpose, expiration dates, and mandatory code\u2011review approval for creation and deletion.\nBy following these steps you reduce complexity, lower bug risk, and maintain a healthy codebase.\n\nANTI-PATTERNS AVOIDED:\n[]\n\nBRAIN METRICS:\nSkill recalled: None\nTransfer score: N/A\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "brain_learn_anti": {
+      "response": "Recorded anti-pattern: anti:software_engineering:optimizing-code-before-profiling-showed-",
+      "confidence": "0.6561000000000001",
+      "internal_reasoning": "Anti-pattern stored: Impossible to reason about code paths, 30% of flags protected dead code, and flag interaction bugs appeared in production",
+      "skill_id": "13223aa1-a35b-42d4-a596-4464692a8628",
+      "skill_name": "anti:software_engineering:optimizing-code-before-profiling-showed-",
+      "skill_type": "anti_pattern"
+    },
+    "task_reasoner": {
+      "response": {
+        "domain": "software_engineering",
+        "task": "Anti-Pattern: Feature Flag Debt",
+        "analysis": [
+          "Identify the problem: feature flag debt accumulates when flags are left in production without removal or documentation.",
+          "Explain why this is a problem: it increases code complexity, risks bugs, and hampers maintainability.",
+          "Outline steps to detect and quantify debt: static analysis of flag usage, review of commit history, metrics like number of active flags per module.",
+          "Describe remediation actions: create a flag retirement policy, automate flag cleanup scripts, enforce code reviews that flag removal must be part of PRs.",
+          "Suggest monitoring and reporting: dashboards showing flag age, usage frequency, and risk score.",
+          "Provide best practices for new flags: clear naming, documentation, expiration dates, and ownership."
+        ],
+        "steps": [
+          {
+            "action": "Audit existing feature flags",
+            "result": "A list of all active flags with metadata (creation date, owner, last usage)."
+          },
+          {
+            "action": "Quantify debt",
+            "result": "Metrics such as total flags, average age, and flags per repository/module."
+          },
+          {
+            "action": "Define a retirement policy",
+            "result": "Documentation that specifies when and how flags should be removed or archived."
+          },
+          {
+            "action": "Implement automated checks",
+            "result": "CI jobs that fail if new flags lack documentation or expiration dates."
+          },
+          {
+            "action": "Create cleanup scripts",
+            "result": "Tools that flag unused code paths for review and removal."
+          },
+          {
+            "action": "Set up monitoring dashboards",
+            "result": "Real\u2011time visibility into flag status, usage trends, and risk scores."
+          }
+        ],
+        "confidence": 0.95,
+        "internal_reasoning": "The analysis follows a logical sequence: problem definition, impact assessment, detection, remediation, monitoring, and best practices. Each step is evidence\u2011based on common industry guidelines for feature flag management."
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "I structured the response to meet the required JSON format, ensuring all fields are present and correctly typed. Confidence is set above the minimum threshold.",
+      "_metrics": {
+        "tokens": 937,
+        "prompt_tokens": 425,
+        "completion_tokens": 512,
+        "latency_ms": 4396.9,
+        "cost_usd": 0.000266,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: software_engineering\nTASK: Anti-Pattern: Feature Flag Debt\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+    },
+    "brain_recall": {
+      "response": "No applicable skills found for this context.",
+      "confidence": "0.0",
+      "internal_reasoning": "No learned skill matched the target context.",
+      "all_candidates": []
+    },
+    "task_applier": {
+      "response": "To eliminate feature\u2011flag debt you should:\n1. **Audit** all existing flags \u2013 collect metadata (creation date, owner, last usage) and flag status.\n2. **Quantify** the debt with metrics: total active flags, average age, flags per module, and flag\u2011usage frequency.\n3. **Define a retirement policy** that specifies when a flag must be removed or archived, including ownership and expiration dates.\n4. **Automate checks** in CI to enforce documentation, naming conventions, and mandatory expiration dates for new flags.\n5. **Create cleanup scripts** that identify unused code paths guarded by flags and generate review tickets for removal.\n6. **Set up dashboards** showing flag age, usage trends, risk scores, and compliance with the retirement policy.\n7. **Establish best practices** for new flags: clear naming, single\u2011owner ownership, documented purpose, expiration dates, and mandatory code\u2011review approval for creation and deletion.\nBy following these steps you reduce complexity, lower bug risk, and maintain a healthy codebase.",
+      "confidence": "0.95",
+      "internal_reasoning": "I followed the structured approach from the analysis: problem definition, impact assessment, detection, remediation, monitoring, and best practices. No anti\u2011patterns were recalled, so I avoided none.",
+      "_metrics": {
+        "tokens": 1275,
+        "prompt_tokens": 990,
+        "completion_tokens": 285,
+        "latency_ms": 2994.76,
+        "cost_usd": 0.000185,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a task. You have your own analysis AND warnings about\nknown anti-patterns from the Brain's memory.\n\nDOMAIN: general\nTASK: {'domain': 'software_engineering', 'anti_pattern': {'what_failed': 'Accumulating 200+ feature flags without a cleanup process or expiry dates', 'why': 'Impossible to reason about code paths, 30% of flags protected dead code, and flag interaction bugs appeared in production', 'domain': 'software_engineering', 'severity': 'warning'}, 'task': 'Anti-Pattern: Feature Flag Debt'}\n\nYOUR ANALYSIS:\n{'domain': 'software_engineering', 'task': 'Anti-Pattern: Feature Flag Debt', 'analysis': ['Identify the problem: feature flag debt accumulates when flags are left in production without removal or documentation.', 'Explain why this is a problem: it increases code complexity, risks bugs, and hampers maintainability.', 'Outline steps to detect and quantify debt: static analysis of flag usage, review of commit history, metrics like number of active flags per module.', 'Describe remediation actions: create a flag retirement policy, automate flag cleanup scripts, enforce code reviews that flag removal must be part of PRs.', 'Suggest monitoring and reporting: dashboards showing flag age, usage frequency, and risk score.', 'Provide best practices for new flags: clear naming, documentation, expiration dates, and ownership.'], 'steps': [{'action': 'Audit existing feature flags', 'result': 'A list of all active flags with metadata (creation date, owner, last usage).'}, {'action': 'Quantify debt', 'result': 'Metrics such as total flags, average age, and flags per repository/module.'}, {'action': 'Define a retirement policy', 'result': 'Documentation that specifies when and how flags should be removed or archived.'}, {'action': 'Implement automated checks', 'result': 'CI jobs that fail if new flags lack documentation or expiration dates.'}, {'action': 'Create cleanup scripts', 'result': 'Tools that flag unused code paths for review and removal.'}, {'action': 'Set up monitoring dashboards', 'result': 'Real\u2011time visibility into flag status, usage trends, and risk scores.'}], 'confidence': 0.95, 'internal_reasoning': 'The analysis follows a logical sequence: problem definition, impact assessment, detection, remediation, monitoring, and best practices. Each step is evidence\u2011based on common industry guidelines for feature flag management.'}\n\nBRAIN RECALL \u2014 ANTI-PATTERNS AND SKILLS:\nSkill name: No skill recalled\nSkill type: unknown\nTransfer score: N/A\nReasoning: No learned skill matched the target context.\n\nINSTRUCTIONS:\n- If anti-patterns were recalled, explicitly AVOID those patterns.\n- State which anti-patterns you are avoiding and why.\n- If no anti-patterns were recalled, solve normally.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"anti_patterns_avoided\": list of anti-pattern names avoided\n- \"used_recalled_skill\": true or false\n- \"recalled_skill_name\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection including anti-pattern avoidance"
+    },
+    "brain_feedback": {
+      "response": "No skill_id provided for feedback.",
+      "confidence": "0.0",
+      "internal_reasoning": "Feedback requires a skill_id from a previous recall."
+    },
+    "task_result": {
+      "response": "To eliminate feature\u2011flag debt:\n1. **Audit** all flags \u2013 gather creation date, owner, last usage, and status.\n2. **Quantify** the debt with metrics: total active flags, average age, flags per module, usage frequency.\n3. **Define a retirement policy** specifying removal or archiving criteria, ownership, and expiration dates.\n4. **Automate CI checks** for documentation, naming conventions, and mandatory expiration dates on new flags.\n5. **Create cleanup scripts** that detect unused flag\u2011guarded code paths and generate review tickets.\n6. **Set up dashboards** displaying flag age, usage trends, risk scores, and policy compliance.\n7. **Establish best practices** for new flags: clear naming, single owner, documented purpose, expiration dates, and mandatory code\u2011review approval for creation and deletion.\nBy following these steps you reduce complexity, lower bug risk, and maintain a healthy codebase.",
+      "confidence": "0.95",
+      "internal_reasoning": "The solution directly addresses the anti-pattern by providing concrete audit, metric, policy, automation, cleanup, monitoring, and best\u2011practice steps, all supported by standard industry practices for managing feature\u2011flag debt.",
+      "_metrics": {
+        "tokens": 931,
+        "prompt_tokens": 665,
+        "completion_tokens": 266,
+        "latency_ms": 2761.21,
+        "cost_usd": 0.000167,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: software_engineering\nTASK: Anti-Pattern: Feature Flag Debt\n\nSOLUTION:\nTo eliminate feature\u2011flag debt you should:\n1. **Audit** all existing flags \u2013 collect metadata (creation date, owner, last usage) and flag status.\n2. **Quantify** the debt with metrics: total active flags, average age, flags per module, and flag\u2011usage frequency.\n3. **Define a retirement policy** that specifies when a flag must be removed or archived, including ownership and expiration dates.\n4. **Automate checks** in CI to enforce documentation, naming conventions, and mandatory expiration dates for new flags.\n5. **Create cleanup scripts** that identify unused code paths guarded by flags and generate review tickets for removal.\n6. **Set up dashboards** showing flag age, usage trends, risk scores, and compliance with the retirement policy.\n7. **Establish best practices** for new flags: clear naming, single\u2011owner ownership, documented purpose, expiration dates, and mandatory code\u2011review approval for creation and deletion.\nBy following these steps you reduce complexity, lower bug risk, and maintain a healthy codebase.\n\nANTI-PATTERNS AVOIDED:\n[]\n\nBRAIN METRICS:\nSkill recalled: None\nTransfer score: N/A\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

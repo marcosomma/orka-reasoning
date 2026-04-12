@@ -1,0 +1,325 @@
+{
+  "task_id": "track_a_14",
+  "condition": "brainless",
+  "elapsed_s": 20.94,
+  "success": true,
+  "output": {
+    "response": {
+      "overview": "A comprehensive, phased plan to assess format obsolescence, bit\u2011rot, and metadata drift in a 2.3\u202fPB national archive repository, classify objects using the NDSA maturity framework weighted by cultural significance and legal deposit obligations, and prioritize migration paths with fidelity estimates.",
+      "steps": [
+        {
+          "step": 1,
+          "title": "Master Inventory & Metadata Mapping",
+          "actions": [
+            "Run DROID/ExifTool on all objects to fingerprint formats.",
+            "Extract ingest logs, catalog records, and schema versions into a unified relational database.",
+            "Generate a master spreadsheet with fields: ObjectID, Size, Format, CreationDate, SourceSystem, SchemaVersion."
+          ],
+          "output": "Inventory table ready for risk analysis."
+        },
+        {
+          "step": 2,
+          "title": "Legacy Format Identification",
+          "actions": [
+            "Cross\u2011reference format fingerprints with PRONOM and IETF RFCs to flag proprietary/obsolete formats.",
+            "Create a support status matrix (Active, Deprecated, Unmaintained)."
+          ],
+          "output": "List of at\u2011risk formats with community support levels."
+        },
+        {
+          "step": 3,
+          "title": "Integrity & Bit\u2011Rot Assessment",
+          "actions": [
+            "Recompute SHA\u2011256 checksums and compare to stored hashes.",
+            "Log mismatches; calculate bit\u2011rot probability using error\u2011detecting codes (CRC32, Adler32)."
+          ],
+          "output": "Bit\u2011rot risk score per object."
+        },
+        {
+          "step": 4,
+          "title": "Metadata Drift Analysis",
+          "actions": [
+            "Map each object's metadata schema to current standards (MARC21, Dublin Core, MODS).",
+            "Generate drift matrix; flag schemas beyond tolerance thresholds."
+          ],
+          "output": "Metadata health score per object."
+        },
+        {
+          "step": 5,
+          "title": "NDSA Maturity Classification",
+          "actions": [
+            "Apply NDSA Levels 1\u20135 criteria: format stability, integrity status, metadata health.",
+            "Assign maturity level to each object."
+          ],
+          "output": "Maturity level table."
+        },
+        {
+          "step": 6,
+          "title": "Risk Weighting",
+          "actions": [
+            "Multiply maturity score by UNESCO Memory of the World cultural weight (0\u20131) and legal deposit factor (0.5\u20131).",
+            "Produce a composite risk index per object."
+          ],
+          "output": "Weighted risk index."
+        },
+        {
+          "step": 7,
+          "title": "Migration Path Planning",
+          "actions": [
+            "Select target open formats: PDF/A for docs, TIFF/PNG for images, WAV/FLAC for audio.",
+            "Use Ghostscript, ImageMagick, FFmpeg to estimate fidelity loss (visual inspection, checksum comparison)."
+          ],
+          "output": "Migration plan with fidelity\u2011loss estimates."
+        },
+        {
+          "step": 8,
+          "title": "Prioritization Engine",
+          "actions": [
+            "Compute priority score = irreplaceability \u00d7 access frequency \u00d7 community support trajectory.",
+            "Rank objects into tiers A (high), B, C; allocate migration resources accordingly."
+          ],
+          "output": "Priority tier list."
+        },
+        {
+          "step": 9,
+          "title": "Proprietary Format Strategy",
+          "actions": [
+            "Assess reverse engineering or third\u2011party emulation for the two 1990s series.",
+            "If emulation viable: preserve original binaries + VM image; else convert using vendor export tools or custom scripts."
+          ],
+          "output": "Preservation strategy for proprietary series."
+        },
+        {
+          "step": 10,
+          "title": "Implementation Roadmap",
+          "actions": [
+            "Draft phased migration schedule aligned with funding cycles.",
+            "Include pilot conversions, QA checkpoints, metadata normalization tasks.",
+            "Estimate costs per tier and contingency buffer."
+          ],
+          "output": "Roadmap document."
+        },
+        {
+          "step": 11,
+          "title": "Monitoring & Governance",
+          "actions": [
+            "Set up cron jobs to re\u2011run integrity checks quarterly.",
+            "Update risk index annually; maintain GitHub repo for scripts, logs, decisions.",
+            "Establish governance board for policy updates."
+          ],
+          "output": "Governance framework."
+        }
+      ],
+      "summary": "This plan delivers a data\u2011driven, risk\u2011aware migration strategy that balances cultural value, legal obligations, and technical feasibility, ensuring long\u2011term access to the archive\u2019s 2.3\u202fPB of heterogeneous content."
+    },
+    "confidence": "0.95",
+    "internal_reasoning": "The solution follows established digital preservation best practices (DROID fingerprinting, NDSA maturity levels, UNESCO criteria) and addresses all specified requirements: format obsolescence, bit\u2011rot, metadata drift, proprietary formats, migration fidelity, and prioritization.",
+    "_metrics": {
+      "tokens": 2156,
+      "prompt_tokens": 1076,
+      "completion_tokens": 1080,
+      "latency_ms": 9150.31,
+      "cost_usd": 0.000575,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'cultural_heritage', 'task': \"Scan a national archive's 2.3PB digital preservation repository for format obsolescence risks, bit-rot indicators, and metadata schema drift across 40 years of heterogeneous ingest. Classify each at-risk object by the NDSA Levels of Digital Preservation maturity framework, severity-weighted by cultural significance (UNESCO Memory of the World criteria) and legal deposit obligations. Recommend format migration paths with fidelity-loss estimates, prioritized by a composite score combining irreplaceability, access frequency, and format community support trajectory. Two collection series use proprietary 1990s-era formats where the vendor no longer exists.\"}\n\nSOLUTION:\n1. Inventory & Metadata Mapping: Use ingest logs, catalog records, and format fingerprinting (e.g., DROID) to create a master spreadsheet of all 2.3\u202fPB objects, noting file type, creation date, source system, and metadata schema version.\n\n2. Legacy Format Identification: Flag all proprietary or obsolete formats (e.g., 1990s vendor\u2011specific CAD, database dumps). Record current community support status via format registries (PRONOM, IETF RFCs).\n\n3. Integrity Assessment: Run checksum verification against stored hashes; flag mismatches as bit\u2011rot candidates. Perform spot\u2011checks with error\u2011detecting codes (e.g., CRC32, SHA\u2011256) and record severity.\n\n4. Metadata Drift Analysis: Compare each object\u2019s metadata schema to the current standard (MARC21, Dublin Core, MODS). Generate a drift matrix; objects deviating beyond acceptable tolerance are marked for normalization.\n\n5. NDSA Maturity Classification: Apply the NDSA Levels of Digital Preservation maturity to each object based on format stability, integrity status, and metadata health, assigning Levels\u202f1\u20135.\n\n6. Risk Weighting: Multiply each object's maturity score by a cultural significance weight (UNESCO Memory of the World criteria) and a legal deposit obligation factor. Produce a weighted risk index.\n\n7. Migration Path Planning: For high\u2011risk objects, select target open formats with proven fidelity (e.g., PDF/A for documents, TIFF/PNG for images, WAV/FLAC for audio). Use conversion tools (Ghostscript, ImageMagick, FFmpeg) to estimate fidelity loss; document expected degradation.\n\n8. Prioritization Engine: Compute a composite priority score = (irreplaceability \u00d7 access frequency \u00d7 community support trajectory). Rank objects into tiers (A\u2013C). Tier\u202fA receives immediate migration resources.\n\n9. Proprietary Format Strategy: For the two 1990s\u2011era proprietary series, evaluate reverse engineering feasibility or third\u2011party emulation services. If emulation is viable, preserve original binaries and provide a virtual machine image; if not, convert to an open format using vendor\u2011specific export tools (if available) or custom scripts.\n\n10. Implementation Roadmap: Draft a phased migration schedule aligned with funding cycles, including pilot conversions, quality assurance checks, and metadata normalization tasks. Provide cost estimates per tier and contingency plans for unforeseen format obsolescence.\n\n11. Monitoring & Governance: Set up automated monitoring (cron jobs) to re\u2011run integrity checks quarterly; update the risk index annually; maintain a living documentation repository (GitHub repo) with all scripts, conversion logs, and decision rationales.\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": {
+        "domain": "cultural_heritage",
+        "task": "Assess format obsolescence, bit\u2011rot, and metadata drift in a 2.3\u202fPB archive; classify risks using NDSA maturity levels weighted by cultural significance and legal deposit; recommend migration paths with fidelity loss estimates prioritized by irreplaceability, access frequency, and community support trajectory.",
+        "steps": [
+          {
+            "action": "Catalog all ingest metadata and file formats across the 40\u2011year span",
+            "result": "Comprehensive inventory of object types, ingestion dates, source systems, and associated metadata schemas."
+          },
+          {
+            "action": "Identify legacy and proprietary formats (e.g., 1990s vendor\u2011specific) via format fingerprinting tools",
+            "result": "List of at\u2011risk formats with version details and current community support status."
+          },
+          {
+            "action": "Run integrity checks (hash verification, checksum comparison) to detect bit\u2011rot indicators",
+            "result": "Report of objects with checksum mismatches or corruption flags."
+          },
+          {
+            "action": "Map metadata schema versions over time and flag deviations from current standards (e.g., MARC21, Dublin Core)",
+            "result": "Schema drift matrix highlighting objects needing metadata normalization."
+          },
+          {
+            "action": "Apply NDSA Levels of Digital Preservation maturity to each object based on format stability, integrity status, and metadata health",
+            "result": "Maturity level assignment per object (Levels 1\u20135)."
+          },
+          {
+            "action": "Weight each object's risk score by UNESCO Memory of the World criteria and legal deposit obligations",
+            "result": "Severity\u2011weighted risk index for every item."
+          },
+          {
+            "action": "Develop migration pathways: select target open formats (e.g., PDF/A, TIFF, WAV) with documented fidelity\u2011loss estimates from conversion tools",
+            "result": "Migration matrix detailing source \u2192 target format, expected loss, and required tooling."
+          },
+          {
+            "action": "Prioritize migrations using a composite score = (irreplaceability \u00d7 access frequency \u00d7 community support trajectory)",
+            "result": "Ordered migration backlog with priority tiers."
+          },
+          {
+            "action": "For proprietary 1990s formats, perform reverse\u2011engineering or engage third\u2011party emulation services; document feasibility and cost",
+            "result": "Feasibility report for each proprietary series with recommended preservation strategy (emulation vs. conversion)."
+          }
+        ],
+        "confidence": "0.95",
+        "internal_reasoning": "The analysis follows a logical sequence: inventory, risk identification, assessment, classification, prioritization, and action planning. Each step builds on the previous one, ensuring evidence\u2011based decisions."
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "All steps are grounded in established digital preservation practices (NDSA framework, UNESCO criteria). The confidence level reflects high certainty that this structured approach will yield actionable insights for a large heterogeneous archive.",
+      "_metrics": {
+        "tokens": 1182,
+        "prompt_tokens": 539,
+        "completion_tokens": 643,
+        "latency_ms": 5847.91,
+        "cost_usd": 0.000361,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: cultural_heritage\nTASK: Scan a national archive's 2.3PB digital preservation repository for format obsolescence risks, bit-rot indicators, and metadata schema drift across 40 years of heterogeneous ingest. Classify each at-risk object by the NDSA Levels of Digital Preservation maturity framework, severity-weighted by cultural significance (UNESCO Memory of the World criteria) and legal deposit obligations. Recommend format migration paths with fidelity-loss estimates, prioritized by a composite score combining irreplaceability, access frequency, and format community support trajectory. Two collection series use proprietary 1990s-era formats where the vendor no longer exists.\n\n\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+    },
+    "task_applier": {
+      "response": "1. Inventory & Metadata Mapping: Use ingest logs, catalog records, and format fingerprinting (e.g., DROID) to create a master spreadsheet of all 2.3\u202fPB objects, noting file type, creation date, source system, and metadata schema version.\n\n2. Legacy Format Identification: Flag all proprietary or obsolete formats (e.g., 1990s vendor\u2011specific CAD, database dumps). Record current community support status via format registries (PRONOM, IETF RFCs).\n\n3. Integrity Assessment: Run checksum verification against stored hashes; flag mismatches as bit\u2011rot candidates. Perform spot\u2011checks with error\u2011detecting codes (e.g., CRC32, SHA\u2011256) and record severity.\n\n4. Metadata Drift Analysis: Compare each object\u2019s metadata schema to the current standard (MARC21, Dublin Core, MODS). Generate a drift matrix; objects deviating beyond acceptable tolerance are marked for normalization.\n\n5. NDSA Maturity Classification: Apply the NDSA Levels of Digital Preservation maturity to each object based on format stability, integrity status, and metadata health, assigning Levels\u202f1\u20135.\n\n6. Risk Weighting: Multiply each object's maturity score by a cultural significance weight (UNESCO Memory of the World criteria) and a legal deposit obligation factor. Produce a weighted risk index.\n\n7. Migration Path Planning: For high\u2011risk objects, select target open formats with proven fidelity (e.g., PDF/A for documents, TIFF/PNG for images, WAV/FLAC for audio). Use conversion tools (Ghostscript, ImageMagick, FFmpeg) to estimate fidelity loss; document expected degradation.\n\n8. Prioritization Engine: Compute a composite priority score = (irreplaceability \u00d7 access frequency \u00d7 community support trajectory). Rank objects into tiers (A\u2013C). Tier\u202fA receives immediate migration resources.\n\n9. Proprietary Format Strategy: For the two 1990s\u2011era proprietary series, evaluate reverse engineering feasibility or third\u2011party emulation services. If emulation is viable, preserve original binaries and provide a virtual machine image; if not, convert to an open format using vendor\u2011specific export tools (if available) or custom scripts.\n\n10. Implementation Roadmap: Draft a phased migration schedule aligned with funding cycles, including pilot conversions, quality assurance checks, and metadata normalization tasks. Provide cost estimates per tier and contingency plans for unforeseen format obsolescence.\n\n11. Monitoring & Governance: Set up automated monitoring (cron jobs) to re\u2011run integrity checks quarterly; update the risk index annually; maintain a living documentation repository (GitHub repo) with all scripts, conversion logs, and decision rationales.",
+      "confidence": "0.95",
+      "internal_reasoning": "The solution follows the stepwise plan from analysis: inventory, format identification, integrity check, metadata drift, maturity classification, risk weighting, migration planning, prioritization, proprietary handling, roadmap, and governance. Each step is evidence\u2011based and aligns with NDSA and UNESCO criteria.",
+      "_metrics": {
+        "tokens": 1732,
+        "prompt_tokens": 1087,
+        "completion_tokens": 645,
+        "latency_ms": 5622.03,
+        "cost_usd": 0.000347,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a task. You have your own step-by-step analysis.\nYou have NO prior experience and NO recalled skills.\n\nDOMAIN: general\nTASK: {'domain': 'cultural_heritage', 'task': \"Scan a national archive's 2.3PB digital preservation repository for format obsolescence risks, bit-rot indicators, and metadata schema drift across 40 years of heterogeneous ingest. Classify each at-risk object by the NDSA Levels of Digital Preservation maturity framework, severity-weighted by cultural significance (UNESCO Memory of the World criteria) and legal deposit obligations. Recommend format migration paths with fidelity-loss estimates, prioritized by a composite score combining irreplaceability, access frequency, and format community support trajectory. Two collection series use proprietary 1990s-era formats where the vendor no longer exists.\"}\n\nYOUR ANALYSIS:\n{'domain': 'cultural_heritage', 'task': 'Assess format obsolescence, bit\u2011rot, and metadata drift in a 2.3\\u202fPB archive; classify risks using NDSA maturity levels weighted by cultural significance and legal deposit; recommend migration paths with fidelity loss estimates prioritized by irreplaceability, access frequency, and community support trajectory.', 'steps': [{'action': 'Catalog all ingest metadata and file formats across the 40\u2011year span', 'result': 'Comprehensive inventory of object types, ingestion dates, source systems, and associated metadata schemas.'}, {'action': 'Identify legacy and proprietary formats (e.g., 1990s vendor\u2011specific) via format fingerprinting tools', 'result': 'List of at\u2011risk formats with version details and current community support status.'}, {'action': 'Run integrity checks (hash verification, checksum comparison) to detect bit\u2011rot indicators', 'result': 'Report of objects with checksum mismatches or corruption flags.'}, {'action': 'Map metadata schema versions over time and flag deviations from current standards (e.g., MARC21, Dublin Core)', 'result': 'Schema drift matrix highlighting objects needing metadata normalization.'}, {'action': 'Apply NDSA Levels of Digital Preservation maturity to each object based on format stability, integrity status, and metadata health', 'result': 'Maturity level assignment per object (Levels 1\u20135).'}, {'action': \"Weight each object's risk score by UNESCO Memory of the World criteria and legal deposit obligations\", 'result': 'Severity\u2011weighted risk index for every item.'}, {'action': 'Develop migration pathways: select target open formats (e.g., PDF/A, TIFF, WAV) with documented fidelity\u2011loss estimates from conversion tools', 'result': 'Migration matrix detailing source \u2192 target format, expected loss, and required tooling.'}, {'action': 'Prioritize migrations using a composite score = (irreplaceability \u00d7 access frequency \u00d7 community support trajectory)', 'result': 'Ordered migration backlog with priority tiers.'}, {'action': 'For proprietary 1990s formats, perform reverse\u2011engineering or engage third\u2011party emulation services; document feasibility and cost', 'result': 'Feasibility report for each proprietary series with recommended preservation strategy (emulation vs. conversion).'}], 'confidence': '0.95', 'internal_reasoning': 'The analysis follows a logical sequence: inventory, risk identification, assessment, classification, prioritization, and action planning. Each step builds on the previous one, ensuring evidence\u2011based decisions.'}\n\nSolve the task using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": false\n- \"recalled_skill_name\": \"none\"\n- \"adaptation_notes\": \"N/A\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+    },
+    "task_result": {
+      "response": {
+        "overview": "A comprehensive, phased plan to assess format obsolescence, bit\u2011rot, and metadata drift in a 2.3\u202fPB national archive repository, classify objects using the NDSA maturity framework weighted by cultural significance and legal deposit obligations, and prioritize migration paths with fidelity estimates.",
+        "steps": [
+          {
+            "step": 1,
+            "title": "Master Inventory & Metadata Mapping",
+            "actions": [
+              "Run DROID/ExifTool on all objects to fingerprint formats.",
+              "Extract ingest logs, catalog records, and schema versions into a unified relational database.",
+              "Generate a master spreadsheet with fields: ObjectID, Size, Format, CreationDate, SourceSystem, SchemaVersion."
+            ],
+            "output": "Inventory table ready for risk analysis."
+          },
+          {
+            "step": 2,
+            "title": "Legacy Format Identification",
+            "actions": [
+              "Cross\u2011reference format fingerprints with PRONOM and IETF RFCs to flag proprietary/obsolete formats.",
+              "Create a support status matrix (Active, Deprecated, Unmaintained)."
+            ],
+            "output": "List of at\u2011risk formats with community support levels."
+          },
+          {
+            "step": 3,
+            "title": "Integrity & Bit\u2011Rot Assessment",
+            "actions": [
+              "Recompute SHA\u2011256 checksums and compare to stored hashes.",
+              "Log mismatches; calculate bit\u2011rot probability using error\u2011detecting codes (CRC32, Adler32)."
+            ],
+            "output": "Bit\u2011rot risk score per object."
+          },
+          {
+            "step": 4,
+            "title": "Metadata Drift Analysis",
+            "actions": [
+              "Map each object's metadata schema to current standards (MARC21, Dublin Core, MODS).",
+              "Generate drift matrix; flag schemas beyond tolerance thresholds."
+            ],
+            "output": "Metadata health score per object."
+          },
+          {
+            "step": 5,
+            "title": "NDSA Maturity Classification",
+            "actions": [
+              "Apply NDSA Levels 1\u20135 criteria: format stability, integrity status, metadata health.",
+              "Assign maturity level to each object."
+            ],
+            "output": "Maturity level table."
+          },
+          {
+            "step": 6,
+            "title": "Risk Weighting",
+            "actions": [
+              "Multiply maturity score by UNESCO Memory of the World cultural weight (0\u20131) and legal deposit factor (0.5\u20131).",
+              "Produce a composite risk index per object."
+            ],
+            "output": "Weighted risk index."
+          },
+          {
+            "step": 7,
+            "title": "Migration Path Planning",
+            "actions": [
+              "Select target open formats: PDF/A for docs, TIFF/PNG for images, WAV/FLAC for audio.",
+              "Use Ghostscript, ImageMagick, FFmpeg to estimate fidelity loss (visual inspection, checksum comparison)."
+            ],
+            "output": "Migration plan with fidelity\u2011loss estimates."
+          },
+          {
+            "step": 8,
+            "title": "Prioritization Engine",
+            "actions": [
+              "Compute priority score = irreplaceability \u00d7 access frequency \u00d7 community support trajectory.",
+              "Rank objects into tiers A (high), B, C; allocate migration resources accordingly."
+            ],
+            "output": "Priority tier list."
+          },
+          {
+            "step": 9,
+            "title": "Proprietary Format Strategy",
+            "actions": [
+              "Assess reverse engineering or third\u2011party emulation for the two 1990s series.",
+              "If emulation viable: preserve original binaries + VM image; else convert using vendor export tools or custom scripts."
+            ],
+            "output": "Preservation strategy for proprietary series."
+          },
+          {
+            "step": 10,
+            "title": "Implementation Roadmap",
+            "actions": [
+              "Draft phased migration schedule aligned with funding cycles.",
+              "Include pilot conversions, QA checkpoints, metadata normalization tasks.",
+              "Estimate costs per tier and contingency buffer."
+            ],
+            "output": "Roadmap document."
+          },
+          {
+            "step": 11,
+            "title": "Monitoring & Governance",
+            "actions": [
+              "Set up cron jobs to re\u2011run integrity checks quarterly.",
+              "Update risk index annually; maintain GitHub repo for scripts, logs, decisions.",
+              "Establish governance board for policy updates."
+            ],
+            "output": "Governance framework."
+          }
+        ],
+        "summary": "This plan delivers a data\u2011driven, risk\u2011aware migration strategy that balances cultural value, legal obligations, and technical feasibility, ensuring long\u2011term access to the archive\u2019s 2.3\u202fPB of heterogeneous content."
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "The solution follows established digital preservation best practices (DROID fingerprinting, NDSA maturity levels, UNESCO criteria) and addresses all specified requirements: format obsolescence, bit\u2011rot, metadata drift, proprietary formats, migration fidelity, and prioritization.",
+      "_metrics": {
+        "tokens": 2156,
+        "prompt_tokens": 1076,
+        "completion_tokens": 1080,
+        "latency_ms": 9150.31,
+        "cost_usd": 0.000575,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'cultural_heritage', 'task': \"Scan a national archive's 2.3PB digital preservation repository for format obsolescence risks, bit-rot indicators, and metadata schema drift across 40 years of heterogeneous ingest. Classify each at-risk object by the NDSA Levels of Digital Preservation maturity framework, severity-weighted by cultural significance (UNESCO Memory of the World criteria) and legal deposit obligations. Recommend format migration paths with fidelity-loss estimates, prioritized by a composite score combining irreplaceability, access frequency, and format community support trajectory. Two collection series use proprietary 1990s-era formats where the vendor no longer exists.\"}\n\nSOLUTION:\n1. Inventory & Metadata Mapping: Use ingest logs, catalog records, and format fingerprinting (e.g., DROID) to create a master spreadsheet of all 2.3\u202fPB objects, noting file type, creation date, source system, and metadata schema version.\n\n2. Legacy Format Identification: Flag all proprietary or obsolete formats (e.g., 1990s vendor\u2011specific CAD, database dumps). Record current community support status via format registries (PRONOM, IETF RFCs).\n\n3. Integrity Assessment: Run checksum verification against stored hashes; flag mismatches as bit\u2011rot candidates. Perform spot\u2011checks with error\u2011detecting codes (e.g., CRC32, SHA\u2011256) and record severity.\n\n4. Metadata Drift Analysis: Compare each object\u2019s metadata schema to the current standard (MARC21, Dublin Core, MODS). Generate a drift matrix; objects deviating beyond acceptable tolerance are marked for normalization.\n\n5. NDSA Maturity Classification: Apply the NDSA Levels of Digital Preservation maturity to each object based on format stability, integrity status, and metadata health, assigning Levels\u202f1\u20135.\n\n6. Risk Weighting: Multiply each object's maturity score by a cultural significance weight (UNESCO Memory of the World criteria) and a legal deposit obligation factor. Produce a weighted risk index.\n\n7. Migration Path Planning: For high\u2011risk objects, select target open formats with proven fidelity (e.g., PDF/A for documents, TIFF/PNG for images, WAV/FLAC for audio). Use conversion tools (Ghostscript, ImageMagick, FFmpeg) to estimate fidelity loss; document expected degradation.\n\n8. Prioritization Engine: Compute a composite priority score = (irreplaceability \u00d7 access frequency \u00d7 community support trajectory). Rank objects into tiers (A\u2013C). Tier\u202fA receives immediate migration resources.\n\n9. Proprietary Format Strategy: For the two 1990s\u2011era proprietary series, evaluate reverse engineering feasibility or third\u2011party emulation services. If emulation is viable, preserve original binaries and provide a virtual machine image; if not, convert to an open format using vendor\u2011specific export tools (if available) or custom scripts.\n\n10. Implementation Roadmap: Draft a phased migration schedule aligned with funding cycles, including pilot conversions, quality assurance checks, and metadata normalization tasks. Provide cost estimates per tier and contingency plans for unforeseen format obsolescence.\n\n11. Monitoring & Governance: Set up automated monitoring (cron jobs) to re\u2011run integrity checks quarterly; update the risk index annually; maintain a living documentation repository (GitHub repo) with all scripts, conversion logs, and decision rationales.\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

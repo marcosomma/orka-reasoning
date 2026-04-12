@@ -1,0 +1,206 @@
+{
+  "task_id": "track_b_49",
+  "condition": "brainless",
+  "elapsed_s": 19.04,
+  "success": true,
+  "output": {
+    "response": {
+      "domain": "software_engineering",
+      "task": "Design a sharding strategy for a 2TB user database with high read/write load and cross-shard challenges.",
+      "solution_steps": [
+        {
+          "step_number": 1,
+          "title": "Validate Sharding Necessity",
+          "actions": [
+            "Profile current DB: CPU, I/O, query plans, connection\u2011pooler logs.",
+            "Re-run workload with correctly configured pooler; if latency < SLA, postpone sharding."
+          ]
+        },
+        {
+          "step_number": 2,
+          "title": "Quantify Access Patterns",
+          "actions": [
+            "Instrument traffic for 1\u20132 weeks to capture cross\u2011user aggregation %, write hotspot %, JOIN frequency.",
+            "Store metrics in a TSDB (Prometheus/InfluxDB) for trend analysis."
+          ]
+        },
+        {
+          "step_number": 3,
+          "title": "Hybrid Sharding Design",
+          "actions": [
+            "Hash shard on user_id for ~99% of users to keep routing simple.",
+            "Create a dedicated power\u2011user pool: top 1% users + related tables (orders, preferences, activity).",
+            "Vertical partition within each shard; hot columns (email) in memory\u2011optimized tables."
+          ]
+        },
+        {
+          "step_number": 4,
+          "title": "Aggregation Layer via Streaming",
+          "actions": [
+            "Publish every write affecting leaderboards/analytics to a Kafka topic.",
+            "Process with Kafka Streams/Flink to update materialised views in an OLAP store (ClickHouse).",
+            "Application queries OLAP for leaderboards/dashboards, eliminating cross\u2011shard reads."
+          ]
+        },
+        {
+          "step_number": 5,
+          "title": "Separate Analytics from OLTP",
+          "actions": [
+            "Deploy a dedicated analytics cluster (ClickHouse/Redshift) receiving incremental updates via Kafka.",
+            "Keep OLTP focused on transactional workloads to avoid contention."
+          ]
+        },
+        {
+          "step_number": 6,
+          "title": "Growth & Rebalancing Plan",
+          "actions": [
+            "Automate shard creation: split when >30% of target size, redistribute data.",
+            "Use a lightweight metadata service (Consul/Etcd) for routing.",
+            "Set alerts at 70% capacity to trigger scaling before reaching 10TB."
+          ]
+        },
+        {
+          "step_number": 7,
+          "title": "Rollback & Monitoring",
+          "actions": [
+            "Maintain a full copy of the database as a baseline during migration.",
+            "Continuously monitor latency, replication lag (for replicas), error rates; rollback if SLA breaches >5%."
+          ]
+        }
+      ],
+      "anti_patterns_avoided": [],
+      "quality_self_assessment": 0.95,
+      "brain_assisted": false,
+      "recalled_skill": "none",
+      "confidence": 0.97
+    },
+    "confidence": "0.97",
+    "internal_reasoning": "The solution follows evidence-based steps: profiling, traffic instrumentation, hybrid sharding to handle hotspots and JOIN locality, streaming aggregation for cross\u2011shard queries, dedicated analytics cluster, automated scaling, and robust monitoring/rollback. All recommendations are grounded in the problem data and best practices.",
+    "_metrics": {
+      "tokens": 2011,
+      "prompt_tokens": 1284,
+      "completion_tokens": 727,
+      "latency_ms": 6383.53,
+      "cost_usd": 0.000401,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: software_engineering\nTASK: You're sharding a 2TB user database with 50K reads/sec and 5K writes/sec. The architect proposes hash-based sharding on user_id: 'perfect distribution, simple routing, no hotspots.' The proof of concept with synthetic data shows even distribution. However: (1) 30% of the read queries are cross-user aggregations (leaderboards, analytics dashboards, admin search-by-email) that would scatter across all shards, (2) the top 1% of users generate 25% of write traffic (power users) \u2014 hash distribution means you can't colocate related data, (3) the application has 15 JOIN queries that assume user and related tables (orders, preferences, activity) are in the same database, (4) the architect proposes running all cross-shard queries against a read replica that aggregates from all shards \u2014 but hasn't addressed the replication lag implications for the real-time leaderboard, (5) nobody profiled whether the 2TB database actually NEEDS sharding \u2014 the current performance issues appeared 3 months ago during a period when the connection pooler was misconfigured. The architect says 'the database will hit 10TB in 2 years, we need to shard now.'\n\nSOLUTION:\n1\ufe0f\u20e3 **Validate the need for sharding**\n   \u2022 Profile the current 2\u202fTB database: CPU, I/O, query plans, and connection\u2011pooler logs.\n   \u2022 Re\u2011run the workload with a correctly configured pooler; if latency drops below SLA thresholds, sharding may be premature.\n\n2\ufe0f\u20e3 **Quantify real access patterns**\n   \u2022 Instrument production traffic for 1\u20132 weeks to capture:\n     - % of cross\u2011user aggregation queries (expected ~30\u202f%)\n     - Write distribution: top\u202f1\u202f% users vs. rest (\u224825\u202f% writes)\n     - Frequency and size of the 15 JOINs per request.\n   \u2022 Store metrics in a time\u2011series DB for trend analysis.\n\n3\ufe0f\u20e3 **Design a hybrid sharding strategy**\n   \u2022 **Hash shard on user_id** for the bulk of users (\u224899\u202f%) to keep routing simple.\n   \u2022 **Power\u2011user pool**: allocate a dedicated set of shards that contain the top\u202f1\u202f% of users and their related tables (orders, preferences, activity).  This reduces write hotspots and keeps JOINs local.\n   \u2022 Use *vertical partitioning* inside each shard to keep hot columns (e.g., email) in memory\u2011optimized tables.\n\n4\ufe0f\u20e3 **Implement an aggregation layer**\n   \u2022 Build a Kafka topic that streams every write affecting leaderboard or analytics metrics.\n   \u2022 Run a stream processor (Kafka Streams / Flink) that updates materialised views in a separate OLAP store (ClickHouse/Redshift).\n   \u2022 The application queries the OLAP store for leaderboards and dashboards, eliminating cross\u2011shard reads on replicas.\n\n5\ufe0f\u20e3 **Separate analytics from OLTP**\n   \u2022 Deploy a dedicated analytics cluster (e.g., ClickHouse) that receives incremental updates via Kafka.\n   \u2022 Keep the OLTP cluster focused on transactional workloads; this avoids contention between heavy joins and analytical scans.\n\n6\ufe0f\u20e3 **Plan for growth & rebalancing**\n   \u2022 Automate shard creation: when a shard reaches 30\u202f% of its target size, split it and redistribute data.\n   \u2022 Use a lightweight metadata service (e.g., Consul) to track shard ownership and routing.\n   \u2022 Set alerts at 70\u202f% capacity to trigger scaling before hitting the 10\u202fTB projection.\n\n7\ufe0f\u20e3 **Rollback & monitoring**\n   \u2022 Maintain a \u201cno\u2011shard\u201d baseline by keeping a full copy of the database for a short period after migration.\n   \u2022 Continuously monitor latency, replication lag (for replicas used in analytics), and error rates; rollback if SLA breaches exceed 5\u202f%.\n\n**Outcome**: The hybrid approach mitigates write hotspots, keeps JOINs local for power users, offloads cross\u2011shard aggregations to an incremental OLAP layer, and provides a clear path for scaling while avoiding unnecessary sharding now.\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"anti_patterns_avoided\": []\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": "Domain: software_engineering\nTask: Evaluate and design a sharding strategy for a 2TB user database with high read/write traffic, addressing cross-shard queries, hotspot users, joins, replication lag, and future growth.\nSteps:\n1. **Validate the need to shard**\n   - Action: Profile current performance (CPU, I/O, query plans) and analyze connection pooler configuration.\n   - Result: Determine if bottlenecks are due to sharding or misconfiguration; decide whether sharding is necessary now.\n2. **Assess data access patterns**\n   - Action: Instrument real traffic to quantify cross-user aggregation frequency, hotspot user write distribution, and join locality.\n   - Result: Concrete metrics on 30% cross-shard reads, 25% writes from top 1%, and 15 JOINs per request.\n3. **Choose a hybrid sharding strategy**\n   - Action: Combine hash sharding for most users with range or vertical partitioning for power users; consider colocating user with orders/preferences in the same shard.\n   - Result: Reduced hotspots, improved join locality, and manageable cross-shard reads.\n4. **Design a read-optimized aggregation layer**\n   - Action: Implement an incremental materialized view system (e.g., Kafka + stream processor) that updates leaderboards and analytics in near real-time.\n   - Result: Eliminates heavy cross-shard queries on replicas, removes replication lag concerns.\n5. **Implement a multi-model database or microservices**\n   - Action: Separate user core data from analytics; use a dedicated analytics store (e.g., ClickHouse) for dashboards.\n   - Result: Keeps OLTP workload light and analytics fast.\n6. **Plan for future growth**\n   - Action: Set up automated shard rebalancing and capacity planning scripts; monitor storage usage to trigger scaling before 10TB.\n   - Result: Smooth transition as data grows, avoiding emergency sharding.\n7. **Document and review**\n   - Action: Create a design document with trade-offs, performance expectations, and rollback plan.\n   - Result: Stakeholder alignment and clear audit trail for future changes.\nConfidence: 0.95\n",
+      "confidence": "0.95",
+      "internal_reasoning": "I followed the task requirements to produce a structured step-by-step analysis that addresses all identified issues, ensuring each step is justified with data-driven reasoning.",
+      "_metrics": {
+        "tokens": 1201,
+        "prompt_tokens": 669,
+        "completion_tokens": 532,
+        "latency_ms": 5545.91,
+        "cost_usd": 0.000342,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: software_engineering\nTASK: You're sharding a 2TB user database with 50K reads/sec and 5K writes/sec. The architect proposes hash-based sharding on user_id: 'perfect distribution, simple routing, no hotspots.' The proof of concept with synthetic data shows even distribution. However: (1) 30% of the read queries are cross-user aggregations (leaderboards, analytics dashboards, admin search-by-email) that would scatter across all shards, (2) the top 1% of users generate 25% of write traffic (power users) \u2014 hash distribution means you can't colocate related data, (3) the application has 15 JOIN queries that assume user and related tables (orders, preferences, activity) are in the same database, (4) the architect proposes running all cross-shard queries against a read replica that aggregates from all shards \u2014 but hasn't addressed the replication lag implications for the real-time leaderboard, (5) nobody profiled whether the 2TB database actually NEEDS sharding \u2014 the current performance issues appeared 3 months ago during a period when the connection pooler was misconfigured. The architect says 'the database will hit 10TB in 2 years, we need to shard now.'\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+    },
+    "task_applier": {
+      "response": "1\ufe0f\u20e3 **Validate the need for sharding**\n   \u2022 Profile the current 2\u202fTB database: CPU, I/O, query plans, and connection\u2011pooler logs.\n   \u2022 Re\u2011run the workload with a correctly configured pooler; if latency drops below SLA thresholds, sharding may be premature.\n\n2\ufe0f\u20e3 **Quantify real access patterns**\n   \u2022 Instrument production traffic for 1\u20132 weeks to capture:\n     - % of cross\u2011user aggregation queries (expected ~30\u202f%)\n     - Write distribution: top\u202f1\u202f% users vs. rest (\u224825\u202f% writes)\n     - Frequency and size of the 15 JOINs per request.\n   \u2022 Store metrics in a time\u2011series DB for trend analysis.\n\n3\ufe0f\u20e3 **Design a hybrid sharding strategy**\n   \u2022 **Hash shard on user_id** for the bulk of users (\u224899\u202f%) to keep routing simple.\n   \u2022 **Power\u2011user pool**: allocate a dedicated set of shards that contain the top\u202f1\u202f% of users and their related tables (orders, preferences, activity).  This reduces write hotspots and keeps JOINs local.\n   \u2022 Use *vertical partitioning* inside each shard to keep hot columns (e.g., email) in memory\u2011optimized tables.\n\n4\ufe0f\u20e3 **Implement an aggregation layer**\n   \u2022 Build a Kafka topic that streams every write affecting leaderboard or analytics metrics.\n   \u2022 Run a stream processor (Kafka Streams / Flink) that updates materialised views in a separate OLAP store (ClickHouse/Redshift).\n   \u2022 The application queries the OLAP store for leaderboards and dashboards, eliminating cross\u2011shard reads on replicas.\n\n5\ufe0f\u20e3 **Separate analytics from OLTP**\n   \u2022 Deploy a dedicated analytics cluster (e.g., ClickHouse) that receives incremental updates via Kafka.\n   \u2022 Keep the OLTP cluster focused on transactional workloads; this avoids contention between heavy joins and analytical scans.\n\n6\ufe0f\u20e3 **Plan for growth & rebalancing**\n   \u2022 Automate shard creation: when a shard reaches 30\u202f% of its target size, split it and redistribute data.\n   \u2022 Use a lightweight metadata service (e.g., Consul) to track shard ownership and routing.\n   \u2022 Set alerts at 70\u202f% capacity to trigger scaling before hitting the 10\u202fTB projection.\n\n7\ufe0f\u20e3 **Rollback & monitoring**\n   \u2022 Maintain a \u201cno\u2011shard\u201d baseline by keeping a full copy of the database for a short period after migration.\n   \u2022 Continuously monitor latency, replication lag (for replicas used in analytics), and error rates; rollback if SLA breaches exceed 5\u202f%.\n\n**Outcome**: The hybrid approach mitigates write hotspots, keeps JOINs local for power users, offloads cross\u2011shard aggregations to an incremental OLAP layer, and provides a clear path for scaling while avoiding unnecessary sharding now.",
+      "confidence": "0.95",
+      "internal_reasoning": "I first verified whether sharding was truly needed by profiling the current system and correcting misconfigurations. Then I gathered real traffic metrics to understand cross\u2011shard load, hotspot writes, and JOIN locality. A hybrid hash + power\u2011user pool strategy balances simplicity with performance for hot users. Offloading aggregations to a Kafka\u2011driven OLAP store removes cross\u2011shard reads from replicas and addresses replication lag concerns. Finally, I added automated scaling, monitoring, and rollback plans to ensure smooth growth to 10\u202fTB.",
+      "_metrics": {
+        "tokens": 1936,
+        "prompt_tokens": 1135,
+        "completion_tokens": 801,
+        "latency_ms": 6814.56,
+        "cost_usd": 0.00042,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a task. You have your own analysis.\nYou have NO warnings about known failure modes or anti-patterns.\n\nDOMAIN: general\nTASK: {'domain': 'software_engineering', 'task': \"You're sharding a 2TB user database with 50K reads/sec and 5K writes/sec. The architect proposes hash-based sharding on user_id: 'perfect distribution, simple routing, no hotspots.' The proof of concept with synthetic data shows even distribution. However: (1) 30% of the read queries are cross-user aggregations (leaderboards, analytics dashboards, admin search-by-email) that would scatter across all shards, (2) the top 1% of users generate 25% of write traffic (power users) \u2014 hash distribution means you can't colocate related data, (3) the application has 15 JOIN queries that assume user and related tables (orders, preferences, activity) are in the same database, (4) the architect proposes running all cross-shard queries against a read replica that aggregates from all shards \u2014 but hasn't addressed the replication lag implications for the real-time leaderboard, (5) nobody profiled whether the 2TB database actually NEEDS sharding \u2014 the current performance issues appeared 3 months ago during a period when the connection pooler was misconfigured. The architect says 'the database will hit 10TB in 2 years, we need to shard now.'\"}\n\nYOUR ANALYSIS:\nDomain: software_engineering\nTask: Evaluate and design a sharding strategy for a 2TB user database with high read/write traffic, addressing cross-shard queries, hotspot users, joins, replication lag, and future growth.\nSteps:\n1. **Validate the need to shard**\n   - Action: Profile current performance (CPU, I/O, query plans) and analyze connection pooler configuration.\n   - Result: Determine if bottlenecks are due to sharding or misconfiguration; decide whether sharding is necessary now.\n2. **Assess data access patterns**\n   - Action: Instrument real traffic to quantify cross-user aggregation frequency, hotspot user write distribution, and join locality.\n   - Result: Concrete metrics on 30% cross-shard reads, 25% writes from top 1%, and 15 JOINs per request.\n3. **Choose a hybrid sharding strategy**\n   - Action: Combine hash sharding for most users with range or vertical partitioning for power users; consider colocating user with orders/preferences in the same shard.\n   - Result: Reduced hotspots, improved join locality, and manageable cross-shard reads.\n4. **Design a read-optimized aggregation layer**\n   - Action: Implement an incremental materialized view system (e.g., Kafka + stream processor) that updates leaderboards and analytics in near real-time.\n   - Result: Eliminates heavy cross-shard queries on replicas, removes replication lag concerns.\n5. **Implement a multi-model database or microservices**\n   - Action: Separate user core data from analytics; use a dedicated analytics store (e.g., ClickHouse) for dashboards.\n   - Result: Keeps OLTP workload light and analytics fast.\n6. **Plan for future growth**\n   - Action: Set up automated shard rebalancing and capacity planning scripts; monitor storage usage to trigger scaling before 10TB.\n   - Result: Smooth transition as data grows, avoiding emergency sharding.\n7. **Document and review**\n   - Action: Create a design document with trade-offs, performance expectations, and rollback plan.\n   - Result: Stakeholder alignment and clear audit trail for future changes.\nConfidence: 0.95\n\n\nSolve the task using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"anti_patterns_avoided\": []\n- \"used_recalled_skill\": false\n- \"recalled_skill_name\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+    },
+    "task_result": {
+      "response": {
+        "domain": "software_engineering",
+        "task": "Design a sharding strategy for a 2TB user database with high read/write load and cross-shard challenges.",
+        "solution_steps": [
+          {
+            "step_number": 1,
+            "title": "Validate Sharding Necessity",
+            "actions": [
+              "Profile current DB: CPU, I/O, query plans, connection\u2011pooler logs.",
+              "Re-run workload with correctly configured pooler; if latency < SLA, postpone sharding."
+            ]
+          },
+          {
+            "step_number": 2,
+            "title": "Quantify Access Patterns",
+            "actions": [
+              "Instrument traffic for 1\u20132 weeks to capture cross\u2011user aggregation %, write hotspot %, JOIN frequency.",
+              "Store metrics in a TSDB (Prometheus/InfluxDB) for trend analysis."
+            ]
+          },
+          {
+            "step_number": 3,
+            "title": "Hybrid Sharding Design",
+            "actions": [
+              "Hash shard on user_id for ~99% of users to keep routing simple.",
+              "Create a dedicated power\u2011user pool: top 1% users + related tables (orders, preferences, activity).",
+              "Vertical partition within each shard; hot columns (email) in memory\u2011optimized tables."
+            ]
+          },
+          {
+            "step_number": 4,
+            "title": "Aggregation Layer via Streaming",
+            "actions": [
+              "Publish every write affecting leaderboards/analytics to a Kafka topic.",
+              "Process with Kafka Streams/Flink to update materialised views in an OLAP store (ClickHouse).",
+              "Application queries OLAP for leaderboards/dashboards, eliminating cross\u2011shard reads."
+            ]
+          },
+          {
+            "step_number": 5,
+            "title": "Separate Analytics from OLTP",
+            "actions": [
+              "Deploy a dedicated analytics cluster (ClickHouse/Redshift) receiving incremental updates via Kafka.",
+              "Keep OLTP focused on transactional workloads to avoid contention."
+            ]
+          },
+          {
+            "step_number": 6,
+            "title": "Growth & Rebalancing Plan",
+            "actions": [
+              "Automate shard creation: split when >30% of target size, redistribute data.",
+              "Use a lightweight metadata service (Consul/Etcd) for routing.",
+              "Set alerts at 70% capacity to trigger scaling before reaching 10TB."
+            ]
+          },
+          {
+            "step_number": 7,
+            "title": "Rollback & Monitoring",
+            "actions": [
+              "Maintain a full copy of the database as a baseline during migration.",
+              "Continuously monitor latency, replication lag (for replicas), error rates; rollback if SLA breaches >5%."
+            ]
+          }
+        ],
+        "anti_patterns_avoided": [],
+        "quality_self_assessment": 0.95,
+        "brain_assisted": false,
+        "recalled_skill": "none",
+        "confidence": 0.97
+      },
+      "confidence": "0.97",
+      "internal_reasoning": "The solution follows evidence-based steps: profiling, traffic instrumentation, hybrid sharding to handle hotspots and JOIN locality, streaming aggregation for cross\u2011shard queries, dedicated analytics cluster, automated scaling, and robust monitoring/rollback. All recommendations are grounded in the problem data and best practices.",
+      "_metrics": {
+        "tokens": 2011,
+        "prompt_tokens": 1284,
+        "completion_tokens": 727,
+        "latency_ms": 6383.53,
+        "cost_usd": 0.000401,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: software_engineering\nTASK: You're sharding a 2TB user database with 50K reads/sec and 5K writes/sec. The architect proposes hash-based sharding on user_id: 'perfect distribution, simple routing, no hotspots.' The proof of concept with synthetic data shows even distribution. However: (1) 30% of the read queries are cross-user aggregations (leaderboards, analytics dashboards, admin search-by-email) that would scatter across all shards, (2) the top 1% of users generate 25% of write traffic (power users) \u2014 hash distribution means you can't colocate related data, (3) the application has 15 JOIN queries that assume user and related tables (orders, preferences, activity) are in the same database, (4) the architect proposes running all cross-shard queries against a read replica that aggregates from all shards \u2014 but hasn't addressed the replication lag implications for the real-time leaderboard, (5) nobody profiled whether the 2TB database actually NEEDS sharding \u2014 the current performance issues appeared 3 months ago during a period when the connection pooler was misconfigured. The architect says 'the database will hit 10TB in 2 years, we need to shard now.'\n\nSOLUTION:\n1\ufe0f\u20e3 **Validate the need for sharding**\n   \u2022 Profile the current 2\u202fTB database: CPU, I/O, query plans, and connection\u2011pooler logs.\n   \u2022 Re\u2011run the workload with a correctly configured pooler; if latency drops below SLA thresholds, sharding may be premature.\n\n2\ufe0f\u20e3 **Quantify real access patterns**\n   \u2022 Instrument production traffic for 1\u20132 weeks to capture:\n     - % of cross\u2011user aggregation queries (expected ~30\u202f%)\n     - Write distribution: top\u202f1\u202f% users vs. rest (\u224825\u202f% writes)\n     - Frequency and size of the 15 JOINs per request.\n   \u2022 Store metrics in a time\u2011series DB for trend analysis.\n\n3\ufe0f\u20e3 **Design a hybrid sharding strategy**\n   \u2022 **Hash shard on user_id** for the bulk of users (\u224899\u202f%) to keep routing simple.\n   \u2022 **Power\u2011user pool**: allocate a dedicated set of shards that contain the top\u202f1\u202f% of users and their related tables (orders, preferences, activity).  This reduces write hotspots and keeps JOINs local.\n   \u2022 Use *vertical partitioning* inside each shard to keep hot columns (e.g., email) in memory\u2011optimized tables.\n\n4\ufe0f\u20e3 **Implement an aggregation layer**\n   \u2022 Build a Kafka topic that streams every write affecting leaderboard or analytics metrics.\n   \u2022 Run a stream processor (Kafka Streams / Flink) that updates materialised views in a separate OLAP store (ClickHouse/Redshift).\n   \u2022 The application queries the OLAP store for leaderboards and dashboards, eliminating cross\u2011shard reads on replicas.\n\n5\ufe0f\u20e3 **Separate analytics from OLTP**\n   \u2022 Deploy a dedicated analytics cluster (e.g., ClickHouse) that receives incremental updates via Kafka.\n   \u2022 Keep the OLTP cluster focused on transactional workloads; this avoids contention between heavy joins and analytical scans.\n\n6\ufe0f\u20e3 **Plan for growth & rebalancing**\n   \u2022 Automate shard creation: when a shard reaches 30\u202f% of its target size, split it and redistribute data.\n   \u2022 Use a lightweight metadata service (e.g., Consul) to track shard ownership and routing.\n   \u2022 Set alerts at 70\u202f% capacity to trigger scaling before hitting the 10\u202fTB projection.\n\n7\ufe0f\u20e3 **Rollback & monitoring**\n   \u2022 Maintain a \u201cno\u2011shard\u201d baseline by keeping a full copy of the database for a short period after migration.\n   \u2022 Continuously monitor latency, replication lag (for replicas used in analytics), and error rates; rollback if SLA breaches exceed 5\u202f%.\n\n**Outcome**: The hybrid approach mitigates write hotspots, keeps JOINs local for power users, offloads cross\u2011shard aggregations to an incremental OLAP layer, and provides a clear path for scaling while avoiding unnecessary sharding now.\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"anti_patterns_avoided\": []\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

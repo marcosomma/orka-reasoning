@@ -1,0 +1,240 @@
+{
+  "task_id": "track_a_11",
+  "condition": "brainless",
+  "elapsed_s": 21.38,
+  "success": true,
+  "output": {
+    "response": {
+      "domain": "archaeometry",
+      "task": "Ingest, reconcile, normalize and load forensic spectroscopic data from four labs into a GIS layer for court exhibit.",
+      "solution_steps": [
+        {
+          "step_number": 1,
+          "action": "Collect raw files from all labs into a unified repository with subfolders per lab.",
+          "expected_outcome": "All XML, FORTRAN fixed\u2011width text, OCR PDFs, and associated metadata are stored in a single, versioned directory structure."
+        },
+        {
+          "step_number": 2,
+          "action": "Parse each lab\u2019s format into a common JSON schema: accession_number, wavelength_nm, absorbance_value, unit, instrument_id, raw_calibration.",
+          "expected_outcome": "A flat table of records ready for calibration and conversion."
+        },
+        {
+          "step_number": 3,
+          "action": "Extract inline calibration metadata from nested XML and apply it to convert absorbance to reflectance percentages using the provided curve or formula.",
+          "expected_outcome": "JSON records now contain a `reflectance_percent` field."
+        },
+        {
+          "step_number": 4,
+          "action": "Transform fixed\u2011width FORTRAN output into the same JSON schema, validating numeric ranges and handling missing fields.",
+          "expected_outcome": "Consistent numeric data across all instruments."
+        },
+        {
+          "step_number": 5,
+          "action": "Clean OCR PDFs: run spell\u2011check, regex validation against expected wavelength/value patterns, and manual spot\u2011checks for high\u2011confidence errors.",
+          "expected_outcome": "Accurate text extraction with corrected wavelengths and values."
+        },
+        {
+          "step_number": 6,
+          "action": "Reconcile overlapping wavelength ranges by interpolating each shard\u2019s reflectance onto a unified grid (e.g., 200\u20132500 nm, 1 nm steps).",
+          "expected_outcome": "All shards share identical wavelength columns for comparative analysis."
+        },
+        {
+          "step_number": 7,
+          "action": "Deduplicate shards sampled twice under different accession numbers by matching spectral fingerprints and metadata; retain a master record with all related accession IDs.",
+          "expected_outcome": "A unique list of shards, each flagged if duplicated."
+        },
+        {
+          "step_number": 8,
+          "action": "Validate data integrity: check value ranges, flag missing or outlier points, and generate a validation report.",
+          "expected_outcome": "High\u2011confidence dataset with anomalies documented."
+        },
+        {
+          "step_number": 9,
+          "action": "Load the harmonized dataset into a GIS provenance layer (GeoPackage) where each point carries reflectance spectra and provenance attributes.",
+          "expected_outcome": "Spatially referenced feature class ready for court exhibits."
+        },
+        {
+          "step_number": 10,
+          "action": "Generate court\u2011ready exhibit package: PDF sheets summarizing spectra, GIS maps, data dictionary, and chain\u2011of\u2011custody documentation.",
+          "expected_outcome": "Complete evidence bundle compliant with legal standards."
+        }
+      ],
+      "quality_self_assessment": {
+        "score": 0.95,
+        "justification": "All steps are directly derived from the task requirements and follow best practices for data ingestion, normalization, deduplication, validation, and GIS integration in forensic contexts."
+      },
+      "brain_assisted": false,
+      "recalled_skill": "none",
+      "confidence": 0.95
+    },
+    "confidence": "0.95",
+    "internal_reasoning": "I mapped each requirement to a concrete action, ensuring format conversion, calibration application, error handling for OCR, wavelength alignment, deduplication logic, validation, GIS loading, and final exhibit preparation. All steps are evidence\u2011based and align with forensic data standards.",
+    "_metrics": {
+      "tokens": 1906,
+      "prompt_tokens": 1084,
+      "completion_tokens": 822,
+      "latency_ms": 6601.21,
+      "cost_usd": 0.000407,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'archaeometry', 'task': \"Ingest spectroscopic mineral-composition readings from 23 confiscated pottery shards across 4 forensic labs (each lab uses a different instrument calibration and reporting schema), reconcile overlapping wavelength ranges, normalize measurement units from absorbance to reflectance percentages, deduplicate shards that were sampled twice under different accession numbers, and load the harmonized dataset into a provenance-attribution GIS layer for court exhibit preparation. Two of the labs deliver results as nested XML with inline calibration metadata, one delivers fixed-width FORTRAN output, and one delivers handwritten PDF scans that have been OCR'd with ~8% character error rate.\"}\n\nSOLUTION:\n{'domain': 'archaeometry', 'task': 'Ingest, reconcile, normalize and load forensic spectroscopic data from four labs into a GIS layer for court exhibit.', 'steps': [{'action': 'Collect raw files from all labs into a unified repository with subfolders per lab.', 'expected_outcome': 'All XML, FORTRAN fixed\u2011width text, OCR PDFs, and associated metadata are stored in a single, versioned directory structure.'}, {'action': 'Parse each lab\u2019s format into a common JSON schema: accession_number, wavelength_nm, absorbance_value, unit, instrument_id, raw_calibration.', 'expected_outcome': 'A flat table of records ready for calibration and conversion.'}, {'action': 'Extract inline calibration metadata from nested XML and apply it to convert absorbance to reflectance percentages using the provided curve or formula.', 'expected_outcome': 'JSON records now contain a `reflectance_percent` field.'}, {'action': 'Transform fixed\u2011width FORTRAN output into the same JSON schema, validating numeric ranges and handling missing fields.', 'expected_outcome': 'Consistent numeric data across all instruments.'}, {'action': 'Clean OCR PDFs: run spell\u2011check, regex validation against expected wavelength/value patterns, and manual spot\u2011checks for high\u2011confidence errors.', 'expected_outcome': 'Accurate text extraction with corrected wavelengths and values.'}, {'action': 'Reconcile overlapping wavelength ranges by interpolating each shard\u2019s reflectance onto a unified grid (e.g., 200\u20132500\\u202fnm, 1\\u202fnm steps).', 'expected_outcome': 'All shards share identical wavelength columns for comparative analysis.'}, {'action': 'Deduplicate shards sampled twice under different accession numbers by matching spectral fingerprints and metadata; retain a master record with all related accession IDs.', 'expected_outcome': 'A unique list of shards, each flagged if duplicated.'}, {'action': 'Validate data integrity: check value ranges, flag missing or outlier points, and generate a validation report.', 'expected_outcome': 'High\u2011confidence dataset with anomalies documented.'}, {'action': 'Load the harmonized dataset into a GIS provenance layer (GeoPackage) where each point carries reflectance spectra and provenance attributes.', 'expected_outcome': 'Spatially referenced feature class ready for court exhibits.'}, {'action': 'Generate court\u2011ready exhibit package: PDF sheets summarizing spectra, GIS maps, data dictionary, and chain\u2011of\u2011custody documentation.', 'expected_outcome': 'Complete evidence bundle compliant with legal standards.'}], 'used_recalled_skill': False, 'recalled_skill_name': 'none', 'adaptation_notes': 'N/A'}\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": "Step\u2011by\u2011step plan for ingesting, reconciling, normalising and loading the forensic spectroscopic data:\n\n1. **Collect raw files from all four labs**\n   - Why: We need a single source of truth before any processing.\n   - Expected output: A folder structure with subfolders LabA, LabB, LabC, LabD containing XML, FORTRAN fixed\u2011width text, and OCR PDFs respectively.\n\n2. **Parse Lab\u2011specific formats into a common intermediate schema**\n   - Why: Each lab uses different calibration metadata and reporting units; parsing standardises the data for downstream steps.\n   - Expected output: For each shard, a JSON record with fields: accession_number, wavelength (nm), absorbance_value, unit, instrument_id, raw_calibration_data.\n\n3. **Extract and apply inline calibration metadata from nested XML**\n   - Why: Calibration curves are required to convert raw absorbance to reflectance percentages.\n   - Expected output: Updated JSON record with a calibrated reflectance value field.\n\n4. **Convert fixed\u2011width FORTRAN output into the same JSON schema**\n   - Why: Ensures all numeric data share identical column ordering and units.\n   - Expected output: JSON records matching those from XML labs, with absorbance values parsed correctly.\n\n5. **OCR\u2011clean handwritten PDF scans (8% error rate)**\n   - Why: OCR errors can corrupt wavelength or value fields; cleaning improves accuracy.\n   - Expected output: Cleaned text files or directly parsed JSON after applying spell\u2011check and regex validation against expected numeric patterns.\n\n6. **Normalize all absorbance measurements to reflectance percentages**\n   - Why: Courts require a single, comparable metric across labs.\n   - Expected output: Each record now contains a `reflectance_percent` field calculated using the lab\u2019s calibration curve or standard conversion formula.\n\n7. **Reconcile overlapping wavelength ranges across instruments**\n   - Why: Different instruments may sample at slightly different wavelengths; harmonisation is needed for comparative analysis.\n   - Expected output: A unified wavelength grid (e.g., 200\u20112500\u202fnm in 1\u202fnm steps) with interpolated reflectance values per shard.\n\n8. **Deduplicate shards sampled twice under different accession numbers**\n   - Why: Duplicate records inflate provenance models and can mislead attribution.\n   - Expected output: A master list of unique shards, each tagged with all related accession numbers and a flag indicating deduplication.\n\n9. **Validate data integrity (range checks, missing values, outliers)**\n   - Why: Ensures the dataset is reliable for forensic presentation.\n   - Expected output: Validation report highlighting any anomalies; corrected or flagged records.\n\n10. **Load harmonised dataset into a provenance\u2011attribution GIS layer**\n    - Why: Spatial context is essential for court exhibits and visualisation.\n    - Expected output: A GIS feature class (e.g., shapefile or GeoPackage) where each shard point carries the reflectance spectrum attributes and provenance metadata.\n\n11. **Generate a court\u2011ready exhibit package**\n    - Why: Provides jurors with clear, interpretable evidence.\n    - Expected output: PDF exhibit sheets summarising spectra, GIS maps, and a data dictionary.\n\n12. **Document the entire workflow for auditability**\n    - Why: Courts require chain\u2011of\u2011custody and reproducibility.\n    - Expected output: A README or SOP file detailing each step, tools used, versioning, and contact information.\n\nEach of these steps ensures that data from heterogeneous sources are accurately transformed into a single, court\u2011ready format while preserving provenance integrity.",
+      "confidence": "0.95",
+      "internal_reasoning": "I mapped the task requirements to concrete actions, justified each step, and specified expected outputs, ensuring compliance with forensic standards.",
+      "_metrics": {
+        "tokens": 1380,
+        "prompt_tokens": 535,
+        "completion_tokens": 845,
+        "latency_ms": 8669.61,
+        "cost_usd": 0.000535,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: archaeometry\nTASK: Ingest spectroscopic mineral-composition readings from 23 confiscated pottery shards across 4 forensic labs (each lab uses a different instrument calibration and reporting schema), reconcile overlapping wavelength ranges, normalize measurement units from absorbance to reflectance percentages, deduplicate shards that were sampled twice under different accession numbers, and load the harmonized dataset into a provenance-attribution GIS layer for court exhibit preparation. Two of the labs deliver results as nested XML with inline calibration metadata, one delivers fixed-width FORTRAN output, and one delivers handwritten PDF scans that have been OCR'd with ~8% character error rate.\n\n\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+    },
+    "task_applier": {
+      "response": {
+        "domain": "archaeometry",
+        "task": "Ingest, reconcile, normalize and load forensic spectroscopic data from four labs into a GIS layer for court exhibit.",
+        "steps": [
+          {
+            "action": "Collect raw files from all labs into a unified repository with subfolders per lab.",
+            "expected_outcome": "All XML, FORTRAN fixed\u2011width text, OCR PDFs, and associated metadata are stored in a single, versioned directory structure."
+          },
+          {
+            "action": "Parse each lab\u2019s format into a common JSON schema: accession_number, wavelength_nm, absorbance_value, unit, instrument_id, raw_calibration.",
+            "expected_outcome": "A flat table of records ready for calibration and conversion."
+          },
+          {
+            "action": "Extract inline calibration metadata from nested XML and apply it to convert absorbance to reflectance percentages using the provided curve or formula.",
+            "expected_outcome": "JSON records now contain a `reflectance_percent` field."
+          },
+          {
+            "action": "Transform fixed\u2011width FORTRAN output into the same JSON schema, validating numeric ranges and handling missing fields.",
+            "expected_outcome": "Consistent numeric data across all instruments."
+          },
+          {
+            "action": "Clean OCR PDFs: run spell\u2011check, regex validation against expected wavelength/value patterns, and manual spot\u2011checks for high\u2011confidence errors.",
+            "expected_outcome": "Accurate text extraction with corrected wavelengths and values."
+          },
+          {
+            "action": "Reconcile overlapping wavelength ranges by interpolating each shard\u2019s reflectance onto a unified grid (e.g., 200\u20132500\u202fnm, 1\u202fnm steps).",
+            "expected_outcome": "All shards share identical wavelength columns for comparative analysis."
+          },
+          {
+            "action": "Deduplicate shards sampled twice under different accession numbers by matching spectral fingerprints and metadata; retain a master record with all related accession IDs.",
+            "expected_outcome": "A unique list of shards, each flagged if duplicated."
+          },
+          {
+            "action": "Validate data integrity: check value ranges, flag missing or outlier points, and generate a validation report.",
+            "expected_outcome": "High\u2011confidence dataset with anomalies documented."
+          },
+          {
+            "action": "Load the harmonized dataset into a GIS provenance layer (GeoPackage) where each point carries reflectance spectra and provenance attributes.",
+            "expected_outcome": "Spatially referenced feature class ready for court exhibits."
+          },
+          {
+            "action": "Generate court\u2011ready exhibit package: PDF sheets summarizing spectra, GIS maps, data dictionary, and chain\u2011of\u2011custody documentation.",
+            "expected_outcome": "Complete evidence bundle compliant with legal standards."
+          }
+        ],
+        "used_recalled_skill": false,
+        "recalled_skill_name": "none",
+        "adaptation_notes": "N/A"
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "The plan follows a logical sequence: acquisition, parsing, calibration, cleaning, harmonization, deduplication, validation, GIS loading, and exhibit creation. Each step addresses the specific challenges (different formats, OCR errors, overlapping wavelengths) with appropriate tools and outputs.",
+      "_metrics": {
+        "tokens": 1984,
+        "prompt_tokens": 1292,
+        "completion_tokens": 692,
+        "latency_ms": 5842.48,
+        "cost_usd": 0.00036,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a task. You have your own step-by-step analysis.\nYou have NO prior experience and NO recalled skills.\n\nDOMAIN: general\nTASK: {'domain': 'archaeometry', 'task': \"Ingest spectroscopic mineral-composition readings from 23 confiscated pottery shards across 4 forensic labs (each lab uses a different instrument calibration and reporting schema), reconcile overlapping wavelength ranges, normalize measurement units from absorbance to reflectance percentages, deduplicate shards that were sampled twice under different accession numbers, and load the harmonized dataset into a provenance-attribution GIS layer for court exhibit preparation. Two of the labs deliver results as nested XML with inline calibration metadata, one delivers fixed-width FORTRAN output, and one delivers handwritten PDF scans that have been OCR'd with ~8% character error rate.\"}\n\nYOUR ANALYSIS:\nStep\u2011by\u2011step plan for ingesting, reconciling, normalising and loading the forensic spectroscopic data:\n\n1. **Collect raw files from all four labs**\n   - Why: We need a single source of truth before any processing.\n   - Expected output: A folder structure with subfolders LabA, LabB, LabC, LabD containing XML, FORTRAN fixed\u2011width text, and OCR PDFs respectively.\n\n2. **Parse Lab\u2011specific formats into a common intermediate schema**\n   - Why: Each lab uses different calibration metadata and reporting units; parsing standardises the data for downstream steps.\n   - Expected output: For each shard, a JSON record with fields: accession_number, wavelength (nm), absorbance_value, unit, instrument_id, raw_calibration_data.\n\n3. **Extract and apply inline calibration metadata from nested XML**\n   - Why: Calibration curves are required to convert raw absorbance to reflectance percentages.\n   - Expected output: Updated JSON record with a calibrated reflectance value field.\n\n4. **Convert fixed\u2011width FORTRAN output into the same JSON schema**\n   - Why: Ensures all numeric data share identical column ordering and units.\n   - Expected output: JSON records matching those from XML labs, with absorbance values parsed correctly.\n\n5. **OCR\u2011clean handwritten PDF scans (8% error rate)**\n   - Why: OCR errors can corrupt wavelength or value fields; cleaning improves accuracy.\n   - Expected output: Cleaned text files or directly parsed JSON after applying spell\u2011check and regex validation against expected numeric patterns.\n\n6. **Normalize all absorbance measurements to reflectance percentages**\n   - Why: Courts require a single, comparable metric across labs.\n   - Expected output: Each record now contains a `reflectance_percent` field calculated using the lab\u2019s calibration curve or standard conversion formula.\n\n7. **Reconcile overlapping wavelength ranges across instruments**\n   - Why: Different instruments may sample at slightly different wavelengths; harmonisation is needed for comparative analysis.\n   - Expected output: A unified wavelength grid (e.g., 200\u20112500\u202fnm in 1\u202fnm steps) with interpolated reflectance values per shard.\n\n8. **Deduplicate shards sampled twice under different accession numbers**\n   - Why: Duplicate records inflate provenance models and can mislead attribution.\n   - Expected output: A master list of unique shards, each tagged with all related accession numbers and a flag indicating deduplication.\n\n9. **Validate data integrity (range checks, missing values, outliers)**\n   - Why: Ensures the dataset is reliable for forensic presentation.\n   - Expected output: Validation report highlighting any anomalies; corrected or flagged records.\n\n10. **Load harmonised dataset into a provenance\u2011attribution GIS layer**\n    - Why: Spatial context is essential for court exhibits and visualisation.\n    - Expected output: A GIS feature class (e.g., shapefile or GeoPackage) where each shard point carries the reflectance spectrum attributes and provenance metadata.\n\n11. **Generate a court\u2011ready exhibit package**\n    - Why: Provides jurors with clear, interpretable evidence.\n    - Expected output: PDF exhibit sheets summarising spectra, GIS maps, and a data dictionary.\n\n12. **Document the entire workflow for auditability**\n    - Why: Courts require chain\u2011of\u2011custody and reproducibility.\n    - Expected output: A README or SOP file detailing each step, tools used, versioning, and contact information.\n\nEach of these steps ensures that data from heterogeneous sources are accurately transformed into a single, court\u2011ready format while preserving provenance integrity.\n\nSolve the task using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": false\n- \"recalled_skill_name\": \"none\"\n- \"adaptation_notes\": \"N/A\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+    },
+    "task_result": {
+      "response": {
+        "domain": "archaeometry",
+        "task": "Ingest, reconcile, normalize and load forensic spectroscopic data from four labs into a GIS layer for court exhibit.",
+        "solution_steps": [
+          {
+            "step_number": 1,
+            "action": "Collect raw files from all labs into a unified repository with subfolders per lab.",
+            "expected_outcome": "All XML, FORTRAN fixed\u2011width text, OCR PDFs, and associated metadata are stored in a single, versioned directory structure."
+          },
+          {
+            "step_number": 2,
+            "action": "Parse each lab\u2019s format into a common JSON schema: accession_number, wavelength_nm, absorbance_value, unit, instrument_id, raw_calibration.",
+            "expected_outcome": "A flat table of records ready for calibration and conversion."
+          },
+          {
+            "step_number": 3,
+            "action": "Extract inline calibration metadata from nested XML and apply it to convert absorbance to reflectance percentages using the provided curve or formula.",
+            "expected_outcome": "JSON records now contain a `reflectance_percent` field."
+          },
+          {
+            "step_number": 4,
+            "action": "Transform fixed\u2011width FORTRAN output into the same JSON schema, validating numeric ranges and handling missing fields.",
+            "expected_outcome": "Consistent numeric data across all instruments."
+          },
+          {
+            "step_number": 5,
+            "action": "Clean OCR PDFs: run spell\u2011check, regex validation against expected wavelength/value patterns, and manual spot\u2011checks for high\u2011confidence errors.",
+            "expected_outcome": "Accurate text extraction with corrected wavelengths and values."
+          },
+          {
+            "step_number": 6,
+            "action": "Reconcile overlapping wavelength ranges by interpolating each shard\u2019s reflectance onto a unified grid (e.g., 200\u20132500 nm, 1 nm steps).",
+            "expected_outcome": "All shards share identical wavelength columns for comparative analysis."
+          },
+          {
+            "step_number": 7,
+            "action": "Deduplicate shards sampled twice under different accession numbers by matching spectral fingerprints and metadata; retain a master record with all related accession IDs.",
+            "expected_outcome": "A unique list of shards, each flagged if duplicated."
+          },
+          {
+            "step_number": 8,
+            "action": "Validate data integrity: check value ranges, flag missing or outlier points, and generate a validation report.",
+            "expected_outcome": "High\u2011confidence dataset with anomalies documented."
+          },
+          {
+            "step_number": 9,
+            "action": "Load the harmonized dataset into a GIS provenance layer (GeoPackage) where each point carries reflectance spectra and provenance attributes.",
+            "expected_outcome": "Spatially referenced feature class ready for court exhibits."
+          },
+          {
+            "step_number": 10,
+            "action": "Generate court\u2011ready exhibit package: PDF sheets summarizing spectra, GIS maps, data dictionary, and chain\u2011of\u2011custody documentation.",
+            "expected_outcome": "Complete evidence bundle compliant with legal standards."
+          }
+        ],
+        "quality_self_assessment": {
+          "score": 0.95,
+          "justification": "All steps are directly derived from the task requirements and follow best practices for data ingestion, normalization, deduplication, validation, and GIS integration in forensic contexts."
+        },
+        "brain_assisted": false,
+        "recalled_skill": "none",
+        "confidence": 0.95
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "I mapped each requirement to a concrete action, ensuring format conversion, calibration application, error handling for OCR, wavelength alignment, deduplication logic, validation, GIS loading, and final exhibit preparation. All steps are evidence\u2011based and align with forensic data standards.",
+      "_metrics": {
+        "tokens": 1906,
+        "prompt_tokens": 1084,
+        "completion_tokens": 822,
+        "latency_ms": 6601.21,
+        "cost_usd": 0.000407,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'archaeometry', 'task': \"Ingest spectroscopic mineral-composition readings from 23 confiscated pottery shards across 4 forensic labs (each lab uses a different instrument calibration and reporting schema), reconcile overlapping wavelength ranges, normalize measurement units from absorbance to reflectance percentages, deduplicate shards that were sampled twice under different accession numbers, and load the harmonized dataset into a provenance-attribution GIS layer for court exhibit preparation. Two of the labs deliver results as nested XML with inline calibration metadata, one delivers fixed-width FORTRAN output, and one delivers handwritten PDF scans that have been OCR'd with ~8% character error rate.\"}\n\nSOLUTION:\n{'domain': 'archaeometry', 'task': 'Ingest, reconcile, normalize and load forensic spectroscopic data from four labs into a GIS layer for court exhibit.', 'steps': [{'action': 'Collect raw files from all labs into a unified repository with subfolders per lab.', 'expected_outcome': 'All XML, FORTRAN fixed\u2011width text, OCR PDFs, and associated metadata are stored in a single, versioned directory structure.'}, {'action': 'Parse each lab\u2019s format into a common JSON schema: accession_number, wavelength_nm, absorbance_value, unit, instrument_id, raw_calibration.', 'expected_outcome': 'A flat table of records ready for calibration and conversion.'}, {'action': 'Extract inline calibration metadata from nested XML and apply it to convert absorbance to reflectance percentages using the provided curve or formula.', 'expected_outcome': 'JSON records now contain a `reflectance_percent` field.'}, {'action': 'Transform fixed\u2011width FORTRAN output into the same JSON schema, validating numeric ranges and handling missing fields.', 'expected_outcome': 'Consistent numeric data across all instruments.'}, {'action': 'Clean OCR PDFs: run spell\u2011check, regex validation against expected wavelength/value patterns, and manual spot\u2011checks for high\u2011confidence errors.', 'expected_outcome': 'Accurate text extraction with corrected wavelengths and values.'}, {'action': 'Reconcile overlapping wavelength ranges by interpolating each shard\u2019s reflectance onto a unified grid (e.g., 200\u20132500\\u202fnm, 1\\u202fnm steps).', 'expected_outcome': 'All shards share identical wavelength columns for comparative analysis.'}, {'action': 'Deduplicate shards sampled twice under different accession numbers by matching spectral fingerprints and metadata; retain a master record with all related accession IDs.', 'expected_outcome': 'A unique list of shards, each flagged if duplicated.'}, {'action': 'Validate data integrity: check value ranges, flag missing or outlier points, and generate a validation report.', 'expected_outcome': 'High\u2011confidence dataset with anomalies documented.'}, {'action': 'Load the harmonized dataset into a GIS provenance layer (GeoPackage) where each point carries reflectance spectra and provenance attributes.', 'expected_outcome': 'Spatially referenced feature class ready for court exhibits.'}, {'action': 'Generate court\u2011ready exhibit package: PDF sheets summarizing spectra, GIS maps, data dictionary, and chain\u2011of\u2011custody documentation.', 'expected_outcome': 'Complete evidence bundle compliant with legal standards.'}], 'used_recalled_skill': False, 'recalled_skill_name': 'none', 'adaptation_notes': 'N/A'}\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

@@ -1,0 +1,172 @@
+{
+  "task_id": "track_a_12",
+  "condition": "brain",
+  "elapsed_s": 18.72,
+  "success": true,
+  "output": {
+    "response": "1. **Data acquisition**: Securely connect to each of the 14 LIMS via their APIs or SFTP endpoints, exporting raw tables that contain SampleID, AnimalID, TestDate, ResultCode, Species/Breed identifiers, GeoCoord (X/Y), CRS_ID, LabName, and CustodyTrail.\n\n2. **Result mapping**: Create a lab\u2011specific lookup table translating local ResultCodes to the unified set {POSITIVE, SUSPECT, NEGATIVE}. Apply this map during import so every record has a StandardResult field.\n\n3. **Species\u2013breed reconciliation**: Join each record\u2019s Species/Breed identifiers with the FAO DAD\u2011IS reference file (species_code \u2192 species_name, breed_code \u2192 breed_name). Replace local codes with FAO codes; flag unmapped entries for manual review.\n\n4. **Coordinate normalisation**: For every row read CRS_ID, resolve it to an EPSG code, and transform X/Y to WGS\u201184 (EPSG:4326) using a GIS library such as pyproj. Store the resulting Latitude/Longitude in decimal degrees.\n\n5. **Test\u2013retest conflict detection**: Build a composite key of AnimalID + LabName. Self\u2011join the dataset on AnimalID, filter pairs where |date1 \u2013 date2| \u2264 30 days and labs differ; flag rows with differing StandardResult values as INCONGRUENT = TRUE.\n\n6. **Unified table assembly**: Consolidate all transformed columns into a single staging table:\n   - SampleID, HerdID (derived from LabName or provided field), AnimalID,\n   - SpeciesFAO, BreedFAO, TestDate, StandardResult,\n   - Latitude, Longitude, LabName, CustodyTrail, IncongruentFlag.\n\n7. **Mapping to WAHIS schema**: Align the staging table columns with OIE\u2019s WAHIS fields:\n   - SampleID \u2192 SampleID\n   - AnimalSpecies \u2192 SpeciesFAO\n   - TestResult \u2192 StandardResult\n   - CollectionDate \u2192 TestDate\n   - Latitude/Longitude \u2192 Latitude/Longitude\n   - LaboratoryName \u2192 LabName\n   - ChainOfCustody \u2192 CustodyTrail.\n\n8. **Data load**: Export the mapped table as CSV or JSON and ingest it into WAHIS via the OIE API or database loader, ensuring audit logs capture batch identifiers to preserve chain\u2011of\u2011custody integrity.\n\n9. **Validation & QA**:\n   - Verify no mandatory fields are null.\n   - Confirm latitude \u2208 [\u221290, 90] and longitude \u2208 [\u2212180, 180].\n   - Ensure StandardResult values belong to {POSITIVE, SUSPECT, NEGATIVE}.\n   - Check that IncongruentFlag is correctly set for all test\u2013retest pairs.\n   - Flag any anomalies for manual investigation.",
+    "confidence": "0.95",
+    "internal_reasoning": "I structured the solution into clear, sequential steps covering extraction, transformation, conflict detection, mapping to the target schema, loading, and validation, matching the task requirements.",
+    "_metrics": {
+      "tokens": 1781,
+      "prompt_tokens": 1116,
+      "completion_tokens": 665,
+      "latency_ms": 5951.42,
+      "cost_usd": 0.000367,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'veterinary_epidemiology', 'task': \"Extract herd-level disease test results from 14 regional veterinary laboratories that each use a different LIMS (Laboratory Information Management System) with varying field definitions for 'positive', 'suspect', and 'negative'. Transform results by reconciling species-breed taxonomies against the FAO DAD-IS nomenclature, converting geo-coordinates from 6 different CRS projections to WGS-84, flagging incongruent test-retest pairs where the same animal was tested at two labs within 30 days with conflicting outcomes, and load the unified surveillance dataset into an OIE-compatible WAHIS reporting schema while preserving chain-of-custody metadata for each sample.\"}\n\nSOLUTION:\n1. **Data Collection** \u2013 Connect to each of the 14 LIMS via APIs or secure file transfer; export raw tables containing SampleID, AnimalID, TestDate, ResultCode, Species/Breed, GeoCoord (X/Y), CRS_ID, LabName, and CustodyTrail.\n\n2. **Result Standardisation** \u2013 Build a lab\u2011specific mapping table that translates local result codes to the unified set {POSITIVE, SUSPECT, NEGATIVE}. Apply this map during import.\n\n3. **Species\u2013Breed Reconciliation** \u2013 Use an FAO DAD\u2011IS lookup file (species_code \u2192 species_name, breed_code \u2192 breed_name). Join on local identifiers and replace them with FAO codes; flag any unmapped records for manual review.\n\n4. **Coordinate Normalisation** \u2013 For each record read the CRS_ID, load the corresponding EPSG code, and transform X/Y to WGS\u201184 (EPSG:4326) using a GIS library (e.g., pyproj). Store Latitude/Longitude in decimal degrees.\n\n5. **Test\u2013Retest Conflict Detection** \u2013 Create a temporary key by concatenating AnimalID + LabName. Join the dataset with itself on AnimalID, filter pairs where |date1\u2011date2| \u2264 30 days and labs differ; flag rows where ResultCode differs as INCONGRUENT = TRUE.\n\n6. **Unified Table Assembly** \u2013 Combine all transformed columns into a single table: SampleID, HerdID (derived from LabName or provided field), AnimalID, SpeciesFAO, BreedFAO, TestDate, StandardResult, Latitude, Longitude, LabName, CustodyTrail, IncongruentFlag.\n\n7. **Mapping to WAHIS Schema** \u2013 Align the unified table columns with OIE\u2019s WAHIS fields: SampleID \u2192 SampleID, AnimalSpecies \u2192 SpeciesFAO, TestResult \u2192 StandardResult, CollectionDate \u2192 TestDate, Latitude/Longitude \u2192 Latitude/Longitude, LabName \u2192 LaboratoryName, CustodyTrail \u2192 ChainOfCustody.\n\n8. **Data Load** \u2013 Export the mapped table as CSV or JSON and use the OIE API or database loader to ingest into the WAHIS system; record audit logs for each batch to preserve chain\u2011of\u2011custody integrity.\n\n9. **Validation & QA** \u2013 Run automated checks: (a) no nulls in mandatory fields, (b) coordinate ranges valid, (c) result codes within allowed set, (d) Incongruent flags correctly populated. Flag any anomalies for manual investigation.\n\nBRAIN METRICS:\nSkill recalled: procedural:general:extraction-sequential\nTransfer score: 0.6523393055555555\nUsed recalled skill: False\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": true if recalled skill contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": {
+        "domain": "veterinary_epidemiology",
+        "task": "Extract, reconcile, transform, flag, and load herd-level disease test results from 14 regional labs into an OIE-compatible WAHIS schema while preserving chain-of-custody metadata.",
+        "steps": [
+          {
+            "action": "Collect raw data from each of the 14 LIMS",
+            "result": "A set of 14 heterogeneous datasets containing sample IDs, animal identifiers, test dates, result codes (positive/suspect/negative), species-breed info, geo-coordinates with CRS tags, and chain-of-custody fields."
+          },
+          {
+            "action": "Standardize result terminology across labs",
+            "result": "A mapping table that translates each lab\u2019s local 'positive', 'suspect', and 'negative' codes into a unified set of outcome labels (e.g., POSITIVE, SUSPECT, NEGATIVE)."
+          },
+          {
+            "action": "Reconcile species-breed taxonomy to FAO DAD-IS nomenclature",
+            "result": "A lookup table linking local species/breed identifiers to FAO DAD-IS codes, and a transformed dataset where each record\u2019s species and breed are replaced with the standardized FAO codes."
+          },
+          {
+            "action": "Convert all geo-coordinates to WGS\u201184 (EPSG:4326)",
+            "result": "A spatial transformation script that reads CRS metadata, applies the appropriate projection conversion for each of the 6 different source CRSs, and outputs latitude/longitude in decimal degrees."
+          },
+          {
+            "action": "Identify incongruent test-retest pairs within 30 days",
+            "result": "An algorithm that joins records by animal ID, filters pairs with dates \u226430 days apart from different labs, flags those where outcome labels differ, and creates a flag column (INCONGRUENT = TRUE/FALSE)."
+          },
+          {
+            "action": "Assemble unified surveillance dataset",
+            "result": "A single table containing: herd ID, animal ID, species-breed FAO codes, test date, standardized result, WGS\u201184 coordinates, lab source, and chain-of-custody metadata."
+          },
+          {
+            "action": "Map the unified dataset to the OIE WAHIS reporting schema",
+            "result": "A transformation that aligns each field with the required WAHIS columns (e.g., SampleID, AnimalSpecies, TestResult, CollectionDate, Latitude, Longitude, LabName, CustodyTrail)."
+          },
+          {
+            "action": "Load data into the OIE-compatible database or export as CSV/JSON for upload",
+            "result": "Data successfully ingested into the target system with audit logs preserving chain-of-custody information."
+          }
+        ],
+        "confidence": "0.95",
+        "internal_reasoning": "The approach follows a logical ETL pipeline: extraction from heterogeneous LIMS, transformation to standardized terminologies and coordinates, validation via test-retest flagging, and loading into the target schema while maintaining metadata integrity."
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "All steps are evidence-based and necessary for accurate, interoperable surveillance reporting.",
+      "_metrics": {
+        "tokens": 1240,
+        "prompt_tokens": 552,
+        "completion_tokens": 688,
+        "latency_ms": 6610.44,
+        "cost_usd": 0.000408,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: veterinary_epidemiology\nTASK: Extract herd-level disease test results from 14 regional veterinary laboratories that each use a different LIMS (Laboratory Information Management System) with varying field definitions for 'positive', 'suspect', and 'negative'. Transform results by reconciling species-breed taxonomies against the FAO DAD-IS nomenclature, converting geo-coordinates from 6 different CRS projections to WGS-84, flagging incongruent test-retest pairs where the same animal was tested at two labs within 30 days with conflicting outcomes, and load the unified surveillance dataset into an OIE-compatible WAHIS reporting schema while preserving chain-of-custody metadata for each sample.\n\n\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+    },
+    "brain_learn": {
+      "response": "Learned skill: procedural:general:extraction-sequential",
+      "confidence": "0.7202249999999999",
+      "internal_reasoning": "Abstracted 2 steps into transferable skill 'procedural:general:extraction-sequential'",
+      "skill_id": "220f04e6-a78c-4587-b231-31f5067536fc",
+      "skill_name": "procedural:general:extraction-sequential",
+      "skill_steps": [
+        "implement [target]",
+        "trace [target]"
+      ],
+      "skill_tags": [
+        "extraction",
+        "{'domain': 'data_engineering', 'task': 'Design and implement an ETL pipeline that extracts data from multiple CSV sources, transforms it by cleaning nulls, normalizing date formats, and deduplicating ",
+        "transformation",
+        "sequential",
+        "filtering",
+        "general"
+      ]
+    },
+    "brain_recall": {
+      "response": "Found applicable skill: 'procedural:general:extraction-sequential' (score: 0.65). Steps: implement [target] \u2192 trace [target]",
+      "confidence": "0.6523393055555555",
+      "internal_reasoning": "Skill 'procedural:general:extraction-sequential'. has very similar task structure. has been transferred 1 times (100% success). shares structures: transformation, filtering. shares patterns: extraction.",
+      "skill_id": "220f04e6-a78c-4587-b231-31f5067536fc",
+      "skill_name": "procedural:general:extraction-sequential",
+      "skill_steps": [
+        "implement [target]",
+        "trace [target]"
+      ],
+      "skill_tags": [
+        "extraction",
+        "{'domain': 'data_engineering', 'task': 'Design and implement an ETL pipeline that extracts data from multiple CSV sources, transforms it by cleaning nulls, normalizing date formats, and deduplicating ",
+        "transformation",
+        "sequential",
+        "filtering",
+        "general"
+      ],
+      "combined_score": 0.6523393055555555,
+      "structural_score": 0.825,
+      "semantic_score": 0.022222222222222223,
+      "adaptations": {
+        "add_structures": [
+          "validation"
+        ],
+        "remove_structures": [
+          "sequential"
+        ]
+      },
+      "all_candidates": [
+        {
+          "skill_name": "procedural:general:extraction-sequential",
+          "score": 0.6523393055555555,
+          "reasoning": "Skill 'procedural:general:extraction-sequential'. has very similar task structure. has been transferred 1 times (100% success). shares structures: transformation, filtering. shares patterns: extraction."
+        }
+      ]
+    },
+    "task_applier": {
+      "response": "1. **Data Collection** \u2013 Connect to each of the 14 LIMS via APIs or secure file transfer; export raw tables containing SampleID, AnimalID, TestDate, ResultCode, Species/Breed, GeoCoord (X/Y), CRS_ID, LabName, and CustodyTrail.\n\n2. **Result Standardisation** \u2013 Build a lab\u2011specific mapping table that translates local result codes to the unified set {POSITIVE, SUSPECT, NEGATIVE}. Apply this map during import.\n\n3. **Species\u2013Breed Reconciliation** \u2013 Use an FAO DAD\u2011IS lookup file (species_code \u2192 species_name, breed_code \u2192 breed_name). Join on local identifiers and replace them with FAO codes; flag any unmapped records for manual review.\n\n4. **Coordinate Normalisation** \u2013 For each record read the CRS_ID, load the corresponding EPSG code, and transform X/Y to WGS\u201184 (EPSG:4326) using a GIS library (e.g., pyproj). Store Latitude/Longitude in decimal degrees.\n\n5. **Test\u2013Retest Conflict Detection** \u2013 Create a temporary key by concatenating AnimalID + LabName. Join the dataset with itself on AnimalID, filter pairs where |date1\u2011date2| \u2264 30 days and labs differ; flag rows where ResultCode differs as INCONGRUENT = TRUE.\n\n6. **Unified Table Assembly** \u2013 Combine all transformed columns into a single table: SampleID, HerdID (derived from LabName or provided field), AnimalID, SpeciesFAO, BreedFAO, TestDate, StandardResult, Latitude, Longitude, LabName, CustodyTrail, IncongruentFlag.\n\n7. **Mapping to WAHIS Schema** \u2013 Align the unified table columns with OIE\u2019s WAHIS fields: SampleID \u2192 SampleID, AnimalSpecies \u2192 SpeciesFAO, TestResult \u2192 StandardResult, CollectionDate \u2192 TestDate, Latitude/Longitude \u2192 Latitude/Longitude, LabName \u2192 LaboratoryName, CustodyTrail \u2192 ChainOfCustody.\n\n8. **Data Load** \u2013 Export the mapped table as CSV or JSON and use the OIE API or database loader to ingest into the WAHIS system; record audit logs for each batch to preserve chain\u2011of\u2011custody integrity.\n\n9. **Validation & QA** \u2013 Run automated checks: (a) no nulls in mandatory fields, (b) coordinate ranges valid, (c) result codes within allowed set, (d) Incongruent flags correctly populated. Flag any anomalies for manual investigation.",
+      "confidence": "0.95",
+      "internal_reasoning": "I followed the ETL logic outlined in my analysis, adding explicit mapping and validation steps to meet OIE requirements.",
+      "_metrics": {
+        "tokens": 1901,
+        "prompt_tokens": 1311,
+        "completion_tokens": 590,
+        "latency_ms": 5457.35,
+        "cost_usd": 0.000337,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a task. You have your own analysis AND access to a\npreviously learned skill from the Brain's memory.\n\nDOMAIN: general\nTASK: {'domain': 'veterinary_epidemiology', 'task': \"Extract herd-level disease test results from 14 regional veterinary laboratories that each use a different LIMS (Laboratory Information Management System) with varying field definitions for 'positive', 'suspect', and 'negative'. Transform results by reconciling species-breed taxonomies against the FAO DAD-IS nomenclature, converting geo-coordinates from 6 different CRS projections to WGS-84, flagging incongruent test-retest pairs where the same animal was tested at two labs within 30 days with conflicting outcomes, and load the unified surveillance dataset into an OIE-compatible WAHIS reporting schema while preserving chain-of-custody metadata for each sample.\"}\n\nYOUR ANALYSIS:\n{'domain': 'veterinary_epidemiology', 'task': 'Extract, reconcile, transform, flag, and load herd-level disease test results from 14 regional labs into an OIE-compatible WAHIS schema while preserving chain-of-custody metadata.', 'steps': [{'action': 'Collect raw data from each of the 14 LIMS', 'result': 'A set of 14 heterogeneous datasets containing sample IDs, animal identifiers, test dates, result codes (positive/suspect/negative), species-breed info, geo-coordinates with CRS tags, and chain-of-custody fields.'}, {'action': 'Standardize result terminology across labs', 'result': \"A mapping table that translates each lab\u2019s local 'positive', 'suspect', and 'negative' codes into a unified set of outcome labels (e.g., POSITIVE, SUSPECT, NEGATIVE).\"}, {'action': 'Reconcile species-breed taxonomy to FAO DAD-IS nomenclature', 'result': 'A lookup table linking local species/breed identifiers to FAO DAD-IS codes, and a transformed dataset where each record\u2019s species and breed are replaced with the standardized FAO codes.'}, {'action': 'Convert all geo-coordinates to WGS\u201184 (EPSG:4326)', 'result': 'A spatial transformation script that reads CRS metadata, applies the appropriate projection conversion for each of the 6 different source CRSs, and outputs latitude/longitude in decimal degrees.'}, {'action': 'Identify incongruent test-retest pairs within 30 days', 'result': 'An algorithm that joins records by animal ID, filters pairs with dates \u226430 days apart from different labs, flags those where outcome labels differ, and creates a flag column (INCONGRUENT = TRUE/FALSE).'}, {'action': 'Assemble unified surveillance dataset', 'result': 'A single table containing: herd ID, animal ID, species-breed FAO codes, test date, standardized result, WGS\u201184 coordinates, lab source, and chain-of-custody metadata.'}, {'action': 'Map the unified dataset to the OIE WAHIS reporting schema', 'result': 'A transformation that aligns each field with the required WAHIS columns (e.g., SampleID, AnimalSpecies, TestResult, CollectionDate, Latitude, Longitude, LabName, CustodyTrail).'}, {'action': 'Load data into the OIE-compatible database or export as CSV/JSON for upload', 'result': 'Data successfully ingested into the target system with audit logs preserving chain-of-custody information.'}], 'confidence': '0.95', 'internal_reasoning': 'The approach follows a logical ETL pipeline: extraction from heterogeneous LIMS, transformation to standardized terminologies and coordinates, validation via test-retest flagging, and loading into the target schema while maintaining metadata integrity.'}\n\nRECALLED SKILL FROM BRAIN:\nSkill name: procedural:general:extraction-sequential\nAbstract steps: ['implement [target]', 'trace [target]']\nTransfer score: 0.6523393055555555\nStructural match: 0.825\nSemantic match: 0.022222222222222223\nAdaptations: {'add_structures': ['validation'], 'remove_structures': ['sequential']}\n\nINSTRUCTIONS:\nIf a skill was recalled, use its abstract pattern to GUIDE your solution.\nFor each abstract step, explain how you ADAPT it to the current domain.\nIf no skill was recalled, solve using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": true or false\n- \"recalled_skill_name\": skill name or \"none\"\n- \"adaptation_notes\": how you adapted the skill (or \"N/A\")\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+    },
+    "brain_feedback": {
+      "response": "Recorded successful transfer for skill 'procedural:general:extraction-sequential'.",
+      "confidence": "0.7342137499999999",
+      "internal_reasoning": "Transfer feedback recorded. Skill now has 2 transfer(s).",
+      "skill_id": "220f04e6-a78c-4587-b231-31f5067536fc",
+      "skill_name": "procedural:general:extraction-sequential",
+      "transfer_count": 2,
+      "transfer_success": true
+    },
+    "task_result": {
+      "response": "1. **Data acquisition**: Securely connect to each of the 14 LIMS via their APIs or SFTP endpoints, exporting raw tables that contain SampleID, AnimalID, TestDate, ResultCode, Species/Breed identifiers, GeoCoord (X/Y), CRS_ID, LabName, and CustodyTrail.\n\n2. **Result mapping**: Create a lab\u2011specific lookup table translating local ResultCodes to the unified set {POSITIVE, SUSPECT, NEGATIVE}. Apply this map during import so every record has a StandardResult field.\n\n3. **Species\u2013breed reconciliation**: Join each record\u2019s Species/Breed identifiers with the FAO DAD\u2011IS reference file (species_code \u2192 species_name, breed_code \u2192 breed_name). Replace local codes with FAO codes; flag unmapped entries for manual review.\n\n4. **Coordinate normalisation**: For every row read CRS_ID, resolve it to an EPSG code, and transform X/Y to WGS\u201184 (EPSG:4326) using a GIS library such as pyproj. Store the resulting Latitude/Longitude in decimal degrees.\n\n5. **Test\u2013retest conflict detection**: Build a composite key of AnimalID + LabName. Self\u2011join the dataset on AnimalID, filter pairs where |date1 \u2013 date2| \u2264 30 days and labs differ; flag rows with differing StandardResult values as INCONGRUENT = TRUE.\n\n6. **Unified table assembly**: Consolidate all transformed columns into a single staging table:\n   - SampleID, HerdID (derived from LabName or provided field), AnimalID,\n   - SpeciesFAO, BreedFAO, TestDate, StandardResult,\n   - Latitude, Longitude, LabName, CustodyTrail, IncongruentFlag.\n\n7. **Mapping to WAHIS schema**: Align the staging table columns with OIE\u2019s WAHIS fields:\n   - SampleID \u2192 SampleID\n   - AnimalSpecies \u2192 SpeciesFAO\n   - TestResult \u2192 StandardResult\n   - CollectionDate \u2192 TestDate\n   - Latitude/Longitude \u2192 Latitude/Longitude\n   - LaboratoryName \u2192 LabName\n   - ChainOfCustody \u2192 CustodyTrail.\n\n8. **Data load**: Export the mapped table as CSV or JSON and ingest it into WAHIS via the OIE API or database loader, ensuring audit logs capture batch identifiers to preserve chain\u2011of\u2011custody integrity.\n\n9. **Validation & QA**:\n   - Verify no mandatory fields are null.\n   - Confirm latitude \u2208 [\u221290, 90] and longitude \u2208 [\u2212180, 180].\n   - Ensure StandardResult values belong to {POSITIVE, SUSPECT, NEGATIVE}.\n   - Check that IncongruentFlag is correctly set for all test\u2013retest pairs.\n   - Flag any anomalies for manual investigation.",
+      "confidence": "0.95",
+      "internal_reasoning": "I structured the solution into clear, sequential steps covering extraction, transformation, conflict detection, mapping to the target schema, loading, and validation, matching the task requirements.",
+      "_metrics": {
+        "tokens": 1781,
+        "prompt_tokens": 1116,
+        "completion_tokens": 665,
+        "latency_ms": 5951.42,
+        "cost_usd": 0.000367,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'veterinary_epidemiology', 'task': \"Extract herd-level disease test results from 14 regional veterinary laboratories that each use a different LIMS (Laboratory Information Management System) with varying field definitions for 'positive', 'suspect', and 'negative'. Transform results by reconciling species-breed taxonomies against the FAO DAD-IS nomenclature, converting geo-coordinates from 6 different CRS projections to WGS-84, flagging incongruent test-retest pairs where the same animal was tested at two labs within 30 days with conflicting outcomes, and load the unified surveillance dataset into an OIE-compatible WAHIS reporting schema while preserving chain-of-custody metadata for each sample.\"}\n\nSOLUTION:\n1. **Data Collection** \u2013 Connect to each of the 14 LIMS via APIs or secure file transfer; export raw tables containing SampleID, AnimalID, TestDate, ResultCode, Species/Breed, GeoCoord (X/Y), CRS_ID, LabName, and CustodyTrail.\n\n2. **Result Standardisation** \u2013 Build a lab\u2011specific mapping table that translates local result codes to the unified set {POSITIVE, SUSPECT, NEGATIVE}. Apply this map during import.\n\n3. **Species\u2013Breed Reconciliation** \u2013 Use an FAO DAD\u2011IS lookup file (species_code \u2192 species_name, breed_code \u2192 breed_name). Join on local identifiers and replace them with FAO codes; flag any unmapped records for manual review.\n\n4. **Coordinate Normalisation** \u2013 For each record read the CRS_ID, load the corresponding EPSG code, and transform X/Y to WGS\u201184 (EPSG:4326) using a GIS library (e.g., pyproj). Store Latitude/Longitude in decimal degrees.\n\n5. **Test\u2013Retest Conflict Detection** \u2013 Create a temporary key by concatenating AnimalID + LabName. Join the dataset with itself on AnimalID, filter pairs where |date1\u2011date2| \u2264 30 days and labs differ; flag rows where ResultCode differs as INCONGRUENT = TRUE.\n\n6. **Unified Table Assembly** \u2013 Combine all transformed columns into a single table: SampleID, HerdID (derived from LabName or provided field), AnimalID, SpeciesFAO, BreedFAO, TestDate, StandardResult, Latitude, Longitude, LabName, CustodyTrail, IncongruentFlag.\n\n7. **Mapping to WAHIS Schema** \u2013 Align the unified table columns with OIE\u2019s WAHIS fields: SampleID \u2192 SampleID, AnimalSpecies \u2192 SpeciesFAO, TestResult \u2192 StandardResult, CollectionDate \u2192 TestDate, Latitude/Longitude \u2192 Latitude/Longitude, LabName \u2192 LaboratoryName, CustodyTrail \u2192 ChainOfCustody.\n\n8. **Data Load** \u2013 Export the mapped table as CSV or JSON and use the OIE API or database loader to ingest into the WAHIS system; record audit logs for each batch to preserve chain\u2011of\u2011custody integrity.\n\n9. **Validation & QA** \u2013 Run automated checks: (a) no nulls in mandatory fields, (b) coordinate ranges valid, (c) result codes within allowed set, (d) Incongruent flags correctly populated. Flag any anomalies for manual investigation.\n\nBRAIN METRICS:\nSkill recalled: procedural:general:extraction-sequential\nTransfer score: 0.6523393055555555\nUsed recalled skill: False\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": true if recalled skill contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

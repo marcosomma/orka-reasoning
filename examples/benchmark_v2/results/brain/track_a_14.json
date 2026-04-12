@@ -1,0 +1,344 @@
+{
+  "task_id": "track_a_14",
+  "condition": "brain",
+  "elapsed_s": 24.63,
+  "success": true,
+  "output": {
+    "response": {
+      "overview": "A comprehensive audit and remediation plan for a 2.3\u202fPB national archive repository covering format obsolescence, bit\u2011rot, metadata drift, and legal/cultural risk.",
+      "steps": [
+        {
+          "step_number": 1,
+          "title": "Full Inventory Crawl",
+          "actions": [
+            "Enumerate all objects with path, size, checksum (SHA\u2011256), ingest year, current format, and existing metadata fields.",
+            "Store results in a master catalog database for downstream analysis."
+          ]
+        },
+        {
+          "step_number": 2,
+          "title": "Format Obsolescence Assessment",
+          "actions": [
+            "Cross\u2011reference each format against NARA Format Registry, ISO/IEC\u202f14721 (OAIS), and the NDSA Format List.",
+            "Flag formats as: (a) actively supported, (b) community\u2011maintained but aging, (c) obsolete or vendor\u2011dead."
+          ]
+        },
+        {
+          "step_number": 3,
+          "title": "Bit\u2011Rot Verification",
+          "actions": [
+            "Recompute SHA\u2011256 checksums and compare to stored values.",
+            "Log mismatches; calculate percentage of affected objects per ingest cohort."
+          ]
+        },
+        {
+          "step_number": 4,
+          "title": "Metadata Schema Drift Analysis",
+          "actions": [
+            "Compare current metadata against original ingest schemas and the latest institutional schema.",
+            "Identify missing, renamed, or restructured fields; score drift impact on discoverability and preservation actions."
+          ]
+        },
+        {
+          "step_number": 5,
+          "title": "Cultural Significance Scoring",
+          "actions": [
+            "Apply UNESCO Memory of the World criteria to each object: historical importance, uniqueness, public value.",
+            "Assign a normalized score (0\u20131) for irreplaceability."
+          ]
+        },
+        {
+          "step_number": 6,
+          "title": "Legal Deposit Verification",
+          "actions": [
+            "Cross\u2011check objects against national legal deposit registers and licensing terms.",
+            "Mark mandatory retention items; note any export restrictions."
+          ]
+        },
+        {
+          "step_number": 7,
+          "title": "NDSA Maturity Level Assignment",
+          "actions": [
+            "Evaluate each object on: format stability, metadata completeness, preservation actions taken, and risk mitigation.",
+            "Assign Levels\u202f1\u20135; Level\u202f5 indicates fully mature with proactive migration plans."
+          ]
+        },
+        {
+          "step_number": 8,
+          "title": "Composite Priority Scoring",
+          "formula": "(irreplaceability \u00d7 0.4) + (access_frequency \u00d7 0.3) + (format_community_support \u00d7 0.3)",
+          "actions": [
+            "Calculate score for each object; rank descending to identify top\u2011priority remediation targets."
+          ]
+        },
+        {
+          "step_number": 9,
+          "title": "Migration Path Recommendation",
+          "actions": [
+            "For each at\u2011risk format, propose a target format (e.g., PDF/A-3 for documents, TIFF/PNG for images, WAV/FLAC for audio).",
+            "Estimate fidelity loss using conversion tool benchmarks; document required tooling and timelines."
+          ]
+        },
+        {
+          "step_number": 10,
+          "title": "Proprietary 1990s Formats Handling",
+          "actions": [
+            "Attempt emulation: locate legacy hardware or virtualise old OS environments.",
+            "If infeasible, capture raw bitstreams, generate detailed file\u2011structure documentation, and preserve in a neutral container (e.g., ISO\u202f9660)."
+          ]
+        },
+        {
+          "step_number": 11,
+          "title": "Executive Dashboard & Governance",
+          "actions": [
+            "Create heat maps of risk by format, ingest year, and maturity level.",
+            "Provide governance recommendations: budget allocation, staffing, policy updates."
+          ]
+        },
+        {
+          "step_number": 12,
+          "title": "Ongoing Monitoring Plan",
+          "actions": [
+            "Schedule quarterly checksum verification, semi\u2011annual format registry review, and annual metadata schema audit.",
+            "Automate alerts for new obsolescence flags or integrity failures."
+          ]
+        }
+      ],
+      "deliverables": [
+        "Master catalog database (CSV/JSON)",
+        "Risk heat map dashboard (PowerBI/Tableau)",
+        "Migration roadmap with timelines and cost estimates",
+        "Legal deposit compliance report",
+        "Proprietary format preservation dossier"
+      ]
+    },
+    "confidence": "0.95",
+    "internal_reasoning": "The solution follows the task requirements: inventory, obsolescence check, bit\u2011rot detection, metadata drift, cultural significance scoring, legal obligations, NDSA maturity classification, composite priority scoring, migration recommendations, proprietary format handling, dashboard creation, and monitoring plan. All steps are concrete, evidence\u2011based, and aligned with best practices in digital preservation.",
+    "_metrics": {
+      "tokens": 2037,
+      "prompt_tokens": 969,
+      "completion_tokens": 1068,
+      "latency_ms": 9481.39,
+      "cost_usd": 0.000596,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'cultural_heritage', 'task': \"Scan a national archive's 2.3PB digital preservation repository for format obsolescence risks, bit-rot indicators, and metadata schema drift across 40 years of heterogeneous ingest. Classify each at-risk object by the NDSA Levels of Digital Preservation maturity framework, severity-weighted by cultural significance (UNESCO Memory of the World criteria) and legal deposit obligations. Recommend format migration paths with fidelity-loss estimates, prioritized by a composite score combining irreplaceability, access frequency, and format community support trajectory. Two collection series use proprietary 1990s-era formats where the vendor no longer exists.\"}\n\nSOLUTION:\n1. Perform a full catalog crawl to build an inventory of all 2.3\u202fPB objects, capturing file format, size, checksum, ingest year, and current metadata.\n2. Cross\u2011reference each format against the NARA Format Registry, ISO/IEC\u00a014721, and industry obsolescence lists to flag obsolete or unsupported formats.\n3. Run integrity checks (SHA\u2011256) against stored checksums; flag any mismatches as bit\u2011rot indicators.\n4. Compare current metadata with original ingest schemas and the latest institutional schema to identify drift; map differences and score impact.\n5. Apply UNESCO Memory of the World criteria to assign a cultural significance score (0\u20131) for each object.\n6. Verify legal deposit obligations, marking objects that require mandatory retention and noting licensing constraints.\n7. Evaluate each object against NDSA Levels\u00a01\u20115 using criteria such as format stability, metadata completeness, and preservation actions taken; assign a maturity level.\n8. Compute a composite priority score: (irreplaceability\u202f\u00d7\u202f0.4) + (access frequency\u202f\u00d7\u202f0.3) + (format community support trajectory\u202f\u00d7\u202f0.3). Rank objects by this score.\n9. For each at\u2011risk object, recommend migration paths to stable target formats (e.g., PDF/A for documents, TIFF/PNG for images), estimating fidelity loss with conversion tools and documenting required tooling and timelines.\n10. For the two proprietary 1990s series where vendors no longer exist: attempt emulation by locating legacy hardware or software; if infeasible, capture raw bitstreams and create detailed documentation of file structure to enable future reverse engineering.\n11. Compile findings into an executive dashboard with risk heat maps, governance recommendations, and a phased implementation roadmap aligned with budget and staffing.\n12. Establish ongoing monitoring: schedule periodic checksum verification, format registry updates, and metadata schema reviews.\n\nBRAIN METRICS:\nSkill recalled: procedural:general:extraction-sequential\nTransfer score: 0.6771060795300387\nUsed recalled skill: False\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": true if recalled skill contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": "Step\u2011by\u2011step analysis for the cultural heritage digital preservation task:\n\n1. **Inventory & Metadata Extraction**\n   - Action: Run a full catalog crawl to list all objects, ingest dates, file formats, checksums, and existing metadata.\n   - Why: Provides baseline data needed for risk assessment and classification.\n   - Expected output: A master spreadsheet/DB with object ID, format, size, checksum, ingest year, and current metadata schema.\n\n2. **Format Obsolescence Assessment**\n   - Action: Cross\u2011reference each file format against the NARA Format Registry, ISO/IEC 14721 (OAIS), and industry lists of deprecated formats.\n   - Why: Identifies formats that are no longer supported or have dwindling tooling.\n   - Expected output: Flag per object indicating \u201cobsolete\u201d, \u201cunsupported\u201d, or \u201csupported\u201d status.\n\n3. **Bit\u2011Rot & Integrity Check**\n   - Action: Verify checksums against stored values; run integrity tests (e.g., SHA\u2011256) and compare with archival logs.\n   - Why: Detects corruption, silent data loss, or degradation over time.\n   - Expected output: List of objects with checksum mismatches or error rates above threshold.\n\n4. **Metadata Schema Drift Analysis**\n   - Action: Compare current metadata against the original ingest schema and the latest institutional schema version; map differences.\n   - Why: Ensures discoverability, interoperability, and compliance with evolving standards.\n   - Expected output: Report of fields that have changed, been removed, or added, with impact scores.\n\n5. **Cultural Significance Weighting**\n   - Action: Apply UNESCO Memory of the World criteria to each object (e.g., uniqueness, historical value) and assign a significance score 0\u20111.\n   - Why: Prioritizes preservation effort for culturally irreplaceable items.\n   - Expected output: Significance score per object.\n\n6. **Legal Deposit & Regulatory Check**\n   - Action: Cross\u2011check objects against national legal deposit obligations and any licensing constraints.\n   - Why: Ensures compliance and identifies mandatory retention periods.\n   - Expected output: Flag for \u201clegal deposit required\u201d with retention period.\n\n7. **NDSA Maturity Classification**\n   - Action: Evaluate each object against the NDSA Levels of Digital Preservation (Levels 1\u20115) using criteria such as format stability, metadata completeness, and preservation actions taken.\n   - Why: Provides a maturity metric to guide resource allocation.\n   - Expected output: Assigned NDSA level per object.\n\n8. **Composite Priority Scoring**\n   - Action: Compute a weighted score = (irreplaceability \u00d7 0.4) + (access frequency \u00d7 0.3) + (format community support trajectory \u00d7 0.3).\n   - Why: Balances cultural value, user demand, and technical viability.\n   - Expected output: Priority rank list of objects.\n\n9. **Migration Path Recommendation**\n   - Action: For each at\u2011risk object, propose target formats (e.g., PDF/A for documents, TIFF/PNG for images) with fidelity\u2011loss estimates using tools like DROID, ExifTool, and format\u2011specific converters.\n   - Why: Provides actionable preservation actions while quantifying quality trade\u2011offs.\n   - Expected output: Migration plan per object including target format, estimated loss, required tooling, and timeline.\n\n10. **Proprietary Format Handling**\n    - Action: For the two 1990s proprietary series, locate legacy emulation environments or reverse\u2011engineer file structures; if impossible, recommend high\u2011fidelity archival capture (e.g., raw bitstream) and create detailed documentation.\n    - Why: Vendor disappearance poses a unique risk; preserving original binaries may be the only viable option.\n    - Expected output: Emulation strategy or archival capture plan with associated costs.\n\n11. **Reporting & Governance**\n    - Action: Compile findings into an executive dashboard, include risk heat maps, and propose governance policies for ongoing monitoring.\n    - Why: Enables decision makers to allocate resources effectively and ensures long\u2011term stewardship.\n    - Expected output: Interactive report and policy brief.\n\n12. **Implementation Roadmap**\n    - Action: Draft a phased implementation plan aligning with institutional budgets, staff capacity, and technical infrastructure upgrades.\n    - Why: Translates analysis into actionable steps.\n    - Expected output: Timeline, milestones, and responsible parties list.\n\nEach step builds on the previous one to create a comprehensive, data\u2011driven preservation strategy that addresses format obsolescence, integrity, metadata drift, cultural significance, legal obligations, and migration pathways.",
+      "confidence": "0.95",
+      "internal_reasoning": "I structured the analysis into logical phases\u2014inventory, risk assessment, prioritization, and action planning\u2014ensuring each step is justified and outputs are clearly defined.",
+      "_metrics": {
+        "tokens": 1611,
+        "prompt_tokens": 539,
+        "completion_tokens": 1072,
+        "latency_ms": 9391.07,
+        "cost_usd": 0.000579,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: cultural_heritage\nTASK: Scan a national archive's 2.3PB digital preservation repository for format obsolescence risks, bit-rot indicators, and metadata schema drift across 40 years of heterogeneous ingest. Classify each at-risk object by the NDSA Levels of Digital Preservation maturity framework, severity-weighted by cultural significance (UNESCO Memory of the World criteria) and legal deposit obligations. Recommend format migration paths with fidelity-loss estimates, prioritized by a composite score combining irreplaceability, access frequency, and format community support trajectory. Two collection series use proprietary 1990s-era formats where the vendor no longer exists.\n\n\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+    },
+    "brain_learn": {
+      "response": "Learned skill: procedural:general:extraction-sequential",
+      "confidence": "0.7475030624999999",
+      "internal_reasoning": "Abstracted 2 steps into transferable skill 'procedural:general:extraction-sequential'",
+      "skill_id": "220f04e6-a78c-4587-b231-31f5067536fc",
+      "skill_name": "procedural:general:extraction-sequential",
+      "skill_steps": [
+        "implement [target]",
+        "trace [target]"
+      ],
+      "skill_tags": [
+        "extraction",
+        "{'domain': 'data_engineering', 'task': 'Design and implement an ETL pipeline that extracts data from multiple CSV sources, transforms it by cleaning nulls, normalizing date formats, and deduplicating ",
+        "transformation",
+        "sequential",
+        "filtering",
+        "general"
+      ]
+    },
+    "brain_recall": {
+      "response": "Found applicable skill: 'procedural:general:extraction-sequential' (score: 0.68). Steps: implement [target] \u2192 trace [target]",
+      "confidence": "0.6771060795300387",
+      "internal_reasoning": "Skill 'procedural:general:extraction-sequential'. has very similar task structure. has been transferred 2 times (100% success). shares structures: transformation, filtering. shares patterns: extraction.",
+      "skill_id": "220f04e6-a78c-4587-b231-31f5067536fc",
+      "skill_name": "procedural:general:extraction-sequential",
+      "skill_steps": [
+        "implement [target]",
+        "trace [target]"
+      ],
+      "skill_tags": [
+        "extraction",
+        "{'domain': 'data_engineering', 'task': 'Design and implement an ETL pipeline that extracts data from multiple CSV sources, transforms it by cleaning nulls, normalizing date formats, and deduplicating ",
+        "transformation",
+        "sequential",
+        "filtering",
+        "general"
+      ],
+      "combined_score": 0.6771060795300387,
+      "structural_score": 0.8833333333333333,
+      "semantic_score": 0.023255813953488372,
+      "adaptations": {
+        "remove_structures": [
+          "sequential"
+        ]
+      },
+      "all_candidates": [
+        {
+          "skill_name": "procedural:general:extraction-sequential",
+          "score": 0.6771060795300387,
+          "reasoning": "Skill 'procedural:general:extraction-sequential'. has very similar task structure. has been transferred 2 times (100% success). shares structures: transformation, filtering. shares patterns: extraction."
+        }
+      ]
+    },
+    "task_applier": {
+      "response": "1. Perform a full catalog crawl to build an inventory of all 2.3\u202fPB objects, capturing file format, size, checksum, ingest year, and current metadata.\n2. Cross\u2011reference each format against the NARA Format Registry, ISO/IEC\u00a014721, and industry obsolescence lists to flag obsolete or unsupported formats.\n3. Run integrity checks (SHA\u2011256) against stored checksums; flag any mismatches as bit\u2011rot indicators.\n4. Compare current metadata with original ingest schemas and the latest institutional schema to identify drift; map differences and score impact.\n5. Apply UNESCO Memory of the World criteria to assign a cultural significance score (0\u20131) for each object.\n6. Verify legal deposit obligations, marking objects that require mandatory retention and noting licensing constraints.\n7. Evaluate each object against NDSA Levels\u00a01\u20115 using criteria such as format stability, metadata completeness, and preservation actions taken; assign a maturity level.\n8. Compute a composite priority score: (irreplaceability\u202f\u00d7\u202f0.4) + (access frequency\u202f\u00d7\u202f0.3) + (format community support trajectory\u202f\u00d7\u202f0.3). Rank objects by this score.\n9. For each at\u2011risk object, recommend migration paths to stable target formats (e.g., PDF/A for documents, TIFF/PNG for images), estimating fidelity loss with conversion tools and documenting required tooling and timelines.\n10. For the two proprietary 1990s series where vendors no longer exist: attempt emulation by locating legacy hardware or software; if infeasible, capture raw bitstreams and create detailed documentation of file structure to enable future reverse engineering.\n11. Compile findings into an executive dashboard with risk heat maps, governance recommendations, and a phased implementation roadmap aligned with budget and staffing.\n12. Establish ongoing monitoring: schedule periodic checksum verification, format registry updates, and metadata schema reviews.",
+      "confidence": "0.95",
+      "internal_reasoning": "I synthesized the detailed step\u2011by\u2011step analysis into a concise action plan that covers inventory, risk assessment, cultural weighting, legal compliance, maturity classification, prioritization, migration strategy, proprietary format handling, reporting, and governance. The plan follows established preservation frameworks (NDSA, UNESCO) and addresses all specified requirements.",
+      "_metrics": {
+        "tokens": 2132,
+        "prompt_tokens": 1639,
+        "completion_tokens": 493,
+        "latency_ms": 4611.11,
+        "cost_usd": 0.00029,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a task. You have your own analysis AND access to a\npreviously learned skill from the Brain's memory.\n\nDOMAIN: general\nTASK: {'domain': 'cultural_heritage', 'task': \"Scan a national archive's 2.3PB digital preservation repository for format obsolescence risks, bit-rot indicators, and metadata schema drift across 40 years of heterogeneous ingest. Classify each at-risk object by the NDSA Levels of Digital Preservation maturity framework, severity-weighted by cultural significance (UNESCO Memory of the World criteria) and legal deposit obligations. Recommend format migration paths with fidelity-loss estimates, prioritized by a composite score combining irreplaceability, access frequency, and format community support trajectory. Two collection series use proprietary 1990s-era formats where the vendor no longer exists.\"}\n\nYOUR ANALYSIS:\nStep\u2011by\u2011step analysis for the cultural heritage digital preservation task:\n\n1. **Inventory & Metadata Extraction**\n   - Action: Run a full catalog crawl to list all objects, ingest dates, file formats, checksums, and existing metadata.\n   - Why: Provides baseline data needed for risk assessment and classification.\n   - Expected output: A master spreadsheet/DB with object ID, format, size, checksum, ingest year, and current metadata schema.\n\n2. **Format Obsolescence Assessment**\n   - Action: Cross\u2011reference each file format against the NARA Format Registry, ISO/IEC 14721 (OAIS), and industry lists of deprecated formats.\n   - Why: Identifies formats that are no longer supported or have dwindling tooling.\n   - Expected output: Flag per object indicating \u201cobsolete\u201d, \u201cunsupported\u201d, or \u201csupported\u201d status.\n\n3. **Bit\u2011Rot & Integrity Check**\n   - Action: Verify checksums against stored values; run integrity tests (e.g., SHA\u2011256) and compare with archival logs.\n   - Why: Detects corruption, silent data loss, or degradation over time.\n   - Expected output: List of objects with checksum mismatches or error rates above threshold.\n\n4. **Metadata Schema Drift Analysis**\n   - Action: Compare current metadata against the original ingest schema and the latest institutional schema version; map differences.\n   - Why: Ensures discoverability, interoperability, and compliance with evolving standards.\n   - Expected output: Report of fields that have changed, been removed, or added, with impact scores.\n\n5. **Cultural Significance Weighting**\n   - Action: Apply UNESCO Memory of the World criteria to each object (e.g., uniqueness, historical value) and assign a significance score 0\u20111.\n   - Why: Prioritizes preservation effort for culturally irreplaceable items.\n   - Expected output: Significance score per object.\n\n6. **Legal Deposit & Regulatory Check**\n   - Action: Cross\u2011check objects against national legal deposit obligations and any licensing constraints.\n   - Why: Ensures compliance and identifies mandatory retention periods.\n   - Expected output: Flag for \u201clegal deposit required\u201d with retention period.\n\n7. **NDSA Maturity Classification**\n   - Action: Evaluate each object against the NDSA Levels of Digital Preservation (Levels 1\u20115) using criteria such as format stability, metadata completeness, and preservation actions taken.\n   - Why: Provides a maturity metric to guide resource allocation.\n   - Expected output: Assigned NDSA level per object.\n\n8. **Composite Priority Scoring**\n   - Action: Compute a weighted score = (irreplaceability \u00d7 0.4) + (access frequency \u00d7 0.3) + (format community support trajectory \u00d7 0.3).\n   - Why: Balances cultural value, user demand, and technical viability.\n   - Expected output: Priority rank list of objects.\n\n9. **Migration Path Recommendation**\n   - Action: For each at\u2011risk object, propose target formats (e.g., PDF/A for documents, TIFF/PNG for images) with fidelity\u2011loss estimates using tools like DROID, ExifTool, and format\u2011specific converters.\n   - Why: Provides actionable preservation actions while quantifying quality trade\u2011offs.\n   - Expected output: Migration plan per object including target format, estimated loss, required tooling, and timeline.\n\n10. **Proprietary Format Handling**\n    - Action: For the two 1990s proprietary series, locate legacy emulation environments or reverse\u2011engineer file structures; if impossible, recommend high\u2011fidelity archival capture (e.g., raw bitstream) and create detailed documentation.\n    - Why: Vendor disappearance poses a unique risk; preserving original binaries may be the only viable option.\n    - Expected output: Emulation strategy or archival capture plan with associated costs.\n\n11. **Reporting & Governance**\n    - Action: Compile findings into an executive dashboard, include risk heat maps, and propose governance policies for ongoing monitoring.\n    - Why: Enables decision makers to allocate resources effectively and ensures long\u2011term stewardship.\n    - Expected output: Interactive report and policy brief.\n\n12. **Implementation Roadmap**\n    - Action: Draft a phased implementation plan aligning with institutional budgets, staff capacity, and technical infrastructure upgrades.\n    - Why: Translates analysis into actionable steps.\n    - Expected output: Timeline, milestones, and responsible parties list.\n\nEach step builds on the previous one to create a comprehensive, data\u2011driven preservation strategy that addresses format obsolescence, integrity, metadata drift, cultural significance, legal obligations, and migration pathways.\n\nRECALLED SKILL FROM BRAIN:\nSkill name: procedural:general:extraction-sequential\nAbstract steps: ['implement [target]', 'trace [target]']\nTransfer score: 0.6771060795300387\nStructural match: 0.8833333333333333\nSemantic match: 0.023255813953488372\nAdaptations: {'remove_structures': ['sequential']}\n\nINSTRUCTIONS:\nIf a skill was recalled, use its abstract pattern to GUIDE your solution.\nFor each abstract step, explain how you ADAPT it to the current domain.\nIf no skill was recalled, solve using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": true or false\n- \"recalled_skill_name\": skill name or \"none\"\n- \"adaptation_notes\": how you adapted the skill (or \"N/A\")\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+    },
+    "brain_feedback": {
+      "response": "Recorded successful transfer for skill 'procedural:general:extraction-sequential'.",
+      "confidence": "0.7601279093749999",
+      "internal_reasoning": "Transfer feedback recorded. Skill now has 3 transfer(s).",
+      "skill_id": "220f04e6-a78c-4587-b231-31f5067536fc",
+      "skill_name": "procedural:general:extraction-sequential",
+      "transfer_count": 3,
+      "transfer_success": true
+    },
+    "task_result": {
+      "response": {
+        "overview": "A comprehensive audit and remediation plan for a 2.3\u202fPB national archive repository covering format obsolescence, bit\u2011rot, metadata drift, and legal/cultural risk.",
+        "steps": [
+          {
+            "step_number": 1,
+            "title": "Full Inventory Crawl",
+            "actions": [
+              "Enumerate all objects with path, size, checksum (SHA\u2011256), ingest year, current format, and existing metadata fields.",
+              "Store results in a master catalog database for downstream analysis."
+            ]
+          },
+          {
+            "step_number": 2,
+            "title": "Format Obsolescence Assessment",
+            "actions": [
+              "Cross\u2011reference each format against NARA Format Registry, ISO/IEC\u202f14721 (OAIS), and the NDSA Format List.",
+              "Flag formats as: (a) actively supported, (b) community\u2011maintained but aging, (c) obsolete or vendor\u2011dead."
+            ]
+          },
+          {
+            "step_number": 3,
+            "title": "Bit\u2011Rot Verification",
+            "actions": [
+              "Recompute SHA\u2011256 checksums and compare to stored values.",
+              "Log mismatches; calculate percentage of affected objects per ingest cohort."
+            ]
+          },
+          {
+            "step_number": 4,
+            "title": "Metadata Schema Drift Analysis",
+            "actions": [
+              "Compare current metadata against original ingest schemas and the latest institutional schema.",
+              "Identify missing, renamed, or restructured fields; score drift impact on discoverability and preservation actions."
+            ]
+          },
+          {
+            "step_number": 5,
+            "title": "Cultural Significance Scoring",
+            "actions": [
+              "Apply UNESCO Memory of the World criteria to each object: historical importance, uniqueness, public value.",
+              "Assign a normalized score (0\u20131) for irreplaceability."
+            ]
+          },
+          {
+            "step_number": 6,
+            "title": "Legal Deposit Verification",
+            "actions": [
+              "Cross\u2011check objects against national legal deposit registers and licensing terms.",
+              "Mark mandatory retention items; note any export restrictions."
+            ]
+          },
+          {
+            "step_number": 7,
+            "title": "NDSA Maturity Level Assignment",
+            "actions": [
+              "Evaluate each object on: format stability, metadata completeness, preservation actions taken, and risk mitigation.",
+              "Assign Levels\u202f1\u20135; Level\u202f5 indicates fully mature with proactive migration plans."
+            ]
+          },
+          {
+            "step_number": 8,
+            "title": "Composite Priority Scoring",
+            "formula": "(irreplaceability \u00d7 0.4) + (access_frequency \u00d7 0.3) + (format_community_support \u00d7 0.3)",
+            "actions": [
+              "Calculate score for each object; rank descending to identify top\u2011priority remediation targets."
+            ]
+          },
+          {
+            "step_number": 9,
+            "title": "Migration Path Recommendation",
+            "actions": [
+              "For each at\u2011risk format, propose a target format (e.g., PDF/A-3 for documents, TIFF/PNG for images, WAV/FLAC for audio).",
+              "Estimate fidelity loss using conversion tool benchmarks; document required tooling and timelines."
+            ]
+          },
+          {
+            "step_number": 10,
+            "title": "Proprietary 1990s Formats Handling",
+            "actions": [
+              "Attempt emulation: locate legacy hardware or virtualise old OS environments.",
+              "If infeasible, capture raw bitstreams, generate detailed file\u2011structure documentation, and preserve in a neutral container (e.g., ISO\u202f9660)."
+            ]
+          },
+          {
+            "step_number": 11,
+            "title": "Executive Dashboard & Governance",
+            "actions": [
+              "Create heat maps of risk by format, ingest year, and maturity level.",
+              "Provide governance recommendations: budget allocation, staffing, policy updates."
+            ]
+          },
+          {
+            "step_number": 12,
+            "title": "Ongoing Monitoring Plan",
+            "actions": [
+              "Schedule quarterly checksum verification, semi\u2011annual format registry review, and annual metadata schema audit.",
+              "Automate alerts for new obsolescence flags or integrity failures."
+            ]
+          }
+        ],
+        "deliverables": [
+          "Master catalog database (CSV/JSON)",
+          "Risk heat map dashboard (PowerBI/Tableau)",
+          "Migration roadmap with timelines and cost estimates",
+          "Legal deposit compliance report",
+          "Proprietary format preservation dossier"
+        ]
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "The solution follows the task requirements: inventory, obsolescence check, bit\u2011rot detection, metadata drift, cultural significance scoring, legal obligations, NDSA maturity classification, composite priority scoring, migration recommendations, proprietary format handling, dashboard creation, and monitoring plan. All steps are concrete, evidence\u2011based, and aligned with best practices in digital preservation.",
+      "_metrics": {
+        "tokens": 2037,
+        "prompt_tokens": 969,
+        "completion_tokens": 1068,
+        "latency_ms": 9481.39,
+        "cost_usd": 0.000596,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'cultural_heritage', 'task': \"Scan a national archive's 2.3PB digital preservation repository for format obsolescence risks, bit-rot indicators, and metadata schema drift across 40 years of heterogeneous ingest. Classify each at-risk object by the NDSA Levels of Digital Preservation maturity framework, severity-weighted by cultural significance (UNESCO Memory of the World criteria) and legal deposit obligations. Recommend format migration paths with fidelity-loss estimates, prioritized by a composite score combining irreplaceability, access frequency, and format community support trajectory. Two collection series use proprietary 1990s-era formats where the vendor no longer exists.\"}\n\nSOLUTION:\n1. Perform a full catalog crawl to build an inventory of all 2.3\u202fPB objects, capturing file format, size, checksum, ingest year, and current metadata.\n2. Cross\u2011reference each format against the NARA Format Registry, ISO/IEC\u00a014721, and industry obsolescence lists to flag obsolete or unsupported formats.\n3. Run integrity checks (SHA\u2011256) against stored checksums; flag any mismatches as bit\u2011rot indicators.\n4. Compare current metadata with original ingest schemas and the latest institutional schema to identify drift; map differences and score impact.\n5. Apply UNESCO Memory of the World criteria to assign a cultural significance score (0\u20131) for each object.\n6. Verify legal deposit obligations, marking objects that require mandatory retention and noting licensing constraints.\n7. Evaluate each object against NDSA Levels\u00a01\u20115 using criteria such as format stability, metadata completeness, and preservation actions taken; assign a maturity level.\n8. Compute a composite priority score: (irreplaceability\u202f\u00d7\u202f0.4) + (access frequency\u202f\u00d7\u202f0.3) + (format community support trajectory\u202f\u00d7\u202f0.3). Rank objects by this score.\n9. For each at\u2011risk object, recommend migration paths to stable target formats (e.g., PDF/A for documents, TIFF/PNG for images), estimating fidelity loss with conversion tools and documenting required tooling and timelines.\n10. For the two proprietary 1990s series where vendors no longer exist: attempt emulation by locating legacy hardware or software; if infeasible, capture raw bitstreams and create detailed documentation of file structure to enable future reverse engineering.\n11. Compile findings into an executive dashboard with risk heat maps, governance recommendations, and a phased implementation roadmap aligned with budget and staffing.\n12. Establish ongoing monitoring: schedule periodic checksum verification, format registry updates, and metadata schema reviews.\n\nBRAIN METRICS:\nSkill recalled: procedural:general:extraction-sequential\nTransfer score: 0.6771060795300387\nUsed recalled skill: False\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": true if recalled skill contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

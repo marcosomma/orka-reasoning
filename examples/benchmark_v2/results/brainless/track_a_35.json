@@ -1,0 +1,310 @@
+{
+  "task_id": "track_a_35",
+  "condition": "brainless",
+  "elapsed_s": 30.37,
+  "success": true,
+  "output": {
+    "response": {
+      "domain": "autonomous_vehicle",
+      "task": "Generate test cases for L4 perception stack covering occlusion/fence split, radar ghosts in rain, camera exposure hunting, and IMU drift; validate against ISO\u202f21448 SOTIF matrix, ASAM OpenSCENARIO, and sensor spec limits.",
+      "solution_steps": [
+        {
+          "step_id": 1,
+          "description": "Define ODD and sensor suite",
+          "details": "Specify speed limits (0\u2011120\u202fkm/h), lane widths (3.5\u202fm), pedestrian density, and installed hardware revisions: VLP\u201116 LiDAR, 77\u202fGHz automotive radar, RGB\u20114K camera, ultrasonic array. Record published specs for range, resolution, FOV."
+        },
+        {
+          "step_id": 2,
+          "description": "Map 67\u2011class taxonomy to perception outputs",
+          "details": "Create a table linking raw primitives (point clusters, Doppler bins, image blobs) to semantic classes such as cyclist, bus, fence, sound barrier, pedestrian, etc."
+        },
+        {
+          "step_id": 3,
+          "description": "Populate ISO\u202f21448 Known/Unknown Unsafe Scenarios matrix",
+          "details": "Identify four relevant cells: (1) known unsafe \u2013 occlusion by large vehicle; (2) unknown unsafe \u2013 radar ghosts in rain; (3) known unsafe \u2013 exposure hunting with dark pedestrian; (4) unknown unsafe \u2013 IMU drift over GPS\u2011denied urban canyon."
+        },
+        {
+          "step_id": 4,
+          "description": "Design test case 1 \u2013 Occlusion + fence split",
+          "details": "Scene: bus (30\u202fkm/h) partially occluding cyclist (10\u202fkm/h). Chain\u2011link fence ahead splits LiDAR returns into two disjoint clusters. Parameters stay within VLP\u201116 specs (range \u2264120\u202fm, angular resolution 0.2\u00b0)."
+        },
+        {
+          "step_id": 5,
+          "description": "Design test case 2 \u2013 Radar ghosts in rain",
+          "details": "Highway with sound barrier 50\u202fm ahead, rainfall 20\u202fmm/h. Radar (77\u202fGHz) returns ghost targets at ~30% of true range due to multi\u2011path. Ensure radar SNR and beamwidth within published limits."
+        },
+        {
+          "step_id": 6,
+          "description": "Design test case 3 \u2013 Camera exposure hunting",
+          "details": "Vehicle transitions from tunnel (0.05\u202flux) to sunny street (10,000\u202flux). Pedestrian in dark clothing (reflectance ~0.01) on crosswalk. Camera settings (ISO, shutter speed) remain within RGB\u20114K spec."
+        },
+        {
+          "step_id": 7,
+          "description": "Design test case 4 \u2013 IMU drift over urban canyon",
+          "details": "2\u202fkm GPS\u2011denied traversal in an urban canyon. IMU bias 0.02\u00b0/h, scale factor error 0.01%. Vehicle speed 50\u202fkm/h, turn rate 5\u00b0/s. Drift accumulation modeled per manufacturer\u2019s noise model."
+        },
+        {
+          "step_id": 8,
+          "description": "Generate ASAM OpenSCENARIO files for each scenario",
+          "details": "Create valid XML files encoding geometry, actor trajectories, weather, lighting, sensor models. Validate with official ASAM validator."
+        },
+        {
+          "step_id": 9,
+          "description": "Simulate sensor outputs with manufacturer noise models",
+          "details": "Generate raw LiDAR point clouds, radar Doppler returns, camera images, ultrasonic echoes, and IMU data within published range/resolution limits."
+        },
+        {
+          "step_id": 10,
+          "description": "Run perception stack and capture outputs",
+          "details": "Record detected objects, class probabilities, bounding boxes, fusion ambiguities for each scenario."
+        },
+        {
+          "step_id": 11,
+          "description": "Validate against ISO\u202f21448 matrix",
+          "details": "Map each test case to the corresponding known/unknown unsafe scenario cell; confirm all cells are covered by at least one test."
+        },
+        {
+          "step_id": 12,
+          "description": "Cross\u2011check sensor assumptions",
+          "details": "Verify no scenario exceeds LiDAR range >120\u202fm, radar SNR below minimum, or camera resolution beyond spec."
+        },
+        {
+          "step_id": 13,
+          "description": "Document results and gaps",
+          "details": "Create a test matrix summarizing expected vs actual outcomes, ISO\u202f21448 coverage, and any failures for further investigation."
+        },
+        {
+          "step_id": 14,
+          "description": "Iterate until full coverage achieved",
+          "details": "Add additional scenarios if any matrix cell remains uncovered; repeat steps 4\u201313."
+        },
+        {
+          "step_id": 15,
+          "description": "Deliver final artifacts",
+          "details": "Provide ASAM OpenSCENARIO files, simulation scripts, perception logs, and a validation report with confidence metrics (e.g., detection rate >95% for target class)."
+        }
+      ],
+      "quality_self_assessment": {
+        "score": 0.92,
+        "justification": "All steps are concrete, align with ISO\u202f21448 SOTIF requirements, respect sensor specs, and include ASAM OpenSCENARIO compliance."
+      },
+      "brain_assisted": false,
+      "recalled_skill": "none",
+      "confidence": 0.95
+    },
+    "confidence": "0.95",
+    "internal_reasoning": "I mapped the task to a structured test design workflow, ensuring each scenario is grounded in sensor specifications and ISO\u202f21448 coverage. The steps are detailed enough for implementation while staying within the constraints.",
+    "_metrics": {
+      "tokens": 2720,
+      "prompt_tokens": 1437,
+      "completion_tokens": 1283,
+      "latency_ms": 9866.65,
+      "cost_usd": 0.00062,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'autonomous_vehicle', 'task': \"Analyze the perception stack specification for an L4 autonomous vehicle operating in a mixed urban/highway ODD (Operational Design Domain), covering camera, LiDAR, radar, and ultrasonic sensor fusion with a 67-class object taxonomy. Generate test cases covering: simultaneous occlusion of a cyclist by a bus while the LiDAR returns are split by a chain-link fence (partial detection ambiguity), radar ghost targets from multi-path reflections off highway sound barriers during rain, camera autoexposure hunting when transitioning from a tunnel to direct sunlight while a pedestrian in dark clothing is in the crosswalk, and IMU drift accumulation during GPS-denied traversal of a 2km urban canyon. Validate test coverage against ISO 21448 (SOTIF) known and unknown unsafe scenarios matrix, ASAM OpenSCENARIO conformance, and ensure no test case assumes sensor performance beyond the manufacturer's published specifications for the installed hardware revision.\"}\n\nSOLUTION:\n{'domain': 'autonomous_vehicle', 'task': 'Generate test cases for L4 perception stack covering occlusion/fence split, radar ghosts in rain, camera exposure hunting, and IMU drift; validate against ISO\\u202f21448 SOTIF matrix, ASAM OpenSCENARIO, and sensor spec limits.', 'steps': [{'action': 'Define ODD and sensor suite', 'expected_outcome': 'Explicit vehicle speed limits, lane widths, pedestrian density, and installed hardware revisions with published specs.'}, {'action': 'Map 67\u2011class taxonomy to perception outputs', 'expected_outcome': 'Table linking raw primitives to semantic classes (e.g., cyclist, bus, fence, sound barrier).'}, {'action': 'Populate ISO\\u202f21448 Known/Unknown Unsafe Scenarios matrix', 'expected_outcome': 'Four cells identified: occlusion, radar ghosts, exposure hunting, IMU drift.'}, {'action': 'Design test case 1 \u2013 Occlusion + fence split', 'expected_outcome': 'Scene with bus (30\\u202fkm/h) partially occluding cyclist (10\\u202fkm/h); LiDAR returns clipped by chain\u2011link fence producing two disjoint point clusters; parameters stay within VLP\u201116 specs.'}, {'action': 'Design test case 2 \u2013 Radar ghosts in rain', 'expected_outcome': 'Highway sound barrier 50\\u202fm ahead, 20\\u202fmm/h rainfall; radar returns include ghost targets at ~30% of true range; parameters respect 77\\u202fGHz radar specs.'}, {'action': 'Design test case 3 \u2013 Camera exposure hunting', 'expected_outcome': 'Vehicle moves from tunnel (0.05\\u202flux) to sunny street (10\\u202f000\\u202flux); pedestrian in dark clothing (0.01\\u202flux reflectance) on crosswalk; camera settings within RGB\u20114K spec.'}, {'action': 'Design test case 4 \u2013 IMU drift over urban canyon', 'expected_outcome': '2\\u202fkm GPS\u2011denied traversal, IMU bias 0.02\u00b0/h, scale factor error 0.01%; vehicle speed 50\\u202fkm/h, turn rate 5\u00b0/s; drift accumulation modeled.'}, {'action': 'Generate ASAM OpenSCENARIO files for each scenario', 'expected_outcome': 'Valid XML files encoding geometry, actor trajectories, weather, lighting, and sensor models; pass official validator.'}, {'action': 'Simulate sensor outputs with manufacturer noise models', 'expected_outcome': 'Raw LiDAR point clouds, radar Doppler returns, camera images, ultrasonic echoes, IMU data generated within published range/resolution limits.'}, {'action': 'Run perception stack and capture outputs', 'expected_outcome': 'Detected objects, class probabilities, bounding boxes, fusion ambiguities logged for each scenario.'}, {'action': 'Validate against ISO\\u202f21448 matrix', 'expected_outcome': 'Each test case maps to a known/unknown unsafe scenario cell; all cells covered by at least one test.'}, {'action': 'Cross\u2011check sensor assumptions', 'expected_outcome': 'No scenario exceeds LiDAR range >120\\u202fm, radar SNR below minimum, or camera resolution beyond spec.'}, {'action': 'Document results and gaps', 'expected_outcome': 'Test matrix summarizing expected vs actual outcomes, ISO\\u202f21448 coverage, and any failures for further investigation.'}, {'action': 'Iterate until full coverage achieved', 'expected_outcome': 'Additional scenarios added if any matrix cell remains uncovered; repeat steps 4\u201312.'}, {'action': 'Deliver final artifacts', 'expected_outcome': 'ASAM OpenSCENARIO files, simulation scripts, perception logs, validation report with confidence metrics (e.g., detection rate >95% for target class).'}], 'used_recalled_skill': False, 'recalled_skill_name': 'none', 'adaptation_notes': 'N/A'}\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": "Step\u2011by\u2011step plan for generating and validating test cases:\n\n1. **Define the ODD and sensor suite**\n   - Extract exact vehicle speed limits, lane widths, pedestrian density, and environmental conditions from the mixed urban/highway ODD.\n   - List installed hardware revisions: camera (RGB 4K), LiDAR (16\u2011beam VLP-16), radar (mmWave 77\u202fGHz), ultrasonic (12\u2011sensor array) with published specs (range, resolution, field of view).\n   - *Why*: Ensures all subsequent test scenarios respect the real operational envelope and sensor capabilities.\n\n2. **Map the 67\u2011class taxonomy to perception outputs**\n   - Create a mapping table from raw detection primitives to final semantic classes (e.g., cyclist, bus, pedestrian, fence, sound barrier).\n   - *Why*: Needed for validating that test cases trigger the correct class labels and fusion logic.\n\n3. **Identify critical unsafe scenarios per ISO\u202f21448**\n   - Populate the Known/Unknown Unsafe Scenarios matrix with:\n     * Simultaneous occlusion (known)\n     * Multi\u2011path radar ghosts (unknown)\n     * Exposure hunting (known)\n     * IMU drift in GPS\u2011denied canyon (unknown)\n   - *Why*: Provides coverage criteria and ensures no scenario is omitted.\n\n4. **Design each test case**\n   - **Occlusion + fence split**: Create a scene where a bus partially occludes a cyclist; LiDAR returns are intentionally clipped by a chain\u2011link fence, producing two disjoint point clusters.\n     * Parameters: bus speed 30\u202fkm/h, cyclist speed 10\u202fkm/h, fence distance 5\u202fm, LiDAR beam divergence 0.2\u00b0, sensor mounting height 1.2\u202fm.\n   - **Radar ghost in rain**: Place a highway sound barrier 50\u202fm ahead; simulate multi\u2011path reflections under 20\u202fmm\u202fh\u207b\u00b9 rainfall; radar returns include ghost targets at 30\u202f% of true range.\n     * Parameters: radar beamwidth 1\u00b0, rain attenuation coefficient, barrier material reflectivity.\n   - **Camera exposure hunting**: Transition vehicle from tunnel (0.05\u202flux) to sunny street (10\u202f000\u202flux); pedestrian in dark clothing (0.01\u202flux reflectance) stands in crosswalk.\n     * Parameters: camera ISO 800, shutter speed 1/200\u202fs, autoexposure algorithm settings.\n   - **IMU drift over canyon**: Simulate a 2\u202fkm urban canyon with no GPS; IMU bias 0.02\u00b0/h, scale factor error 0.01%; accumulate heading drift.\n     * Parameters: vehicle speed 50\u202fkm/h, turn rate 5\u00b0/s.\n   - *Why*: Each case targets a specific fusion challenge and aligns with the taxonomy.\n\n5. **Generate ASAM OpenSCENARIO files**\n   - Encode each scenario\u2019s geometry, actor trajectories, weather, lighting, and sensor models.\n   - Validate against the OpenSCENARIO schema using the official validator.\n   - *Why*: Ensures interoperability and compliance with industry standards.\n\n6. **Simulate sensor outputs**\n   - Use a validated simulation platform (e.g., CARLA + ROS) to generate raw LiDAR point clouds, radar Doppler returns, camera images, ultrasonic echoes, and IMU data per scenario.\n   - Apply manufacturer\u2011specified noise models; do not exceed range or resolution limits.\n   - *Why*: Provides realistic test inputs for the perception stack without violating hardware constraints.\n\n7. **Run perception stack and capture outputs**\n   - Feed simulated sensor streams into the fusion pipeline.\n   - Record detected objects, class probabilities, bounding boxes, and any fusion ambiguities.\n   - *Why*: Enables verification that the system behaves as expected under each scenario.\n\n8. **Validate against ISO\u202f21448 matrix**\n   - For each test case, confirm it maps to a known or unknown unsafe scenario cell.\n   - Ensure coverage of all cells with at least one test.\n   - *Why*: Meets SOTIF safety validation requirements.\n\n9. **Cross\u2011check sensor assumptions**\n   - Verify that no test case requires sensor performance beyond published specs (e.g., LiDAR range > 120\u202fm, radar SNR < manufacturer minimum).\n   - Document any deviations and adjust scenario parameters accordingly.\n   - *Why*: Maintains realism and avoids over\u2011optimistic validation.\n\n10. **Document results and gaps**\n    - Produce a test matrix summarizing each scenario, expected outcomes, actual perception outputs, and ISO\u202f21448 cell coverage.\n    - Highlight any failures or ambiguities for further investigation.\n    - *Why*: Provides traceability and supports certification evidence.\n\n11. **Iterate and refine**\n    - If gaps remain (e.g., unknown unsafe scenario not covered), design additional scenarios following the same methodology.\n    - Repeat steps 4\u201310 until full coverage is achieved.\n    - *Why*: Ensures a comprehensive safety validation program.\n\n12. **Deliver final artifacts**\n    - Submit ASAM OpenSCENARIO files, simulation scripts, perception logs, and validation report.\n    - Include confidence metrics for each test case (e.g., detection rate > 95\u202f% for target class).\n    - *Why*: Provides stakeholders with verifiable evidence of safety compliance.",
+      "confidence": "0.96",
+      "internal_reasoning": "I dissected the task into logical phases: specification extraction, scenario design, simulation, execution, validation against ISO\u202f21448 and OpenSCENARIO, and documentation. Each step is justified to meet safety, standard conformance, and hardware limits.",
+      "_metrics": {
+        "tokens": 1887,
+        "prompt_tokens": 602,
+        "completion_tokens": 1285,
+        "latency_ms": 11236.7,
+        "cost_usd": 0.000693,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: autonomous_vehicle\nTASK: Analyze the perception stack specification for an L4 autonomous vehicle operating in a mixed urban/highway ODD (Operational Design Domain), covering camera, LiDAR, radar, and ultrasonic sensor fusion with a 67-class object taxonomy. Generate test cases covering: simultaneous occlusion of a cyclist by a bus while the LiDAR returns are split by a chain-link fence (partial detection ambiguity), radar ghost targets from multi-path reflections off highway sound barriers during rain, camera autoexposure hunting when transitioning from a tunnel to direct sunlight while a pedestrian in dark clothing is in the crosswalk, and IMU drift accumulation during GPS-denied traversal of a 2km urban canyon. Validate test coverage against ISO 21448 (SOTIF) known and unknown unsafe scenarios matrix, ASAM OpenSCENARIO conformance, and ensure no test case assumes sensor performance beyond the manufacturer's published specifications for the installed hardware revision.\n\n\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+    },
+    "task_applier": {
+      "response": {
+        "domain": "autonomous_vehicle",
+        "task": "Generate test cases for L4 perception stack covering occlusion/fence split, radar ghosts in rain, camera exposure hunting, and IMU drift; validate against ISO\u202f21448 SOTIF matrix, ASAM OpenSCENARIO, and sensor spec limits.",
+        "steps": [
+          {
+            "action": "Define ODD and sensor suite",
+            "expected_outcome": "Explicit vehicle speed limits, lane widths, pedestrian density, and installed hardware revisions with published specs."
+          },
+          {
+            "action": "Map 67\u2011class taxonomy to perception outputs",
+            "expected_outcome": "Table linking raw primitives to semantic classes (e.g., cyclist, bus, fence, sound barrier)."
+          },
+          {
+            "action": "Populate ISO\u202f21448 Known/Unknown Unsafe Scenarios matrix",
+            "expected_outcome": "Four cells identified: occlusion, radar ghosts, exposure hunting, IMU drift."
+          },
+          {
+            "action": "Design test case 1 \u2013 Occlusion + fence split",
+            "expected_outcome": "Scene with bus (30\u202fkm/h) partially occluding cyclist (10\u202fkm/h); LiDAR returns clipped by chain\u2011link fence producing two disjoint point clusters; parameters stay within VLP\u201116 specs."
+          },
+          {
+            "action": "Design test case 2 \u2013 Radar ghosts in rain",
+            "expected_outcome": "Highway sound barrier 50\u202fm ahead, 20\u202fmm/h rainfall; radar returns include ghost targets at ~30% of true range; parameters respect 77\u202fGHz radar specs."
+          },
+          {
+            "action": "Design test case 3 \u2013 Camera exposure hunting",
+            "expected_outcome": "Vehicle moves from tunnel (0.05\u202flux) to sunny street (10\u202f000\u202flux); pedestrian in dark clothing (0.01\u202flux reflectance) on crosswalk; camera settings within RGB\u20114K spec."
+          },
+          {
+            "action": "Design test case 4 \u2013 IMU drift over urban canyon",
+            "expected_outcome": "2\u202fkm GPS\u2011denied traversal, IMU bias 0.02\u00b0/h, scale factor error 0.01%; vehicle speed 50\u202fkm/h, turn rate 5\u00b0/s; drift accumulation modeled."
+          },
+          {
+            "action": "Generate ASAM OpenSCENARIO files for each scenario",
+            "expected_outcome": "Valid XML files encoding geometry, actor trajectories, weather, lighting, and sensor models; pass official validator."
+          },
+          {
+            "action": "Simulate sensor outputs with manufacturer noise models",
+            "expected_outcome": "Raw LiDAR point clouds, radar Doppler returns, camera images, ultrasonic echoes, IMU data generated within published range/resolution limits."
+          },
+          {
+            "action": "Run perception stack and capture outputs",
+            "expected_outcome": "Detected objects, class probabilities, bounding boxes, fusion ambiguities logged for each scenario."
+          },
+          {
+            "action": "Validate against ISO\u202f21448 matrix",
+            "expected_outcome": "Each test case maps to a known/unknown unsafe scenario cell; all cells covered by at least one test."
+          },
+          {
+            "action": "Cross\u2011check sensor assumptions",
+            "expected_outcome": "No scenario exceeds LiDAR range >120\u202fm, radar SNR below minimum, or camera resolution beyond spec."
+          },
+          {
+            "action": "Document results and gaps",
+            "expected_outcome": "Test matrix summarizing expected vs actual outcomes, ISO\u202f21448 coverage, and any failures for further investigation."
+          },
+          {
+            "action": "Iterate until full coverage achieved",
+            "expected_outcome": "Additional scenarios added if any matrix cell remains uncovered; repeat steps 4\u201312."
+          },
+          {
+            "action": "Deliver final artifacts",
+            "expected_outcome": "ASAM OpenSCENARIO files, simulation scripts, perception logs, validation report with confidence metrics (e.g., detection rate >95% for target class)."
+          }
+        ],
+        "used_recalled_skill": false,
+        "recalled_skill_name": "none",
+        "adaptation_notes": "N/A"
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "I structured the solution by first establishing the operational envelope and sensor specifications, then mapping taxonomy to outputs, identifying unsafe scenario cells per ISO\u202f21448, designing concrete test cases that stay within hardware limits, generating compliant OpenSCENARIO files, simulating realistic sensor data, running perception, validating coverage, ensuring no over\u2011spec assumptions, documenting results, iterating for completeness, and finally delivering artifacts. This stepwise plan directly addresses all requested validation criteria.",
+      "_metrics": {
+        "tokens": 2785,
+        "prompt_tokens": 1753,
+        "completion_tokens": 1032,
+        "latency_ms": 8868.73,
+        "cost_usd": 0.000558,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a task. You have your own step-by-step analysis.\nYou have NO prior experience and NO recalled skills.\n\nDOMAIN: general\nTASK: {'domain': 'autonomous_vehicle', 'task': \"Analyze the perception stack specification for an L4 autonomous vehicle operating in a mixed urban/highway ODD (Operational Design Domain), covering camera, LiDAR, radar, and ultrasonic sensor fusion with a 67-class object taxonomy. Generate test cases covering: simultaneous occlusion of a cyclist by a bus while the LiDAR returns are split by a chain-link fence (partial detection ambiguity), radar ghost targets from multi-path reflections off highway sound barriers during rain, camera autoexposure hunting when transitioning from a tunnel to direct sunlight while a pedestrian in dark clothing is in the crosswalk, and IMU drift accumulation during GPS-denied traversal of a 2km urban canyon. Validate test coverage against ISO 21448 (SOTIF) known and unknown unsafe scenarios matrix, ASAM OpenSCENARIO conformance, and ensure no test case assumes sensor performance beyond the manufacturer's published specifications for the installed hardware revision.\"}\n\nYOUR ANALYSIS:\nStep\u2011by\u2011step plan for generating and validating test cases:\n\n1. **Define the ODD and sensor suite**\n   - Extract exact vehicle speed limits, lane widths, pedestrian density, and environmental conditions from the mixed urban/highway ODD.\n   - List installed hardware revisions: camera (RGB 4K), LiDAR (16\u2011beam VLP-16), radar (mmWave 77\u202fGHz), ultrasonic (12\u2011sensor array) with published specs (range, resolution, field of view).\n   - *Why*: Ensures all subsequent test scenarios respect the real operational envelope and sensor capabilities.\n\n2. **Map the 67\u2011class taxonomy to perception outputs**\n   - Create a mapping table from raw detection primitives to final semantic classes (e.g., cyclist, bus, pedestrian, fence, sound barrier).\n   - *Why*: Needed for validating that test cases trigger the correct class labels and fusion logic.\n\n3. **Identify critical unsafe scenarios per ISO\u202f21448**\n   - Populate the Known/Unknown Unsafe Scenarios matrix with:\n     * Simultaneous occlusion (known)\n     * Multi\u2011path radar ghosts (unknown)\n     * Exposure hunting (known)\n     * IMU drift in GPS\u2011denied canyon (unknown)\n   - *Why*: Provides coverage criteria and ensures no scenario is omitted.\n\n4. **Design each test case**\n   - **Occlusion + fence split**: Create a scene where a bus partially occludes a cyclist; LiDAR returns are intentionally clipped by a chain\u2011link fence, producing two disjoint point clusters.\n     * Parameters: bus speed 30\u202fkm/h, cyclist speed 10\u202fkm/h, fence distance 5\u202fm, LiDAR beam divergence 0.2\u00b0, sensor mounting height 1.2\u202fm.\n   - **Radar ghost in rain**: Place a highway sound barrier 50\u202fm ahead; simulate multi\u2011path reflections under 20\u202fmm\u202fh\u207b\u00b9 rainfall; radar returns include ghost targets at 30\u202f% of true range.\n     * Parameters: radar beamwidth 1\u00b0, rain attenuation coefficient, barrier material reflectivity.\n   - **Camera exposure hunting**: Transition vehicle from tunnel (0.05\u202flux) to sunny street (10\u202f000\u202flux); pedestrian in dark clothing (0.01\u202flux reflectance) stands in crosswalk.\n     * Parameters: camera ISO 800, shutter speed 1/200\u202fs, autoexposure algorithm settings.\n   - **IMU drift over canyon**: Simulate a 2\u202fkm urban canyon with no GPS; IMU bias 0.02\u00b0/h, scale factor error 0.01%; accumulate heading drift.\n     * Parameters: vehicle speed 50\u202fkm/h, turn rate 5\u00b0/s.\n   - *Why*: Each case targets a specific fusion challenge and aligns with the taxonomy.\n\n5. **Generate ASAM OpenSCENARIO files**\n   - Encode each scenario\u2019s geometry, actor trajectories, weather, lighting, and sensor models.\n   - Validate against the OpenSCENARIO schema using the official validator.\n   - *Why*: Ensures interoperability and compliance with industry standards.\n\n6. **Simulate sensor outputs**\n   - Use a validated simulation platform (e.g., CARLA + ROS) to generate raw LiDAR point clouds, radar Doppler returns, camera images, ultrasonic echoes, and IMU data per scenario.\n   - Apply manufacturer\u2011specified noise models; do not exceed range or resolution limits.\n   - *Why*: Provides realistic test inputs for the perception stack without violating hardware constraints.\n\n7. **Run perception stack and capture outputs**\n   - Feed simulated sensor streams into the fusion pipeline.\n   - Record detected objects, class probabilities, bounding boxes, and any fusion ambiguities.\n   - *Why*: Enables verification that the system behaves as expected under each scenario.\n\n8. **Validate against ISO\u202f21448 matrix**\n   - For each test case, confirm it maps to a known or unknown unsafe scenario cell.\n   - Ensure coverage of all cells with at least one test.\n   - *Why*: Meets SOTIF safety validation requirements.\n\n9. **Cross\u2011check sensor assumptions**\n   - Verify that no test case requires sensor performance beyond published specs (e.g., LiDAR range > 120\u202fm, radar SNR < manufacturer minimum).\n   - Document any deviations and adjust scenario parameters accordingly.\n   - *Why*: Maintains realism and avoids over\u2011optimistic validation.\n\n10. **Document results and gaps**\n    - Produce a test matrix summarizing each scenario, expected outcomes, actual perception outputs, and ISO\u202f21448 cell coverage.\n    - Highlight any failures or ambiguities for further investigation.\n    - *Why*: Provides traceability and supports certification evidence.\n\n11. **Iterate and refine**\n    - If gaps remain (e.g., unknown unsafe scenario not covered), design additional scenarios following the same methodology.\n    - Repeat steps 4\u201310 until full coverage is achieved.\n    - *Why*: Ensures a comprehensive safety validation program.\n\n12. **Deliver final artifacts**\n    - Submit ASAM OpenSCENARIO files, simulation scripts, perception logs, and validation report.\n    - Include confidence metrics for each test case (e.g., detection rate > 95\u202f% for target class).\n    - *Why*: Provides stakeholders with verifiable evidence of safety compliance.\n\nSolve the task using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": false\n- \"recalled_skill_name\": \"none\"\n- \"adaptation_notes\": \"N/A\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+    },
+    "task_result": {
+      "response": {
+        "domain": "autonomous_vehicle",
+        "task": "Generate test cases for L4 perception stack covering occlusion/fence split, radar ghosts in rain, camera exposure hunting, and IMU drift; validate against ISO\u202f21448 SOTIF matrix, ASAM OpenSCENARIO, and sensor spec limits.",
+        "solution_steps": [
+          {
+            "step_id": 1,
+            "description": "Define ODD and sensor suite",
+            "details": "Specify speed limits (0\u2011120\u202fkm/h), lane widths (3.5\u202fm), pedestrian density, and installed hardware revisions: VLP\u201116 LiDAR, 77\u202fGHz automotive radar, RGB\u20114K camera, ultrasonic array. Record published specs for range, resolution, FOV."
+          },
+          {
+            "step_id": 2,
+            "description": "Map 67\u2011class taxonomy to perception outputs",
+            "details": "Create a table linking raw primitives (point clusters, Doppler bins, image blobs) to semantic classes such as cyclist, bus, fence, sound barrier, pedestrian, etc."
+          },
+          {
+            "step_id": 3,
+            "description": "Populate ISO\u202f21448 Known/Unknown Unsafe Scenarios matrix",
+            "details": "Identify four relevant cells: (1) known unsafe \u2013 occlusion by large vehicle; (2) unknown unsafe \u2013 radar ghosts in rain; (3) known unsafe \u2013 exposure hunting with dark pedestrian; (4) unknown unsafe \u2013 IMU drift over GPS\u2011denied urban canyon."
+          },
+          {
+            "step_id": 4,
+            "description": "Design test case 1 \u2013 Occlusion + fence split",
+            "details": "Scene: bus (30\u202fkm/h) partially occluding cyclist (10\u202fkm/h). Chain\u2011link fence ahead splits LiDAR returns into two disjoint clusters. Parameters stay within VLP\u201116 specs (range \u2264120\u202fm, angular resolution 0.2\u00b0)."
+          },
+          {
+            "step_id": 5,
+            "description": "Design test case 2 \u2013 Radar ghosts in rain",
+            "details": "Highway with sound barrier 50\u202fm ahead, rainfall 20\u202fmm/h. Radar (77\u202fGHz) returns ghost targets at ~30% of true range due to multi\u2011path. Ensure radar SNR and beamwidth within published limits."
+          },
+          {
+            "step_id": 6,
+            "description": "Design test case 3 \u2013 Camera exposure hunting",
+            "details": "Vehicle transitions from tunnel (0.05\u202flux) to sunny street (10,000\u202flux). Pedestrian in dark clothing (reflectance ~0.01) on crosswalk. Camera settings (ISO, shutter speed) remain within RGB\u20114K spec."
+          },
+          {
+            "step_id": 7,
+            "description": "Design test case 4 \u2013 IMU drift over urban canyon",
+            "details": "2\u202fkm GPS\u2011denied traversal in an urban canyon. IMU bias 0.02\u00b0/h, scale factor error 0.01%. Vehicle speed 50\u202fkm/h, turn rate 5\u00b0/s. Drift accumulation modeled per manufacturer\u2019s noise model."
+          },
+          {
+            "step_id": 8,
+            "description": "Generate ASAM OpenSCENARIO files for each scenario",
+            "details": "Create valid XML files encoding geometry, actor trajectories, weather, lighting, sensor models. Validate with official ASAM validator."
+          },
+          {
+            "step_id": 9,
+            "description": "Simulate sensor outputs with manufacturer noise models",
+            "details": "Generate raw LiDAR point clouds, radar Doppler returns, camera images, ultrasonic echoes, and IMU data within published range/resolution limits."
+          },
+          {
+            "step_id": 10,
+            "description": "Run perception stack and capture outputs",
+            "details": "Record detected objects, class probabilities, bounding boxes, fusion ambiguities for each scenario."
+          },
+          {
+            "step_id": 11,
+            "description": "Validate against ISO\u202f21448 matrix",
+            "details": "Map each test case to the corresponding known/unknown unsafe scenario cell; confirm all cells are covered by at least one test."
+          },
+          {
+            "step_id": 12,
+            "description": "Cross\u2011check sensor assumptions",
+            "details": "Verify no scenario exceeds LiDAR range >120\u202fm, radar SNR below minimum, or camera resolution beyond spec."
+          },
+          {
+            "step_id": 13,
+            "description": "Document results and gaps",
+            "details": "Create a test matrix summarizing expected vs actual outcomes, ISO\u202f21448 coverage, and any failures for further investigation."
+          },
+          {
+            "step_id": 14,
+            "description": "Iterate until full coverage achieved",
+            "details": "Add additional scenarios if any matrix cell remains uncovered; repeat steps 4\u201313."
+          },
+          {
+            "step_id": 15,
+            "description": "Deliver final artifacts",
+            "details": "Provide ASAM OpenSCENARIO files, simulation scripts, perception logs, and a validation report with confidence metrics (e.g., detection rate >95% for target class)."
+          }
+        ],
+        "quality_self_assessment": {
+          "score": 0.92,
+          "justification": "All steps are concrete, align with ISO\u202f21448 SOTIF requirements, respect sensor specs, and include ASAM OpenSCENARIO compliance."
+        },
+        "brain_assisted": false,
+        "recalled_skill": "none",
+        "confidence": 0.95
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "I mapped the task to a structured test design workflow, ensuring each scenario is grounded in sensor specifications and ISO\u202f21448 coverage. The steps are detailed enough for implementation while staying within the constraints.",
+      "_metrics": {
+        "tokens": 2720,
+        "prompt_tokens": 1437,
+        "completion_tokens": 1283,
+        "latency_ms": 9866.65,
+        "cost_usd": 0.00062,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'autonomous_vehicle', 'task': \"Analyze the perception stack specification for an L4 autonomous vehicle operating in a mixed urban/highway ODD (Operational Design Domain), covering camera, LiDAR, radar, and ultrasonic sensor fusion with a 67-class object taxonomy. Generate test cases covering: simultaneous occlusion of a cyclist by a bus while the LiDAR returns are split by a chain-link fence (partial detection ambiguity), radar ghost targets from multi-path reflections off highway sound barriers during rain, camera autoexposure hunting when transitioning from a tunnel to direct sunlight while a pedestrian in dark clothing is in the crosswalk, and IMU drift accumulation during GPS-denied traversal of a 2km urban canyon. Validate test coverage against ISO 21448 (SOTIF) known and unknown unsafe scenarios matrix, ASAM OpenSCENARIO conformance, and ensure no test case assumes sensor performance beyond the manufacturer's published specifications for the installed hardware revision.\"}\n\nSOLUTION:\n{'domain': 'autonomous_vehicle', 'task': 'Generate test cases for L4 perception stack covering occlusion/fence split, radar ghosts in rain, camera exposure hunting, and IMU drift; validate against ISO\\u202f21448 SOTIF matrix, ASAM OpenSCENARIO, and sensor spec limits.', 'steps': [{'action': 'Define ODD and sensor suite', 'expected_outcome': 'Explicit vehicle speed limits, lane widths, pedestrian density, and installed hardware revisions with published specs.'}, {'action': 'Map 67\u2011class taxonomy to perception outputs', 'expected_outcome': 'Table linking raw primitives to semantic classes (e.g., cyclist, bus, fence, sound barrier).'}, {'action': 'Populate ISO\\u202f21448 Known/Unknown Unsafe Scenarios matrix', 'expected_outcome': 'Four cells identified: occlusion, radar ghosts, exposure hunting, IMU drift.'}, {'action': 'Design test case 1 \u2013 Occlusion + fence split', 'expected_outcome': 'Scene with bus (30\\u202fkm/h) partially occluding cyclist (10\\u202fkm/h); LiDAR returns clipped by chain\u2011link fence producing two disjoint point clusters; parameters stay within VLP\u201116 specs.'}, {'action': 'Design test case 2 \u2013 Radar ghosts in rain', 'expected_outcome': 'Highway sound barrier 50\\u202fm ahead, 20\\u202fmm/h rainfall; radar returns include ghost targets at ~30% of true range; parameters respect 77\\u202fGHz radar specs.'}, {'action': 'Design test case 3 \u2013 Camera exposure hunting', 'expected_outcome': 'Vehicle moves from tunnel (0.05\\u202flux) to sunny street (10\\u202f000\\u202flux); pedestrian in dark clothing (0.01\\u202flux reflectance) on crosswalk; camera settings within RGB\u20114K spec.'}, {'action': 'Design test case 4 \u2013 IMU drift over urban canyon', 'expected_outcome': '2\\u202fkm GPS\u2011denied traversal, IMU bias 0.02\u00b0/h, scale factor error 0.01%; vehicle speed 50\\u202fkm/h, turn rate 5\u00b0/s; drift accumulation modeled.'}, {'action': 'Generate ASAM OpenSCENARIO files for each scenario', 'expected_outcome': 'Valid XML files encoding geometry, actor trajectories, weather, lighting, and sensor models; pass official validator.'}, {'action': 'Simulate sensor outputs with manufacturer noise models', 'expected_outcome': 'Raw LiDAR point clouds, radar Doppler returns, camera images, ultrasonic echoes, IMU data generated within published range/resolution limits.'}, {'action': 'Run perception stack and capture outputs', 'expected_outcome': 'Detected objects, class probabilities, bounding boxes, fusion ambiguities logged for each scenario.'}, {'action': 'Validate against ISO\\u202f21448 matrix', 'expected_outcome': 'Each test case maps to a known/unknown unsafe scenario cell; all cells covered by at least one test.'}, {'action': 'Cross\u2011check sensor assumptions', 'expected_outcome': 'No scenario exceeds LiDAR range >120\\u202fm, radar SNR below minimum, or camera resolution beyond spec.'}, {'action': 'Document results and gaps', 'expected_outcome': 'Test matrix summarizing expected vs actual outcomes, ISO\\u202f21448 coverage, and any failures for further investigation.'}, {'action': 'Iterate until full coverage achieved', 'expected_outcome': 'Additional scenarios added if any matrix cell remains uncovered; repeat steps 4\u201312.'}, {'action': 'Deliver final artifacts', 'expected_outcome': 'ASAM OpenSCENARIO files, simulation scripts, perception logs, validation report with confidence metrics (e.g., detection rate >95% for target class).'}], 'used_recalled_skill': False, 'recalled_skill_name': 'none', 'adaptation_notes': 'N/A'}\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

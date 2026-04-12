@@ -1,0 +1,245 @@
+{
+  "task_id": "track_b_45",
+  "condition": "brain",
+  "elapsed_s": 23.76,
+  "success": true,
+  "output": {
+    "response": {
+      "domain": "software_engineering",
+      "task": "Design a robust archival strategy for a 50\u202fTB database that mitigates WAL bloat, lock contention, long runtime, partial failure, and regulatory query requirements.",
+      "solution_steps": [
+        {
+          "action": "Partition the main table by time (e.g., monthly) with declarative partitioning enabled.",
+          "expected_outcome": "Each partition can be archived independently, reducing transaction size, WAL generation, and lock duration."
+        },
+        {
+          "action": "Create a staging table that mirrors the schema of the main table plus audit columns for tracking.",
+          "expected_outcome": "Rows to archive are first inserted into the staging area, providing a checkpoint for partial failures."
+        },
+        {
+          "action": "For each partition: 1) Insert qualifying rows into the staging table; 2) Export those rows from the staging table to cold storage using COPY or SELECT INTO per partition, storing files in S3/Glacier with metadata (partition name, timestamp).",
+          "expected_outcome": "Export size is manageable, progress can be monitored per partition, and failures can be resumed without reprocessing the entire dataset."
+        },
+        {
+          "action": "After successful export of a partition, drop that partition from the main table.",
+          "expected_outcome": "Locks are held only for the brief period of the DROP operation; production reads remain largely unaffected."
+        },
+        {
+          "action": "Configure continuous WAL archiving to a separate disk or object store during the job.",
+          "expected_outcome": "Prevents main data disk from filling and enables point\u2011in\u2011time recovery if the archival process crashes."
+        },
+        {
+          "action": "Load exported data into a read\u2011only replica or columnar analytics platform (e.g., Redshift, Snowflake) that supports required queries.",
+          "expected_outcome": "Regulatory compliance is met because archived records remain queryable with full indexing and performance."
+        },
+        {
+          "action": "Implement monitoring of WAL size, disk usage, partition export progress, and failure events; trigger alerts when thresholds are exceeded.",
+          "expected_outcome": "Early detection prevents catastrophic failures and ensures SLA compliance."
+        },
+        {
+          "action": "Schedule the archival process in small chunks (e.g., weekly) within a 12\u2011hour maintenance window, running sequentially or with limited parallelism.",
+          "expected_outcome": "Cumulative runtime stays below the maintenance limit while minimizing production impact."
+        },
+        {
+          "action": "Validate post\u2011archival integrity using checksums or hash comparisons between source and archived data; verify query results on the cold store match expected counts.",
+          "expected_outcome": "Guarantees that no records were lost or corrupted during transfer."
+        },
+        {
+          "action": "Document all steps, logs, configuration snapshots, and audit reports in a tamper\u2011evident repository for compliance audits.",
+          "expected_outcome": "Provides traceability and accountability required by regulatory bodies."
+        }
+      ],
+      "anti_patterns_avoided": [
+        "Large single transaction delete",
+        "Uncontrolled WAL bloat",
+        "Long-running maintenance job without checkpoints",
+        "Lack of rollback or recovery mechanism",
+        "Ignoring read\u2011only replica for archival queries"
+      ]
+    },
+    "confidence": "0.95",
+    "internal_reasoning": "The solution decomposes the problem into proven techniques: time-based partitioning, staging with audit columns, per-partition export, WAL archiving, and use of a queryable cold store. Each step directly addresses the listed risks (WAL bloat, lock contention, runtime, partial failure, compliance). The approach is based on industry best practices for large-scale PostgreSQL archival and aligns with regulatory requirements.",
+    "_metrics": {
+      "tokens": 2073,
+      "prompt_tokens": 1267,
+      "completion_tokens": 806,
+      "latency_ms": 6988.95,
+      "cost_usd": 0.00044,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: software_engineering\nTASK: You're building data archival for 50TB database. The DBA proposes a Saturday night batch job: 'DELETE FROM main_table WHERE created_at < NOW() - INTERVAL 2 YEARS; we'll run SELECT INTO cold_storage first.' Simple and complete. The DBA has done this before on a 500GB database. However: (1) the DELETE on 50TB will generate massive WAL/redo logs potentially filling the disk, (2) the long-running DELETE holds row-level locks that will block production reads on referenced rows, (3) the 'SELECT INTO cold_storage' for 30TB of archival data would run for ~6 hours \u2014 well beyond the maintenance window, (4) if the job fails at 80%, the partial state requires understanding which records were archived and which weren't (there's no checkpoint mechanism), (5) regulatory compliance requires that archived records remain queryable \u2014 the cold storage doesn't have the same indexes or query interface. The DBA says 'we'll increase the maintenance window to 12 hours.'\n\nSOLUTION:\n{'domain': 'software_engineering', 'task': 'Design a robust archival strategy for a 50\\u202fTB database that mitigates WAL bloat, lock contention, long runtime, partial failure, and regulatory query requirements.', 'steps': [{'action': 'Partition the main table by time (e.g., monthly) and enable declarative partition pruning.', 'expected_outcome': 'Each partition can be archived independently, reducing transaction size and WAL generation.'}, {'action': 'Create a staging table with identical schema plus audit columns.', 'expected_outcome': 'Rows to archive are first inserted into the staging area, providing a checkpoint for partial failures.'}, {'action': 'Export each partition from the staging table to cold storage using COPY or SELECT INTO per partition, storing files in S3/Glacier with metadata (partition name, timestamp).', 'expected_outcome': 'Export size is manageable, progress can be monitored per partition, and failures can be resumed.'}, {'action': 'After successful export, delete the corresponding partition from the main table.', 'expected_outcome': 'Locks are held only for the short duration of the partition drop; production reads remain largely unaffected.'}, {'action': 'Configure continuous WAL archiving to a separate disk or object store during the job.', 'expected_outcome': 'Prevent main data disk from filling and enable point\u2011in\u2011time recovery if the archival process crashes.'}, {'action': 'Load exported data into a read\u2011only replica or columnar analytics platform (e.g., Redshift, Snowflake) that supports required queries.', 'expected_outcome': 'Regulatory compliance is met because archived records remain queryable with full indexing and performance.'}, {'action': 'Implement monitoring of WAL size, disk usage, partition export progress, and failure events; trigger alerts when thresholds are exceeded.', 'expected_outcome': 'Early detection prevents catastrophic failures and ensures SLA compliance.'}, {'action': 'Schedule the archival process in small chunks (e.g., weekly) within a 12\u2011hour maintenance window, running sequentially or with limited parallelism.', 'expected_outcome': 'Cumulative runtime stays below the maintenance limit while minimizing production impact.'}, {'action': 'Validate post\u2011archival integrity using checksums or hash comparisons between source and archived data; verify query results on the cold store match expected counts.', 'expected_outcome': 'Guarantees that no records were lost or corrupted during transfer.'}, {'action': 'Document all steps, logs, configuration snapshots, and audit reports in a tamper\u2011evident repository for compliance audits.', 'expected_outcome': 'Provides traceability and accountability required by regulatory bodies.'}], 'anti_patterns_avoided': ['Large single transaction delete', 'Uncontrolled WAL bloat', 'Long-running maintenance job without checkpoints', 'Lack of rollback or recovery mechanism', 'Ignoring read\u2011only replica for archival queries'], 'used_recalled_skill': False, 'recalled_skill_name': 'none'}\n\nANTI-PATTERNS AVOIDED:\n[]\n\nBRAIN METRICS:\nSkill recalled: None\nTransfer score: N/A\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "brain_learn_anti": {
+      "response": "Recorded anti-pattern: anti:software_engineering:optimizing-code-before-profiling-showed-",
+      "confidence": "0.016423203268260654",
+      "internal_reasoning": "Anti-pattern stored: unknown",
+      "skill_id": "13223aa1-a35b-42d4-a596-4464692a8628",
+      "skill_name": "anti:software_engineering:optimizing-code-before-profiling-showed-",
+      "skill_type": "anti_pattern"
+    },
+    "task_reasoner": {
+      "response": "Domain: software_engineering\nTask: Design a robust, compliant archival strategy for a 50\u202fTB database that mitigates WAL bloat, lock contention, long runtime, partial failure, and regulatory query requirements.\n\nStep-by-step analysis:\n1. **Implement incremental partitioned archiving** \u2013 Move data out of the main table in small, time\u2011window partitions (e.g., weekly or monthly). This reduces single transaction size, limits WAL generation, and keeps locks short.\n   *Why*: Smaller deletes generate less redo, avoid disk fill, and reduce lock duration.\n   *Expected output*: Partitioned tables with a retention policy; each partition can be dropped independently.\n\n2. **Use declarative partition pruning for SELECT INTO** \u2013 Export each partition to cold storage using `COPY` or `SELECT ... INTO` per partition, then drop the partition. Parallelize across multiple workers.\n   *Why*: Keeps export size manageable, allows monitoring progress per partition, and enables resumption if a job fails.\n   *Expected output*: Archived files per partition in S3/Glacier with metadata (partition name, timestamp).\n\n3. **Create a staging table with the same schema plus audit columns** \u2013 Insert rows into this staging table first, then delete from main_table once confirmed.\n   *Why*: Provides a checkpoint; if the job fails after insertion but before deletion, data is still present in staging and can be re\u2011archived.\n   *Expected output*: Staging table populated with exactly those rows that will be archived.\n\n4. **Employ WAL archiving to an external store** \u2013 Configure continuous archiving of WAL segments to a separate disk or object store during the job.\n   *Why*: Prevents main data disk from filling; allows recovery if the archival process crashes.\n   *Expected output*: WAL segments safely stored, enabling point\u2011in\u2011time recovery.\n\n5. **Use read\u2011only replicas for query\u2011able archives** \u2013 Load archived data into a secondary database or a columnar store (e.g., Amazon Redshift, Snowflake) that supports the required query interface and indexing.\n   *Why*: Meets regulatory compliance by keeping records queryable without impacting production.\n   *Expected output*: Archived dataset available via standard SQL queries with appropriate indexes.\n\n6. **Implement a robust monitoring & alerting system** \u2013 Track WAL size, disk usage, job progress per partition, and failure events. Trigger alerts if thresholds are exceeded.\n   *Why*: Early detection prevents catastrophic failures and ensures SLA compliance.\n   *Expected output*: Real\u2011time dashboards and automated notifications.\n\n7. **Schedule the archival during low\u2011traffic windows** \u2013 Run each partition job sequentially or in parallel within a 12\u2011hour window, ensuring that cumulative runtime stays below maintenance limits.\n   *Why*: Avoids prolonged production impact while staying within agreed downtime.\n   *Expected output*: Completed archival with minimal disruption.\n\n8. **Validate post\u2011archival integrity** \u2013 Run checksums or hash comparisons between source and archived data; verify query results on the cold store match expected counts.\n   *Why*: Guarantees that no records were lost or corrupted during transfer.\n   *Expected output*: Signed audit report confirming successful archival.\n\n9. **Automate cleanup of old partitions** \u2013 Once a partition is successfully archived and validated, drop it from the main table to free space.\n   *Why*: Prevents accumulation of stale data and keeps storage costs low.\n   *Expected output*: Main table size reduced, disk space reclaimed.\n\n10. **Document the entire process for compliance audits** \u2013 Store logs, configuration snapshots, and audit reports in a tamper\u2011evident repository.\n    *Why*: Meets regulatory requirements for traceability and accountability.\n    *Expected output*: Audit trail ready for external review.\n\nBy following these steps, we achieve efficient archival with controlled WAL usage, minimal lock contention, manageable job duration, recoverable partial failures, and compliant query\u2011capable cold storage.\n",
+      "confidence": "0.95",
+      "internal_reasoning": "I prioritized partitioned incremental archiving to mitigate WAL bloat and locking, added staging for checkpoints, leveraged external WAL archiving, and ensured compliance via read\u2011only replicas and audit trails.",
+      "_metrics": {
+        "tokens": 1543,
+        "prompt_tokens": 628,
+        "completion_tokens": 915,
+        "latency_ms": 9423.68,
+        "cost_usd": 0.000581,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: software_engineering\nTASK: You're building data archival for 50TB database. The DBA proposes a Saturday night batch job: 'DELETE FROM main_table WHERE created_at < NOW() - INTERVAL 2 YEARS; we'll run SELECT INTO cold_storage first.' Simple and complete. The DBA has done this before on a 500GB database. However: (1) the DELETE on 50TB will generate massive WAL/redo logs potentially filling the disk, (2) the long-running DELETE holds row-level locks that will block production reads on referenced rows, (3) the 'SELECT INTO cold_storage' for 30TB of archival data would run for ~6 hours \u2014 well beyond the maintenance window, (4) if the job fails at 80%, the partial state requires understanding which records were archived and which weren't (there's no checkpoint mechanism), (5) regulatory compliance requires that archived records remain queryable \u2014 the cold storage doesn't have the same indexes or query interface. The DBA says 'we'll increase the maintenance window to 12 hours.'\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+    },
+    "brain_recall": {
+      "response": "No applicable skills found for this context.",
+      "confidence": "0.0",
+      "internal_reasoning": "No learned skill matched the target context.",
+      "all_candidates": []
+    },
+    "task_applier": {
+      "response": {
+        "domain": "software_engineering",
+        "task": "Design a robust archival strategy for a 50\u202fTB database that mitigates WAL bloat, lock contention, long runtime, partial failure, and regulatory query requirements.",
+        "steps": [
+          {
+            "action": "Partition the main table by time (e.g., monthly) and enable declarative partition pruning.",
+            "expected_outcome": "Each partition can be archived independently, reducing transaction size and WAL generation."
+          },
+          {
+            "action": "Create a staging table with identical schema plus audit columns.",
+            "expected_outcome": "Rows to archive are first inserted into the staging area, providing a checkpoint for partial failures."
+          },
+          {
+            "action": "Export each partition from the staging table to cold storage using COPY or SELECT INTO per partition, storing files in S3/Glacier with metadata (partition name, timestamp).",
+            "expected_outcome": "Export size is manageable, progress can be monitored per partition, and failures can be resumed."
+          },
+          {
+            "action": "After successful export, delete the corresponding partition from the main table.",
+            "expected_outcome": "Locks are held only for the short duration of the partition drop; production reads remain largely unaffected."
+          },
+          {
+            "action": "Configure continuous WAL archiving to a separate disk or object store during the job.",
+            "expected_outcome": "Prevent main data disk from filling and enable point\u2011in\u2011time recovery if the archival process crashes."
+          },
+          {
+            "action": "Load exported data into a read\u2011only replica or columnar analytics platform (e.g., Redshift, Snowflake) that supports required queries.",
+            "expected_outcome": "Regulatory compliance is met because archived records remain queryable with full indexing and performance."
+          },
+          {
+            "action": "Implement monitoring of WAL size, disk usage, partition export progress, and failure events; trigger alerts when thresholds are exceeded.",
+            "expected_outcome": "Early detection prevents catastrophic failures and ensures SLA compliance."
+          },
+          {
+            "action": "Schedule the archival process in small chunks (e.g., weekly) within a 12\u2011hour maintenance window, running sequentially or with limited parallelism.",
+            "expected_outcome": "Cumulative runtime stays below the maintenance limit while minimizing production impact."
+          },
+          {
+            "action": "Validate post\u2011archival integrity using checksums or hash comparisons between source and archived data; verify query results on the cold store match expected counts.",
+            "expected_outcome": "Guarantees that no records were lost or corrupted during transfer."
+          },
+          {
+            "action": "Document all steps, logs, configuration snapshots, and audit reports in a tamper\u2011evident repository for compliance audits.",
+            "expected_outcome": "Provides traceability and accountability required by regulatory bodies."
+          }
+        ],
+        "anti_patterns_avoided": [
+          "Large single transaction delete",
+          "Uncontrolled WAL bloat",
+          "Long-running maintenance job without checkpoints",
+          "Lack of rollback or recovery mechanism",
+          "Ignoring read\u2011only replica for archival queries"
+        ],
+        "used_recalled_skill": false,
+        "recalled_skill_name": "none"
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "The solution addresses each identified risk by partitioning, staging, incremental export, WAL archiving, and read\u2011only replicas, avoiding known anti-patterns such as large deletes and uncontrolled WAL growth.",
+      "_metrics": {
+        "tokens": 2285,
+        "prompt_tokens": 1539,
+        "completion_tokens": 746,
+        "latency_ms": 6546.81,
+        "cost_usd": 0.000412,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a task. You have your own analysis AND warnings about\nknown anti-patterns from the Brain's memory.\n\nDOMAIN: general\nTASK: {'domain': 'software_engineering', 'task': \"You're building data archival for 50TB database. The DBA proposes a Saturday night batch job: 'DELETE FROM main_table WHERE created_at < NOW() - INTERVAL 2 YEARS; we'll run SELECT INTO cold_storage first.' Simple and complete. The DBA has done this before on a 500GB database. However: (1) the DELETE on 50TB will generate massive WAL/redo logs potentially filling the disk, (2) the long-running DELETE holds row-level locks that will block production reads on referenced rows, (3) the 'SELECT INTO cold_storage' for 30TB of archival data would run for ~6 hours \u2014 well beyond the maintenance window, (4) if the job fails at 80%, the partial state requires understanding which records were archived and which weren't (there's no checkpoint mechanism), (5) regulatory compliance requires that archived records remain queryable \u2014 the cold storage doesn't have the same indexes or query interface. The DBA says 'we'll increase the maintenance window to 12 hours.'\"}\n\nYOUR ANALYSIS:\nDomain: software_engineering\nTask: Design a robust, compliant archival strategy for a 50\u202fTB database that mitigates WAL bloat, lock contention, long runtime, partial failure, and regulatory query requirements.\n\nStep-by-step analysis:\n1. **Implement incremental partitioned archiving** \u2013 Move data out of the main table in small, time\u2011window partitions (e.g., weekly or monthly). This reduces single transaction size, limits WAL generation, and keeps locks short.\n   *Why*: Smaller deletes generate less redo, avoid disk fill, and reduce lock duration.\n   *Expected output*: Partitioned tables with a retention policy; each partition can be dropped independently.\n\n2. **Use declarative partition pruning for SELECT INTO** \u2013 Export each partition to cold storage using `COPY` or `SELECT ... INTO` per partition, then drop the partition. Parallelize across multiple workers.\n   *Why*: Keeps export size manageable, allows monitoring progress per partition, and enables resumption if a job fails.\n   *Expected output*: Archived files per partition in S3/Glacier with metadata (partition name, timestamp).\n\n3. **Create a staging table with the same schema plus audit columns** \u2013 Insert rows into this staging table first, then delete from main_table once confirmed.\n   *Why*: Provides a checkpoint; if the job fails after insertion but before deletion, data is still present in staging and can be re\u2011archived.\n   *Expected output*: Staging table populated with exactly those rows that will be archived.\n\n4. **Employ WAL archiving to an external store** \u2013 Configure continuous archiving of WAL segments to a separate disk or object store during the job.\n   *Why*: Prevents main data disk from filling; allows recovery if the archival process crashes.\n   *Expected output*: WAL segments safely stored, enabling point\u2011in\u2011time recovery.\n\n5. **Use read\u2011only replicas for query\u2011able archives** \u2013 Load archived data into a secondary database or a columnar store (e.g., Amazon Redshift, Snowflake) that supports the required query interface and indexing.\n   *Why*: Meets regulatory compliance by keeping records queryable without impacting production.\n   *Expected output*: Archived dataset available via standard SQL queries with appropriate indexes.\n\n6. **Implement a robust monitoring & alerting system** \u2013 Track WAL size, disk usage, job progress per partition, and failure events. Trigger alerts if thresholds are exceeded.\n   *Why*: Early detection prevents catastrophic failures and ensures SLA compliance.\n   *Expected output*: Real\u2011time dashboards and automated notifications.\n\n7. **Schedule the archival during low\u2011traffic windows** \u2013 Run each partition job sequentially or in parallel within a 12\u2011hour window, ensuring that cumulative runtime stays below maintenance limits.\n   *Why*: Avoids prolonged production impact while staying within agreed downtime.\n   *Expected output*: Completed archival with minimal disruption.\n\n8. **Validate post\u2011archival integrity** \u2013 Run checksums or hash comparisons between source and archived data; verify query results on the cold store match expected counts.\n   *Why*: Guarantees that no records were lost or corrupted during transfer.\n   *Expected output*: Signed audit report confirming successful archival.\n\n9. **Automate cleanup of old partitions** \u2013 Once a partition is successfully archived and validated, drop it from the main table to free space.\n   *Why*: Prevents accumulation of stale data and keeps storage costs low.\n   *Expected output*: Main table size reduced, disk space reclaimed.\n\n10. **Document the entire process for compliance audits** \u2013 Store logs, configuration snapshots, and audit reports in a tamper\u2011evident repository.\n    *Why*: Meets regulatory requirements for traceability and accountability.\n    *Expected output*: Audit trail ready for external review.\n\nBy following these steps, we achieve efficient archival with controlled WAL usage, minimal lock contention, manageable job duration, recoverable partial failures, and compliant query\u2011capable cold storage.\n\n\nBRAIN RECALL \u2014 ANTI-PATTERNS AND SKILLS:\nSkill name: No skill recalled\nSkill type: unknown\nTransfer score: N/A\nReasoning: No learned skill matched the target context.\n\nINSTRUCTIONS:\n- If anti-patterns were recalled, explicitly AVOID those patterns.\n- State which anti-patterns you are avoiding and why.\n- If no anti-patterns were recalled, solve normally.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"anti_patterns_avoided\": list of anti-pattern names avoided\n- \"used_recalled_skill\": true or false\n- \"recalled_skill_name\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection including anti-pattern avoidance"
+    },
+    "brain_feedback": {
+      "response": "No skill_id provided for feedback.",
+      "confidence": "0.0",
+      "internal_reasoning": "Feedback requires a skill_id from a previous recall."
+    },
+    "task_result": {
+      "response": {
+        "domain": "software_engineering",
+        "task": "Design a robust archival strategy for a 50\u202fTB database that mitigates WAL bloat, lock contention, long runtime, partial failure, and regulatory query requirements.",
+        "solution_steps": [
+          {
+            "action": "Partition the main table by time (e.g., monthly) with declarative partitioning enabled.",
+            "expected_outcome": "Each partition can be archived independently, reducing transaction size, WAL generation, and lock duration."
+          },
+          {
+            "action": "Create a staging table that mirrors the schema of the main table plus audit columns for tracking.",
+            "expected_outcome": "Rows to archive are first inserted into the staging area, providing a checkpoint for partial failures."
+          },
+          {
+            "action": "For each partition: 1) Insert qualifying rows into the staging table; 2) Export those rows from the staging table to cold storage using COPY or SELECT INTO per partition, storing files in S3/Glacier with metadata (partition name, timestamp).",
+            "expected_outcome": "Export size is manageable, progress can be monitored per partition, and failures can be resumed without reprocessing the entire dataset."
+          },
+          {
+            "action": "After successful export of a partition, drop that partition from the main table.",
+            "expected_outcome": "Locks are held only for the brief period of the DROP operation; production reads remain largely unaffected."
+          },
+          {
+            "action": "Configure continuous WAL archiving to a separate disk or object store during the job.",
+            "expected_outcome": "Prevents main data disk from filling and enables point\u2011in\u2011time recovery if the archival process crashes."
+          },
+          {
+            "action": "Load exported data into a read\u2011only replica or columnar analytics platform (e.g., Redshift, Snowflake) that supports required queries.",
+            "expected_outcome": "Regulatory compliance is met because archived records remain queryable with full indexing and performance."
+          },
+          {
+            "action": "Implement monitoring of WAL size, disk usage, partition export progress, and failure events; trigger alerts when thresholds are exceeded.",
+            "expected_outcome": "Early detection prevents catastrophic failures and ensures SLA compliance."
+          },
+          {
+            "action": "Schedule the archival process in small chunks (e.g., weekly) within a 12\u2011hour maintenance window, running sequentially or with limited parallelism.",
+            "expected_outcome": "Cumulative runtime stays below the maintenance limit while minimizing production impact."
+          },
+          {
+            "action": "Validate post\u2011archival integrity using checksums or hash comparisons between source and archived data; verify query results on the cold store match expected counts.",
+            "expected_outcome": "Guarantees that no records were lost or corrupted during transfer."
+          },
+          {
+            "action": "Document all steps, logs, configuration snapshots, and audit reports in a tamper\u2011evident repository for compliance audits.",
+            "expected_outcome": "Provides traceability and accountability required by regulatory bodies."
+          }
+        ],
+        "anti_patterns_avoided": [
+          "Large single transaction delete",
+          "Uncontrolled WAL bloat",
+          "Long-running maintenance job without checkpoints",
+          "Lack of rollback or recovery mechanism",
+          "Ignoring read\u2011only replica for archival queries"
+        ]
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "The solution decomposes the problem into proven techniques: time-based partitioning, staging with audit columns, per-partition export, WAL archiving, and use of a queryable cold store. Each step directly addresses the listed risks (WAL bloat, lock contention, runtime, partial failure, compliance). The approach is based on industry best practices for large-scale PostgreSQL archival and aligns with regulatory requirements.",
+      "_metrics": {
+        "tokens": 2073,
+        "prompt_tokens": 1267,
+        "completion_tokens": 806,
+        "latency_ms": 6988.95,
+        "cost_usd": 0.00044,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: software_engineering\nTASK: You're building data archival for 50TB database. The DBA proposes a Saturday night batch job: 'DELETE FROM main_table WHERE created_at < NOW() - INTERVAL 2 YEARS; we'll run SELECT INTO cold_storage first.' Simple and complete. The DBA has done this before on a 500GB database. However: (1) the DELETE on 50TB will generate massive WAL/redo logs potentially filling the disk, (2) the long-running DELETE holds row-level locks that will block production reads on referenced rows, (3) the 'SELECT INTO cold_storage' for 30TB of archival data would run for ~6 hours \u2014 well beyond the maintenance window, (4) if the job fails at 80%, the partial state requires understanding which records were archived and which weren't (there's no checkpoint mechanism), (5) regulatory compliance requires that archived records remain queryable \u2014 the cold storage doesn't have the same indexes or query interface. The DBA says 'we'll increase the maintenance window to 12 hours.'\n\nSOLUTION:\n{'domain': 'software_engineering', 'task': 'Design a robust archival strategy for a 50\\u202fTB database that mitigates WAL bloat, lock contention, long runtime, partial failure, and regulatory query requirements.', 'steps': [{'action': 'Partition the main table by time (e.g., monthly) and enable declarative partition pruning.', 'expected_outcome': 'Each partition can be archived independently, reducing transaction size and WAL generation.'}, {'action': 'Create a staging table with identical schema plus audit columns.', 'expected_outcome': 'Rows to archive are first inserted into the staging area, providing a checkpoint for partial failures.'}, {'action': 'Export each partition from the staging table to cold storage using COPY or SELECT INTO per partition, storing files in S3/Glacier with metadata (partition name, timestamp).', 'expected_outcome': 'Export size is manageable, progress can be monitored per partition, and failures can be resumed.'}, {'action': 'After successful export, delete the corresponding partition from the main table.', 'expected_outcome': 'Locks are held only for the short duration of the partition drop; production reads remain largely unaffected.'}, {'action': 'Configure continuous WAL archiving to a separate disk or object store during the job.', 'expected_outcome': 'Prevent main data disk from filling and enable point\u2011in\u2011time recovery if the archival process crashes.'}, {'action': 'Load exported data into a read\u2011only replica or columnar analytics platform (e.g., Redshift, Snowflake) that supports required queries.', 'expected_outcome': 'Regulatory compliance is met because archived records remain queryable with full indexing and performance.'}, {'action': 'Implement monitoring of WAL size, disk usage, partition export progress, and failure events; trigger alerts when thresholds are exceeded.', 'expected_outcome': 'Early detection prevents catastrophic failures and ensures SLA compliance.'}, {'action': 'Schedule the archival process in small chunks (e.g., weekly) within a 12\u2011hour maintenance window, running sequentially or with limited parallelism.', 'expected_outcome': 'Cumulative runtime stays below the maintenance limit while minimizing production impact.'}, {'action': 'Validate post\u2011archival integrity using checksums or hash comparisons between source and archived data; verify query results on the cold store match expected counts.', 'expected_outcome': 'Guarantees that no records were lost or corrupted during transfer.'}, {'action': 'Document all steps, logs, configuration snapshots, and audit reports in a tamper\u2011evident repository for compliance audits.', 'expected_outcome': 'Provides traceability and accountability required by regulatory bodies.'}], 'anti_patterns_avoided': ['Large single transaction delete', 'Uncontrolled WAL bloat', 'Long-running maintenance job without checkpoints', 'Lack of rollback or recovery mechanism', 'Ignoring read\u2011only replica for archival queries'], 'used_recalled_skill': False, 'recalled_skill_name': 'none'}\n\nANTI-PATTERNS AVOIDED:\n[]\n\nBRAIN METRICS:\nSkill recalled: None\nTransfer score: N/A\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}
