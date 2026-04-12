@@ -6,7 +6,7 @@ from orka.agents.local_llm_agents import LocalLLMAgent
 @pytest.mark.asyncio
 async def test_prompt_mode_with_schema_parsing(monkeypatch):
     # Monkeypatch network call to return a JSON string
-    async def fake_call_openai_compatible(self, model_url, model, prompt, temperature, max_tokens=None):
+    async def fake_call_openai_compatible(self, model_url, model, prompt, temperature, max_tokens=None, timeout_seconds=None):
         return '{"response": "summary", "confidence": 0.7}'
 
     monkeypatch.setattr(LocalLLMAgent, "_call_openai_compatible", fake_call_openai_compatible, raising=True)
@@ -33,7 +33,7 @@ async def test_prompt_mode_with_schema_parsing(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_unsupported_mode_fallback_to_prompt(monkeypatch):
-    async def fake_call_ollama(self, model_url, model, prompt, temperature, max_tokens=None):
+    async def fake_call_ollama(self, model_url, model, prompt, temperature, max_tokens=None, timeout_seconds=None):
         # The instructions should not break parsing; return JSON anyway
         return '{"response": "ok", "confidence": 0.6}'
 

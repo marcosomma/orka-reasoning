@@ -30,6 +30,39 @@ class TestSkillStep:
         assert restored.parameters == step.parameters
         assert restored.is_optional is True
 
+    def test_short_action_passes_through(self):
+        """Actions within MAX_ACTION_LENGTH are unchanged."""
+        action = "analyze data"
+        step = SkillStep(action=action, order=0)
+        assert step.action == action
+
+    def test_long_action_is_truncated(self):
+        """Actions exceeding MAX_ACTION_LENGTH are truncated with ellipsis."""
+        from orka.brain.constants import MAX_ACTION_LENGTH
+
+        long_action = "a" * (MAX_ACTION_LENGTH + 20)
+        step = SkillStep(action=long_action, order=0)
+        assert len(step.action) == MAX_ACTION_LENGTH
+        assert step.action.endswith("…")
+
+    def test_exactly_max_length_passes(self):
+        """Actions at exactly MAX_ACTION_LENGTH are not truncated."""
+        from orka.brain.constants import MAX_ACTION_LENGTH
+
+        exact_action = "x" * MAX_ACTION_LENGTH
+        step = SkillStep(action=exact_action, order=0)
+        assert step.action == exact_action
+
+    def test_long_action_warning_logged(self, caplog):
+        """Truncation emits a WARNING log."""
+        import logging
+        from orka.brain.constants import MAX_ACTION_LENGTH
+
+        long_action = "b" * (MAX_ACTION_LENGTH + 5)
+        with caplog.at_level(logging.WARNING, logger="orka.brain.skill"):
+            SkillStep(action=long_action, order=0)
+        assert any("exceeds" in record.message for record in caplog.records)
+
 
 class TestSkillCondition:
     def test_create_basic(self):

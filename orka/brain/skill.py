@@ -21,6 +21,7 @@ can transfer across domains.
 
 from __future__ import annotations
 
+import logging
 import math
 import re
 import uuid
@@ -28,6 +29,10 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any
+
+from .constants import MAX_ACTION_LENGTH
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_SKILL_TTL_HOURS: float = 168.0
 
@@ -89,6 +94,18 @@ class SkillStep:
     order: int = 0
     parameters: dict[str, Any] = field(default_factory=dict)
     is_optional: bool = False
+
+    def __post_init__(self) -> None:
+        """Validate action field to prevent verbatim sentence storage."""
+        if len(self.action) > MAX_ACTION_LENGTH:
+            logger.warning(
+                "SkillStep action exceeds %d chars (%d): '%s…'. "
+                "This may indicate verbatim text instead of an abstract action.",
+                MAX_ACTION_LENGTH,
+                len(self.action),
+                self.action[:40],
+            )
+            self.action = self.action[: MAX_ACTION_LENGTH - 1] + "…"
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -245,9 +262,7 @@ class Skill:
     @property
     def ttl_hours(self) -> float:
         """Effective TTL in hours, scaled by usage and confidence."""
-        return DEFAULT_SKILL_TTL_HOURS * (
-            1 + math.log2(max(1, self.usage_count))
-        ) * (0.5 + self.confidence)
+        return DEFAULT_SKILL_TTL_HOURS * (1 + math.log2(max(1, self.usage_count))) * (0.5 + self.confidence)
 
     @property
     def is_expired(self) -> bool:
@@ -258,9 +273,7 @@ class Skill:
 
     def renew_ttl(self) -> None:
         """Recalculate and set the expiry timestamp."""
-        self.expires_at = (
-            datetime.now(UTC) + timedelta(hours=self.ttl_hours)
-        ).isoformat()
+        self.expires_at = (datetime.now(UTC) + timedelta(hours=self.ttl_hours)).isoformat()
         self.updated_at = datetime.now(UTC)
 
     def record_usage(self, success: bool) -> None:
@@ -338,9 +351,7 @@ class Skill:
             preconditions=[SkillCondition.from_dict(c) for c in data.get("preconditions", [])],
             postconditions=[SkillCondition.from_dict(c) for c in data.get("postconditions", [])],
             source_context=data.get("source_context", {}),
-            transfer_history=[
-                SkillTransferRecord.from_dict(t) for t in data.get("transfer_history", [])
-            ],
+            transfer_history=[SkillTransferRecord.from_dict(t) for t in data.get("transfer_history", [])],
             confidence=data.get("confidence", 0.5),
             usage_count=data.get("usage_count", 0),
             success_rate=data.get("success_rate", 0.0),
@@ -371,9 +382,7 @@ class Skill:
                 parts.append(self.task_description)
             if self.skill_type == SkillType.EXECUTION_RECIPE.value and self.recipe:
                 agents = self.recipe.get("agents", [])
-                agent_names = [
-                    a["id"] if isinstance(a, dict) else str(a) for a in agents
-                ]
+                agent_names = [a["id"] if isinstance(a, dict) else str(a) for a in agents]
                 if agent_names:
                     parts.append(f"agents: {' → '.join(agent_names)}")
                 pattern = self.recipe.get("pattern", "")

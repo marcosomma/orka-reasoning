@@ -1,0 +1,35 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Benchmark v2 — Track A: Cross-Domain Skill Transfer (Single-Pass Baseline)
+# ═══════════════════════════════════════════════════════════════════════
+#
+# Single LLM pass — no iterative refinement, no brain.
+# Measures raw LLM capability on one shot.
+# ═══════════════════════════════════════════════════════════════════════
+
+orchestrator:
+  id: bench-v2-baseline-track-a
+  strategy: sequential
+  agents:
+    - task_solver
+
+agents:
+  - id: task_solver
+    type: local_llm
+    prompt: |
+      You are a senior software architect. Solve this task in a single pass.
+
+      DOMAIN: {{ input.domain | default('general') }}
+      TASK: {{ input.task | default(input) }}
+
+      Return JSON with:
+      - "response": your complete solution
+      - "domain": "{{ input.domain | default('general') }}"
+      - "task": brief task description
+      - "steps": array of {"action": "...", "result": "expected outcome"}
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": your approach
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3

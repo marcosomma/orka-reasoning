@@ -37,6 +37,7 @@ from typing import Any, Dict
 
 from .base_agent import BaseAgent
 from ..brain import Brain
+from ..brain.constants import ACTION_VERBS
 from ..contracts import Context
 
 logger = logging.getLogger(__name__)
@@ -70,8 +71,7 @@ class BrainAgent(BaseAgent):
             mem = self._memory_logger
             if mem is None:
                 raise RuntimeError(
-                    f"BrainAgent '{self.agent_id}' requires a memory_logger. "
-                    "Ensure the orchestrator provides one."
+                    f"BrainAgent '{self.agent_id}' requires a memory_logger. " "Ensure the orchestrator provides one."
                 )
             self._brain = Brain(memory=mem)
         return self._brain
@@ -126,6 +126,54 @@ class BrainAgent(BaseAgent):
             return {"response": raw}
         return {}
 
+    def _abstract_procedure(self, text: str) -> list[Dict[str, str]]:
+        """Extract abstract, domain-agnostic procedure steps from LLM output.
+
+        Instead of storing verbatim sentences, detect action verbs and
+        generalize the procedure into transferable steps.
+
+        Returns an empty list when no actionable procedure can be extracted,
+        which causes ``brain.learn()`` to skip skill creation.
+        """
+        abstract_steps: list[Dict[str, str]] = []
+        for sentence in text.replace("\n", ". ").split(". "):
+            sentence = sentence.strip()
+            if len(sentence) < 20:
+                continue
+            words = sentence.split()
+            verb = words[0].lower().rstrip(":.,-")
+            if verb in ACTION_VERBS:
+                abstract_steps.append(
+                    {
+                        "action": f"{verb} [component/entity]",
+                        "result": "identified findings",
+                        "description": sentence,
+                    }
+                )
+            elif any(v in sentence.lower() for v in ACTION_VERBS):
+                for v in ACTION_VERBS:
+                    if v in sentence.lower():
+                        abstract_steps.append(
+                            {
+                                "action": f"{v} [target]",
+                                "result": "processed result",
+                                "description": sentence,
+                            }
+                        )
+                        break
+
+            if len(abstract_steps) >= 8:
+                break
+
+        if not abstract_steps:
+            logger.warning(
+                "No actionable procedure could be abstracted from text (%d chars). " "Skipping skill creation.",
+                len(text),
+            )
+            return []
+
+        return abstract_steps
+
     # ------------------------------------------------------------------ #
     # learn
     # ------------------------------------------------------------------ #
@@ -145,12 +193,7 @@ class BrainAgent(BaseAgent):
             # Prefer the richer response text over internal_reasoning
             source = reasoning if len(reasoning) > len(response_text) else response_text
             if source:
-                sentences = [
-                    s.strip()
-                    for s in source.replace("\n", ". ").split(". ")
-                    if len(s.strip()) > 20
-                ]
-                steps_raw = [{"action": s, "result": "success"} for s in sentences[:10]]
+                steps_raw = self._abstract_procedure(source)
 
         execution_trace = {
             "steps": steps_raw,
@@ -216,7 +259,7 @@ class BrainAgent(BaseAgent):
         candidates = await brain.recall(
             context=context,
             top_k=int(payload.get("top_k", 3)),
-            min_score=float(payload.get("min_score", 0.0)),
+            min_score=float(payload.get("min_score", 0.5)),
             skill_types=skill_types if isinstance(skill_types, list) else None,
             domain_filter=domain_filter if isinstance(domain_filter, str) else None,
         )
@@ -320,9 +363,7 @@ class BrainAgent(BaseAgent):
             except (json.JSONDecodeError, TypeError):
                 agents_raw = [{"id": agents_raw}]
 
-        agents = [
-            a if isinstance(a, dict) else {"id": str(a)} for a in agents_raw
-        ]
+        agents = [a if isinstance(a, dict) else {"id": str(a)} for a in agents_raw]
 
         pattern = str(payload.get("pattern", payload.get("strategy", "sequential")))
 
@@ -415,9 +456,7 @@ class BrainAgent(BaseAgent):
                 if isinstance(item, str):
                     path_nodes.append(item)
                 elif isinstance(item, dict):
-                    path_nodes.append(
-                        str(item.get("id") or item.get("name") or item.get("node_id") or item)
-                    )
+                    path_nodes.append(str(item.get("id") or item.get("name") or item.get("node_id") or item))
                 else:
                     path_nodes.append(str(item))
 

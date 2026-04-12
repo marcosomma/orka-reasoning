@@ -46,6 +46,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from .context_analyzer import ContextAnalyzer, ContextFeatures
+from .constants import ACTION_VERB_CANONICAL
 from .skill import Skill, SkillCondition, SkillStep, SkillTransferRecord, SkillType, generate_search_tokens
 from .skill_graph import SkillGraph
 from .transfer_engine import SkillTransferEngine, TransferCandidate
@@ -324,15 +325,9 @@ class Brain:
 
         # If transfer was successful, create a TRANSFERRED_TO edge
         if success:
-            logger.info(
-                f"Skill '{skill.name}' successfully transferred "
-                f"(confidence now {skill.confidence:.2f})"
-            )
+            logger.info(f"Skill '{skill.name}' successfully transferred " f"(confidence now {skill.confidence:.2f})")
         else:
-            logger.info(
-                f"Skill '{skill.name}' transfer failed "
-                f"(confidence now {skill.confidence:.2f})"
-            )
+            logger.info(f"Skill '{skill.name}' transfer failed " f"(confidence now {skill.confidence:.2f})")
 
     # ========== Introspection ==========
 
@@ -597,10 +592,7 @@ class Brain:
             name=name,
             description=f"GraphScout path for {domain}: {' → '.join(path_nodes)}",
             skill_type=SkillType.GRAPH_PATH.value,
-            procedure=[
-                SkillStep(action=f"execute {nid}", order=i)
-                for i, nid in enumerate(path_nodes)
-            ],
+            procedure=[SkillStep(action=f"execute {nid}", order=i) for i, nid in enumerate(path_nodes)],
             preconditions=preconditions,
             source_context=features.to_dict(),
             confidence=min(0.8, score),
@@ -629,6 +621,8 @@ class Brain:
             if isinstance(step, dict):
                 action = step.get("action", step.get("agent_id", f"step_{i}"))
                 description = step.get("description", step.get("result", ""))
+                if len(str(action)) > 80:
+                    action = self._abstract_action(str(action))
                 steps.append(
                     SkillStep(
                         action=str(action),
@@ -639,9 +633,8 @@ class Brain:
                     )
                 )
             elif isinstance(step, str):
-                steps.append(
-                    SkillStep(action=step, description="", order=i)
-                )
+                action = self._abstract_action(step) if len(step) > 80 else step
+                steps.append(SkillStep(action=action, description=step, order=i))
 
         # Also extract from agents list if no explicit steps
         if not steps and "agents" in trace:
@@ -659,9 +652,19 @@ class Brain:
 
         return steps
 
-    def _extract_preconditions(
-        self, features: ContextFeatures, trace: dict[str, Any]
-    ) -> list[SkillCondition]:
+    @staticmethod
+    def _abstract_action(text: str) -> str:
+        """Reduce a verbose sentence to an abstract ``verb [target]`` phrase."""
+        words = text.strip().split()
+        if not words:
+            return "process"
+        verb = words[0].lower().rstrip(":.,-()")
+        verb = ACTION_VERB_CANONICAL.get(verb, verb)
+        if len(words) > 3:
+            return f"{verb} [target]"
+        return text
+
+    def _extract_preconditions(self, features: ContextFeatures, trace: dict[str, Any]) -> list[SkillCondition]:
         """Extract preconditions from context features and trace."""
         conditions = []
 
@@ -685,9 +688,7 @@ class Brain:
 
         return conditions
 
-    def _extract_postconditions(
-        self, features: ContextFeatures, outcome: dict[str, Any]
-    ) -> list[SkillCondition]:
+    def _extract_postconditions(self, features: ContextFeatures, outcome: dict[str, Any]) -> list[SkillCondition]:
         """Extract postconditions from outcome."""
         conditions = []
 
@@ -736,9 +737,7 @@ class Brain:
             parts.append(f"({features.domain_hints[0]})")
         return " ".join(parts) if parts else "Unnamed Skill"
 
-    def _generate_description(
-        self, features: ContextFeatures, procedure: list[SkillStep]
-    ) -> str:
+    def _generate_description(self, features: ContextFeatures, procedure: list[SkillStep]) -> str:
         """Generate a description of the skill."""
         parts = [features.abstract_goal]
 
@@ -748,9 +747,7 @@ class Brain:
 
         return ". ".join(parts)
 
-    def _find_existing_skill(
-        self, features: ContextFeatures, name: str
-    ) -> Skill | None:
+    def _find_existing_skill(self, features: ContextFeatures, name: str) -> Skill | None:
         """Check if a structurally similar skill already exists.
 
         Uses exact fingerprint match first (fast path), then falls back
@@ -777,10 +774,7 @@ class Brain:
                 best_score = sim
 
         if best_match is not None and best_score >= 0.7:
-            logger.info(
-                f"Found similar skill '{best_match.name}' "
-                f"(similarity: {best_score:.2f})"
-            )
+            logger.info(f"Found similar skill '{best_match.name}' " f"(similarity: {best_score:.2f})")
             return best_match
 
         return None

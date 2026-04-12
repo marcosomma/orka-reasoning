@@ -187,6 +187,22 @@ class LocalLLMAgent(BaseAgent):
             except (ValueError, TypeError):
                 max_tokens = None
 
+        # Configurable HTTP timeout (seconds) for LLM API calls.
+        # Reasoning models (e.g. DeepSeek R1) may need much longer than default.
+        # The YAML `params.timeout` is consumed by BaseAgent.__init__ as self.timeout,
+        # so it doesn't appear in self.params (kwargs). Read from self.timeout first.
+        timeout_val = ctx.get("timeout", self.timeout)
+        request_timeout: Optional[float]
+        if timeout_val is None or timeout_val == "":
+            request_timeout = None  # let each provider method use its default
+        else:
+            try:
+                request_timeout = float(str(timeout_val))
+                if request_timeout <= 0:
+                    request_timeout = None
+            except (ValueError, TypeError):
+                request_timeout = None
+
         # Build the full prompt using template replacement
         # Convert ctx to dict if it's not already
         context_dict: Dict[str, Any] = dict(ctx) if isinstance(ctx, dict) else {"input": str(ctx)}
@@ -300,6 +316,7 @@ class LocalLLMAgent(BaseAgent):
                     full_prompt,
                     temperature,
                     max_tokens=max_tokens,
+                    timeout_seconds=request_timeout,
                 )
             elif provider_norm in ["lm_studio", "lmstudio"]:
                 raw_response = await self._call_lm_studio(
@@ -308,6 +325,7 @@ class LocalLLMAgent(BaseAgent):
                     full_prompt,
                     temperature,
                     max_tokens=max_tokens,
+                    timeout_seconds=request_timeout,
                 )
             elif provider_norm == "openai_compatible":
                 raw_response = await self._call_openai_compatible(
@@ -316,6 +334,7 @@ class LocalLLMAgent(BaseAgent):
                     full_prompt,
                     temperature,
                     max_tokens=max_tokens,
+                    timeout_seconds=request_timeout,
                 )
             else:
                 raise ValueError(
@@ -397,6 +416,19 @@ class LocalLLMAgent(BaseAgent):
             return parsed_response
 
         except Exception as e:
+            # Provide a descriptive message for timeout errors (asyncio.TimeoutError has no str)
+            if isinstance(e, (asyncio.TimeoutError,)):
+                effective_timeout = request_timeout or (
+                    30 if provider_norm == "ollama" else 60
+                )
+                error_msg = (
+                    f"HTTP request timed out after {effective_timeout}s. "
+                    f"Reasoning models may need a larger timeout. "
+                    f"Set params.timeout in the workflow YAML (e.g. timeout: 300)."
+                )
+            else:
+                error_msg = str(e)
+
             # Count tokens even in error case if we have the prompt
             try:
                 error_prompt_tokens = (
@@ -427,9 +459,9 @@ class LocalLLMAgent(BaseAgent):
                 error_cost = None
 
             return {
-                "response": f"[LocalLLMAgent error: {e!s}]",
+                "response": f"[LocalLLMAgent error: {error_msg}]",
                 "confidence": "0.0",
-                "internal_reasoning": f"Error occurred during LLM call: {e!s}",
+                "internal_reasoning": f"Error occurred during LLM call: {error_msg}",
                 "_metrics": {
                     "tokens": error_prompt_tokens,
                     "prompt_tokens": error_prompt_tokens,
@@ -528,6 +560,7 @@ class LocalLLMAgent(BaseAgent):
         prompt: str,
         temperature: float,
         max_tokens: Optional[int] = None,
+        timeout_seconds: Optional[float] = None,
     ) -> str:
         """
         Call Ollama API endpoint (async, aiohttp).
@@ -547,7 +580,7 @@ class LocalLLMAgent(BaseAgent):
         if max_tokens is not None:
             payload["options"]["num_predict"] = max_tokens
 
-        timeout = aiohttp.ClientTimeout(total=30)
+        timeout = aiohttp.ClientTimeout(total=timeout_seconds or 30)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.post(model_url, json=payload) as response:
                 try:
@@ -569,6 +602,7 @@ class LocalLLMAgent(BaseAgent):
         prompt: str,
         temperature: float,
         max_tokens: Optional[int] = None,
+        timeout_seconds: Optional[float] = None,
     ) -> str:
         """
         Call LM Studio API endpoint (OpenAI-compatible, async, aiohttp).
@@ -594,7 +628,7 @@ class LocalLLMAgent(BaseAgent):
             else:
                 model_url = model_url + "/v1/chat/completions"
 
-        timeout = aiohttp.ClientTimeout(total=60)
+        timeout = aiohttp.ClientTimeout(total=timeout_seconds or 60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.post(model_url, json=payload) as response:
                 try:
@@ -619,6 +653,7 @@ class LocalLLMAgent(BaseAgent):
         prompt: str,
         temperature: float,
         max_tokens: Optional[int] = None,
+        timeout_seconds: Optional[float] = None,
     ) -> str:
         """
         Call any OpenAI-compatible API endpoint (async, aiohttp).
@@ -638,7 +673,7 @@ class LocalLLMAgent(BaseAgent):
         if max_tokens is not None:
             payload["max_tokens"] = max_tokens
 
-        timeout = aiohttp.ClientTimeout(total=60)
+        timeout = aiohttp.ClientTimeout(total=timeout_seconds or 60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.post(model_url, json=payload) as response:
                 try:

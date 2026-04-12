@@ -1,29 +1,20 @@
 # ═══════════════════════════════════════════════════════════════════════
-# Benchmark v2 — LLM-as-Judge: Pairwise Comparison
+# Benchmark v2 — LLM-as-Judge: Pairwise Comparison (GPT-4 variant)
 # ═══════════════════════════════════════════════════════════════════════
 #
-# Compares TWO outputs side-by-side with randomized A/B labeling.
-# The judge does NOT know which is brain-enabled or brainless.
-#
-# Input (JSON):
-#   {
-#     "domain": "...",
-#     "task": "...",
-#     "track": "A|B|C|D|E",
-#     "output_a": { ... },
-#     "output_b": { ... }
-#   }
+# Optional external judge — use via:
+#   python judge_benchmark.py --pairwise-workflow judge_pairwise_gpt4.yml --output-tag gpt4
 # ═══════════════════════════════════════════════════════════════════════
 
 orchestrator:
-  id: bench-v2-judge-pairwise
+  id: judge-pairwise-gpt4
   strategy: sequential
   agents:
     - pairwise_judge
 
 agents:
   - id: pairwise_judge
-    type: local_llm
+    type: openai-gpt-4
     prompt: |
       You are an expert evaluator. You will be given two outputs (A and B) that
       solve the same task. Compare them and state your preference for each quality.
@@ -40,14 +31,9 @@ agents:
 
       For EACH of the following three questions, choose "A", "B", or "TIE":
 
-      1. STRONGER REASONING: Which output demonstrates more logically coherent,
-         evidence-based reasoning with valid step ordering?
-
-      2. MORE STRUCTURALLY COMPLETE: Which output covers all necessary steps and
-         is better organized with nothing important missing?
-
-      3. MORE TRUSTWORTHY: Considering depth of analysis, domain adaptation, and
-         calibrated confidence, which output would you trust more in production?
+      1. STRONGER REASONING
+      2. MORE STRUCTURALLY COMPLETE
+      3. MORE TRUSTWORTHY
 
       Return ONLY a JSON object with:
       - "stronger_reasoning": "A" or "B" or "TIE"
@@ -59,8 +45,6 @@ agents:
       - "overall_preference": "A" or "B" or "TIE"
       - "overall_justification": two to three sentence summary
     params:
-      provider: lm_studio
-      model_url: "http://localhost:1234"
-      model: "qwen/qwen3-coder-30b"
+      model: gpt-4-turbo
       temperature: 0.1
-      timeout: 1200
+      max_tokens: 1000

@@ -195,6 +195,19 @@ class SkillTransferEngine:
         # 2. Semantic similarity (via embeddings if available)
         semantic = self._compute_semantic_similarity(skill, target_features)
 
+        # Semantic floor — if content is unrelated, don't transfer
+        if semantic < 0.1 and structural < 0.6:
+            return TransferCandidate(
+                skill=skill,
+                structural_score=structural,
+                semantic_score=semantic,
+                transfer_score=0.0,
+                confidence_score=0.0,
+                combined_score=0.0,
+                adaptations={},
+                reasoning="Filtered: semantic similarity too low for meaningful transfer.",
+            )
+
         # 3. Transfer track record
         transfer = skill.transfer_success_rate if skill.transfer_history else 0.5
 
@@ -210,9 +223,7 @@ class SkillTransferEngine:
         )
 
         # Generate reasoning
-        reasoning = self._generate_reasoning(
-            skill, target_features, structural, semantic, transfer
-        )
+        reasoning = self._generate_reasoning(skill, target_features, structural, semantic, transfer)
 
         # Suggest adaptations
         adaptations = self._suggest_adaptations(skill, source_features, target_features)
@@ -228,9 +239,7 @@ class SkillTransferEngine:
             reasoning=reasoning,
         )
 
-    def _compute_semantic_similarity(
-        self, skill: Skill, target_features: ContextFeatures
-    ) -> float:
+    def _compute_semantic_similarity(self, skill: Skill, target_features: ContextFeatures) -> float:
         """Compute semantic similarity between a skill and target context.
 
         Uses vector embeddings if an embedder is available, otherwise
@@ -298,15 +307,11 @@ class SkillTransferEngine:
 
         # Matching structures
         source_features = ContextFeatures.from_dict(skill.source_context)
-        common_structures = set(source_features.task_structures) & set(
-            target_features.task_structures
-        )
+        common_structures = set(source_features.task_structures) & set(target_features.task_structures)
         if common_structures:
             parts.append(f"shares structures: {', '.join(common_structures)}")
 
-        common_patterns = set(source_features.cognitive_patterns) & set(
-            target_features.cognitive_patterns
-        )
+        common_patterns = set(source_features.cognitive_patterns) & set(target_features.cognitive_patterns)
         if common_patterns:
             parts.append(f"shares patterns: {', '.join(common_patterns)}")
 
@@ -341,12 +346,8 @@ class SkillTransferEngine:
             }
 
         # Structure adaptations
-        missing_structures = set(target_features.task_structures) - set(
-            source_features.task_structures
-        )
-        extra_structures = set(source_features.task_structures) - set(
-            target_features.task_structures
-        )
+        missing_structures = set(target_features.task_structures) - set(source_features.task_structures)
+        extra_structures = set(source_features.task_structures) - set(target_features.task_structures)
 
         if missing_structures:
             adaptations["add_structures"] = list(missing_structures)

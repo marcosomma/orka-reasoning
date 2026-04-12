@@ -1,28 +1,20 @@
 # ═══════════════════════════════════════════════════════════════════════
-# Benchmark v2 — LLM-as-Judge: Rubric Scoring
+# Benchmark v2 — LLM-as-Judge: Rubric Scoring (GPT-4 variant)
 # ═══════════════════════════════════════════════════════════════════════
 #
-# Scores a SINGLE output on 6 quality dimensions (1-10).
-# The judge is blind to which condition (brain/brainless) produced it.
-#
-# Input (JSON):
-#   {
-#     "domain": "...",
-#     "task": "...",
-#     "track": "A|B|C|D|E",
-#     "output": { ... task_result output ... }
-#   }
+# Optional external judge — use via:
+#   python judge_benchmark.py --judge-workflow judge_rubric_gpt4.yml --output-tag gpt4
 # ═══════════════════════════════════════════════════════════════════════
 
 orchestrator:
-  id: bench-v2-judge-rubric
+  id: judge-rubric-gpt4
   strategy: sequential
   agents:
     - rubric_judge
 
 agents:
   - id: rubric_judge
-    type: local_llm
+    type: openai-gpt-4
     prompt: |
       You are an expert evaluator. Score the following task output on 6 dimensions.
       Each dimension is scored from 1 (poor) to 10 (excellent).
@@ -37,29 +29,11 @@ agents:
       SCORING RUBRIC:
 
       1. REASONING QUALITY (1-10)
-         How logically coherent is the reasoning? Are conclusions evidence-based?
-         Are the steps valid and well-ordered? Is the logic sound?
-
       2. STRUCTURAL COMPLETENESS (1-10)
-         Are all necessary steps present? Is anything important missing?
-         Is the output well-organized with proper structure?
-
       3. DEPTH OF ANALYSIS (1-10)
-         Does it go beyond surface-level observations?
-         Are edge cases considered? Are trade-offs discussed?
-
       4. ACTIONABILITY (1-10)
-         Are the recommendations concrete and specific?
-         Could someone follow these steps and implement the solution?
-
       5. DOMAIN ADAPTABILITY (1-10)
-         Is the solution well-adapted to the specific domain?
-         Does it use domain-appropriate terminology and approaches?
-         Or is it generic boilerplate that could apply to anything?
-
       6. CONFIDENCE CALIBRATION (1-10)
-         Does the self-reported confidence match the actual solution quality?
-         Is the confidence justified by the reasoning depth?
 
       Return ONLY a JSON object with:
       - "reasoning_quality": integer 1-10
@@ -77,8 +51,6 @@ agents:
       - "overall_score": float (average of all 6 dimensions)
       - "overall_impression": two to three sentences summarizing the output quality
     params:
-      provider: lm_studio
-      model_url: "http://localhost:1234"
-      model: "qwen/qwen3-coder-30b"
+      model: gpt-4-turbo
       temperature: 0.1
-      timeout: 1200
+      max_tokens: 1000

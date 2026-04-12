@@ -399,14 +399,134 @@ class TestBrainCrossContextTransfer:
         top = candidates[0]
         assert top.structural_score > 0.0
 
-        # Step 3: Record successful transfer
+
+class TestBrainAbstractAction:
+    """Tests for Brain._abstract_action static method."""
+
+    def test_empty_string_returns_process(self):
+        result = Brain._abstract_action("")
+        assert result == "process"
+
+    def test_whitespace_only_returns_process(self):
+        result = Brain._abstract_action("   ")
+        assert result == "process"
+
+    def test_short_text_passes_through(self):
+        result = Brain._abstract_action("analyze data")
+        assert result == "analyze data"
+
+    def test_three_word_text_passes_through(self):
+        result = Brain._abstract_action("analyze the data")
+        assert result == "analyze the data"
+
+    def test_long_text_abstractified(self):
+        result = Brain._abstract_action("analyze the incoming request data for anomalies")
+        assert result == "analyze [target]"
+
+    def test_canonical_verb_normalization(self):
+        """Verbs in ACTION_VERB_CANONICAL are replaced with canonical form."""
+        result = Brain._abstract_action("fix the broken deployment pipeline quickly")
+        assert result == "mitigate [target]"
+
+    def test_verb_with_trailing_punctuation(self):
+        """Trailing punctuation on the verb is stripped."""
+        result = Brain._abstract_action("review: the entire codebase for security")
+        assert result == "evaluate [target]"
+
+    def test_non_canonical_verb_preserved(self):
+        result = Brain._abstract_action("deploy the application to production servers")
+        # 'deploy' is not in ACTION_VERB_CANONICAL, but check it stays
+        # Note: 'deploy' maps to 'execute' in canonical — either is acceptable
+        from orka.brain.constants import ACTION_VERB_CANONICAL
+
+        expected_verb = ACTION_VERB_CANONICAL.get("deploy", "deploy")
+        assert result == f"{expected_verb} [target]"
+
+    def test_extract_procedure_calls_abstract_for_long_dict_actions(self):
+        """_extract_procedure should abstract dict actions > 80 chars."""
+        brain = Brain(memory=FakeMemory())
+        long_action = "analyze the incoming request data " + "carefully " * 10
+        assert len(long_action) > 80
+        trace = {
+            "steps": [
+                {"action": long_action},
+            ],
+        }
+        steps = brain._extract_procedure(trace)
+        assert len(steps) == 1
+        assert steps[0].action == "analyze [target]"
+
+    def test_extract_procedure_calls_abstract_for_long_string_steps(self):
+        """_extract_procedure should abstract string steps > 80 chars."""
+        brain = Brain(memory=FakeMemory())
+        long_step = "deploy the full application to all production servers " + "everywhere " * 5
+        assert len(long_step) > 80
+        trace = {
+            "steps": [
+                long_step,
+            ],
+        }
+        steps = brain._extract_procedure(trace)
+        assert len(steps) == 1
+        from orka.brain.constants import ACTION_VERB_CANONICAL
+
+        expected_verb = ACTION_VERB_CANONICAL.get("deploy", "deploy")
+        assert steps[0].action == f"{expected_verb} [target]"
+
+    def test_extract_procedure_short_steps_unchanged(self):
+        """Short actions should pass through unchanged."""
+        brain = Brain(memory=FakeMemory())
+        trace = {
+            "steps": [
+                {"action": "analyze input"},
+                "validate output",
+            ],
+        }
+        steps = brain._extract_procedure(trace)
+        assert steps[0].action == "analyze input"
+        assert steps[1].action == "validate output"
+
+
+class TestBrainCrossContextTransferExtended:
+    """Additional cross-context transfer tests (continued from base class above)."""
+
+    @pytest.mark.asyncio
+    async def test_text_to_code_transfer_with_feedback(self, brain):
+        """Learn, recall, feedback, then verify transferability."""
+        skill = await brain.learn(
+            execution_trace={
+                "steps": [
+                    {"action": "decompose input into parts"},
+                    {"action": "analyze each part independently"},
+                    {"action": "aggregate analysis into summary"},
+                ],
+            },
+            context={
+                "domain": "text_analysis",
+                "task": "Break down a long document and summarize each section",
+            },
+            outcome={"success": True, "quality": 0.92},
+        )
+        assert skill is not None
+
+        candidates = await brain.recall(
+            context={
+                "domain": "code_review",
+                "task": "Break down a PR into files and analyze each change, then summarize",
+            },
+            min_score=0.0,
+        )
+        assert len(candidates) >= 1
+        top = candidates[0]
+
+        # Record successful transfer
         await brain.feedback(
             skill_id=top.skill.id,
             context={"domain": "code_review"},
             success=True,
         )
 
-        # Step 4: Verify skill is now recognized as transferable
+        # Verify skill is now recognized as transferable
         updated = await brain.get_skill(top.skill.id)
         assert updated is not None
         assert updated.is_transferable is True

@@ -76,17 +76,17 @@ class TemplateSafeObject:
 
     def __iter__(self):
         if isinstance(self._value, dict):
-            return iter(self._value)
-        if isinstance(self._value, (list, tuple)):
+            yield from self._value
+        elif isinstance(self._value, (list, tuple)):
             for item in self._value:
                 if isinstance(item, (dict, list)):
                     yield TemplateSafeObject(item)
                 else:
                     yield item
-            return
-        raise TypeError(
-            f"TemplateSafeObject wrapping {type(self._value).__name__} is not iterable"
-        )
+        else:
+            raise TypeError(
+                f"TemplateSafeObject wrapping {type(self._value).__name__} is not iterable"
+            )
 
     def __len__(self):
         if isinstance(self._value, (dict, list, tuple, str)):

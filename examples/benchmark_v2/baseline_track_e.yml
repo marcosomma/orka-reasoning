@@ -1,0 +1,39 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Benchmark v2 — Track E: Longitudinal Learning Curve (Single-Pass Baseline)
+# ═══════════════════════════════════════════════════════════════════════
+#
+# Single LLM pass per task — no iterative refinement, no brain.
+# Measures raw LLM capability without any multi-step reasoning pipeline.
+# ═══════════════════════════════════════════════════════════════════════
+
+orchestrator:
+  id: bench-v2-baseline-track-e
+  strategy: sequential
+  agents:
+    - task_solver
+
+agents:
+  - id: task_solver
+    type: local_llm
+    prompt: |
+      You are a senior software architect. Solve this task in a single pass.
+
+      DOMAIN: software_architecture
+      TASK: {{ input.task | default(input) }}
+
+      Return JSON with:
+      - "response": your complete architecture review
+      - "domain": "software_architecture"
+      - "task": brief task description
+      - "sequence_number": {{ input.sequence | default(0) }}
+      - "solution_steps": array of concrete review steps
+      - "quality_self_assessment": 0.0-1.0
+      - "brain_assisted": false
+      - "recalled_skill": "none"
+      - "confidence": 0.0-1.0
+      - "internal_reasoning": your approach
+    params:
+      provider: lm_studio
+      model_url: "http://localhost:1234"
+      model: "openai/gpt-oss-20b"
+      temperature: 0.3

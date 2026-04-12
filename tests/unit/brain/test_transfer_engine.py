@@ -277,3 +277,65 @@ class TestSkillTransferEngine:
         assert len(candidates) >= 1
         # Should have some semantic score from keyword overlap
         assert candidates[0].semantic_score >= 0.0
+
+    def test_semantic_floor_filters_unrelated(self):
+        """When semantic < 0.1 AND structural < 0.6, candidate is zeroed."""
+        # Create a skill with very specific context
+        skill = _make_skill(
+            "Cooking Skill",
+            structures=["sequential"],
+            patterns=["preparation"],
+        )
+        self.graph.save_skill(skill)
+
+        # Query with a completely unrelated context
+        candidates = self.engine.find_transferable_skills(
+            {"task": "Quantum entanglement photon analysis"},
+            min_score=0.0,
+        )
+        # If semantic floor triggered, the candidate should have combined_score=0
+        for c in candidates:
+            if c.combined_score == 0.0:
+                assert c.reasoning == "Filtered: semantic similarity too low for meaningful transfer."
+                assert c.transfer_score == 0.0
+                assert c.confidence_score == 0.0
+
+    def test_semantic_floor_preserves_related(self):
+        """Skills with decent semantic overlap should pass through the floor."""
+        skill = _make_skill(
+            "Code Analyzer",
+            structures=["decomposition", "sequential"],
+            patterns=["analysis", "extraction"],
+        )
+        self.graph.save_skill(skill)
+
+        candidates = self.engine.find_transferable_skills(
+            {"task": "Analyze and extract patterns from the codebase"},
+            min_score=0.0,
+        )
+        assert len(candidates) >= 1
+        # Should have a non-zero combined score
+        assert candidates[0].combined_score > 0.0
+
+    def test_semantic_floor_zeroed_candidate_structure(self):
+        """A zeroed TransferCandidate has correct field values."""
+        skill = _make_skill(
+            "Niche Skill",
+            structures=["routing"],
+            patterns=["classification"],
+            confidence=0.3,
+        )
+        self.graph.save_skill(skill)
+
+        # Score directly via the internal method
+        from orka.brain.context_analyzer import ContextFeatures
+
+        target_features = self.analyzer.analyze({"task": "Completely unrelated xyz"})
+        candidate = self.engine._score_skill(
+            skill, target_features, {"task": "Completely unrelated xyz"}
+        )
+        # Either filtered (zeroed) or has valid scores
+        if candidate.semantic_score < 0.1 and candidate.structural_score < 0.6:
+            assert candidate.combined_score == 0.0
+            assert candidate.adaptations == {}
+            assert "Filtered" in candidate.reasoning

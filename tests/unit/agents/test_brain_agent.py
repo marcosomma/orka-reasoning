@@ -158,23 +158,43 @@ async def test_recall_no_skills_yet(memory):
 
 @pytest.mark.asyncio(loop_scope="function")
 async def test_recall_finds_learned_skill(memory):
-    """Learn a skill, then recall it from a different domain context."""
-    # Step 1: Learn
-    learn_agent = BrainAgent(agent_id="learn", operation="learn", memory_logger=memory)
+    """Learn a skill, then recall it from a related domain context."""
+    agent = BrainAgent(agent_id="brain", operation="learn", memory_logger=memory)
+
+    # Step 1: Learn — use task descriptions the ContextAnalyzer can extract patterns from
+    learn_payload = {
+        "domain": "data_analysis",
+        "task": "Analyze and decompose the dataset, validate each section and aggregate results",
+        "response": "Systematic analysis with decomposition and aggregation",
+        "steps": [
+            {"action": "decompose input into sections", "result": "success"},
+            {"action": "analyze each section independently", "result": "success"},
+            {"action": "validate section results", "result": "success"},
+            {"action": "aggregate validated results", "result": "success"},
+        ],
+        "confidence": "0.85",
+    }
     learn_ctx = {
-        "formatted_prompt": json.dumps(_make_learn_payload()),
+        "formatted_prompt": json.dumps(learn_payload),
         "input": "test",
     }
-    learn_result = await learn_agent._run_impl(learn_ctx)
+    learn_result = await agent._run_impl(learn_ctx)
     assert "skill_id" in learn_result
 
-    # Step 2: Recall from different domain
-    recall_agent = BrainAgent(agent_id="recall", operation="recall", memory_logger=memory)
+    # Step 2: Recall from different domain but with similar cognitive patterns
+    agent.operation = "recall"
+    recall_payload = {
+        "domain": "code_review",
+        "task": "Analyze and decompose the PR into files, validate each change and aggregate findings",
+        "response": "Need to break down and analyze code changes",
+        "confidence": "0.7",
+        "min_score": "0.0",
+    }
     recall_ctx = {
-        "formatted_prompt": json.dumps(_make_recall_payload()),
+        "formatted_prompt": json.dumps(recall_payload),
         "input": "test",
     }
-    recall_result = await recall_agent._run_impl(recall_ctx)
+    recall_result = await agent._run_impl(recall_ctx)
 
     assert "skill_id" in recall_result
     assert recall_result["skill_name"]
@@ -207,10 +227,12 @@ async def test_learn_recall_lifecycle(memory):
     assert skill_name
     assert len(skill_steps) >= 3
 
-    # Switch to recall mode and query from software domain
+    # Switch to recall mode and query from software domain (explicit min_score=0.0)
     brain_agent.operation = "recall"
+    recall_payload = _make_recall_payload()
+    recall_payload["min_score"] = "0.0"
     recall_ctx = {
-        "formatted_prompt": json.dumps(_make_recall_payload()),
+        "formatted_prompt": json.dumps(recall_payload),
         "input": "debug system",
     }
     recall_result = await brain_agent._run_impl(recall_ctx)
@@ -266,10 +288,12 @@ async def test_feedback_records_transfer(memory):
     learn_result = await agent._run_impl(learn_ctx)
     skill_id = learn_result["skill_id"]
 
-    # Step 2: Recall
+    # Step 2: Recall (explicit min_score=0.0 for lifecycle test)
     agent.operation = "recall"
+    recall_payload = _make_recall_payload()
+    recall_payload["min_score"] = "0.0"
     recall_ctx = {
-        "formatted_prompt": json.dumps(_make_recall_payload()),
+        "formatted_prompt": json.dumps(recall_payload),
         "input": "test",
     }
     recall_result = await agent._run_impl(recall_ctx)
@@ -343,10 +367,12 @@ async def test_full_learn_recall_feedback_lifecycle(memory):
     learn_result = await agent._run_impl(learn_ctx)
     skill_id = learn_result["skill_id"]
 
-    # Recall
+    # Recall (explicit min_score=0.0 for lifecycle test)
     agent.operation = "recall"
+    recall_payload = _make_recall_payload()
+    recall_payload["min_score"] = "0.0"
     recall_ctx = {
-        "formatted_prompt": json.dumps(_make_recall_payload()),
+        "formatted_prompt": json.dumps(recall_payload),
         "input": "software debugging",
     }
     recall_result = await agent._run_impl(recall_ctx)
@@ -361,7 +387,7 @@ async def test_full_learn_recall_feedback_lifecycle(memory):
     fb_result = await agent._run_impl(feedback_ctx)
     assert fb_result["transfer_count"] == 1
 
-    # Second recall + feedback cycle
+    # Second recall + feedback cycle (reuse same recall_ctx with min_score=0.0)
     agent.operation = "recall"
     recall_result2 = await agent._run_impl(recall_ctx)
 
@@ -394,3 +420,105 @@ async def test_parse_json_field_handles_bad_input():
     assert BrainAgent._parse_json_field("not json") == {}
     assert BrainAgent._parse_json_field('{"key": "val"}') == {"key": "val"}
     assert BrainAgent._parse_json_field({"key": "val"}) == {"key": "val"}
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# _abstract_procedure tests
+# ═══════════════════════════════════════════════════════════════════════
+
+
+class TestAbstractProcedure:
+    def _make_agent(self, memory):
+        return BrainAgent(agent_id="test_abs", operation="learn", memory_logger=memory)
+
+    def test_extracts_leading_verb(self, memory):
+        agent = self._make_agent(memory)
+        text = "Analyze the system logs for anomalies and report findings."
+        steps = agent._abstract_procedure(text)
+        assert len(steps) >= 1
+        assert steps[0]["action"].startswith("analyze ")
+
+    def test_extracts_embedded_verb(self, memory):
+        """Verbs appearing inside a sentence are detected."""
+        agent = self._make_agent(memory)
+        text = "The system should validate the incoming data carefully."
+        steps = agent._abstract_procedure(text)
+        assert len(steps) >= 1
+        assert any("validate" in s["action"] for s in steps)
+
+    def test_max_eight_steps(self, memory):
+        """No more than 8 steps should be returned."""
+        agent = self._make_agent(memory)
+        sentences = [
+            f"Analyze part {i} of the input data for correctness." for i in range(20)
+        ]
+        text = ". ".join(sentences)
+        steps = agent._abstract_procedure(text)
+        assert len(steps) <= 8
+
+    def test_no_actionable_text_returns_empty(self, memory):
+        """Text without action verbs returns empty list."""
+        agent = self._make_agent(memory)
+        text = "This is just a long sentence about nothing particularly special or interesting really."
+        steps = agent._abstract_procedure(text)
+        assert steps == []
+
+    def test_short_sentences_skipped(self, memory):
+        """Sentences shorter than 20 chars are ignored."""
+        agent = self._make_agent(memory)
+        text = "Analyze it. Done."
+        steps = agent._abstract_procedure(text)
+        assert steps == []
+
+    def test_steps_have_required_keys(self, memory):
+        agent = self._make_agent(memory)
+        text = "Validate the entire configuration for compliance with the standards."
+        steps = agent._abstract_procedure(text)
+        assert len(steps) >= 1
+        for step in steps:
+            assert "action" in step
+            assert "result" in step
+            assert "description" in step
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# min_score default validation
+# ═══════════════════════════════════════════════════════════════════════
+
+
+@pytest.mark.asyncio(loop_scope="function")
+async def test_recall_default_min_score_filters_low_matches(memory):
+    """The default min_score=0.5 should filter out very weak matches."""
+    agent = BrainAgent(agent_id="brain", operation="learn", memory_logger=memory)
+
+    # Learn a very specific skill
+    learn_ctx = {
+        "formatted_prompt": json.dumps({
+            "domain": "cooking",
+            "task": "Prepare a three-course dinner with appetizer, main, dessert",
+            "response": "Analyze ingredients and prepare each course systematically",
+            "steps": [
+                {"action": "gather ingredients", "result": "success"},
+                {"action": "prepare appetizer", "result": "success"},
+                {"action": "cook main course", "result": "success"},
+            ],
+            "confidence": "0.8",
+        }),
+        "input": "cook dinner",
+    }
+    await agent._run_impl(learn_ctx)
+
+    # Recall from completely unrelated domain — default min_score=0.5
+    # should filter this out (no explicit min_score in payload)
+    agent.operation = "recall"
+    recall_ctx = {
+        "formatted_prompt": json.dumps({
+            "domain": "quantum_physics",
+            "task": "Solve the Schrödinger equation for a hydrogen atom",
+        }),
+        "input": "physics",
+    }
+    result = await agent._run_impl(recall_ctx)
+
+    # With default min_score=0.5, unrelated domains should be filtered
+    assert result["confidence"] == "0.0" or float(result.get("combined_score", 0.0)) >= 0.5
