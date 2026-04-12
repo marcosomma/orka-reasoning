@@ -1,3 +1,48 @@
+# [0.9.16] · 2026-04-12 🔬
+OrKa v0.9.16 – Benchmark V2 Results & Episodic Memory Foundation
+
+### Summary
+This release documents the results of the **Benchmark V2 experiment** (250 tasks, 500 runs, 5 tracks) evaluating the Brain's procedural skill transfer system. Key finding: the 61.6% pairwise win rate is driven by pipeline structure, not skill content — `used_recalled_skill: False` across all 250 brain tasks. Rubric delta improved from +0.03 to +0.06 but remains negligible due to score compression. This release prepares the codebase for the **episodic memory pivot** in the next iteration.
+
+### Added
+* **Benchmark V2 Infrastructure**
+  - Decoupled 3-script architecture: `run_benchmark_v2.py` (execution), `judge_benchmark.py` (judging), `aggregate_benchmark.py` (aggregation)
+  - Separate judge model support (`qwen/qwen3-coder-30b`) to eliminate circular bias
+  - `--skip-existing`, `--track`, `--output-tag`, `--exclude-tracks`, `--compare-tags` CLI flags
+  - Judge workflow YAMLs for rubric and pairwise evaluation
+
+* **Skill Abstraction (Problem 1 Fix)**
+  - `orka/brain/constants.py` — shared constants: `MAX_ACTION_LENGTH`, `ACTION_VERBS` (~170), `ACTION_VERB_CANONICAL` (~30 mappings)
+  - `SkillStep.__post_init__` action length validation and truncation
+  - `Brain._abstract_action()` — reduces verbose sentences to "verb [target]" patterns
+  - `BrainAgent._abstract_procedure()` — extracts abstract steps from LLM output
+
+* **Transfer Engine Hardening (Problem 2 Fix)**
+  - Raised `min_score` default from 0.0 to 0.5
+  - Semantic floor filter: `semantic < 0.1 AND structural < 0.6` → zeroed candidate
+
+* **Single-Pass Baselines (Problem 5 Fix)**
+  - Baseline workflow YAMLs for tracks A, B, D, E
+
+### Fixed
+* **`TemplateSafeObject.__iter__` bug** — `return iter(self._value)` inside generator silently terminated; fixed with `yield from`
+* **Local LLM timeout routing** — `self.params.get("timeout")` was always None because `BaseAgent.__init__` consumed it; fixed to read `self.timeout`
+* **HTTP timeout configurability** — `timeout_seconds` parameter now propagates to `_call_ollama`, `_call_lm_studio`, `_call_openai_compatible`
+* **Empty `asyncio.TimeoutError`** — added descriptive error message
+* **Pairwise `--skip-existing`** — checked wrong path for existing results
+
+### Benchmark V2 Results
+See `changelog/v0.9.15_benchmark_v2_experiment.md` for full analysis. Key numbers:
+- Pairwise brain win rate: **61.6%** (statistically significant, p < 0.01)
+- Rubric delta: **+0.06** (negligible due to score compression)
+- Skill usage: **0/250** tasks self-reported using recalled skills
+- Conclusion: advantage is pipeline-structural, not skill-transfer
+
+### Compatibility
+* Backward compatible — no breaking changes to existing APIs or YAML schemas
+
+---
+
 # [0.9.15] · 2026-03-25 🧠
 OrKa v0.9.15 – Brain: Procedural Skill Memory with Cross-Context Transfer & TTL
 
