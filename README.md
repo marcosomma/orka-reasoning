@@ -35,7 +35,7 @@ That is where Orka came from.
 
 My first commit was just a small POC with two agents processing one input in a linear flow. From there, I added routing, branching, loops, and more. I built it in public because I wanted to show that there was a better path.
 
-Some people engaged from the beginning. Others arrived later. Over the year, I saw around 50k downloads across GitHub and PyPI. Some people came back with feedback. Some contributed. Many criticized it. All of that helped.
+Some people engaged from the beginning. Others arrived later. Over the year, I saw around 30k downloads across GitHub and PyPI. Some people came back with feedback. Some contributed. Many criticized it. All of that helped.
 
 Orka kept growing and became a sort of personal AI ecosystem for me. A place where I could build agentic flows with no boundaries, and where critical thinking was part of the pipeline before producing a final output.
 
