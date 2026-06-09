@@ -1098,7 +1098,8 @@ class TestGraphScoutBrainConfig:
 
 
 class TestPathScorerBrainComponent:
-    def test_brain_component_added_when_present(self):
+    @pytest.mark.asyncio
+    async def test_brain_component_added_when_present(self):
         from orka.orchestrator.path_scoring import PathScorer
         from orka.nodes.graph_scout_agent import GraphScoutConfig
 
@@ -1112,17 +1113,13 @@ class TestPathScorerBrainComponent:
             "brain_penalty": 0.0,
         }
         # We need to call the internal method which is async
-        import asyncio
-
-        async def run() -> dict[str, float]:
-            return await scorer._score_candidate(candidate, "test question", {})
-
-        components = asyncio.get_event_loop().run_until_complete(run())
+        components = await scorer._score_candidate(candidate, "test question", {})
         assert "brain" in components
         # 0.5 + 0.1 - 0.0 = 0.6
         assert components["brain"] == pytest.approx(0.6, abs=0.01)
 
-    def test_brain_component_with_penalty(self):
+    @pytest.mark.asyncio
+    async def test_brain_component_with_penalty(self):
         from orka.orchestrator.path_scoring import PathScorer
         from orka.nodes.graph_scout_agent import GraphScoutConfig
 
@@ -1136,17 +1133,13 @@ class TestPathScorerBrainComponent:
             "brain_penalty": 0.3,
         }
 
-        import asyncio
-
-        async def run() -> dict[str, float]:
-            return await scorer._score_candidate(candidate, "q", {})
-
-        components = asyncio.get_event_loop().run_until_complete(run())
+        components = await scorer._score_candidate(candidate, "q", {})
         assert "brain" in components
         # 0.5 + 0.0 - 0.3 = 0.2
         assert components["brain"] == pytest.approx(0.2, abs=0.01)
 
-    def test_brain_component_clamped(self):
+    @pytest.mark.asyncio
+    async def test_brain_component_clamped(self):
         from orka.orchestrator.path_scoring import PathScorer
         from orka.nodes.graph_scout_agent import GraphScoutConfig
 
@@ -1160,15 +1153,11 @@ class TestPathScorerBrainComponent:
             "brain_penalty": 1.0,
         }
 
-        import asyncio
-
-        async def run() -> dict[str, float]:
-            return await scorer._score_candidate(candidate, "q", {})
-
-        components = asyncio.get_event_loop().run_until_complete(run())
+        components = await scorer._score_candidate(candidate, "q", {})
         assert components["brain"] == 0.0
 
-    def test_no_brain_component_without_signals(self):
+    @pytest.mark.asyncio
+    async def test_no_brain_component_without_signals(self):
         from orka.orchestrator.path_scoring import PathScorer
         from orka.nodes.graph_scout_agent import GraphScoutConfig
 
@@ -1180,12 +1169,7 @@ class TestPathScorerBrainComponent:
             "path": ["a"],
         }
 
-        import asyncio
-
-        async def run() -> dict[str, float]:
-            return await scorer._score_candidate(candidate, "q", {})
-
-        components = asyncio.get_event_loop().run_until_complete(run())
+        components = await scorer._score_candidate(candidate, "q", {})
         assert "brain" not in components
 
 
