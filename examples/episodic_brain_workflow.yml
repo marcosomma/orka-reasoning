@@ -1,0 +1,134 @@
+# ═══════════════════════════════════════════════════════════════════════
+# OrKa Brain — Episodic Memory Workflow
+# ═══════════════════════════════════════════════════════════════════════
+#
+# This workflow demonstrates the Brain's episodic memory system:
+#   1. An LLM performs a task
+#   2. The Brain records the execution as an episode (what happened,
+#      what worked, what failed, lessons learned)
+#   3. When a new, similar task arrives, the Brain recalls relevant
+#      past episodes and injects them into the prompt
+#   4. The LLM uses concrete past experience to improve its response
+#
+# Unlike skill transfer (which abstracts reasoning procedures), episodic
+# memory preserves *specific outcomes*: failures, workarounds, and
+# context-specific lessons the model cannot derive from its weights.
+#
+# Usage:
+#   orka run examples/episodic_brain_workflow.yml "$(cat examples/inputs/episodic_brain_input.json)"
+#
+# Requirements:
+#   - Local LLM (Ollama or LM Studio)
+#   - Redis (orka-start)
+# ═══════════════════════════════════════════════════════════════════════
+
+orchestrator:
+  id: brain-episodic-memory
+  strategy: sequential
+  agents:
+    # Phase 1: Execute a task and record the episode
+    - task_executor
+    - episode_recorder
+
+    # Phase 2: Recall episodes for a new task and apply experience
+    - episode_recaller
+    - experienced_executor
+    - final_output
+
+agents:
+  # ─────────────────────────────────────────────────────────────────────
+  # Phase 1: Execute and record
+  # ─────────────────────────────────────────────────────────────────────
+
+  - id: task_executor
+    type: local_llm
+    prompt: |
+      You are an expert problem solver. Perform the following task:
+
+      {{ input }}
+
+      After completing, return your response as JSON with these EXACT fields:
+      - "domain": the domain of the task
+      - "task": what you were asked to do
+      - "response": your full answer
+      - "outcome_summary": 1-2 sentence summary of results
+      - "what_worked": list of things that went well
+      - "what_failed": list of issues encountered (empty list if none)
+      - "failure_analysis": root cause if anything failed (empty string if success)
+      - "lessons": list of actionable takeaways for similar future tasks
+      - "confidence": your confidence score (0.0 to 1.0)
+
+      Return ONLY valid JSON.
+    params:
+      model: "{{ model | default('openai/gpt-oss-20b') }}"
+      temperature: 0.7
+      timeout: 120
+
+  - id: episode_recorder
+    type: brain
+    operation: record_episode
+    prompt: |
+      {{ previous_outputs.task_executor }}
+    params:
+      timeout: 30
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Phase 2: Recall and apply
+  # ─────────────────────────────────────────────────────────────────────
+
+  - id: episode_recaller
+    type: brain
+    operation: recall_episodes
+    prompt: |
+      {
+        "task_input": "{{ input }}",
+        "domain": "{{ previous_outputs.task_executor.domain | default('general') }}",
+        "top_k": 5,
+        "min_score": 0.2,
+        "include_failures": true
+      }
+    params:
+      timeout: 30
+
+  - id: experienced_executor
+    type: local_llm
+    prompt: |
+      You are an expert problem solver with access to relevant past experience.
+
+      CURRENT TASK:
+      {{ input }}
+
+      {{ previous_outputs.episode_recaller.response }}
+
+      Use the past experience above to avoid known pitfalls and apply proven
+      approaches. If past episodes mention failures, explicitly address how
+      you will avoid them.
+
+      Return your response as JSON:
+      - "response": your full answer
+      - "used_past_experience": true/false — whether past episodes influenced your approach
+      - "experience_applied": brief description of how past experience was used
+      - "confidence": your confidence (0.0-1.0)
+    params:
+      model: "{{ model | default('openai/gpt-oss-20b') }}"
+      temperature: 0.7
+      timeout: 120
+
+  - id: final_output
+    type: local_llm
+    prompt: |
+      Summarize both execution results — the initial attempt and the
+      experience-informed attempt. Note any differences.
+
+      INITIAL RESULT:
+      {{ previous_outputs.task_executor.response | default('N/A') }}
+
+      EXPERIENCE-INFORMED RESULT:
+      {{ previous_outputs.experienced_executor.response | default('N/A') }}
+
+      Was past experience used? {{ previous_outputs.experienced_executor.used_past_experience | default('unknown') }}
+      How? {{ previous_outputs.experienced_executor.experience_applied | default('N/A') }}
+    params:
+      model: "{{ model | default('openai/gpt-oss-20b') }}"
+      temperature: 0.3
+      timeout: 60

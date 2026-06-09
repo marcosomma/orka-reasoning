@@ -17,6 +17,7 @@ class FakeMemory:
         self._store: dict[str, str] = {}
         self._hashes: dict[str, dict[str, str]] = {}
         self._sets: dict[str, set[str]] = {}
+        self._sorted_sets: dict[str, dict[str, float]] = {}
 
     def get(self, key: str) -> str | None:
         return self._store.get(key)
@@ -54,6 +55,35 @@ class FakeMemory:
 
     def smembers(self, name: str) -> list[str]:
         return list(self._sets.get(name, set()))
+
+    def zadd(self, name: str, mapping: dict[str, float]) -> int:
+        if name not in self._sorted_sets:
+            self._sorted_sets[name] = {}
+        count = 0
+        for member, score in mapping.items():
+            if member not in self._sorted_sets[name]:
+                count += 1
+            self._sorted_sets[name][member] = score
+        return count
+
+    def zrem(self, name: str, *members: str) -> int:
+        zs = self._sorted_sets.get(name, {})
+        return sum(1 for m in members if zs.pop(m, None) is not None)
+
+    def zcard(self, name: str) -> int:
+        return len(self._sorted_sets.get(name, {}))
+
+    def zrevrange(self, name: str, start: int, stop: int) -> list[str]:
+        zs = self._sorted_sets.get(name, {})
+        sorted_members = sorted(zs.keys(), key=lambda m: zs[m], reverse=True)
+        end = len(sorted_members) + stop + 1 if stop < 0 else stop + 1
+        return sorted_members[start:end]
+
+    def zrange(self, name: str, start: int, stop: int) -> list[str]:
+        zs = self._sorted_sets.get(name, {})
+        sorted_members = sorted(zs.keys(), key=lambda m: zs[m])
+        end = len(sorted_members) + stop + 1 if stop < 0 else stop + 1
+        return sorted_members[start:end]
 
     def log(self, agent_id, event_type, payload, **kwargs):
         pass
@@ -211,9 +241,7 @@ async def test_recall_finds_learned_skill(memory):
 @pytest.mark.asyncio(loop_scope="function")
 async def test_learn_recall_lifecycle(memory):
     """Full lifecycle: learn in medical, recall for software debugging."""
-    brain_agent = BrainAgent(
-        agent_id="brain", operation="learn", memory_logger=memory
-    )
+    brain_agent = BrainAgent(agent_id="brain", operation="learn", memory_logger=memory)
 
     # Learn medical diagnosis pattern
     learn_ctx = {
@@ -342,9 +370,7 @@ async def test_feedback_failed_transfer(memory):
     # Feedback with failure
     agent.operation = "feedback"
     feedback_ctx = {
-        "formatted_prompt": json.dumps(
-            {"skill_id": skill_id, "success": False, "domain": "test"}
-        ),
+        "formatted_prompt": json.dumps({"skill_id": skill_id, "success": False, "domain": "test"}),
         "input": "test",
     }
     fb_result = await agent._run_impl(feedback_ctx)
@@ -399,6 +425,7 @@ async def test_full_learn_recall_feedback_lifecycle(memory):
     fb_result2 = await agent._run_impl(feedback_ctx2)
     assert fb_result2["transfer_count"] == 2
 
+
 # ═══════════════════════════════════════════════════════════════════════
 # Error handling
 # ═══════════════════════════════════════════════════════════════════════
@@ -449,9 +476,7 @@ class TestAbstractProcedure:
     def test_max_eight_steps(self, memory):
         """No more than 8 steps should be returned."""
         agent = self._make_agent(memory)
-        sentences = [
-            f"Analyze part {i} of the input data for correctness." for i in range(20)
-        ]
+        sentences = [f"Analyze part {i} of the input data for correctness." for i in range(20)]
         text = ". ".join(sentences)
         steps = agent._abstract_procedure(text)
         assert len(steps) <= 8
@@ -493,17 +518,19 @@ async def test_recall_default_min_score_filters_low_matches(memory):
 
     # Learn a very specific skill
     learn_ctx = {
-        "formatted_prompt": json.dumps({
-            "domain": "cooking",
-            "task": "Prepare a three-course dinner with appetizer, main, dessert",
-            "response": "Analyze ingredients and prepare each course systematically",
-            "steps": [
-                {"action": "gather ingredients", "result": "success"},
-                {"action": "prepare appetizer", "result": "success"},
-                {"action": "cook main course", "result": "success"},
-            ],
-            "confidence": "0.8",
-        }),
+        "formatted_prompt": json.dumps(
+            {
+                "domain": "cooking",
+                "task": "Prepare a three-course dinner with appetizer, main, dessert",
+                "response": "Analyze ingredients and prepare each course systematically",
+                "steps": [
+                    {"action": "gather ingredients", "result": "success"},
+                    {"action": "prepare appetizer", "result": "success"},
+                    {"action": "cook main course", "result": "success"},
+                ],
+                "confidence": "0.8",
+            }
+        ),
         "input": "cook dinner",
     }
     await agent._run_impl(learn_ctx)
@@ -512,13 +539,222 @@ async def test_recall_default_min_score_filters_low_matches(memory):
     # should filter this out (no explicit min_score in payload)
     agent.operation = "recall"
     recall_ctx = {
-        "formatted_prompt": json.dumps({
-            "domain": "quantum_physics",
-            "task": "Solve the Schrödinger equation for a hydrogen atom",
-        }),
+        "formatted_prompt": json.dumps(
+            {
+                "domain": "quantum_physics",
+                "task": "Solve the Schrödinger equation for a hydrogen atom",
+            }
+        ),
         "input": "physics",
     }
     result = await agent._run_impl(recall_ctx)
 
     # With default min_score=0.5, unrelated domains should be filtered
     assert result["confidence"] == "0.0" or float(result.get("combined_score", 0.0)) >= 0.5
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Episode operations: record_episode
+# ═══════════════════════════════════════════════════════════════════════
+
+
+def _make_record_episode_payload() -> dict:
+    """Build a payload for the record_episode operation."""
+    return {
+        "task_input": "Analyze customer churn data and build prediction model",
+        "domain": "data_science",
+        "task": "churn_prediction",
+        "model": "gpt-4",
+        "success": True,
+        "quality": 0.85,
+        "outcome_summary": "Built churn model with 85% accuracy",
+        "what_worked": ["Feature engineering", "XGBoost model"],
+        "what_failed": [],
+        "lessons": ["Use SMOTE for imbalanced data", "Validate with time-based splits"],
+        "agents": ["data_prep", "model_trainer", "evaluator"],
+        "strategy": "sequential",
+        "tokens_used": 3000,
+        "latency_ms": 1500,
+    }
+
+
+@pytest.mark.asyncio(loop_scope="function")
+async def test_record_episode_returns_episode_id(memory):
+    agent = BrainAgent(agent_id="test_ep", operation="record_episode", memory_logger=memory)
+    ctx = {
+        "formatted_prompt": json.dumps(_make_record_episode_payload()),
+        "input": "test",
+    }
+    result = await agent._run_impl(ctx)
+
+    assert "episode_id" in result
+    assert result["episode_domain"] == "data_science"
+    assert result["episode_success"] is True
+
+
+@pytest.mark.asyncio(loop_scope="function")
+async def test_record_episode_failure(memory):
+    agent = BrainAgent(agent_id="test_ep_fail", operation="record_episode", memory_logger=memory)
+    payload = _make_record_episode_payload()
+    payload["success"] = False
+    payload["quality"] = 0.2
+    payload["outcome_summary"] = "Model training diverged"
+    payload["what_failed"] = ["Gradient explosion"]
+    payload["failure_analysis"] = "Learning rate too high"
+    payload["lessons"] = ["Use learning rate warmup"]
+
+    ctx = {
+        "formatted_prompt": json.dumps(payload),
+        "input": "test",
+    }
+    result = await agent._run_impl(ctx)
+
+    assert result["episode_success"] is False
+    assert "episode_id" in result
+
+
+@pytest.mark.asyncio(loop_scope="function")
+async def test_record_episode_minimal_payload(memory):
+    agent = BrainAgent(agent_id="test_ep_min", operation="record_episode", memory_logger=memory)
+    ctx = {
+        "formatted_prompt": json.dumps({"response": "Did something"}),
+        "input": "test",
+    }
+    result = await agent._run_impl(ctx)
+    assert "episode_id" in result
+
+
+@pytest.mark.asyncio(loop_scope="function")
+async def test_record_episode_coerces_string_lists(memory):
+    agent = BrainAgent(agent_id="test_ep_str", operation="record_episode", memory_logger=memory)
+    payload = _make_record_episode_payload()
+    payload["lessons"] = "lesson A, lesson B, lesson C"
+    payload["what_worked"] = "thing 1, thing 2"
+
+    ctx = {
+        "formatted_prompt": json.dumps(payload),
+        "input": "test",
+    }
+    result = await agent._run_impl(ctx)
+    assert "episode_id" in result
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Episode operations: recall_episodes
+# ═══════════════════════════════════════════════════════════════════════
+
+
+@pytest.mark.asyncio(loop_scope="function")
+async def test_recall_episodes_empty(memory):
+    agent = BrainAgent(agent_id="test_recall_ep", operation="recall_episodes", memory_logger=memory)
+    ctx = {
+        "formatted_prompt": json.dumps(
+            {
+                "task_input": "Find similar tasks",
+                "domain": "test",
+            }
+        ),
+        "input": "test",
+    }
+    result = await agent._run_impl(ctx)
+    assert result["episode_count"] == 0
+    assert "No relevant" in result["response"]
+
+
+@pytest.mark.asyncio(loop_scope="function")
+async def test_record_then_recall_episodes(memory):
+    """Record an episode, then recall it from a similar context."""
+    agent = BrainAgent(agent_id="brain", operation="record_episode", memory_logger=memory)
+
+    # Record
+    record_ctx = {
+        "formatted_prompt": json.dumps(_make_record_episode_payload()),
+        "input": "test",
+    }
+    record_result = await agent._run_impl(record_ctx)
+    assert "episode_id" in record_result
+
+    # Recall
+    agent.operation = "recall_episodes"
+    recall_ctx = {
+        "formatted_prompt": json.dumps(
+            {
+                "task_input": "Build a prediction model for customer churn",
+                "domain": "data_science",
+                "min_score": "0.0",
+            }
+        ),
+        "input": "test",
+    }
+    recall_result = await agent._run_impl(recall_ctx)
+
+    assert recall_result["episode_count"] >= 1
+    assert "RELEVANT PAST EXPERIENCE" in recall_result["response"]
+    assert isinstance(recall_result["episodes"], list)
+
+
+@pytest.mark.asyncio(loop_scope="function")
+async def test_recall_episodes_with_domain_filter(memory):
+    """Recall with domain_filter restricts results."""
+    agent = BrainAgent(agent_id="brain", operation="record_episode", memory_logger=memory)
+
+    # Record in two different domains
+    payload_ds = _make_record_episode_payload()
+    payload_ds["domain"] = "data_science"
+    await agent._run_impl(
+        {
+            "formatted_prompt": json.dumps(payload_ds),
+            "input": "test",
+        }
+    )
+
+    payload_eng = _make_record_episode_payload()
+    payload_eng["domain"] = "engineering"
+    payload_eng["task_input"] = "Build REST API"
+    await agent._run_impl(
+        {
+            "formatted_prompt": json.dumps(payload_eng),
+            "input": "test",
+        }
+    )
+
+    # Recall only engineering
+    agent.operation = "recall_episodes"
+    recall_ctx = {
+        "formatted_prompt": json.dumps(
+            {
+                "task_input": "Build API",
+                "domain_filter": "engineering",
+                "min_score": "0.0",
+            }
+        ),
+        "input": "test",
+    }
+    result = await agent._run_impl(recall_ctx)
+    assert result["episode_count"] >= 1
+
+
+@pytest.mark.asyncio(loop_scope="function")
+async def test_dispatch_routes_to_record_episode(memory):
+    """Operation dispatch routes 'record_episode' correctly."""
+    agent = BrainAgent(agent_id="test", operation="learn", memory_logger=memory)
+    ctx = {
+        "operation": "record_episode",
+        "formatted_prompt": json.dumps(_make_record_episode_payload()),
+        "input": "test",
+    }
+    result = await agent._run_impl(ctx)
+    assert "episode_id" in result
+
+
+@pytest.mark.asyncio(loop_scope="function")
+async def test_dispatch_routes_to_recall_episodes(memory):
+    """Operation dispatch routes 'recall_episodes' correctly."""
+    agent = BrainAgent(agent_id="test", operation="learn", memory_logger=memory)
+    ctx = {
+        "operation": "recall_episodes",
+        "formatted_prompt": json.dumps({"task_input": "something", "domain": "test"}),
+        "input": "test",
+    }
+    result = await agent._run_impl(ctx)
+    assert "episode_count" in result

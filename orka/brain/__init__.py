@@ -78,12 +78,19 @@ from .skill import Skill, SkillStep, SkillCondition, SkillTransferRecord, SkillT
 from .skill_graph import SkillGraph
 from .context_analyzer import ContextAnalyzer, ContextFeatures
 from .transfer_engine import SkillTransferEngine, TransferCandidate
+from .episode import Episode
+from .episode_store import EpisodeStore
+from .episode_recall import EpisodeMatch, EpisodeRecaller
 from .brain import Brain
 
 __all__ = [
     "Brain",
     "ContextAnalyzer",
     "ContextFeatures",
+    "Episode",
+    "EpisodeMatch",
+    "EpisodeRecaller",
+    "EpisodeStore",
     "Skill",
     "SkillCondition",
     "SkillGraph",

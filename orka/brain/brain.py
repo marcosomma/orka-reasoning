@@ -47,6 +47,9 @@ from typing import Any
 
 from .context_analyzer import ContextAnalyzer, ContextFeatures
 from .constants import ACTION_VERB_CANONICAL
+from .episode import Episode
+from .episode_recall import EpisodeMatch, EpisodeRecaller
+from .episode_store import EpisodeStore
 from .skill import Skill, SkillCondition, SkillStep, SkillTransferRecord, SkillType, generate_search_tokens
 from .skill_graph import SkillGraph
 from .transfer_engine import SkillTransferEngine, TransferCandidate
@@ -123,6 +126,8 @@ class Brain:
             context_analyzer=self._analyzer,
             embedder=embedder,
         )
+        self._episode_store = EpisodeStore(memory=memory, embedder=embedder)
+        self._episode_recaller = EpisodeRecaller()
         self._last_cleanup: datetime = datetime.now(UTC)
 
     @property
@@ -139,6 +144,16 @@ class Brain:
     def transfer_engine(self) -> SkillTransferEngine:
         """Access the transfer engine."""
         return self._transfer
+
+    @property
+    def episode_store(self) -> EpisodeStore:
+        """Access the episode store."""
+        return self._episode_store
+
+    @property
+    def episode_recaller(self) -> EpisodeRecaller:
+        """Access the episode recaller."""
+        return self._episode_recaller
 
     # ========== Learn ==========
 
@@ -609,6 +624,151 @@ class Brain:
         self._log_learning_event(skill, context, outcome)
         logger.info(f"Learned path '{skill.name}' ({skill.id})")
         return skill
+
+    # ========== Episodic Memory ==========
+
+    async def record_episode(
+        self,
+        task_input: str,
+        context: dict[str, Any],
+        outcome: dict[str, Any],
+        execution_trace: dict[str, Any] | None = None,
+    ) -> Episode:
+        """Record an execution episode to episodic memory.
+
+        Unlike skill learning (which abstracts procedures), episodic memory
+        stores *what actually happened*: concrete outcomes, failures,
+        lessons learned, and contextual features. This enables the Brain
+        to recall past experiences when facing similar situations.
+
+        Args:
+            task_input: The original task input text.
+            context: Execution context (``domain``, ``task``, ``model``, etc.).
+            outcome: Execution outcome. Expected keys:
+                ``success`` (bool), ``quality`` (float 0-1),
+                ``outcome_summary`` (str), ``what_worked`` (list[str]),
+                ``what_failed`` (list[str]), ``failure_analysis`` (str),
+                ``lessons`` (list[str]), ``tokens_used`` (int),
+                ``latency_ms`` (int).
+            execution_trace: Optional trace with ``agents`` (list) and
+                ``strategy`` (str).
+
+        Returns:
+            The newly created Episode.
+        """
+        features = self._analyzer.analyze(context)
+        trace = execution_trace or {}
+
+        agents_used = trace.get("agents", [])
+        if isinstance(agents_used, list):
+            agents_used = [a if isinstance(a, str) else a.get("id", str(a)) for a in agents_used]
+
+        episode = Episode(
+            task_input=task_input,
+            task_domain=context.get("domain", "general"),
+            task_type=context.get("task", "unknown"),
+            agents_used=agents_used,
+            strategy=trace.get("strategy", "unknown"),
+            model=context.get("model", "unknown"),
+            context_features=features.to_dict(),
+            success=outcome.get("success", False),
+            quality_score=outcome.get("quality", 0.0),
+            outcome_summary=outcome.get("outcome_summary", ""),
+            what_worked=outcome.get("what_worked", []),
+            what_failed=outcome.get("what_failed", []),
+            failure_analysis=outcome.get("failure_analysis", ""),
+            lessons=outcome.get("lessons", []),
+            tokens_used=outcome.get("tokens_used", 0),
+            latency_ms=outcome.get("latency_ms", 0),
+        )
+
+        self._episode_store.save_episode(episode)
+
+        # Lazy cleanup
+        self._episode_store.maybe_cleanup()
+
+        logger.info(f"Recorded episode {episode.id} " f"(domain={episode.task_domain}, success={episode.success})")
+        return episode
+
+    async def recall_episodes(
+        self,
+        context: dict[str, Any],
+        task_input: str = "",
+        top_k: int = 5,
+        min_score: float = 0.2,
+        include_failures: bool = True,
+        domain_filter: str | None = None,
+    ) -> list[EpisodeMatch]:
+        """Recall relevant past episodes for a given context.
+
+        Searches episodic memory for past experiences that are semantically
+        and contextually similar to the current situation. Results are
+        ranked by a composite score of semantic similarity, recency,
+        domain overlap, and outcome relevance.
+
+        Args:
+            context: The current execution context.
+            task_input: The current task input for semantic matching.
+            top_k: Maximum number of episodes to return.
+            min_score: Minimum combined score threshold.
+            include_failures: Whether to include failed episodes.
+            domain_filter: Optional domain to restrict search.
+
+        Returns:
+            List of :class:`EpisodeMatch` objects, ranked by combined score.
+        """
+        domain = domain_filter or context.get("domain")
+
+        # Gather candidate episodes with optional semantic scores
+        candidate_scores: dict[str, float] = {}  # episode_id -> semantic score
+        candidates: dict[str, Episode] = {}  # episode_id -> Episode
+
+        if domain:
+            for ep in self._episode_store.find_by_domain(domain, limit=top_k * 3):
+                candidates[ep.id] = ep
+
+        # Supplement with semantic search if we have an embedder and task input
+        if task_input and self._embedder is not None:
+            results = self._episode_store.semantic_search(query_text=task_input, top_k=top_k * 3, domain=domain)
+            for ep, sim in results:
+                candidate_scores[ep.id] = sim
+                if ep.id not in candidates:
+                    candidates[ep.id] = ep
+
+        # Fallback: list recent episodes if no candidates yet
+        if not candidates:
+            for ep in self._episode_store.list_episodes(limit=top_k * 3):
+                candidates[ep.id] = ep
+
+        # Filter out failures if not wanted
+        if not include_failures:
+            candidates = {eid: ep for eid, ep in candidates.items() if ep.success}
+
+        # Score each candidate
+        scored_matches: list[EpisodeMatch] = []
+        for eid, ep in candidates.items():
+            semantic_sim = candidate_scores.get(eid, 0.0)
+            match = self._episode_recaller.score(
+                episode=ep,
+                semantic_similarity=semantic_sim,
+                query_domain=domain,
+            )
+            scored_matches.append(match)
+
+        # Rank and filter
+        matches = self._episode_recaller.rank(
+            matches=scored_matches,
+            min_score=min_score,
+        )
+
+        matches = matches[:top_k]
+
+        if matches:
+            logger.info(f"Recalled {len(matches)} episodes " f"(top score: {matches[0].combined_score:.2f})")
+        else:
+            logger.debug("No relevant episodes found")
+
+        return matches
 
     # ========== Internal Helpers ==========
 

@@ -501,6 +501,129 @@ class BrainAgent(BaseAgent):
         }
 
     # ------------------------------------------------------------------ #
+    # record_episode
+    # ------------------------------------------------------------------ #
+
+    async def _handle_record_episode(self, ctx: Context) -> Dict[str, Any]:
+        brain = self._ensure_brain(ctx)
+        payload = self._extract_llm_payload(ctx)
+
+        task_input = str(payload.get("task_input", payload.get("input", payload.get("response", ""))))
+
+        context = {
+            "domain": payload.get("domain", "general"),
+            "task": payload.get("task", "unknown"),
+            "model": payload.get("model", "unknown"),
+        }
+
+        success = payload.get("success", True)
+        if isinstance(success, str):
+            success = success.lower() not in ("false", "0", "no")
+
+        outcome: Dict[str, Any] = {
+            "success": bool(success),
+            "quality": float(payload.get("quality", 0.5)),
+            "outcome_summary": str(payload.get("outcome_summary", "")),
+            "what_worked": payload.get("what_worked", []),
+            "what_failed": payload.get("what_failed", []),
+            "failure_analysis": str(payload.get("failure_analysis", "")),
+            "lessons": payload.get("lessons", []),
+        }
+        if "tokens_used" in payload:
+            outcome["tokens_used"] = int(payload["tokens_used"])
+        if "latency_ms" in payload:
+            outcome["latency_ms"] = int(payload["latency_ms"])
+
+        # Coerce list fields from strings if needed
+        for list_field in ("what_worked", "what_failed", "lessons"):
+            val = outcome[list_field]
+            if isinstance(val, str):
+                outcome[list_field] = [s.strip() for s in val.split(",") if s.strip()]
+
+        agents_raw = payload.get("agents", [])
+        if isinstance(agents_raw, str):
+            try:
+                agents_raw = json.loads(agents_raw)
+            except (json.JSONDecodeError, TypeError):
+                agents_raw = [agents_raw]
+
+        execution_trace = {
+            "agents": agents_raw,
+            "strategy": str(payload.get("strategy", "sequential")),
+        }
+
+        episode = await brain.record_episode(
+            task_input=task_input,
+            context=context,
+            outcome=outcome,
+            execution_trace=execution_trace,
+        )
+
+        return {
+            "response": f"Recorded episode {episode.id} (success={episode.success})",
+            "confidence": str(episode.quality_score),
+            "internal_reasoning": (
+                f"Stored episodic memory: domain={episode.task_domain}, " f"lessons={len(episode.lessons)}"
+            ),
+            "episode_id": episode.id,
+            "episode_domain": episode.task_domain,
+            "episode_success": episode.success,
+        }
+
+    # ------------------------------------------------------------------ #
+    # recall_episodes
+    # ------------------------------------------------------------------ #
+
+    async def _handle_recall_episodes(self, ctx: Context) -> Dict[str, Any]:
+        brain = self._ensure_brain(ctx)
+        payload = self._extract_llm_payload(ctx)
+
+        task_input = str(payload.get("task_input", payload.get("input", payload.get("response", ""))))
+
+        context = {
+            "domain": payload.get("domain", "general"),
+            "task": payload.get("task", task_input[:200]),
+        }
+
+        include_failures = payload.get("include_failures", True)
+        if isinstance(include_failures, str):
+            include_failures = include_failures.lower() not in ("false", "0", "no")
+
+        matches = await brain.recall_episodes(
+            context=context,
+            task_input=task_input,
+            top_k=int(payload.get("top_k", 5)),
+            min_score=float(payload.get("min_score", 0.2)),
+            include_failures=bool(include_failures),
+            domain_filter=payload.get("domain_filter"),
+        )
+
+        if matches:
+            # Format for injection into downstream prompts
+            injection_text = brain.episode_recaller.format_for_injection(
+                matches, max_tokens=int(payload.get("max_tokens", 1500))
+            )
+            top = matches[0]
+            return {
+                "response": injection_text,
+                "confidence": str(top.combined_score),
+                "internal_reasoning": (
+                    f"Recalled {len(matches)} episodes "
+                    f"(top: {top.episode.task_domain}, score={top.combined_score:.2f})"
+                ),
+                "episode_count": len(matches),
+                "episodes": [m.to_dict() for m in matches],
+            }
+
+        return {
+            "response": "No relevant past episodes found.",
+            "confidence": "0.0",
+            "internal_reasoning": "No episodic memories matched the current context.",
+            "episode_count": 0,
+            "episodes": [],
+        }
+
+    # ------------------------------------------------------------------ #
     # main dispatch
     # ------------------------------------------------------------------ #
 
@@ -516,4 +639,8 @@ class BrainAgent(BaseAgent):
             return await self._handle_learn_anti(ctx)
         if operation == "learn_path":
             return await self._handle_learn_path(ctx)
+        if operation == "record_episode":
+            return await self._handle_record_episode(ctx)
+        if operation == "recall_episodes":
+            return await self._handle_recall_episodes(ctx)
         return await self._handle_learn(ctx)
