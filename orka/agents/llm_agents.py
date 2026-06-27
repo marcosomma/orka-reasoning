@@ -83,7 +83,7 @@ OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL") or os.getenv("OPENAI_API_BASE")
 PYTEST_RUNNING = os.getenv("PYTEST_RUNNING", "").lower() in ("true", "1", "yes")
 
 # Initialize OpenAI client with optional API key
-_client_kwargs = {"base_url": OPENAI_BASE_URL} if OPENAI_BASE_URL else {}
+_client_kwargs: dict[str, Any] = {"base_url": OPENAI_BASE_URL} if OPENAI_BASE_URL else {}
 client = None
 if OPENAI_API_KEY:
     client = AsyncOpenAI(api_key=OPENAI_API_KEY, **_client_kwargs)

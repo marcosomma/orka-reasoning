@@ -124,6 +124,8 @@ class EpisodeStore:
 
     def _store_embedding(self, episode_id: str, text: str) -> Any:
         """Encode ``text`` and persist the vector for ``episode_id``. Returns the vector."""
+        if self._embedder is None:
+            return None
         try:
             import numpy as np
 

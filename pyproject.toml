@@ -36,7 +36,10 @@ dependencies = [
   "openai>=1.0.0",
   "numpy>=2.3.1",
   "sentence_transformers>=5.0.0",
-  
+  # Direct dep: local-LLM (Ollama/LM Studio) HTTP + dry-run providers import aiohttp.
+  # Previously satisfied transitively via litellm; declared explicitly now that it's gone.
+  "aiohttp>=3.8.0",
+
   # Search and APIs
   "ddgs>=3.0.0",
   
