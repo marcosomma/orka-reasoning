@@ -105,7 +105,12 @@ class InvariantValidatorAgent(BaseAgent):
         Async implementation required by BaseAgent.
         Delegates to synchronous process() method.
         """
-        input_data = ctx.get("input", "") or ""
+        # Execution artifacts are injected via the rendered prompt (the
+        # EXECUTION_DATA_JSON marker produced by get_execution_artifacts), which
+        # lives in `formatted_prompt` — NOT the raw `input`. Prefer the rendered
+        # prompt so process() can extract the data; without this the validator
+        # always reports "No execution_data provided, validation will be limited".
+        input_data = ctx.get("formatted_prompt") or ctx.get("input", "") or ""
         return self.process(input_data)
     
     def process(self, input_data: str) -> Dict[str, Any]:

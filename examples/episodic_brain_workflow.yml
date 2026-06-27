@@ -61,7 +61,9 @@ agents:
 
       Return ONLY valid JSON.
     params:
-      model: "{{ model | default('openai/gpt-oss-20b') }}"
+      model: openai/gpt-oss-20b
+      model_url: http://localhost:1234
+      provider: lm_studio
       temperature: 0.7
       timeout: 120
 
@@ -85,7 +87,9 @@ agents:
       - "quality_score": a number 0.0 to 1.0
       - "reason": one sentence justifying the verdict
     params:
-      model: "{{ model | default('openai/gpt-oss-20b') }}"
+      model: openai/gpt-oss-20b
+      model_url: http://localhost:1234
+      provider: lm_studio
       temperature: 0.1
       timeout: 60
 
@@ -147,7 +151,9 @@ agents:
       - "experience_applied": brief description of how past experience was used
       - "confidence": your confidence (0.0-1.0)
     params:
-      model: "{{ model | default('openai/gpt-oss-20b') }}"
+      model: openai/gpt-oss-20b
+      model_url: http://localhost:1234
+      provider: lm_studio
       temperature: 0.7
       timeout: 120
 
@@ -166,6 +172,8 @@ agents:
       Was past experience used? {{ previous_outputs.experienced_executor.used_past_experience | default('unknown') }}
       How? {{ previous_outputs.experienced_executor.experience_applied | default('N/A') }}
     params:
-      model: "{{ model | default('openai/gpt-oss-20b') }}"
+      model: openai/gpt-oss-20b
+      model_url: http://localhost:1234
+      provider: lm_studio
       temperature: 0.3
       timeout: 60

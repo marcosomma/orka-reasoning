@@ -185,6 +185,39 @@ Button.-error {
     grid-size: 2 3;
     grid-gutter: 1;
     grid-rows: 1fr 2fr 1fr;
+    padding: 0 1;
+}
+
+/* ── Dashboard (panel 1) layout polish ──────────────────────────────
+   Scoped to .dashboard-grid only, so other screens are untouched.
+   Fixes: panels now fill their grid cell (no fixed screen-% heights that
+   left big gaps), titles are a clean header line instead of a nested
+   bordered box, and content fills the space under each title. */
+.dashboard-grid > Container {
+    height: 100%;       /* fill the grid cell instead of 45%/50% of the screen */
+    min-height: 0;      /* cancel the min-height that forced the empty gaps */
+    padding: 1 2;       /* breathing room so text doesn't touch the border */
+}
+
+.dashboard-grid .container-compact {
+    border: none;       /* remove the inner double-box around each title */
+    background: transparent;
+    height: 1;
+    margin: 0 0 1 0;    /* a single blank line under the title */
+    padding: 0;
+    color: $accent;
+    text-style: bold;
+}
+
+/* each panel's body fills the room left under its title */
+.dashboard-grid #dashboard-stats,
+.dashboard-grid #dashboard-skills,
+.dashboard-grid #dashboard-memories,
+.dashboard-grid #dashboard-logs,
+.dashboard-grid #quick-health,
+.dashboard-grid #dashboard-env {
+    height: 1fr;
+    width: 100%;
 }
 
 .memory-grid {

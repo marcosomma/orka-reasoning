@@ -73,6 +73,21 @@ def default_timeout_seconds() -> float:
         return 300.0
 
 
+def default_agent_timeout_seconds() -> float:
+    """Resolve the per-agent execution timeout.
+
+    Honors ORKA_TIMEOUT_SECONDS so a single env var can raise every agent's timeout
+    (useful for slower local models); falls back to 120s to preserve prior behavior.
+    An explicit ``timeout`` in an agent's YAML config still overrides this.
+    """
+    try:
+        value = float(os.getenv("ORKA_TIMEOUT_SECONDS", "120"))
+        return value if value > 0 else 120.0
+    except (TypeError, ValueError):
+        logger.warning("Invalid ORKA_TIMEOUT_SECONDS; using default 120")
+        return 120.0
+
+
 class ConcurrencyManager:
     """
     Manages concurrency and timeouts for async operations.

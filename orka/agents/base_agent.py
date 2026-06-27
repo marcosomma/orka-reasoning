@@ -50,7 +50,7 @@ from typing import Any, TypeVar, Union
 
 from orka.contracts import Context, OrkaResponse, Registry
 from orka.response_builder import ResponseBuilder
-from orka.utils.concurrency import ConcurrencyManager
+from orka.utils.concurrency import ConcurrencyManager, default_agent_timeout_seconds
 
 logger = logging.getLogger(__name__)
 
@@ -168,7 +168,7 @@ class BaseAgent(abc.ABC):
         registry: Registry | None = None,
         prompt: str | None = None,
         queue: list[str] | None = None,
-        timeout: float | None = 120.0,
+        timeout: float | None = None,
         max_concurrency: int | None = None,
         **kwargs,
     ):
@@ -186,7 +186,9 @@ class BaseAgent(abc.ABC):
         """
         self.agent_id = agent_id
         self.registry = registry
-        self.timeout = timeout
+        # Explicit YAML `timeout` wins; otherwise honor ORKA_TIMEOUT_SECONDS
+        # (fallback 120s) so a single env var can raise every agent's timeout.
+        self.timeout = timeout if timeout is not None else default_agent_timeout_seconds()
         self.concurrency = ConcurrencyManager(max_concurrency=max_concurrency)
         self._initialized = False
 

@@ -40,12 +40,17 @@ class ResponseNormalizer:
             # they live inside `result`. Without this, the generic block below sees no
             # top-level "response" key, routes to from_node_response, and silently
             # defaults confidence to 0.0 and drops cost_usd (data loss).
+            # Only unwrap genuine LLM legacy responses — those carry a "response" key.
+            # Node/agent outputs (e.g. GraphScout returns {decision, target, confidence,
+            # result}) also have "confidence"/"_metrics" but NO "response"; treating them
+            # as LLM responses would extract a non-existent "response" field and null out
+            # their real result. Require "response" so those fall through to from_node_response.
             if (
                 isinstance(agent_result, dict)
                 and "component_type" in agent_result
                 and "status" in agent_result
                 and isinstance(agent_result.get("result"), dict)
-                and any(k in agent_result["result"] for k in ("response", "confidence", "_metrics"))
+                and "response" in agent_result["result"]
             ):
                 inner = dict(agent_result["result"])
                 # Preserve any rich fields the builder DID promote to the top level.

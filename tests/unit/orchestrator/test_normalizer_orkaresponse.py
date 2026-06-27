@@ -57,6 +57,26 @@ def test_demonstrates_old_path_would_have_dropped_them():
     assert old.get("cost_usd") is None
 
 
+def test_node_output_with_confidence_but_no_response_is_preserved():
+    """Regression: a node output (GraphScout-style) with confidence/result but NO
+    'response' key must NOT be treated as an LLM response and nulled out."""
+    gs_inner = {
+        "decision": "commit_path",
+        "target": ["search_agent", "analysis_agent", "response_builder"],
+        "confidence": 0.62,
+        "reasoning": "strong evidence",
+        "candidates_evaluated": 164,
+    }
+    wrapped = ResponseBuilder.create_success_response(
+        result=gs_inner, component_id="graphscout_discovery", component_type="agent",
+    )
+    rn = ResponseNormalizer(_FakeEngine())
+    payload = rn.normalize(agent=None, agent_id="graphscout_discovery", agent_result=wrapped)
+    # The committed path must survive (was becoming None before the fix).
+    assert payload["result"] == gs_inner, f"GraphScout result clobbered: {payload.get('result')}"
+    assert payload["result"]["target"] == ["search_agent", "analysis_agent", "response_builder"]
+
+
 def test_raw_legacy_dict_still_works():
     """The pre-existing raw-dict path is unchanged (no component_type -> skip new branch)."""
     rn = ResponseNormalizer(_FakeEngine())
