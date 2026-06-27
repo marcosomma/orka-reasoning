@@ -209,7 +209,10 @@ agents:
   - id: path_executor
     type: path_executor
     path_source: graphscout_discovery
-    input_source: query_extractor.response.response
+    # query_extractor (local_llm) output is {response: "<query>"}; the input is one
+    # level deep. (Was query_extractor.response.response — a spurious extra .response
+    # that navigated into a string and silently fell back to the wrong input.)
+    input_source: query_extractor.response
     on_agent_failure: continue
     depends_on: query_extractor
 

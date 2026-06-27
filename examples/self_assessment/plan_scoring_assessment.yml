@@ -1,0 +1,109 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Self-Assessment — Boolean / Plan Scoring (stabilized POC)
+# ═══════════════════════════════════════════════════════════════════════
+# Verifies the integrity of the whole system AND the boolean-scoring machinery
+# shared by the plan_validator and loop_validator:
+#   • a loop_validator emits boolean_evaluations which the BooleanScoreCalculator
+#     turns into a weighted score using a (now weight-validated) preset;
+#   • final_score is a real computed value in [0,1], not the fallback sentinel;
+#   • the loop terminates predictably and execution invariants hold.
+#
+# Run:  ORKA_TIMEOUT_SECONDS=600 orka run \
+#         examples/self_assessment/plan_scoring_assessment.yml "assess boolean scoring"
+# Requires: Redis (orka-start) + an OpenAI-compatible LLM at model_url.
+# ═══════════════════════════════════════════════════════════════════════
+
+orchestrator:
+  id: plan-scoring-self-assessment
+  strategy: sequential
+  memory_preset: "working"
+  agents:
+    - boolean_loop
+    - integrity_check
+    - assessment_report
+
+agents:
+  - id: boolean_loop
+    type: loop
+    max_loops: 2
+    score_threshold: 0.4
+    fallback_score: 0.25      # sentinel: if final_score is exactly this, scoring FAILED
+    timeout_score: 0.15
+    persist_across_runs: false
+    scoring:
+      preset: lenient
+      context: loop_convergence
+      custom_weights:
+        improvement.better_than_previous: 0.50
+        convergence.within_tolerance: 0.30
+        stability.consistent_direction: 0.20
+    internal_workflow:
+      orchestrator:
+        id: internal
+        strategy: sequential
+        agents: [analyzer, boolean_evaluator]
+      agents:
+        - id: analyzer
+          type: local_llm
+          model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
+          temperature: 0.4
+          timeout: 90
+          prompt: |
+            Analyze this topic in 3-4 structured sentences: {{ get_input() }}
+            {% if get_loop_number() > 1 %}Improve on the previous iteration.{% endif %}
+        - id: boolean_evaluator
+          type: loop_validator
+          llm_model: openai/gpt-oss-20b
+          model_url: http://localhost:1234
+          provider: lm_studio
+          temperature: 0.1
+          timeout: 90
+          scoring_preset: lenient
+          scoring_context: loop_convergence
+
+  - id: integrity_check
+    type: invariant_validator
+    depends_on: boolean_loop
+    prompt: |
+      EXECUTION_DATA_JSON:
+      {{ get_execution_artifacts(previous_outputs) | to_json_string }}
+    params:
+      max_depth: 50
+      strict_tool_errors: false
+
+  - id: assessment_report
+    type: local_llm
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
+    temperature: 0.1
+    timeout: 120
+    depends_on: integrity_check
+    prompt: |
+      You are auditing the boolean scoring subsystem (calculator + weighted presets).
+
+      LOOP RESULT:
+      final_score: {{ previous_outputs.boolean_loop.final_score | default('MISSING') }}
+      loops_completed: {{ previous_outputs.boolean_loop.loops_completed | default('MISSING') }}
+      threshold_met: {{ previous_outputs.boolean_loop.threshold_met | default('MISSING') }}
+
+      EXECUTION INTEGRITY:
+      {{ previous_outputs.integrity_check.response | default(previous_outputs.integrity_check) }}
+
+      Decide:
+      1. boolean_score_ok: true if final_score is a number in [0,1] AND not exactly the
+         fallback 0.25 / timeout 0.15 (i.e. it was computed from boolean evaluations).
+      2. loop_terminated_ok: true if loops_completed is between 1 and 2 inclusive.
+      3. integrity_ok: true if invariant validation reports no violations.
+
+      Return ONLY JSON:
+      {
+        "boolean_score_ok": true/false,
+        "loop_terminated_ok": true/false,
+        "integrity_ok": true/false,
+        "overall": "PASS" or "FAIL",
+        "evidence": "one sentence citing final_score and loop count",
+        "confidence": 0.0-1.0
+      }

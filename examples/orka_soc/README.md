@@ -1,10 +1,13 @@
-## Cognitive Society Workflows (Local, Optimized)
+## Cognitive Society Workflow (Local, Optimized)
 
-This folder contains three optimized “Cognitive Society” workflows designed for local LLMs via Ollama. They coordinate multiple reasoning personas, iteratively refine positions, and converge to an agreement with memory support.
+This folder contains an optimized "Cognitive Society" workflow for local LLMs. It
+coordinates multiple reasoning personas, iteratively refines positions, and converges
+to an agreement with memory support.
 
-- cognitive_society_with_memory_local_optimal_deepseek-8b.yml
-- cognitive_society_with_memory_local_optimal_deepseek-32b.yml
-- cognitive_society_with_memory_local_optimal-gpt-oss-20b.yml
+- `cognitive_society_with_memory_local_optimal-gpt-oss-20b.yml`
+
+> Note: earlier `deepseek-8b` / `deepseek-32b` variants were removed; this folder now
+> ships the single LM Studio + `openai/gpt-oss-20b` configuration.
 
 ### Goals
 - Multi-agent debate with distinct roles (progressive, conservative, realist, purist)
@@ -13,16 +16,9 @@ This folder contains three optimized “Cognitive Society” workflows designed 
 - RedisStack-based short-term memory for debate continuity
 
 ### Prerequisites
-- RedisStack running (orka-start is recommended)
-- Ollama running with pulled models referenced in the workflow (e.g., deepseek-r1:8b, deepseek-r1:32b, gpt-oss:20b)
-
-Example (PowerShell):
-
-```
-ollama pull deepseek-r1:8b
-ollama pull deepseek-r1:32b
-ollama pull gpt-oss:20b
-```
+- RedisStack running (`orka-start` is recommended)
+- An OpenAI-compatible local LLM endpoint serving `openai/gpt-oss-20b`
+  (the workflow uses `provider: lm_studio`, `model_url: http://localhost:1234`)
 
 ### Common Structure
 - Orchestrator: sequential strategy with a top-level loop node and final synthesis
@@ -33,25 +29,24 @@ ollama pull gpt-oss:20b
 - Loop continues until the agreement score meets the threshold
 - After the loop: meta_debate_reflection → final_synthesis_processor
 
+### Scoring
+- Primary: boolean `loop_convergence` scoring via the `loop_validator` + the
+  `agreement_moderator` high-priority agent.
+- Fallback: embedding-agreement across the perspective agents, enabled explicitly via
+  `score_extraction_config.agreement_fallback: true` (the previous agent-name
+  auto-detection has been removed).
+
 ### Memory
 - Namespace: `society_memory`
 - Short-term, vector-enabled storage for recent debate context
 - Writer logs loop rounds, agreement summaries, and scores
 
-### Key Differences Between Files
-- 8b vs 32b vs 20b: same orchestration, different local models and temperature defaults for quality vs. speed trade-offs
-- 8b is most cost-efficient, 32b produces richer language, 20b is a balanced GPT-OSS option
-
 ### How to Run
 
 ```
-orka run examples/orka_soc/cognitive_society_with_memory_local_optimal_deepseek-8b.yml "How should cities balance green growth and housing affordability?"
-
-# or
-orka run examples/orka_soc/cognitive_society_with_memory_local_optimal_deepseek-32b.yml "What AI safety measures should be prioritized for open-source models?"
-
-# or
-orka run examples/orka_soc/cognitive_society_with_memory_local_optimal-gpt-oss-20b.yml "What is the role of nuclear energy in a decarbonized grid?"
+ORKA_TIMEOUT_SECONDS=600 orka run \
+  examples/orka_soc/cognitive_society_with_memory_local_optimal-gpt-oss-20b.yml \
+  "What is the role of nuclear energy in a decarbonized grid?"
 ```
 
 ### Tuning Tips
@@ -61,8 +56,7 @@ orka run examples/orka_soc/cognitive_society_with_memory_local_optimal-gpt-oss-2
 - Raise/Lower `similarity_threshold` in `shared_memory_reader` to change recall breadth
 
 ### Troubleshooting
-- If no agreement is reached, lower `score_threshold` (e.g., from 0.90 to 0.75)
-- Verify Ollama endpoint (`model_url`) and models exist (`ollama list`)
+- If no agreement is reached, lower `score_threshold`
+- Verify the LLM endpoint (`model_url`) is serving the model
 - Ensure RedisStack index is healthy (`orka memory watch`) and vector search is enabled
-
-
+- gpt-oss-20b is large; if agents time out, raise `ORKA_TIMEOUT_SECONDS`

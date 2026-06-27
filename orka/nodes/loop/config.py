@@ -149,9 +149,15 @@ def build_loop_node_config(
     else:
         logger.debug(f"LoopNode {node_id}: No custom score_extraction_config, using defaults")
 
-    score_extraction_config: Dict[str, Any] = kwargs.get(
-        "score_extraction_config", copy.deepcopy(DEFAULT_SCORE_EXTRACTION_CONFIG)
-    )
+    # Shallow-merge YAML config over the defaults so additive keys (e.g.
+    # `agreement_fallback: true`) don't wipe the default `strategies`. A YAML that
+    # DOES provide `strategies` still replaces the default list (key-level override).
+    score_extraction_config = copy.deepcopy(DEFAULT_SCORE_EXTRACTION_CONFIG)
+    _yaml_score_cfg = kwargs.get("score_extraction_config")
+    if isinstance(_yaml_score_cfg, dict):
+        score_extraction_config.update(_yaml_score_cfg)
+    elif _yaml_score_cfg is not None:
+        score_extraction_config = _yaml_score_cfg
 
     # Debug: Log which configuration is actually being used
     if isinstance(score_extraction_config, dict) and "strategies" in score_extraction_config:

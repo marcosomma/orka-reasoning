@@ -1,0 +1,127 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Self-Assessment — Episodic Brain (stabilized POC)
+# ═══════════════════════════════════════════════════════════════════════
+# Verifies the integrity of the whole system AND the episodic-brain fixes:
+#   • semantic recall actually works — a lexically DIFFERENT but semantically
+#     SIMILAR query must surface the seeded episode (proves the embedder is wired
+#     and embeddings persisted-at-save are reused at recall);
+#   • the outcome signal is real (recorded success/quality round-trips);
+#   • execution invariants hold (fork/join, routing, cycles, schema, depth).
+#
+# Run:  ORKA_TIMEOUT_SECONDS=600 orka run \
+#         examples/self_assessment/episodic_brain_assessment.yml "verify episodic memory"
+# Requires: Redis (orka-start) + an OpenAI-compatible LLM at model_url.
+# ═══════════════════════════════════════════════════════════════════════
+
+orchestrator:
+  id: episodic-brain-self-assessment
+  strategy: sequential
+  memory_preset: "episodic"
+  agents:
+    - seed_recorder
+    - distractor_recorder
+    - semantic_recall_probe
+    - integrity_check
+    - assessment_report
+
+agents:
+  # ── Seed a domain episode with a specific, lexically distinctive lesson ──
+  - id: seed_recorder
+    type: brain
+    operation: record_episode
+    prompt: |
+      {
+        "domain": "data_engineering",
+        "task": "etl pipeline ordering",
+        "outcome_summary": "Validating records before any deduplication step caught corrupt rows early.",
+        "what_worked": ["validate before dedup"],
+        "what_failed": [],
+        "failure_analysis": "",
+        "lessons": ["Always validate records before removing duplicates to avoid propagating dirty data."],
+        "success": true,
+        "quality": 0.9
+      }
+    params:
+      timeout: 30
+
+  # ── An unrelated episode, so recall has to discriminate, not just return one ──
+  - id: distractor_recorder
+    type: brain
+    operation: record_episode
+    prompt: |
+      {
+        "domain": "frontend",
+        "task": "css layout",
+        "outcome_summary": "Switching the grid to flexbox fixed the mobile navbar overflow.",
+        "what_worked": ["flexbox navbar"],
+        "what_failed": [],
+        "lessons": ["Use flexbox for responsive navbars."],
+        "success": true,
+        "quality": 0.8
+      }
+    params:
+      timeout: 30
+
+  # ── Recall with a query that shares MEANING but NOT WORDS with the seed.
+  #    Pre-fix (no embedder) this scored ~0 semantically and would not surface. ──
+  - id: semantic_recall_probe
+    type: brain
+    operation: recall_episodes
+    prompt: |
+      {
+        "task_input": "How do I stop corrupt entries from spreading when I remove duplicate rows?",
+        "domain": "data_engineering",
+        "top_k": 3,
+        "min_score": 0.2,
+        "include_failures": true
+      }
+    params:
+      timeout: 30
+
+  # ── Whole-system integrity: deterministic invariant validation over the run ──
+  - id: integrity_check
+    type: invariant_validator
+    depends_on: semantic_recall_probe
+    prompt: |
+      EXECUTION_DATA_JSON:
+      {{ get_execution_artifacts(previous_outputs) | to_json_string }}
+    params:
+      max_depth: 50
+      strict_tool_errors: false
+
+  # ── Verdict: did semantic recall surface the seed, and do invariants hold? ──
+  - id: assessment_report
+    type: local_llm
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
+    temperature: 0.1
+    timeout: 120
+    depends_on: integrity_check
+    prompt: |
+      You are auditing the episodic-memory subsystem of an AI orchestration framework.
+
+      RECALL RESULT (for the query about preventing corrupt entries when removing duplicates):
+      Injected experience text:
+      {{ previous_outputs.semantic_recall_probe.response | default('(none)') }}
+      Episodes returned: {{ previous_outputs.semantic_recall_probe.episode_count | default(0) }}
+
+      EXECUTION INTEGRITY (deterministic invariant validation):
+      {{ previous_outputs.integrity_check.response | default(previous_outputs.integrity_check) }}
+
+      Decide:
+      1. semantic_recall_ok: true ONLY IF the injected experience clearly references the
+         "validate before deduplication" lesson — i.e. the lexically-different query
+         surfaced the semantically-matching seed episode (NOT the flexbox/navbar one).
+      2. outcome_signal_ok: true if at least one episode was returned with recorded outcome detail.
+      3. integrity_ok: true if the invariant validation reports no violations.
+
+      Return ONLY JSON:
+      {
+        "semantic_recall_ok": true/false,
+        "outcome_signal_ok": true/false,
+        "integrity_ok": true/false,
+        "overall": "PASS" or "FAIL",
+        "evidence": "one sentence citing what the recall surfaced",
+        "confidence": 0.0-1.0
+      }

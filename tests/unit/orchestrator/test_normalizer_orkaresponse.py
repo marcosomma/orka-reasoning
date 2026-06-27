@@ -38,14 +38,17 @@ def test_wrapped_orkaresponse_preserves_confidence_and_cost():
     rn = ResponseNormalizer(_FakeEngine())
     payload = rn.normalize(agent=None, agent_id="llm_agent", agent_result=_wrapped_llm_orkaresponse())
 
-    # The fields that were previously lost:
+    # The fields that were previously lost (promoted to top level for logging):
     assert payload["confidence"] == 0.87, f"confidence lost/defaulted: {payload.get('confidence')}"
     assert payload["cost_usd"] == 0.0123, f"cost dropped: {payload.get('cost_usd')}"
-    # And the actual answer + reasoning survive:
     assert payload["response"] == "the answer"
-    assert payload["result"] == "the answer"
     assert payload["internal_reasoning"] == "because"
     assert payload["status"] == "success"
+    # result must remain the full structured dict so previous_outputs navigation works
+    # (previous_outputs[id] = payload["result"]; templates read .response/.confidence/...).
+    assert isinstance(payload["result"], dict), "result collapsed to a bare string"
+    assert payload["result"]["response"] == "the answer"
+    assert payload["result"]["confidence"] == "0.87"
 
 
 def test_demonstrates_old_path_would_have_dropped_them():
@@ -75,6 +78,27 @@ def test_node_output_with_confidence_but_no_response_is_preserved():
     # The committed path must survive (was becoming None before the fix).
     assert payload["result"] == gs_inner, f"GraphScout result clobbered: {payload.get('result')}"
     assert payload["result"]["target"] == ["search_agent", "analysis_agent", "response_builder"]
+
+
+def test_unwrap_preserves_agent_specific_extra_fields():
+    """Brain recall returns {response, confidence, episode_count, episodes}; the unwrap
+    must keep the custom fields so downstream templates can read them."""
+    inner = {
+        "response": "RELEVANT PAST EXPERIENCE: validate before dedup",
+        "confidence": "0.83",
+        "episode_count": 1,
+        "episodes": [{"episode_id": "x", "combined_score": 0.83}],
+    }
+    wrapped = ResponseBuilder.create_success_response(
+        result=inner, component_id="semantic_recall_probe", component_type="agent",
+    )
+    rn = ResponseNormalizer(_FakeEngine())
+    payload = rn.normalize(agent=None, agent_id="semantic_recall_probe", agent_result=wrapped)
+    assert payload["response"].startswith("RELEVANT PAST EXPERIENCE")
+    assert payload["confidence"] == 0.83
+    # The custom fields must survive (were dropped before the fix):
+    assert payload.get("episode_count") == 1, "episode_count dropped by normalizer"
+    assert payload.get("episodes") and payload["episodes"][0]["episode_id"] == "x"
 
 
 def test_raw_legacy_dict_still_works():

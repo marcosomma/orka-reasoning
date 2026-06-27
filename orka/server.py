@@ -248,6 +248,7 @@ import time
 import sys
 import platform
 from urllib.parse import urlparse, urlunparse
+import json
 import logging
 import os
 import pprint
@@ -293,12 +294,23 @@ except Exception:
     # Aim to avoid server startup failures due to logging configuration issues; verify logging configuration in deployment.
     pass
 
-# CORS (optional, but useful if UI and API are on different ports during dev)
+# CORS: restrict to local UI origins by default; override with ORKA_CORS_ORIGINS
+# (comma-separated, or "*" to allow any). Per the CORS spec, "*" cannot be combined
+# with credentials, so credentials are disabled when origins is "*".
+_cors_env = os.environ.get(
+    "ORKA_CORS_ORIGINS", "http://localhost:8080,http://127.0.0.1:8080"
+).strip()
+if _cors_env == "*":
+    _cors_origins = ["*"]
+    _cors_credentials = False
+else:
+    _cors_origins = [o.strip() for o in _cors_env.split(",") if o.strip()]
+    _cors_credentials = True
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=_cors_origins,
+    allow_credentials=_cors_credentials,
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -546,16 +558,41 @@ async def health_basic() -> JSONResponse:
 @app.post("/api/run")
 async def run_execution(request: Request):
     tmp_path = None
+    data = {}
     try:
-        data = await request.json()
-        logger.info("\n========== [DEBUG] Incoming POST /api/run ==========")
-        print(data)
+        # Optional API-key gate — enabled only when ORKA_API_KEY is set. /api/run runs
+        # caller-supplied YAML through the full engine, so this is the access control for
+        # any non-localhost deployment.
+        required_key = os.environ.get("ORKA_API_KEY")
+        if required_key:
+            provided = request.headers.get("x-api-key") or request.headers.get(
+                "authorization", ""
+            ).removeprefix("Bearer ").strip()
+            if provided != required_key:
+                return JSONResponse(status_code=401, content={"error": "unauthorized"})
+
+        # Bounded body read (default 1 MiB; override with ORKA_MAX_REQUEST_BYTES).
+        max_bytes = int(os.environ.get("ORKA_MAX_REQUEST_BYTES", str(1024 * 1024)))
+        raw = await request.body()
+        if len(raw) > max_bytes:
+            return JSONResponse(
+                status_code=413, content={"error": f"request body exceeds {max_bytes} bytes"}
+            )
+        data = json.loads(raw or b"{}")
 
         input_text = data.get("input")
         yaml_config = data.get("yaml_config")
+        if not yaml_config or not isinstance(yaml_config, str):
+            return JSONResponse(
+                status_code=400, content={"error": "yaml_config (string) is required"}
+            )
 
-        logger.info("\n========== [DEBUG] YAML Config String ==========")
-        logger.info(yaml_config)
+        # Log sizes only — never the raw config or input (may contain secrets).
+        logger.info(
+            "POST /api/run: input=%d chars, yaml_config=%d chars",
+            len(str(input_text or "")),
+            len(yaml_config),
+        )
 
         # Create a temporary file path with UTF-8 encoding
         tmp_fd, tmp_path = tempfile.mkstemp(suffix=".yml")
@@ -565,15 +602,8 @@ async def run_execution(request: Request):
         with open(tmp_path, "w", encoding="utf-8") as tmp:
             tmp.write(yaml_config)
 
-        logger.info("\n========== [DEBUG] Instantiating Orchestrator ==========")
         orchestrator = Orchestrator(tmp_path)
-        logger.info(f"Orchestrator: {orchestrator}")
-
-        logger.info("\n========== [DEBUG] Running Orchestrator ==========")
         result = await orchestrator.run(input_text, return_logs=True)
-
-        logger.info("\n========== [DEBUG] Orchestrator Result ==========")
-        print(result)
 
         # Sanitize the result data for JSON serialization
         sanitized_result = sanitize_for_json(result)
@@ -611,7 +641,10 @@ def main():
     # Import uvicorn only when running the server to avoid test-time dependency on 'click'
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    # Bind to localhost by default; set ORKA_SERVER_HOST=0.0.0.0 to expose on the network
+    # (do that only behind ORKA_API_KEY / a trusted network — /api/run executes caller YAML).
+    host = os.environ.get("ORKA_SERVER_HOST", "127.0.0.1")
+    uvicorn.run(app, host=host, port=port)
 
 if __name__ == "__main__":
     main()

@@ -53,31 +53,39 @@ class ResponseNormalizer:
                 and "response" in agent_result["result"]
             ):
                 inner = dict(agent_result["result"])
-                # Preserve any rich fields the builder DID promote to the top level.
                 for k in (
                     "cost_usd", "token_usage", "confidence", "formatted_prompt",
                     "internal_reasoning", "trace_id", "execution_time_ms",
                 ):
                     if agent_result.get(k) is not None and inner.get(k) is None:
                         inner[k] = agent_result[k]
-                converted = ResponseBuilder.from_llm_agent_response(inner, agent_id)
+                # CRITICAL: keep `result` as the full inner dict. build_previous_outputs
+                # exposes previous_outputs[agent_id] = payload["result"], so templates
+                # navigate it as previous_outputs.x.<field> (e.g. .response, .domain,
+                # .episode_count). Collapsing result to inner["response"] would make it a
+                # bare string and break that navigation. We additionally PROMOTE the
+                # rich fields (confidence/cost/...) to the top level for logging/metrics.
                 payload_out.update(
                     {
-                        "result": converted.get("result"),
-                        "status": agent_result.get("status") or converted.get("status"),
+                        "result": inner,
+                        "status": agent_result.get("status") or "success",
                         "error": agent_result.get("error"),
-                        "response": converted.get("result"),
-                        "confidence": converted.get("confidence", inner.get("confidence", 0.0)),
-                        "internal_reasoning": converted.get("internal_reasoning", ""),
-                        "formatted_prompt": converted.get("formatted_prompt", ""),
-                        "execution_time_ms": converted.get("execution_time_ms")
-                        or agent_result.get("execution_time_ms"),
-                        "token_usage": converted.get("token_usage"),
-                        "cost_usd": converted.get("cost_usd"),
-                        "_metrics": converted.get("metrics", {}) or inner.get("_metrics", {}),
-                        "trace_id": converted.get("trace_id") or agent_result.get("trace_id"),
+                        "response": inner.get("response"),
+                        "confidence": inner.get("confidence", 0.0),
+                        "internal_reasoning": inner.get("internal_reasoning", ""),
+                        "formatted_prompt": inner.get("formatted_prompt", ""),
+                        "execution_time_ms": agent_result.get("execution_time_ms"),
+                        "token_usage": inner.get("token_usage"),
+                        "cost_usd": inner.get("cost_usd"),
+                        "_metrics": inner.get("_metrics", {}),
+                        "trace_id": inner.get("trace_id") or agent_result.get("trace_id"),
                     }
                 )
+                # Also surface agent-specific extras at the top level for any consumer
+                # that reads the normalized payload directly (not via previous_outputs).
+                for k, v in inner.items():
+                    if k not in payload_out:
+                        payload_out[k] = v
                 return normalize_payload(payload_out)
 
             # Dict-like results (LLM agents, nodes, memory agents)
