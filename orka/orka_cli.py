@@ -30,7 +30,9 @@ from orka.streaming.runtime import RefreshConfig, StreamingOrchestrator
 from orka.streaming.types import PromptBudgets
 from orka.streaming.state import Invariants
 from orka.loader import YAMLLoader
+from orka.cli.memory.commands import memory_cleanup, memory_stats
 from orka.cli.memory.watch import memory_watch
+from orka.cli.system import system_status
 from orka.cli.utils import setup_logging
 
 logger = logging.getLogger(__name__)
@@ -118,18 +120,31 @@ Note: Run 'orka-start' before using workflows that require memory operations.
     # Memory stats command
     stats_parser = memory_subparsers.add_parser("stats", help="Show memory statistics")
     stats_parser.add_argument("--json", action="store_true", help="Output in JSON format")
-    stats_parser.set_defaults(func=lambda args: 0)
+    stats_parser.add_argument("--backend", help="Memory backend (redisstack|redis)", default=None)
+    stats_parser.set_defaults(func=memory_stats)
 
     # Memory cleanup command
     cleanup_parser = memory_subparsers.add_parser("cleanup", help="Clean up expired memories")
     cleanup_parser.add_argument("--dry-run", action="store_true", help="Show what would be deleted")
-    cleanup_parser.set_defaults(func=lambda args: 0)
+    cleanup_parser.add_argument("--json", action="store_true", help="Output in JSON format")
+    cleanup_parser.add_argument("--backend", help="Memory backend (redisstack|redis)", default=None)
+    cleanup_parser.set_defaults(func=memory_cleanup)
 
     # Memory watch command
     watch_parser = memory_subparsers.add_parser("watch", help="Watch memory events in real-time")
     watch_parser.add_argument("--json", action="store_true", help="Output in JSON format")
     watch_parser.add_argument("--run-id", help="Filter by run ID")
     watch_parser.set_defaults(func=memory_watch)
+
+    # System command
+    system_parser = subparsers.add_parser("system", help="System diagnostics")
+    system_subparsers = system_parser.add_subparsers(dest="system_command")
+    status_parser = system_subparsers.add_parser(
+        "status", help="Check Redis, RediSearch, and local LLM reachability"
+    )
+    status_parser.add_argument("--json", action="store_true", help="Output in JSON format")
+    status_parser.add_argument("--backend", help="Memory backend (redisstack|redis)", default=None)
+    status_parser.set_defaults(func=system_status)
 
     # Streaming command (feature-gated)
     streaming_parser = subparsers.add_parser(
@@ -220,6 +235,19 @@ def main(argv: list[str] | None = None) -> int:
                 _attr_memory: int = args.func(args)
                 logger.debug(f"[OrKa][DEBUG] Memory command returned: {_attr_memory}")
                 return _attr_memory
+
+        # Handle system command
+        if args.command == "system":
+            if not getattr(args, "system_command", None):
+                if parser._subparsers is not None:
+                    for action in parser._subparsers._actions:
+                        if isinstance(action, argparse._SubParsersAction) and "system" in action.choices:
+                            action.choices["system"].print_help()
+                            return 1
+                return 1
+            if hasattr(args, "func"):
+                return int(args.func(args))
+            return 1
 
         # Handle run command
         if args.command == "run":
@@ -318,8 +346,21 @@ def main(argv: list[str] | None = None) -> int:
             exec_base_url = exec_agent.get("base_url") or exec_agent.get("model_url")
             exec_api_key = exec_agent.get("api_key")
 
-            # Build components
-            bus = EventBus(redis_client=None)
+            # Build components. When --redis URL is provided, back the EventBus with
+            # Redis Streams so the event log survives across processes; otherwise use
+            # the in-memory bus. (Previously the --redis flag was parsed but ignored.)
+            redis_client = None
+            redis_url = (getattr(args, "redis", "") or "").strip()
+            if redis_url:
+                try:
+                    import redis.asyncio as aioredis
+
+                    redis_client = aioredis.from_url(redis_url)
+                    print(f"[OrKa] Streaming EventBus backed by Redis at {redis_url}")
+                except Exception as exc:
+                    print(f"[OrKa] Could not connect to Redis ({exc}); using in-memory bus.")
+                    redis_client = None
+            bus = EventBus(redis_client=redis_client)
             composer = PromptComposer(budgets=budgets)
             # Discover satellite roles
             satellite_roles: list[str] = []

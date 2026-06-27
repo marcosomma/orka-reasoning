@@ -59,7 +59,11 @@ class EpisodeStore:
     """
 
     def __init__(self, memory: Any, embedder: Any | None = None) -> None:
-        self._memory = memory
+        # EpisodeStore uses raw Redis primitives (set/get/zadd/zrange/sadd/hset/...).
+        # The RedisStackMemoryLogger does not proxy those — it exposes the raw client
+        # as `.redis`. Test fakes implement the primitives directly, so fall back to
+        # the object itself when there is no `.redis` attribute.
+        self._memory = getattr(memory, "redis", None) or memory
         self._embedder = embedder
         self._last_cleanup: datetime = datetime.now(UTC)
 

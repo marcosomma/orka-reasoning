@@ -33,6 +33,48 @@ class ResponseNormalizer:
         payload_out: Dict[str, Any] = {"agent_id": agent_id}
 
         try:
+            # Unwrap a BaseAgent OrkaResponse before generic routing.
+            # BaseAgent.run wraps _run_impl output as
+            #   {result: <legacy dict>, status, component_id, component_type, ...}
+            # and does NOT promote confidence/cost/internal_reasoning to the top level —
+            # they live inside `result`. Without this, the generic block below sees no
+            # top-level "response" key, routes to from_node_response, and silently
+            # defaults confidence to 0.0 and drops cost_usd (data loss).
+            if (
+                isinstance(agent_result, dict)
+                and "component_type" in agent_result
+                and "status" in agent_result
+                and isinstance(agent_result.get("result"), dict)
+                and any(k in agent_result["result"] for k in ("response", "confidence", "_metrics"))
+            ):
+                inner = dict(agent_result["result"])
+                # Preserve any rich fields the builder DID promote to the top level.
+                for k in (
+                    "cost_usd", "token_usage", "confidence", "formatted_prompt",
+                    "internal_reasoning", "trace_id", "execution_time_ms",
+                ):
+                    if agent_result.get(k) is not None and inner.get(k) is None:
+                        inner[k] = agent_result[k]
+                converted = ResponseBuilder.from_llm_agent_response(inner, agent_id)
+                payload_out.update(
+                    {
+                        "result": converted.get("result"),
+                        "status": agent_result.get("status") or converted.get("status"),
+                        "error": agent_result.get("error"),
+                        "response": converted.get("result"),
+                        "confidence": converted.get("confidence", inner.get("confidence", 0.0)),
+                        "internal_reasoning": converted.get("internal_reasoning", ""),
+                        "formatted_prompt": converted.get("formatted_prompt", ""),
+                        "execution_time_ms": converted.get("execution_time_ms")
+                        or agent_result.get("execution_time_ms"),
+                        "token_usage": converted.get("token_usage"),
+                        "cost_usd": converted.get("cost_usd"),
+                        "_metrics": converted.get("metrics", {}) or inner.get("_metrics", {}),
+                        "trace_id": converted.get("trace_id") or agent_result.get("trace_id"),
+                    }
+                )
+                return normalize_payload(payload_out)
+
             # Dict-like results (LLM agents, nodes, memory agents)
             if isinstance(agent_result, dict) and (
                 "result" in agent_result or "memories" in agent_result or "response" in agent_result

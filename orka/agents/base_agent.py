@@ -169,7 +169,7 @@ class BaseAgent(abc.ABC):
         prompt: str | None = None,
         queue: list[str] | None = None,
         timeout: float | None = 120.0,
-        max_concurrency: int = 10,
+        max_concurrency: int | None = None,
         **kwargs,
     ):
         """

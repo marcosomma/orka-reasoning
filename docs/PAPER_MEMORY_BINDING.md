@@ -10,7 +10,7 @@ DOI (v1 benchmark): https://doi.org/10.5281/zenodo.19227514
 
 ## Abstract
 
-The current discourse around agent memory assumes that recall is the primary bottleneck: if the agent can retrieve the right memory, it will use it well. This paper argues that the real bottleneck is binding, the architectural linkage between memory types. I present two iterative benchmarks evaluating a procedural skill memory system within the OrKa agent orchestration framework. Benchmark v1 (30 tasks, 2 tracks, OrKa 0.9.15) produced an ambiguous positive result: 60.7% pairwise win rate but only +0.10 rubric delta on a 10-point scale. Community feedback identified five confounds. Benchmark v2 (250 tasks, 5 tracks, 500 runs, OrKa 0.9.16) addressed these with improved skill abstraction, a stricter recall threshold, and a judge model separate from the executor, and produced a more precise negative result: rubric deltas of -0.03 to +0.06 depending on the evaluation pass, with zero out of 250 tasks self-reporting use of the recalled skill. Two evaluation passes of the same judge model (run on different dates with identical configuration) produced divergent per-track scores, which is itself evidence of evaluation instability in LLM-as-judge methods. Both passes agreed on the overall finding: procedural memory alone produces marginal gains because the base model already possesses the procedural patterns being recalled. The system contains a fully built but entirely disconnected episodic memory subsystem. This architectural gap mirrors the hippocampal binding problem in cognitive neuroscience: separate memory stores that never share an index produce memories that cannot compound. The paper proposes a binding architecture linking procedural skills to their application episodes and describes the recursive loop that would enable genuine knowledge compounding. The principal limitations are single-researcher execution, a single model family, local-only inference, and persistent evaluation bias in pairwise comparison.
+The current discourse around agent memory assumes that recall is the primary bottleneck: if the agent can retrieve the right memory, it will use it well. This paper argues that the real bottleneck is binding, the architectural linkage between memory types. I present two iterative benchmarks evaluating a procedural skill memory system within the OrKa agent orchestration framework. Benchmark v1 (30 tasks, 2 tracks, OrKa 0.9.15) produced an ambiguous positive result: 60.7% pairwise win rate but only +0.10 rubric delta on a 10-point scale. Community feedback identified five confounds. Benchmark v2 (250 tasks, 5 tracks, 500 runs, OrKa 0.9.16) addressed these with improved skill abstraction, a stricter recall threshold, and a judge model separate from the executor, and produced a more precise negative result: rubric deltas of -0.03 to +0.06 depending on the evaluation pass (computed over the 212/223 judge outputs that produced a parseable score), with no measurable benefit from the recalled skills. (A per-task `used_recalled_skill` self-report was requested but, owing to executor schema-noncompliance, was not reliably persisted in the committed outputs; see §5.5.) Two evaluation passes of the same judge model (run on different dates with identical configuration) produced divergent per-track scores, which is itself evidence of evaluation instability in LLM-as-judge methods. Both passes agreed on the overall finding: procedural memory alone produces marginal gains because the base model already possesses the procedural patterns being recalled. The system contains a fully built but entirely disconnected episodic memory subsystem. This architectural gap mirrors the hippocampal binding problem in cognitive neuroscience: separate memory stores that never share an index produce memories that cannot compound. The paper proposes a binding architecture linking procedural skills to their application episodes and describes the recursive loop that would enable genuine knowledge compounding. The principal limitations are single-researcher execution, a single model family, local-only inference, and persistent evaluation bias in pairwise comparison.
 
 ---
 
@@ -229,9 +229,19 @@ Notably, the pipeline-length asymmetry was not changed. The brain condition stil
 
 A critical transparency point: v2 results were evaluated twice by the same judge model (qwen/qwen3-coder-30b), run on different dates with identical prompts, workflows, and temperature. These are not two independent judges; they are two passes of the same model, and the fact that they produced meaningfully different scores is itself a finding about LLM-as-judge reliability. Pass 1 produced scores in the 4.9-9.1 range across tracks, suggesting reasonable discrimination. Pass 2, run three days later, produced scores of 9.3+/10 with multiple perfect 10.0 dimension averages, indicating score compression and leniency bias. For some tracks, the two passes produced opposite conclusions. Neither pass is preferred; both are presented.
 
+**Data availability caveat.** Only the Pass 2 (`local`) raw judge outputs are committed to the repository (`examples/benchmark_v2/results/judge_rubric_local/` and `judge_pairwise_local/`). The Pass 1 raw outputs are not included, so the Pass 1 figures in the tables below cannot be independently reconstructed from the published data; they are reported here as recorded at the time of that run.
+
 ### 5.2 Aggregate Results
 
-**Table 3: v2 Overall Rubric Scores (N=250 per condition)**
+**Table 3: v2 Overall Rubric Scores**
+
+250 tasks were executed per condition. Rubric averages are computed only over judge
+outputs that produced a parseable `overall_score`: for the committed Pass 2 (`local`)
+data this is **212/250 (brain)** and **223/250 (brainless)** — 38 and 27 judge outputs
+respectively returned prose the parser could not score and are excluded from the means
+(not counted as zeros). The aggregator now reports these as `n_scored` / `n_unparseable`
+rather than the previously reported `n_scored: 250`, which conflated "ran successfully"
+with "produced a scorable verdict."
 
 | Metric | Pass 1 | Pass 2 |
 |--------|-------:|-------:|
@@ -304,9 +314,28 @@ The rubric does not show this pattern because it scores each dimension independe
 
 ### 5.5 Skill Usage Analysis
 
-The v2 results contain a field, `used_recalled_skill`, in each brain execution output. The value was `false` for all 250 brain tasks. Zero out of 250 tasks self-reported using the recalled skill. The model read the recalled skill, evaluated it, and decided every single time that it was not helpful.
+The brain workflow requested a `used_recalled_skill` self-report field from the executor.
+During the v2 runs this was observed to be `false` across tasks, supporting the
+interpretation that the executor did not consider the recalled skill helpful.
 
-This finding is recorded in the OrKa 0.9.16 changelog: "the 61.6% pairwise win rate is driven by pipeline structure, not skill content."
+**Reconstructability caveat (added on review).** This self-report figure cannot be
+independently reconstructed from the committed result files. Two harness defects are
+responsible: (1) the executor frequently returned prose rather than the requested JSON
+schema, so `used_recalled_skill` was not captured as a structured boolean in the saved
+`task_result` output; and (2) the saved schema requested `brain_assisted`, not
+`used_recalled_skill`, so the field was not persisted at all in the primary output.
+A naive token search over the committed brain files therefore finds the string only
+inside the echoed prompt instructions ("used_recalled_skill: true or false"), not as a
+model answer, and the brainless workflow hard-codes the field to `false`. The harness has
+since been corrected to persist `used_recalled_skill` as a first-class field in
+`task_result` (see `examples/benchmark_v2/brain_track_*.yml`), but the v2 data reported
+here predates that fix. The headline negative conclusion does **not** rest on this
+self-report alone: it is independently supported by the marginal rubric deltas (Table 3)
+and the length-bias decomposition of the pairwise preference (§5.4). The specific "0 of
+250" framing is therefore downgraded from a measured result to an observation that is not
+verifiable in the published artifacts.
+
+This conclusion is recorded in the OrKa 0.9.16 changelog: "the 61.6% pairwise win rate is driven by pipeline structure, not skill content."
 
 The skill abstraction changes, meant to produce more transferable patterns, had an unintended effect. v1 skills were too specific (literal LLM paraphrases). v2 skills were too abstract (empty shells like "implement [target]", "validate [component]"). The embedding model saw no meaningful relationship between these two-word patterns and actual tasks. The execution model correctly recognized that "implement [target]" tells it nothing it does not already know.
 
@@ -449,7 +478,7 @@ The community commenters on the v1 article reached a compatible conclusion indep
 
 **Pipeline-length confound.** Despite five methodology improvements between v1 and v2, the pipeline-length asymmetry (6 agents versus 3) persists. Brain responses averaged 7,586 characters versus 6,868 for brainless (+10.4%). The correlation between per-track length delta and pairwise win rate is strong (Table 6): Track E, where brain outputs are 27.1% longer, shows 80% pairwise preference; Track C, where brain outputs are 3.0% shorter, shows 48%. A conservative estimate attributes roughly half the pairwise advantage above 50% to length bias, reducing the corrected preference to approximately 55%.
 
-**The 0/250 usage claim.** The `used_recalled_skill: false` finding across all 250 tasks is based on model self-report. The model may have been influenced by the recalled skill without explicitly acknowledging it. However, the rubric deltas are consistent with the self-report: if skills were being used implicitly, the effect is too small to measure.
+**The skill-usage self-report.** The `used_recalled_skill` self-report is doubly weak. First, it is a model self-report, and the model may have been influenced by the recalled skill without acknowledging it. Second — and discovered on review — it was not reliably persisted in the committed outputs (the executor returned prose instead of the requested schema, and the saved `task_result` did not include the field), so the "0 of 250" figure cannot be reconstructed from the published artifacts (§5.5). The negative conclusion is therefore carried by the rubric deltas and the length-bias decomposition, not by the self-report: if skills were being used implicitly, the rubric effect is too small to measure.
 
 ### 7.4 What This Paper Does Not Claim
 
@@ -465,7 +494,7 @@ What this paper does claim is that the real bottleneck in agent memory systems i
 
 ## 8. Conclusion
 
-This paper presents two iterative benchmarks evaluating a procedural skill memory system within the OrKa agent orchestration framework. Benchmark v1 (30 tasks, OrKa 0.9.15) produced an ambiguous positive result: 60.7% pairwise preference, +0.10 rubric delta, but five identified confounds that made the cause of the positive signal unclear. Community feedback sharpened the diagnosis. Benchmark v2 (250 tasks, 5 tracks, OrKa 0.9.16) addressed the criticism with improved skill abstraction, a stricter recall threshold, a judge model separate from the executor, and substantially greater diversity, and produced a more precise negative result: marginal rubric deltas across two evaluation passes of the same judge (which themselves diverged, revealing evaluation instability), zero tasks self-reporting use of recalled skills, and the conclusion that the ~60% pairwise preference is pipeline-structural, not skill-content-driven.
+This paper presents two iterative benchmarks evaluating a procedural skill memory system within the OrKa agent orchestration framework. Benchmark v1 (30 tasks, OrKa 0.9.15) produced an ambiguous positive result: 60.7% pairwise preference, +0.10 rubric delta, but five identified confounds that made the cause of the positive signal unclear. Community feedback sharpened the diagnosis. Benchmark v2 (250 tasks, 5 tracks, OrKa 0.9.16) addressed the criticism with improved skill abstraction, a stricter recall threshold, a judge model separate from the executor, and substantially greater diversity, and produced a more precise negative result: marginal rubric deltas across two evaluation passes of the same judge (which themselves diverged, revealing evaluation instability), no measurable benefit from recalled skills, and the conclusion that the ~60% pairwise preference is pipeline-structural, not skill-content-driven.
 
 The finding is this: the real bottleneck in agent memory is not recall quality but binding architecture. The OrKa codebase contains a fully operational procedural memory system and a fully built episodic memory system, and they share no information. A skill recalled without its application episodes provides no information the model cannot derive from its own weights. Only when procedural memory is bound to episodic evidence, when a recalled skill carries the situated history of its prior applications, can the system provide genuinely novel information to the model.
 

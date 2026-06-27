@@ -26,8 +26,9 @@ orchestrator:
   id: brain-episodic-memory
   strategy: sequential
   agents:
-    # Phase 1: Execute a task and record the episode
+    # Phase 1: Execute a task, score it independently, and record the episode
     - task_executor
+    - quality_scorer
     - episode_recorder
 
     # Phase 2: Recall episodes for a new task and apply experience
@@ -64,11 +65,47 @@ agents:
       temperature: 0.7
       timeout: 120
 
+  # An INDEPENDENT scorer judges the executor's output. Its verdict — not the
+  # executor's self-report — decides whether the episode is recorded as a
+  # success or a failure, so the Brain can actually learn from mistakes.
+  - id: quality_scorer
+    type: local_llm
+    prompt: |
+      You are a strict quality judge. Evaluate the SOLUTION below against the TASK.
+      Mark success=false if the solution is wrong, unsafe, evasive, empty, or fails
+      to address the task; otherwise success=true.
+
+      TASK: {{ input }}
+
+      SOLUTION:
+      {{ previous_outputs.task_executor.response | default(previous_outputs.task_executor) }}
+
+      Return ONLY valid JSON with these EXACT fields:
+      - "success": true or false
+      - "quality_score": a number 0.0 to 1.0
+      - "reason": one sentence justifying the verdict
+    params:
+      model: "{{ model | default('openai/gpt-oss-20b') }}"
+      temperature: 0.1
+      timeout: 60
+
   - id: episode_recorder
     type: brain
     operation: record_episode
+    # Merge the executor's narrative with the INDEPENDENT scorer's success/quality
+    # verdict. record_episode reads `success`/`quality` from this JSON payload.
     prompt: |
-      {{ previous_outputs.task_executor }}
+      {
+        "domain": "{{ previous_outputs.task_executor.domain | default('general') }}",
+        "task": "{{ previous_outputs.task_executor.task | default(input) }}",
+        "outcome_summary": "{{ previous_outputs.task_executor.outcome_summary | default('') }}",
+        "what_worked": {{ previous_outputs.task_executor.what_worked | default([]) | tojson }},
+        "what_failed": {{ previous_outputs.task_executor.what_failed | default([]) | tojson }},
+        "failure_analysis": "{{ previous_outputs.task_executor.failure_analysis | default('') }}",
+        "lessons": {{ previous_outputs.task_executor.lessons | default([]) | tojson }},
+        "success": {{ previous_outputs.quality_scorer.success | default(true) | tojson }},
+        "quality": {{ previous_outputs.quality_scorer.quality_score | default(0.5) }}
+      }
     params:
       timeout: 30
 

@@ -469,6 +469,11 @@ class StreamingOrchestrator:
         inv = self.state.clone_invariants()
         intent = getattr(self.state.mutable, "intent", "")
         summary = getattr(self.state.mutable, "summary", "")
+        # Feed accumulated conversation history into satellites so they regenerate
+        # from full context instead of only the current turn. Without this each
+        # satellite saw only the latest intent/summary and overwrote its section,
+        # losing prior-turn context (the documented context-loss defect).
+        context_text = self._current_history_text() or intent or summary
 
         async def run_one(defn: dict) -> tuple[str, Optional[str]]:
             role = str(defn.get("role", ""))
@@ -482,13 +487,13 @@ class StreamingOrchestrator:
                 f"identity: {inv.get('identity','')}\nvoice: {inv.get('voice','')}\nrefusal: {inv.get('refusal','')}"
             )
             if role == "summarizer":
-                user_text = f"Summarize briefly this content for chat continuity:\n{intent or summary}"
+                user_text = f"Summarize the conversation so far for chat continuity:\n{context_text}"
             elif role == "intent":
-                user_text = f"Extract the user's intent in one sentence:\n{intent or summary}"
+                user_text = f"Given the conversation so far, state the user's current intent in one sentence:\n{context_text}"
             elif role == "compliance":
-                user_text = f"Check risks/policy constraints for this message:\n{intent or summary}"
+                user_text = f"Check risks/policy constraints across the conversation so far:\n{context_text}"
             else:
-                user_text = f"Process:\n{intent or summary}"
+                user_text = f"Process:\n{context_text}"
             try:
                 client = OpenAICompatClient(base_url=base_url, api_key=api_key)
                 out = await client.complete(model=model, system=system_text, user=user_text)

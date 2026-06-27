@@ -17,8 +17,9 @@ OrKa workflows are defined as YAML with **two top-level sections**:
    ```yaml
    orchestrator:
      id: "workflow_name"
-     strategy: sequential   # sequential | parallel
-     agents: [agent_1, agent_2]
+     strategy: sequential   # label only; the engine always runs a sequential queue.
+                            # Use fork/join/router NODES for parallelism and branching.
+     agents: [agent_1, agent_2]   # ordered; reordered to honor any agent depends_on
 
    agents:
      - id: agent_1
@@ -638,43 +639,50 @@ orchestrator:
 ```
 
 ### 2. Parallel Processing with Memory
+
+Parallelism is expressed with `fork`/`join` **nodes**, not a top-level `strategy`.
+The orchestrator's `agents:` is an ordered list of ids; the `fork` node's `targets:`
+is a list of branches (each branch is itself a list of agent ids), and the matching
+`join` node references the fork via `group:`.
+
 ```yaml
 orchestrator:
-  name: "parallel_processor"
-  description: "Parallel processing with memory storage"
-  strategy: "parallel"
+  id: parallel_processor
   agents:
-    - id: "fork_node"
-      type: "fork"
-      params:
-        parallel_agents: ["validator_1", "validator_2", "validator_3"]
-        join_node: "aggregator"
+    - fork_checks
+    - join_checks
+    - memory_writer
 
-    - id: "validator_1"
-      type: "openai-binary"
-      prompt: "Check grammar: {{ input }}"
+agents:
+  - id: fork_checks
+    type: fork
+    targets:
+      - [validator_1]
+      - [validator_2]
+      - [validator_3]
 
-    - id: "validator_2"
-      type: "openai-binary"
-      prompt: "Check content safety: {{ input }}"
+  - id: validator_1
+    type: openai-binary
+    prompt: "Check grammar: {{ input }}"
+    depends_on: [fork_checks]
+  - id: validator_2
+    type: openai-binary
+    prompt: "Check content safety: {{ input }}"
+    depends_on: [fork_checks]
+  - id: validator_3
+    type: openai-binary
+    prompt: "Check relevance: {{ input }}"
+    depends_on: [fork_checks]
 
-    - id: "validator_3"
-      type: "openai-binary"
-      prompt: "Check relevance: {{ input }}"
+  - id: join_checks
+    type: join
+    group: fork_checks
 
-    - id: "aggregator"
-      type: "join"
-      params:
-        aggregation_strategy: "all_required"
-
-    - id: "memory_writer"
-      type: "memory_writer"
-      params:
-        memory_type: "reflective"  # Level 3 Minsky memory
-        decay_config:
-          enabled: true
-          short_term_hours: 48
-          long_term_hours: 2160
+  - id: memory_writer
+    type: memory
+    memory_preset: "episodic"
+    config: { operation: write }
+    prompt: "{{ get_input() }}"
 ```
 
 ### 3. Complex Routing with Tools

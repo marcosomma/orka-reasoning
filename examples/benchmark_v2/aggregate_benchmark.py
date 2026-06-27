@@ -136,12 +136,18 @@ def aggregate_rubric_scores(
         vals = totals[dim]
         averages[dim] = round(sum(vals) / len(vals), 2) if vals else None
 
+    n_success = sum(1 for r in rubric_results if r.get("success"))
     return {
         "dimension_averages": averages,
         "overall_average": (
             round(sum(overall_scores) / len(overall_scores), 2) if overall_scores else None
         ),
-        "n_scored": sum(1 for r in rubric_results if r.get("success")),
+        # n_scored is the REAL denominator behind overall_average: tasks whose judge
+        # output produced a parseable overall_score. Previously this counted every
+        # success==true run, inflating N over the subset the averages used.
+        "n_scored": len(overall_scores),
+        "n_success": n_success,
+        "n_unparseable": n_success - len(overall_scores),
         "n_failed": sum(1 for r in rubric_results if not r.get("success")),
     }
 
