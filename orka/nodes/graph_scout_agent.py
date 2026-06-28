@@ -71,6 +71,9 @@ class GraphScoutConfig:
     k_beam: int = 3
     max_depth: int = 2
     commit_margin: float = 0.15
+    # Hard cap on candidate paths emitted by discovery (post-dedup). Bounds the
+    # combinatorial blow-up of universal-routing DFS; excess is dropped with a log.
+    max_candidates: int = 50
 
     # Scoring mode selection
     scoring_mode: str = "numeric"  # "numeric" (default) or "boolean" (deterministic)

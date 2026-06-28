@@ -42,8 +42,15 @@ class GraphIntrospector:
         self.config = config
         self.max_depth = getattr(config, "max_depth", 4)  # Default to 4 if not specified
         self.k_beam = config.k_beam
+        # Coerce defensively: a Mock/None config (as in some unit tests) must still
+        # yield a usable integer cap rather than an uncomparable object.
+        _max_candidates = getattr(config, "max_candidates", 50)
+        self.max_candidates = _max_candidates if isinstance(_max_candidates, int) else 50
 
-        logger.debug(f"GraphIntrospector initialized with max_depth={self.max_depth}")
+        logger.debug(
+            f"GraphIntrospector initialized with max_depth={self.max_depth}, "
+            f"max_candidates={self.max_candidates}"
+        )
 
     def _filter_memory_agents_from_candidates(
         self, neighbors: List[str], graph_state: GraphState
@@ -311,8 +318,25 @@ class GraphIntrospector:
             # Filter and rank candidates
             filtered_candidates = self._filter_candidates(candidates, graph_state, context)
 
+            # Collapse identical paths. _ensure_terminal_path appends a response builder
+            # to prefixes (e.g. [A,B] -> [A,B,rb]), which collides with paths already
+            # emitted; recursion can also re-emit the same path via different branches.
+            # Without this, scoring/decision waste effort on exact duplicates.
+            filtered_candidates = self._deduplicate_candidates(filtered_candidates)
+
             # Don't limit to beam width here - let scoring system handle prioritization
-            # This allows all candidates (single-hop + multi-hop) to compete fairly
+            # This allows all candidates (single-hop + multi-hop) to compete fairly.
+            # But DO bound the absolute count: universal-routing DFS is combinatorial,
+            # so cap the candidate set to protect downstream LLM-evaluation cost.
+            # Truncation is logged, never silent.
+            if len(filtered_candidates) > self.max_candidates:
+                logger.warning(
+                    f"Discovered {len(filtered_candidates)} candidate paths; capping to "
+                    f"max_candidates={self.max_candidates} (dropping "
+                    f"{len(filtered_candidates) - self.max_candidates})"
+                )
+                filtered_candidates = filtered_candidates[: self.max_candidates]
+
             logger.info(f"Discovered {len(filtered_candidates)} candidate paths")
 
             return filtered_candidates
@@ -320,6 +344,30 @@ class GraphIntrospector:
         except Exception as e:
             logger.error(f"Path discovery failed: {e}")
             return []
+
+    def _deduplicate_candidates(
+        self, candidates: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """Drop candidates whose ``path`` is identical to one already kept.
+
+        Order is preserved and the first occurrence wins (it carries the richest
+        metadata, e.g. the special-routing flags on memory candidates). Dedup key is
+        the full path tuple, so [A] and [A, rb] remain distinct candidates.
+        """
+        seen: Set[Tuple[str, ...]] = set()
+        unique: List[Dict[str, Any]] = []
+        for candidate in candidates:
+            key = tuple(candidate.get("path", [candidate.get("node_id")]))
+            if key in seen:
+                logger.debug(f"Dropping duplicate candidate path: {' -> '.join(key)}")
+                continue
+            seen.add(key)
+            unique.append(candidate)
+
+        dropped = len(candidates) - len(unique)
+        if dropped:
+            logger.info(f"Deduplicated candidates: removed {dropped} duplicate path(s)")
+        return unique
 
     def _get_eligible_neighbors(
         self, graph_state: GraphState, current_node: str, visited: Set[str],
@@ -596,6 +644,13 @@ class GraphIntrospector:
             )
 
             for start_node in start_nodes:
+                # A response builder is terminal: routing TO it is already captured as a
+                # single-hop candidate. Exploring OUT of it (rb -> X) yields nonsensical
+                # paths that leave a terminal node, so never use one as an extension seed.
+                if self._is_response_builder_node(graph_state, start_node):
+                    logger.debug(f"Skipping response-builder start node: {start_node}")
+                    continue
+
                 # Explore paths starting from this node
                 paths = await self._explore_from_node(
                     graph_state,

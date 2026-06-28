@@ -6,6 +6,7 @@ import pytest
 
 from orka.orchestrator.graph_introspection import GraphIntrospector
 from orka.orchestrator.graph_api import GraphState, NodeDescriptor, EdgeDescriptor
+from orka.nodes.graph_scout_agent import GraphScoutConfig
 
 # Mark all tests in this class to skip auto-mocking since we need specific mocks
 pytestmark = [pytest.mark.unit, pytest.mark.no_auto_mock]
@@ -1322,3 +1323,114 @@ class TestJoinFeasibilityAnalysis:
 
         result = introspector._has_parallel_paths_to_join("branch_a", graph_state)
         assert result is False
+
+
+class TestDiscoveryDeduplicationAndBounds:
+    """Stabilization tests: discovery must not emit duplicate or out-of-terminal paths,
+    and must respect the max_candidates cap.
+
+    These cover the bug where _ensure_terminal_path appends a response builder to a
+    prefix path (e.g. [A,B] -> [A,B,rb]), colliding with the [A,B,rb] already emitted,
+    while response-builder nodes were also used as DFS start nodes (rb -> X paths).
+    """
+
+    def create_graph_state(self, extra_agents=0):
+        """GraphScout + two pool agents + a response builder, universal routing (no edges).
+
+        extra_agents adds N more pool agents to inflate the candidate count for cap tests.
+        """
+        nodes = {
+            "graphscout": NodeDescriptor(
+                id="graphscout", type="GraphScoutAgent", prompt_summary="router",
+                capabilities=["routing"], contract={}, cost_model={}, safety_tags=[],
+                metadata={},
+            ),
+            "search_agent": NodeDescriptor(
+                id="search_agent", type="DuckDuckGoAgent", prompt_summary="search",
+                capabilities=["web_search"], contract={}, cost_model={}, safety_tags=[],
+                metadata={},
+            ),
+            "analysis_agent": NodeDescriptor(
+                id="analysis_agent", type="LocalLLMAgent", prompt_summary="analysis",
+                capabilities=["reasoning"], contract={}, cost_model={}, safety_tags=[],
+                metadata={},
+            ),
+            "response_builder": NodeDescriptor(
+                id="response_builder", type="LocalLLMAgent", prompt_summary="answer",
+                capabilities=["answer_emit", "response_generation"], contract={},
+                cost_model={}, safety_tags=[], metadata={"is_terminal": True},
+            ),
+        }
+        for i in range(extra_agents):
+            nodes[f"pool_{i}"] = NodeDescriptor(
+                id=f"pool_{i}", type="LocalLLMAgent", prompt_summary=f"pool {i}",
+                capabilities=["reasoning"], contract={}, cost_model={}, safety_tags=[],
+                metadata={},
+            )
+        return GraphState(
+            nodes=nodes, edges=[], current_node="graphscout", visited_nodes=set(),
+            runtime_state={}, budgets={}, constraints={},
+        )
+
+    def test_deduplicate_candidates_collapses_identical_paths(self):
+        """The dedup helper keeps the first occurrence (richest metadata) and drops dups."""
+        introspector = GraphIntrospector(GraphScoutConfig(max_depth=3, k_beam=6))
+        candidates = [
+            {"node_id": "a", "path": ["a", "rb"], "special_routing": True},
+            {"node_id": "a", "path": ["a", "rb"]},  # exact duplicate path
+            {"node_id": "a", "path": ["a"]},  # distinct (prefix is its own candidate)
+            {"node_id": "b", "path": ["b", "rb"]},
+        ]
+        unique = introspector._deduplicate_candidates(candidates)
+        paths = [tuple(c["path"]) for c in unique]
+        assert paths == [("a", "rb"), ("a",), ("b", "rb")]
+        # First occurrence wins -> its special_routing metadata is preserved.
+        assert unique[0].get("special_routing") is True
+
+    @pytest.mark.asyncio
+    async def test_discover_paths_emits_no_duplicate_paths(self):
+        introspector = GraphIntrospector(GraphScoutConfig(max_depth=3, k_beam=6))
+        graph_state = self.create_graph_state()
+
+        candidates = await introspector.discover_paths(
+            graph_state, "What is the weather?", {}, executing_node="graphscout"
+        )
+
+        path_tuples = [tuple(c["path"]) for c in candidates]
+        assert len(path_tuples) == len(set(path_tuples)), (
+            f"duplicate candidate paths emitted: {path_tuples}"
+        )
+
+    @pytest.mark.asyncio
+    async def test_discover_paths_never_routes_out_of_response_builder(self):
+        introspector = GraphIntrospector(GraphScoutConfig(max_depth=3, k_beam=6))
+        graph_state = self.create_graph_state()
+
+        candidates = await introspector.discover_paths(
+            graph_state, "What is the weather?", {}, executing_node="graphscout"
+        )
+
+        for c in candidates:
+            path = c["path"]
+            # A response builder is terminal: it may only appear as the LAST hop.
+            if "response_builder" in path:
+                assert path.index("response_builder") == len(path) - 1, (
+                    f"response_builder must be terminal, got: {path}"
+                )
+            # No multi-hop path may START at a response builder (rb -> X is nonsensical).
+            if len(path) > 1:
+                assert path[0] != "response_builder", f"path routes out of terminal: {path}"
+
+    @pytest.mark.asyncio
+    async def test_discover_paths_respects_max_candidates_cap(self):
+        # Many pool agents + depth 3 produces far more than 3 candidates; cap must bite.
+        introspector = GraphIntrospector(
+            GraphScoutConfig(max_depth=3, k_beam=6, max_candidates=3)
+        )
+        graph_state = self.create_graph_state(extra_agents=5)
+
+        candidates = await introspector.discover_paths(
+            graph_state, "complex question", {}, executing_node="graphscout"
+        )
+
+        assert len(candidates) <= 3
