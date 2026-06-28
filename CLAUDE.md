@@ -66,6 +66,15 @@ Agent `prompt:` fields are Jinja2 templates rendered against workflow context. C
 ### CLI and server
 `orka/orka_cli.py` (entry `orka`) re-exports `orka/cli/` (parser, core, memory + orchestrator subcommands). `orka/server.py` is the FastAPI backend; `orka/orka_start.py` (entry `orka-start`) boots the full stack. `orka/tui/` is the Textual-based memory dashboard.
 
+## Working rules (must follow)
+
+These are non-negotiable for any change in this repo:
+
+- **Always run mypy AND the full test suite before calling work done.** Both are CI gates: `mypy orka` must report `Success`, and `pytest --cov=orka --cov-fail-under=80` must pass. "It looks right" is not done — run them.
+- **Mirror the CI environment when verifying.** A stale dev venv can hide failures (e.g. a removed dependency that's still installed locally). When deps change, verify against what `pip install -e .` actually provides — uninstall the removed package locally, or use a clean venv — don't trust a polluted local environment. If code imports a third party at module level, it must be a declared dependency.
+- **Never fake to make tests pass.** Do not stub out the code under test, assert on hard-coded constants, or mock past the real logic. Mock only true external boundaries (network, Redis, LLM HTTP, filesystem when necessary) — everything inside `orka` should run for real. Tests must exercise real code paths and stay as close to production behavior as possible; a test that can't fail when the code breaks is worse than no test.
+- **Never edit docs to match broken code, or code to make a test pass.** Fix the real thing. If behavior changed intentionally, update the test to assert the new *real* contract (not to paper over a regression).
+
 ## Conventions
 
 - Every source file carries the Apache-2.0 OrKa attribution header — preserve it on new files.
