@@ -318,6 +318,19 @@ def main(argv: list[str] | None = None) -> int:
             if orch.get("mode") != "streaming":
                 print("Config orchestrator.mode must be 'streaming' for this command.")
                 return 2
+
+            # Loud guard against the silent no-op: the streaming runtime only calls a
+            # model when the HTTP executor path is explicitly enabled. Without it,
+            # `streaming run/chat` accepts input and emits structure events but generates
+            # NO response text. Warn on stdout so this isn't mistaken for a working run.
+            if os.environ.get("ORKA_STREAMING_HTTP_ENABLE", "0") != "1":
+                print(
+                    "[OrKa] WARNING: streaming runtime is in structure-only mode — no model "
+                    "will be called, so no response text is generated. Set "
+                    "ORKA_STREAMING_HTTP_ENABLE=1 (and configure the executor "
+                    "provider/model/base_url) to produce real output.",
+                )
+
             budgets_cfg = (orch.get("prompt_budgets") or {})
             total_tokens = int(budgets_cfg.get("total_tokens", 2048))
             sections = budgets_cfg.get("sections", {})
