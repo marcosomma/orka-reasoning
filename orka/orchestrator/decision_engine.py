@@ -65,18 +65,49 @@ class DecisionEngine:
             # Sort by score (should already be sorted)
             scored_candidates.sort(key=lambda x: x.get("score", 0.0), reverse=True)
 
-            # Check for terminal paths (2-hop chains ending with response builders)
+            # Check for terminal paths (chains ending with response builders).
             if self.require_terminal:
                 terminal_paths = self._find_terminal_paths(scored_candidates, context)
                 if terminal_paths:
                     best_terminal = terminal_paths[0]
                     terminal_path = best_terminal["path"]
-                    logger.info(f"[TARGET] Creating commit_path decision with target: {terminal_path}")
-                    return self._create_decision(
-                        "commit_path",
-                        terminal_path,
-                        best_terminal.get("confidence", 0.8),
-                        f"[TARGET] Terminal path to response builder (score={best_terminal.get('score', 0.0):.3f})",
+                    # Apply the commit margin AMONG terminal paths: commit only when the
+                    # best terminal path is a clear winner. If several terminal paths sit
+                    # within the margin the choice is ambiguous, so return a shortlist —
+                    # this makes the configurable commit_margin actually govern terminal
+                    # routing. (Previously it committed unconditionally, so commit_margin
+                    # was dead whenever any terminal path existed.)
+                    dynamic_margin = self._get_dynamic_margin(context)
+                    if len(terminal_paths) == 1:
+                        logger.info(f"[TARGET] Sole terminal path -> commit_path: {terminal_path}")
+                        return self._create_decision(
+                            "commit_path",
+                            terminal_path,
+                            best_terminal.get("confidence", 0.8),
+                            f"[TARGET] Sole terminal path to response builder "
+                            f"(score={best_terminal.get('score', 0.0):.3f})",
+                        )
+                    terminal_margin = best_terminal.get("score", 0.0) - terminal_paths[1].get(
+                        "score", 0.0
+                    )
+                    if terminal_margin >= dynamic_margin:
+                        logger.info(
+                            f"[TARGET] Terminal path clear winner -> commit_path: {terminal_path}"
+                        )
+                        return self._create_decision(
+                            "commit_path",
+                            terminal_path,
+                            best_terminal.get("confidence", 0.8),
+                            f"[TARGET] Terminal path clear winner by margin "
+                            f"{terminal_margin:.3f} >= {dynamic_margin:.3f} "
+                            f"(score={best_terminal.get('score', 0.0):.3f})",
+                        )
+                    logger.info(
+                        f"[TARGET] {len(terminal_paths)} terminal paths within margin "
+                        f"({terminal_margin:.3f} < {dynamic_margin:.3f}) -> shortlist"
+                    )
+                    return await self._handle_low_confidence_decision(
+                        terminal_paths[: self.k_beam], terminal_margin, context
                     )
                 # If no terminal paths found, continue with normal decision logic
                 # This allows shortlist to be returned when appropriate
