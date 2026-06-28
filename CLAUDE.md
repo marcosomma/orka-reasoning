@@ -74,6 +74,7 @@ These are non-negotiable for any change in this repo:
 - **Mirror the CI environment when verifying.** A stale dev venv can hide failures (e.g. a removed dependency that's still installed locally). When deps change, verify against what `pip install -e .` actually provides — uninstall the removed package locally, or use a clean venv — don't trust a polluted local environment. If code imports a third party at module level, it must be a declared dependency.
 - **Never fake to make tests pass.** Do not stub out the code under test, assert on hard-coded constants, or mock past the real logic. Mock only true external boundaries (network, Redis, LLM HTTP, filesystem when necessary) — everything inside `orka` should run for real. Tests must exercise real code paths and stay as close to production behavior as possible; a test that can't fail when the code breaks is worse than no test.
 - **Never edit docs to match broken code, or code to make a test pass.** Fix the real thing. If behavior changed intentionally, update the test to assert the new *real* contract (not to paper over a regression).
+- **Never add a `Co-Authored-By: Claude ...` trailer (or any AI co-author/attribution) to commit messages.** Commits are authored by the user only.
 
 ## Conventions
 
