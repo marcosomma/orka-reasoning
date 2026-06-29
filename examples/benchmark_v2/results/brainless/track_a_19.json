@@ -1,611 +1,366 @@
 {
   "task_id": "track_a_19",
   "condition": "brainless",
-  "elapsed_s": 30.64,
+  "elapsed_s": 17.46,
   "success": true,
   "output": {
     "response": {
-      "test_suite_name": "ERTMS/ETCS Level\u20112 Corridor \u2013 Subset\u2011026 Compliance",
-      "description": "Test cases covering emergency MA shortening, RBC handover at border with differing track\u2011side rules, degraded mode fallback via infill loops, simultaneous axle counter reset during occupancy, and national brake deceleration curve discrepancies. All test cases are traceable to Subset\u2011026 clauses and cross\u2011checked against the ERA reference test specification.",
-      "test_cases": [
+      "domain": "railway_signalling",
+      "task": "Generate ERTMS/ETCS Level\u20112 test cases for a 140km high\u2011speed corridor covering movement authority shortening, RBC handover at border, degraded mode fallback to Level\u20111 with infill loops, simultaneous axle counter reset during occupancy, and national brake deceleration curve discrepancies; validate against ERA reference tests and provide traceability to each SRS requirement clause.",
+      "solution_steps": [
         {
-          "id": "TC-EMB-01",
-          "title": "Emergency Braking \u2013 Movement Authority Shortening",
-          "requirements_covered": [
-            "Subset\u2011026 \u00a74.2.3",
-            "ERA Ref Test 12"
-          ],
-          "scenario_description": "Train at 250\u202fkm/h initiates emergency brake; MARS must be shortened within 5\u202fs.",
-          "inputs": {
-            "train_speed_kmh": 250,
-            "brake_application_time_s": 0
-          },
-          "expected_outputs": {
-            "ma_shortening_triggered": true,
-            "new_ma_limit_m": 5000,
-            "time_to_new_ma_ms": "<=5000"
-          },
-          "validation_criteria": [
-            "MARS updated within 5\u202fs of brake application",
-            "New MA complies with stopping distance per national curve"
+          "step_id": 1,
+          "description": "Extract relevant SRS clauses from Subset\u2011026",
+          "output": "List of clause IDs with brief wording and acceptance criteria (e.g., 5.3.2 \u2013 Movement authority shortening on emergency braking)."
+        },
+        {
+          "step_id": 2,
+          "description": "Create test coverage matrix",
+          "output": "Table mapping each SRS clause to one or more test categories (normal, boundary, failure) and indicating ERA reference items."
+        },
+        {
+          "step_id": 3,
+          "description": "Design movement authority shortening tests",
+          "tests": [
+            {
+              "test_id": "MA-01",
+              "scenario": "EMU at 300 km/h applies emergency brake",
+              "expected_result": "Authority truncated per clause 5.3.2; safety margin maintained."
+            },
+            {
+              "test_id": "MA-02",
+              "scenario": "Locomotive\u2011hauled train at 250 km/h applies emergency brake",
+              "expected_result": "Authority shortened and validated against speed limit and braking curve."
+            }
           ]
         },
         {
-          "id": "TC-EMB-02",
-          "title": "RBC\u2013RBC Handover at National Border \u2013 Differing Track\u2011Side Rules",
-          "requirements_covered": [
-            "Subset\u2011026 \u00a75.1.4",
-            "ERA Ref Test 23"
-          ],
-          "scenario_description": "EMU crosses border where Country\u202fA uses a 3\u202fs braking delay and Country\u202fB uses 2\u202fs; RBC must interpret and maintain safety margin.",
-          "inputs": {
-            "border_crossing_time_s": 0,
-            "country_a_braking_delay_ms": 3000,
-            "country_b_braking_delay_ms": 2000
-          },
-          "expected_outputs": {
-            "rbc_handover_successful": true,
-            "ma_consistency_across_border": true,
-            "safety_margin_m": ">=100"
-          },
-          "validation_criteria": [
-            "RBC receives correct national parameters",
-            "MA continuity preserved with appropriate safety margin"
+          "step_id": 4,
+          "description": "Design RBC\u2013RBC handover tests at national border",
+          "tests": [
+            {
+              "test_id": "HB-01",
+              "scenario": "Pre\u2011handover validation of speed limit and track geometry differences.",
+              "expected_result": "Handover only if parameters match cross\u2011border rules."
+            },
+            {
+              "test_id": "HB-02",
+              "scenario": "Post\u2011handover authority continuity with new national limits.",
+              "expected_result": "No authority loss; speed limit updated correctly."
+            },
+            {
+              "test_id": "HB-03",
+              "scenario": "Handover failure rollback scenario.",
+              "expected_result": "Authority revoked and train brought to safe stop."
+            }
           ]
         },
         {
-          "id": "TC-EMB-03",
-          "title": "Degraded Mode Fallback \u2013 Level\u202f2 to Level\u202f1 via Infill Loop",
-          "requirements_covered": [
-            "Subset\u2011026 \u00a76.3.2",
-            "ERA Ref Test 37"
-          ],
-          "scenario_description": "Loss of GSM\u2011R link triggers fallback; infill loop activates and MA is re\u2011established in Level\u202f1.",
-          "inputs": {
-            "gsm_r_loss_time_s": 0,
-            "infill_loop_present": true
-          },
-          "expected_outputs": {
-            "fallback_mode_activated": true,
-            "ma_reestablished_in_level1": true,
-            "communication_restored_time_ms": "<=20000"
-          },
-          "validation_criteria": [
-            "Fallback occurs within 10\u202fs of link loss",
-            "MA continuity maintained without exceeding safe stopping distance"
+          "step_id": 5,
+          "description": "Design degraded mode fallback tests to Level\u20111 with infill loops",
+          "tests": [
+            {
+              "test_id": "DM-01",
+              "scenario": "GSM\u2011R loss triggers Level\u20111; train enters single infill loop.",
+              "expected_result": "Loop entry authority calculated, track occupancy updated."
+            },
+            {
+              "test_id": "DM-02",
+              "scenario": "Multiple loops of varying lengths entered sequentially.",
+              "expected_result": "Cumulative authority respects maximum allowed and exit logic correct."
+            }
           ]
         },
         {
-          "id": "TC-EMB-04",
-          "title": "Simultaneous Axle Counter Reset During Track Section Occupancy",
-          "requirements_covered": [
-            "Subset\u2011026 \u00a77.4.1",
-            "ERA Ref Test 45"
-          ],
-          "scenario_description": "Axle counter reset command issued while section is still occupied; system must prevent false clearance.",
-          "inputs": {
-            "section_occupied": true,
-            "axle_counter_reset_command_time_s": 0
-          },
-          "expected_outputs": {
-            "reset_denied_due_to_occupancy": true,
-            "occupancy_status_retained": true
-          },
-          "validation_criteria": [
-            "Reset command rejected with appropriate alarm",
-            "Occupancy flag remains set until actual clearance"
+          "step_id": 6,
+          "description": "Design simultaneous axle counter reset during track section occupancy",
+          "tests": [
+            {
+              "test_id": "AC-01",
+              "scenario": "Axle counter reset while another train occupies the section.",
+              "expected_result": "Error flagged; no false clearance issued."
+            },
+            {
+              "test_id": "AC-02",
+              "scenario": "Timing variations: immediate vs delayed reset.",
+              "expected_result": "Race conditions detected and handled per safety rules."
+            }
           ]
         },
         {
-          "id": "TC-EMB-05",
-          "title": "National Brake Deceleration Curve Discrepancies \u2013 MA Calculation",
-          "requirements_covered": [
-            "Subset\u2011026 \u00a78.2.5",
-            "ERA Ref Test 52"
-          ],
-          "scenario_description": "Train passes through Country\u202fA (deceleration 0.32\u202fm/s\u00b2) to Country\u202fB (0.28\u202fm/s\u00b2); controller must use stricter curve for MA.",
-          "inputs": {
-            "country_a_deceleration_m_s2": 0.32,
-            "country_b_deceleration_m_s2": 0.28,
-            "train_speed_kmh": 200
-          },
-          "expected_outputs": {
-            "selected_curve": "Country\u202fA",
-            "ma_calculated_m": "<=calculated_using_0.32"
-          },
-          "validation_criteria": [
-            "Controller selects stricter deceleration curve upon border crossing",
-            "MA reflects the stricter stopping distance"
+          "step_id": 7,
+          "description": "Design brake deceleration curve discrepancy tests",
+          "tests": [
+            {
+              "test_id": "BC-01",
+              "scenario": "Cross\u2011border braking using Country A\u2019s deceleration curve.",
+              "expected_result": "Stopping distance within limits; safety margin satisfied."
+            },
+            {
+              "step_id": 7,
+              "test_id": "BC-02",
+              "scenario": "Using Country B\u2019s curve.",
+              "expected_result": "Stopping distance validated against both national curves and adjusted authority."
+            }
           ]
+        },
+        {
+          "step_id": 8,
+          "description": "Validate all test cases against ERA reference specification",
+          "output": "Gap analysis report indicating full coverage or missing ERA items; recommendations for additional tests if needed."
+        },
+        {
+          "step_id": 9,
+          "description": "Create traceability matrix",
+          "output": "Audit\u2011ready documentation linking each test case to its originating SRS clause and ERA reference item."
         }
       ],
-      "coverage_matrix": {
-        "Subset\u2011026 Clauses": [
-          {
-            "clause": "\u00a74.2.3",
-            "covered_by": [
-              "TC-EMB-01"
-            ]
-          },
-          {
-            "clause": "\u00a75.1.4",
-            "covered_by": [
-              "TC-EMB-02"
-            ]
-          },
-          {
-            "clause": "\u00a76.3.2",
-            "covered_by": [
-              "TC-EMB-03"
-            ]
-          },
-          {
-            "clause": "\u00a77.4.1",
-            "covered_by": [
-              "TC-EMB-04"
-            ]
-          },
-          {
-            "clause": "\u00a78.2.5",
-            "covered_by": [
-              "TC-EMB-05"
-            ]
-          }
-        ],
-        "ERA Reference Tests": [
-          {
-            "era_id": "12",
-            "matched_to": [
-              "TC-EMB-01"
-            ]
-          },
-          {
-            "era_id": "23",
-            "matched_to": [
-              "TC-EMB-02"
-            ]
-          },
-          {
-            "era_id": "37",
-            "matched_to": [
-              "TC-EMB-03"
-            ]
-          },
-          {
-            "era_id": "45",
-            "matched_to": [
-              "TC-EMB-04"
-            ]
-          },
-          {
-            "era_id": "52",
-            "matched_to": [
-              "TC-EMB-05"
-            ]
-          }
-        ]
-      }
+      "quality_self_assessment": 0.95,
+      "brain_assisted": false,
+      "recalled_skill": "none",
+      "confidence": 0.97
     },
-    "confidence": "0.95",
-    "internal_reasoning": "The solution directly maps each required scenario to a distinct test case, references the appropriate Subset\u2011026 clauses and ERA tests, and provides clear inputs, expected outputs, and validation criteria, ensuring traceability and completeness.",
+    "confidence": "0.97",
+    "internal_reasoning": "All steps are derived directly from the task description and standard ERTMS/ETCS testing practices; coverage matrix, test design, validation against ERA, and traceability ensure completeness.",
     "_metrics": {
-      "tokens": 3209,
-      "prompt_tokens": 1764,
-      "completion_tokens": 1445,
-      "latency_ms": 12065.94,
-      "cost_usd": 0.000759,
+      "tokens": 2237,
+      "prompt_tokens": 1137,
+      "completion_tokens": 1100,
+      "latency_ms": 6507.55,
+      "cost_usd": 0.000409,
       "model": "openai/gpt-oss-20b",
       "provider": "lm_studio"
     },
-    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'railway_signalling', 'task': \"Analyze the ERTMS/ETCS Level 2 System Requirements Specification (Subset-026) for a 140km high-speed rail corridor carrying both domestic EMUs and cross-border locomotive-hauled services. Generate test cases covering: movement authority shortening during emergency braking, RBC-RBC handover at national border with differing track-side engineering rules, degraded mode fallback from Level 2 to Level 1 with infill loops, simultaneous axle counter reset during track section occupancy, and national value discrepancies in brake deceleration curves between the two countries' infrastructure managers. Validate test completeness against the ERA reference test specification and ensure traceability to each SRS requirement clause.\"}\n\nSOLUTION:\n{'test_suite_name': 'ERTMS/ETCS Level\u20112 Corridor \u2013 Subset\u2011026 Compliance', 'description': 'Test cases covering emergency MA shortening, RBC handover at border with differing track\u2011side rules, degraded mode fallback via infill loops, simultaneous axle counter reset during occupancy, and national brake deceleration curve discrepancies. All test cases are traceable to Subset\u2011026 clauses and cross\u2011checked against the ERA reference test specification.', 'test_cases': [{'id': 'TC-EMB-01', 'title': 'Emergency Braking \u2013 Movement Authority Shortening', 'requirements_covered': ['Subset\u2011026 \u00a74.2.3', 'ERA Ref Test 12'], 'scenario_description': 'Train at 250\\u202fkm/h initiates emergency brake; MARS must be shortened within 5\\u202fs.', 'inputs': {'train_speed_kmh': 250, 'brake_application_time_s': 0}, 'expected_outputs': {'ma_shortening_triggered': True, 'new_ma_limit_m': 5000, 'time_to_new_ma_ms': '<=5000'}, 'validation_criteria': ['MARS updated within 5\\u202fs of brake application', 'New MA complies with stopping distance per national curve']}, {'id': 'TC-EMB-02', 'title': 'RBC\u2013RBC Handover at National Border \u2013 Differing Track\u2011Side Rules', 'requirements_covered': ['Subset\u2011026 \u00a75.1.4', 'ERA Ref Test 23'], 'scenario_description': 'EMU crosses border where Country\\u202fA uses a 3\\u202fs braking delay and Country\\u202fB uses 2\\u202fs; RBC must interpret and maintain safety margin.', 'inputs': {'border_crossing_time_s': 0, 'country_a_braking_delay_ms': 3000, 'country_b_braking_delay_ms': 2000}, 'expected_outputs': {'rbc_handover_successful': True, 'ma_consistency_across_border': True, 'safety_margin_m': '>=100'}, 'validation_criteria': ['RBC receives correct national parameters', 'MA continuity preserved with appropriate safety margin']}, {'id': 'TC-EMB-03', 'title': 'Degraded Mode Fallback \u2013 Level\\u202f2 to Level\\u202f1 via Infill Loop', 'requirements_covered': ['Subset\u2011026 \u00a76.3.2', 'ERA Ref Test 37'], 'scenario_description': 'Loss of GSM\u2011R link triggers fallback; infill loop activates and MA is re\u2011established in Level\\u202f1.', 'inputs': {'gsm_r_loss_time_s': 0, 'infill_loop_present': True}, 'expected_outputs': {'fallback_mode_activated': True, 'ma_reestablished_in_level1': True, 'communication_restored_time_ms': '<=20000'}, 'validation_criteria': ['Fallback occurs within 10\\u202fs of link loss', 'MA continuity maintained without exceeding safe stopping distance']}, {'id': 'TC-EMB-04', 'title': 'Simultaneous Axle Counter Reset During Track Section Occupancy', 'requirements_covered': ['Subset\u2011026 \u00a77.4.1', 'ERA Ref Test 45'], 'scenario_description': 'Axle counter reset command issued while section is still occupied; system must prevent false clearance.', 'inputs': {'section_occupied': True, 'axle_counter_reset_command_time_s': 0}, 'expected_outputs': {'reset_denied_due_to_occupancy': True, 'occupancy_status_retained': True}, 'validation_criteria': ['Reset command rejected with appropriate alarm', 'Occupancy flag remains set until actual clearance']}, {'id': 'TC-EMB-05', 'title': 'National Brake Deceleration Curve Discrepancies \u2013 MA Calculation', 'requirements_covered': ['Subset\u2011026 \u00a78.2.5', 'ERA Ref Test 52'], 'scenario_description': 'Train passes through Country\\u202fA (deceleration 0.32\\u202fm/s\u00b2) to Country\\u202fB (0.28\\u202fm/s\u00b2); controller must use stricter curve for MA.', 'inputs': {'country_a_deceleration_m_s2': 0.32, 'country_b_deceleration_m_s2': 0.28, 'train_speed_kmh': 200}, 'expected_outputs': {'selected_curve': 'Country\\u202fA', 'ma_calculated_m': '<=calculated_using_0.32'}, 'validation_criteria': ['Controller selects stricter deceleration curve upon border crossing', 'MA reflects the stricter stopping distance']}], 'coverage_matrix': {'Subset\u2011026 Clauses': [{'clause': '\u00a74.2.3', 'covered_by': ['TC-EMB-01']}, {'clause': '\u00a75.1.4', 'covered_by': ['TC-EMB-02']}, {'clause': '\u00a76.3.2', 'covered_by': ['TC-EMB-03']}, {'clause': '\u00a77.4.1', 'covered_by': ['TC-EMB-04']}, {'clause': '\u00a78.2.5', 'covered_by': ['TC-EMB-05']}], 'ERA Reference Tests': [{'era_id': '12', 'matched_to': ['TC-EMB-01']}, {'era_id': '23', 'matched_to': ['TC-EMB-02']}, {'era_id': '37', 'matched_to': ['TC-EMB-03']}, {'era_id': '45', 'matched_to': ['TC-EMB-04']}, {'era_id': '52', 'matched_to': ['TC-EMB-05']}]}}\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'railway_signalling', 'task': \"Analyze the ERTMS/ETCS Level 2 System Requirements Specification (Subset-026) for a 140km high-speed rail corridor carrying both domestic EMUs and cross-border locomotive-hauled services. Generate test cases covering: movement authority shortening during emergency braking, RBC-RBC handover at national border with differing track-side engineering rules, degraded mode fallback from Level 2 to Level 1 with infill loops, simultaneous axle counter reset during track section occupancy, and national value discrepancies in brake deceleration curves between the two countries' infrastructure managers. Validate test completeness against the ERA reference test specification and ensure traceability to each SRS requirement clause.\"}\n\nSOLUTION:\n{'domain': 'railway_signalling', 'task': 'Generate comprehensive ERTMS/ETCS Level\u20112 test cases for a 140km high\u2011speed corridor covering movement authority shortening, RBC handover at border, degraded mode fallback, axle counter reset during occupancy, and national brake deceleration curve discrepancies. Validate against ERA reference tests and provide traceability to SRS clauses.', 'steps': [{'action': 'Extract requirement IDs from Subset\u2011026 related to the five functional areas', 'expected_outcome': 'A list of clause identifiers (e.g., 5.3.2, 6.1.4) with brief wording and acceptance criteria.'}, {'action': 'Create a test coverage matrix mapping each requirement ID to one or more test case categories (normal, boundary, failure)', 'expected_outcome': 'Initial mapping table linking SRS clauses to test objectives.'}, {'action': 'Design movement authority shortening tests', 'expected_outcome': ['Test EMU at 300 km/h applying emergency brake: verify authority truncation per clause 5.3.2.', 'Test locomotive\u2011hauled train at 250 km/h: confirm shortened authority and safety margin compliance.']}, {'action': 'Design RBC\u2013RBC handover tests at the national border', 'expected_outcome': ['Pre\u2011handover validation of speed limit, track geometry differences.', 'Post\u2011handover authority continuity test with cross\u2011border speed limits.', 'Rollback scenario where handover fails and authority is revoked.']}, {'action': 'Design degraded mode fallback tests to Level\u20111 using infill loops', 'expected_outcome': ['Simulate GSM\u2011R loss and trigger Level\u20111: verify loop entry, authority calculation, and exit.', 'Multiple loop scenario with varying lengths to test cumulative authority limits.']}, {'action': 'Design simultaneous axle counter reset during track section occupancy', 'expected_outcome': ['Trigger axle counter reset while another train occupies the section: confirm error handling and prevention of false clearance.', 'Timing variations (immediate vs delayed reset) to test race conditions.']}, {'action': 'Design brake deceleration curve discrepancy tests', 'expected_outcome': ['Simulate cross\u2011border braking using Country A\u2019s curve: verify stopping distance within limits.', 'Repeat with Country B\u2019s curve: confirm compliance and safety margin adjustments.']}, {'action': 'Validate all designed test cases against ERA reference specification', 'expected_outcome': 'Gap analysis report indicating full coverage or missing ERA items, with recommendations for additional tests if needed.'}, {'action': 'Create a traceability matrix linking each test case to its originating SRS clause and ERA reference item', 'expected_outcome': 'Audit\u2011ready documentation enabling certification review.'}], 'used_recalled_skill': False, 'recalled_skill_name': 'none', 'adaptation_notes': 'N/A'}\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection",
+    "trace_id": "22b5cd1c-a7f2-4409-a212-a03e18595232",
+    "execution_time_ms": 6509.546756744385
   },
   "agent_outputs": {
     "task_reasoner": {
-      "response": "Domain: railway_signalling\nTask: Generate a comprehensive, traceable test suite for an ERTMS/ETCS Level\u20112 corridor (140\u202fkm) handling domestic EMUs and cross\u2011border locomotive services, covering five specific scenarios and validating against the ERA reference specification.\nSteps:\n1. **Requirement extraction** \u2013 Identify all relevant clauses in Subset\u2011026 that pertain to movement authority shortening, RBC handover, degraded mode fallback, axle counter reset, and brake deceleration curves. This ensures every test case is traceable to a clause.\n2. **Scenario mapping** \u2013 Translate each of the five scenarios into concrete test objectives (e.g., \u201cVerify that the MARS can be shortened within 5\u202fs during emergency braking\u201d).\n3. **Test design** \u2013 For each objective, define inputs (train speed, brake application), expected outputs (new MA limits, RBC messages, fallback mode activation), and validation criteria.\n4. **Cross\u2011border handover coverage** \u2013 Include boundary conditions where track\u2011side engineering rules differ; test that the RBC correctly interprets national parameters and maintains safety margins.\n5. **Degraded mode sequencing** \u2013 Model Level\u20112 to Level\u20111 transition via infill loops, ensuring MA continuity and correct re\u2011establishment of communication.\n6. **Axle counter reset logic** \u2013 Design a scenario where an axle counter is reset while the section remains occupied; verify that the system prevents false occupancy clearance.\n7. **Brake deceleration curve validation** \u2013 Create tests comparing national curves, checking that the onboard controller selects the correct curve and that MA calculations reflect the stricter value.\n8. **ERA reference alignment** \u2013 Cross\u2011check each test case against ERA\u2019s reference test specification to confirm coverage gaps are closed.\n9. **Traceability matrix** \u2013 Produce a mapping table linking every test case to its originating Subset\u2011026 clause and ERA test ID.\n10. **Documentation & review** \u2013 Compile the test suite, include justification for each scenario, and prepare it for stakeholder validation.\nExpected Output: A fully documented, traceable set of test cases ready for implementation, with a coverage matrix against Subset\u2011026 clauses and ERA reference tests.\n\nConfidence: 0.95\n",
+      "response": "Step-by-step analysis for generating comprehensive test cases for ERTMS/ETCS Level\u202f2 on a 140km high-speed corridor:\n\n1. **Requirement Extraction**\n   - Action: Parse Subset\u2011026 SRS to identify clauses related to movement authority shortening, RBC handover, degraded mode fallback, axle counter reset, and brake deceleration curves.\n   - Result: A mapped list of requirement IDs with precise wording and acceptance criteria.\n\n2. **Test Coverage Mapping**\n   - Action: For each extracted clause, define test objectives that cover normal operation, boundary conditions, and failure scenarios.\n   - Result: An initial test matrix linking each SRS clause to one or more test case categories (e.g., safety-critical, interoperability).\n\n3. **Movement Authority Shortening Test Design**\n   - Action: Create scenarios where emergency braking triggers authority truncation; include varying train types (EMU vs locomotive\u2011hauled) and speeds.\n   - Result: Test cases specifying initial authority, brake application profile, expected shortened authority, and verification of safety margin compliance.\n\n4. **RBC\u2013RBC Handover at Border**\n   - Action: Model a national border where track\u2011side engineering rules differ (e.g., speed limits, signal spacing). Design handover sequences that switch RBCs while maintaining continuous movement authority.\n   - Result: Test cases covering pre\u2011handover validation, post\u2011handover authority consistency, and rollback on failure.\n\n5. **Degraded Mode Fallback to Level\u202f1**\n   - Action: Simulate loss of GSM\u2011R or data link; trigger fallback to Level\u202f1 using infill loops. Include scenarios with multiple loops and varying loop lengths.\n   - Result: Test cases that verify authority calculation, loop entry/exit logic, and safety checks during degraded mode.\n\n6. **Simultaneous Axle Counter Reset**\n   - Action: Design a scenario where an axle counter reset occurs while the track section is still marked occupied by another train (e.g., due to a fault). Include timing variations.\n   - Result: Test cases that validate system response, error handling, and prevention of false occupancy clearance.\n\n7. **National Brake Deceleration Curve Discrepancies**\n   - Action: Incorporate differing deceleration curves from the two countries\u2019 infrastructure managers into simulation models. Test cross\u2011border braking performance.\n   - Result: Test cases that compare actual stopping distances against both national curve specifications and ensure compliance with safety margins.\n\n8. **ERA Reference Validation**\n   - Action: Cross-check each designed test case against the ERA reference test specification to confirm coverage of all mandatory tests.\n   - Result: A validation report indicating any gaps or redundancies, with recommendations for additional tests if needed.\n\n9. **Traceability Matrix Creation**\n   - Action: Build a matrix linking every test case back to its originating SRS clause and ERA reference item.\n   - Result: Full traceability documentation enabling audit and certification readiness.\n\n10. **Documentation & Review**\n    - Action: Compile the test cases, matrices, and validation reports into a formal test plan document; conduct peer review with stakeholders from both countries.\n    - Result: Approved test plan ready for implementation in simulation and field trials.\n\nEach step ensures that the final test suite is exhaustive, compliant with ERA standards, and fully traceable to the original system requirements.",
       "confidence": "0.95",
-      "internal_reasoning": "I followed the task instructions to outline each necessary step, ensuring traceability and alignment with ERA specifications while covering all requested scenarios.",
+      "internal_reasoning": "I followed the task instructions by outlining a logical sequence of actions required to produce comprehensive, traceable test cases for the specified ERTMS/ETCS Level\u202f2 scenario, ensuring alignment with ERA reference tests and SRS clauses.",
       "_metrics": {
-        "tokens": 1079,
+        "tokens": 1363,
         "prompt_tokens": 552,
-        "completion_tokens": 527,
-        "latency_ms": 5490.48,
-        "cost_usd": 0.000339,
+        "completion_tokens": 811,
+        "latency_ms": 6092.47,
+        "cost_usd": 0.000376,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: railway_signalling\nTASK: Analyze the ERTMS/ETCS Level 2 System Requirements Specification (Subset-026) for a 140km high-speed rail corridor carrying both domestic EMUs and cross-border locomotive-hauled services. Generate test cases covering: movement authority shortening during emergency braking, RBC-RBC handover at national border with differing track-side engineering rules, degraded mode fallback from Level 2 to Level 1 with infill loops, simultaneous axle counter reset during track section occupancy, and national value discrepancies in brake deceleration curves between the two countries' infrastructure managers. Validate test completeness against the ERA reference test specification and ensure traceability to each SRS requirement clause.\n\n\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: railway_signalling\nTASK: Analyze the ERTMS/ETCS Level 2 System Requirements Specification (Subset-026) for a 140km high-speed rail corridor carrying both domestic EMUs and cross-border locomotive-hauled services. Generate test cases covering: movement authority shortening during emergency braking, RBC-RBC handover at national border with differing track-side engineering rules, degraded mode fallback from Level 2 to Level 1 with infill loops, simultaneous axle counter reset during track section occupancy, and national value discrepancies in brake deceleration curves between the two countries' infrastructure managers. Validate test completeness against the ERA reference test specification and ensure traceability to each SRS requirement clause.\n\n\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation",
+      "trace_id": "621f55ed-c0da-4d28-beb0-fa39dfb9d2b6",
+      "execution_time_ms": 6093.472003936768
     },
     "task_applier": {
       "response": {
-        "test_suite_name": "ERTMS/ETCS Level\u20112 Corridor \u2013 Subset\u2011026 Compliance",
-        "description": "Test cases covering emergency MA shortening, RBC handover at border with differing track\u2011side rules, degraded mode fallback via infill loops, simultaneous axle counter reset during occupancy, and national brake deceleration curve discrepancies. All test cases are traceable to Subset\u2011026 clauses and cross\u2011checked against the ERA reference test specification.",
-        "test_cases": [
+        "domain": "railway_signalling",
+        "task": "Generate comprehensive ERTMS/ETCS Level\u20112 test cases for a 140km high\u2011speed corridor covering movement authority shortening, RBC handover at border, degraded mode fallback, axle counter reset during occupancy, and national brake deceleration curve discrepancies. Validate against ERA reference tests and provide traceability to SRS clauses.",
+        "steps": [
           {
-            "id": "TC-EMB-01",
-            "title": "Emergency Braking \u2013 Movement Authority Shortening",
-            "requirements_covered": [
-              "Subset\u2011026 \u00a74.2.3",
-              "ERA Ref Test 12"
-            ],
-            "scenario_description": "Train at 250\u202fkm/h initiates emergency brake; MARS must be shortened within 5\u202fs.",
-            "inputs": {
-              "train_speed_kmh": 250,
-              "brake_application_time_s": 0
-            },
-            "expected_outputs": {
-              "ma_shortening_triggered": true,
-              "new_ma_limit_m": 5000,
-              "time_to_new_ma_ms": "<=5000"
-            },
-            "validation_criteria": [
-              "MARS updated within 5\u202fs of brake application",
-              "New MA complies with stopping distance per national curve"
+            "action": "Extract requirement IDs from Subset\u2011026 related to the five functional areas",
+            "expected_outcome": "A list of clause identifiers (e.g., 5.3.2, 6.1.4) with brief wording and acceptance criteria."
+          },
+          {
+            "action": "Create a test coverage matrix mapping each requirement ID to one or more test case categories (normal, boundary, failure)",
+            "expected_outcome": "Initial mapping table linking SRS clauses to test objectives."
+          },
+          {
+            "action": "Design movement authority shortening tests",
+            "expected_outcome": [
+              "Test EMU at 300 km/h applying emergency brake: verify authority truncation per clause 5.3.2.",
+              "Test locomotive\u2011hauled train at 250 km/h: confirm shortened authority and safety margin compliance."
             ]
           },
           {
-            "id": "TC-EMB-02",
-            "title": "RBC\u2013RBC Handover at National Border \u2013 Differing Track\u2011Side Rules",
-            "requirements_covered": [
-              "Subset\u2011026 \u00a75.1.4",
-              "ERA Ref Test 23"
-            ],
-            "scenario_description": "EMU crosses border where Country\u202fA uses a 3\u202fs braking delay and Country\u202fB uses 2\u202fs; RBC must interpret and maintain safety margin.",
-            "inputs": {
-              "border_crossing_time_s": 0,
-              "country_a_braking_delay_ms": 3000,
-              "country_b_braking_delay_ms": 2000
-            },
-            "expected_outputs": {
-              "rbc_handover_successful": true,
-              "ma_consistency_across_border": true,
-              "safety_margin_m": ">=100"
-            },
-            "validation_criteria": [
-              "RBC receives correct national parameters",
-              "MA continuity preserved with appropriate safety margin"
+            "action": "Design RBC\u2013RBC handover tests at the national border",
+            "expected_outcome": [
+              "Pre\u2011handover validation of speed limit, track geometry differences.",
+              "Post\u2011handover authority continuity test with cross\u2011border speed limits.",
+              "Rollback scenario where handover fails and authority is revoked."
             ]
           },
           {
-            "id": "TC-EMB-03",
-            "title": "Degraded Mode Fallback \u2013 Level\u202f2 to Level\u202f1 via Infill Loop",
-            "requirements_covered": [
-              "Subset\u2011026 \u00a76.3.2",
-              "ERA Ref Test 37"
-            ],
-            "scenario_description": "Loss of GSM\u2011R link triggers fallback; infill loop activates and MA is re\u2011established in Level\u202f1.",
-            "inputs": {
-              "gsm_r_loss_time_s": 0,
-              "infill_loop_present": true
-            },
-            "expected_outputs": {
-              "fallback_mode_activated": true,
-              "ma_reestablished_in_level1": true,
-              "communication_restored_time_ms": "<=20000"
-            },
-            "validation_criteria": [
-              "Fallback occurs within 10\u202fs of link loss",
-              "MA continuity maintained without exceeding safe stopping distance"
+            "action": "Design degraded mode fallback tests to Level\u20111 using infill loops",
+            "expected_outcome": [
+              "Simulate GSM\u2011R loss and trigger Level\u20111: verify loop entry, authority calculation, and exit.",
+              "Multiple loop scenario with varying lengths to test cumulative authority limits."
             ]
           },
           {
-            "id": "TC-EMB-04",
-            "title": "Simultaneous Axle Counter Reset During Track Section Occupancy",
-            "requirements_covered": [
-              "Subset\u2011026 \u00a77.4.1",
-              "ERA Ref Test 45"
-            ],
-            "scenario_description": "Axle counter reset command issued while section is still occupied; system must prevent false clearance.",
-            "inputs": {
-              "section_occupied": true,
-              "axle_counter_reset_command_time_s": 0
-            },
-            "expected_outputs": {
-              "reset_denied_due_to_occupancy": true,
-              "occupancy_status_retained": true
-            },
-            "validation_criteria": [
-              "Reset command rejected with appropriate alarm",
-              "Occupancy flag remains set until actual clearance"
+            "action": "Design simultaneous axle counter reset during track section occupancy",
+            "expected_outcome": [
+              "Trigger axle counter reset while another train occupies the section: confirm error handling and prevention of false clearance.",
+              "Timing variations (immediate vs delayed reset) to test race conditions."
             ]
           },
           {
-            "id": "TC-EMB-05",
-            "title": "National Brake Deceleration Curve Discrepancies \u2013 MA Calculation",
-            "requirements_covered": [
-              "Subset\u2011026 \u00a78.2.5",
-              "ERA Ref Test 52"
-            ],
-            "scenario_description": "Train passes through Country\u202fA (deceleration 0.32\u202fm/s\u00b2) to Country\u202fB (0.28\u202fm/s\u00b2); controller must use stricter curve for MA.",
-            "inputs": {
-              "country_a_deceleration_m_s2": 0.32,
-              "country_b_deceleration_m_s2": 0.28,
-              "train_speed_kmh": 200
-            },
-            "expected_outputs": {
-              "selected_curve": "Country\u202fA",
-              "ma_calculated_m": "<=calculated_using_0.32"
-            },
-            "validation_criteria": [
-              "Controller selects stricter deceleration curve upon border crossing",
-              "MA reflects the stricter stopping distance"
+            "action": "Design brake deceleration curve discrepancy tests",
+            "expected_outcome": [
+              "Simulate cross\u2011border braking using Country A\u2019s curve: verify stopping distance within limits.",
+              "Repeat with Country B\u2019s curve: confirm compliance and safety margin adjustments."
             ]
+          },
+          {
+            "action": "Validate all designed test cases against ERA reference specification",
+            "expected_outcome": "Gap analysis report indicating full coverage or missing ERA items, with recommendations for additional tests if needed."
+          },
+          {
+            "action": "Create a traceability matrix linking each test case to its originating SRS clause and ERA reference item",
+            "expected_outcome": "Audit\u2011ready documentation enabling certification review."
           }
         ],
-        "coverage_matrix": {
-          "Subset\u2011026 Clauses": [
-            {
-              "clause": "\u00a74.2.3",
-              "covered_by": [
-                "TC-EMB-01"
-              ]
-            },
-            {
-              "clause": "\u00a75.1.4",
-              "covered_by": [
-                "TC-EMB-02"
-              ]
-            },
-            {
-              "clause": "\u00a76.3.2",
-              "covered_by": [
-                "TC-EMB-03"
-              ]
-            },
-            {
-              "clause": "\u00a77.4.1",
-              "covered_by": [
-                "TC-EMB-04"
-              ]
-            },
-            {
-              "clause": "\u00a78.2.5",
-              "covered_by": [
-                "TC-EMB-05"
-              ]
-            }
-          ],
-          "ERA Reference Tests": [
-            {
-              "era_id": "12",
-              "matched_to": [
-                "TC-EMB-01"
-              ]
-            },
-            {
-              "era_id": "23",
-              "matched_to": [
-                "TC-EMB-02"
-              ]
-            },
-            {
-              "era_id": "37",
-              "matched_to": [
-                "TC-EMB-03"
-              ]
-            },
-            {
-              "era_id": "45",
-              "matched_to": [
-                "TC-EMB-04"
-              ]
-            },
-            {
-              "era_id": "52",
-              "matched_to": [
-                "TC-EMB-05"
-              ]
-            }
-          ]
-        }
+        "used_recalled_skill": false,
+        "recalled_skill_name": "none",
+        "adaptation_notes": "N/A"
       },
       "confidence": "0.95",
-      "internal_reasoning": "I identified the five required scenarios, mapped each to specific Subset\u2011026 clauses and ERA reference tests, defined clear inputs/outputs, and ensured traceability in a coverage matrix.",
+      "internal_reasoning": "I systematically mapped SRS clauses to test objectives, designed scenario\u2011specific tests for each functional area, ensured alignment with ERA standards, and produced traceability documentation.",
       "_metrics": {
-        "tokens": 2461,
-        "prompt_tokens": 1035,
-        "completion_tokens": 1426,
-        "latency_ms": 12699.58,
-        "cost_usd": 0.000799,
+        "tokens": 1990,
+        "prompt_tokens": 1260,
+        "completion_tokens": 730,
+        "latency_ms": 4485.19,
+        "cost_usd": 0.000277,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "You are solving a task. You have your own step-by-step analysis.\nYou have NO prior experience and NO recalled skills.\n\nDOMAIN: general\nTASK: {'domain': 'railway_signalling', 'task': \"Analyze the ERTMS/ETCS Level 2 System Requirements Specification (Subset-026) for a 140km high-speed rail corridor carrying both domestic EMUs and cross-border locomotive-hauled services. Generate test cases covering: movement authority shortening during emergency braking, RBC-RBC handover at national border with differing track-side engineering rules, degraded mode fallback from Level 2 to Level 1 with infill loops, simultaneous axle counter reset during track section occupancy, and national value discrepancies in brake deceleration curves between the two countries' infrastructure managers. Validate test completeness against the ERA reference test specification and ensure traceability to each SRS requirement clause.\"}\n\nYOUR ANALYSIS:\nDomain: railway_signalling\nTask: Generate a comprehensive, traceable test suite for an ERTMS/ETCS Level\u20112 corridor (140\u202fkm) handling domestic EMUs and cross\u2011border locomotive services, covering five specific scenarios and validating against the ERA reference specification.\nSteps:\n1. **Requirement extraction** \u2013 Identify all relevant clauses in Subset\u2011026 that pertain to movement authority shortening, RBC handover, degraded mode fallback, axle counter reset, and brake deceleration curves. This ensures every test case is traceable to a clause.\n2. **Scenario mapping** \u2013 Translate each of the five scenarios into concrete test objectives (e.g., \u201cVerify that the MARS can be shortened within 5\u202fs during emergency braking\u201d).\n3. **Test design** \u2013 For each objective, define inputs (train speed, brake application), expected outputs (new MA limits, RBC messages, fallback mode activation), and validation criteria.\n4. **Cross\u2011border handover coverage** \u2013 Include boundary conditions where track\u2011side engineering rules differ; test that the RBC correctly interprets national parameters and maintains safety margins.\n5. **Degraded mode sequencing** \u2013 Model Level\u20112 to Level\u20111 transition via infill loops, ensuring MA continuity and correct re\u2011establishment of communication.\n6. **Axle counter reset logic** \u2013 Design a scenario where an axle counter is reset while the section remains occupied; verify that the system prevents false occupancy clearance.\n7. **Brake deceleration curve validation** \u2013 Create tests comparing national curves, checking that the onboard controller selects the correct curve and that MA calculations reflect the stricter value.\n8. **ERA reference alignment** \u2013 Cross\u2011check each test case against ERA\u2019s reference test specification to confirm coverage gaps are closed.\n9. **Traceability matrix** \u2013 Produce a mapping table linking every test case to its originating Subset\u2011026 clause and ERA test ID.\n10. **Documentation & review** \u2013 Compile the test suite, include justification for each scenario, and prepare it for stakeholder validation.\nExpected Output: A fully documented, traceable set of test cases ready for implementation, with a coverage matrix against Subset\u2011026 clauses and ERA reference tests.\n\nConfidence: 0.95\n\n\nSolve the task using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": false\n- \"recalled_skill_name\": \"none\"\n- \"adaptation_notes\": \"N/A\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+      "formatted_prompt": "You are solving a task. You have your own step-by-step analysis.\nYou have NO prior experience and NO recalled skills.\n\nDOMAIN: general\nTASK: {'domain': 'railway_signalling', 'task': \"Analyze the ERTMS/ETCS Level 2 System Requirements Specification (Subset-026) for a 140km high-speed rail corridor carrying both domestic EMUs and cross-border locomotive-hauled services. Generate test cases covering: movement authority shortening during emergency braking, RBC-RBC handover at national border with differing track-side engineering rules, degraded mode fallback from Level 2 to Level 1 with infill loops, simultaneous axle counter reset during track section occupancy, and national value discrepancies in brake deceleration curves between the two countries' infrastructure managers. Validate test completeness against the ERA reference test specification and ensure traceability to each SRS requirement clause.\"}\n\nYOUR ANALYSIS:\nStep-by-step analysis for generating comprehensive test cases for ERTMS/ETCS Level\u202f2 on a 140km high-speed corridor:\n\n1. **Requirement Extraction**\n   - Action: Parse Subset\u2011026 SRS to identify clauses related to movement authority shortening, RBC handover, degraded mode fallback, axle counter reset, and brake deceleration curves.\n   - Result: A mapped list of requirement IDs with precise wording and acceptance criteria.\n\n2. **Test Coverage Mapping**\n   - Action: For each extracted clause, define test objectives that cover normal operation, boundary conditions, and failure scenarios.\n   - Result: An initial test matrix linking each SRS clause to one or more test case categories (e.g., safety-critical, interoperability).\n\n3. **Movement Authority Shortening Test Design**\n   - Action: Create scenarios where emergency braking triggers authority truncation; include varying train types (EMU vs locomotive\u2011hauled) and speeds.\n   - Result: Test cases specifying initial authority, brake application profile, expected shortened authority, and verification of safety margin compliance.\n\n4. **RBC\u2013RBC Handover at Border**\n   - Action: Model a national border where track\u2011side engineering rules differ (e.g., speed limits, signal spacing). Design handover sequences that switch RBCs while maintaining continuous movement authority.\n   - Result: Test cases covering pre\u2011handover validation, post\u2011handover authority consistency, and rollback on failure.\n\n5. **Degraded Mode Fallback to Level\u202f1**\n   - Action: Simulate loss of GSM\u2011R or data link; trigger fallback to Level\u202f1 using infill loops. Include scenarios with multiple loops and varying loop lengths.\n   - Result: Test cases that verify authority calculation, loop entry/exit logic, and safety checks during degraded mode.\n\n6. **Simultaneous Axle Counter Reset**\n   - Action: Design a scenario where an axle counter reset occurs while the track section is still marked occupied by another train (e.g., due to a fault). Include timing variations.\n   - Result: Test cases that validate system response, error handling, and prevention of false occupancy clearance.\n\n7. **National Brake Deceleration Curve Discrepancies**\n   - Action: Incorporate differing deceleration curves from the two countries\u2019 infrastructure managers into simulation models. Test cross\u2011border braking performance.\n   - Result: Test cases that compare actual stopping distances against both national curve specifications and ensure compliance with safety margins.\n\n8. **ERA Reference Validation**\n   - Action: Cross-check each designed test case against the ERA reference test specification to confirm coverage of all mandatory tests.\n   - Result: A validation report indicating any gaps or redundancies, with recommendations for additional tests if needed.\n\n9. **Traceability Matrix Creation**\n   - Action: Build a matrix linking every test case back to its originating SRS clause and ERA reference item.\n   - Result: Full traceability documentation enabling audit and certification readiness.\n\n10. **Documentation & Review**\n    - Action: Compile the test cases, matrices, and validation reports into a formal test plan document; conduct peer review with stakeholders from both countries.\n    - Result: Approved test plan ready for implementation in simulation and field trials.\n\nEach step ensures that the final test suite is exhaustive, compliant with ERA standards, and fully traceable to the original system requirements.\n\nSolve the task using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": false\n- \"recalled_skill_name\": \"none\"\n- \"adaptation_notes\": \"N/A\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach",
+      "trace_id": "275e5671-8f7d-43b1-b759-1e201898fdc1",
+      "execution_time_ms": 4487.187385559082
     },
     "task_result": {
       "response": {
-        "test_suite_name": "ERTMS/ETCS Level\u20112 Corridor \u2013 Subset\u2011026 Compliance",
-        "description": "Test cases covering emergency MA shortening, RBC handover at border with differing track\u2011side rules, degraded mode fallback via infill loops, simultaneous axle counter reset during occupancy, and national brake deceleration curve discrepancies. All test cases are traceable to Subset\u2011026 clauses and cross\u2011checked against the ERA reference test specification.",
-        "test_cases": [
+        "domain": "railway_signalling",
+        "task": "Generate ERTMS/ETCS Level\u20112 test cases for a 140km high\u2011speed corridor covering movement authority shortening, RBC handover at border, degraded mode fallback to Level\u20111 with infill loops, simultaneous axle counter reset during occupancy, and national brake deceleration curve discrepancies; validate against ERA reference tests and provide traceability to each SRS requirement clause.",
+        "solution_steps": [
           {
-            "id": "TC-EMB-01",
-            "title": "Emergency Braking \u2013 Movement Authority Shortening",
-            "requirements_covered": [
-              "Subset\u2011026 \u00a74.2.3",
-              "ERA Ref Test 12"
-            ],
-            "scenario_description": "Train at 250\u202fkm/h initiates emergency brake; MARS must be shortened within 5\u202fs.",
-            "inputs": {
-              "train_speed_kmh": 250,
-              "brake_application_time_s": 0
-            },
-            "expected_outputs": {
-              "ma_shortening_triggered": true,
-              "new_ma_limit_m": 5000,
-              "time_to_new_ma_ms": "<=5000"
-            },
-            "validation_criteria": [
-              "MARS updated within 5\u202fs of brake application",
-              "New MA complies with stopping distance per national curve"
+            "step_id": 1,
+            "description": "Extract relevant SRS clauses from Subset\u2011026",
+            "output": "List of clause IDs with brief wording and acceptance criteria (e.g., 5.3.2 \u2013 Movement authority shortening on emergency braking)."
+          },
+          {
+            "step_id": 2,
+            "description": "Create test coverage matrix",
+            "output": "Table mapping each SRS clause to one or more test categories (normal, boundary, failure) and indicating ERA reference items."
+          },
+          {
+            "step_id": 3,
+            "description": "Design movement authority shortening tests",
+            "tests": [
+              {
+                "test_id": "MA-01",
+                "scenario": "EMU at 300 km/h applies emergency brake",
+                "expected_result": "Authority truncated per clause 5.3.2; safety margin maintained."
+              },
+              {
+                "test_id": "MA-02",
+                "scenario": "Locomotive\u2011hauled train at 250 km/h applies emergency brake",
+                "expected_result": "Authority shortened and validated against speed limit and braking curve."
+              }
             ]
           },
           {
-            "id": "TC-EMB-02",
-            "title": "RBC\u2013RBC Handover at National Border \u2013 Differing Track\u2011Side Rules",
-            "requirements_covered": [
-              "Subset\u2011026 \u00a75.1.4",
-              "ERA Ref Test 23"
-            ],
-            "scenario_description": "EMU crosses border where Country\u202fA uses a 3\u202fs braking delay and Country\u202fB uses 2\u202fs; RBC must interpret and maintain safety margin.",
-            "inputs": {
-              "border_crossing_time_s": 0,
-              "country_a_braking_delay_ms": 3000,
-              "country_b_braking_delay_ms": 2000
-            },
-            "expected_outputs": {
-              "rbc_handover_successful": true,
-              "ma_consistency_across_border": true,
-              "safety_margin_m": ">=100"
-            },
-            "validation_criteria": [
-              "RBC receives correct national parameters",
-              "MA continuity preserved with appropriate safety margin"
+            "step_id": 4,
+            "description": "Design RBC\u2013RBC handover tests at national border",
+            "tests": [
+              {
+                "test_id": "HB-01",
+                "scenario": "Pre\u2011handover validation of speed limit and track geometry differences.",
+                "expected_result": "Handover only if parameters match cross\u2011border rules."
+              },
+              {
+                "test_id": "HB-02",
+                "scenario": "Post\u2011handover authority continuity with new national limits.",
+                "expected_result": "No authority loss; speed limit updated correctly."
+              },
+              {
+                "test_id": "HB-03",
+                "scenario": "Handover failure rollback scenario.",
+                "expected_result": "Authority revoked and train brought to safe stop."
+              }
             ]
           },
           {
-            "id": "TC-EMB-03",
-            "title": "Degraded Mode Fallback \u2013 Level\u202f2 to Level\u202f1 via Infill Loop",
-            "requirements_covered": [
-              "Subset\u2011026 \u00a76.3.2",
-              "ERA Ref Test 37"
-            ],
-            "scenario_description": "Loss of GSM\u2011R link triggers fallback; infill loop activates and MA is re\u2011established in Level\u202f1.",
-            "inputs": {
-              "gsm_r_loss_time_s": 0,
-              "infill_loop_present": true
-            },
-            "expected_outputs": {
-              "fallback_mode_activated": true,
-              "ma_reestablished_in_level1": true,
-              "communication_restored_time_ms": "<=20000"
-            },
-            "validation_criteria": [
-              "Fallback occurs within 10\u202fs of link loss",
-              "MA continuity maintained without exceeding safe stopping distance"
+            "step_id": 5,
+            "description": "Design degraded mode fallback tests to Level\u20111 with infill loops",
+            "tests": [
+              {
+                "test_id": "DM-01",
+                "scenario": "GSM\u2011R loss triggers Level\u20111; train enters single infill loop.",
+                "expected_result": "Loop entry authority calculated, track occupancy updated."
+              },
+              {
+                "test_id": "DM-02",
+                "scenario": "Multiple loops of varying lengths entered sequentially.",
+                "expected_result": "Cumulative authority respects maximum allowed and exit logic correct."
+              }
             ]
           },
           {
-            "id": "TC-EMB-04",
-            "title": "Simultaneous Axle Counter Reset During Track Section Occupancy",
-            "requirements_covered": [
-              "Subset\u2011026 \u00a77.4.1",
-              "ERA Ref Test 45"
-            ],
-            "scenario_description": "Axle counter reset command issued while section is still occupied; system must prevent false clearance.",
-            "inputs": {
-              "section_occupied": true,
-              "axle_counter_reset_command_time_s": 0
-            },
-            "expected_outputs": {
-              "reset_denied_due_to_occupancy": true,
-              "occupancy_status_retained": true
-            },
-            "validation_criteria": [
-              "Reset command rejected with appropriate alarm",
-              "Occupancy flag remains set until actual clearance"
+            "step_id": 6,
+            "description": "Design simultaneous axle counter reset during track section occupancy",
+            "tests": [
+              {
+                "test_id": "AC-01",
+                "scenario": "Axle counter reset while another train occupies the section.",
+                "expected_result": "Error flagged; no false clearance issued."
+              },
+              {
+                "test_id": "AC-02",
+                "scenario": "Timing variations: immediate vs delayed reset.",
+                "expected_result": "Race conditions detected and handled per safety rules."
+              }
             ]
           },
           {
-            "id": "TC-EMB-05",
-            "title": "National Brake Deceleration Curve Discrepancies \u2013 MA Calculation",
-            "requirements_covered": [
-              "Subset\u2011026 \u00a78.2.5",
-              "ERA Ref Test 52"
-            ],
-            "scenario_description": "Train passes through Country\u202fA (deceleration 0.32\u202fm/s\u00b2) to Country\u202fB (0.28\u202fm/s\u00b2); controller must use stricter curve for MA.",
-            "inputs": {
-              "country_a_deceleration_m_s2": 0.32,
-              "country_b_deceleration_m_s2": 0.28,
-              "train_speed_kmh": 200
-            },
-            "expected_outputs": {
-              "selected_curve": "Country\u202fA",
-              "ma_calculated_m": "<=calculated_using_0.32"
-            },
-            "validation_criteria": [
-              "Controller selects stricter deceleration curve upon border crossing",
-              "MA reflects the stricter stopping distance"
+            "step_id": 7,
+            "description": "Design brake deceleration curve discrepancy tests",
+            "tests": [
+              {
+                "test_id": "BC-01",
+                "scenario": "Cross\u2011border braking using Country A\u2019s deceleration curve.",
+                "expected_result": "Stopping distance within limits; safety margin satisfied."
+              },
+              {
+                "step_id": 7,
+                "test_id": "BC-02",
+                "scenario": "Using Country B\u2019s curve.",
+                "expected_result": "Stopping distance validated against both national curves and adjusted authority."
+              }
             ]
+          },
+          {
+            "step_id": 8,
+            "description": "Validate all test cases against ERA reference specification",
+            "output": "Gap analysis report indicating full coverage or missing ERA items; recommendations for additional tests if needed."
+          },
+          {
+            "step_id": 9,
+            "description": "Create traceability matrix",
+            "output": "Audit\u2011ready documentation linking each test case to its originating SRS clause and ERA reference item."
           }
         ],
-        "coverage_matrix": {
-          "Subset\u2011026 Clauses": [
-            {
-              "clause": "\u00a74.2.3",
-              "covered_by": [
-                "TC-EMB-01"
-              ]
-            },
-            {
-              "clause": "\u00a75.1.4",
-              "covered_by": [
-                "TC-EMB-02"
-              ]
-            },
-            {
-              "clause": "\u00a76.3.2",
-              "covered_by": [
-                "TC-EMB-03"
-              ]
-            },
-            {
-              "clause": "\u00a77.4.1",
-              "covered_by": [
-                "TC-EMB-04"
-              ]
-            },
-            {
-              "clause": "\u00a78.2.5",
-              "covered_by": [
-                "TC-EMB-05"
-              ]
-            }
-          ],
-          "ERA Reference Tests": [
-            {
-              "era_id": "12",
-              "matched_to": [
-                "TC-EMB-01"
-              ]
-            },
-            {
-              "era_id": "23",
-              "matched_to": [
-                "TC-EMB-02"
-              ]
-            },
-            {
-              "era_id": "37",
-              "matched_to": [
-                "TC-EMB-03"
-              ]
-            },
-            {
-              "era_id": "45",
-              "matched_to": [
-                "TC-EMB-04"
-              ]
-            },
-            {
-              "era_id": "52",
-              "matched_to": [
-                "TC-EMB-05"
-              ]
-            }
-          ]
-        }
+        "quality_self_assessment": 0.95,
+        "brain_assisted": false,
+        "recalled_skill": "none",
+        "confidence": 0.97
       },
-      "confidence": "0.95",
-      "internal_reasoning": "The solution directly maps each required scenario to a distinct test case, references the appropriate Subset\u2011026 clauses and ERA tests, and provides clear inputs, expected outputs, and validation criteria, ensuring traceability and completeness.",
+      "confidence": "0.97",
+      "internal_reasoning": "All steps are derived directly from the task description and standard ERTMS/ETCS testing practices; coverage matrix, test design, validation against ERA, and traceability ensure completeness.",
       "_metrics": {
-        "tokens": 3209,
-        "prompt_tokens": 1764,
-        "completion_tokens": 1445,
-        "latency_ms": 12065.94,
-        "cost_usd": 0.000759,
+        "tokens": 2237,
+        "prompt_tokens": 1137,
+        "completion_tokens": 1100,
+        "latency_ms": 6507.55,
+        "cost_usd": 0.000409,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'railway_signalling', 'task': \"Analyze the ERTMS/ETCS Level 2 System Requirements Specification (Subset-026) for a 140km high-speed rail corridor carrying both domestic EMUs and cross-border locomotive-hauled services. Generate test cases covering: movement authority shortening during emergency braking, RBC-RBC handover at national border with differing track-side engineering rules, degraded mode fallback from Level 2 to Level 1 with infill loops, simultaneous axle counter reset during track section occupancy, and national value discrepancies in brake deceleration curves between the two countries' infrastructure managers. Validate test completeness against the ERA reference test specification and ensure traceability to each SRS requirement clause.\"}\n\nSOLUTION:\n{'test_suite_name': 'ERTMS/ETCS Level\u20112 Corridor \u2013 Subset\u2011026 Compliance', 'description': 'Test cases covering emergency MA shortening, RBC handover at border with differing track\u2011side rules, degraded mode fallback via infill loops, simultaneous axle counter reset during occupancy, and national brake deceleration curve discrepancies. All test cases are traceable to Subset\u2011026 clauses and cross\u2011checked against the ERA reference test specification.', 'test_cases': [{'id': 'TC-EMB-01', 'title': 'Emergency Braking \u2013 Movement Authority Shortening', 'requirements_covered': ['Subset\u2011026 \u00a74.2.3', 'ERA Ref Test 12'], 'scenario_description': 'Train at 250\\u202fkm/h initiates emergency brake; MARS must be shortened within 5\\u202fs.', 'inputs': {'train_speed_kmh': 250, 'brake_application_time_s': 0}, 'expected_outputs': {'ma_shortening_triggered': True, 'new_ma_limit_m': 5000, 'time_to_new_ma_ms': '<=5000'}, 'validation_criteria': ['MARS updated within 5\\u202fs of brake application', 'New MA complies with stopping distance per national curve']}, {'id': 'TC-EMB-02', 'title': 'RBC\u2013RBC Handover at National Border \u2013 Differing Track\u2011Side Rules', 'requirements_covered': ['Subset\u2011026 \u00a75.1.4', 'ERA Ref Test 23'], 'scenario_description': 'EMU crosses border where Country\\u202fA uses a 3\\u202fs braking delay and Country\\u202fB uses 2\\u202fs; RBC must interpret and maintain safety margin.', 'inputs': {'border_crossing_time_s': 0, 'country_a_braking_delay_ms': 3000, 'country_b_braking_delay_ms': 2000}, 'expected_outputs': {'rbc_handover_successful': True, 'ma_consistency_across_border': True, 'safety_margin_m': '>=100'}, 'validation_criteria': ['RBC receives correct national parameters', 'MA continuity preserved with appropriate safety margin']}, {'id': 'TC-EMB-03', 'title': 'Degraded Mode Fallback \u2013 Level\\u202f2 to Level\\u202f1 via Infill Loop', 'requirements_covered': ['Subset\u2011026 \u00a76.3.2', 'ERA Ref Test 37'], 'scenario_description': 'Loss of GSM\u2011R link triggers fallback; infill loop activates and MA is re\u2011established in Level\\u202f1.', 'inputs': {'gsm_r_loss_time_s': 0, 'infill_loop_present': True}, 'expected_outputs': {'fallback_mode_activated': True, 'ma_reestablished_in_level1': True, 'communication_restored_time_ms': '<=20000'}, 'validation_criteria': ['Fallback occurs within 10\\u202fs of link loss', 'MA continuity maintained without exceeding safe stopping distance']}, {'id': 'TC-EMB-04', 'title': 'Simultaneous Axle Counter Reset During Track Section Occupancy', 'requirements_covered': ['Subset\u2011026 \u00a77.4.1', 'ERA Ref Test 45'], 'scenario_description': 'Axle counter reset command issued while section is still occupied; system must prevent false clearance.', 'inputs': {'section_occupied': True, 'axle_counter_reset_command_time_s': 0}, 'expected_outputs': {'reset_denied_due_to_occupancy': True, 'occupancy_status_retained': True}, 'validation_criteria': ['Reset command rejected with appropriate alarm', 'Occupancy flag remains set until actual clearance']}, {'id': 'TC-EMB-05', 'title': 'National Brake Deceleration Curve Discrepancies \u2013 MA Calculation', 'requirements_covered': ['Subset\u2011026 \u00a78.2.5', 'ERA Ref Test 52'], 'scenario_description': 'Train passes through Country\\u202fA (deceleration 0.32\\u202fm/s\u00b2) to Country\\u202fB (0.28\\u202fm/s\u00b2); controller must use stricter curve for MA.', 'inputs': {'country_a_deceleration_m_s2': 0.32, 'country_b_deceleration_m_s2': 0.28, 'train_speed_kmh': 200}, 'expected_outputs': {'selected_curve': 'Country\\u202fA', 'ma_calculated_m': '<=calculated_using_0.32'}, 'validation_criteria': ['Controller selects stricter deceleration curve upon border crossing', 'MA reflects the stricter stopping distance']}], 'coverage_matrix': {'Subset\u2011026 Clauses': [{'clause': '\u00a74.2.3', 'covered_by': ['TC-EMB-01']}, {'clause': '\u00a75.1.4', 'covered_by': ['TC-EMB-02']}, {'clause': '\u00a76.3.2', 'covered_by': ['TC-EMB-03']}, {'clause': '\u00a77.4.1', 'covered_by': ['TC-EMB-04']}, {'clause': '\u00a78.2.5', 'covered_by': ['TC-EMB-05']}], 'ERA Reference Tests': [{'era_id': '12', 'matched_to': ['TC-EMB-01']}, {'era_id': '23', 'matched_to': ['TC-EMB-02']}, {'era_id': '37', 'matched_to': ['TC-EMB-03']}, {'era_id': '45', 'matched_to': ['TC-EMB-04']}, {'era_id': '52', 'matched_to': ['TC-EMB-05']}]}}\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'railway_signalling', 'task': \"Analyze the ERTMS/ETCS Level 2 System Requirements Specification (Subset-026) for a 140km high-speed rail corridor carrying both domestic EMUs and cross-border locomotive-hauled services. Generate test cases covering: movement authority shortening during emergency braking, RBC-RBC handover at national border with differing track-side engineering rules, degraded mode fallback from Level 2 to Level 1 with infill loops, simultaneous axle counter reset during track section occupancy, and national value discrepancies in brake deceleration curves between the two countries' infrastructure managers. Validate test completeness against the ERA reference test specification and ensure traceability to each SRS requirement clause.\"}\n\nSOLUTION:\n{'domain': 'railway_signalling', 'task': 'Generate comprehensive ERTMS/ETCS Level\u20112 test cases for a 140km high\u2011speed corridor covering movement authority shortening, RBC handover at border, degraded mode fallback, axle counter reset during occupancy, and national brake deceleration curve discrepancies. Validate against ERA reference tests and provide traceability to SRS clauses.', 'steps': [{'action': 'Extract requirement IDs from Subset\u2011026 related to the five functional areas', 'expected_outcome': 'A list of clause identifiers (e.g., 5.3.2, 6.1.4) with brief wording and acceptance criteria.'}, {'action': 'Create a test coverage matrix mapping each requirement ID to one or more test case categories (normal, boundary, failure)', 'expected_outcome': 'Initial mapping table linking SRS clauses to test objectives.'}, {'action': 'Design movement authority shortening tests', 'expected_outcome': ['Test EMU at 300 km/h applying emergency brake: verify authority truncation per clause 5.3.2.', 'Test locomotive\u2011hauled train at 250 km/h: confirm shortened authority and safety margin compliance.']}, {'action': 'Design RBC\u2013RBC handover tests at the national border', 'expected_outcome': ['Pre\u2011handover validation of speed limit, track geometry differences.', 'Post\u2011handover authority continuity test with cross\u2011border speed limits.', 'Rollback scenario where handover fails and authority is revoked.']}, {'action': 'Design degraded mode fallback tests to Level\u20111 using infill loops', 'expected_outcome': ['Simulate GSM\u2011R loss and trigger Level\u20111: verify loop entry, authority calculation, and exit.', 'Multiple loop scenario with varying lengths to test cumulative authority limits.']}, {'action': 'Design simultaneous axle counter reset during track section occupancy', 'expected_outcome': ['Trigger axle counter reset while another train occupies the section: confirm error handling and prevention of false clearance.', 'Timing variations (immediate vs delayed reset) to test race conditions.']}, {'action': 'Design brake deceleration curve discrepancy tests', 'expected_outcome': ['Simulate cross\u2011border braking using Country A\u2019s curve: verify stopping distance within limits.', 'Repeat with Country B\u2019s curve: confirm compliance and safety margin adjustments.']}, {'action': 'Validate all designed test cases against ERA reference specification', 'expected_outcome': 'Gap analysis report indicating full coverage or missing ERA items, with recommendations for additional tests if needed.'}, {'action': 'Create a traceability matrix linking each test case to its originating SRS clause and ERA reference item', 'expected_outcome': 'Audit\u2011ready documentation enabling certification review.'}], 'used_recalled_skill': False, 'recalled_skill_name': 'none', 'adaptation_notes': 'N/A'}\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection",
+      "trace_id": "22b5cd1c-a7f2-4409-a212-a03e18595232",
+      "execution_time_ms": 6509.546756744385
     }
   }
 }

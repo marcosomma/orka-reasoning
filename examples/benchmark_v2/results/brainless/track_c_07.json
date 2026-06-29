@@ -1,94 +1,29 @@
 {
   "task_id": "track_c_07",
   "condition": "brainless",
-  "elapsed_s": 7.57,
+  "elapsed_s": 5.59,
   "success": true,
   "output": {
-    "response": "Over\u2011escalation is a costly inefficiency in customer support where agents repeatedly hand off tickets to higher tiers without attempting resolution at their level. To mitigate this, organizations should: \n1. **Empower Agents** \u2013 Grant broader permissions and clear escalation guidelines so agents can resolve more issues independently.\n2. **Enhance Knowledge Base** \u2013 Keep documentation comprehensive, searchable, and up\u2011to\u2011date; integrate it into agent workflows.\n3. **Deploy Decision Trees** \u2013 Implement structured troubleshooting flows that guide agents through common solutions before considering escalation.\n4. **Track Escalation Metrics** \u2013 Monitor frequency, reasons, and resolution times to spot patterns and target training.\n5. **Provide Continuous Training** \u2013 Offer regular refresher courses on product updates and problem\u2011solving techniques.\n6. **Encourage Feedback Loops** \u2013 Allow agents to report gaps in documentation or process bottlenecks that lead to unnecessary escalations.\nBy combining these steps, companies can reduce over\u2011escalation, improve time\u2011to\u2011resolution, and increase customer satisfaction.",
-    "confidence": "0.9",
-    "internal_reasoning": "The solution directly addresses the anti\u2011pattern by outlining evidence\u2011based mitigation strategies that align with best practices in support operations.",
+    "response": "Over\u2011escalation is mitigated by a structured approach:\n1. **Clear Escalation Criteria** \u2013 Define explicit thresholds (e.g., technical complexity, time\u2011critical incidents) and train agents on them.\n2. **Empower First\u2011Line Agents** \u2013 Provide comprehensive training, quick reference guides, troubleshooting flows, and decision trees to handle common issues.\n3. **Use Automated Triage Tools** \u2013 Deploy chatbots or ticket classifiers that route tickets correctly from the start, reducing manual escalations.\n4. **Set Escalation Limits** \u2013 Enforce a maximum number of escalations per ticket (e.g., two). Beyond this, require senior review before further escalation.\n5. **Monitor and Feedback Loop** \u2013 Track metrics such as escalation frequency and resolution time; give agents regular feedback and highlight successful self\u2011resolution cases.\n6. **Customer Communication** \u2013 When escalation is necessary, explain the reason, expected timeline, and next steps to maintain transparency and reduce frustration.",
+    "confidence": "0.92",
+    "internal_reasoning": "The solution directly addresses each anti\u2011pattern element with evidence-based practices from support literature; confidence is high due to alignment with established industry guidelines.",
     "_metrics": {
-      "tokens": 2250,
-      "prompt_tokens": 1981,
-      "completion_tokens": 269,
-      "latency_ms": 3335.87,
-      "cost_usd": 0.00021,
+      "tokens": 2323,
+      "prompt_tokens": 2064,
+      "completion_tokens": 259,
+      "latency_ms": 2111.6,
+      "cost_usd": 0.000133,
       "model": "openai/gpt-oss-20b",
       "provider": "lm_studio"
     },
-    "formatted_prompt": "Produce the FINAL structured output.\n\nDOMAIN: customer_support\nTASK: Anti-Pattern: Over-Escalation\n\nROUTING DECISION: shortlist\nTARGET: [{'node_id': 'escalation_handler', 'path': ['escalation_handler', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7022020316123964, 'score_components': {'llm': 0.5, 'heuristics': 0.7960101580619813, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7687418683453066}, {'node_id': 'escalation_handler', 'path': ['escalation_handler', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7022020316123964, 'score_components': {'llm': 0.5, 'heuristics': 0.7960101580619813, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7687418683453066}, {'node_id': 'escalation_handler', 'path': ['escalation_handler', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7022020316123964, 'score_components': {'llm': 0.5, 'heuristics': 0.7960101580619813, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7687418683453066}]\nCONFIDENCE: 0.5687418683453065\n\nEXECUTION RESULT:\nOver\u2011escalation occurs when a support agent repeatedly escalates an issue to higher tiers without attempting to resolve it at the current level, often due to uncertainty or lack of authority. This pattern wastes resources and frustrates customers.\n\n**Key indicators**:\n1. **Repeated escalation** \u2013 The same ticket is passed up multiple times.\n2. **Lack of follow\u2011up** \u2013 No attempt to gather more information before escalating.\n3. **Inadequate knowledge base usage** \u2013 Agent ignores or misuses available documentation.\n4. **Time\u2011to\u2011resolution (TTR) spikes** \u2013 Escalations add significant delay.\n\n**Mitigation strategies**:\n- **Empower agents** with broader permissions and clearer guidelines on when escalation is warranted.\n- **Improve knowledge base**: Ensure it is comprehensive, searchable, and regularly updated.\n- **Implement decision trees** that guide agents through troubleshooting steps before considering escalation.\n- **Track escalation metrics** to identify patterns and provide targeted training.\n\nBy addressing these areas, organizations can reduce over\u2011escalation, improve efficiency, and enhance customer satisfaction.\n\nReturn JSON with:\n- \"response\": comprehensive solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"route_decision\": the routing decision made\n- \"route_target\": selected path\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    "formatted_prompt": "Produce the FINAL structured output.\n\nDOMAIN: customer_support\nTASK: Anti-Pattern: Over-Escalation\n\nROUTING DECISION: shortlist\nTARGET: [{'node_id': 'escalation_handler', 'path': ['escalation_handler', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7022020316123964, 'score_components': {'llm': 0.5, 'heuristics': 0.7960101580619813, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7687418683453066}, {'node_id': 'escalation_handler', 'path': ['escalation_handler', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7022020316123964, 'score_components': {'llm': 0.5, 'heuristics': 0.7960101580619813, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7687418683453066}, {'node_id': 'escalation_handler', 'path': ['escalation_handler', 'quality_checker'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7022020316123964, 'score_components': {'llm': 0.5, 'heuristics': 0.7960101580619813, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7687418683453066}]\nCONFIDENCE: 0.5687418683453065\n\nEXECUTION RESULT:\nOver\u2011escalation occurs when a support agent repeatedly escalates an issue to higher tiers without attempting to resolve it at the current level, leading to customer frustration and inefficiency. To mitigate this anti\u2011pattern, implement the following structured approach:\n\n1. **Clear Escalation Criteria** \u2013 Define explicit conditions that warrant escalation (e.g., technical complexity beyond Tier\u202f1 knowledge base, time\u2011critical incidents). Ensure all agents understand these thresholds.\n2. **Empower First\u2011Line Agents** \u2013 Provide comprehensive training and a robust knowledge base so Tier\u202f1 can handle common issues independently. Include quick reference guides, troubleshooting flows, and decision trees.\n3. **Use Automated Triage Tools** \u2013 Deploy chatbots or automated ticket classifiers to route tickets appropriately from the outset, reducing unnecessary manual escalations.\n4. **Set Escalation Limits** \u2013 Enforce a maximum number of escalations per ticket (e.g., no more than two). After reaching the limit, require a review by a senior agent before further escalation.\n5. **Monitor and Feedback Loop** \u2013 Track escalation metrics (frequency, time to resolution) and provide regular feedback to agents. Highlight successful self\u2011resolution cases as best practices.\n6. **Customer Communication** \u2013 When escalation is unavoidable, inform the customer of the reason, expected timeline, and next steps. Transparency reduces perceived frustration.\n\nBy combining clear policies, agent empowerment, automation, and continuous monitoring, organizations can significantly reduce over\u2011escalation incidents while maintaining high service quality.\n\nReturn JSON with:\n- \"response\": comprehensive solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"route_decision\": the routing decision made\n- \"route_target\": selected path\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection",
+    "trace_id": "0f9ceeb9-0a46-4156-9189-ee187490d908",
+    "execution_time_ms": 2113.5950088500977
   },
   "agent_outputs": {
     "smart_router": {
       "decision": "shortlist",
       "target": [
-        {
-          "node_id": "escalation_handler",
-          "path": [
-            "escalation_handler",
-            "knowledge_base_search"
-          ],
-          "depth": 2,
-          "feasible": true,
-          "constraints_met": true,
-          "graphscout_generated": true,
-          "estimated_cost": 0.002,
-          "estimated_latency": 2000.0,
-          "budget_assessment": {
-            "compliant": true,
-            "violations": [],
-            "estimates": {
-              "tokens": 240,
-              "cost_usd": 0.002,
-              "latency_ms": 2000.0
-            },
-            "remaining_budget": {
-              "tokens": 50000,
-              "cost_usd": 1.0,
-              "latency_ms": 30000.0
-            }
-          },
-          "fits_budget": true,
-          "llm_evaluation": {
-            "relevance_score": 0.5,
-            "confidence": 0.8,
-            "reasoning": "Heuristic evaluation: escalation_handler matched question keywords",
-            "expected_output": "Agent execution result",
-            "estimated_tokens": 500,
-            "estimated_cost": 0.001,
-            "estimated_latency_ms": 1000,
-            "risk_factors": [],
-            "efficiency_rating": "medium",
-            "is_deterministic_fallback": true
-          },
-          "llm_validation": {
-            "is_valid": false,
-            "confidence": 0.8,
-            "efficiency_score": 0.9,
-            "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
-            "suggested_improvements": [],
-            "risk_assessment": "low",
-            "is_deterministic_fallback": true
-          },
-          "safety_score": 1.0,
-          "safety_risks": [],
-          "safety_details": {
-            "content": {},
-            "capabilities": {
-              "forbidden_capabilities": []
-            },
-            "policy": {}
-          },
-          "score": 0.7022020316123964,
-          "score_components": {
-            "llm": 0.5,
-            "heuristics": 0.7960101580619813,
-            "prior": 0.9,
-            "cost": 0.98,
-            "latency": 0.8
-          },
-          "confidence": 0.7687418683453066
-        },
         {
           "node_id": "escalation_handler",
           "path": [
@@ -222,13 +157,80 @@
             "latency": 0.8
           },
           "confidence": 0.7687418683453066
+        },
+        {
+          "node_id": "escalation_handler",
+          "path": [
+            "escalation_handler",
+            "quality_checker"
+          ],
+          "depth": 2,
+          "feasible": true,
+          "constraints_met": true,
+          "graphscout_generated": true,
+          "estimated_cost": 0.002,
+          "estimated_latency": 2000.0,
+          "budget_assessment": {
+            "compliant": true,
+            "violations": [],
+            "estimates": {
+              "tokens": 240,
+              "cost_usd": 0.002,
+              "latency_ms": 2000.0
+            },
+            "remaining_budget": {
+              "tokens": 50000,
+              "cost_usd": 1.0,
+              "latency_ms": 30000.0
+            }
+          },
+          "fits_budget": true,
+          "llm_evaluation": {
+            "relevance_score": 0.5,
+            "confidence": 0.8,
+            "reasoning": "Heuristic evaluation: escalation_handler matched question keywords",
+            "expected_output": "Agent execution result",
+            "estimated_tokens": 500,
+            "estimated_cost": 0.001,
+            "estimated_latency_ms": 1000,
+            "risk_factors": [],
+            "efficiency_rating": "medium",
+            "is_deterministic_fallback": true
+          },
+          "llm_validation": {
+            "is_valid": false,
+            "confidence": 0.8,
+            "efficiency_score": 0.9,
+            "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+            "suggested_improvements": [],
+            "risk_assessment": "low",
+            "is_deterministic_fallback": true
+          },
+          "safety_score": 1.0,
+          "safety_risks": [],
+          "safety_details": {
+            "content": {},
+            "capabilities": {
+              "forbidden_capabilities": []
+            },
+            "policy": {}
+          },
+          "score": 0.7022020316123964,
+          "score_components": {
+            "llm": 0.5,
+            "heuristics": 0.7960101580619813,
+            "prior": 0.9,
+            "cost": 0.98,
+            "latency": 0.8
+          },
+          "confidence": 0.7687418683453066
         }
       ],
       "confidence": 0.5687418683453065,
       "reasoning": "Close competition with margin 0.000 - returning top 3 options",
       "trace": {
         "graph_scout_version": "1.0.0",
-        "timestamp": "2026-04-10T23:12:04.022426+00:00",
+        "timestamp": "2026-06-28T23:31:46.451968+00:00",
         "question": "Given this support request, find the best processing path.\nAnti-Pattern: Over-Escalation",
         "config": {
           "k_beam": 3,
@@ -243,7 +245,7 @@
           }
         },
         "discovery": {
-          "total_candidates": 91,
+          "total_candidates": 49,
           "candidate_nodes": [
             "knowledge_base_search",
             "response_drafter",
@@ -258,18 +260,6 @@
             "knowledge_base_search",
             "knowledge_base_search",
             "knowledge_base_search",
-            "knowledge_base_search",
-            "knowledge_base_search",
-            "knowledge_base_search",
-            "knowledge_base_search",
-            "knowledge_base_search",
-            "knowledge_base_search",
-            "response_drafter",
-            "response_drafter",
-            "response_drafter",
-            "response_drafter",
-            "response_drafter",
-            "response_drafter",
             "response_drafter",
             "response_drafter",
             "response_drafter",
@@ -282,18 +272,6 @@
             "quality_checker",
             "quality_checker",
             "quality_checker",
-            "quality_checker",
-            "quality_checker",
-            "quality_checker",
-            "quality_checker",
-            "quality_checker",
-            "quality_checker",
-            "escalation_handler",
-            "escalation_handler",
-            "escalation_handler",
-            "escalation_handler",
-            "escalation_handler",
-            "escalation_handler",
             "escalation_handler",
             "escalation_handler",
             "escalation_handler",
@@ -306,30 +284,12 @@
             "account_recovery",
             "account_recovery",
             "account_recovery",
-            "account_recovery",
-            "account_recovery",
-            "account_recovery",
-            "account_recovery",
-            "account_recovery",
-            "account_recovery",
             "billing_specialist",
             "billing_specialist",
             "billing_specialist",
             "billing_specialist",
             "billing_specialist",
             "billing_specialist",
-            "billing_specialist",
-            "billing_specialist",
-            "billing_specialist",
-            "billing_specialist",
-            "billing_specialist",
-            "billing_specialist",
-            "technical_support",
-            "technical_support",
-            "technical_support",
-            "technical_support",
-            "technical_support",
-            "technical_support",
             "technical_support",
             "technical_support",
             "technical_support",
@@ -432,7 +392,7 @@
               "node_id": "escalation_handler",
               "path": [
                 "escalation_handler",
-                "knowledge_base_search"
+                "response_drafter"
               ],
               "depth": 2,
               "feasible": true,
@@ -499,7 +459,7 @@
               "node_id": "escalation_handler",
               "path": [
                 "escalation_handler",
-                "response_drafter"
+                "quality_checker"
               ],
               "depth": 2,
               "feasible": true,
@@ -575,9 +535,9 @@
       "status": "success",
       "metrics": {
         "run_id": "unknown",
-        "timestamp": "2026-04-11T01:12:03.874635",
+        "timestamp": "2026-06-29T01:31:46.311901",
         "path_discovery": {
-          "candidates_discovered": 91,
+          "candidates_discovered": 49,
           "candidates_after_budget": 0,
           "candidates_after_safety": 0,
           "reduction_rate": 1.0
@@ -660,7 +620,7 @@
               "node_id": "escalation_handler",
               "path": [
                 "escalation_handler",
-                "knowledge_base_search"
+                "response_drafter"
               ],
               "depth": 2,
               "feasible": true,
@@ -727,7 +687,7 @@
               "node_id": "escalation_handler",
               "path": [
                 "escalation_handler",
-                "response_drafter"
+                "quality_checker"
               ],
               "depth": 2,
               "feasible": true,
@@ -795,7 +755,7 @@
           "reasoning_preview": "Close competition with margin 0.000 - returning top 3 options"
         },
         "performance": {
-          "total_time_ms": 148.30946922302246,
+          "total_time_ms": 140.06662368774414,
           "breakdown": {
             "budget_filter_ms": 0.0,
             "safety_filter_ms": 0.0,
@@ -819,73 +779,6 @@
       "result": {
         "decision": "shortlist",
         "target": [
-          {
-            "node_id": "escalation_handler",
-            "path": [
-              "escalation_handler",
-              "knowledge_base_search"
-            ],
-            "depth": 2,
-            "feasible": true,
-            "constraints_met": true,
-            "graphscout_generated": true,
-            "estimated_cost": 0.002,
-            "estimated_latency": 2000.0,
-            "budget_assessment": {
-              "compliant": true,
-              "violations": [],
-              "estimates": {
-                "tokens": 240,
-                "cost_usd": 0.002,
-                "latency_ms": 2000.0
-              },
-              "remaining_budget": {
-                "tokens": 50000,
-                "cost_usd": 1.0,
-                "latency_ms": 30000.0
-              }
-            },
-            "fits_budget": true,
-            "llm_evaluation": {
-              "relevance_score": 0.5,
-              "confidence": 0.8,
-              "reasoning": "Heuristic evaluation: escalation_handler matched question keywords",
-              "expected_output": "Agent execution result",
-              "estimated_tokens": 500,
-              "estimated_cost": 0.001,
-              "estimated_latency_ms": 1000,
-              "risk_factors": [],
-              "efficiency_rating": "medium",
-              "is_deterministic_fallback": true
-            },
-            "llm_validation": {
-              "is_valid": false,
-              "confidence": 0.8,
-              "efficiency_score": 0.9,
-              "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
-              "suggested_improvements": [],
-              "risk_assessment": "low",
-              "is_deterministic_fallback": true
-            },
-            "safety_score": 1.0,
-            "safety_risks": [],
-            "safety_details": {
-              "content": {},
-              "capabilities": {
-                "forbidden_capabilities": []
-              },
-              "policy": {}
-            },
-            "score": 0.7022020316123964,
-            "score_components": {
-              "llm": 0.5,
-              "heuristics": 0.7960101580619813,
-              "prior": 0.9,
-              "cost": 0.98,
-              "latency": 0.8
-            },
-            "confidence": 0.7687418683453066
-          },
           {
             "node_id": "escalation_handler",
             "path": [
@@ -1019,43 +912,114 @@
               "latency": 0.8
             },
             "confidence": 0.7687418683453066
+          },
+          {
+            "node_id": "escalation_handler",
+            "path": [
+              "escalation_handler",
+              "quality_checker"
+            ],
+            "depth": 2,
+            "feasible": true,
+            "constraints_met": true,
+            "graphscout_generated": true,
+            "estimated_cost": 0.002,
+            "estimated_latency": 2000.0,
+            "budget_assessment": {
+              "compliant": true,
+              "violations": [],
+              "estimates": {
+                "tokens": 240,
+                "cost_usd": 0.002,
+                "latency_ms": 2000.0
+              },
+              "remaining_budget": {
+                "tokens": 50000,
+                "cost_usd": 1.0,
+                "latency_ms": 30000.0
+              }
+            },
+            "fits_budget": true,
+            "llm_evaluation": {
+              "relevance_score": 0.5,
+              "confidence": 0.8,
+              "reasoning": "Heuristic evaluation: escalation_handler matched question keywords",
+              "expected_output": "Agent execution result",
+              "estimated_tokens": 500,
+              "estimated_cost": 0.001,
+              "estimated_latency_ms": 1000,
+              "risk_factors": [],
+              "efficiency_rating": "medium",
+              "is_deterministic_fallback": true
+            },
+            "llm_validation": {
+              "is_valid": false,
+              "confidence": 0.8,
+              "efficiency_score": 0.9,
+              "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+              "suggested_improvements": [],
+              "risk_assessment": "low",
+              "is_deterministic_fallback": true
+            },
+            "safety_score": 1.0,
+            "safety_risks": [],
+            "safety_details": {
+              "content": {},
+              "capabilities": {
+                "forbidden_capabilities": []
+              },
+              "policy": {}
+            },
+            "score": 0.7022020316123964,
+            "score_components": {
+              "llm": 0.5,
+              "heuristics": 0.7960101580619813,
+              "prior": 0.9,
+              "cost": 0.98,
+              "latency": 0.8
+            },
+            "confidence": 0.7687418683453066
           }
         ],
         "confidence": 0.5687418683453065,
         "reasoning": "Close competition with margin 0.000 - returning top 3 options",
-        "candidates_evaluated": 91,
+        "candidates_evaluated": 49,
         "top_score": 0.7022020316123964
       }
     },
     "route_executor": {
-      "response": "Over\u2011escalation occurs when a support agent repeatedly escalates an issue to higher tiers without attempting to resolve it at the current level, often due to uncertainty or lack of authority. This pattern wastes resources and frustrates customers.\n\n**Key indicators**:\n1. **Repeated escalation** \u2013 The same ticket is passed up multiple times.\n2. **Lack of follow\u2011up** \u2013 No attempt to gather more information before escalating.\n3. **Inadequate knowledge base usage** \u2013 Agent ignores or misuses available documentation.\n4. **Time\u2011to\u2011resolution (TTR) spikes** \u2013 Escalations add significant delay.\n\n**Mitigation strategies**:\n- **Empower agents** with broader permissions and clearer guidelines on when escalation is warranted.\n- **Improve knowledge base**: Ensure it is comprehensive, searchable, and regularly updated.\n- **Implement decision trees** that guide agents through troubleshooting steps before considering escalation.\n- **Track escalation metrics** to identify patterns and provide targeted training.\n\nBy addressing these areas, organizations can reduce over\u2011escalation, improve efficiency, and enhance customer satisfaction.",
+      "response": "Over\u2011escalation occurs when a support agent repeatedly escalates an issue to higher tiers without attempting to resolve it at the current level, leading to customer frustration and inefficiency. To mitigate this anti\u2011pattern, implement the following structured approach:\n\n1. **Clear Escalation Criteria** \u2013 Define explicit conditions that warrant escalation (e.g., technical complexity beyond Tier\u202f1 knowledge base, time\u2011critical incidents). Ensure all agents understand these thresholds.\n2. **Empower First\u2011Line Agents** \u2013 Provide comprehensive training and a robust knowledge base so Tier\u202f1 can handle common issues independently. Include quick reference guides, troubleshooting flows, and decision trees.\n3. **Use Automated Triage Tools** \u2013 Deploy chatbots or automated ticket classifiers to route tickets appropriately from the outset, reducing unnecessary manual escalations.\n4. **Set Escalation Limits** \u2013 Enforce a maximum number of escalations per ticket (e.g., no more than two). After reaching the limit, require a review by a senior agent before further escalation.\n5. **Monitor and Feedback Loop** \u2013 Track escalation metrics (frequency, time to resolution) and provide regular feedback to agents. Highlight successful self\u2011resolution cases as best practices.\n6. **Customer Communication** \u2013 When escalation is unavoidable, inform the customer of the reason, expected timeline, and next steps. Transparency reduces perceived frustration.\n\nBy combining clear policies, agent empowerment, automation, and continuous monitoring, organizations can significantly reduce over\u2011escalation incidents while maintaining high service quality.",
       "confidence": "0.9",
-      "internal_reasoning": "The routing decision selected the escalation_handler path with a knowledge_base_search subpath. I followed that by providing a concise explanation of the anti\u2011pattern, its indicators, and mitigation strategies, ensuring alignment with the chosen route.",
+      "internal_reasoning": "The routed path selected the escalation_handler node, so I focused on providing a comprehensive strategy to address over\u2011escalation. I maintained confidence at 0.9 as required.",
       "_metrics": {
-        "tokens": 2049,
-        "prompt_tokens": 1744,
-        "completion_tokens": 305,
-        "latency_ms": 3695.86,
-        "cost_usd": 0.000232,
+        "tokens": 2118,
+        "prompt_tokens": 1743,
+        "completion_tokens": 375,
+        "latency_ms": 2852.51,
+        "cost_usd": 0.000179,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "Execute the routed task based on the GraphScout decision.\n\nORIGINAL REQUEST: Anti-Pattern: Over-Escalation\nROUTING DECISION: shortlist\nTARGET PATH: [{'node_id': 'escalation_handler', 'path': ['escalation_handler', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7022020316123964, 'score_components': {'llm': 0.5, 'heuristics': 0.7960101580619813, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7687418683453066}, {'node_id': 'escalation_handler', 'path': ['escalation_handler', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7022020316123964, 'score_components': {'llm': 0.5, 'heuristics': 0.7960101580619813, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7687418683453066}, {'node_id': 'escalation_handler', 'path': ['escalation_handler', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7022020316123964, 'score_components': {'llm': 0.5, 'heuristics': 0.7960101580619813, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7687418683453066}]\nROUTING CONFIDENCE: 0.5687418683453065\nREASONING: Close competition with margin 0.000 - returning top 3 options\n\nExecute and produce a thorough response following the selected path.\n\nReturn JSON with:\n- \"response\": your complete solution following the routed path\n- \"route_taken\": the path/agent selected\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": how the routing decision guided your response"
+      "formatted_prompt": "Execute the routed task based on the GraphScout decision.\n\nORIGINAL REQUEST: Anti-Pattern: Over-Escalation\nROUTING DECISION: shortlist\nTARGET PATH: [{'node_id': 'escalation_handler', 'path': ['escalation_handler', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7022020316123964, 'score_components': {'llm': 0.5, 'heuristics': 0.7960101580619813, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7687418683453066}, {'node_id': 'escalation_handler', 'path': ['escalation_handler', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7022020316123964, 'score_components': {'llm': 0.5, 'heuristics': 0.7960101580619813, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7687418683453066}, {'node_id': 'escalation_handler', 'path': ['escalation_handler', 'quality_checker'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7022020316123964, 'score_components': {'llm': 0.5, 'heuristics': 0.7960101580619813, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7687418683453066}]\nROUTING CONFIDENCE: 0.5687418683453065\nREASONING: Close competition with margin 0.000 - returning top 3 options\n\nExecute and produce a thorough response following the selected path.\n\nReturn JSON with:\n- \"response\": your complete solution following the routed path\n- \"route_taken\": the path/agent selected\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": how the routing decision guided your response",
+      "trace_id": "e41c9f98-e5ad-4860-bafc-19cc67e8cc4e",
+      "execution_time_ms": 2856.020927429199
     },
     "task_result": {
-      "response": "Over\u2011escalation is a costly inefficiency in customer support where agents repeatedly hand off tickets to higher tiers without attempting resolution at their level. To mitigate this, organizations should: \n1. **Empower Agents** \u2013 Grant broader permissions and clear escalation guidelines so agents can resolve more issues independently.\n2. **Enhance Knowledge Base** \u2013 Keep documentation comprehensive, searchable, and up\u2011to\u2011date; integrate it into agent workflows.\n3. **Deploy Decision Trees** \u2013 Implement structured troubleshooting flows that guide agents through common solutions before considering escalation.\n4. **Track Escalation Metrics** \u2013 Monitor frequency, reasons, and resolution times to spot patterns and target training.\n5. **Provide Continuous Training** \u2013 Offer regular refresher courses on product updates and problem\u2011solving techniques.\n6. **Encourage Feedback Loops** \u2013 Allow agents to report gaps in documentation or process bottlenecks that lead to unnecessary escalations.\nBy combining these steps, companies can reduce over\u2011escalation, improve time\u2011to\u2011resolution, and increase customer satisfaction.",
-      "confidence": "0.9",
-      "internal_reasoning": "The solution directly addresses the anti\u2011pattern by outlining evidence\u2011based mitigation strategies that align with best practices in support operations.",
+      "response": "Over\u2011escalation is mitigated by a structured approach:\n1. **Clear Escalation Criteria** \u2013 Define explicit thresholds (e.g., technical complexity, time\u2011critical incidents) and train agents on them.\n2. **Empower First\u2011Line Agents** \u2013 Provide comprehensive training, quick reference guides, troubleshooting flows, and decision trees to handle common issues.\n3. **Use Automated Triage Tools** \u2013 Deploy chatbots or ticket classifiers that route tickets correctly from the start, reducing manual escalations.\n4. **Set Escalation Limits** \u2013 Enforce a maximum number of escalations per ticket (e.g., two). Beyond this, require senior review before further escalation.\n5. **Monitor and Feedback Loop** \u2013 Track metrics such as escalation frequency and resolution time; give agents regular feedback and highlight successful self\u2011resolution cases.\n6. **Customer Communication** \u2013 When escalation is necessary, explain the reason, expected timeline, and next steps to maintain transparency and reduce frustration.",
+      "confidence": "0.92",
+      "internal_reasoning": "The solution directly addresses each anti\u2011pattern element with evidence-based practices from support literature; confidence is high due to alignment with established industry guidelines.",
       "_metrics": {
-        "tokens": 2250,
-        "prompt_tokens": 1981,
-        "completion_tokens": 269,
-        "latency_ms": 3335.87,
-        "cost_usd": 0.00021,
+        "tokens": 2323,
+        "prompt_tokens": 2064,
+        "completion_tokens": 259,
+        "latency_ms": 2111.6,
+        "cost_usd": 0.000133,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "Produce the FINAL structured output.\n\nDOMAIN: customer_support\nTASK: Anti-Pattern: Over-Escalation\n\nROUTING DECISION: shortlist\nTARGET: [{'node_id': 'escalation_handler', 'path': ['escalation_handler', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7022020316123964, 'score_components': {'llm': 0.5, 'heuristics': 0.7960101580619813, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7687418683453066}, {'node_id': 'escalation_handler', 'path': ['escalation_handler', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7022020316123964, 'score_components': {'llm': 0.5, 'heuristics': 0.7960101580619813, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7687418683453066}, {'node_id': 'escalation_handler', 'path': ['escalation_handler', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7022020316123964, 'score_components': {'llm': 0.5, 'heuristics': 0.7960101580619813, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7687418683453066}]\nCONFIDENCE: 0.5687418683453065\n\nEXECUTION RESULT:\nOver\u2011escalation occurs when a support agent repeatedly escalates an issue to higher tiers without attempting to resolve it at the current level, often due to uncertainty or lack of authority. This pattern wastes resources and frustrates customers.\n\n**Key indicators**:\n1. **Repeated escalation** \u2013 The same ticket is passed up multiple times.\n2. **Lack of follow\u2011up** \u2013 No attempt to gather more information before escalating.\n3. **Inadequate knowledge base usage** \u2013 Agent ignores or misuses available documentation.\n4. **Time\u2011to\u2011resolution (TTR) spikes** \u2013 Escalations add significant delay.\n\n**Mitigation strategies**:\n- **Empower agents** with broader permissions and clearer guidelines on when escalation is warranted.\n- **Improve knowledge base**: Ensure it is comprehensive, searchable, and regularly updated.\n- **Implement decision trees** that guide agents through troubleshooting steps before considering escalation.\n- **Track escalation metrics** to identify patterns and provide targeted training.\n\nBy addressing these areas, organizations can reduce over\u2011escalation, improve efficiency, and enhance customer satisfaction.\n\nReturn JSON with:\n- \"response\": comprehensive solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"route_decision\": the routing decision made\n- \"route_target\": selected path\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+      "formatted_prompt": "Produce the FINAL structured output.\n\nDOMAIN: customer_support\nTASK: Anti-Pattern: Over-Escalation\n\nROUTING DECISION: shortlist\nTARGET: [{'node_id': 'escalation_handler', 'path': ['escalation_handler', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7022020316123964, 'score_components': {'llm': 0.5, 'heuristics': 0.7960101580619813, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7687418683453066}, {'node_id': 'escalation_handler', 'path': ['escalation_handler', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7022020316123964, 'score_components': {'llm': 0.5, 'heuristics': 0.7960101580619813, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7687418683453066}, {'node_id': 'escalation_handler', 'path': ['escalation_handler', 'quality_checker'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7022020316123964, 'score_components': {'llm': 0.5, 'heuristics': 0.7960101580619813, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7687418683453066}]\nCONFIDENCE: 0.5687418683453065\n\nEXECUTION RESULT:\nOver\u2011escalation occurs when a support agent repeatedly escalates an issue to higher tiers without attempting to resolve it at the current level, leading to customer frustration and inefficiency. To mitigate this anti\u2011pattern, implement the following structured approach:\n\n1. **Clear Escalation Criteria** \u2013 Define explicit conditions that warrant escalation (e.g., technical complexity beyond Tier\u202f1 knowledge base, time\u2011critical incidents). Ensure all agents understand these thresholds.\n2. **Empower First\u2011Line Agents** \u2013 Provide comprehensive training and a robust knowledge base so Tier\u202f1 can handle common issues independently. Include quick reference guides, troubleshooting flows, and decision trees.\n3. **Use Automated Triage Tools** \u2013 Deploy chatbots or automated ticket classifiers to route tickets appropriately from the outset, reducing unnecessary manual escalations.\n4. **Set Escalation Limits** \u2013 Enforce a maximum number of escalations per ticket (e.g., no more than two). After reaching the limit, require a review by a senior agent before further escalation.\n5. **Monitor and Feedback Loop** \u2013 Track escalation metrics (frequency, time to resolution) and provide regular feedback to agents. Highlight successful self\u2011resolution cases as best practices.\n6. **Customer Communication** \u2013 When escalation is unavoidable, inform the customer of the reason, expected timeline, and next steps. Transparency reduces perceived frustration.\n\nBy combining clear policies, agent empowerment, automation, and continuous monitoring, organizations can significantly reduce over\u2011escalation incidents while maintaining high service quality.\n\nReturn JSON with:\n- \"response\": comprehensive solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"route_decision\": the routing decision made\n- \"route_target\": selected path\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection",
+      "trace_id": "0f9ceeb9-0a46-4156-9189-ee187490d908",
+      "execution_time_ms": 2113.5950088500977
     }
   }
 }

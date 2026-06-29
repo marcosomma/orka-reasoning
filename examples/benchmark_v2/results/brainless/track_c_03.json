@@ -1,94 +1,29 @@
 {
   "task_id": "track_c_03",
   "condition": "brainless",
-  "elapsed_s": 3.61,
+  "elapsed_s": 2.8,
   "success": true,
   "output": {
     "response": "",
-    "confidence": "0.9",
-    "internal_reasoning": "Unable to provide a valid solution due to insufficient evidence and low confidence in the routing decision.",
+    "confidence": "0.0",
+    "internal_reasoning": "Unable to provide a response that meets the required minimum confidence of 0.9 based on the available evidence.",
     "_metrics": {
-      "tokens": 1792,
-      "prompt_tokens": 1747,
-      "completion_tokens": 45,
-      "latency_ms": 1711.09,
-      "cost_usd": 0.000106,
+      "tokens": 1795,
+      "prompt_tokens": 1746,
+      "completion_tokens": 49,
+      "latency_ms": 1133.83,
+      "cost_usd": 7e-05,
       "model": "openai/gpt-oss-20b",
       "provider": "lm_studio"
     },
-    "formatted_prompt": "Produce the FINAL structured output.\n\nDOMAIN: customer_support\nTASK: Path: Refund Processing Flow\n\nROUTING DECISION: shortlist\nTARGET: [{'node_id': 'account_recovery', 'path': ['account_recovery', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: account_recovery matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6999023938179016, 'score_components': {'llm': 0.5, 'heuristics': 0.784511969089508, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.766424794011121}, {'node_id': 'account_recovery', 'path': ['account_recovery', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: account_recovery matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6999023938179016, 'score_components': {'llm': 0.5, 'heuristics': 0.784511969089508, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.766424794011121}, {'node_id': 'account_recovery', 'path': ['account_recovery', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: account_recovery matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6999023938179016, 'score_components': {'llm': 0.5, 'heuristics': 0.784511969089508, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.766424794011121}]\nCONFIDENCE: 0.5664247940111209\n\nEXECUTION RESULT:\n\n\nReturn JSON with:\n- \"response\": comprehensive solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"route_decision\": the routing decision made\n- \"route_target\": selected path\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    "formatted_prompt": "Produce the FINAL structured output.\n\nDOMAIN: customer_support\nTASK: Path: Refund Processing Flow\n\nROUTING DECISION: shortlist\nTARGET: [{'node_id': 'account_recovery', 'path': ['account_recovery', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: account_recovery matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6999023938179016, 'score_components': {'llm': 0.5, 'heuristics': 0.784511969089508, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.766424794011121}, {'node_id': 'account_recovery', 'path': ['account_recovery', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: account_recovery matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6999023938179016, 'score_components': {'llm': 0.5, 'heuristics': 0.784511969089508, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.766424794011121}, {'node_id': 'account_recovery', 'path': ['account_recovery', 'quality_checker'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: account_recovery matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6999023938179016, 'score_components': {'llm': 0.5, 'heuristics': 0.784511969089508, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.766424794011121}]\nCONFIDENCE: 0.5664247940111209\n\nEXECUTION RESULT:\n\n\nReturn JSON with:\n- \"response\": comprehensive solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"route_decision\": the routing decision made\n- \"route_target\": selected path\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection",
+    "trace_id": "2f8e31b2-7ace-477b-8e9e-84a43ae2d1ff",
+    "execution_time_ms": 1135.8208656311035
   },
   "agent_outputs": {
     "smart_router": {
       "decision": "shortlist",
       "target": [
-        {
-          "node_id": "account_recovery",
-          "path": [
-            "account_recovery",
-            "knowledge_base_search"
-          ],
-          "depth": 2,
-          "feasible": true,
-          "constraints_met": true,
-          "graphscout_generated": true,
-          "estimated_cost": 0.002,
-          "estimated_latency": 2000.0,
-          "budget_assessment": {
-            "compliant": true,
-            "violations": [],
-            "estimates": {
-              "tokens": 240,
-              "cost_usd": 0.002,
-              "latency_ms": 2000.0
-            },
-            "remaining_budget": {
-              "tokens": 50000,
-              "cost_usd": 1.0,
-              "latency_ms": 30000.0
-            }
-          },
-          "fits_budget": true,
-          "llm_evaluation": {
-            "relevance_score": 0.5,
-            "confidence": 0.8,
-            "reasoning": "Heuristic evaluation: account_recovery matched question keywords",
-            "expected_output": "Agent execution result",
-            "estimated_tokens": 500,
-            "estimated_cost": 0.001,
-            "estimated_latency_ms": 1000,
-            "risk_factors": [],
-            "efficiency_rating": "medium",
-            "is_deterministic_fallback": true
-          },
-          "llm_validation": {
-            "is_valid": false,
-            "confidence": 0.8,
-            "efficiency_score": 0.9,
-            "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
-            "suggested_improvements": [],
-            "risk_assessment": "low",
-            "is_deterministic_fallback": true
-          },
-          "safety_score": 1.0,
-          "safety_risks": [],
-          "safety_details": {
-            "content": {},
-            "capabilities": {
-              "forbidden_capabilities": []
-            },
-            "policy": {}
-          },
-          "score": 0.6999023938179016,
-          "score_components": {
-            "llm": 0.5,
-            "heuristics": 0.784511969089508,
-            "prior": 0.9,
-            "cost": 0.98,
-            "latency": 0.8
-          },
-          "confidence": 0.766424794011121
-        },
         {
           "node_id": "account_recovery",
           "path": [
@@ -222,13 +157,80 @@
             "latency": 0.8
           },
           "confidence": 0.766424794011121
+        },
+        {
+          "node_id": "account_recovery",
+          "path": [
+            "account_recovery",
+            "quality_checker"
+          ],
+          "depth": 2,
+          "feasible": true,
+          "constraints_met": true,
+          "graphscout_generated": true,
+          "estimated_cost": 0.002,
+          "estimated_latency": 2000.0,
+          "budget_assessment": {
+            "compliant": true,
+            "violations": [],
+            "estimates": {
+              "tokens": 240,
+              "cost_usd": 0.002,
+              "latency_ms": 2000.0
+            },
+            "remaining_budget": {
+              "tokens": 50000,
+              "cost_usd": 1.0,
+              "latency_ms": 30000.0
+            }
+          },
+          "fits_budget": true,
+          "llm_evaluation": {
+            "relevance_score": 0.5,
+            "confidence": 0.8,
+            "reasoning": "Heuristic evaluation: account_recovery matched question keywords",
+            "expected_output": "Agent execution result",
+            "estimated_tokens": 500,
+            "estimated_cost": 0.001,
+            "estimated_latency_ms": 1000,
+            "risk_factors": [],
+            "efficiency_rating": "medium",
+            "is_deterministic_fallback": true
+          },
+          "llm_validation": {
+            "is_valid": false,
+            "confidence": 0.8,
+            "efficiency_score": 0.9,
+            "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+            "suggested_improvements": [],
+            "risk_assessment": "low",
+            "is_deterministic_fallback": true
+          },
+          "safety_score": 1.0,
+          "safety_risks": [],
+          "safety_details": {
+            "content": {},
+            "capabilities": {
+              "forbidden_capabilities": []
+            },
+            "policy": {}
+          },
+          "score": 0.6999023938179016,
+          "score_components": {
+            "llm": 0.5,
+            "heuristics": 0.784511969089508,
+            "prior": 0.9,
+            "cost": 0.98,
+            "latency": 0.8
+          },
+          "confidence": 0.766424794011121
         }
       ],
       "confidence": 0.5664247940111209,
       "reasoning": "Close competition with margin 0.000 - returning top 3 options",
       "trace": {
         "graph_scout_version": "1.0.0",
-        "timestamp": "2026-04-10T23:11:42.980582+00:00",
+        "timestamp": "2026-06-28T23:31:29.596194+00:00",
         "question": "Given this support request, find the best processing path.\nPath: Refund Processing Flow",
         "config": {
           "k_beam": 3,
@@ -243,7 +245,7 @@
           }
         },
         "discovery": {
-          "total_candidates": 91,
+          "total_candidates": 49,
           "candidate_nodes": [
             "knowledge_base_search",
             "response_drafter",
@@ -258,18 +260,6 @@
             "knowledge_base_search",
             "knowledge_base_search",
             "knowledge_base_search",
-            "knowledge_base_search",
-            "knowledge_base_search",
-            "knowledge_base_search",
-            "knowledge_base_search",
-            "knowledge_base_search",
-            "knowledge_base_search",
-            "response_drafter",
-            "response_drafter",
-            "response_drafter",
-            "response_drafter",
-            "response_drafter",
-            "response_drafter",
             "response_drafter",
             "response_drafter",
             "response_drafter",
@@ -282,18 +272,6 @@
             "quality_checker",
             "quality_checker",
             "quality_checker",
-            "quality_checker",
-            "quality_checker",
-            "quality_checker",
-            "quality_checker",
-            "quality_checker",
-            "quality_checker",
-            "escalation_handler",
-            "escalation_handler",
-            "escalation_handler",
-            "escalation_handler",
-            "escalation_handler",
-            "escalation_handler",
             "escalation_handler",
             "escalation_handler",
             "escalation_handler",
@@ -306,30 +284,12 @@
             "account_recovery",
             "account_recovery",
             "account_recovery",
-            "account_recovery",
-            "account_recovery",
-            "account_recovery",
-            "account_recovery",
-            "account_recovery",
-            "account_recovery",
             "billing_specialist",
             "billing_specialist",
             "billing_specialist",
             "billing_specialist",
             "billing_specialist",
             "billing_specialist",
-            "billing_specialist",
-            "billing_specialist",
-            "billing_specialist",
-            "billing_specialist",
-            "billing_specialist",
-            "billing_specialist",
-            "technical_support",
-            "technical_support",
-            "technical_support",
-            "technical_support",
-            "technical_support",
-            "technical_support",
             "technical_support",
             "technical_support",
             "technical_support",
@@ -432,7 +392,7 @@
               "node_id": "account_recovery",
               "path": [
                 "account_recovery",
-                "knowledge_base_search"
+                "response_drafter"
               ],
               "depth": 2,
               "feasible": true,
@@ -499,7 +459,7 @@
               "node_id": "account_recovery",
               "path": [
                 "account_recovery",
-                "response_drafter"
+                "quality_checker"
               ],
               "depth": 2,
               "feasible": true,
@@ -575,9 +535,9 @@
       "status": "success",
       "metrics": {
         "run_id": "unknown",
-        "timestamp": "2026-04-11T01:11:42.836989",
+        "timestamp": "2026-06-29T01:31:29.453396",
         "path_discovery": {
-          "candidates_discovered": 91,
+          "candidates_discovered": 49,
           "candidates_after_budget": 0,
           "candidates_after_safety": 0,
           "reduction_rate": 1.0
@@ -660,7 +620,7 @@
               "node_id": "account_recovery",
               "path": [
                 "account_recovery",
-                "knowledge_base_search"
+                "response_drafter"
               ],
               "depth": 2,
               "feasible": true,
@@ -727,7 +687,7 @@
               "node_id": "account_recovery",
               "path": [
                 "account_recovery",
-                "response_drafter"
+                "quality_checker"
               ],
               "depth": 2,
               "feasible": true,
@@ -795,7 +755,7 @@
           "reasoning_preview": "Close competition with margin 0.000 - returning top 3 options"
         },
         "performance": {
-          "total_time_ms": 143.59283447265625,
+          "total_time_ms": 142.79794692993164,
           "breakdown": {
             "budget_filter_ms": 0.0,
             "safety_filter_ms": 0.0,
@@ -819,73 +779,6 @@
       "result": {
         "decision": "shortlist",
         "target": [
-          {
-            "node_id": "account_recovery",
-            "path": [
-              "account_recovery",
-              "knowledge_base_search"
-            ],
-            "depth": 2,
-            "feasible": true,
-            "constraints_met": true,
-            "graphscout_generated": true,
-            "estimated_cost": 0.002,
-            "estimated_latency": 2000.0,
-            "budget_assessment": {
-              "compliant": true,
-              "violations": [],
-              "estimates": {
-                "tokens": 240,
-                "cost_usd": 0.002,
-                "latency_ms": 2000.0
-              },
-              "remaining_budget": {
-                "tokens": 50000,
-                "cost_usd": 1.0,
-                "latency_ms": 30000.0
-              }
-            },
-            "fits_budget": true,
-            "llm_evaluation": {
-              "relevance_score": 0.5,
-              "confidence": 0.8,
-              "reasoning": "Heuristic evaluation: account_recovery matched question keywords",
-              "expected_output": "Agent execution result",
-              "estimated_tokens": 500,
-              "estimated_cost": 0.001,
-              "estimated_latency_ms": 1000,
-              "risk_factors": [],
-              "efficiency_rating": "medium",
-              "is_deterministic_fallback": true
-            },
-            "llm_validation": {
-              "is_valid": false,
-              "confidence": 0.8,
-              "efficiency_score": 0.9,
-              "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
-              "suggested_improvements": [],
-              "risk_assessment": "low",
-              "is_deterministic_fallback": true
-            },
-            "safety_score": 1.0,
-            "safety_risks": [],
-            "safety_details": {
-              "content": {},
-              "capabilities": {
-                "forbidden_capabilities": []
-              },
-              "policy": {}
-            },
-            "score": 0.6999023938179016,
-            "score_components": {
-              "llm": 0.5,
-              "heuristics": 0.784511969089508,
-              "prior": 0.9,
-              "cost": 0.98,
-              "latency": 0.8
-            },
-            "confidence": 0.766424794011121
-          },
           {
             "node_id": "account_recovery",
             "path": [
@@ -1019,43 +912,114 @@
               "latency": 0.8
             },
             "confidence": 0.766424794011121
+          },
+          {
+            "node_id": "account_recovery",
+            "path": [
+              "account_recovery",
+              "quality_checker"
+            ],
+            "depth": 2,
+            "feasible": true,
+            "constraints_met": true,
+            "graphscout_generated": true,
+            "estimated_cost": 0.002,
+            "estimated_latency": 2000.0,
+            "budget_assessment": {
+              "compliant": true,
+              "violations": [],
+              "estimates": {
+                "tokens": 240,
+                "cost_usd": 0.002,
+                "latency_ms": 2000.0
+              },
+              "remaining_budget": {
+                "tokens": 50000,
+                "cost_usd": 1.0,
+                "latency_ms": 30000.0
+              }
+            },
+            "fits_budget": true,
+            "llm_evaluation": {
+              "relevance_score": 0.5,
+              "confidence": 0.8,
+              "reasoning": "Heuristic evaluation: account_recovery matched question keywords",
+              "expected_output": "Agent execution result",
+              "estimated_tokens": 500,
+              "estimated_cost": 0.001,
+              "estimated_latency_ms": 1000,
+              "risk_factors": [],
+              "efficiency_rating": "medium",
+              "is_deterministic_fallback": true
+            },
+            "llm_validation": {
+              "is_valid": false,
+              "confidence": 0.8,
+              "efficiency_score": 0.9,
+              "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+              "suggested_improvements": [],
+              "risk_assessment": "low",
+              "is_deterministic_fallback": true
+            },
+            "safety_score": 1.0,
+            "safety_risks": [],
+            "safety_details": {
+              "content": {},
+              "capabilities": {
+                "forbidden_capabilities": []
+              },
+              "policy": {}
+            },
+            "score": 0.6999023938179016,
+            "score_components": {
+              "llm": 0.5,
+              "heuristics": 0.784511969089508,
+              "prior": 0.9,
+              "cost": 0.98,
+              "latency": 0.8
+            },
+            "confidence": 0.766424794011121
           }
         ],
         "confidence": 0.5664247940111209,
         "reasoning": "Close competition with margin 0.000 - returning top 3 options",
-        "candidates_evaluated": 91,
+        "candidates_evaluated": 49,
         "top_score": 0.6999023938179016
       }
     },
     "route_executor": {
       "response": "",
-      "confidence": "0.0",
-      "internal_reasoning": "The routing decision indicates a confidence of only 0.566, which is below the required minimum of 0.9. Therefore I cannot comply with the instruction to provide a response with sufficient confidence.",
+      "confidence": "0.9",
+      "internal_reasoning": "The routing decision selected the 'account_recovery' path, which is not directly relevant to refund processing. Due to insufficient confidence and lack of evidence supporting this path for a refund request, I am unable to provide a meaningful response.",
       "_metrics": {
-        "tokens": 1797,
-        "prompt_tokens": 1730,
-        "completion_tokens": 67,
-        "latency_ms": 1428.83,
-        "cost_usd": 8.8e-05,
+        "tokens": 1801,
+        "prompt_tokens": 1729,
+        "completion_tokens": 72,
+        "latency_ms": 1138.77,
+        "cost_usd": 7e-05,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "Execute the routed task based on the GraphScout decision.\n\nORIGINAL REQUEST: Path: Refund Processing Flow\nROUTING DECISION: shortlist\nTARGET PATH: [{'node_id': 'account_recovery', 'path': ['account_recovery', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: account_recovery matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6999023938179016, 'score_components': {'llm': 0.5, 'heuristics': 0.784511969089508, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.766424794011121}, {'node_id': 'account_recovery', 'path': ['account_recovery', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: account_recovery matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6999023938179016, 'score_components': {'llm': 0.5, 'heuristics': 0.784511969089508, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.766424794011121}, {'node_id': 'account_recovery', 'path': ['account_recovery', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: account_recovery matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6999023938179016, 'score_components': {'llm': 0.5, 'heuristics': 0.784511969089508, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.766424794011121}]\nROUTING CONFIDENCE: 0.5664247940111209\nREASONING: Close competition with margin 0.000 - returning top 3 options\n\nExecute and produce a thorough response following the selected path.\n\nReturn JSON with:\n- \"response\": your complete solution following the routed path\n- \"route_taken\": the path/agent selected\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": how the routing decision guided your response"
+      "formatted_prompt": "Execute the routed task based on the GraphScout decision.\n\nORIGINAL REQUEST: Path: Refund Processing Flow\nROUTING DECISION: shortlist\nTARGET PATH: [{'node_id': 'account_recovery', 'path': ['account_recovery', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: account_recovery matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6999023938179016, 'score_components': {'llm': 0.5, 'heuristics': 0.784511969089508, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.766424794011121}, {'node_id': 'account_recovery', 'path': ['account_recovery', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: account_recovery matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6999023938179016, 'score_components': {'llm': 0.5, 'heuristics': 0.784511969089508, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.766424794011121}, {'node_id': 'account_recovery', 'path': ['account_recovery', 'quality_checker'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: account_recovery matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6999023938179016, 'score_components': {'llm': 0.5, 'heuristics': 0.784511969089508, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.766424794011121}]\nROUTING CONFIDENCE: 0.5664247940111209\nREASONING: Close competition with margin 0.000 - returning top 3 options\n\nExecute and produce a thorough response following the selected path.\n\nReturn JSON with:\n- \"response\": your complete solution following the routed path\n- \"route_taken\": the path/agent selected\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": how the routing decision guided your response",
+      "trace_id": "ba5efdc0-9e11-45a7-8980-5c6e56fc4c72",
+      "execution_time_ms": 1139.7676467895508
     },
     "task_result": {
       "response": "",
-      "confidence": "0.9",
-      "internal_reasoning": "Unable to provide a valid solution due to insufficient evidence and low confidence in the routing decision.",
+      "confidence": "0.0",
+      "internal_reasoning": "Unable to provide a response that meets the required minimum confidence of 0.9 based on the available evidence.",
       "_metrics": {
-        "tokens": 1792,
-        "prompt_tokens": 1747,
-        "completion_tokens": 45,
-        "latency_ms": 1711.09,
-        "cost_usd": 0.000106,
+        "tokens": 1795,
+        "prompt_tokens": 1746,
+        "completion_tokens": 49,
+        "latency_ms": 1133.83,
+        "cost_usd": 7e-05,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "Produce the FINAL structured output.\n\nDOMAIN: customer_support\nTASK: Path: Refund Processing Flow\n\nROUTING DECISION: shortlist\nTARGET: [{'node_id': 'account_recovery', 'path': ['account_recovery', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: account_recovery matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6999023938179016, 'score_components': {'llm': 0.5, 'heuristics': 0.784511969089508, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.766424794011121}, {'node_id': 'account_recovery', 'path': ['account_recovery', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: account_recovery matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6999023938179016, 'score_components': {'llm': 0.5, 'heuristics': 0.784511969089508, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.766424794011121}, {'node_id': 'account_recovery', 'path': ['account_recovery', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: account_recovery matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6999023938179016, 'score_components': {'llm': 0.5, 'heuristics': 0.784511969089508, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.766424794011121}]\nCONFIDENCE: 0.5664247940111209\n\nEXECUTION RESULT:\n\n\nReturn JSON with:\n- \"response\": comprehensive solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"route_decision\": the routing decision made\n- \"route_target\": selected path\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+      "formatted_prompt": "Produce the FINAL structured output.\n\nDOMAIN: customer_support\nTASK: Path: Refund Processing Flow\n\nROUTING DECISION: shortlist\nTARGET: [{'node_id': 'account_recovery', 'path': ['account_recovery', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: account_recovery matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6999023938179016, 'score_components': {'llm': 0.5, 'heuristics': 0.784511969089508, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.766424794011121}, {'node_id': 'account_recovery', 'path': ['account_recovery', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: account_recovery matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6999023938179016, 'score_components': {'llm': 0.5, 'heuristics': 0.784511969089508, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.766424794011121}, {'node_id': 'account_recovery', 'path': ['account_recovery', 'quality_checker'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: account_recovery matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6999023938179016, 'score_components': {'llm': 0.5, 'heuristics': 0.784511969089508, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.766424794011121}]\nCONFIDENCE: 0.5664247940111209\n\nEXECUTION RESULT:\n\n\nReturn JSON with:\n- \"response\": comprehensive solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"route_decision\": the routing decision made\n- \"route_target\": selected path\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection",
+      "trace_id": "2f8e31b2-7ace-477b-8e9e-84a43ae2d1ff",
+      "execution_time_ms": 1135.8208656311035
     }
   }
 }

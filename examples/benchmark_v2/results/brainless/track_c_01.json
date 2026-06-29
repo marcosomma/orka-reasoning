@@ -1,31 +1,33 @@
 {
   "task_id": "track_c_01",
   "condition": "brainless",
-  "elapsed_s": 3.56,
+  "elapsed_s": 3.3,
   "success": true,
   "output": {
     "response": "",
     "confidence": "0.0",
-    "internal_reasoning": "The provided routing decision and target paths have a confidence of only 0.5668, which is below the required minimum of 0.9. Therefore, I cannot provide a confident answer as per the constraints.",
+    "internal_reasoning": "The available evidence and confidence score (0.565) are below the required minimum of 0.9, so I cannot provide a reliable answer.",
     "_metrics": {
-      "tokens": 1825,
-      "prompt_tokens": 1755,
-      "completion_tokens": 70,
-      "latency_ms": 1165.14,
-      "cost_usd": 7.2e-05,
+      "tokens": 1817,
+      "prompt_tokens": 1760,
+      "completion_tokens": 57,
+      "latency_ms": 1397.61,
+      "cost_usd": 8.6e-05,
       "model": "openai/gpt-oss-20b",
       "provider": "lm_studio"
     },
-    "formatted_prompt": "Produce the FINAL structured output.\n\nDOMAIN: customer_support\nTASK: Path: Tier-1 Standard Support Flow\n\nROUTING DECISION: shortlist\nTARGET: [{'node_id': 'route_executor', 'path': ['route_executor', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 339, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: route_executor matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7002814865112306, 'score_components': {'llm': 0.5, 'heuristics': 0.7864074325561524, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7668096733567862}, {'node_id': 'route_executor', 'path': ['route_executor', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 339, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: route_executor matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7002814865112306, 'score_components': {'llm': 0.5, 'heuristics': 0.7864074325561524, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7668096733567862}, {'node_id': 'route_executor', 'path': ['route_executor', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 339, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: route_executor matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7002814865112306, 'score_components': {'llm': 0.5, 'heuristics': 0.7864074325561524, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7668096733567862}]\nCONFIDENCE: 0.5668096733567862\n\nEXECUTION RESULT:\n\n\nReturn JSON with:\n- \"response\": comprehensive solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"route_decision\": the routing decision made\n- \"route_target\": selected path\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    "formatted_prompt": "Produce the FINAL structured output.\n\nDOMAIN: customer_support\nTASK: Path: Tier-1 Standard Support Flow\n\nROUTING DECISION: shortlist\nTARGET: [{'node_id': 'escalation_handler', 'path': ['escalation_handler', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6986074542999269, 'score_components': {'llm': 0.5, 'heuristics': 0.7780372714996339, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7651014168346184}, {'node_id': 'escalation_handler', 'path': ['escalation_handler', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6986074542999269, 'score_components': {'llm': 0.5, 'heuristics': 0.7780372714996339, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7651014168346184}, {'node_id': 'escalation_handler', 'path': ['escalation_handler', 'quality_checker'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6986074542999269, 'score_components': {'llm': 0.5, 'heuristics': 0.7780372714996339, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7651014168346184}]\nCONFIDENCE: 0.5651014168346185\n\nEXECUTION RESULT:\n\n\nReturn JSON with:\n- \"response\": comprehensive solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"route_decision\": the routing decision made\n- \"route_target\": selected path\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection",
+    "trace_id": "1ef72df5-ec9a-45cf-85b1-2d6f7d02ad82",
+    "execution_time_ms": 1398.6177444458008
   },
   "agent_outputs": {
     "smart_router": {
       "decision": "shortlist",
       "target": [
         {
-          "node_id": "route_executor",
+          "node_id": "escalation_handler",
           "path": [
-            "route_executor",
+            "escalation_handler",
             "knowledge_base_search"
           ],
           "depth": 2,
@@ -38,7 +40,7 @@
             "compliant": true,
             "violations": [],
             "estimates": {
-              "tokens": 339,
+              "tokens": 240,
               "cost_usd": 0.002,
               "latency_ms": 2000.0
             },
@@ -52,7 +54,7 @@
           "llm_evaluation": {
             "relevance_score": 0.5,
             "confidence": 0.8,
-            "reasoning": "Heuristic evaluation: route_executor matched question keywords",
+            "reasoning": "Heuristic evaluation: escalation_handler matched question keywords",
             "expected_output": "Agent execution result",
             "estimated_tokens": 500,
             "estimated_cost": 0.001,
@@ -79,87 +81,20 @@
             },
             "policy": {}
           },
-          "score": 0.7002814865112306,
+          "score": 0.6986074542999269,
           "score_components": {
             "llm": 0.5,
-            "heuristics": 0.7864074325561524,
+            "heuristics": 0.7780372714996339,
             "prior": 0.9,
             "cost": 0.98,
             "latency": 0.8
           },
-          "confidence": 0.7668096733567862
+          "confidence": 0.7651014168346184
         },
         {
-          "node_id": "route_executor",
+          "node_id": "escalation_handler",
           "path": [
-            "route_executor",
-            "knowledge_base_search"
-          ],
-          "depth": 2,
-          "feasible": true,
-          "constraints_met": true,
-          "graphscout_generated": true,
-          "estimated_cost": 0.002,
-          "estimated_latency": 2000.0,
-          "budget_assessment": {
-            "compliant": true,
-            "violations": [],
-            "estimates": {
-              "tokens": 339,
-              "cost_usd": 0.002,
-              "latency_ms": 2000.0
-            },
-            "remaining_budget": {
-              "tokens": 50000,
-              "cost_usd": 1.0,
-              "latency_ms": 30000.0
-            }
-          },
-          "fits_budget": true,
-          "llm_evaluation": {
-            "relevance_score": 0.5,
-            "confidence": 0.8,
-            "reasoning": "Heuristic evaluation: route_executor matched question keywords",
-            "expected_output": "Agent execution result",
-            "estimated_tokens": 500,
-            "estimated_cost": 0.001,
-            "estimated_latency_ms": 1000,
-            "risk_factors": [],
-            "efficiency_rating": "medium",
-            "is_deterministic_fallback": true
-          },
-          "llm_validation": {
-            "is_valid": false,
-            "confidence": 0.8,
-            "efficiency_score": 0.9,
-            "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
-            "suggested_improvements": [],
-            "risk_assessment": "low",
-            "is_deterministic_fallback": true
-          },
-          "safety_score": 1.0,
-          "safety_risks": [],
-          "safety_details": {
-            "content": {},
-            "capabilities": {
-              "forbidden_capabilities": []
-            },
-            "policy": {}
-          },
-          "score": 0.7002814865112306,
-          "score_components": {
-            "llm": 0.5,
-            "heuristics": 0.7864074325561524,
-            "prior": 0.9,
-            "cost": 0.98,
-            "latency": 0.8
-          },
-          "confidence": 0.7668096733567862
-        },
-        {
-          "node_id": "route_executor",
-          "path": [
-            "route_executor",
+            "escalation_handler",
             "response_drafter"
           ],
           "depth": 2,
@@ -172,7 +107,7 @@
             "compliant": true,
             "violations": [],
             "estimates": {
-              "tokens": 339,
+              "tokens": 240,
               "cost_usd": 0.002,
               "latency_ms": 2000.0
             },
@@ -186,7 +121,7 @@
           "llm_evaluation": {
             "relevance_score": 0.5,
             "confidence": 0.8,
-            "reasoning": "Heuristic evaluation: route_executor matched question keywords",
+            "reasoning": "Heuristic evaluation: escalation_handler matched question keywords",
             "expected_output": "Agent execution result",
             "estimated_tokens": 500,
             "estimated_cost": 0.001,
@@ -213,22 +148,89 @@
             },
             "policy": {}
           },
-          "score": 0.7002814865112306,
+          "score": 0.6986074542999269,
           "score_components": {
             "llm": 0.5,
-            "heuristics": 0.7864074325561524,
+            "heuristics": 0.7780372714996339,
             "prior": 0.9,
             "cost": 0.98,
             "latency": 0.8
           },
-          "confidence": 0.7668096733567862
+          "confidence": 0.7651014168346184
+        },
+        {
+          "node_id": "escalation_handler",
+          "path": [
+            "escalation_handler",
+            "quality_checker"
+          ],
+          "depth": 2,
+          "feasible": true,
+          "constraints_met": true,
+          "graphscout_generated": true,
+          "estimated_cost": 0.002,
+          "estimated_latency": 2000.0,
+          "budget_assessment": {
+            "compliant": true,
+            "violations": [],
+            "estimates": {
+              "tokens": 240,
+              "cost_usd": 0.002,
+              "latency_ms": 2000.0
+            },
+            "remaining_budget": {
+              "tokens": 50000,
+              "cost_usd": 1.0,
+              "latency_ms": 30000.0
+            }
+          },
+          "fits_budget": true,
+          "llm_evaluation": {
+            "relevance_score": 0.5,
+            "confidence": 0.8,
+            "reasoning": "Heuristic evaluation: escalation_handler matched question keywords",
+            "expected_output": "Agent execution result",
+            "estimated_tokens": 500,
+            "estimated_cost": 0.001,
+            "estimated_latency_ms": 1000,
+            "risk_factors": [],
+            "efficiency_rating": "medium",
+            "is_deterministic_fallback": true
+          },
+          "llm_validation": {
+            "is_valid": false,
+            "confidence": 0.8,
+            "efficiency_score": 0.9,
+            "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+            "suggested_improvements": [],
+            "risk_assessment": "low",
+            "is_deterministic_fallback": true
+          },
+          "safety_score": 1.0,
+          "safety_risks": [],
+          "safety_details": {
+            "content": {},
+            "capabilities": {
+              "forbidden_capabilities": []
+            },
+            "policy": {}
+          },
+          "score": 0.6986074542999269,
+          "score_components": {
+            "llm": 0.5,
+            "heuristics": 0.7780372714996339,
+            "prior": 0.9,
+            "cost": 0.98,
+            "latency": 0.8
+          },
+          "confidence": 0.7651014168346184
         }
       ],
-      "confidence": 0.5668096733567862,
+      "confidence": 0.5651014168346185,
       "reasoning": "Close competition with margin 0.000 - returning top 3 options",
       "trace": {
         "graph_scout_version": "1.0.0",
-        "timestamp": "2026-04-10T23:11:33.324766+00:00",
+        "timestamp": "2026-06-28T23:31:23.243827+00:00",
         "question": "Given this support request, find the best processing path.\nPath: Tier-1 Standard Support Flow",
         "config": {
           "k_beam": 3,
@@ -243,7 +245,7 @@
           }
         },
         "discovery": {
-          "total_candidates": 120,
+          "total_candidates": 50,
           "candidate_nodes": [
             "knowledge_base_search",
             "response_drafter",
@@ -260,20 +262,6 @@
             "knowledge_base_search",
             "knowledge_base_search",
             "knowledge_base_search",
-            "knowledge_base_search",
-            "knowledge_base_search",
-            "knowledge_base_search",
-            "knowledge_base_search",
-            "knowledge_base_search",
-            "knowledge_base_search",
-            "knowledge_base_search",
-            "response_drafter",
-            "response_drafter",
-            "response_drafter",
-            "response_drafter",
-            "response_drafter",
-            "response_drafter",
-            "response_drafter",
             "response_drafter",
             "response_drafter",
             "response_drafter",
@@ -288,20 +276,6 @@
             "quality_checker",
             "quality_checker",
             "quality_checker",
-            "quality_checker",
-            "quality_checker",
-            "quality_checker",
-            "quality_checker",
-            "quality_checker",
-            "quality_checker",
-            "quality_checker",
-            "escalation_handler",
-            "escalation_handler",
-            "escalation_handler",
-            "escalation_handler",
-            "escalation_handler",
-            "escalation_handler",
-            "escalation_handler",
             "escalation_handler",
             "escalation_handler",
             "escalation_handler",
@@ -316,73 +290,31 @@
             "account_recovery",
             "account_recovery",
             "account_recovery",
-            "account_recovery",
-            "account_recovery",
-            "account_recovery",
-            "account_recovery",
-            "account_recovery",
-            "account_recovery",
-            "account_recovery",
             "billing_specialist",
             "billing_specialist",
             "billing_specialist",
             "billing_specialist",
             "billing_specialist",
             "billing_specialist",
-            "billing_specialist",
-            "billing_specialist",
-            "billing_specialist",
-            "billing_specialist",
-            "billing_specialist",
-            "billing_specialist",
-            "billing_specialist",
-            "billing_specialist",
-            "technical_support",
-            "technical_support",
-            "technical_support",
-            "technical_support",
-            "technical_support",
-            "technical_support",
-            "technical_support",
-            "technical_support",
-            "technical_support",
-            "technical_support",
-            "technical_support",
-            "technical_support",
-            "technical_support",
-            "technical_support",
-            "route_executor",
-            "route_executor",
-            "route_executor",
-            "route_executor",
-            "route_executor",
-            "route_executor",
-            "route_executor",
-            "route_executor",
-            "route_executor",
-            "route_executor",
-            "route_executor",
-            "route_executor",
-            "route_executor",
-            "route_executor"
+            "billing_specialist"
           ]
         },
         "scoring": {
           "scored_candidates": 3,
           "top_scores": [
             {
-              "node_id": "route_executor",
-              "score": 0.7002814865112306,
+              "node_id": "escalation_handler",
+              "score": 0.6986074542999269,
               "components": {}
             },
             {
-              "node_id": "route_executor",
-              "score": 0.7002814865112306,
+              "node_id": "escalation_handler",
+              "score": 0.6986074542999269,
               "components": {}
             },
             {
-              "node_id": "route_executor",
-              "score": 0.7002814865112306,
+              "node_id": "escalation_handler",
+              "score": 0.6986074542999269,
               "components": {}
             }
           ]
@@ -391,9 +323,9 @@
           "type": "shortlist",
           "target": [
             {
-              "node_id": "route_executor",
+              "node_id": "escalation_handler",
               "path": [
-                "route_executor",
+                "escalation_handler",
                 "knowledge_base_search"
               ],
               "depth": 2,
@@ -406,7 +338,7 @@
                 "compliant": true,
                 "violations": [],
                 "estimates": {
-                  "tokens": 339,
+                  "tokens": 240,
                   "cost_usd": 0.002,
                   "latency_ms": 2000.0
                 },
@@ -420,7 +352,7 @@
               "llm_evaluation": {
                 "relevance_score": 0.5,
                 "confidence": 0.8,
-                "reasoning": "Heuristic evaluation: route_executor matched question keywords",
+                "reasoning": "Heuristic evaluation: escalation_handler matched question keywords",
                 "expected_output": "Agent execution result",
                 "estimated_tokens": 500,
                 "estimated_cost": 0.001,
@@ -447,87 +379,20 @@
                 },
                 "policy": {}
               },
-              "score": 0.7002814865112306,
+              "score": 0.6986074542999269,
               "score_components": {
                 "llm": 0.5,
-                "heuristics": 0.7864074325561524,
+                "heuristics": 0.7780372714996339,
                 "prior": 0.9,
                 "cost": 0.98,
                 "latency": 0.8
               },
-              "confidence": 0.7668096733567862
+              "confidence": 0.7651014168346184
             },
             {
-              "node_id": "route_executor",
+              "node_id": "escalation_handler",
               "path": [
-                "route_executor",
-                "knowledge_base_search"
-              ],
-              "depth": 2,
-              "feasible": true,
-              "constraints_met": true,
-              "graphscout_generated": true,
-              "estimated_cost": 0.002,
-              "estimated_latency": 2000.0,
-              "budget_assessment": {
-                "compliant": true,
-                "violations": [],
-                "estimates": {
-                  "tokens": 339,
-                  "cost_usd": 0.002,
-                  "latency_ms": 2000.0
-                },
-                "remaining_budget": {
-                  "tokens": 50000,
-                  "cost_usd": 1.0,
-                  "latency_ms": 30000.0
-                }
-              },
-              "fits_budget": true,
-              "llm_evaluation": {
-                "relevance_score": 0.5,
-                "confidence": 0.8,
-                "reasoning": "Heuristic evaluation: route_executor matched question keywords",
-                "expected_output": "Agent execution result",
-                "estimated_tokens": 500,
-                "estimated_cost": 0.001,
-                "estimated_latency_ms": 1000,
-                "risk_factors": [],
-                "efficiency_rating": "medium",
-                "is_deterministic_fallback": true
-              },
-              "llm_validation": {
-                "is_valid": false,
-                "confidence": 0.8,
-                "efficiency_score": 0.9,
-                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
-                "suggested_improvements": [],
-                "risk_assessment": "low",
-                "is_deterministic_fallback": true
-              },
-              "safety_score": 1.0,
-              "safety_risks": [],
-              "safety_details": {
-                "content": {},
-                "capabilities": {
-                  "forbidden_capabilities": []
-                },
-                "policy": {}
-              },
-              "score": 0.7002814865112306,
-              "score_components": {
-                "llm": 0.5,
-                "heuristics": 0.7864074325561524,
-                "prior": 0.9,
-                "cost": 0.98,
-                "latency": 0.8
-              },
-              "confidence": 0.7668096733567862
-            },
-            {
-              "node_id": "route_executor",
-              "path": [
-                "route_executor",
+                "escalation_handler",
                 "response_drafter"
               ],
               "depth": 2,
@@ -540,7 +405,7 @@
                 "compliant": true,
                 "violations": [],
                 "estimates": {
-                  "tokens": 339,
+                  "tokens": 240,
                   "cost_usd": 0.002,
                   "latency_ms": 2000.0
                 },
@@ -554,7 +419,7 @@
               "llm_evaluation": {
                 "relevance_score": 0.5,
                 "confidence": 0.8,
-                "reasoning": "Heuristic evaluation: route_executor matched question keywords",
+                "reasoning": "Heuristic evaluation: escalation_handler matched question keywords",
                 "expected_output": "Agent execution result",
                 "estimated_tokens": 500,
                 "estimated_cost": 0.001,
@@ -581,18 +446,85 @@
                 },
                 "policy": {}
               },
-              "score": 0.7002814865112306,
+              "score": 0.6986074542999269,
               "score_components": {
                 "llm": 0.5,
-                "heuristics": 0.7864074325561524,
+                "heuristics": 0.7780372714996339,
                 "prior": 0.9,
                 "cost": 0.98,
                 "latency": 0.8
               },
-              "confidence": 0.7668096733567862
+              "confidence": 0.7651014168346184
+            },
+            {
+              "node_id": "escalation_handler",
+              "path": [
+                "escalation_handler",
+                "quality_checker"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: escalation_handler matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 1.0,
+              "safety_risks": [],
+              "safety_details": {
+                "content": {},
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6986074542999269,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.7780372714996339,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7651014168346184
             }
           ],
-          "confidence": 0.5668096733567862,
+          "confidence": 0.5651014168346185,
           "reasoning": "Close competition with margin 0.000 - returning top 3 options"
         },
         "execution_metadata": {
@@ -604,9 +536,9 @@
       "status": "success",
       "metrics": {
         "run_id": "unknown",
-        "timestamp": "2026-04-11T01:11:32.862534",
+        "timestamp": "2026-06-29T01:31:22.914076",
         "path_discovery": {
-          "candidates_discovered": 120,
+          "candidates_discovered": 50,
           "candidates_after_budget": 0,
           "candidates_after_safety": 0,
           "reduction_rate": 1.0
@@ -619,9 +551,9 @@
         "selection": {
           "selected_path": [
             {
-              "node_id": "route_executor",
+              "node_id": "escalation_handler",
               "path": [
-                "route_executor",
+                "escalation_handler",
                 "knowledge_base_search"
               ],
               "depth": 2,
@@ -634,7 +566,7 @@
                 "compliant": true,
                 "violations": [],
                 "estimates": {
-                  "tokens": 339,
+                  "tokens": 240,
                   "cost_usd": 0.002,
                   "latency_ms": 2000.0
                 },
@@ -648,7 +580,7 @@
               "llm_evaluation": {
                 "relevance_score": 0.5,
                 "confidence": 0.8,
-                "reasoning": "Heuristic evaluation: route_executor matched question keywords",
+                "reasoning": "Heuristic evaluation: escalation_handler matched question keywords",
                 "expected_output": "Agent execution result",
                 "estimated_tokens": 500,
                 "estimated_cost": 0.001,
@@ -675,87 +607,20 @@
                 },
                 "policy": {}
               },
-              "score": 0.7002814865112306,
+              "score": 0.6986074542999269,
               "score_components": {
                 "llm": 0.5,
-                "heuristics": 0.7864074325561524,
+                "heuristics": 0.7780372714996339,
                 "prior": 0.9,
                 "cost": 0.98,
                 "latency": 0.8
               },
-              "confidence": 0.7668096733567862
+              "confidence": 0.7651014168346184
             },
             {
-              "node_id": "route_executor",
+              "node_id": "escalation_handler",
               "path": [
-                "route_executor",
-                "knowledge_base_search"
-              ],
-              "depth": 2,
-              "feasible": true,
-              "constraints_met": true,
-              "graphscout_generated": true,
-              "estimated_cost": 0.002,
-              "estimated_latency": 2000.0,
-              "budget_assessment": {
-                "compliant": true,
-                "violations": [],
-                "estimates": {
-                  "tokens": 339,
-                  "cost_usd": 0.002,
-                  "latency_ms": 2000.0
-                },
-                "remaining_budget": {
-                  "tokens": 50000,
-                  "cost_usd": 1.0,
-                  "latency_ms": 30000.0
-                }
-              },
-              "fits_budget": true,
-              "llm_evaluation": {
-                "relevance_score": 0.5,
-                "confidence": 0.8,
-                "reasoning": "Heuristic evaluation: route_executor matched question keywords",
-                "expected_output": "Agent execution result",
-                "estimated_tokens": 500,
-                "estimated_cost": 0.001,
-                "estimated_latency_ms": 1000,
-                "risk_factors": [],
-                "efficiency_rating": "medium",
-                "is_deterministic_fallback": true
-              },
-              "llm_validation": {
-                "is_valid": false,
-                "confidence": 0.8,
-                "efficiency_score": 0.9,
-                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
-                "suggested_improvements": [],
-                "risk_assessment": "low",
-                "is_deterministic_fallback": true
-              },
-              "safety_score": 1.0,
-              "safety_risks": [],
-              "safety_details": {
-                "content": {},
-                "capabilities": {
-                  "forbidden_capabilities": []
-                },
-                "policy": {}
-              },
-              "score": 0.7002814865112306,
-              "score_components": {
-                "llm": 0.5,
-                "heuristics": 0.7864074325561524,
-                "prior": 0.9,
-                "cost": 0.98,
-                "latency": 0.8
-              },
-              "confidence": 0.7668096733567862
-            },
-            {
-              "node_id": "route_executor",
-              "path": [
-                "route_executor",
+                "escalation_handler",
                 "response_drafter"
               ],
               "depth": 2,
@@ -768,7 +633,7 @@
                 "compliant": true,
                 "violations": [],
                 "estimates": {
-                  "tokens": 339,
+                  "tokens": 240,
                   "cost_usd": 0.002,
                   "latency_ms": 2000.0
                 },
@@ -782,7 +647,7 @@
               "llm_evaluation": {
                 "relevance_score": 0.5,
                 "confidence": 0.8,
-                "reasoning": "Heuristic evaluation: route_executor matched question keywords",
+                "reasoning": "Heuristic evaluation: escalation_handler matched question keywords",
                 "expected_output": "Agent execution result",
                 "estimated_tokens": 500,
                 "estimated_cost": 0.001,
@@ -809,22 +674,89 @@
                 },
                 "policy": {}
               },
-              "score": 0.7002814865112306,
+              "score": 0.6986074542999269,
               "score_components": {
                 "llm": 0.5,
-                "heuristics": 0.7864074325561524,
+                "heuristics": 0.7780372714996339,
                 "prior": 0.9,
                 "cost": 0.98,
                 "latency": 0.8
               },
-              "confidence": 0.7668096733567862
+              "confidence": 0.7651014168346184
+            },
+            {
+              "node_id": "escalation_handler",
+              "path": [
+                "escalation_handler",
+                "quality_checker"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: escalation_handler matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 1.0,
+              "safety_risks": [],
+              "safety_details": {
+                "content": {},
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6986074542999269,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.7780372714996339,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7651014168346184
             }
           ],
-          "confidence": 0.5668096733567862,
+          "confidence": 0.5651014168346185,
           "reasoning_preview": "Close competition with margin 0.000 - returning top 3 options"
         },
         "performance": {
-          "total_time_ms": 462.2321128845215,
+          "total_time_ms": 329.75053787231445,
           "breakdown": {
             "budget_filter_ms": 0.0,
             "safety_filter_ms": 0.0,
@@ -849,9 +781,9 @@
         "decision": "shortlist",
         "target": [
           {
-            "node_id": "route_executor",
+            "node_id": "escalation_handler",
             "path": [
-              "route_executor",
+              "escalation_handler",
               "knowledge_base_search"
             ],
             "depth": 2,
@@ -864,7 +796,7 @@
               "compliant": true,
               "violations": [],
               "estimates": {
-                "tokens": 339,
+                "tokens": 240,
                 "cost_usd": 0.002,
                 "latency_ms": 2000.0
               },
@@ -878,7 +810,7 @@
             "llm_evaluation": {
               "relevance_score": 0.5,
               "confidence": 0.8,
-              "reasoning": "Heuristic evaluation: route_executor matched question keywords",
+              "reasoning": "Heuristic evaluation: escalation_handler matched question keywords",
               "expected_output": "Agent execution result",
               "estimated_tokens": 500,
               "estimated_cost": 0.001,
@@ -905,87 +837,20 @@
               },
               "policy": {}
             },
-            "score": 0.7002814865112306,
+            "score": 0.6986074542999269,
             "score_components": {
               "llm": 0.5,
-              "heuristics": 0.7864074325561524,
+              "heuristics": 0.7780372714996339,
               "prior": 0.9,
               "cost": 0.98,
               "latency": 0.8
             },
-            "confidence": 0.7668096733567862
+            "confidence": 0.7651014168346184
           },
           {
-            "node_id": "route_executor",
+            "node_id": "escalation_handler",
             "path": [
-              "route_executor",
-              "knowledge_base_search"
-            ],
-            "depth": 2,
-            "feasible": true,
-            "constraints_met": true,
-            "graphscout_generated": true,
-            "estimated_cost": 0.002,
-            "estimated_latency": 2000.0,
-            "budget_assessment": {
-              "compliant": true,
-              "violations": [],
-              "estimates": {
-                "tokens": 339,
-                "cost_usd": 0.002,
-                "latency_ms": 2000.0
-              },
-              "remaining_budget": {
-                "tokens": 50000,
-                "cost_usd": 1.0,
-                "latency_ms": 30000.0
-              }
-            },
-            "fits_budget": true,
-            "llm_evaluation": {
-              "relevance_score": 0.5,
-              "confidence": 0.8,
-              "reasoning": "Heuristic evaluation: route_executor matched question keywords",
-              "expected_output": "Agent execution result",
-              "estimated_tokens": 500,
-              "estimated_cost": 0.001,
-              "estimated_latency_ms": 1000,
-              "risk_factors": [],
-              "efficiency_rating": "medium",
-              "is_deterministic_fallback": true
-            },
-            "llm_validation": {
-              "is_valid": false,
-              "confidence": 0.8,
-              "efficiency_score": 0.9,
-              "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
-              "suggested_improvements": [],
-              "risk_assessment": "low",
-              "is_deterministic_fallback": true
-            },
-            "safety_score": 1.0,
-            "safety_risks": [],
-            "safety_details": {
-              "content": {},
-              "capabilities": {
-                "forbidden_capabilities": []
-              },
-              "policy": {}
-            },
-            "score": 0.7002814865112306,
-            "score_components": {
-              "llm": 0.5,
-              "heuristics": 0.7864074325561524,
-              "prior": 0.9,
-              "cost": 0.98,
-              "latency": 0.8
-            },
-            "confidence": 0.7668096733567862
-          },
-          {
-            "node_id": "route_executor",
-            "path": [
-              "route_executor",
+              "escalation_handler",
               "response_drafter"
             ],
             "depth": 2,
@@ -998,7 +863,7 @@
               "compliant": true,
               "violations": [],
               "estimates": {
-                "tokens": 339,
+                "tokens": 240,
                 "cost_usd": 0.002,
                 "latency_ms": 2000.0
               },
@@ -1012,7 +877,7 @@
             "llm_evaluation": {
               "relevance_score": 0.5,
               "confidence": 0.8,
-              "reasoning": "Heuristic evaluation: route_executor matched question keywords",
+              "reasoning": "Heuristic evaluation: escalation_handler matched question keywords",
               "expected_output": "Agent execution result",
               "estimated_tokens": 500,
               "estimated_cost": 0.001,
@@ -1039,52 +904,123 @@
               },
               "policy": {}
             },
-            "score": 0.7002814865112306,
+            "score": 0.6986074542999269,
             "score_components": {
               "llm": 0.5,
-              "heuristics": 0.7864074325561524,
+              "heuristics": 0.7780372714996339,
               "prior": 0.9,
               "cost": 0.98,
               "latency": 0.8
             },
-            "confidence": 0.7668096733567862
+            "confidence": 0.7651014168346184
+          },
+          {
+            "node_id": "escalation_handler",
+            "path": [
+              "escalation_handler",
+              "quality_checker"
+            ],
+            "depth": 2,
+            "feasible": true,
+            "constraints_met": true,
+            "graphscout_generated": true,
+            "estimated_cost": 0.002,
+            "estimated_latency": 2000.0,
+            "budget_assessment": {
+              "compliant": true,
+              "violations": [],
+              "estimates": {
+                "tokens": 240,
+                "cost_usd": 0.002,
+                "latency_ms": 2000.0
+              },
+              "remaining_budget": {
+                "tokens": 50000,
+                "cost_usd": 1.0,
+                "latency_ms": 30000.0
+              }
+            },
+            "fits_budget": true,
+            "llm_evaluation": {
+              "relevance_score": 0.5,
+              "confidence": 0.8,
+              "reasoning": "Heuristic evaluation: escalation_handler matched question keywords",
+              "expected_output": "Agent execution result",
+              "estimated_tokens": 500,
+              "estimated_cost": 0.001,
+              "estimated_latency_ms": 1000,
+              "risk_factors": [],
+              "efficiency_rating": "medium",
+              "is_deterministic_fallback": true
+            },
+            "llm_validation": {
+              "is_valid": false,
+              "confidence": 0.8,
+              "efficiency_score": 0.9,
+              "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+              "suggested_improvements": [],
+              "risk_assessment": "low",
+              "is_deterministic_fallback": true
+            },
+            "safety_score": 1.0,
+            "safety_risks": [],
+            "safety_details": {
+              "content": {},
+              "capabilities": {
+                "forbidden_capabilities": []
+              },
+              "policy": {}
+            },
+            "score": 0.6986074542999269,
+            "score_components": {
+              "llm": 0.5,
+              "heuristics": 0.7780372714996339,
+              "prior": 0.9,
+              "cost": 0.98,
+              "latency": 0.8
+            },
+            "confidence": 0.7651014168346184
           }
         ],
-        "confidence": 0.5668096733567862,
+        "confidence": 0.5651014168346185,
         "reasoning": "Close competition with margin 0.000 - returning top 3 options",
-        "candidates_evaluated": 120,
-        "top_score": 0.7002814865112306
+        "candidates_evaluated": 50,
+        "top_score": 0.6986074542999269
       }
     },
     "route_executor": {
       "response": "",
       "confidence": "0.0",
-      "internal_reasoning": "The routing decision indicates insufficient confidence (0.5668) to produce a reliable answer within the required confidence threshold of 0.9. Therefore, I cannot comply with the request as it would violate the minimum confidence constraint.",
+      "internal_reasoning": "The routing decision indicates a confidence of only 0.565, which is below the required minimum confidence of 0.9 for compliance with the critical instructions. Therefore, I cannot produce a valid response that meets all constraints.",
       "_metrics": {
-        "tokens": 1810,
-        "prompt_tokens": 1738,
+        "tokens": 1815,
+        "prompt_tokens": 1743,
         "completion_tokens": 72,
-        "latency_ms": 1621.89,
-        "cost_usd": 0.0001,
+        "latency_ms": 1153.88,
+        "cost_usd": 7.1e-05,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "Execute the routed task based on the GraphScout decision.\n\nORIGINAL REQUEST: Path: Tier-1 Standard Support Flow\nROUTING DECISION: shortlist\nTARGET PATH: [{'node_id': 'route_executor', 'path': ['route_executor', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 339, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: route_executor matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7002814865112306, 'score_components': {'llm': 0.5, 'heuristics': 0.7864074325561524, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7668096733567862}, {'node_id': 'route_executor', 'path': ['route_executor', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 339, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: route_executor matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7002814865112306, 'score_components': {'llm': 0.5, 'heuristics': 0.7864074325561524, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7668096733567862}, {'node_id': 'route_executor', 'path': ['route_executor', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 339, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: route_executor matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7002814865112306, 'score_components': {'llm': 0.5, 'heuristics': 0.7864074325561524, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7668096733567862}]\nROUTING CONFIDENCE: 0.5668096733567862\nREASONING: Close competition with margin 0.000 - returning top 3 options\n\nExecute and produce a thorough response following the selected path.\n\nReturn JSON with:\n- \"response\": your complete solution following the routed path\n- \"route_taken\": the path/agent selected\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": how the routing decision guided your response"
+      "formatted_prompt": "Execute the routed task based on the GraphScout decision.\n\nORIGINAL REQUEST: Path: Tier-1 Standard Support Flow\nROUTING DECISION: shortlist\nTARGET PATH: [{'node_id': 'escalation_handler', 'path': ['escalation_handler', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6986074542999269, 'score_components': {'llm': 0.5, 'heuristics': 0.7780372714996339, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7651014168346184}, {'node_id': 'escalation_handler', 'path': ['escalation_handler', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6986074542999269, 'score_components': {'llm': 0.5, 'heuristics': 0.7780372714996339, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7651014168346184}, {'node_id': 'escalation_handler', 'path': ['escalation_handler', 'quality_checker'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6986074542999269, 'score_components': {'llm': 0.5, 'heuristics': 0.7780372714996339, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7651014168346184}]\nROUTING CONFIDENCE: 0.5651014168346185\nREASONING: Close competition with margin 0.000 - returning top 3 options\n\nExecute and produce a thorough response following the selected path.\n\nReturn JSON with:\n- \"response\": your complete solution following the routed path\n- \"route_taken\": the path/agent selected\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": how the routing decision guided your response",
+      "trace_id": "03b83a82-f407-4c33-b7ab-5cfc658e8c8d",
+      "execution_time_ms": 1155.4722785949707
     },
     "task_result": {
       "response": "",
       "confidence": "0.0",
-      "internal_reasoning": "The provided routing decision and target paths have a confidence of only 0.5668, which is below the required minimum of 0.9. Therefore, I cannot provide a confident answer as per the constraints.",
+      "internal_reasoning": "The available evidence and confidence score (0.565) are below the required minimum of 0.9, so I cannot provide a reliable answer.",
       "_metrics": {
-        "tokens": 1825,
-        "prompt_tokens": 1755,
-        "completion_tokens": 70,
-        "latency_ms": 1165.14,
-        "cost_usd": 7.2e-05,
+        "tokens": 1817,
+        "prompt_tokens": 1760,
+        "completion_tokens": 57,
+        "latency_ms": 1397.61,
+        "cost_usd": 8.6e-05,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "Produce the FINAL structured output.\n\nDOMAIN: customer_support\nTASK: Path: Tier-1 Standard Support Flow\n\nROUTING DECISION: shortlist\nTARGET: [{'node_id': 'route_executor', 'path': ['route_executor', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 339, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: route_executor matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7002814865112306, 'score_components': {'llm': 0.5, 'heuristics': 0.7864074325561524, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7668096733567862}, {'node_id': 'route_executor', 'path': ['route_executor', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 339, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: route_executor matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7002814865112306, 'score_components': {'llm': 0.5, 'heuristics': 0.7864074325561524, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7668096733567862}, {'node_id': 'route_executor', 'path': ['route_executor', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 339, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: route_executor matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7002814865112306, 'score_components': {'llm': 0.5, 'heuristics': 0.7864074325561524, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7668096733567862}]\nCONFIDENCE: 0.5668096733567862\n\nEXECUTION RESULT:\n\n\nReturn JSON with:\n- \"response\": comprehensive solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"route_decision\": the routing decision made\n- \"route_target\": selected path\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+      "formatted_prompt": "Produce the FINAL structured output.\n\nDOMAIN: customer_support\nTASK: Path: Tier-1 Standard Support Flow\n\nROUTING DECISION: shortlist\nTARGET: [{'node_id': 'escalation_handler', 'path': ['escalation_handler', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6986074542999269, 'score_components': {'llm': 0.5, 'heuristics': 0.7780372714996339, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7651014168346184}, {'node_id': 'escalation_handler', 'path': ['escalation_handler', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6986074542999269, 'score_components': {'llm': 0.5, 'heuristics': 0.7780372714996339, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7651014168346184}, {'node_id': 'escalation_handler', 'path': ['escalation_handler', 'quality_checker'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: escalation_handler matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6986074542999269, 'score_components': {'llm': 0.5, 'heuristics': 0.7780372714996339, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7651014168346184}]\nCONFIDENCE: 0.5651014168346185\n\nEXECUTION RESULT:\n\n\nReturn JSON with:\n- \"response\": comprehensive solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"route_decision\": the routing decision made\n- \"route_target\": selected path\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection",
+      "trace_id": "1ef72df5-ec9a-45cf-85b1-2d6f7d02ad82",
+      "execution_time_ms": 1398.6177444458008
     }
   }
 }

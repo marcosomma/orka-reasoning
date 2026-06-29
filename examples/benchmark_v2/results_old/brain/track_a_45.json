@@ -1,0 +1,372 @@
+{
+  "task_id": "track_a_45",
+  "condition": "brain",
+  "elapsed_s": 24.24,
+  "success": true,
+  "output": {
+    "response": {
+      "domain": "nuclear_medicine",
+      "task": "Generate QC test cases for a Lu-177 PSMA theranostic under GMP Annex 1, Ph.Eur. monograph 2798 and FDA 21 CFR 212 constraints with a 6.7\u2011day half\u2011life requiring all tests within 4\u202fh of release.",
+      "solution_steps": [
+        {
+          "step_id": 1,
+          "title": "Regulatory & Timing Framework",
+          "actions": [
+            "Document that the clean\u2011room meets GMP Annex\u00a01 requirements (ISO\u202f7/8, HEPA filtration, gowning).",
+            "Confirm compliance with Ph.Eur. monograph\u00a02798 for Lu\u2011177 chloride and FDA 21\u202fCFR\u202f212 for therapeutic radiopharmaceuticals.",
+            "Establish a master schedule that limits total QC time to <4\u202fh post\u2011release; assign start times to each test."
+          ],
+          "expected_outcome": "All activities traceable, timing constraints met."
+        },
+        {
+          "step_id": 2,
+          "title": "Radionuclidic Purity \u2013 Distinguish Lu\u2011177m from Ground State",
+          "actions": [
+            "Use a high\u2011purity germanium detector (\u226510\u202fkHz resolution).",
+            "Acquire spectra for 5\u201310\u202fmin immediately after release to capture maximum activity.",
+            "Apply live\u2011time correction via an electronic pulser or built\u2011in dead\u2011time counter; record both live and real time.",
+            "Quantify the 133\u202fkeV (Lu\u2011177m) peak versus the 208\u202fkeV ground\u2011state peak using standard\u2010based calibration.",
+            "Acceptance: <0.1\u202f% Lu\u2011177m relative to total activity."
+          ],
+          "expected_outcome": "Accurate isomer content measurement within ALARA limits."
+        },
+        {
+          "step_id": 3,
+          "title": "Radiochemical Purity \u2013 HPLC with System Suitability Workaround",
+          "actions": [
+            "Run a reverse\u2011phase C18 column (5\u202f\u00b5m, 250\u202f\u00d7\u202f4.6\u202fmm).",
+            "Mobile phase: A = 10\u202f\u00b5M ammonium acetate pH\u202f5.5; B = acetonitrile, gradient 0\u201340\u202f% B over 15\u202fmin.",
+            "Inject a surrogate ligand (e.g., 99mTc\u2011DMSA at ~1\u202f% of expected activity) to confirm peak shape and retention time because reference standard is unavailable.",
+            "Integrate the PSMA\u2011ligand peak; calculate % area relative to total chromatogram.",
+            "Acceptance: \u226595\u202f% radiochemical purity."
+          ],
+          "expected_outcome": "Validated system suitability without a direct reference standard."
+        },
+        {
+          "step_id": 4,
+          "title": "Sterility \u2013 Parametric Release",
+          "actions": [
+            "Filter 1\u202fmL of product through a 0.45\u202f\u00b5m membrane into sterile broth (tryptic soy broth, 30\u201335\u202f\u00b0C).",
+            "Incubate for 2\u202fh; monitor turbidity with a photometer.",
+            "Use a Poisson statistical model to predict sterility probability >99.999\u202f% based on observed growth rate and sample size.",
+            "If no growth detected, release product immediately (bypassing the 14\u2011day USP\u202f<71> incubation)."
+          ],
+          "expected_outcome": "Rapid sterility confirmation compliant with FDA guidance."
+        },
+        {
+          "step_id": 5,
+          "title": "Endotoxin \u2013 Clinical Dose Volume",
+          "actions": [
+            "Perform a kinetic turbidimetric LAL assay on a 1:10 dilution of the final product.",
+            "Calculate maximum valid dilution (MVD) from specific activity; if MVD < required dilution, perform two\u2011step dilution (1:5 then 1:2).",
+            "Report endotoxin in EU/\u00b5Ci and confirm \u22645\u202fEU/mL at clinical dose volume.",
+            "Document assay conditions to satisfy USP\u202f<85>."
+          ],
+          "expected_outcome": "Endotoxin within limits despite high specific activity."
+        },
+        {
+          "step_id": 6,
+          "title": "ALARA Compliance for QC Personnel",
+          "actions": [
+            "Maintain \u226510\u202fcm source\u2013detector distance during gamma spectrometry; use lead shielding and automated dead\u2011time correction.",
+            "Limit exposure to <0.1\u202fmSv per test (verified by personal dosimeters).",
+            "HPLC, sterility, and endotoxin assays involve no radiation."
+          ],
+          "expected_outcome": "Radiation doses for staff remain within ALARA principles."
+        },
+        {
+          "step_id": 7,
+          "title": "Test Sequence Respecting Decay Clock",
+          "actions": [
+            "1. Radionuclidic purity (immediately after release).",
+            "2. Radiochemical purity (while activity still high).",
+            "3. Sterility and endotoxin assays in parallel to save time.",
+            "4. Final documentation and release decision."
+          ],
+          "expected_outcome": "All tests completed within 4\u202fh, minimizing decay loss."
+        }
+      ]
+    },
+    "confidence": "0.95",
+    "internal_reasoning": "I synthesized the regulatory requirements, half\u2011life constraints, and specific acceptance criteria into a stepwise QC plan that satisfies GMP Annex\u00a01, Ph.Eur. monograph\u00a02798, and FDA 21\u202fCFR\u202f212. Each test case addresses the hard time limit, distinguishes Lu\u2011177m, compensates for missing reference standards, uses parametric sterility release, resolves endotoxin dilution conflict, and maintains ALARA exposure.",
+    "_metrics": {
+      "tokens": 2763,
+      "prompt_tokens": 1460,
+      "completion_tokens": 1303,
+      "latency_ms": 10108.33,
+      "cost_usd": 0.000636,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'nuclear_medicine', 'task': \"Analyze the regulatory specifications for a novel Lutetium-177 PSMA theranostic radiopharmaceutical manufacturing process (GMP Annex 1 clean room requirements, Ph.Eur. monograph 2798 for Lu-177 chloride, FDA 21 CFR 212 for PET/therapeutic radiopharmaceuticals) where the 6.7-day half-life creates a hard constraint that all QC testing must complete within 4 hours of batch release. Generate test cases covering: radionuclidic purity assessment where the 5.5% Lu-177m metastable isomer content must be distinguished from Lu-177 ground state by gamma spectrometry with detector dead-time correction, radiochemical purity by HPLC where the acceptance criterion is \u226595% but the reference standard is unavailable (requiring system suitability workaround), sterility testing using a parametric release approach because the 14-day USP <71> test would expire the product, and endotoxin testing at the clinical dose volume where the maximum valid dilution calculation creates a mathematical conflict with the product's specific activity. Validate that no test case violates ALARA radiation protection principles for QC laboratory personnel and that the test sequence respects the physical decay clock.\"}\n\nSOLUTION:\n{'domain': 'nuclear_medicine', 'task': 'Generate QC test cases for a Lu-177 PSMA theranostic under GMP Annex 1, Ph.Eur. 2798, and FDA 21 CFR 212 constraints with a 6.7\u2011day half\u2011life requiring all tests within 4\\u202fh of release.', 'steps': [{'action': 'Define regulatory context and time constraint', 'expected_outcome': 'All QC activities documented to comply with GMP Annex\\xa01 clean\u2011room, Ph.Eur. monograph\\xa02798 for Lu\u2011177 chloride, and FDA 21\\u202fCFR\\u202f212; total test duration <4\\u202fh post\u2011release.'}, {'action': 'Radionuclidic purity assessment', 'expected_outcome': 'High\u2011resolution HPGe gamma spectrometry (\u226510\\u202fk\\u202fHz resolution) with live\u2011time monitoring. Acquire 5\u201310\\u202fmin spectra; apply dead\u2011time correction using a pulser or live\u2011time counter. Resolve 177mLu (133\\u202fkeV) from ground state (208\\u202fkeV). Acceptance: <0.1\\u202f% 177mLu relative to total activity.'}, {'action': 'Radiochemical purity by HPLC', 'expected_outcome': 'Reversed\u2011phase C18 column, mobile phase A (10\\u202f\u00b5M ammonium acetate, pH\\u202f5.5) / B (acetonitrile). System suitability: spike a surrogate ligand (e.g., 99mTc\u2011DMSA at 1\\u202f% of expected activity) to confirm peak shape and retention time. Acceptance: \u226595\\u202f% target PSMA\u2011ligand peak area relative to total chromatogram.'}, {'action': 'Sterility testing with parametric release', 'expected_outcome': 'Use a validated 2\u2011hour membrane filtration (0.45\\u202f\u00b5m) followed by rapid culture in tryptic soy broth at 30\u201335\\u202f\u00b0C. Apply statistical model (e.g., Poisson) to predict sterility probability >99.999\\u202f% within the 4\u2011h window, obviating the 14\u2011day USP\\u202f<71> incubation.'}, {'action': 'Endotoxin testing at clinical dose volume', 'expected_outcome': 'Kinetic turbidimetric LAL assay with a 1:10 dilution of the final product. Calculate maximum valid dilution (MVD) from specific activity; if MVD < required dilution, perform two\u2011step dilution (e.g., 1:5 then 1:2). Report endotoxin in EU/\u00b5Ci and confirm \u22645\\u202fEU/mL at clinical dose.'}, {'action': 'ALARA compliance for QC personnel', 'expected_outcome': 'All gamma spectrometry performed with \u226510\\u202fcm source\u2013detector distance, lead shielding, and automated dead\u2011time correction to keep exposure <0.1\\u202fmSv per test. HPLC and endotoxin assays involve no radiation.'}, {'action': 'Test sequence respecting decay clock', 'expected_outcome': ['Radionuclidic purity immediately after release (max activity).', 'Radiochemical purity while activity remains high.', 'Sterility/parametric release concurrently with HPLC to save time.', 'Endotoxin assay last to avoid sample loss.'], 'total_time_estimate': '<4\\u202fh'}]}\n\nBRAIN METRICS:\nSkill recalled: procedural:general:analysis-sequential\nTransfer score: 0.6323525197395833\nUsed recalled skill: False\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": true if recalled skill contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": {
+        "domain": "nuclear_medicine",
+        "task": "Generate QC test cases for a Lu-177 PSMA theranostic under GMP Annex 1, Ph.Eur. 2798, and FDA 21 CFR 212 constraints with a 6.7\u2011day half\u2011life requiring all tests within 4 hours of release.",
+        "steps": [
+          {
+            "action": "Define regulatory context and time constraint",
+            "result": "Documented that GMP Annex 1 clean room, Ph.Eur. monograph 2798 (Lu-177 chloride), and FDA 21 CFR 212 apply; all QC must finish within 4\u202fh post\u2011release due to the 6.7\u2011day half\u2011life."
+          },
+          {
+            "action": "Design radionuclidic purity test",
+            "result": "Gamma spectrometry method with high\u2011resolution HPGe detector, 5\u201310\u202fmin acquisition, dead\u2011time correction via live\u2011time monitoring; calibration curve for 177mLu (133\u202fkeV) vs. ground state (208\u202fkeV). Acceptance: <0.1% 177mLu relative to total activity."
+          },
+          {
+            "action": "Develop radiochemical purity method",
+            "result": "HPLC with reversed\u2011phase column, mobile phase A (10\u202fmM ammonium acetate, pH\u202f5.5) and B (acetonitrile). System suitability: use a surrogate ligand (e.g., 99mTc\u2011DMSA) spiked at 1% of expected activity; acceptance: \u226595% target peak area relative to total chromatogram."
+          },
+          {
+            "action": "Plan sterility testing with parametric release",
+            "result": "Use USP <71> 14\u2011day incubation but apply a validated 2\u2011hour membrane filtration method (e.g., 0.45\u202f\u00b5m filter) followed by rapid culture in tryptic soy broth; statistical model predicts sterility probability >99.999% within 4\u202fh."
+          },
+          {
+            "action": "Set endotoxin assay at clinical dose volume",
+            "result": "Use LAL kinetic turbidimetric test with a 1:10 dilution of the final product to stay below the maximum valid dilution (MVD). Calculate MVD based on specific activity; adjust sample volume so that endotoxin concentration remains \u22645\u202fEU/mL. Resolve mathematical conflict by using a two\u2011step dilution strategy and reporting results in EU/\u00b5Ci."
+          },
+          {
+            "action": "Validate ALARA compliance for QC lab personnel",
+            "result": "All assays performed at minimal source\u2013detector distance, with lead shielding; gamma spectrometry uses 10\u202fmin acquisition to keep exposure <0.1\u202fmSv per test; HPLC and endotoxin tests involve no radiation."
+          },
+          {
+            "action": "Sequence tests respecting decay clock",
+            "result": "Order: (1) Radionuclidic purity immediately after release, (2) Radiochemical purity while activity is still high, (3) Sterility/parametric release concurrently with HPLC, (4) Endotoxin assay last to avoid sample loss. Total time <4\u202fh."
+          }
+        ],
+        "validation": {
+          "ALARA_check": true,
+          "decay_clock_respect": true
+        }
+      },
+      "confidence": "0.96",
+      "internal_reasoning": "I mapped each regulatory requirement to a specific QC method, ensured timing fits the 4\u2011hour window, applied ALARA principles, and sequenced tests logically.",
+      "_metrics": {
+        "tokens": 1464,
+        "prompt_tokens": 667,
+        "completion_tokens": 797,
+        "latency_ms": 6358.95,
+        "cost_usd": 0.000392,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: nuclear_medicine\nTASK: Analyze the regulatory specifications for a novel Lutetium-177 PSMA theranostic radiopharmaceutical manufacturing process (GMP Annex 1 clean room requirements, Ph.Eur. monograph 2798 for Lu-177 chloride, FDA 21 CFR 212 for PET/therapeutic radiopharmaceuticals) where the 6.7-day half-life creates a hard constraint that all QC testing must complete within 4 hours of batch release. Generate test cases covering: radionuclidic purity assessment where the 5.5% Lu-177m metastable isomer content must be distinguished from Lu-177 ground state by gamma spectrometry with detector dead-time correction, radiochemical purity by HPLC where the acceptance criterion is \u226595% but the reference standard is unavailable (requiring system suitability workaround), sterility testing using a parametric release approach because the 14-day USP <71> test would expire the product, and endotoxin testing at the clinical dose volume where the maximum valid dilution calculation creates a mathematical conflict with the product's specific activity. Validate that no test case violates ALARA radiation protection principles for QC laboratory personnel and that the test sequence respects the physical decay clock.\n\n\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+    },
+    "brain_learn": {
+      "response": "Learned skill: procedural:general:analysis-sequential",
+      "confidence": "0.7601279093749999",
+      "internal_reasoning": "Abstracted 1 steps into transferable skill 'procedural:general:analysis-sequential'",
+      "skill_id": "5b2b1650-36f1-46f5-8552-8565d96ff664",
+      "skill_name": "procedural:general:analysis-sequential",
+      "skill_steps": [
+        "test [target]"
+      ],
+      "skill_tags": [
+        "sequential",
+        "analysis",
+        "generation",
+        "{'domain': 'quality_assurance', 'task': 'Analyze a software specification for testable requirements, generate comprehensive test cases with boundary conditions, then validate test coverage completenes",
+        "routing",
+        "general",
+        "evaluation",
+        "validation"
+      ]
+    },
+    "brain_recall": {
+      "response": "Found applicable skill: 'procedural:general:analysis-sequential' (score: 0.63). Steps: test [target]",
+      "confidence": "0.6323525197395833",
+      "internal_reasoning": "Skill 'procedural:general:analysis-sequential'. has very similar task structure. has been transferred 1 times (100% success). shares structures: routing, validation. shares patterns: generation, evaluation.",
+      "skill_id": "5b2b1650-36f1-46f5-8552-8565d96ff664",
+      "skill_name": "procedural:general:analysis-sequential",
+      "skill_steps": [
+        "test [target]"
+      ],
+      "skill_tags": [
+        "sequential",
+        "analysis",
+        "generation",
+        "{'domain': 'quality_assurance', 'task': 'Analyze a software specification for testable requirements, generate comprehensive test cases with boundary conditions, then validate test coverage completenes",
+        "routing",
+        "general",
+        "evaluation",
+        "validation"
+      ],
+      "combined_score": 0.6323525197395833,
+      "structural_score": 0.7666666666666666,
+      "semantic_score": 0.0,
+      "adaptations": {
+        "remove_structures": [
+          "sequential"
+        ]
+      },
+      "all_candidates": [
+        {
+          "skill_name": "procedural:general:analysis-sequential",
+          "score": 0.6323525197395833,
+          "reasoning": "Skill 'procedural:general:analysis-sequential'. has very similar task structure. has been transferred 1 times (100% success). shares structures: routing, validation. shares patterns: generation, evaluation."
+        }
+      ]
+    },
+    "task_applier": {
+      "response": {
+        "domain": "nuclear_medicine",
+        "task": "Generate QC test cases for a Lu-177 PSMA theranostic under GMP Annex 1, Ph.Eur. 2798, and FDA 21 CFR 212 constraints with a 6.7\u2011day half\u2011life requiring all tests within 4\u202fh of release.",
+        "steps": [
+          {
+            "action": "Define regulatory context and time constraint",
+            "expected_outcome": "All QC activities documented to comply with GMP Annex\u00a01 clean\u2011room, Ph.Eur. monograph\u00a02798 for Lu\u2011177 chloride, and FDA 21\u202fCFR\u202f212; total test duration <4\u202fh post\u2011release."
+          },
+          {
+            "action": "Radionuclidic purity assessment",
+            "expected_outcome": "High\u2011resolution HPGe gamma spectrometry (\u226510\u202fk\u202fHz resolution) with live\u2011time monitoring. Acquire 5\u201310\u202fmin spectra; apply dead\u2011time correction using a pulser or live\u2011time counter. Resolve 177mLu (133\u202fkeV) from ground state (208\u202fkeV). Acceptance: <0.1\u202f% 177mLu relative to total activity."
+          },
+          {
+            "action": "Radiochemical purity by HPLC",
+            "expected_outcome": "Reversed\u2011phase C18 column, mobile phase A (10\u202f\u00b5M ammonium acetate, pH\u202f5.5) / B (acetonitrile). System suitability: spike a surrogate ligand (e.g., 99mTc\u2011DMSA at 1\u202f% of expected activity) to confirm peak shape and retention time. Acceptance: \u226595\u202f% target PSMA\u2011ligand peak area relative to total chromatogram."
+          },
+          {
+            "action": "Sterility testing with parametric release",
+            "expected_outcome": "Use a validated 2\u2011hour membrane filtration (0.45\u202f\u00b5m) followed by rapid culture in tryptic soy broth at 30\u201335\u202f\u00b0C. Apply statistical model (e.g., Poisson) to predict sterility probability >99.999\u202f% within the 4\u2011h window, obviating the 14\u2011day USP\u202f<71> incubation."
+          },
+          {
+            "action": "Endotoxin testing at clinical dose volume",
+            "expected_outcome": "Kinetic turbidimetric LAL assay with a 1:10 dilution of the final product. Calculate maximum valid dilution (MVD) from specific activity; if MVD < required dilution, perform two\u2011step dilution (e.g., 1:5 then 1:2). Report endotoxin in EU/\u00b5Ci and confirm \u22645\u202fEU/mL at clinical dose."
+          },
+          {
+            "action": "ALARA compliance for QC personnel",
+            "expected_outcome": "All gamma spectrometry performed with \u226510\u202fcm source\u2013detector distance, lead shielding, and automated dead\u2011time correction to keep exposure <0.1\u202fmSv per test. HPLC and endotoxin assays involve no radiation."
+          },
+          {
+            "action": "Test sequence respecting decay clock",
+            "expected_outcome": [
+              "Radionuclidic purity immediately after release (max activity).",
+              "Radiochemical purity while activity remains high.",
+              "Sterility/parametric release concurrently with HPLC to save time.",
+              "Endotoxin assay last to avoid sample loss."
+            ],
+            "total_time_estimate": "<4\u202fh"
+          }
+        ]
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "I mapped each regulatory requirement to a specific QC test, ensuring the 6.7\u2011day half\u2011life constraint is met by sequencing tests from highest to lowest activity and using rapid methods (parametric sterility). Dead\u2011time correction, surrogate standards, and dilution strategies address the technical challenges while maintaining ALARA.",
+      "_metrics": {
+        "tokens": 2391,
+        "prompt_tokens": 1513,
+        "completion_tokens": 878,
+        "latency_ms": 6994.11,
+        "cost_usd": 0.00044,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a task. You have your own analysis AND access to a\npreviously learned skill from the Brain's memory.\n\nDOMAIN: general\nTASK: {'domain': 'nuclear_medicine', 'task': \"Analyze the regulatory specifications for a novel Lutetium-177 PSMA theranostic radiopharmaceutical manufacturing process (GMP Annex 1 clean room requirements, Ph.Eur. monograph 2798 for Lu-177 chloride, FDA 21 CFR 212 for PET/therapeutic radiopharmaceuticals) where the 6.7-day half-life creates a hard constraint that all QC testing must complete within 4 hours of batch release. Generate test cases covering: radionuclidic purity assessment where the 5.5% Lu-177m metastable isomer content must be distinguished from Lu-177 ground state by gamma spectrometry with detector dead-time correction, radiochemical purity by HPLC where the acceptance criterion is \u226595% but the reference standard is unavailable (requiring system suitability workaround), sterility testing using a parametric release approach because the 14-day USP <71> test would expire the product, and endotoxin testing at the clinical dose volume where the maximum valid dilution calculation creates a mathematical conflict with the product's specific activity. Validate that no test case violates ALARA radiation protection principles for QC laboratory personnel and that the test sequence respects the physical decay clock.\"}\n\nYOUR ANALYSIS:\n{'domain': 'nuclear_medicine', 'task': 'Generate QC test cases for a Lu-177 PSMA theranostic under GMP Annex 1, Ph.Eur. 2798, and FDA 21 CFR 212 constraints with a 6.7\u2011day half\u2011life requiring all tests within 4 hours of release.', 'steps': [{'action': 'Define regulatory context and time constraint', 'result': 'Documented that GMP Annex 1 clean room, Ph.Eur. monograph 2798 (Lu-177 chloride), and FDA 21 CFR 212 apply; all QC must finish within 4\\u202fh post\u2011release due to the 6.7\u2011day half\u2011life.'}, {'action': 'Design radionuclidic purity test', 'result': 'Gamma spectrometry method with high\u2011resolution HPGe detector, 5\u201310\\u202fmin acquisition, dead\u2011time correction via live\u2011time monitoring; calibration curve for 177mLu (133\\u202fkeV) vs. ground state (208\\u202fkeV). Acceptance: <0.1% 177mLu relative to total activity.'}, {'action': 'Develop radiochemical purity method', 'result': 'HPLC with reversed\u2011phase column, mobile phase A (10\\u202fmM ammonium acetate, pH\\u202f5.5) and B (acetonitrile). System suitability: use a surrogate ligand (e.g., 99mTc\u2011DMSA) spiked at 1% of expected activity; acceptance: \u226595% target peak area relative to total chromatogram.'}, {'action': 'Plan sterility testing with parametric release', 'result': 'Use USP <71> 14\u2011day incubation but apply a validated 2\u2011hour membrane filtration method (e.g., 0.45\\u202f\u00b5m filter) followed by rapid culture in tryptic soy broth; statistical model predicts sterility probability >99.999% within 4\\u202fh.'}, {'action': 'Set endotoxin assay at clinical dose volume', 'result': 'Use LAL kinetic turbidimetric test with a 1:10 dilution of the final product to stay below the maximum valid dilution (MVD). Calculate MVD based on specific activity; adjust sample volume so that endotoxin concentration remains \u22645\\u202fEU/mL. Resolve mathematical conflict by using a two\u2011step dilution strategy and reporting results in EU/\u00b5Ci.'}, {'action': 'Validate ALARA compliance for QC lab personnel', 'result': 'All assays performed at minimal source\u2013detector distance, with lead shielding; gamma spectrometry uses 10\\u202fmin acquisition to keep exposure <0.1\\u202fmSv per test; HPLC and endotoxin tests involve no radiation.'}, {'action': 'Sequence tests respecting decay clock', 'result': 'Order: (1) Radionuclidic purity immediately after release, (2) Radiochemical purity while activity is still high, (3) Sterility/parametric release concurrently with HPLC, (4) Endotoxin assay last to avoid sample loss. Total time <4\\u202fh.'}], 'validation': {'ALARA_check': True, 'decay_clock_respect': True}}\n\nRECALLED SKILL FROM BRAIN:\nSkill name: procedural:general:analysis-sequential\nAbstract steps: ['test [target]']\nTransfer score: 0.6323525197395833\nStructural match: 0.7666666666666666\nSemantic match: 0.0\nAdaptations: {'remove_structures': ['sequential']}\n\nINSTRUCTIONS:\nIf a skill was recalled, use its abstract pattern to GUIDE your solution.\nFor each abstract step, explain how you ADAPT it to the current domain.\nIf no skill was recalled, solve using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": true or false\n- \"recalled_skill_name\": skill name or \"none\"\n- \"adaptation_notes\": how you adapted the skill (or \"N/A\")\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+    },
+    "brain_feedback": {
+      "response": "Recorded successful transfer for skill 'procedural:general:analysis-sequential'.",
+      "confidence": "0.7721215139062498",
+      "internal_reasoning": "Transfer feedback recorded. Skill now has 2 transfer(s).",
+      "skill_id": "5b2b1650-36f1-46f5-8552-8565d96ff664",
+      "skill_name": "procedural:general:analysis-sequential",
+      "transfer_count": 2,
+      "transfer_success": true
+    },
+    "task_result": {
+      "response": {
+        "domain": "nuclear_medicine",
+        "task": "Generate QC test cases for a Lu-177 PSMA theranostic under GMP Annex 1, Ph.Eur. monograph 2798 and FDA 21 CFR 212 constraints with a 6.7\u2011day half\u2011life requiring all tests within 4\u202fh of release.",
+        "solution_steps": [
+          {
+            "step_id": 1,
+            "title": "Regulatory & Timing Framework",
+            "actions": [
+              "Document that the clean\u2011room meets GMP Annex\u00a01 requirements (ISO\u202f7/8, HEPA filtration, gowning).",
+              "Confirm compliance with Ph.Eur. monograph\u00a02798 for Lu\u2011177 chloride and FDA 21\u202fCFR\u202f212 for therapeutic radiopharmaceuticals.",
+              "Establish a master schedule that limits total QC time to <4\u202fh post\u2011release; assign start times to each test."
+            ],
+            "expected_outcome": "All activities traceable, timing constraints met."
+          },
+          {
+            "step_id": 2,
+            "title": "Radionuclidic Purity \u2013 Distinguish Lu\u2011177m from Ground State",
+            "actions": [
+              "Use a high\u2011purity germanium detector (\u226510\u202fkHz resolution).",
+              "Acquire spectra for 5\u201310\u202fmin immediately after release to capture maximum activity.",
+              "Apply live\u2011time correction via an electronic pulser or built\u2011in dead\u2011time counter; record both live and real time.",
+              "Quantify the 133\u202fkeV (Lu\u2011177m) peak versus the 208\u202fkeV ground\u2011state peak using standard\u2010based calibration.",
+              "Acceptance: <0.1\u202f% Lu\u2011177m relative to total activity."
+            ],
+            "expected_outcome": "Accurate isomer content measurement within ALARA limits."
+          },
+          {
+            "step_id": 3,
+            "title": "Radiochemical Purity \u2013 HPLC with System Suitability Workaround",
+            "actions": [
+              "Run a reverse\u2011phase C18 column (5\u202f\u00b5m, 250\u202f\u00d7\u202f4.6\u202fmm).",
+              "Mobile phase: A = 10\u202f\u00b5M ammonium acetate pH\u202f5.5; B = acetonitrile, gradient 0\u201340\u202f% B over 15\u202fmin.",
+              "Inject a surrogate ligand (e.g., 99mTc\u2011DMSA at ~1\u202f% of expected activity) to confirm peak shape and retention time because reference standard is unavailable.",
+              "Integrate the PSMA\u2011ligand peak; calculate % area relative to total chromatogram.",
+              "Acceptance: \u226595\u202f% radiochemical purity."
+            ],
+            "expected_outcome": "Validated system suitability without a direct reference standard."
+          },
+          {
+            "step_id": 4,
+            "title": "Sterility \u2013 Parametric Release",
+            "actions": [
+              "Filter 1\u202fmL of product through a 0.45\u202f\u00b5m membrane into sterile broth (tryptic soy broth, 30\u201335\u202f\u00b0C).",
+              "Incubate for 2\u202fh; monitor turbidity with a photometer.",
+              "Use a Poisson statistical model to predict sterility probability >99.999\u202f% based on observed growth rate and sample size.",
+              "If no growth detected, release product immediately (bypassing the 14\u2011day USP\u202f<71> incubation)."
+            ],
+            "expected_outcome": "Rapid sterility confirmation compliant with FDA guidance."
+          },
+          {
+            "step_id": 5,
+            "title": "Endotoxin \u2013 Clinical Dose Volume",
+            "actions": [
+              "Perform a kinetic turbidimetric LAL assay on a 1:10 dilution of the final product.",
+              "Calculate maximum valid dilution (MVD) from specific activity; if MVD < required dilution, perform two\u2011step dilution (1:5 then 1:2).",
+              "Report endotoxin in EU/\u00b5Ci and confirm \u22645\u202fEU/mL at clinical dose volume.",
+              "Document assay conditions to satisfy USP\u202f<85>."
+            ],
+            "expected_outcome": "Endotoxin within limits despite high specific activity."
+          },
+          {
+            "step_id": 6,
+            "title": "ALARA Compliance for QC Personnel",
+            "actions": [
+              "Maintain \u226510\u202fcm source\u2013detector distance during gamma spectrometry; use lead shielding and automated dead\u2011time correction.",
+              "Limit exposure to <0.1\u202fmSv per test (verified by personal dosimeters).",
+              "HPLC, sterility, and endotoxin assays involve no radiation."
+            ],
+            "expected_outcome": "Radiation doses for staff remain within ALARA principles."
+          },
+          {
+            "step_id": 7,
+            "title": "Test Sequence Respecting Decay Clock",
+            "actions": [
+              "1. Radionuclidic purity (immediately after release).",
+              "2. Radiochemical purity (while activity still high).",
+              "3. Sterility and endotoxin assays in parallel to save time.",
+              "4. Final documentation and release decision."
+            ],
+            "expected_outcome": "All tests completed within 4\u202fh, minimizing decay loss."
+          }
+        ]
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "I synthesized the regulatory requirements, half\u2011life constraints, and specific acceptance criteria into a stepwise QC plan that satisfies GMP Annex\u00a01, Ph.Eur. monograph\u00a02798, and FDA 21\u202fCFR\u202f212. Each test case addresses the hard time limit, distinguishes Lu\u2011177m, compensates for missing reference standards, uses parametric sterility release, resolves endotoxin dilution conflict, and maintains ALARA exposure.",
+      "_metrics": {
+        "tokens": 2763,
+        "prompt_tokens": 1460,
+        "completion_tokens": 1303,
+        "latency_ms": 10108.33,
+        "cost_usd": 0.000636,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'nuclear_medicine', 'task': \"Analyze the regulatory specifications for a novel Lutetium-177 PSMA theranostic radiopharmaceutical manufacturing process (GMP Annex 1 clean room requirements, Ph.Eur. monograph 2798 for Lu-177 chloride, FDA 21 CFR 212 for PET/therapeutic radiopharmaceuticals) where the 6.7-day half-life creates a hard constraint that all QC testing must complete within 4 hours of batch release. Generate test cases covering: radionuclidic purity assessment where the 5.5% Lu-177m metastable isomer content must be distinguished from Lu-177 ground state by gamma spectrometry with detector dead-time correction, radiochemical purity by HPLC where the acceptance criterion is \u226595% but the reference standard is unavailable (requiring system suitability workaround), sterility testing using a parametric release approach because the 14-day USP <71> test would expire the product, and endotoxin testing at the clinical dose volume where the maximum valid dilution calculation creates a mathematical conflict with the product's specific activity. Validate that no test case violates ALARA radiation protection principles for QC laboratory personnel and that the test sequence respects the physical decay clock.\"}\n\nSOLUTION:\n{'domain': 'nuclear_medicine', 'task': 'Generate QC test cases for a Lu-177 PSMA theranostic under GMP Annex 1, Ph.Eur. 2798, and FDA 21 CFR 212 constraints with a 6.7\u2011day half\u2011life requiring all tests within 4\\u202fh of release.', 'steps': [{'action': 'Define regulatory context and time constraint', 'expected_outcome': 'All QC activities documented to comply with GMP Annex\\xa01 clean\u2011room, Ph.Eur. monograph\\xa02798 for Lu\u2011177 chloride, and FDA 21\\u202fCFR\\u202f212; total test duration <4\\u202fh post\u2011release.'}, {'action': 'Radionuclidic purity assessment', 'expected_outcome': 'High\u2011resolution HPGe gamma spectrometry (\u226510\\u202fk\\u202fHz resolution) with live\u2011time monitoring. Acquire 5\u201310\\u202fmin spectra; apply dead\u2011time correction using a pulser or live\u2011time counter. Resolve 177mLu (133\\u202fkeV) from ground state (208\\u202fkeV). Acceptance: <0.1\\u202f% 177mLu relative to total activity.'}, {'action': 'Radiochemical purity by HPLC', 'expected_outcome': 'Reversed\u2011phase C18 column, mobile phase A (10\\u202f\u00b5M ammonium acetate, pH\\u202f5.5) / B (acetonitrile). System suitability: spike a surrogate ligand (e.g., 99mTc\u2011DMSA at 1\\u202f% of expected activity) to confirm peak shape and retention time. Acceptance: \u226595\\u202f% target PSMA\u2011ligand peak area relative to total chromatogram.'}, {'action': 'Sterility testing with parametric release', 'expected_outcome': 'Use a validated 2\u2011hour membrane filtration (0.45\\u202f\u00b5m) followed by rapid culture in tryptic soy broth at 30\u201335\\u202f\u00b0C. Apply statistical model (e.g., Poisson) to predict sterility probability >99.999\\u202f% within the 4\u2011h window, obviating the 14\u2011day USP\\u202f<71> incubation.'}, {'action': 'Endotoxin testing at clinical dose volume', 'expected_outcome': 'Kinetic turbidimetric LAL assay with a 1:10 dilution of the final product. Calculate maximum valid dilution (MVD) from specific activity; if MVD < required dilution, perform two\u2011step dilution (e.g., 1:5 then 1:2). Report endotoxin in EU/\u00b5Ci and confirm \u22645\\u202fEU/mL at clinical dose.'}, {'action': 'ALARA compliance for QC personnel', 'expected_outcome': 'All gamma spectrometry performed with \u226510\\u202fcm source\u2013detector distance, lead shielding, and automated dead\u2011time correction to keep exposure <0.1\\u202fmSv per test. HPLC and endotoxin assays involve no radiation.'}, {'action': 'Test sequence respecting decay clock', 'expected_outcome': ['Radionuclidic purity immediately after release (max activity).', 'Radiochemical purity while activity remains high.', 'Sterility/parametric release concurrently with HPLC to save time.', 'Endotoxin assay last to avoid sample loss.'], 'total_time_estimate': '<4\\u202fh'}]}\n\nBRAIN METRICS:\nSkill recalled: procedural:general:analysis-sequential\nTransfer score: 0.6323525197395833\nUsed recalled skill: False\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": true if recalled skill contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

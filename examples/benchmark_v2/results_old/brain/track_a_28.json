@@ -1,0 +1,346 @@
+{
+  "task_id": "track_a_28",
+  "condition": "brain",
+  "elapsed_s": 22.95,
+  "success": true,
+  "output": {
+    "response": {
+      "information_needs_matrix": {
+        "elderly_low_digital_literacy": [
+          "Stay inside",
+          "Shelter\u2011in\u2011place instructions",
+          "Call 911 if injured"
+        ],
+        "parents_school_children_evacuate": [
+          "Evacuation routes",
+          "Nearest safe zones",
+          "School lockdown status"
+        ],
+        "first_responders_real_time_hazard": [
+          "Hazard perimeter updates",
+          "Chemical plume direction",
+          "Recommended safe corridors"
+        ],
+        "hearing_impaired_visual_only": [
+          "LED flash patterns",
+          "On\u2011screen text captions",
+          "Visual alert hierarchy"
+        ]
+      },
+      "modalities_and_content_mapping": {
+        "push_notifications": {
+          "elderly": "Large icons + single\u2011line text",
+          "parents": "Map snippet + route highlights"
+        },
+        "television_override": {
+          "content": "Live GIS map with color\u2011coded hazard zones, captions for hearing\u2011impaired",
+          "protocol": "ATSC\u2011A53.2 broadcast API"
+        },
+        "outdoor_siren_plus_led": {
+          "siren_waveform": "Distinct 3\u2011beat pattern for chemical alert",
+          "led_pattern": "Flashing intensity proportional to hazard radius, color coded per segment"
+        },
+        "web_dashboard": {
+          "features": [
+            "Real\u2011time GIS layers",
+            "Downloadable evacuation plans",
+            "Accessibility toggle (high contrast, screen reader friendly)"
+          ],
+          "delivery": "CDN cached static assets + WebSocket live updates"
+        }
+      },
+      "90_second_delivery_pipeline": [
+        "IPAWS ingest of event data",
+        "Automated templating per segment",
+        "Dispatch via: Push API (APNs/FCM), TV override, Siren+LED controller, Web push & CDN refresh",
+        "Log delivery receipts; fallback to SMS if push fails"
+      ],
+      "fema_ipaws_compliance_checks": [
+        "JSON/XML payload schema validation",
+        "Priority code mapping (P1\u2011P5)",
+        "Delivery success metrics per channel"
+      ],
+      "nielsen_heuristics_panic_state": [
+        "Visibility of system status \u2013 real\u2011time delivery bars on dashboard",
+        "Match between system & real world \u2013 color codes align with hazard maps",
+        "User control & freedom \u2013 parents can toggle route detail; elderly can pause alerts",
+        "Consistency & standards \u2013 same iconography across all channels",
+        "Error prevention \u2013 confirmation prompts before evacuation orders",
+        "Minimalism \u2013 single\u2011line messages, no extraneous graphics"
+      ],
+      "prototype_mockups": {
+        "push_payload_example": "{\"title\":\"\u26a0\ufe0f Chemical Alert\",\"body\":\"Stay inside and shelter in place. Call 911 if injured.\",\"icon\":\"elderly_icon.png\"}",
+        "tv_overlay_storyboard": [
+          {
+            "layer": "hazard_map",
+            "color": "red"
+          },
+          {
+            "layer": "caption_text",
+            "text": "Chemical plume expanding eastward"
+          }
+        ],
+        "led_pattern_diagram": {
+          "chemical_alert": "3\u2011beat cycle (flash, pause, flash)",
+          "evacuation_order": "1\u2011beat flash"
+        },
+        "web_dashboard_screenshot": "URL_to_mockup_image.png"
+      },
+      "behavioral_compliance_simulation": {
+        "theory": "Protection Motivation Theory",
+        "predicted_rates": {
+          "elderly": 0.8,
+          "parents": 0.9,
+          "first_responders": 0.95,
+          "hearing_impaired": 0.85
+        },
+        "rationale": "High threat severity + clear response efficacy + simple action steps drive compliance"
+      },
+      "testing_plan": [
+        "Controlled event simulation; measure time to action per segment",
+        "Log delivery success across channels within 90\u202fs",
+        "Post\u2011event surveys to validate predicted compliance"
+      ],
+      "deployment_checklist": [
+        "IPAWS integration test suite",
+        "Accessibility audit for web dashboard",
+        "Siren/LED redundancy plan",
+        "Staff training on override procedures"
+      ],
+      "future_enhancements": [
+        "AI route optimization based on live traffic",
+        "Voice\u2011over text for hearing\u2011impaired via TTS",
+        "ML to predict compliance gaps and adjust messaging"
+      ]
+    },
+    "confidence": "0.95",
+    "internal_reasoning": "I synthesized the task requirements into a structured solution, mapping each population segment\u2019s needs to specific modalities, ensuring IPAWS compliance, applying Nielsen heuristics for panic states, and estimating compliance via Protection Motivation Theory.",
+    "_metrics": {
+      "tokens": 2326,
+      "prompt_tokens": 1336,
+      "completion_tokens": 990,
+      "latency_ms": 8258.55,
+      "cost_usd": 0.000519,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'crisis_communication', 'task': 'Discover the information needs of 4 distinct population segments during a compound disaster (simultaneous earthquake + chemical plant explosion): elderly residents with low digital literacy, parents of school-age children needing evacuation routing, first responders needing real-time hazard perimeter updates, and hearing-impaired individuals who cannot receive audio alerts. Prototype a multi-modal alert interface that delivers differentiated, actionable information through push notifications, television override, outdoor siren-plus-LED networks, and a web dashboard \u2014 all within 90 seconds of alert issuance. Test using FEMA IPAWS integration standards, Nielsen heuristics adapted for panic-state cognitive load, and predict behavioral compliance rates for each segment using Protection Motivation Theory frameworks.'}\n\nSOLUTION:\n1. **Information\u2011needs matrix**\n   - Elderly (low digital literacy): \"Stay inside, shelter\u2011in\u2011place, call 911 if injured\".\n   - Parents of school\u2011age children: \"Evacuation routes, nearest safe zones, school\u2011lockdown status\".\n   - First responders: \"Real\u2011time hazard perimeter, chemical plume direction, recommended safe corridors\".\n   - Hearing\u2011impaired: \"Visual alerts only \u2013 LED patterns, on\u2011screen text, captioned TV overlay\".\n\n2. **Modalities & content mapping**\n   - Push notifications (mobile): large icons + simple text for elderly; route maps for parents.\n   - Television override: live map with color\u2011coded hazard zones and captions for hearing\u2011impaired.\n   - Outdoor siren + LED network: distinct waveform for chemical alert, LED flash patterns tied to hazard radius for responders.\n   - Web dashboard (CDN\u2011cached): real\u2011time GIS layers, downloadable evacuation plans, accessibility toggle.\n\n3. **90\u2011second delivery pipeline**\n   1. IPAWS ingest of emergency event.\n   2. Automated message templating per segment.\n   4. Dispatch via:\n      - Push API (APNs/FCM) with priority flag.\n      - TV broadcast API (e.g., ATSC\u2011A53.2) for override.\n      - Siren control protocol + LED controller (DMX or custom RF).\n      - Web push & CDN refresh.\n   5. Confirmation receipts logged; fallback to SMS if push fails.\n\n4. **FEMA IPAWS compliance checks**\n   - Payload schema validation (JSON, XML). \n   - Priority code mapping (P1\u2011P5). \n   - Delivery success metrics per channel.\n\n5. **Nielsen heuristics for panic state**\n   1. Visibility of system status \u2013 real\u2011time delivery bars on dashboard.\n   2. Match between system & real world \u2013 color codes match hazard maps.\n   3. User control & freedom \u2013 parents can toggle route detail; elderly can pause alerts.\n   4. Consistency & standards \u2013 same iconography across push, TV, LED.\n   5. Error prevention \u2013 confirmation prompts before evacuation orders.\n   6. Minimalism \u2013 single\u2011line messages, no extraneous graphics.\n\n6. **Prototype mockups**\n   - Push payload JSON example with large emoji icons.\n   - TV overlay storyboard (map + caption). \n   - LED pattern diagram: 3\u2011beat cycle for chemical plume, 1\u2011beat for evacuation.\n   - Web dashboard screenshot with accessibility toggle.\n\n7. **Behavioral compliance simulation**\n   - Use Protection Motivation Theory to estimate compliance:\n     * Threat severity & vulnerability high \u2192 all segments likely comply.\n     * Response efficacy (clear routes) boosts parents\u2019 and responders\u2019 compliance.\n     * Self\u2011efficacy (simple actions for elderly) improves their compliance.\n   - Predicted compliance rates: Elderly 80%, Parents 90%, Responders 95%, Hearing\u2011impaired 85%.\n\n8. **Testing plan**\n   - Simulate event in a controlled environment; measure time to action per segment.\n   - Log delivery success across channels within 90\u202fs.\n   - Conduct post\u2011event surveys to validate predicted compliance.\n\n9. **Deployment checklist**\n   - IPAWS integration test suite.\n   - Accessibility audit for web dashboard.\n   - Siren/LED redundancy plan.\n   - Staff training on override procedures.\n\n10. **Future enhancements**\n    - AI\u2011driven route optimization based on live traffic.\n    - Voice\u2011over text for hearing\u2011impaired via TTS.\n    - Machine learning to predict compliance gaps and adjust messaging.\n\n\nBRAIN METRICS:\nSkill recalled: None\nTransfer score: N/A\nUsed recalled skill: False\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": true if recalled skill contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": {
+        "domain": "crisis_communication",
+        "task": "Design a rapid, multi\u2011modal alert system for four distinct population segments during an earthquake + chemical plant explosion and evaluate it using FEMA IPAWS standards, Nielsen heuristics adapted to panic states, and Protection Motivation Theory.",
+        "steps": [
+          {
+            "action": "Identify information needs per segment",
+            "result": "A matrix of key messages (e.g., evacuation routes for parents, hazard perimeter for responders, simple safety actions for elderly, visual cues for hearing\u2011impaired)."
+          },
+          {
+            "action": "Map modalities to segments and content",
+            "result": "Push notifications with large icons for elderly; TV override with live maps for parents; siren + LED with real\u2011time coordinates for responders; LED\u2011only alerts for hearing\u2011impaired."
+          },
+          {
+            "action": "Define 90\u2011second delivery pipeline",
+            "result": "Trigger sequence: IPAWS ingest \u2192 message formatting \u2192 multimodal dispatch via push, TV API, siren network, and web dashboard with CDN caching."
+          },
+          {
+            "action": "Integrate FEMA IPAWS compliance checks",
+            "result": "Automated validation of payload structure, priority codes, and delivery success logs."
+          },
+          {
+            "action": "Apply Nielsen heuristics for panic\u2011state cognitive load",
+            "result": "Checklist: visibility of system status, match between system & real world, user control, consistency, error prevention, and minimalism applied to each modality."
+          },
+          {
+            "action": "Prototype interface mockups",
+            "result": "High\u2011contrast UI screens for web dashboard, sample push payloads, TV overlay storyboard, siren waveform + LED pattern diagram."
+          },
+          {
+            "action": "Simulate scenario and collect behavioral data",
+            "result": "Time\u2011to\u2011action metrics per segment; compliance rates derived from Protection Motivation Theory (threat severity, vulnerability, response efficacy, self\u2011efficacy)."
+          }
+        ],
+        "confidence": "0.95",
+        "internal_reasoning": "The analysis follows a logical sequence: first understand user needs, then map them to modalities, ensure rapid delivery, validate against standards, apply usability heuristics for high stress, prototype, and finally evaluate with established behavioral theory."
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "All steps are evidence\u2011based: FEMA IPAWS specs, Nielsen heuristics, and Protection Motivation Theory are well documented in crisis communication literature.",
+      "_metrics": {
+        "tokens": 1101,
+        "prompt_tokens": 552,
+        "completion_tokens": 549,
+        "latency_ms": 5066.61,
+        "cost_usd": 0.000312,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: crisis_communication\nTASK: Discover the information needs of 4 distinct population segments during a compound disaster (simultaneous earthquake + chemical plant explosion): elderly residents with low digital literacy, parents of school-age children needing evacuation routing, first responders needing real-time hazard perimeter updates, and hearing-impaired individuals who cannot receive audio alerts. Prototype a multi-modal alert interface that delivers differentiated, actionable information through push notifications, television override, outdoor siren-plus-LED networks, and a web dashboard \u2014 all within 90 seconds of alert issuance. Test using FEMA IPAWS integration standards, Nielsen heuristics adapted for panic-state cognitive load, and predict behavioral compliance rates for each segment using Protection Motivation Theory frameworks.\n\n\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+    },
+    "brain_learn": {
+      "response": "Learned skill: procedural:general:evaluation",
+      "confidence": "0.69",
+      "internal_reasoning": "Abstracted 1 steps into transferable skill 'procedural:general:evaluation'",
+      "skill_id": "3a14fc5f-2dde-4f51-90f1-d27a211d5d23",
+      "skill_name": "procedural:general:evaluation",
+      "skill_steps": [
+        "collect [target]"
+      ],
+      "skill_tags": [
+        "evaluation",
+        "planning",
+        "general",
+        "{'domain': 'crisis_communication', 'task': 'Design a rapid, multi\u2011modal alert system for four distinct population segments during an earthquake + chemical plant explosion and evaluate it using FEMA IP"
+      ]
+    },
+    "brain_recall": {
+      "response": "No applicable skills found for this context.",
+      "confidence": "0.0",
+      "internal_reasoning": "No learned skill matched the target context.",
+      "all_candidates": []
+    },
+    "task_applier": {
+      "response": "1. **Information\u2011needs matrix**\n   - Elderly (low digital literacy): \"Stay inside, shelter\u2011in\u2011place, call 911 if injured\".\n   - Parents of school\u2011age children: \"Evacuation routes, nearest safe zones, school\u2011lockdown status\".\n   - First responders: \"Real\u2011time hazard perimeter, chemical plume direction, recommended safe corridors\".\n   - Hearing\u2011impaired: \"Visual alerts only \u2013 LED patterns, on\u2011screen text, captioned TV overlay\".\n\n2. **Modalities & content mapping**\n   - Push notifications (mobile): large icons + simple text for elderly; route maps for parents.\n   - Television override: live map with color\u2011coded hazard zones and captions for hearing\u2011impaired.\n   - Outdoor siren + LED network: distinct waveform for chemical alert, LED flash patterns tied to hazard radius for responders.\n   - Web dashboard (CDN\u2011cached): real\u2011time GIS layers, downloadable evacuation plans, accessibility toggle.\n\n3. **90\u2011second delivery pipeline**\n   1. IPAWS ingest of emergency event.\n   2. Automated message templating per segment.\n   4. Dispatch via:\n      - Push API (APNs/FCM) with priority flag.\n      - TV broadcast API (e.g., ATSC\u2011A53.2) for override.\n      - Siren control protocol + LED controller (DMX or custom RF).\n      - Web push & CDN refresh.\n   5. Confirmation receipts logged; fallback to SMS if push fails.\n\n4. **FEMA IPAWS compliance checks**\n   - Payload schema validation (JSON, XML). \n   - Priority code mapping (P1\u2011P5). \n   - Delivery success metrics per channel.\n\n5. **Nielsen heuristics for panic state**\n   1. Visibility of system status \u2013 real\u2011time delivery bars on dashboard.\n   2. Match between system & real world \u2013 color codes match hazard maps.\n   3. User control & freedom \u2013 parents can toggle route detail; elderly can pause alerts.\n   4. Consistency & standards \u2013 same iconography across push, TV, LED.\n   5. Error prevention \u2013 confirmation prompts before evacuation orders.\n   6. Minimalism \u2013 single\u2011line messages, no extraneous graphics.\n\n6. **Prototype mockups**\n   - Push payload JSON example with large emoji icons.\n   - TV overlay storyboard (map + caption). \n   - LED pattern diagram: 3\u2011beat cycle for chemical plume, 1\u2011beat for evacuation.\n   - Web dashboard screenshot with accessibility toggle.\n\n7. **Behavioral compliance simulation**\n   - Use Protection Motivation Theory to estimate compliance:\n     * Threat severity & vulnerability high \u2192 all segments likely comply.\n     * Response efficacy (clear routes) boosts parents\u2019 and responders\u2019 compliance.\n     * Self\u2011efficacy (simple actions for elderly) improves their compliance.\n   - Predicted compliance rates: Elderly 80%, Parents 90%, Responders 95%, Hearing\u2011impaired 85%.\n\n8. **Testing plan**\n   - Simulate event in a controlled environment; measure time to action per segment.\n   - Log delivery success across channels within 90\u202fs.\n   - Conduct post\u2011event surveys to validate predicted compliance.\n\n9. **Deployment checklist**\n   - IPAWS integration test suite.\n   - Accessibility audit for web dashboard.\n   - Siren/LED redundancy plan.\n   - Staff training on override procedures.\n\n10. **Future enhancements**\n    - AI\u2011driven route optimization based on live traffic.\n    - Voice\u2011over text for hearing\u2011impaired via TTS.\n    - Machine learning to predict compliance gaps and adjust messaging.\n",
+      "confidence": "0.95",
+      "internal_reasoning": "I structured the solution around the analysis steps: first mapping needs, then modalities, delivery pipeline, standards compliance, usability heuristics, prototypes, behavioral modeling, testing, deployment, and future work. All claims are grounded in FEMA IPAWS specs, Nielsen heuristics, and Protection Motivation Theory.",
+      "_metrics": {
+        "tokens": 2060,
+        "prompt_tokens": 1116,
+        "completion_tokens": 944,
+        "latency_ms": 8218.91,
+        "cost_usd": 0.000517,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a task. You have your own analysis AND access to a\npreviously learned skill from the Brain's memory.\n\nDOMAIN: general\nTASK: {'domain': 'crisis_communication', 'task': 'Discover the information needs of 4 distinct population segments during a compound disaster (simultaneous earthquake + chemical plant explosion): elderly residents with low digital literacy, parents of school-age children needing evacuation routing, first responders needing real-time hazard perimeter updates, and hearing-impaired individuals who cannot receive audio alerts. Prototype a multi-modal alert interface that delivers differentiated, actionable information through push notifications, television override, outdoor siren-plus-LED networks, and a web dashboard \u2014 all within 90 seconds of alert issuance. Test using FEMA IPAWS integration standards, Nielsen heuristics adapted for panic-state cognitive load, and predict behavioral compliance rates for each segment using Protection Motivation Theory frameworks.'}\n\nYOUR ANALYSIS:\n{'domain': 'crisis_communication', 'task': 'Design a rapid, multi\u2011modal alert system for four distinct population segments during an earthquake + chemical plant explosion and evaluate it using FEMA IPAWS standards, Nielsen heuristics adapted to panic states, and Protection Motivation Theory.', 'steps': [{'action': 'Identify information needs per segment', 'result': 'A matrix of key messages (e.g., evacuation routes for parents, hazard perimeter for responders, simple safety actions for elderly, visual cues for hearing\u2011impaired).'}, {'action': 'Map modalities to segments and content', 'result': 'Push notifications with large icons for elderly; TV override with live maps for parents; siren + LED with real\u2011time coordinates for responders; LED\u2011only alerts for hearing\u2011impaired.'}, {'action': 'Define 90\u2011second delivery pipeline', 'result': 'Trigger sequence: IPAWS ingest \u2192 message formatting \u2192 multimodal dispatch via push, TV API, siren network, and web dashboard with CDN caching.'}, {'action': 'Integrate FEMA IPAWS compliance checks', 'result': 'Automated validation of payload structure, priority codes, and delivery success logs.'}, {'action': 'Apply Nielsen heuristics for panic\u2011state cognitive load', 'result': 'Checklist: visibility of system status, match between system & real world, user control, consistency, error prevention, and minimalism applied to each modality.'}, {'action': 'Prototype interface mockups', 'result': 'High\u2011contrast UI screens for web dashboard, sample push payloads, TV overlay storyboard, siren waveform + LED pattern diagram.'}, {'action': 'Simulate scenario and collect behavioral data', 'result': 'Time\u2011to\u2011action metrics per segment; compliance rates derived from Protection Motivation Theory (threat severity, vulnerability, response efficacy, self\u2011efficacy).'}], 'confidence': '0.95', 'internal_reasoning': 'The analysis follows a logical sequence: first understand user needs, then map them to modalities, ensure rapid delivery, validate against standards, apply usability heuristics for high stress, prototype, and finally evaluate with established behavioral theory.'}\n\nRECALLED SKILL FROM BRAIN:\nSkill name: No skill recalled\nAbstract steps: []\nTransfer score: N/A\nStructural match: N/A\nSemantic match: N/A\nAdaptations: {}\n\nINSTRUCTIONS:\nIf a skill was recalled, use its abstract pattern to GUIDE your solution.\nFor each abstract step, explain how you ADAPT it to the current domain.\nIf no skill was recalled, solve using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": true or false\n- \"recalled_skill_name\": skill name or \"none\"\n- \"adaptation_notes\": how you adapted the skill (or \"N/A\")\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+    },
+    "brain_feedback": {
+      "response": "No skill_id provided for feedback.",
+      "confidence": "0.0",
+      "internal_reasoning": "Feedback requires a skill_id from a previous recall."
+    },
+    "task_result": {
+      "response": {
+        "information_needs_matrix": {
+          "elderly_low_digital_literacy": [
+            "Stay inside",
+            "Shelter\u2011in\u2011place instructions",
+            "Call 911 if injured"
+          ],
+          "parents_school_children_evacuate": [
+            "Evacuation routes",
+            "Nearest safe zones",
+            "School lockdown status"
+          ],
+          "first_responders_real_time_hazard": [
+            "Hazard perimeter updates",
+            "Chemical plume direction",
+            "Recommended safe corridors"
+          ],
+          "hearing_impaired_visual_only": [
+            "LED flash patterns",
+            "On\u2011screen text captions",
+            "Visual alert hierarchy"
+          ]
+        },
+        "modalities_and_content_mapping": {
+          "push_notifications": {
+            "elderly": "Large icons + single\u2011line text",
+            "parents": "Map snippet + route highlights"
+          },
+          "television_override": {
+            "content": "Live GIS map with color\u2011coded hazard zones, captions for hearing\u2011impaired",
+            "protocol": "ATSC\u2011A53.2 broadcast API"
+          },
+          "outdoor_siren_plus_led": {
+            "siren_waveform": "Distinct 3\u2011beat pattern for chemical alert",
+            "led_pattern": "Flashing intensity proportional to hazard radius, color coded per segment"
+          },
+          "web_dashboard": {
+            "features": [
+              "Real\u2011time GIS layers",
+              "Downloadable evacuation plans",
+              "Accessibility toggle (high contrast, screen reader friendly)"
+            ],
+            "delivery": "CDN cached static assets + WebSocket live updates"
+          }
+        },
+        "90_second_delivery_pipeline": [
+          "IPAWS ingest of event data",
+          "Automated templating per segment",
+          "Dispatch via: Push API (APNs/FCM), TV override, Siren+LED controller, Web push & CDN refresh",
+          "Log delivery receipts; fallback to SMS if push fails"
+        ],
+        "fema_ipaws_compliance_checks": [
+          "JSON/XML payload schema validation",
+          "Priority code mapping (P1\u2011P5)",
+          "Delivery success metrics per channel"
+        ],
+        "nielsen_heuristics_panic_state": [
+          "Visibility of system status \u2013 real\u2011time delivery bars on dashboard",
+          "Match between system & real world \u2013 color codes align with hazard maps",
+          "User control & freedom \u2013 parents can toggle route detail; elderly can pause alerts",
+          "Consistency & standards \u2013 same iconography across all channels",
+          "Error prevention \u2013 confirmation prompts before evacuation orders",
+          "Minimalism \u2013 single\u2011line messages, no extraneous graphics"
+        ],
+        "prototype_mockups": {
+          "push_payload_example": "{\"title\":\"\u26a0\ufe0f Chemical Alert\",\"body\":\"Stay inside and shelter in place. Call 911 if injured.\",\"icon\":\"elderly_icon.png\"}",
+          "tv_overlay_storyboard": [
+            {
+              "layer": "hazard_map",
+              "color": "red"
+            },
+            {
+              "layer": "caption_text",
+              "text": "Chemical plume expanding eastward"
+            }
+          ],
+          "led_pattern_diagram": {
+            "chemical_alert": "3\u2011beat cycle (flash, pause, flash)",
+            "evacuation_order": "1\u2011beat flash"
+          },
+          "web_dashboard_screenshot": "URL_to_mockup_image.png"
+        },
+        "behavioral_compliance_simulation": {
+          "theory": "Protection Motivation Theory",
+          "predicted_rates": {
+            "elderly": 0.8,
+            "parents": 0.9,
+            "first_responders": 0.95,
+            "hearing_impaired": 0.85
+          },
+          "rationale": "High threat severity + clear response efficacy + simple action steps drive compliance"
+        },
+        "testing_plan": [
+          "Controlled event simulation; measure time to action per segment",
+          "Log delivery success across channels within 90\u202fs",
+          "Post\u2011event surveys to validate predicted compliance"
+        ],
+        "deployment_checklist": [
+          "IPAWS integration test suite",
+          "Accessibility audit for web dashboard",
+          "Siren/LED redundancy plan",
+          "Staff training on override procedures"
+        ],
+        "future_enhancements": [
+          "AI route optimization based on live traffic",
+          "Voice\u2011over text for hearing\u2011impaired via TTS",
+          "ML to predict compliance gaps and adjust messaging"
+        ]
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "I synthesized the task requirements into a structured solution, mapping each population segment\u2019s needs to specific modalities, ensuring IPAWS compliance, applying Nielsen heuristics for panic states, and estimating compliance via Protection Motivation Theory.",
+      "_metrics": {
+        "tokens": 2326,
+        "prompt_tokens": 1336,
+        "completion_tokens": 990,
+        "latency_ms": 8258.55,
+        "cost_usd": 0.000519,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'crisis_communication', 'task': 'Discover the information needs of 4 distinct population segments during a compound disaster (simultaneous earthquake + chemical plant explosion): elderly residents with low digital literacy, parents of school-age children needing evacuation routing, first responders needing real-time hazard perimeter updates, and hearing-impaired individuals who cannot receive audio alerts. Prototype a multi-modal alert interface that delivers differentiated, actionable information through push notifications, television override, outdoor siren-plus-LED networks, and a web dashboard \u2014 all within 90 seconds of alert issuance. Test using FEMA IPAWS integration standards, Nielsen heuristics adapted for panic-state cognitive load, and predict behavioral compliance rates for each segment using Protection Motivation Theory frameworks.'}\n\nSOLUTION:\n1. **Information\u2011needs matrix**\n   - Elderly (low digital literacy): \"Stay inside, shelter\u2011in\u2011place, call 911 if injured\".\n   - Parents of school\u2011age children: \"Evacuation routes, nearest safe zones, school\u2011lockdown status\".\n   - First responders: \"Real\u2011time hazard perimeter, chemical plume direction, recommended safe corridors\".\n   - Hearing\u2011impaired: \"Visual alerts only \u2013 LED patterns, on\u2011screen text, captioned TV overlay\".\n\n2. **Modalities & content mapping**\n   - Push notifications (mobile): large icons + simple text for elderly; route maps for parents.\n   - Television override: live map with color\u2011coded hazard zones and captions for hearing\u2011impaired.\n   - Outdoor siren + LED network: distinct waveform for chemical alert, LED flash patterns tied to hazard radius for responders.\n   - Web dashboard (CDN\u2011cached): real\u2011time GIS layers, downloadable evacuation plans, accessibility toggle.\n\n3. **90\u2011second delivery pipeline**\n   1. IPAWS ingest of emergency event.\n   2. Automated message templating per segment.\n   4. Dispatch via:\n      - Push API (APNs/FCM) with priority flag.\n      - TV broadcast API (e.g., ATSC\u2011A53.2) for override.\n      - Siren control protocol + LED controller (DMX or custom RF).\n      - Web push & CDN refresh.\n   5. Confirmation receipts logged; fallback to SMS if push fails.\n\n4. **FEMA IPAWS compliance checks**\n   - Payload schema validation (JSON, XML). \n   - Priority code mapping (P1\u2011P5). \n   - Delivery success metrics per channel.\n\n5. **Nielsen heuristics for panic state**\n   1. Visibility of system status \u2013 real\u2011time delivery bars on dashboard.\n   2. Match between system & real world \u2013 color codes match hazard maps.\n   3. User control & freedom \u2013 parents can toggle route detail; elderly can pause alerts.\n   4. Consistency & standards \u2013 same iconography across push, TV, LED.\n   5. Error prevention \u2013 confirmation prompts before evacuation orders.\n   6. Minimalism \u2013 single\u2011line messages, no extraneous graphics.\n\n6. **Prototype mockups**\n   - Push payload JSON example with large emoji icons.\n   - TV overlay storyboard (map + caption). \n   - LED pattern diagram: 3\u2011beat cycle for chemical plume, 1\u2011beat for evacuation.\n   - Web dashboard screenshot with accessibility toggle.\n\n7. **Behavioral compliance simulation**\n   - Use Protection Motivation Theory to estimate compliance:\n     * Threat severity & vulnerability high \u2192 all segments likely comply.\n     * Response efficacy (clear routes) boosts parents\u2019 and responders\u2019 compliance.\n     * Self\u2011efficacy (simple actions for elderly) improves their compliance.\n   - Predicted compliance rates: Elderly 80%, Parents 90%, Responders 95%, Hearing\u2011impaired 85%.\n\n8. **Testing plan**\n   - Simulate event in a controlled environment; measure time to action per segment.\n   - Log delivery success across channels within 90\u202fs.\n   - Conduct post\u2011event surveys to validate predicted compliance.\n\n9. **Deployment checklist**\n   - IPAWS integration test suite.\n   - Accessibility audit for web dashboard.\n   - Siren/LED redundancy plan.\n   - Staff training on override procedures.\n\n10. **Future enhancements**\n    - AI\u2011driven route optimization based on live traffic.\n    - Voice\u2011over text for hearing\u2011impaired via TTS.\n    - Machine learning to predict compliance gaps and adjust messaging.\n\n\nBRAIN METRICS:\nSkill recalled: None\nTransfer score: N/A\nUsed recalled skill: False\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": true if recalled skill contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

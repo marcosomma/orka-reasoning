@@ -1,0 +1,407 @@
+{
+  "task_id": "track_a_21",
+  "condition": "brainless",
+  "elapsed_s": 22.27,
+  "success": true,
+  "output": {
+    "response": {
+      "scope_definition": {
+        "population": 45000,
+        "sites": 12,
+        "terrain": "unstable mountainous",
+        "weather": "nighttime < -5\u00b0C within 45 days",
+        "legal_context": "landlocked, customs clearance uncertain"
+      },
+      "shelter_requirements": {
+        "sphere_min_area_per_person_m2": 3.5,
+        "total_required_area_m2": 157500,
+        "kit_count_estimate": 45000,
+        "kit_components": [
+          "tarpaulin",
+          "plywood panels",
+          "insulation blankets",
+          "thermal windows",
+          "basic furnishings"
+        ]
+      },
+      "procurement_effort": {
+        "nearest_stockpiles_status": "depleted",
+        "alternative_sources": [
+          "regional warehouses 2 hrs away",
+          "airlift for critical items"
+        ],
+        "sea_freight_lead_time_weeks": 6,
+        "customs_clearance_buffer_days": 14,
+        "local_labor_displacement_rate": 0.2,
+        "buffer_workers_needed_percent": 30,
+        "procurement_schedule": {
+          "week_1-2": "Finalize specifications, secure contracts",
+          "week_3-4": "Place orders with regional warehouses",
+          "week_5-6": "Receive goods from sea freight (if any)",
+          "week_7-8": "Customs clearance and distribution to sites"
+        }
+      },
+      "rubble_clearance_and_ONA": {
+        "assessment_team_required": 4,
+        "clearance_rate_per_site_m2_day": 2000,
+        "total_rubble_area_estimate_m2": 300000,
+        "schedule": {
+          "week_3-6": "ONA survey and clearance at upstream sites",
+          "week_7-10": "Clear downstream sites after road access"
+        }
+      },
+      "site_preparation_and_winterization": {
+        "geotechnical_survey_required": true,
+        "soil_stabilization_methods": [
+          "sheet piling",
+          "rock bolts"
+        ],
+        "winterization_measures": [
+          "thermal insulation panels",
+          "portable heaters (fuel-based)",
+          "weatherproof roofing"
+        ],
+        "prep_schedule": {
+          "week_4-8": "Stabilize slopes, lay foundations",
+          "week_9-12": "Install winterization features before -5\u00b0C"
+        }
+      },
+      "inter_site_dependency_chain": {
+        "road_network_map": [
+          {
+            "from": "Site1",
+            "to": "Site2",
+            "depends_on": "Road clearance at Site1"
+          },
+          {
+            "from": "Site3",
+            "to": "Site4",
+            "depends_on": "Road clearance at Site3"
+          }
+        ],
+        "critical_path": [
+          "Site1 clearance",
+          "Site2 access",
+          "Site3 clearance",
+          "Site4 access"
+        ],
+        "buffer_days_for_uncertainty": 7
+      },
+      "90_day_schedule_overview": {
+        "weeks_1-6": "Procurement and initial transport",
+        "weeks_3-10": "Rubble clearance & ONA",
+        "weeks_4-12": "Site prep, winterization",
+        "weeks_9-14": "Shelter assembly and verification gates",
+        "verification_gates": [
+          {
+            "week": "4",
+            "check": "30% of total area built"
+          },
+          {
+            "week": "8",
+            "check": "60% of total area built"
+          },
+          {
+            "week": "12",
+            "check": "90% of total area built"
+          }
+        ]
+      },
+      "workforce_availability_buffers": {
+        "local_labor_pool_estimate": 2000,
+        "displaced_local_rate": 0.2,
+        "buffer_workers_needed": 400,
+        "source_of_buffer": [
+          "international contractors",
+          "NGO staff",
+          "military logistics"
+        ]
+      }
+    },
+    "confidence": "0.92",
+    "internal_reasoning": "All figures and schedules are derived from Sphere standards, typical rubble clearance rates for mountainous terrain, and realistic freight lead times for a landlocked country with depleted regional stockpiles.",
+    "_metrics": {
+      "tokens": 2165,
+      "prompt_tokens": 1299,
+      "completion_tokens": 866,
+      "latency_ms": 7337.42,
+      "cost_usd": 0.000461,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'humanitarian_logistics', 'task': 'Define scope for a 90-day emergency shelter program serving 45,000 displaced persons across 12 sites following a 7.2 magnitude earthquake in a landlocked mountainous country. Estimate effort for shelter kit procurement (considering that the two nearest regional stockpiles are depleted and sea freight takes 6 weeks), rubble clearance with explosive ordnance contamination assessment, site preparation on unstable terrain, and winterization given that nighttime temperatures will drop below -5\u00b0C within 45 days. Create a schedule with inter-site dependency chains (some sites accessible only after road clearance at upstream sites), customs clearance uncertainties, and workforce availability buffers accounting for 20% of local labor force being displaced themselves. The schedule must satisfy Sphere Standards minimum shelter area (3.5m\u00b2 per person) verification gates.'}\n\nSOLUTION:\n{'scope_definition': {'population': 45000, 'sites': 12, 'terrain': 'unstable mountainous', 'weather': 'nighttime < -5\u00b0C within 45 days', 'legal_context': 'landlocked, customs clearance uncertain'}, 'shelter_requirements': {'sphere_min_area_per_person_m2': 3.5, 'total_required_area_m2': 157500, 'kit_count_estimate': 45000, 'kit_components': ['tarpaulin', 'plywood panels', 'insulation blankets', 'thermal windows', 'basic furnishings']}, 'procurement_effort': {'nearest_stockpiles_status': 'depleted', 'alternative_sources': ['regional warehouses 2 hrs away', 'airlift for critical items'], 'sea_freight_lead_time_weeks': 6, 'customs_clearance_buffer_days': 14, 'local_labor_displacement_rate': 0.2, 'buffer_workers_needed': '30% of projected local workforce', 'procurement_schedule': {'week_1-2': 'Finalize specifications, secure contracts', 'week_3-4': 'Place orders with regional warehouses', 'week_5-6': 'Receive goods from sea freight (if any)', 'week_7-8': 'Customs clearance and distribution to sites'}}, 'rubble_clearance_and_ONA': {'assessment_team_required': 4, 'clearance_rate_per_site_m2_day': 2000, 'total_rubble_area_estimate_m2': 300000, 'schedule': {'week_3-6': 'ONA survey and clearance at upstream sites', 'week_7-10': 'Clear downstream sites after road access'}}, 'site_preparation_and_winterization': {'geotechnical_survey_required': True, 'soil_stabilization_methods': ['sheet piling', 'rock bolts'], 'winterization_measures': ['thermal insulation panels', 'portable heaters (fuel-based)', 'weatherproof roofing'], 'prep_schedule': {'week_4-8': 'Stabilize slopes, lay foundations', 'week_9-12': 'Install winterization features before -5\u00b0C'}}, 'inter_site_dependency_chain': {'road_network_map': [{'from': 'Site1', 'to': 'Site2', 'depends_on': 'Road clearance at Site1'}, {'from': 'Site3', 'to': 'Site4', 'depends_on': 'Road clearance at Site3'}], 'critical_path': ['Site1 clearance', 'Site2 access', 'Site3 clearance', 'Site4 access'], 'buffer_days_for_uncertainty': 7}, '90_day_schedule_overview': {'weeks_1-6': 'Procurement and initial transport', 'weeks_3-10': 'Rubble clearance & ONA', 'weeks_4-12': 'Site prep, winterization', 'weeks_9-14': 'Shelter assembly and verification gates', 'verification_gates': [{'week': '4', 'check': '30% of total area built'}, {'week': '8', 'check': '60% of total area built'}, {'week': '12', 'check': '90% of total area built'}]}, 'workforce_availability_buffers': {'local_labor_pool_estimate': 2000, 'displaced_local_rate': 0.2, 'buffer_workers_needed': 400, 'source_of_buffer': ['international contractors', 'NGO staff', 'military logistics']}}\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": "Domain: humanitarian_logistics\nTask: Define a 90\u2011day emergency shelter program for 45,000 displaced persons across 12 sites after a 7.2 earthquake in a landlocked mountainous country.\nStep\u2011by\u2011step analysis:\n1. **Define overall scope and constraints** \u2013 Identify target population, site count, terrain, weather, and legal context to set boundaries.\n2. **Quantify shelter requirements** \u2013 Calculate total area (45,000\u202f\u00d7\u202f3.5\u202fm\u00b2 = 157,500\u202fm\u00b2) and kit numbers, considering depletion of nearest stockpiles and 6\u2011week sea freight delay.\n3. **Assess procurement effort** \u2013 Estimate lead time, customs clearance windows, and buffer for 20% local labor displacement; plan alternative sourcing (regional warehouses, airlift for critical items).\n4. **Plan rubble clearance & ONA** \u2013 Allocate specialized teams, schedule sequentially with upstream road clearing dependencies, include risk mitigation for unexploded ordnance.\n5. **Design site preparation on unstable terrain** \u2013 Conduct geotechnical surveys, plan shoring/soil stabilization, integrate winterization measures (insulation, heating), and schedule before -5\u00b0C onset.\n6. **Develop inter\u2011site dependency chain** \u2013 Map road network; set critical path where downstream sites await upstream clearance; embed buffer days for customs delays.\n7. **Build 90\u2011day schedule** \u2013 Use Gantt logic: procurement (weeks\u202f1\u20136), transport & customs (weeks\u202f5\u20138), rubble clearance (weeks\u202f3\u201310), site prep (weeks\u202f4\u201312), shelter assembly (weeks\u202f9\u201314) with overlapping tasks where possible.\n8. **Insert verification gates** \u2013 At weeks\u202f4, 8, and 12 confirm that cumulative built area meets Sphere minimums; adjust resource allocation if lagging.\n9. **Allocate workforce buffers** \u2013 Deduct 20% of local labor from available pool; hire external contractors or international staff to cover gaps; schedule overtime for critical phases.\n10. **Finalize risk & contingency plan** \u2013 Include weather delays, supply chain disruptions, and ONA incidents; set up rapid response teams.\n11. **Document deliverables** \u2013 Create a master schedule spreadsheet, procurement tracker, and verification log.\n12. **Review & approve** \u2013 Present to stakeholders for sign\u2011off before execution.",
+      "confidence": "0.95",
+      "internal_reasoning": "I systematically broke down the complex logistics problem into discrete, actionable steps that cover scope definition, quantitative calculations, supply chain constraints, terrain and weather challenges, inter-site dependencies, scheduling, verification against Sphere standards, workforce planning, risk management, and documentation. Each step logically follows from the previous, ensuring a comprehensive plan.",
+      "_metrics": {
+        "tokens": 1180,
+        "prompt_tokens": 577,
+        "completion_tokens": 603,
+        "latency_ms": 7163.21,
+        "cost_usd": 0.000442,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: humanitarian_logistics\nTASK: Define scope for a 90-day emergency shelter program serving 45,000 displaced persons across 12 sites following a 7.2 magnitude earthquake in a landlocked mountainous country. Estimate effort for shelter kit procurement (considering that the two nearest regional stockpiles are depleted and sea freight takes 6 weeks), rubble clearance with explosive ordnance contamination assessment, site preparation on unstable terrain, and winterization given that nighttime temperatures will drop below -5\u00b0C within 45 days. Create a schedule with inter-site dependency chains (some sites accessible only after road clearance at upstream sites), customs clearance uncertainties, and workforce availability buffers accounting for 20% of local labor force being displaced themselves. The schedule must satisfy Sphere Standards minimum shelter area (3.5m\u00b2 per person) verification gates.\n\n\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+    },
+    "task_applier": {
+      "response": {
+        "scope_definition": {
+          "population": 45000,
+          "sites": 12,
+          "terrain": "unstable mountainous",
+          "weather": "nighttime < -5\u00b0C within 45 days",
+          "legal_context": "landlocked, customs clearance uncertain"
+        },
+        "shelter_requirements": {
+          "sphere_min_area_per_person_m2": 3.5,
+          "total_required_area_m2": 157500,
+          "kit_count_estimate": 45000,
+          "kit_components": [
+            "tarpaulin",
+            "plywood panels",
+            "insulation blankets",
+            "thermal windows",
+            "basic furnishings"
+          ]
+        },
+        "procurement_effort": {
+          "nearest_stockpiles_status": "depleted",
+          "alternative_sources": [
+            "regional warehouses 2 hrs away",
+            "airlift for critical items"
+          ],
+          "sea_freight_lead_time_weeks": 6,
+          "customs_clearance_buffer_days": 14,
+          "local_labor_displacement_rate": 0.2,
+          "buffer_workers_needed": "30% of projected local workforce",
+          "procurement_schedule": {
+            "week_1-2": "Finalize specifications, secure contracts",
+            "week_3-4": "Place orders with regional warehouses",
+            "week_5-6": "Receive goods from sea freight (if any)",
+            "week_7-8": "Customs clearance and distribution to sites"
+          }
+        },
+        "rubble_clearance_and_ONA": {
+          "assessment_team_required": 4,
+          "clearance_rate_per_site_m2_day": 2000,
+          "total_rubble_area_estimate_m2": 300000,
+          "schedule": {
+            "week_3-6": "ONA survey and clearance at upstream sites",
+            "week_7-10": "Clear downstream sites after road access"
+          }
+        },
+        "site_preparation_and_winterization": {
+          "geotechnical_survey_required": true,
+          "soil_stabilization_methods": [
+            "sheet piling",
+            "rock bolts"
+          ],
+          "winterization_measures": [
+            "thermal insulation panels",
+            "portable heaters (fuel-based)",
+            "weatherproof roofing"
+          ],
+          "prep_schedule": {
+            "week_4-8": "Stabilize slopes, lay foundations",
+            "week_9-12": "Install winterization features before -5\u00b0C"
+          }
+        },
+        "inter_site_dependency_chain": {
+          "road_network_map": [
+            {
+              "from": "Site1",
+              "to": "Site2",
+              "depends_on": "Road clearance at Site1"
+            },
+            {
+              "from": "Site3",
+              "to": "Site4",
+              "depends_on": "Road clearance at Site3"
+            }
+          ],
+          "critical_path": [
+            "Site1 clearance",
+            "Site2 access",
+            "Site3 clearance",
+            "Site4 access"
+          ],
+          "buffer_days_for_uncertainty": 7
+        },
+        "90_day_schedule_overview": {
+          "weeks_1-6": "Procurement and initial transport",
+          "weeks_3-10": "Rubble clearance & ONA",
+          "weeks_4-12": "Site prep, winterization",
+          "weeks_9-14": "Shelter assembly and verification gates",
+          "verification_gates": [
+            {
+              "week": "4",
+              "check": "30% of total area built"
+            },
+            {
+              "week": "8",
+              "check": "60% of total area built"
+            },
+            {
+              "week": "12",
+              "check": "90% of total area built"
+            }
+          ]
+        },
+        "workforce_availability_buffers": {
+          "local_labor_pool_estimate": 2000,
+          "displaced_local_rate": 0.2,
+          "buffer_workers_needed": 400,
+          "source_of_buffer": [
+            "international contractors",
+            "NGO staff",
+            "military logistics"
+          ]
+        }
+      },
+      "confidence": "0.92",
+      "internal_reasoning": "I derived all figures from the task constraints, calculated area using Sphere standards, estimated procurement and transport timelines based on sea freight lead time, incorporated a 20% labor displacement buffer, mapped inter-site dependencies logically, and set verification gates at 30/60/90% milestones to satisfy Sphere minimums.",
+      "_metrics": {
+        "tokens": 2000,
+        "prompt_tokens": 1100,
+        "completion_tokens": 900,
+        "latency_ms": 7603.54,
+        "cost_usd": 0.000469,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a task. You have your own step-by-step analysis.\nYou have NO prior experience and NO recalled skills.\n\nDOMAIN: general\nTASK: {'domain': 'humanitarian_logistics', 'task': 'Define scope for a 90-day emergency shelter program serving 45,000 displaced persons across 12 sites following a 7.2 magnitude earthquake in a landlocked mountainous country. Estimate effort for shelter kit procurement (considering that the two nearest regional stockpiles are depleted and sea freight takes 6 weeks), rubble clearance with explosive ordnance contamination assessment, site preparation on unstable terrain, and winterization given that nighttime temperatures will drop below -5\u00b0C within 45 days. Create a schedule with inter-site dependency chains (some sites accessible only after road clearance at upstream sites), customs clearance uncertainties, and workforce availability buffers accounting for 20% of local labor force being displaced themselves. The schedule must satisfy Sphere Standards minimum shelter area (3.5m\u00b2 per person) verification gates.'}\n\nYOUR ANALYSIS:\nDomain: humanitarian_logistics\nTask: Define a 90\u2011day emergency shelter program for 45,000 displaced persons across 12 sites after a 7.2 earthquake in a landlocked mountainous country.\nStep\u2011by\u2011step analysis:\n1. **Define overall scope and constraints** \u2013 Identify target population, site count, terrain, weather, and legal context to set boundaries.\n2. **Quantify shelter requirements** \u2013 Calculate total area (45,000\u202f\u00d7\u202f3.5\u202fm\u00b2 = 157,500\u202fm\u00b2) and kit numbers, considering depletion of nearest stockpiles and 6\u2011week sea freight delay.\n3. **Assess procurement effort** \u2013 Estimate lead time, customs clearance windows, and buffer for 20% local labor displacement; plan alternative sourcing (regional warehouses, airlift for critical items).\n4. **Plan rubble clearance & ONA** \u2013 Allocate specialized teams, schedule sequentially with upstream road clearing dependencies, include risk mitigation for unexploded ordnance.\n5. **Design site preparation on unstable terrain** \u2013 Conduct geotechnical surveys, plan shoring/soil stabilization, integrate winterization measures (insulation, heating), and schedule before -5\u00b0C onset.\n6. **Develop inter\u2011site dependency chain** \u2013 Map road network; set critical path where downstream sites await upstream clearance; embed buffer days for customs delays.\n7. **Build 90\u2011day schedule** \u2013 Use Gantt logic: procurement (weeks\u202f1\u20136), transport & customs (weeks\u202f5\u20138), rubble clearance (weeks\u202f3\u201310), site prep (weeks\u202f4\u201312), shelter assembly (weeks\u202f9\u201314) with overlapping tasks where possible.\n8. **Insert verification gates** \u2013 At weeks\u202f4, 8, and 12 confirm that cumulative built area meets Sphere minimums; adjust resource allocation if lagging.\n9. **Allocate workforce buffers** \u2013 Deduct 20% of local labor from available pool; hire external contractors or international staff to cover gaps; schedule overtime for critical phases.\n10. **Finalize risk & contingency plan** \u2013 Include weather delays, supply chain disruptions, and ONA incidents; set up rapid response teams.\n11. **Document deliverables** \u2013 Create a master schedule spreadsheet, procurement tracker, and verification log.\n12. **Review & approve** \u2013 Present to stakeholders for sign\u2011off before execution.\n\nSolve the task using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": false\n- \"recalled_skill_name\": \"none\"\n- \"adaptation_notes\": \"N/A\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+    },
+    "task_result": {
+      "response": {
+        "scope_definition": {
+          "population": 45000,
+          "sites": 12,
+          "terrain": "unstable mountainous",
+          "weather": "nighttime < -5\u00b0C within 45 days",
+          "legal_context": "landlocked, customs clearance uncertain"
+        },
+        "shelter_requirements": {
+          "sphere_min_area_per_person_m2": 3.5,
+          "total_required_area_m2": 157500,
+          "kit_count_estimate": 45000,
+          "kit_components": [
+            "tarpaulin",
+            "plywood panels",
+            "insulation blankets",
+            "thermal windows",
+            "basic furnishings"
+          ]
+        },
+        "procurement_effort": {
+          "nearest_stockpiles_status": "depleted",
+          "alternative_sources": [
+            "regional warehouses 2 hrs away",
+            "airlift for critical items"
+          ],
+          "sea_freight_lead_time_weeks": 6,
+          "customs_clearance_buffer_days": 14,
+          "local_labor_displacement_rate": 0.2,
+          "buffer_workers_needed_percent": 30,
+          "procurement_schedule": {
+            "week_1-2": "Finalize specifications, secure contracts",
+            "week_3-4": "Place orders with regional warehouses",
+            "week_5-6": "Receive goods from sea freight (if any)",
+            "week_7-8": "Customs clearance and distribution to sites"
+          }
+        },
+        "rubble_clearance_and_ONA": {
+          "assessment_team_required": 4,
+          "clearance_rate_per_site_m2_day": 2000,
+          "total_rubble_area_estimate_m2": 300000,
+          "schedule": {
+            "week_3-6": "ONA survey and clearance at upstream sites",
+            "week_7-10": "Clear downstream sites after road access"
+          }
+        },
+        "site_preparation_and_winterization": {
+          "geotechnical_survey_required": true,
+          "soil_stabilization_methods": [
+            "sheet piling",
+            "rock bolts"
+          ],
+          "winterization_measures": [
+            "thermal insulation panels",
+            "portable heaters (fuel-based)",
+            "weatherproof roofing"
+          ],
+          "prep_schedule": {
+            "week_4-8": "Stabilize slopes, lay foundations",
+            "week_9-12": "Install winterization features before -5\u00b0C"
+          }
+        },
+        "inter_site_dependency_chain": {
+          "road_network_map": [
+            {
+              "from": "Site1",
+              "to": "Site2",
+              "depends_on": "Road clearance at Site1"
+            },
+            {
+              "from": "Site3",
+              "to": "Site4",
+              "depends_on": "Road clearance at Site3"
+            }
+          ],
+          "critical_path": [
+            "Site1 clearance",
+            "Site2 access",
+            "Site3 clearance",
+            "Site4 access"
+          ],
+          "buffer_days_for_uncertainty": 7
+        },
+        "90_day_schedule_overview": {
+          "weeks_1-6": "Procurement and initial transport",
+          "weeks_3-10": "Rubble clearance & ONA",
+          "weeks_4-12": "Site prep, winterization",
+          "weeks_9-14": "Shelter assembly and verification gates",
+          "verification_gates": [
+            {
+              "week": "4",
+              "check": "30% of total area built"
+            },
+            {
+              "week": "8",
+              "check": "60% of total area built"
+            },
+            {
+              "week": "12",
+              "check": "90% of total area built"
+            }
+          ]
+        },
+        "workforce_availability_buffers": {
+          "local_labor_pool_estimate": 2000,
+          "displaced_local_rate": 0.2,
+          "buffer_workers_needed": 400,
+          "source_of_buffer": [
+            "international contractors",
+            "NGO staff",
+            "military logistics"
+          ]
+        }
+      },
+      "confidence": "0.92",
+      "internal_reasoning": "All figures and schedules are derived from Sphere standards, typical rubble clearance rates for mountainous terrain, and realistic freight lead times for a landlocked country with depleted regional stockpiles.",
+      "_metrics": {
+        "tokens": 2165,
+        "prompt_tokens": 1299,
+        "completion_tokens": 866,
+        "latency_ms": 7337.42,
+        "cost_usd": 0.000461,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'humanitarian_logistics', 'task': 'Define scope for a 90-day emergency shelter program serving 45,000 displaced persons across 12 sites following a 7.2 magnitude earthquake in a landlocked mountainous country. Estimate effort for shelter kit procurement (considering that the two nearest regional stockpiles are depleted and sea freight takes 6 weeks), rubble clearance with explosive ordnance contamination assessment, site preparation on unstable terrain, and winterization given that nighttime temperatures will drop below -5\u00b0C within 45 days. Create a schedule with inter-site dependency chains (some sites accessible only after road clearance at upstream sites), customs clearance uncertainties, and workforce availability buffers accounting for 20% of local labor force being displaced themselves. The schedule must satisfy Sphere Standards minimum shelter area (3.5m\u00b2 per person) verification gates.'}\n\nSOLUTION:\n{'scope_definition': {'population': 45000, 'sites': 12, 'terrain': 'unstable mountainous', 'weather': 'nighttime < -5\u00b0C within 45 days', 'legal_context': 'landlocked, customs clearance uncertain'}, 'shelter_requirements': {'sphere_min_area_per_person_m2': 3.5, 'total_required_area_m2': 157500, 'kit_count_estimate': 45000, 'kit_components': ['tarpaulin', 'plywood panels', 'insulation blankets', 'thermal windows', 'basic furnishings']}, 'procurement_effort': {'nearest_stockpiles_status': 'depleted', 'alternative_sources': ['regional warehouses 2 hrs away', 'airlift for critical items'], 'sea_freight_lead_time_weeks': 6, 'customs_clearance_buffer_days': 14, 'local_labor_displacement_rate': 0.2, 'buffer_workers_needed': '30% of projected local workforce', 'procurement_schedule': {'week_1-2': 'Finalize specifications, secure contracts', 'week_3-4': 'Place orders with regional warehouses', 'week_5-6': 'Receive goods from sea freight (if any)', 'week_7-8': 'Customs clearance and distribution to sites'}}, 'rubble_clearance_and_ONA': {'assessment_team_required': 4, 'clearance_rate_per_site_m2_day': 2000, 'total_rubble_area_estimate_m2': 300000, 'schedule': {'week_3-6': 'ONA survey and clearance at upstream sites', 'week_7-10': 'Clear downstream sites after road access'}}, 'site_preparation_and_winterization': {'geotechnical_survey_required': True, 'soil_stabilization_methods': ['sheet piling', 'rock bolts'], 'winterization_measures': ['thermal insulation panels', 'portable heaters (fuel-based)', 'weatherproof roofing'], 'prep_schedule': {'week_4-8': 'Stabilize slopes, lay foundations', 'week_9-12': 'Install winterization features before -5\u00b0C'}}, 'inter_site_dependency_chain': {'road_network_map': [{'from': 'Site1', 'to': 'Site2', 'depends_on': 'Road clearance at Site1'}, {'from': 'Site3', 'to': 'Site4', 'depends_on': 'Road clearance at Site3'}], 'critical_path': ['Site1 clearance', 'Site2 access', 'Site3 clearance', 'Site4 access'], 'buffer_days_for_uncertainty': 7}, '90_day_schedule_overview': {'weeks_1-6': 'Procurement and initial transport', 'weeks_3-10': 'Rubble clearance & ONA', 'weeks_4-12': 'Site prep, winterization', 'weeks_9-14': 'Shelter assembly and verification gates', 'verification_gates': [{'week': '4', 'check': '30% of total area built'}, {'week': '8', 'check': '60% of total area built'}, {'week': '12', 'check': '90% of total area built'}]}, 'workforce_availability_buffers': {'local_labor_pool_estimate': 2000, 'displaced_local_rate': 0.2, 'buffer_workers_needed': 400, 'source_of_buffer': ['international contractors', 'NGO staff', 'military logistics']}}\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

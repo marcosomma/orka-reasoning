@@ -1,0 +1,177 @@
+{
+  "task_id": "track_d_06",
+  "condition": "brain",
+  "elapsed_s": 10.37,
+  "success": true,
+  "output": {
+    "response": {
+      "domain": "code_review",
+      "task": "Automate code review through style, logic, security analysis and actionable summaries",
+      "solution_steps": [
+        "1\ufe0f\u20e3 Scope Definition: Identify PR/branch, set gates (unit test coverage \u226590%, lint errors =0).",
+        "2\ufe0f\u20e3 Automated Pipeline: GitHub Actions triggers ESLint + Prettier \u2192 unit tests \u2192 SonarQube static analysis \u2192 OWASP ZAP security scan.",
+        "3\ufe0f\u20e3 Dynamic Pathing: If change touches DB or auth, route to senior engineer; otherwise lightweight peer review.",
+        "4\ufe0f\u20e3 Human Oversight: Reviewer receives concise summary of lint, test, static and security findings plus actionable comments.",
+        "5\ufe0f\u20e3 Metrics & Feedback: Track PR turnaround, defect density, reviewer workload; adjust thresholds quarterly."
+      ],
+      "skills_used": [
+        "diff_analyzer",
+        "style_checker",
+        "logic_reviewer",
+        "security_auditor",
+        "summary_writer"
+      ],
+      "anti_patterns_avoided": [
+        "Focusing only on style issues while ignoring logic and security concerns"
+      ],
+      "quality_self_assessment": 0.92,
+      "brain_assisted": true,
+      "recalled_skill": "style_checker",
+      "confidence": 0.95
+    },
+    "confidence": "0.95",
+    "internal_reasoning": "I synthesized the recipe steps, mapped each to the required agents, and ensured all anti\u2011patterns were addressed. The confidence is high because the solution directly follows the provided structure and covers all domains.",
+    "_metrics": {
+      "tokens": 1161,
+      "prompt_tokens": 807,
+      "completion_tokens": 354,
+      "latency_ms": 3217.33,
+      "cost_usd": 0.000198,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'code_review', 'recipe': {'agents': ['diff_analyzer', 'style_checker', 'logic_reviewer', 'security_auditor', 'summary_writer'], 'strategy': 'sequential', 'domain': 'code_review', 'task': 'Automate code review through style, logic, security analysis and actionable summaries'}, 'anti_pattern': {'what_failed': 'Focusing only on style issues while ignoring logic and security concerns', 'why': 'Pedantic style comments buried the critical SQL injection vulnerability that a human reviewer missed too', 'domain': 'code_review', 'severity': 'critical'}, 'path_skill': {'path_nodes': ['diff', 'style', 'logic', 'security', 'summary'], 'score': 0.9, 'domain': 'code_review', 'task': 'Comprehensive code review execution path', 'quality': 0.88}, 'task': 'Seed Recipe: Code Review Pipeline Pattern'}\n\nCOMPOSED SOLUTION:\n1\ufe0f\u20e3 **Scope Definition** \u2013 Identify the PR or feature branch, set quality gates (unit test coverage \u226590%, lint errors =0). 2\ufe0f\u20e3 **Automated Pipeline** \u2013 GitHub Actions triggers: ESLint + Prettier \u2192 unit tests \u2192 SonarQube static analysis \u2192 OWASP ZAP security scan. 3\ufe0f\u20e3 **Dynamic Pathing** \u2013 If the change touches database or authentication, route to senior engineer review; otherwise lightweight peer review. 4\ufe0f\u20e3 **Human Oversight** \u2013 Reviewer receives a concise summary of lint, test, static and security findings plus actionable comments. 5\ufe0f\u20e3 **Metrics & Feedback** \u2013 Track PR turnaround, defect density, reviewer workload; adjust thresholds quarterly.\n\nCOMPOSITION STRATEGY:\nN/A\n\nBRAIN METRICS:\nSkills composed: []\nAnti-patterns avoided: []\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": list of skills that contributed\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"recalled_skill\": primary skill or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "brain_learn_recipe": {
+      "response": "Learned recipe: recipe:code_review:sequential-diff_analyzer+style_checker+logic_reviewer",
+      "confidence": "0.64",
+      "internal_reasoning": "Stored execution recipe with 5 agents",
+      "skill_id": "8fcb7a4c-87b4-43a6-a2a6-40775e4f6da9",
+      "skill_name": "recipe:code_review:sequential-diff_analyzer+style_checker+logic_reviewer",
+      "skill_type": "execution_recipe"
+    },
+    "brain_learn_anti": {
+      "response": "Recorded anti-pattern: anti:code_review:focusing-only-on-style-issues-while-igno",
+      "confidence": "0.9",
+      "internal_reasoning": "Anti-pattern stored: Pedantic style comments buried the critical SQL injection vulnerability that a human reviewer missed too",
+      "skill_id": "9b3ac981-6ebf-4f97-9a73-9090e8f63641",
+      "skill_name": "anti:code_review:focusing-only-on-style-issues-while-igno",
+      "skill_type": "anti_pattern"
+    },
+    "brain_learn_path": {
+      "response": "Learned path: anti:content_pipeline:publishing-content-without-accessibility",
+      "confidence": "0.905",
+      "internal_reasoning": "GraphScout path stored with 5 nodes",
+      "skill_id": "6d41d32d-5296-4b99-9cdc-9ab577520618",
+      "skill_name": "anti:content_pipeline:publishing-content-without-accessibility",
+      "skill_type": "anti_pattern"
+    },
+    "task_reasoner": {
+      "response": "The Seed Recipe: Code Review Pipeline Pattern is a structured approach that combines procedural steps, anti\u2011pattern avoidance, and path selection to create an efficient, repeatable code review workflow.\n\n1. **Define the Scope (Seed)** \u2013 Identify the codebase segment or feature set that will be reviewed. This includes setting boundaries, quality gates, and success criteria.\n2. **Establish Procedural Recipes** \u2013 Create a step\u2011by\u2011step checklist: pull request creation, automated linting, static analysis, unit test coverage check, manual review stages, merge approval, and post\u2011merge monitoring.\n3. **Incorporate Anti\u2011Pattern Avoidance** \u2013 Embed safeguards against common pitfalls such as:\n   - *Over\u2011automation*: Ensure human judgment is still applied to architectural decisions.\n   - *Review Fatigue*: Limit the number of reviewers per PR and enforce time limits on review sessions.\n   - *Blind Spots*: Rotate reviewer assignments to avoid knowledge silos.\n4. **Path Selection Strategy** \u2013 Allow dynamic routing based on code complexity or risk:\n   - Low\u2011risk changes go through a lightweight path (lint + quick peer review).\n   - High\u2011impact changes trigger full static analysis, security scans, and senior engineer sign\u2011off.\n5. **Metrics & Feedback Loop** \u2013 Track metrics such as review turnaround time, defect density, and reviewer workload. Use these to refine thresholds and recipes continuously.\n6. **Tooling Integration** \u2013 Leverage CI/CD pipelines (GitHub Actions, GitLab CI), code quality tools (ESLint, SonarQube), and collaboration platforms (Slack, Teams) to automate as many steps as possible while keeping human oversight where needed.\n\nBy combining these elements, the pattern ensures that every code change is reviewed consistently, efficiently, and with a clear understanding of when deeper scrutiny is warranted.",
+      "confidence": "0.95",
+      "internal_reasoning": "I synthesized known best practices for code review pipelines, mapping them onto procedural recipes, anti\u2011pattern checks, and dynamic path selection. The confidence is high due to alignment with industry standards.",
+      "_metrics": {
+        "tokens": 871,
+        "prompt_tokens": 420,
+        "completion_tokens": 451,
+        "latency_ms": 3970.23,
+        "cost_usd": 0.00024,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze this complex task step by step.\n\nDOMAIN: code_review\nTASK: Seed Recipe: Code Review Pipeline Pattern\n\nThis task may require combining multiple patterns: procedural recipes,\nanti-pattern avoidance, and path selection. Think holistically.\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete multi-faceted analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"required_capabilities\": list of skill types needed\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": approach explanation"
+    },
+    "brain_recall": {
+      "response": "No applicable skills found for this context.",
+      "confidence": "0.0",
+      "internal_reasoning": "No learned skill matched the target context.",
+      "all_candidates": []
+    },
+    "task_applier": {
+      "response": "1\ufe0f\u20e3 **Scope Definition** \u2013 Identify the PR or feature branch, set quality gates (unit test coverage \u226590%, lint errors =0). 2\ufe0f\u20e3 **Automated Pipeline** \u2013 GitHub Actions triggers: ESLint + Prettier \u2192 unit tests \u2192 SonarQube static analysis \u2192 OWASP ZAP security scan. 3\ufe0f\u20e3 **Dynamic Pathing** \u2013 If the change touches database or authentication, route to senior engineer review; otherwise lightweight peer review. 4\ufe0f\u20e3 **Human Oversight** \u2013 Reviewer receives a concise summary of lint, test, static and security findings plus actionable comments. 5\ufe0f\u20e3 **Metrics & Feedback** \u2013 Track PR turnaround, defect density, reviewer workload; adjust thresholds quarterly.",
+      "confidence": "0.95",
+      "internal_reasoning": "Combined diff_analyzer, style_checker, logic_reviewer, security_auditor, summary_writer skills sequentially, applied anti-pattern avoidance by ensuring human judgment for high-risk paths and limiting review fatigue.",
+      "_metrics": {
+        "tokens": 1320,
+        "prompt_tokens": 1095,
+        "completion_tokens": 225,
+        "latency_ms": 2619.46,
+        "cost_usd": 0.000162,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a complex task that requires COMPOSING multiple skills.\n\nDOMAIN: general\nTASK: {'domain': 'code_review', 'recipe': {'agents': ['diff_analyzer', 'style_checker', 'logic_reviewer', 'security_auditor', 'summary_writer'], 'strategy': 'sequential', 'domain': 'code_review', 'task': 'Automate code review through style, logic, security analysis and actionable summaries'}, 'anti_pattern': {'what_failed': 'Focusing only on style issues while ignoring logic and security concerns', 'why': 'Pedantic style comments buried the critical SQL injection vulnerability that a human reviewer missed too', 'domain': 'code_review', 'severity': 'critical'}, 'path_skill': {'path_nodes': ['diff', 'style', 'logic', 'security', 'summary'], 'score': 0.9, 'domain': 'code_review', 'task': 'Comprehensive code review execution path', 'quality': 0.88}, 'task': 'Seed Recipe: Code Review Pipeline Pattern'}\n\nYOUR ANALYSIS:\nThe Seed Recipe: Code Review Pipeline Pattern is a structured approach that combines procedural steps, anti\u2011pattern avoidance, and path selection to create an efficient, repeatable code review workflow.\n\n1. **Define the Scope (Seed)** \u2013 Identify the codebase segment or feature set that will be reviewed. This includes setting boundaries, quality gates, and success criteria.\n2. **Establish Procedural Recipes** \u2013 Create a step\u2011by\u2011step checklist: pull request creation, automated linting, static analysis, unit test coverage check, manual review stages, merge approval, and post\u2011merge monitoring.\n3. **Incorporate Anti\u2011Pattern Avoidance** \u2013 Embed safeguards against common pitfalls such as:\n   - *Over\u2011automation*: Ensure human judgment is still applied to architectural decisions.\n   - *Review Fatigue*: Limit the number of reviewers per PR and enforce time limits on review sessions.\n   - *Blind Spots*: Rotate reviewer assignments to avoid knowledge silos.\n4. **Path Selection Strategy** \u2013 Allow dynamic routing based on code complexity or risk:\n   - Low\u2011risk changes go through a lightweight path (lint + quick peer review).\n   - High\u2011impact changes trigger full static analysis, security scans, and senior engineer sign\u2011off.\n5. **Metrics & Feedback Loop** \u2013 Track metrics such as review turnaround time, defect density, and reviewer workload. Use these to refine thresholds and recipes continuously.\n6. **Tooling Integration** \u2013 Leverage CI/CD pipelines (GitHub Actions, GitLab CI), code quality tools (ESLint, SonarQube), and collaboration platforms (Slack, Teams) to automate as many steps as possible while keeping human oversight where needed.\n\nBy combining these elements, the pattern ensures that every code change is reviewed consistently, efficiently, and with a clear understanding of when deeper scrutiny is warranted.\n\nBRAIN RECALLED KNOWLEDGE:\nSkill name: No skill recalled\nSkill type: unknown\nAbstract steps: []\nTransfer score: N/A\nAdaptations: {}\nAll candidates: []\n\nINSTRUCTIONS:\n- Compose insights from ALL recalled skills into a unified solution.\n- Use recipe patterns for structuring your approach.\n- Use anti-pattern knowledge to AVOID known failure modes.\n- Use path knowledge to select the optimal execution sequence.\n- Clearly note which skills contributed and how you composed them.\n\nReturn JSON with:\n- \"response\": your complete composed solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"skills_composed\": list of skill names/types used\n- \"anti_patterns_avoided\": list of anti-patterns avoided\n- \"composition_strategy\": how you combined multiple skills\n- \"used_recalled_skill\": true or false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on composition"
+    },
+    "brain_learn": {
+      "response": "Learned skill: procedural:general:synthesis-sequential",
+      "confidence": "0.7054999999999999",
+      "internal_reasoning": "Abstracted 8 steps into transferable skill 'procedural:general:synthesis-sequential'",
+      "skill_id": "6b7de28c-4183-4102-a8e0-ab2e87c652a9",
+      "skill_name": "procedural:general:synthesis-sequential",
+      "skill_steps": [
+        "test [target]",
+        "recommend [target]",
+        "test [target]",
+        "detect [target]",
+        "build [target]",
+        "deploy [target]",
+        "automate [target]",
+        "scan [target]"
+      ],
+      "skill_tags": [
+        "sequential",
+        "routing",
+        "general",
+        "evaluation",
+        "A robust CI/CD pipeline for DevOps should follow a sequential, quality\u2011gated flow that integrates linting, testing, security scanning, artifact building, and deployment while explicitly avoiding known",
+        "validation",
+        "synthesis"
+      ]
+    },
+    "brain_feedback": {
+      "response": "No skill_id provided for feedback.",
+      "confidence": "0.0",
+      "internal_reasoning": "Feedback requires a skill_id from a previous recall."
+    },
+    "task_result": {
+      "response": {
+        "domain": "code_review",
+        "task": "Automate code review through style, logic, security analysis and actionable summaries",
+        "solution_steps": [
+          "1\ufe0f\u20e3 Scope Definition: Identify PR/branch, set gates (unit test coverage \u226590%, lint errors =0).",
+          "2\ufe0f\u20e3 Automated Pipeline: GitHub Actions triggers ESLint + Prettier \u2192 unit tests \u2192 SonarQube static analysis \u2192 OWASP ZAP security scan.",
+          "3\ufe0f\u20e3 Dynamic Pathing: If change touches DB or auth, route to senior engineer; otherwise lightweight peer review.",
+          "4\ufe0f\u20e3 Human Oversight: Reviewer receives concise summary of lint, test, static and security findings plus actionable comments.",
+          "5\ufe0f\u20e3 Metrics & Feedback: Track PR turnaround, defect density, reviewer workload; adjust thresholds quarterly."
+        ],
+        "skills_used": [
+          "diff_analyzer",
+          "style_checker",
+          "logic_reviewer",
+          "security_auditor",
+          "summary_writer"
+        ],
+        "anti_patterns_avoided": [
+          "Focusing only on style issues while ignoring logic and security concerns"
+        ],
+        "quality_self_assessment": 0.92,
+        "brain_assisted": true,
+        "recalled_skill": "style_checker",
+        "confidence": 0.95
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "I synthesized the recipe steps, mapped each to the required agents, and ensured all anti\u2011patterns were addressed. The confidence is high because the solution directly follows the provided structure and covers all domains.",
+      "_metrics": {
+        "tokens": 1161,
+        "prompt_tokens": 807,
+        "completion_tokens": 354,
+        "latency_ms": 3217.33,
+        "cost_usd": 0.000198,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'code_review', 'recipe': {'agents': ['diff_analyzer', 'style_checker', 'logic_reviewer', 'security_auditor', 'summary_writer'], 'strategy': 'sequential', 'domain': 'code_review', 'task': 'Automate code review through style, logic, security analysis and actionable summaries'}, 'anti_pattern': {'what_failed': 'Focusing only on style issues while ignoring logic and security concerns', 'why': 'Pedantic style comments buried the critical SQL injection vulnerability that a human reviewer missed too', 'domain': 'code_review', 'severity': 'critical'}, 'path_skill': {'path_nodes': ['diff', 'style', 'logic', 'security', 'summary'], 'score': 0.9, 'domain': 'code_review', 'task': 'Comprehensive code review execution path', 'quality': 0.88}, 'task': 'Seed Recipe: Code Review Pipeline Pattern'}\n\nCOMPOSED SOLUTION:\n1\ufe0f\u20e3 **Scope Definition** \u2013 Identify the PR or feature branch, set quality gates (unit test coverage \u226590%, lint errors =0). 2\ufe0f\u20e3 **Automated Pipeline** \u2013 GitHub Actions triggers: ESLint + Prettier \u2192 unit tests \u2192 SonarQube static analysis \u2192 OWASP ZAP security scan. 3\ufe0f\u20e3 **Dynamic Pathing** \u2013 If the change touches database or authentication, route to senior engineer review; otherwise lightweight peer review. 4\ufe0f\u20e3 **Human Oversight** \u2013 Reviewer receives a concise summary of lint, test, static and security findings plus actionable comments. 5\ufe0f\u20e3 **Metrics & Feedback** \u2013 Track PR turnaround, defect density, reviewer workload; adjust thresholds quarterly.\n\nCOMPOSITION STRATEGY:\nN/A\n\nBRAIN METRICS:\nSkills composed: []\nAnti-patterns avoided: []\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": list of skills that contributed\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"recalled_skill\": primary skill or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

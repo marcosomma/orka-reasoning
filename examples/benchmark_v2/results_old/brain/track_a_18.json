@@ -1,0 +1,183 @@
+{
+  "task_id": "track_a_18",
+  "condition": "brain",
+  "elapsed_s": 17.96,
+  "success": true,
+  "output": {
+    "response": "1. **Data acquisition** \u2013 Pull millisecond\u2011resolution telemetry from all 240 dipole magnets (beam current, temperature, vacuum pressure, helium level). 2. **Quench log extraction** \u2013 Retrieve quench protection system logs with sub\u2011millisecond timestamps and associated cryogenic valve actions. 3. **Beam loss mapping** \u2013 Collect BLM spike records for the entire ring during the event to locate spatial correlation with quenches. 4. **Orbit drift analysis** \u2013 Aggregate corrector current data from the preceding 72\u202fh, focusing on slow drifts in cells adjacent to the affected arc. 5. **Event sequencing** \u2013 Align all datasets by timestamp to build a propagation timeline: identify first quenching magnet(s), valve response lag, BLM spikes, and drift patterns. 6. **Margin assessment** \u2013 Examine quench margin test results; compare observed margins against expected values to distinguish training quenches from defects. 7. **Cryogenic stability check** \u2013 Inspect helium level, pressure, and valve logs for anomalies (e.g., sudden drops or stuck valves) that could indicate a cryogenic instability. 8. **Defect probability scoring** \u2013 Cross\u2011reference conductor inspection reports and historical quench data to assign defect likelihood to each affected magnet. 9. **Root\u2011cause report** \u2013 Compile findings into a structured document, assigning weighted probabilities to training quench, conductor defect, or cryogenic instability, with clear recommendations. 10. **Staged re\u2011cooling** \u2013 Re\u2011cool magnets in controlled increments while monitoring thermal gradients to ensure uniform temperature distribution. 11. **Incremental current ramp tests** \u2013 Perform stepwise current increases, measuring quench margin at each stage and recording any quenches to build a training curve. 12. **Reduced\u2011energy beam threading** \u2013 Circulate the beam at lower energy through the trained magnets while monitoring BLMs and temperatures; confirm stable operation before returning to full energy.",
+    "confidence": "0.95",
+    "internal_reasoning": "The solution follows a logical, data\u2011driven workflow: acquire telemetry, extract precise quench logs, map beam loss, analyze orbit drift, sequence events, assess margins, check cryogenics, score defect probability, report root cause, and execute staged recovery steps. All actions are evidence\u2011based and align with standard accelerator operations procedures.",
+    "_metrics": {
+      "tokens": 1518,
+      "prompt_tokens": 1012,
+      "completion_tokens": 506,
+      "latency_ms": 4594.46,
+      "cost_usd": 0.000283,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'particle_physics_ops', 'task': 'Monitor beam current, magnet temperatures, vacuum pressures, and cryogenic helium levels across 240 superconducting dipole magnets in a synchrotron storage ring. Diagnose a cascading quench event that propagated through 8 consecutive arc cells by correlating quench protection system firing sequences (sub-millisecond timestamps), cryogenic valve response logs, beam loss monitor spike patterns, and the preceding 72 hours of slowly drifting orbit corrector currents that suggest a pre-existing alignment issue. Execute magnet training recovery: staged re-cooling, incremental current ramp with quench margin testing, beam threading at reduced energy, and a root-cause report distinguishing between a training quench, a conductor defect, and a cryogenic system instability.'}\n\nSOLUTION:\n1. **Data acquisition** \u2013 Pull millisecond\u2011resolution telemetry from all 240 dipole magnets (beam current, temperature, vacuum pressure, helium level). \n2. **Quench log extraction** \u2013 Retrieve quench protection system logs with sub\u2011millisecond timestamps and associated cryogenic valve actions. \n3. **Beam loss mapping** \u2013 Collect BLM spike records for the entire ring during the event to locate spatial correlation with quenches. \n4. **Orbit drift analysis** \u2013 Aggregate corrector current data from the preceding 72\u202fh, focusing on slow drifts in cells adjacent to the affected arc. \n5. **Event sequencing** \u2013 Align all datasets by timestamp to build a propagation timeline: identify first quenching magnet(s), valve response lag, BLM spikes, and drift patterns. \n6. **Margin assessment** \u2013 Examine quench margin test results; compare observed margins against expected values to distinguish training quenches from defects. \n7. **Cryogenic stability check** \u2013 Inspect helium level, pressure, and valve logs for anomalies (e.g., sudden drops or stuck valves) that could indicate a cryogenic instability. \n8. **Defect probability scoring** \u2013 Cross\u2011reference conductor inspection reports and historical quench data to assign defect likelihood to each affected magnet. \n9. **Root\u2011cause report** \u2013 Compile findings into a structured document, assigning weighted probabilities to training quench, conductor defect, or cryogenic instability, with clear recommendations. \n10. **Staged re\u2011cooling** \u2013 Re\u2011cool magnets in controlled increments while monitoring thermal gradients to ensure uniform temperature distribution. \n11. **Incremental current ramp tests** \u2013 Perform stepwise current increases, measuring quench margin at each stage and recording any quenches to build a training curve. \n12. **Reduced\u2011energy beam threading** \u2013 Circulate the beam at lower energy through the trained magnets while monitoring BLMs and temperatures; confirm stable operation before returning to full energy.\n\nBRAIN METRICS:\nSkill recalled: procedural:general:planning-sequential\nTransfer score: 0.5876320625\nUsed recalled skill: False\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": true if recalled skill contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": {
+        "domain": "particle_physics_ops",
+        "task": "Monitor and diagnose a cascading quench across 8 arc cells in a synchrotron storage ring, then execute magnet training recovery and produce a root\u2011cause report.",
+        "steps": [
+          {
+            "action": "Collect real\u2011time telemetry from all 240 dipole magnets (beam current, magnet temperature, vacuum pressure, helium level).",
+            "result": "A synchronized dataset with millisecond resolution for each magnet."
+          },
+          {
+            "action": "Extract quench protection system logs, noting sub\u2011millisecond timestamps of trigger events and associated cryogenic valve actions.",
+            "result": "Chronology of protection activations and valve responses during the event."
+          },
+          {
+            "action": "Retrieve beam loss monitor (BLM) spike records for all 240 magnets over the quench interval.",
+            "result": "Spatial and temporal map of BLM activity correlating with quenches."
+          },
+          {
+            "action": "Aggregate orbit corrector current data for the preceding 72 hours, focusing on slow drifts in adjacent cells to the affected arc.",
+            "result": "Trend analysis indicating potential mis\u2011alignment or field error buildup."
+          },
+          {
+            "action": "Correlate all datasets to identify the sequence of failures: which magnets quenched first, valve response lag, BLM spikes, and corrector drift patterns.",
+            "result": "A detailed failure propagation timeline pinpointing initiating magnet(s)."
+          },
+          {
+            "action": "Analyze quench margin tests from the protection system to assess whether each quench was within expected margin or exceeded it.",
+            "result": "Margin violation indicators that suggest training vs. defect."
+          },
+          {
+            "action": "Inspect cryogenic temperature and pressure logs for anomalies (e.g., sudden helium level drop, valve stuck open/closed).",
+            "result": "Evidence of cryogenic instability if present."
+          },
+          {
+            "action": "Cross\u2011reference magnet conductor inspection reports and previous quench history to evaluate defect likelihood.",
+            "result": "Defect probability score for each affected magnet."
+          },
+          {
+            "action": "Prepare a root\u2011cause report distinguishing between training quench, conductor defect, and cryogenic instability based on weighted evidence from steps 5\u20138.",
+            "result": "Structured report with cause probabilities and recommended actions."
+          },
+          {
+            "action": "Initiate staged re\u2011cooling: cool magnets to operating temperature in controlled increments while monitoring thermal gradients.",
+            "result": "Stable cryogenic state ready for training."
+          },
+          {
+            "action": "Perform incremental current ramp tests, measuring quench margin at each step and recording any quenches.",
+            "result": "Training curve showing increasing margin or identification of persistent low\u2011margin points."
+          },
+          {
+            "action": "Thread beam at reduced energy through the trained magnets, monitoring BLMs and temperature sensors for stability.",
+            "result": "Verification that beam can be safely circulated without triggering quenches."
+          }
+        ],
+        "confidence": 0.95,
+        "internal_reasoning": "The analysis follows a systematic data\u2011correlation approach: first gather all relevant telemetry, then align timestamps to reconstruct the event sequence. By examining quench margins, cryogenic logs, and conductor history, we can statistically weigh each potential root cause. The recovery plan is standard for superconducting magnets, ensuring safety and gradual re\u2011training."
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "All steps are evidence\u2011based, directly tied to available instrumentation data, and follow established procedures in synchrotron operations.",
+      "_metrics": {
+        "tokens": 1349,
+        "prompt_tokens": 565,
+        "completion_tokens": 784,
+        "latency_ms": 6874.03,
+        "cost_usd": 0.000424,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: particle_physics_ops\nTASK: Monitor beam current, magnet temperatures, vacuum pressures, and cryogenic helium levels across 240 superconducting dipole magnets in a synchrotron storage ring. Diagnose a cascading quench event that propagated through 8 consecutive arc cells by correlating quench protection system firing sequences (sub-millisecond timestamps), cryogenic valve response logs, beam loss monitor spike patterns, and the preceding 72 hours of slowly drifting orbit corrector currents that suggest a pre-existing alignment issue. Execute magnet training recovery: staged re-cooling, incremental current ramp with quench margin testing, beam threading at reduced energy, and a root-cause report distinguishing between a training quench, a conductor defect, and a cryogenic system instability.\n\n\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+    },
+    "brain_learn": {
+      "response": "Learned skill: procedural:general:generation-sequential",
+      "confidence": "0.69",
+      "internal_reasoning": "Abstracted 4 steps into transferable skill 'procedural:general:generation-sequential'",
+      "skill_id": "b38714b5-117d-450f-a66a-58868a49b679",
+      "skill_name": "procedural:general:generation-sequential",
+      "skill_steps": [
+        "aggregate [target]",
+        "test [target]",
+        "conduct [target]",
+        "conduct [target]"
+      ],
+      "skill_tags": [
+        "generation",
+        "sequential",
+        "{'domain': 'particle_physics_ops', 'task': 'Monitor and diagnose a cascading quench across 8 arc cells in a synchrotron storage ring, then execute magnet training recovery and produce a root\u2011cause rep",
+        "general"
+      ]
+    },
+    "brain_recall": {
+      "response": "Found applicable skill: 'procedural:general:planning-sequential' (score: 0.59). Steps: aggregate [target]",
+      "confidence": "0.5876320625",
+      "internal_reasoning": "Skill 'procedural:general:planning-sequential'. shares some structural patterns. has been transferred 2 times (100% success). shares structures: sequential.",
+      "skill_id": "cf4e1aac-3acc-4154-bc73-60723e0486a8",
+      "skill_name": "procedural:general:planning-sequential",
+      "skill_steps": [
+        "aggregate [target]"
+      ],
+      "skill_tags": [
+        "sequential",
+        "planning",
+        "{'domain': 'infrastructure_ops', 'task': 'Monitor system health metrics, diagnose the root cause of performance degradation by correlating logs across services, then execute a recovery plan with rollb",
+        "general"
+      ],
+      "combined_score": 0.5876320625,
+      "structural_score": 0.65,
+      "semantic_score": 0.0,
+      "adaptations": {},
+      "all_candidates": [
+        {
+          "skill_name": "procedural:general:planning-sequential",
+          "score": 0.5876320625,
+          "reasoning": "Skill 'procedural:general:planning-sequential'. shares some structural patterns. has been transferred 2 times (100% success). shares structures: sequential."
+        },
+        {
+          "skill_name": "procedural:general:generation-sequential",
+          "score": 0.5785,
+          "reasoning": "Skill 'procedural:general:generation-sequential'. has very similar task structure. shares structures: sequential. shares patterns: generation."
+        }
+      ]
+    },
+    "task_applier": {
+      "response": "1. **Data acquisition** \u2013 Pull millisecond\u2011resolution telemetry from all 240 dipole magnets (beam current, temperature, vacuum pressure, helium level). \n2. **Quench log extraction** \u2013 Retrieve quench protection system logs with sub\u2011millisecond timestamps and associated cryogenic valve actions. \n3. **Beam loss mapping** \u2013 Collect BLM spike records for the entire ring during the event to locate spatial correlation with quenches. \n4. **Orbit drift analysis** \u2013 Aggregate corrector current data from the preceding 72\u202fh, focusing on slow drifts in cells adjacent to the affected arc. \n5. **Event sequencing** \u2013 Align all datasets by timestamp to build a propagation timeline: identify first quenching magnet(s), valve response lag, BLM spikes, and drift patterns. \n6. **Margin assessment** \u2013 Examine quench margin test results; compare observed margins against expected values to distinguish training quenches from defects. \n7. **Cryogenic stability check** \u2013 Inspect helium level, pressure, and valve logs for anomalies (e.g., sudden drops or stuck valves) that could indicate a cryogenic instability. \n8. **Defect probability scoring** \u2013 Cross\u2011reference conductor inspection reports and historical quench data to assign defect likelihood to each affected magnet. \n9. **Root\u2011cause report** \u2013 Compile findings into a structured document, assigning weighted probabilities to training quench, conductor defect, or cryogenic instability, with clear recommendations. \n10. **Staged re\u2011cooling** \u2013 Re\u2011cool magnets in controlled increments while monitoring thermal gradients to ensure uniform temperature distribution. \n11. **Incremental current ramp tests** \u2013 Perform stepwise current increases, measuring quench margin at each stage and recording any quenches to build a training curve. \n12. **Reduced\u2011energy beam threading** \u2013 Circulate the beam at lower energy through the trained magnets while monitoring BLMs and temperatures; confirm stable operation before returning to full energy.",
+      "confidence": "0.95",
+      "internal_reasoning": "I followed a systematic data\u2011correlation approach: first gather all relevant telemetry, align timestamps, analyze margins and cryogenic logs, then weigh evidence for each potential cause. The recovery plan uses standard staged re\u2011cooling and incremental ramping to safely retrain the magnets.",
+      "_metrics": {
+        "tokens": 1866,
+        "prompt_tokens": 1362,
+        "completion_tokens": 504,
+        "latency_ms": 4824.88,
+        "cost_usd": 0.000298,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a task. You have your own analysis AND access to a\npreviously learned skill from the Brain's memory.\n\nDOMAIN: general\nTASK: {'domain': 'particle_physics_ops', 'task': 'Monitor beam current, magnet temperatures, vacuum pressures, and cryogenic helium levels across 240 superconducting dipole magnets in a synchrotron storage ring. Diagnose a cascading quench event that propagated through 8 consecutive arc cells by correlating quench protection system firing sequences (sub-millisecond timestamps), cryogenic valve response logs, beam loss monitor spike patterns, and the preceding 72 hours of slowly drifting orbit corrector currents that suggest a pre-existing alignment issue. Execute magnet training recovery: staged re-cooling, incremental current ramp with quench margin testing, beam threading at reduced energy, and a root-cause report distinguishing between a training quench, a conductor defect, and a cryogenic system instability.'}\n\nYOUR ANALYSIS:\n{'domain': 'particle_physics_ops', 'task': 'Monitor and diagnose a cascading quench across 8 arc cells in a synchrotron storage ring, then execute magnet training recovery and produce a root\u2011cause report.', 'steps': [{'action': 'Collect real\u2011time telemetry from all 240 dipole magnets (beam current, magnet temperature, vacuum pressure, helium level).', 'result': 'A synchronized dataset with millisecond resolution for each magnet.'}, {'action': 'Extract quench protection system logs, noting sub\u2011millisecond timestamps of trigger events and associated cryogenic valve actions.', 'result': 'Chronology of protection activations and valve responses during the event.'}, {'action': 'Retrieve beam loss monitor (BLM) spike records for all 240 magnets over the quench interval.', 'result': 'Spatial and temporal map of BLM activity correlating with quenches.'}, {'action': 'Aggregate orbit corrector current data for the preceding 72 hours, focusing on slow drifts in adjacent cells to the affected arc.', 'result': 'Trend analysis indicating potential mis\u2011alignment or field error buildup.'}, {'action': 'Correlate all datasets to identify the sequence of failures: which magnets quenched first, valve response lag, BLM spikes, and corrector drift patterns.', 'result': 'A detailed failure propagation timeline pinpointing initiating magnet(s).'}, {'action': 'Analyze quench margin tests from the protection system to assess whether each quench was within expected margin or exceeded it.', 'result': 'Margin violation indicators that suggest training vs. defect.'}, {'action': 'Inspect cryogenic temperature and pressure logs for anomalies (e.g., sudden helium level drop, valve stuck open/closed).', 'result': 'Evidence of cryogenic instability if present.'}, {'action': 'Cross\u2011reference magnet conductor inspection reports and previous quench history to evaluate defect likelihood.', 'result': 'Defect probability score for each affected magnet.'}, {'action': 'Prepare a root\u2011cause report distinguishing between training quench, conductor defect, and cryogenic instability based on weighted evidence from steps 5\u20138.', 'result': 'Structured report with cause probabilities and recommended actions.'}, {'action': 'Initiate staged re\u2011cooling: cool magnets to operating temperature in controlled increments while monitoring thermal gradients.', 'result': 'Stable cryogenic state ready for training.'}, {'action': 'Perform incremental current ramp tests, measuring quench margin at each step and recording any quenches.', 'result': 'Training curve showing increasing margin or identification of persistent low\u2011margin points.'}, {'action': 'Thread beam at reduced energy through the trained magnets, monitoring BLMs and temperature sensors for stability.', 'result': 'Verification that beam can be safely circulated without triggering quenches.'}], 'confidence': 0.95, 'internal_reasoning': 'The analysis follows a systematic data\u2011correlation approach: first gather all relevant telemetry, then align timestamps to reconstruct the event sequence. By examining quench margins, cryogenic logs, and conductor history, we can statistically weigh each potential root cause. The recovery plan is standard for superconducting magnets, ensuring safety and gradual re\u2011training.'}\n\nRECALLED SKILL FROM BRAIN:\nSkill name: procedural:general:planning-sequential\nAbstract steps: ['aggregate [target]']\nTransfer score: 0.5876320625\nStructural match: 0.65\nSemantic match: 0.0\nAdaptations: {}\n\nINSTRUCTIONS:\nIf a skill was recalled, use its abstract pattern to GUIDE your solution.\nFor each abstract step, explain how you ADAPT it to the current domain.\nIf no skill was recalled, solve using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": true or false\n- \"recalled_skill_name\": skill name or \"none\"\n- \"adaptation_notes\": how you adapted the skill (or \"N/A\")\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+    },
+    "brain_feedback": {
+      "response": "Recorded successful transfer for skill 'procedural:general:planning-sequential'.",
+      "confidence": "0.7475030624999999",
+      "internal_reasoning": "Transfer feedback recorded. Skill now has 3 transfer(s).",
+      "skill_id": "cf4e1aac-3acc-4154-bc73-60723e0486a8",
+      "skill_name": "procedural:general:planning-sequential",
+      "transfer_count": 3,
+      "transfer_success": true
+    },
+    "task_result": {
+      "response": "1. **Data acquisition** \u2013 Pull millisecond\u2011resolution telemetry from all 240 dipole magnets (beam current, temperature, vacuum pressure, helium level). 2. **Quench log extraction** \u2013 Retrieve quench protection system logs with sub\u2011millisecond timestamps and associated cryogenic valve actions. 3. **Beam loss mapping** \u2013 Collect BLM spike records for the entire ring during the event to locate spatial correlation with quenches. 4. **Orbit drift analysis** \u2013 Aggregate corrector current data from the preceding 72\u202fh, focusing on slow drifts in cells adjacent to the affected arc. 5. **Event sequencing** \u2013 Align all datasets by timestamp to build a propagation timeline: identify first quenching magnet(s), valve response lag, BLM spikes, and drift patterns. 6. **Margin assessment** \u2013 Examine quench margin test results; compare observed margins against expected values to distinguish training quenches from defects. 7. **Cryogenic stability check** \u2013 Inspect helium level, pressure, and valve logs for anomalies (e.g., sudden drops or stuck valves) that could indicate a cryogenic instability. 8. **Defect probability scoring** \u2013 Cross\u2011reference conductor inspection reports and historical quench data to assign defect likelihood to each affected magnet. 9. **Root\u2011cause report** \u2013 Compile findings into a structured document, assigning weighted probabilities to training quench, conductor defect, or cryogenic instability, with clear recommendations. 10. **Staged re\u2011cooling** \u2013 Re\u2011cool magnets in controlled increments while monitoring thermal gradients to ensure uniform temperature distribution. 11. **Incremental current ramp tests** \u2013 Perform stepwise current increases, measuring quench margin at each stage and recording any quenches to build a training curve. 12. **Reduced\u2011energy beam threading** \u2013 Circulate the beam at lower energy through the trained magnets while monitoring BLMs and temperatures; confirm stable operation before returning to full energy.",
+      "confidence": "0.95",
+      "internal_reasoning": "The solution follows a logical, data\u2011driven workflow: acquire telemetry, extract precise quench logs, map beam loss, analyze orbit drift, sequence events, assess margins, check cryogenics, score defect probability, report root cause, and execute staged recovery steps. All actions are evidence\u2011based and align with standard accelerator operations procedures.",
+      "_metrics": {
+        "tokens": 1518,
+        "prompt_tokens": 1012,
+        "completion_tokens": 506,
+        "latency_ms": 4594.46,
+        "cost_usd": 0.000283,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'particle_physics_ops', 'task': 'Monitor beam current, magnet temperatures, vacuum pressures, and cryogenic helium levels across 240 superconducting dipole magnets in a synchrotron storage ring. Diagnose a cascading quench event that propagated through 8 consecutive arc cells by correlating quench protection system firing sequences (sub-millisecond timestamps), cryogenic valve response logs, beam loss monitor spike patterns, and the preceding 72 hours of slowly drifting orbit corrector currents that suggest a pre-existing alignment issue. Execute magnet training recovery: staged re-cooling, incremental current ramp with quench margin testing, beam threading at reduced energy, and a root-cause report distinguishing between a training quench, a conductor defect, and a cryogenic system instability.'}\n\nSOLUTION:\n1. **Data acquisition** \u2013 Pull millisecond\u2011resolution telemetry from all 240 dipole magnets (beam current, temperature, vacuum pressure, helium level). \n2. **Quench log extraction** \u2013 Retrieve quench protection system logs with sub\u2011millisecond timestamps and associated cryogenic valve actions. \n3. **Beam loss mapping** \u2013 Collect BLM spike records for the entire ring during the event to locate spatial correlation with quenches. \n4. **Orbit drift analysis** \u2013 Aggregate corrector current data from the preceding 72\u202fh, focusing on slow drifts in cells adjacent to the affected arc. \n5. **Event sequencing** \u2013 Align all datasets by timestamp to build a propagation timeline: identify first quenching magnet(s), valve response lag, BLM spikes, and drift patterns. \n6. **Margin assessment** \u2013 Examine quench margin test results; compare observed margins against expected values to distinguish training quenches from defects. \n7. **Cryogenic stability check** \u2013 Inspect helium level, pressure, and valve logs for anomalies (e.g., sudden drops or stuck valves) that could indicate a cryogenic instability. \n8. **Defect probability scoring** \u2013 Cross\u2011reference conductor inspection reports and historical quench data to assign defect likelihood to each affected magnet. \n9. **Root\u2011cause report** \u2013 Compile findings into a structured document, assigning weighted probabilities to training quench, conductor defect, or cryogenic instability, with clear recommendations. \n10. **Staged re\u2011cooling** \u2013 Re\u2011cool magnets in controlled increments while monitoring thermal gradients to ensure uniform temperature distribution. \n11. **Incremental current ramp tests** \u2013 Perform stepwise current increases, measuring quench margin at each stage and recording any quenches to build a training curve. \n12. **Reduced\u2011energy beam threading** \u2013 Circulate the beam at lower energy through the trained magnets while monitoring BLMs and temperatures; confirm stable operation before returning to full energy.\n\nBRAIN METRICS:\nSkill recalled: procedural:general:planning-sequential\nTransfer score: 0.5876320625\nUsed recalled skill: False\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": true if recalled skill contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

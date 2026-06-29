@@ -1,0 +1,225 @@
+{
+  "task_id": "track_d_32",
+  "condition": "brain",
+  "elapsed_s": 16.64,
+  "success": true,
+  "output": {
+    "response": {
+      "domain": "api_design",
+      "task": "Modernize an API gateway from custom nginx configs to a managed solution while preserving legacy behavior, ensuring consistent schemas, maintaining historical analytics, and correcting rate limits.",
+      "solution_steps": [
+        {
+          "phase": 1,
+          "title": "Rule Validation & Documentation",
+          "steps": [
+            "Deploy a sandbox Nginx instance with the full 800\u2011line config.",
+            "Replay recent traffic (last 30\u202fdays) through this instance and capture which rewrite rules fire using `ngx_http_log_module` or a custom Lua script.",
+            "Correlate rule hits with downstream service responses; flag rules that never match or only serve dead consumers.",
+            "Generate a markdown catalog for each rule, including source line, intent, and affected endpoints. Store the 47 undocumented rules in a separate audit log.",
+            "Keep the original config under version control; migrate only validated rules to the managed gateway."
+          ]
+        },
+        {
+          "phase": 2,
+          "title": "Multi\u2011Pattern API Support",
+          "steps": [
+            "In the new gateway (e.g., Kong, Apigee), create a canonical route for `/users` that points to the backend service.",
+            "Add three alias routes (`/api/users`, `/v1/users`, `/users.json`) that rewrite the path to the canonical one using `path_rewrite` or virtual hosts.",
+            "Emit deprecation headers on the legacy patterns and publish a consumer migration guide.",
+            "Schedule a cut\u2011over after 30\u202fdays of parallel operation."
+          ]
+        },
+        {
+          "phase": 3,
+          "title": "Structured Logging Continuity",
+          "steps": [
+            "Use Logstash/Fluentd to parse the historic custom log format into JSON, preserving all fields (timestamp, client IP, request URI, status, latency).",
+            "Store this archive in a searchable index (Elasticsearch) alongside new logs.",
+            "Configure the managed gateway to emit logs in the same JSON schema.",
+            "Ingest both streams into the analytics pipeline so historical and current data are comparable."
+          ]
+        },
+        {
+          "phase": 4,
+          "title": "Rate\u2011Limit State Migration",
+          "steps": [
+            "Sample traffic over a 5\u2011minute window on each worker to estimate per\u2011client counters (e.g., `client_ip: count`).",
+            "Seed Redis with these counts, applying the correct per\u2011client limit (1000 req/min) and setting TTLs.",
+            "Deploy the new rate\u2011limit plugin behind a feature flag.",
+            "Monitor error rates; if consumers experience spikes, roll back to the old 8\u00d7 higher limit for a grace period."
+          ]
+        },
+        {
+          "phase": "Rollback & Communication",
+          "steps": [
+            "Each phase has a rollback path: revert to the original Nginx config, disable alias routes, switch logging back to legacy format, or restore in\u2011memory counters.",
+            "Communicate changes via API changelog, email, and developer portal updates. Provide a 2\u2011week window for consumers to adjust."
+          ]
+        }
+      ],
+      "outcome": "All consumers retain access to their existing URLs while the gateway becomes consistent, observable, and scalable. Historical analytics remain intact, and rate limits are corrected without breaking current traffic patterns."
+    },
+    "confidence": "0.95",
+    "internal_reasoning": "The solution directly addresses each of the four constraints by proposing concrete, phased actions that preserve legacy behavior, maintain data continuity, and correct systemic bugs. All steps are grounded in standard industry practices (sandbox testing, log parsing pipelines, feature flagging) and provide clear rollback paths.",
+    "_metrics": {
+      "tokens": 2137,
+      "prompt_tokens": 1346,
+      "completion_tokens": 791,
+      "latency_ms": 6648.38,
+      "cost_usd": 0.000418,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'api_design', 'task': \"Modernize an API gateway from custom nginx configs (800 lines of undocumented rewrite rules accumulated over 5 years) to a managed solution. The API design recipe demands consistent schemas. Monitoring recipe demands analytics. Database recipe designs rate limit state. Content recipe creates documentation. However: (1) 47 of the 800 nginx rewrite rules have NO documentation and NO comments \u2014 reverse-engineering their behavior by traffic analysis reveals that some rules redirect URLs that no active consumer uses (dead rules?) but you can't be certain without removing them and waiting for errors, (2) the API naming consistency rule reveals that the legacy gateway exposes the SAME resource under 3 different URL patterns ( /api/users, /v1/users, /users.json) \u2014 all 3 are used by different consumers. The managed gateway needs to serve all 3 or break consumers, (3) the monitoring recipe's recommended analytics require structured access logging, but the nginx configs use a custom non-standard log format that existing analysis tools can't parse \u2014 5 years of historical analytics data is in this format and migration destroys continuity, (4) the database recipe for rate limit state recommends Redis, but the existing nginx-based rate limiting uses in-memory counters per worker process, meaning rate limits were accidentally per-worker (1000 req/min per worker \u00d7 8 workers = 8000 effective req/min) \u2014 consumers have been unknowingly relying on this 8x higher effective limit. Migrating to correct per-client limits will break consumers who were benefiting from the bug.\"}\n\nCOMPOSED SOLUTION:\nThe migration plan is a four\u2011phase, risk\u2011controlled rollout that preserves consumer continuity while addressing the legacy gateway\u2019s hidden issues:\n\n**Phase\u202f1 \u2013 Rule Validation & Documentation**\n- Deploy a sandbox Nginx instance with the full 800\u2011line config.\n- Replay recent traffic (last 30\u202fdays) through this instance and capture which rewrite rules fire using `ngx_http_log_module` or a custom Lua script.\n- Correlate rule hits with downstream service responses; flag rules that never match or only serve dead consumers.\n- Generate a markdown catalog for each rule, including source line, intent, and affected endpoints. Store the 47 undocumented rules in a separate audit log.\n- Keep the original config in version control; only migrate validated rules to the managed gateway.\n\n**Phase\u202f2 \u2013 Multi\u2011Pattern API Support**\n- In the new gateway (e.g., Kong, Apigee), create a canonical route for `/users` that points to the backend service.\n- Add three alias routes (`/api/users`, `/v1/users`, `/users.json`) that rewrite the path to the canonical one using `path_rewrite` or virtual hosts.\n- Emit deprecation headers on the legacy patterns and publish a consumer migration guide. Schedule a cut\u2011over after 30\u202fdays of parallel operation.\n\n**Phase\u202f3 \u2013 Structured Logging Continuity**\n- Use Logstash/Fluentd to parse the historic custom log format into JSON, preserving all fields (timestamp, client IP, request URI, status, latency).\n- Store this archive in a searchable index (Elasticsearch) alongside new logs.\n- Configure the managed gateway to emit logs in the same JSON schema. Ingest both streams into the analytics pipeline so historical and current data are comparable.\n\n**Phase\u202f4 \u2013 Rate\u2011Limit State Migration**\n- Sample traffic over a 5\u2011minute window on each worker to estimate per\u2011client counters (e.g., `client_ip: count`).\n- Seed Redis with these counts, applying the correct per\u2011client limit (1000 req/min) and setting TTLs.\n- Deploy the new rate\u2011limit plugin behind a feature flag. Monitor error rates; if consumers experience spikes, roll back to the old 8\u00d7 higher limit for a grace period.\n\n**Rollback & Communication**\n- Each phase has a rollback path: revert to the original Nginx config, disable alias routes, switch logging back to legacy format, or restore in\u2011memory counters.\n- Communicate changes via API changelog, email, and developer portal updates. Provide a 2\u2011week window for consumers to adjust.\n\n**Outcome**\n- All consumers retain access to their existing URLs while the gateway becomes consistent, observable, and scalable. Historical analytics remain intact, and rate limits are corrected without breaking current traffic patterns.\n\nCOMPOSITION STRATEGY:\nN/A\n\nBRAIN METRICS:\nSkills composed: []\nAnti-patterns avoided: []\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": list of skills that contributed\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"recalled_skill\": primary skill or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "brain_learn_recipe": {
+      "response": "No recipe could be learned (missing agents or failed outcome).",
+      "confidence": "0.0"
+    },
+    "brain_learn_anti": {
+      "response": "Recorded anti-pattern: anti:devops:deploying-without-running-security-scans",
+      "confidence": "0.0647586257290055",
+      "internal_reasoning": "Anti-pattern stored: unknown",
+      "skill_id": "a182cf09-c14d-4302-938f-5565af1c8cdd",
+      "skill_name": "anti:devops:deploying-without-running-security-scans",
+      "skill_type": "anti_pattern"
+    },
+    "brain_learn_path": {
+      "response": "No path could be learned (empty path or failed outcome).",
+      "confidence": "0.0"
+    },
+    "task_reasoner": {
+      "response": "The modernization effort must be staged to preserve consumer continuity while addressing the four critical pain points:\n\n1. **Rule Validation & De\u2011duplication** \u2013 Build a traffic replay engine that feeds current request logs into a sandboxed Nginx instance. Capture which rewrite rules fire, correlate with downstream service responses, and flag rules that never hit or only serve dead consumers. Document each rule\u2019s intent, then migrate the validated subset to the managed gateway; keep an audit trail for the 47 undocumented ones.\n\n2. **Multi\u2011Pattern API Support** \u2013 Implement a canonical mapping layer in the new gateway: expose /api/users, /v1/users, and /users.json as aliases that all route to the same backend service. Use path rewriting or virtual hosts so each consumer continues unchanged. Add deprecation headers for the legacy patterns and schedule a gradual cut\u2011over.\n\n3. **Structured Logging Continuity** \u2013 Export the historic custom log format into a structured JSON archive (e.g., using Logstash or Fluentd). Configure the managed gateway to emit logs in the same JSON schema, then ingest both streams into the analytics pipeline. This preserves historical context and allows incremental migration without losing continuity.\n\n4. **Rate\u2011Limit State Migration** \u2013 Reconstruct per\u2011client counters from the existing in\u2011memory counts by sampling traffic over a short window. Use these samples to seed Redis with accurate initial limits. Deploy the new rate\u2011limiting logic behind a feature flag; monitor consumer error rates, then roll out gradually while keeping the old 8\u00d7 higher limit active for a defined grace period.\n\n**Overall Path** \u2013 Adopt a phased migration: (a) rule validation, (b) aliasing of legacy endpoints, (c) logging schema alignment, (d) rate\u2011limit state bootstrap. Each phase includes rollback plans and consumer communication checkpoints.",
+      "confidence": "0.92",
+      "internal_reasoning": "I identified the four pain points, mapped them to concrete migration actions that preserve continuity, and structured the solution into a phased plan with fallback options.",
+      "_metrics": {
+        "tokens": 1155,
+        "prompt_tokens": 719,
+        "completion_tokens": 436,
+        "latency_ms": 3775.88,
+        "cost_usd": 0.000233,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze this complex task step by step.\n\nDOMAIN: api_design\nTASK: Modernize an API gateway from custom nginx configs (800 lines of undocumented rewrite rules accumulated over 5 years) to a managed solution. The API design recipe demands consistent schemas. Monitoring recipe demands analytics. Database recipe designs rate limit state. Content recipe creates documentation. However: (1) 47 of the 800 nginx rewrite rules have NO documentation and NO comments \u2014 reverse-engineering their behavior by traffic analysis reveals that some rules redirect URLs that no active consumer uses (dead rules?) but you can't be certain without removing them and waiting for errors, (2) the API naming consistency rule reveals that the legacy gateway exposes the SAME resource under 3 different URL patterns ( /api/users, /v1/users, /users.json) \u2014 all 3 are used by different consumers. The managed gateway needs to serve all 3 or break consumers, (3) the monitoring recipe's recommended analytics require structured access logging, but the nginx configs use a custom non-standard log format that existing analysis tools can't parse \u2014 5 years of historical analytics data is in this format and migration destroys continuity, (4) the database recipe for rate limit state recommends Redis, but the existing nginx-based rate limiting uses in-memory counters per worker process, meaning rate limits were accidentally per-worker (1000 req/min per worker \u00d7 8 workers = 8000 effective req/min) \u2014 consumers have been unknowingly relying on this 8x higher effective limit. Migrating to correct per-client limits will break consumers who were benefiting from the bug.\n\nThis task may require combining multiple patterns: procedural recipes,\nanti-pattern avoidance, and path selection. Think holistically.\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete multi-faceted analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"required_capabilities\": list of skill types needed\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": approach explanation"
+    },
+    "brain_recall": {
+      "response": "No applicable skills found for this context.",
+      "confidence": "0.0",
+      "internal_reasoning": "No learned skill matched the target context.",
+      "all_candidates": []
+    },
+    "task_applier": {
+      "response": "The migration plan is a four\u2011phase, risk\u2011controlled rollout that preserves consumer continuity while addressing the legacy gateway\u2019s hidden issues:\n\n**Phase\u202f1 \u2013 Rule Validation & Documentation**\n- Deploy a sandbox Nginx instance with the full 800\u2011line config.\n- Replay recent traffic (last 30\u202fdays) through this instance and capture which rewrite rules fire using `ngx_http_log_module` or a custom Lua script.\n- Correlate rule hits with downstream service responses; flag rules that never match or only serve dead consumers.\n- Generate a markdown catalog for each rule, including source line, intent, and affected endpoints. Store the 47 undocumented rules in a separate audit log.\n- Keep the original config in version control; only migrate validated rules to the managed gateway.\n\n**Phase\u202f2 \u2013 Multi\u2011Pattern API Support**\n- In the new gateway (e.g., Kong, Apigee), create a canonical route for `/users` that points to the backend service.\n- Add three alias routes (`/api/users`, `/v1/users`, `/users.json`) that rewrite the path to the canonical one using `path_rewrite` or virtual hosts.\n- Emit deprecation headers on the legacy patterns and publish a consumer migration guide. Schedule a cut\u2011over after 30\u202fdays of parallel operation.\n\n**Phase\u202f3 \u2013 Structured Logging Continuity**\n- Use Logstash/Fluentd to parse the historic custom log format into JSON, preserving all fields (timestamp, client IP, request URI, status, latency).\n- Store this archive in a searchable index (Elasticsearch) alongside new logs.\n- Configure the managed gateway to emit logs in the same JSON schema. Ingest both streams into the analytics pipeline so historical and current data are comparable.\n\n**Phase\u202f4 \u2013 Rate\u2011Limit State Migration**\n- Sample traffic over a 5\u2011minute window on each worker to estimate per\u2011client counters (e.g., `client_ip: count`).\n- Seed Redis with these counts, applying the correct per\u2011client limit (1000 req/min) and setting TTLs.\n- Deploy the new rate\u2011limit plugin behind a feature flag. Monitor error rates; if consumers experience spikes, roll back to the old 8\u00d7 higher limit for a grace period.\n\n**Rollback & Communication**\n- Each phase has a rollback path: revert to the original Nginx config, disable alias routes, switch logging back to legacy format, or restore in\u2011memory counters.\n- Communicate changes via API changelog, email, and developer portal updates. Provide a 2\u2011week window for consumers to adjust.\n\n**Outcome**\n- All consumers retain access to their existing URLs while the gateway becomes consistent, observable, and scalable. Historical analytics remain intact, and rate limits are corrected without breaking current traffic patterns.",
+      "confidence": "0.95",
+      "internal_reasoning": "I synthesized best practices from API design, monitoring, database state migration, and content documentation recipes. The plan addresses each pain point with a concrete, phased approach that preserves continuity and includes rollback strategies.",
+      "_metrics": {
+        "tokens": 1908,
+        "prompt_tokens": 1217,
+        "completion_tokens": 691,
+        "latency_ms": 5567.94,
+        "cost_usd": 0.000343,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a complex task that requires COMPOSING multiple skills.\n\nDOMAIN: general\nTASK: {'domain': 'api_design', 'task': \"Modernize an API gateway from custom nginx configs (800 lines of undocumented rewrite rules accumulated over 5 years) to a managed solution. The API design recipe demands consistent schemas. Monitoring recipe demands analytics. Database recipe designs rate limit state. Content recipe creates documentation. However: (1) 47 of the 800 nginx rewrite rules have NO documentation and NO comments \u2014 reverse-engineering their behavior by traffic analysis reveals that some rules redirect URLs that no active consumer uses (dead rules?) but you can't be certain without removing them and waiting for errors, (2) the API naming consistency rule reveals that the legacy gateway exposes the SAME resource under 3 different URL patterns ( /api/users, /v1/users, /users.json) \u2014 all 3 are used by different consumers. The managed gateway needs to serve all 3 or break consumers, (3) the monitoring recipe's recommended analytics require structured access logging, but the nginx configs use a custom non-standard log format that existing analysis tools can't parse \u2014 5 years of historical analytics data is in this format and migration destroys continuity, (4) the database recipe for rate limit state recommends Redis, but the existing nginx-based rate limiting uses in-memory counters per worker process, meaning rate limits were accidentally per-worker (1000 req/min per worker \u00d7 8 workers = 8000 effective req/min) \u2014 consumers have been unknowingly relying on this 8x higher effective limit. Migrating to correct per-client limits will break consumers who were benefiting from the bug.\"}\n\nYOUR ANALYSIS:\nThe modernization effort must be staged to preserve consumer continuity while addressing the four critical pain points:\n\n1. **Rule Validation & De\u2011duplication** \u2013 Build a traffic replay engine that feeds current request logs into a sandboxed Nginx instance. Capture which rewrite rules fire, correlate with downstream service responses, and flag rules that never hit or only serve dead consumers. Document each rule\u2019s intent, then migrate the validated subset to the managed gateway; keep an audit trail for the 47 undocumented ones.\n\n2. **Multi\u2011Pattern API Support** \u2013 Implement a canonical mapping layer in the new gateway: expose /api/users, /v1/users, and /users.json as aliases that all route to the same backend service. Use path rewriting or virtual hosts so each consumer continues unchanged. Add deprecation headers for the legacy patterns and schedule a gradual cut\u2011over.\n\n3. **Structured Logging Continuity** \u2013 Export the historic custom log format into a structured JSON archive (e.g., using Logstash or Fluentd). Configure the managed gateway to emit logs in the same JSON schema, then ingest both streams into the analytics pipeline. This preserves historical context and allows incremental migration without losing continuity.\n\n4. **Rate\u2011Limit State Migration** \u2013 Reconstruct per\u2011client counters from the existing in\u2011memory counts by sampling traffic over a short window. Use these samples to seed Redis with accurate initial limits. Deploy the new rate\u2011limiting logic behind a feature flag; monitor consumer error rates, then roll out gradually while keeping the old 8\u00d7 higher limit active for a defined grace period.\n\n**Overall Path** \u2013 Adopt a phased migration: (a) rule validation, (b) aliasing of legacy endpoints, (c) logging schema alignment, (d) rate\u2011limit state bootstrap. Each phase includes rollback plans and consumer communication checkpoints.\n\nBRAIN RECALLED KNOWLEDGE:\nSkill name: No skill recalled\nSkill type: unknown\nAbstract steps: []\nTransfer score: N/A\nAdaptations: {}\nAll candidates: []\n\nINSTRUCTIONS:\n- Compose insights from ALL recalled skills into a unified solution.\n- Use recipe patterns for structuring your approach.\n- Use anti-pattern knowledge to AVOID known failure modes.\n- Use path knowledge to select the optimal execution sequence.\n- Clearly note which skills contributed and how you composed them.\n\nReturn JSON with:\n- \"response\": your complete composed solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"skills_composed\": list of skill names/types used\n- \"anti_patterns_avoided\": list of anti-patterns avoided\n- \"composition_strategy\": how you combined multiple skills\n- \"used_recalled_skill\": true or false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on composition"
+    },
+    "brain_learn": {
+      "response": "Learned skill: procedural:general:planning",
+      "confidence": "0.7054999999999999",
+      "internal_reasoning": "Abstracted 8 steps into transferable skill 'procedural:general:planning'",
+      "skill_id": "b647bcfb-ea9c-4b14-8bcd-1d2e9738ae0a",
+      "skill_name": "procedural:general:planning",
+      "skill_steps": [
+        "plan [target]",
+        "align [target]",
+        "architect [target]",
+        "catalog [target]",
+        "collect [target]",
+        "provide [target]",
+        "extract [target]",
+        "deploy [target]"
+      ],
+      "skill_tags": [
+        "planning",
+        "**Migration Plan Overview**\n\n1. **Domain Boundary Alignment (Week\u202f1\u20112)**\n   * Action: Host a cross\u2011functional Event\u2011Storming workshop with product, warehouse, and architecture leads.\n   * Expected Out",
+        "general"
+      ]
+    },
+    "brain_feedback": {
+      "response": "No skill_id provided for feedback.",
+      "confidence": "0.0",
+      "internal_reasoning": "Feedback requires a skill_id from a previous recall."
+    },
+    "task_result": {
+      "response": {
+        "domain": "api_design",
+        "task": "Modernize an API gateway from custom nginx configs to a managed solution while preserving legacy behavior, ensuring consistent schemas, maintaining historical analytics, and correcting rate limits.",
+        "solution_steps": [
+          {
+            "phase": 1,
+            "title": "Rule Validation & Documentation",
+            "steps": [
+              "Deploy a sandbox Nginx instance with the full 800\u2011line config.",
+              "Replay recent traffic (last 30\u202fdays) through this instance and capture which rewrite rules fire using `ngx_http_log_module` or a custom Lua script.",
+              "Correlate rule hits with downstream service responses; flag rules that never match or only serve dead consumers.",
+              "Generate a markdown catalog for each rule, including source line, intent, and affected endpoints. Store the 47 undocumented rules in a separate audit log.",
+              "Keep the original config under version control; migrate only validated rules to the managed gateway."
+            ]
+          },
+          {
+            "phase": 2,
+            "title": "Multi\u2011Pattern API Support",
+            "steps": [
+              "In the new gateway (e.g., Kong, Apigee), create a canonical route for `/users` that points to the backend service.",
+              "Add three alias routes (`/api/users`, `/v1/users`, `/users.json`) that rewrite the path to the canonical one using `path_rewrite` or virtual hosts.",
+              "Emit deprecation headers on the legacy patterns and publish a consumer migration guide.",
+              "Schedule a cut\u2011over after 30\u202fdays of parallel operation."
+            ]
+          },
+          {
+            "phase": 3,
+            "title": "Structured Logging Continuity",
+            "steps": [
+              "Use Logstash/Fluentd to parse the historic custom log format into JSON, preserving all fields (timestamp, client IP, request URI, status, latency).",
+              "Store this archive in a searchable index (Elasticsearch) alongside new logs.",
+              "Configure the managed gateway to emit logs in the same JSON schema.",
+              "Ingest both streams into the analytics pipeline so historical and current data are comparable."
+            ]
+          },
+          {
+            "phase": 4,
+            "title": "Rate\u2011Limit State Migration",
+            "steps": [
+              "Sample traffic over a 5\u2011minute window on each worker to estimate per\u2011client counters (e.g., `client_ip: count`).",
+              "Seed Redis with these counts, applying the correct per\u2011client limit (1000 req/min) and setting TTLs.",
+              "Deploy the new rate\u2011limit plugin behind a feature flag.",
+              "Monitor error rates; if consumers experience spikes, roll back to the old 8\u00d7 higher limit for a grace period."
+            ]
+          },
+          {
+            "phase": "Rollback & Communication",
+            "steps": [
+              "Each phase has a rollback path: revert to the original Nginx config, disable alias routes, switch logging back to legacy format, or restore in\u2011memory counters.",
+              "Communicate changes via API changelog, email, and developer portal updates. Provide a 2\u2011week window for consumers to adjust."
+            ]
+          }
+        ],
+        "outcome": "All consumers retain access to their existing URLs while the gateway becomes consistent, observable, and scalable. Historical analytics remain intact, and rate limits are corrected without breaking current traffic patterns."
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "The solution directly addresses each of the four constraints by proposing concrete, phased actions that preserve legacy behavior, maintain data continuity, and correct systemic bugs. All steps are grounded in standard industry practices (sandbox testing, log parsing pipelines, feature flagging) and provide clear rollback paths.",
+      "_metrics": {
+        "tokens": 2137,
+        "prompt_tokens": 1346,
+        "completion_tokens": 791,
+        "latency_ms": 6648.38,
+        "cost_usd": 0.000418,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'api_design', 'task': \"Modernize an API gateway from custom nginx configs (800 lines of undocumented rewrite rules accumulated over 5 years) to a managed solution. The API design recipe demands consistent schemas. Monitoring recipe demands analytics. Database recipe designs rate limit state. Content recipe creates documentation. However: (1) 47 of the 800 nginx rewrite rules have NO documentation and NO comments \u2014 reverse-engineering their behavior by traffic analysis reveals that some rules redirect URLs that no active consumer uses (dead rules?) but you can't be certain without removing them and waiting for errors, (2) the API naming consistency rule reveals that the legacy gateway exposes the SAME resource under 3 different URL patterns ( /api/users, /v1/users, /users.json) \u2014 all 3 are used by different consumers. The managed gateway needs to serve all 3 or break consumers, (3) the monitoring recipe's recommended analytics require structured access logging, but the nginx configs use a custom non-standard log format that existing analysis tools can't parse \u2014 5 years of historical analytics data is in this format and migration destroys continuity, (4) the database recipe for rate limit state recommends Redis, but the existing nginx-based rate limiting uses in-memory counters per worker process, meaning rate limits were accidentally per-worker (1000 req/min per worker \u00d7 8 workers = 8000 effective req/min) \u2014 consumers have been unknowingly relying on this 8x higher effective limit. Migrating to correct per-client limits will break consumers who were benefiting from the bug.\"}\n\nCOMPOSED SOLUTION:\nThe migration plan is a four\u2011phase, risk\u2011controlled rollout that preserves consumer continuity while addressing the legacy gateway\u2019s hidden issues:\n\n**Phase\u202f1 \u2013 Rule Validation & Documentation**\n- Deploy a sandbox Nginx instance with the full 800\u2011line config.\n- Replay recent traffic (last 30\u202fdays) through this instance and capture which rewrite rules fire using `ngx_http_log_module` or a custom Lua script.\n- Correlate rule hits with downstream service responses; flag rules that never match or only serve dead consumers.\n- Generate a markdown catalog for each rule, including source line, intent, and affected endpoints. Store the 47 undocumented rules in a separate audit log.\n- Keep the original config in version control; only migrate validated rules to the managed gateway.\n\n**Phase\u202f2 \u2013 Multi\u2011Pattern API Support**\n- In the new gateway (e.g., Kong, Apigee), create a canonical route for `/users` that points to the backend service.\n- Add three alias routes (`/api/users`, `/v1/users`, `/users.json`) that rewrite the path to the canonical one using `path_rewrite` or virtual hosts.\n- Emit deprecation headers on the legacy patterns and publish a consumer migration guide. Schedule a cut\u2011over after 30\u202fdays of parallel operation.\n\n**Phase\u202f3 \u2013 Structured Logging Continuity**\n- Use Logstash/Fluentd to parse the historic custom log format into JSON, preserving all fields (timestamp, client IP, request URI, status, latency).\n- Store this archive in a searchable index (Elasticsearch) alongside new logs.\n- Configure the managed gateway to emit logs in the same JSON schema. Ingest both streams into the analytics pipeline so historical and current data are comparable.\n\n**Phase\u202f4 \u2013 Rate\u2011Limit State Migration**\n- Sample traffic over a 5\u2011minute window on each worker to estimate per\u2011client counters (e.g., `client_ip: count`).\n- Seed Redis with these counts, applying the correct per\u2011client limit (1000 req/min) and setting TTLs.\n- Deploy the new rate\u2011limit plugin behind a feature flag. Monitor error rates; if consumers experience spikes, roll back to the old 8\u00d7 higher limit for a grace period.\n\n**Rollback & Communication**\n- Each phase has a rollback path: revert to the original Nginx config, disable alias routes, switch logging back to legacy format, or restore in\u2011memory counters.\n- Communicate changes via API changelog, email, and developer portal updates. Provide a 2\u2011week window for consumers to adjust.\n\n**Outcome**\n- All consumers retain access to their existing URLs while the gateway becomes consistent, observable, and scalable. Historical analytics remain intact, and rate limits are corrected without breaking current traffic patterns.\n\nCOMPOSITION STRATEGY:\nN/A\n\nBRAIN METRICS:\nSkills composed: []\nAnti-patterns avoided: []\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": list of skills that contributed\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"recalled_skill\": primary skill or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}
