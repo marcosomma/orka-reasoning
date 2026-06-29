@@ -1,249 +1,324 @@
 {
   "task_id": "track_d_18",
   "condition": "brain",
-  "elapsed_s": 21.08,
+  "elapsed_s": 17.4,
   "success": true,
   "output": {
-    "response": {
-      "solution_overview": "Reduce onboarding time\u2011to\u2011value from 2 weeks to 3 days by delivering 12 high\u2011impact, role\u2011based tutorials, using a modular library for the remaining 20 paths, and adapting personalization without behavioral tracking. Accessibility and SEO are enforced on all content; comprehensive error coverage is achieved through risk\u2011based testing of external integrations.",
-      "steps": [
-        {
-          "step_id": 1,
-          "title": "Select Core Tutorial Paths",
-          "details": [
-            "Identify the four highest\u2011impact roles: Admin, Manager, Analyst, Support.",
-            "Pair each with the two most critical modules (User Management & Data Integration) \u2192 8 paths.",
-            "Add Developer & Auditor for User Management and Trainer & Ops for Data Integration to reach 12 paths."
-          ]
-        },
-        {
-          "step_id": 2,
-          "title": "Build Modular Tutorial Library",
-          "details": [
-            "Create reusable content cards (video, doc, interactive demo) for each module.",
-            "Implement a lightweight rule engine that stitches modules based on role, integration status, and org size.",
-            "Use the engine to generate any of the 32 paths on demand, covering the remaining 20 gaps without writing separate tutorials."
-          ]
-        },
-        {
-          "step_id": 3,
-          "title": "Adaptation Without Behavioral Tracking",
-          "details": [
-            "Collect only deterministic inputs: selected role, chosen integrations, org size, and session\u2011level state stored in browser localStorage.",
-            "If a DPA forbids tracking, default to the static role\u2011based path; otherwise offer micro\u2011learning suggestions derived from progress within the same session.",
-            "No cross\u2011session analytics or external data collection is used."
-          ]
-        },
-        {
-          "step_id": 4,
-          "title": "Accessibility & SEO Compliance",
-          "details": [
-            "Run axe and Lighthouse audits on all 12 core tutorials; fix WCAG\u202f2.1 AA issues (semantic HTML, ARIA labels, captions, keyboard navigation, alt text).",
-            "Embed keyword\u2011rich meta tags, structured data (JSON\u2011LD), and descriptive URLs for SEO.",
-            "Create an accessibility review checklist to be run before any future content publication."
-          ]
-        },
-        {
-          "step_id": 5,
-          "title": "Testing Strategy for External Integrations",
-          "details": [
-            "Define four failure modes per integration (auth error, timeout, data mismatch, permission denied) \u2192 12 error paths.",
-            "Automate UI tests with Playwright/Cypress to simulate each failure and verify graceful fallbacks.",
-            "Add unit tests for the rule engine and dynamic assembly logic."
-          ]
-        },
-        {
-          "step_id": 6,
-          "title": "Timeline & Delivery",
-          "details": [
-            "Week\u202f1: finalize role\u2011module mapping, build modular library, audit a11y/SEO.",
-            "Week\u202f2: develop rule engine & wizard, produce 12 core tutorials.",
-            "Week\u202f3: implement automated tests, run integration failure simulations, iterate.",
-            "Deploy ready for activation within 3 days of onboarding."
-          ]
-        }
-      ],
-      "expected_outcomes": [
-        "Time\u2011to\u2011value reduced to 3 days.",
-        "No behavioral tracking for DPA\u2011restricted customers.",
-        "Accessibility requirements met for all contracts.",
-        "Churn from generic tutorials cut by offering role\u2011specific paths.",
-        "Comprehensive error coverage for SSO, CRM sync, and data migration tools."
-      ]
-    },
-    "confidence": "0.95",
-    "internal_reasoning": "Analyzed constraints: need 12 tutorials, handle 20 gaps, avoid tracking, meet accessibility, cover errors. Applied modular design to satisfy all while keeping timeline realistic. Confidence high due to alignment with best practices and clear step\u2011by\u2011step plan.",
+    "response": "1\ufe0f\u20e3 **Dual\u2011Mode Personalization Engine** \u2013 Detect DPA status at account creation. If tracking is allowed, the engine uses behavioral signals; otherwise it falls back to static role/contract data and optional opt\u2011in prompts.\n\n2\ufe0f\u20e3 **Accessibility & SEO Pipeline** \u2013 Automated audit (axe, Lighthouse) runs on every tutorial before publish. For the two customers with strict contracts, a manual WCAG\u202f2.1 AA review is required.\n\n3\ufe0f\u20e3 **12 Core Tutorial Paths** \u2013 Selected via weighted impact matrix (role churn risk, module criticality, integration complexity). The chosen paths:\n   \u2022 Admin \u2013 Core Dashboard\n   \u2022 Admin \u2013 User Management\n   \u2022 Sales Rep \u2013 Lead Capture\n   \u2022 Sales Rep \u2013 Deal Pipeline\n   \u2022 Marketing \u2013 Campaign Setup\n   \u2022 Marketing \u2013 Analytics Overview\n   \u2022 Finance \u2013 Billing Integration\n   \u2022 Finance \u2013 Expense Reporting\n   \u2022 Support \u2013 Ticket Creation\n   \u2022 Support \u2013 Knowledge Base Search\n   \u2022 IT \u2013 SSO Configuration\n   \u2022 IT \u2013 Data Migration Tool\n   A modular, role\u2011agnostic fallback stitches missing steps via conditional branching.\n\n4\ufe0f\u20e3 **Error\u2011Path Tutorials & Tests** \u2013 Three dedicated tutorials for SSO failure, CRM sync inconsistency, and data migration timeout. Each includes mock failure scenarios.\n   \u2022 Automated integration tests with stubs for each provider.\n   \u2022 End\u2011to\u2011end smoke test covering all 12 core paths + error tutorials.\n   \u2022 Regression suite updated to include new error scenarios.\n\n5\ufe0f\u20e3 **Timeline** \u2013 Three\u2011day sprint:\n   \u2022 Day\u202f1: Set up dual\u2011mode engine & audit pipeline, finalize 12 paths.\n   \u2022 Day\u202f2: Build tutorials, run automated accessibility/SEO checks, create fallback structure.\n   \u2022 Day\u202f3: Write error\u2011path tutorials, execute test suites, deploy to staging.\n\n6\ufe0f\u20e3 **Metrics** \u2013 Time\u2011to\u2011value <72\u202fh for all customers; Accessibility score \u226595%; Churn reduction target \u226410%.\n\nThis plan delivers a role\u2011based onboarding experience that respects DPAs, meets accessibility contracts, covers critical error paths, and stays within the 12\u2011tutorial production window.",
+    "confidence": "0.96",
+    "internal_reasoning": "I mapped each constraint to a concrete solution component: dual\u2011mode personalization for DPA compliance, an automated audit pipeline for accessibility/SEO, a weighted selection matrix for choosing 12 paths from 32, and dedicated error tutorials plus comprehensive tests for undocumented failure modes. The plan aligns with the sprint timeline and measurable metrics.",
     "_metrics": {
-      "tokens": 2069,
-      "prompt_tokens": 1231,
-      "completion_tokens": 838,
-      "latency_ms": 6966.55,
-      "cost_usd": 0.000438,
+      "tokens": 1881,
+      "prompt_tokens": 1304,
+      "completion_tokens": 577,
+      "latency_ms": 4622.11,
+      "cost_usd": 0.000285,
       "model": "openai/gpt-oss-20b",
       "provider": "lm_studio"
     },
-    "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'user_onboarding', 'task': \"Redesign enterprise user onboarding to reduce time-to-value from 2 weeks to 3 days. The onboarding recipe demands adaptive, role-based tutorials. The content publishing recipe demands accessibility and SEO. The testing strategy recipe demands comprehensive coverage. However: (1) the adaptive tutorial system collects user behavioral data to personalize the experience, but 25% of enterprise customers have DPAs prohibiting behavioral tracking of their employees \u2014 the personalization system must work WITHOUT tracking for these customers, (2) the content team published onboarding materials without accessibility review (publish_without_a11y anti-pattern), and 2 enterprise customers have accessibility requirements in their procurement contracts, (3) the previous 'one-size-fits-all tutorial' approach (generic_tutorial anti-pattern) caused 60% enterprise churn \u2014 but the proposed role-based system has 8 roles \u00d7 4 product modules = 32 tutorial paths, and the content team can only produce 12 tutorials by the deadline, (4) the testing recipe says 'cover error paths' but the onboarding flow involves 3 external integrations (SSO provider, CRM sync, data migration tool) whose failure modes during first-time-setup are poorly documented. Which 12 of 32 paths do you build, how do you handle the 20 gaps, and how do you handle adaptation without behavioral tracking?\"}\n\nCOMPOSED SOLUTION:\n1\ufe0f\u20e3 **Select 12 core paths** \u2013 Pick the four highest\u2011impact roles (Admin, Manager, Analyst, Support) and pair each with the two most critical modules (User Management & Data Integration). That gives 8 paths. Add Developer & Auditor for User Management and Trainer & Ops for Data Integration to reach 12.\n\n2\ufe0f\u20e3 **Close the remaining 20 gaps** \u2013 Build a *modular tutorial library* of reusable cards, videos, and docs. A lightweight rule engine stitches these modules at runtime based on role, integration status, and company size, creating any of the 32 paths without writing each one from scratch. For unbuilt paths provide a concise \u201cquick\u2011start\u201d guide linking to relevant modules.\n\n3\ufe0f\u20e3 **Adaptation without behavioral tracking** \u2013 Use deterministic inputs: selected role, chosen integrations, org size, and local session state (browser storage). If DPAs forbid tracking, default to the role\u2011based path; otherwise enrich with micro\u2011learning suggestions derived from observed progress within the same session. No cross\u2011session or external analytics are used.\n\n4\ufe0f\u20e3 **Accessibility & SEO** \u2013 Run an a11y audit on the 12 core tutorials (axe, Lighthouse). Ensure WCAG\u202f2.1\u202fAA compliance: semantic HTML, ARIA labels, captions, keyboard navigation, and alt text. For SEO, embed keyword\u2011rich meta tags, structured data (JSON\u2011LD), and descriptive URLs.\n\n5\ufe0f\u20e3 **Testing strategy** \u2013 Create a risk\u2011based matrix for the three external integrations. Define four failure modes per integration (auth error, timeout, data mismatch, permission denied) \u2192 12 error paths. Automate UI tests with Playwright/Cypress to simulate each failure and verify graceful fallbacks. Add unit tests for the rule engine and dynamic assembly logic.\n\n6\ufe0f\u20e3 **Timeline** \u2013 Week\u202f1: finalize role\u2011module mapping, build modular library, audit a11y/SEO. Week\u202f2: develop rule engine & wizard, produce 12 core tutorials. Week\u202f3: implement automated tests, run integration failure simulations, iterate. Deliverable ready for deployment within 3 days of activation.\n\nThis plan reduces time\u2011to\u2011value to 3 days, respects DPAs and accessibility contracts, mitigates churn from generic tutorials, and ensures comprehensive error coverage.\n\nCOMPOSITION STRATEGY:\nN/A\n\nBRAIN METRICS:\nSkills composed: []\nAnti-patterns avoided: []\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": list of skills that contributed\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"recalled_skill\": primary skill or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'user_onboarding', 'task': \"Redesign enterprise user onboarding to reduce time-to-value from 2 weeks to 3 days. The onboarding recipe demands adaptive, role-based tutorials. The content publishing recipe demands accessibility and SEO. The testing strategy recipe demands comprehensive coverage. However: (1) the adaptive tutorial system collects user behavioral data to personalize the experience, but 25% of enterprise customers have DPAs prohibiting behavioral tracking of their employees \u2014 the personalization system must work WITHOUT tracking for these customers, (2) the content team published onboarding materials without accessibility review (publish_without_a11y anti-pattern), and 2 enterprise customers have accessibility requirements in their procurement contracts, (3) the previous 'one-size-fits-all tutorial' approach (generic_tutorial anti-pattern) caused 60% enterprise churn \u2014 but the proposed role-based system has 8 roles \u00d7 4 product modules = 32 tutorial paths, and the content team can only produce 12 tutorials by the deadline, (4) the testing recipe says 'cover error paths' but the onboarding flow involves 3 external integrations (SSO provider, CRM sync, data migration tool) whose failure modes during first-time-setup are poorly documented. Which 12 of 32 paths do you build, how do you handle the 20 gaps, and how do you handle adaptation without behavioral tracking?\"}\n\nCOMPOSED SOLUTION:\n{'overview': 'A three\u2011day sprint to deliver a role\u2011based, accessible, SEO\u2011friendly onboarding experience that works for both tracking\u2011enabled and tracking\u2011blocked customers while covering critical error paths.', 'components': [{'name': 'Dual\u2011Mode Personalization Engine', 'description': 'Detects DPA status at account creation. If tracking is allowed, the engine uses behavioral signals; otherwise it falls back to static role/contract data and optional opt\u2011in prompts.', 'implementation': {'tech_stack': ['Node.js', 'Redis cache', 'Feature flag service'], 'tests': ['Unit tests for mode selection', 'Integration test with mock analytics']}}, {'name': 'Accessibility & SEO Pipeline', 'description': 'Automated audit (axe, Lighthouse) runs on every tutorial before publish. For the two customers with strict contracts, a manual WCAG 2.1 AA review is required.', 'implementation': {'ci_cd': ['GitHub Actions', 'SonarQube'], 'outputs': ['Accessibility score report', 'SEO keyword density check']}}, {'name': '12 Core Tutorial Paths', 'description': 'Selected via weighted impact matrix (role churn risk, module criticality, integration complexity).', 'paths': ['Admin \u2013 Core Dashboard', 'Admin \u2013 User Management', 'Sales Rep \u2013 Lead Capture', 'Sales Rep \u2013 Deal Pipeline', 'Marketing \u2013 Campaign Setup', 'Marketing \u2013 Analytics Overview', 'Finance \u2013 Billing Integration', 'Finance \u2013 Expense Reporting', 'Support \u2013 Ticket Creation', 'Support \u2013 Knowledge Base Search', 'IT \u2013 SSO Configuration', 'IT \u2013 Data Migration Tool'], 'fallback': 'Modular role\u2011agnostic tutorial that stitches missing steps via conditional branching.'}, {'name': 'Error\u2011Path Tutorials & Tests', 'description': 'Three dedicated tutorials for SSO failure, CRM sync inconsistency, and data migration timeout. Each includes mock failure scenarios.', 'tests': ['Automated integration tests with stubs for each provider', 'End\u2011to\u2011end smoke test covering all 12 core paths + error tutorials', 'Regression suite updated to include new error scenarios']}], 'timeline': {'Day1': ['Set up dual\u2011mode engine & audit pipeline', 'Define impact matrix and finalize 12 paths'], 'Day2': ['Build tutorials, run automated accessibility/SEO checks', 'Create fallback tutorial structure'], 'Day3': ['Write error\u2011path tutorials, execute test suites', 'Deploy to staging, gather feedback']}, 'metrics': {'time_to_value': '<72 hours for all customers', 'accessibility_score': '\u226595%', 'churn_reduction_target': '\u226410%'}}\n\nCOMPOSITION STRATEGY:\nN/A\n\nBRAIN METRICS:\nSkills composed: []\nAnti-patterns avoided: []\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": list of skills that contributed\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"used_recalled_skill\": copy the boolean from the prior step (true/false) \u2014 whether recalled knowledge actually guided the solution\n- \"recalled_skill\": primary skill or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection",
+    "trace_id": "19dc3eaa-413f-4b9a-86fb-ace86e6ea17a",
+    "execution_time_ms": 4624.111175537109
   },
   "agent_outputs": {
     "brain_learn_recipe": {
       "response": "No recipe could be learned (missing agents or failed outcome).",
-      "confidence": "0.0"
+      "confidence": "0.0",
+      "trace_id": "9c70a1c6-170d-47ab-b0dc-ba2930150c5e",
+      "execution_time_ms": 0.0
     },
     "brain_learn_anti": {
       "response": "Recorded anti-pattern: anti:devops:deploying-without-running-security-scans",
       "confidence": "0.28307563595945506",
       "internal_reasoning": "Anti-pattern stored: unknown",
-      "skill_id": "a182cf09-c14d-4302-938f-5565af1c8cdd",
+      "skill_id": "51094fb4-26fc-4d1e-aaf9-947c2ad394d5",
       "skill_name": "anti:devops:deploying-without-running-security-scans",
-      "skill_type": "anti_pattern"
+      "skill_type": "anti_pattern",
+      "trace_id": "172acc9c-9e0a-4d87-be6d-fb612007478b",
+      "execution_time_ms": 14.156818389892578
     },
     "brain_learn_path": {
       "response": "No path could be learned (empty path or failed outcome).",
-      "confidence": "0.0"
+      "confidence": "0.0",
+      "trace_id": "d0a647e5-6541-460e-b882-fdf149a6e488",
+      "execution_time_ms": 0.0
     },
     "task_reasoner": {
-      "response": "Domain: user_onboarding\nTask: Reduce time\u2011to\u2011value from 2 weeks to 3 days by redesigning enterprise onboarding with adaptive, role\u2011based tutorials while meeting accessibility, SEO, and testing requirements under constraints.\n\nAnalysis & Solution:\n1. **Path Selection (12 of 32)**\n   - Prioritize high\u2011impact roles: Admin, Manager, Analyst, Support (4 roles) \u00d7 2 core modules (User Management, Data Integration) = 8 paths.\n   - Add 4 supplementary paths for the remaining critical roles that overlap modules: Developer & Auditor on User Management; Trainer & Ops on Data Integration. These cover 12 distinct paths.\n   - Rationale: These roles drive most first\u2011time setup actions and have the highest churn risk if not guided properly.\n\n2. **Handling Remaining 20 Gaps**\n   - **Modular Tutorial Library:** Build a reusable component library (cards, videos, docs) that can be assembled on demand for any role/module combo.\n   - **Dynamic Assembly Engine:** At runtime, the onboarding wizard stitches the relevant components based on user role selection and integration status. This allows instant creation of up to 32 paths without writing each one from scratch.\n   - **Fallback Guides:** Provide a concise \u201cquick\u2011start\u201d guide for any unbuilt path that covers the essential steps with links to the modular library.\n\n3. **Adaptation Without Behavioral Tracking**\n   - Use *contextual cues* (role selection, integration status, company size) as deterministic inputs for personalization.\n   - Implement a lightweight rule engine: if behavioral data is unavailable (DPAs), default to the role\u2011based path; otherwise enrich with micro\u2011learning suggestions based on observed progress.\n   - Store user preferences locally (browser storage or secure cookie) to remember completed steps within a session, avoiding cross\u2011session tracking.\n\n4. **Accessibility & SEO Compliance**\n   - Conduct an *a11y audit* of the 12 core tutorials using automated tools (axe, Lighthouse) and manual checks for WCAG 2.1 AA compliance.\n   - Embed semantic HTML, ARIA labels, captions, and keyboard navigation support in all tutorial components.\n   - Optimize content with keyword research, meta tags, structured data (JSON\u2011LD), and descriptive alt text to meet SEO goals.\n\n5. **Testing Strategy**\n   - Adopt a *risk\u2011based testing matrix* covering 3 external integrations: SSO, CRM sync, Data Migration.\n   - For each integration, define 4 failure modes (auth error, timeout, data mismatch, permission denied) \u2192 12 error paths.\n   - Use automated UI tests (Playwright/Cypress) to simulate these failures and verify graceful fallback messages.\n   - Include unit tests for the rule engine and dynamic assembly logic; perform regression testing after each content update.\n\n6. **Timeline & Deliverables**\n   - Week 1: Finalize role/module mapping, build modular library, audit a11y/SEO.\n   - Week 2: Develop dynamic assembly engine, rule engine, and core tutorials (12 paths).\n   - Week 3: Implement testing suite, run integration failure simulations, iterate based on results.\n   - Deliverable: Fully functional onboarding wizard ready for deployment within 3 days of user activation.\n\nConclusion: By focusing on high\u2011impact roles, leveraging modular content, using deterministic personalization, enforcing accessibility/SEO standards, and rigorously testing external integrations, we meet the 3\u2011day time\u2011to\u2011value goal while respecting DPAs and procurement contracts.",
-      "confidence": "0.95",
-      "internal_reasoning": "I mapped constraints to concrete actions: selected 12 paths based on churn risk, created a modular assembly strategy for gaps, designed rule\u2011based personalization without tracking, ensured accessibility/SEO compliance, and built a comprehensive testing matrix covering integration failures.",
-      "_metrics": {
-        "tokens": 1525,
-        "prompt_tokens": 682,
-        "completion_tokens": 843,
-        "latency_ms": 8320.45,
-        "cost_usd": 0.000513,
-        "model": "openai/gpt-oss-20b",
-        "provider": "lm_studio"
-      },
-      "formatted_prompt": "You are an expert analyst. Analyze this complex task step by step.\n\nDOMAIN: user_onboarding\nTASK: Redesign enterprise user onboarding to reduce time-to-value from 2 weeks to 3 days. The onboarding recipe demands adaptive, role-based tutorials. The content publishing recipe demands accessibility and SEO. The testing strategy recipe demands comprehensive coverage. However: (1) the adaptive tutorial system collects user behavioral data to personalize the experience, but 25% of enterprise customers have DPAs prohibiting behavioral tracking of their employees \u2014 the personalization system must work WITHOUT tracking for these customers, (2) the content team published onboarding materials without accessibility review (publish_without_a11y anti-pattern), and 2 enterprise customers have accessibility requirements in their procurement contracts, (3) the previous 'one-size-fits-all tutorial' approach (generic_tutorial anti-pattern) caused 60% enterprise churn \u2014 but the proposed role-based system has 8 roles \u00d7 4 product modules = 32 tutorial paths, and the content team can only produce 12 tutorials by the deadline, (4) the testing recipe says 'cover error paths' but the onboarding flow involves 3 external integrations (SSO provider, CRM sync, data migration tool) whose failure modes during first-time-setup are poorly documented. Which 12 of 32 paths do you build, how do you handle the 20 gaps, and how do you handle adaptation without behavioral tracking?\n\nThis task may require combining multiple patterns: procedural recipes,\nanti-pattern avoidance, and path selection. Think holistically.\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete multi-faceted analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"required_capabilities\": list of skill types needed\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": approach explanation"
-    },
-    "brain_recall": {
-      "response": "No applicable skills found for this context.",
-      "confidence": "0.0",
-      "internal_reasoning": "No learned skill matched the target context.",
-      "all_candidates": []
-    },
-    "task_applier": {
-      "response": "1\ufe0f\u20e3 **Select 12 core paths** \u2013 Pick the four highest\u2011impact roles (Admin, Manager, Analyst, Support) and pair each with the two most critical modules (User Management & Data Integration). That gives 8 paths. Add Developer & Auditor for User Management and Trainer & Ops for Data Integration to reach 12.\n\n2\ufe0f\u20e3 **Close the remaining 20 gaps** \u2013 Build a *modular tutorial library* of reusable cards, videos, and docs. A lightweight rule engine stitches these modules at runtime based on role, integration status, and company size, creating any of the 32 paths without writing each one from scratch. For unbuilt paths provide a concise \u201cquick\u2011start\u201d guide linking to relevant modules.\n\n3\ufe0f\u20e3 **Adaptation without behavioral tracking** \u2013 Use deterministic inputs: selected role, chosen integrations, org size, and local session state (browser storage). If DPAs forbid tracking, default to the role\u2011based path; otherwise enrich with micro\u2011learning suggestions derived from observed progress within the same session. No cross\u2011session or external analytics are used.\n\n4\ufe0f\u20e3 **Accessibility & SEO** \u2013 Run an a11y audit on the 12 core tutorials (axe, Lighthouse). Ensure WCAG\u202f2.1\u202fAA compliance: semantic HTML, ARIA labels, captions, keyboard navigation, and alt text. For SEO, embed keyword\u2011rich meta tags, structured data (JSON\u2011LD), and descriptive URLs.\n\n5\ufe0f\u20e3 **Testing strategy** \u2013 Create a risk\u2011based matrix for the three external integrations. Define four failure modes per integration (auth error, timeout, data mismatch, permission denied) \u2192 12 error paths. Automate UI tests with Playwright/Cypress to simulate each failure and verify graceful fallbacks. Add unit tests for the rule engine and dynamic assembly logic.\n\n6\ufe0f\u20e3 **Timeline** \u2013 Week\u202f1: finalize role\u2011module mapping, build modular library, audit a11y/SEO. Week\u202f2: develop rule engine & wizard, produce 12 core tutorials. Week\u202f3: implement automated tests, run integration failure simulations, iterate. Deliverable ready for deployment within 3 days of activation.\n\nThis plan reduces time\u2011to\u2011value to 3 days, respects DPAs and accessibility contracts, mitigates churn from generic tutorials, and ensures comprehensive error coverage.",
-      "confidence": "0.95",
-      "internal_reasoning": "I mapped constraints to concrete actions: prioritized roles for path selection, modular content to cover gaps, deterministic rule engine for personalization without tracking, a11y/SEO checks, risk\u2011based testing for integrations, and a clear timeline. All decisions align with the recipe patterns and anti\u2011pattern avoidance.",
-      "_metrics": {
-        "tokens": 2133,
-        "prompt_tokens": 1537,
-        "completion_tokens": 596,
-        "latency_ms": 4955.95,
-        "cost_usd": 0.000312,
-        "model": "openai/gpt-oss-20b",
-        "provider": "lm_studio"
-      },
-      "formatted_prompt": "You are solving a complex task that requires COMPOSING multiple skills.\n\nDOMAIN: general\nTASK: {'domain': 'user_onboarding', 'task': \"Redesign enterprise user onboarding to reduce time-to-value from 2 weeks to 3 days. The onboarding recipe demands adaptive, role-based tutorials. The content publishing recipe demands accessibility and SEO. The testing strategy recipe demands comprehensive coverage. However: (1) the adaptive tutorial system collects user behavioral data to personalize the experience, but 25% of enterprise customers have DPAs prohibiting behavioral tracking of their employees \u2014 the personalization system must work WITHOUT tracking for these customers, (2) the content team published onboarding materials without accessibility review (publish_without_a11y anti-pattern), and 2 enterprise customers have accessibility requirements in their procurement contracts, (3) the previous 'one-size-fits-all tutorial' approach (generic_tutorial anti-pattern) caused 60% enterprise churn \u2014 but the proposed role-based system has 8 roles \u00d7 4 product modules = 32 tutorial paths, and the content team can only produce 12 tutorials by the deadline, (4) the testing recipe says 'cover error paths' but the onboarding flow involves 3 external integrations (SSO provider, CRM sync, data migration tool) whose failure modes during first-time-setup are poorly documented. Which 12 of 32 paths do you build, how do you handle the 20 gaps, and how do you handle adaptation without behavioral tracking?\"}\n\nYOUR ANALYSIS:\nDomain: user_onboarding\nTask: Reduce time\u2011to\u2011value from 2 weeks to 3 days by redesigning enterprise onboarding with adaptive, role\u2011based tutorials while meeting accessibility, SEO, and testing requirements under constraints.\n\nAnalysis & Solution:\n1. **Path Selection (12 of 32)**\n   - Prioritize high\u2011impact roles: Admin, Manager, Analyst, Support (4 roles) \u00d7 2 core modules (User Management, Data Integration) = 8 paths.\n   - Add 4 supplementary paths for the remaining critical roles that overlap modules: Developer & Auditor on User Management; Trainer & Ops on Data Integration. These cover 12 distinct paths.\n   - Rationale: These roles drive most first\u2011time setup actions and have the highest churn risk if not guided properly.\n\n2. **Handling Remaining 20 Gaps**\n   - **Modular Tutorial Library:** Build a reusable component library (cards, videos, docs) that can be assembled on demand for any role/module combo.\n   - **Dynamic Assembly Engine:** At runtime, the onboarding wizard stitches the relevant components based on user role selection and integration status. This allows instant creation of up to 32 paths without writing each one from scratch.\n   - **Fallback Guides:** Provide a concise \u201cquick\u2011start\u201d guide for any unbuilt path that covers the essential steps with links to the modular library.\n\n3. **Adaptation Without Behavioral Tracking**\n   - Use *contextual cues* (role selection, integration status, company size) as deterministic inputs for personalization.\n   - Implement a lightweight rule engine: if behavioral data is unavailable (DPAs), default to the role\u2011based path; otherwise enrich with micro\u2011learning suggestions based on observed progress.\n   - Store user preferences locally (browser storage or secure cookie) to remember completed steps within a session, avoiding cross\u2011session tracking.\n\n4. **Accessibility & SEO Compliance**\n   - Conduct an *a11y audit* of the 12 core tutorials using automated tools (axe, Lighthouse) and manual checks for WCAG 2.1 AA compliance.\n   - Embed semantic HTML, ARIA labels, captions, and keyboard navigation support in all tutorial components.\n   - Optimize content with keyword research, meta tags, structured data (JSON\u2011LD), and descriptive alt text to meet SEO goals.\n\n5. **Testing Strategy**\n   - Adopt a *risk\u2011based testing matrix* covering 3 external integrations: SSO, CRM sync, Data Migration.\n   - For each integration, define 4 failure modes (auth error, timeout, data mismatch, permission denied) \u2192 12 error paths.\n   - Use automated UI tests (Playwright/Cypress) to simulate these failures and verify graceful fallback messages.\n   - Include unit tests for the rule engine and dynamic assembly logic; perform regression testing after each content update.\n\n6. **Timeline & Deliverables**\n   - Week 1: Finalize role/module mapping, build modular library, audit a11y/SEO.\n   - Week 2: Develop dynamic assembly engine, rule engine, and core tutorials (12 paths).\n   - Week 3: Implement testing suite, run integration failure simulations, iterate based on results.\n   - Deliverable: Fully functional onboarding wizard ready for deployment within 3 days of user activation.\n\nConclusion: By focusing on high\u2011impact roles, leveraging modular content, using deterministic personalization, enforcing accessibility/SEO standards, and rigorously testing external integrations, we meet the 3\u2011day time\u2011to\u2011value goal while respecting DPAs and procurement contracts.\n\nBRAIN RECALLED KNOWLEDGE:\nSkill name: No skill recalled\nSkill type: unknown\nAbstract steps: []\nTransfer score: N/A\nAdaptations: {}\nAll candidates: []\n\nINSTRUCTIONS:\n- Compose insights from ALL recalled skills into a unified solution.\n- Use recipe patterns for structuring your approach.\n- Use anti-pattern knowledge to AVOID known failure modes.\n- Use path knowledge to select the optimal execution sequence.\n- Clearly note which skills contributed and how you composed them.\n\nReturn JSON with:\n- \"response\": your complete composed solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"skills_composed\": list of skill names/types used\n- \"anti_patterns_avoided\": list of anti-patterns avoided\n- \"composition_strategy\": how you combined multiple skills\n- \"used_recalled_skill\": true or false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on composition"
-    },
-    "brain_learn": {
-      "response": "Learned skill: via Filtering (general)",
-      "confidence": "0.69",
-      "internal_reasoning": "Abstracted 8 steps into transferable skill 'via Filtering (general)'",
-      "skill_id": "89b9b136-ca3f-490f-ae0a-5ebc9c1b7674",
-      "skill_name": "via Filtering (general)",
-      "skill_steps": [
-        "select [target]",
-        "train [target]",
-        "build [target]",
-        "run [target]",
-        "link [target]",
-        "select [target]",
-        "derive [target]",
-        "audit [target]"
-      ],
-      "skill_tags": [
-        "filtering",
-        "1\ufe0f\u20e3 **Select 12 core paths** \u2013 Pick the four highest\u2011impact roles (Admin, Manager, Analyst, Support) and pair each with the two most critical modules (User Management & Data Integration). That gives 8",
-        "general"
-      ]
-    },
-    "brain_feedback": {
-      "response": "No skill_id provided for feedback.",
-      "confidence": "0.0",
-      "internal_reasoning": "Feedback requires a skill_id from a previous recall."
-    },
-    "task_result": {
       "response": {
-        "solution_overview": "Reduce onboarding time\u2011to\u2011value from 2 weeks to 3 days by delivering 12 high\u2011impact, role\u2011based tutorials, using a modular library for the remaining 20 paths, and adapting personalization without behavioral tracking. Accessibility and SEO are enforced on all content; comprehensive error coverage is achieved through risk\u2011based testing of external integrations.",
-        "steps": [
+        "domain": "user_onboarding",
+        "task": "Redesign enterprise onboarding to cut time-to-value from 2 weeks to 3 days while meeting adaptive, role\u2011based tutorials, accessibility/SEO publishing, and comprehensive testing.",
+        "analysis": [
           {
-            "step_id": 1,
-            "title": "Select Core Tutorial Paths",
-            "details": [
-              "Identify the four highest\u2011impact roles: Admin, Manager, Analyst, Support.",
-              "Pair each with the two most critical modules (User Management & Data Integration) \u2192 8 paths.",
-              "Add Developer & Auditor for User Management and Trainer & Ops for Data Integration to reach 12 paths."
+            "challenge": "Behavioral tracking blocked for 25% of customers",
+            "solution": "Implement a dual\u2011mode personalization engine: (1) Data\u2011free mode uses static role & contract metadata plus optional opt\u2011in prompts; (2) Tracking mode enriches with behavioral signals. The engine selects the appropriate mode per customer profile and caches decisions to avoid repeated checks."
+          },
+          {
+            "challenge": "Accessibility anti\u2011pattern in published content",
+            "solution": "Adopt a lightweight automated accessibility audit pipeline (axe, Lighthouse) that runs on every new tutorial before publishing. For the 2 customers with strict contracts, add manual WCAG 2.1 AA review and sign\u2011off. Publish only after passing both automated and manual checks."
+          },
+          {
+            "challenge": "Limited content capacity: 12 tutorials vs 32 required paths",
+            "solution": "Prioritize by impact using a weighted matrix (role churn risk, module criticality, integration complexity). Selected 12 paths:",
+            "selected_paths": [
+              "Admin \u2013 Core Dashboard",
+              "Admin \u2013 User Management",
+              "Sales Rep \u2013 Lead Capture",
+              "Sales Rep \u2013 Deal Pipeline",
+              "Marketing \u2013 Campaign Setup",
+              "Marketing \u2013 Analytics Overview",
+              "Finance \u2013 Billing Integration",
+              "Finance \u2013 Expense Reporting",
+              "Support \u2013 Ticket Creation",
+              "Support \u2013 Knowledge Base Search",
+              "IT \u2013 SSO Configuration",
+              "IT \u2013 Data Migration Tool"
+            ],
+            "gap_handling": [
+              "Create a generic fallback tutorial that covers the remaining 20 paths using modular, role\u2011agnostic content blocks.",
+              "Implement conditional branching within tutorials to skip or merge steps for roles not covered in the 12 primary paths.",
+              "Schedule incremental content releases (post\u2011launch updates) to add missing paths as resources allow."
             ]
           },
           {
-            "step_id": 2,
-            "title": "Build Modular Tutorial Library",
-            "details": [
-              "Create reusable content cards (video, doc, interactive demo) for each module.",
-              "Implement a lightweight rule engine that stitches modules based on role, integration status, and org size.",
-              "Use the engine to generate any of the 32 paths on demand, covering the remaining 20 gaps without writing separate tutorials."
-            ]
-          },
-          {
-            "step_id": 3,
-            "title": "Adaptation Without Behavioral Tracking",
-            "details": [
-              "Collect only deterministic inputs: selected role, chosen integrations, org size, and session\u2011level state stored in browser localStorage.",
-              "If a DPA forbids tracking, default to the static role\u2011based path; otherwise offer micro\u2011learning suggestions derived from progress within the same session.",
-              "No cross\u2011session analytics or external data collection is used."
-            ]
-          },
-          {
-            "step_id": 4,
-            "title": "Accessibility & SEO Compliance",
-            "details": [
-              "Run axe and Lighthouse audits on all 12 core tutorials; fix WCAG\u202f2.1 AA issues (semantic HTML, ARIA labels, captions, keyboard navigation, alt text).",
-              "Embed keyword\u2011rich meta tags, structured data (JSON\u2011LD), and descriptive URLs for SEO.",
-              "Create an accessibility review checklist to be run before any future content publication."
-            ]
-          },
-          {
-            "step_id": 5,
-            "title": "Testing Strategy for External Integrations",
-            "details": [
-              "Define four failure modes per integration (auth error, timeout, data mismatch, permission denied) \u2192 12 error paths.",
-              "Automate UI tests with Playwright/Cypress to simulate each failure and verify graceful fallbacks.",
-              "Add unit tests for the rule engine and dynamic assembly logic."
-            ]
-          },
-          {
-            "step_id": 6,
-            "title": "Timeline & Delivery",
-            "details": [
-              "Week\u202f1: finalize role\u2011module mapping, build modular library, audit a11y/SEO.",
-              "Week\u202f2: develop rule engine & wizard, produce 12 core tutorials.",
-              "Week\u202f3: implement automated tests, run integration failure simulations, iterate.",
-              "Deploy ready for activation within 3 days of onboarding."
+            "challenge": "Poorly documented failure modes for three external integrations",
+            "solution": "Perform a rapid risk assessment: map each integration\u2019s critical failure points, create mock failure scenarios, and write dedicated error\u2011path tutorials. Include:",
+            "error_tutorials": [
+              "SSO Provider \u2013 Authentication Failure",
+              "CRM Sync \u2013 Data Inconsistency",
+              "Data Migration Tool \u2013 Timeout/Partial Import"
+            ],
+            "testing_strategy": [
+              "Automated integration tests with stubs/mocks for each failure mode.",
+              "End\u2011to\u2011end smoke tests covering the 12 primary paths plus the three error tutorials.",
+              "Regression suite updated to include new error scenarios."
             ]
           }
         ],
-        "expected_outcomes": [
-          "Time\u2011to\u2011value reduced to 3 days.",
-          "No behavioral tracking for DPA\u2011restricted customers.",
-          "Accessibility requirements met for all contracts.",
-          "Churn from generic tutorials cut by offering role\u2011specific paths.",
-          "Comprehensive error coverage for SSO, CRM sync, and data migration tools."
-        ]
+        "overall_plan": {
+          "timeline": "3 days",
+          "deliverables": [
+            "12 role\u2011based tutorials with accessibility compliance",
+            "Automated audit pipeline",
+            "Dual\u2011mode personalization engine",
+            "Error\u2011path tutorials and test suites"
+          ],
+          "metrics": [
+            "Time\u2011to\u2011value < 72 hours for all customers",
+            "Accessibility score \u2265 95%",
+            "Churn reduction target: \u2264 10%"
+          ]
+        }
       },
-      "confidence": "0.95",
-      "internal_reasoning": "Analyzed constraints: need 12 tutorials, handle 20 gaps, avoid tracking, meet accessibility, cover errors. Applied modular design to satisfy all while keeping timeline realistic. Confidence high due to alignment with best practices and clear step\u2011by\u2011step plan.",
+      "confidence": "0.97",
+      "internal_reasoning": "I dissected each constraint, mapped it to relevant anti\u2011patterns and procedural recipes, then constructed a prioritized path selection matrix and mitigation steps that satisfy all requirements while staying within the content capacity.",
       "_metrics": {
-        "tokens": 2069,
-        "prompt_tokens": 1231,
-        "completion_tokens": 838,
-        "latency_ms": 6966.55,
-        "cost_usd": 0.000438,
+        "tokens": 1442,
+        "prompt_tokens": 682,
+        "completion_tokens": 760,
+        "latency_ms": 6163.34,
+        "cost_usd": 0.00038,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'user_onboarding', 'task': \"Redesign enterprise user onboarding to reduce time-to-value from 2 weeks to 3 days. The onboarding recipe demands adaptive, role-based tutorials. The content publishing recipe demands accessibility and SEO. The testing strategy recipe demands comprehensive coverage. However: (1) the adaptive tutorial system collects user behavioral data to personalize the experience, but 25% of enterprise customers have DPAs prohibiting behavioral tracking of their employees \u2014 the personalization system must work WITHOUT tracking for these customers, (2) the content team published onboarding materials without accessibility review (publish_without_a11y anti-pattern), and 2 enterprise customers have accessibility requirements in their procurement contracts, (3) the previous 'one-size-fits-all tutorial' approach (generic_tutorial anti-pattern) caused 60% enterprise churn \u2014 but the proposed role-based system has 8 roles \u00d7 4 product modules = 32 tutorial paths, and the content team can only produce 12 tutorials by the deadline, (4) the testing recipe says 'cover error paths' but the onboarding flow involves 3 external integrations (SSO provider, CRM sync, data migration tool) whose failure modes during first-time-setup are poorly documented. Which 12 of 32 paths do you build, how do you handle the 20 gaps, and how do you handle adaptation without behavioral tracking?\"}\n\nCOMPOSED SOLUTION:\n1\ufe0f\u20e3 **Select 12 core paths** \u2013 Pick the four highest\u2011impact roles (Admin, Manager, Analyst, Support) and pair each with the two most critical modules (User Management & Data Integration). That gives 8 paths. Add Developer & Auditor for User Management and Trainer & Ops for Data Integration to reach 12.\n\n2\ufe0f\u20e3 **Close the remaining 20 gaps** \u2013 Build a *modular tutorial library* of reusable cards, videos, and docs. A lightweight rule engine stitches these modules at runtime based on role, integration status, and company size, creating any of the 32 paths without writing each one from scratch. For unbuilt paths provide a concise \u201cquick\u2011start\u201d guide linking to relevant modules.\n\n3\ufe0f\u20e3 **Adaptation without behavioral tracking** \u2013 Use deterministic inputs: selected role, chosen integrations, org size, and local session state (browser storage). If DPAs forbid tracking, default to the role\u2011based path; otherwise enrich with micro\u2011learning suggestions derived from observed progress within the same session. No cross\u2011session or external analytics are used.\n\n4\ufe0f\u20e3 **Accessibility & SEO** \u2013 Run an a11y audit on the 12 core tutorials (axe, Lighthouse). Ensure WCAG\u202f2.1\u202fAA compliance: semantic HTML, ARIA labels, captions, keyboard navigation, and alt text. For SEO, embed keyword\u2011rich meta tags, structured data (JSON\u2011LD), and descriptive URLs.\n\n5\ufe0f\u20e3 **Testing strategy** \u2013 Create a risk\u2011based matrix for the three external integrations. Define four failure modes per integration (auth error, timeout, data mismatch, permission denied) \u2192 12 error paths. Automate UI tests with Playwright/Cypress to simulate each failure and verify graceful fallbacks. Add unit tests for the rule engine and dynamic assembly logic.\n\n6\ufe0f\u20e3 **Timeline** \u2013 Week\u202f1: finalize role\u2011module mapping, build modular library, audit a11y/SEO. Week\u202f2: develop rule engine & wizard, produce 12 core tutorials. Week\u202f3: implement automated tests, run integration failure simulations, iterate. Deliverable ready for deployment within 3 days of activation.\n\nThis plan reduces time\u2011to\u2011value to 3 days, respects DPAs and accessibility contracts, mitigates churn from generic tutorials, and ensures comprehensive error coverage.\n\nCOMPOSITION STRATEGY:\nN/A\n\nBRAIN METRICS:\nSkills composed: []\nAnti-patterns avoided: []\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": list of skills that contributed\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"recalled_skill\": primary skill or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+      "formatted_prompt": "You are an expert analyst. Analyze this complex task step by step.\n\nDOMAIN: user_onboarding\nTASK: Redesign enterprise user onboarding to reduce time-to-value from 2 weeks to 3 days. The onboarding recipe demands adaptive, role-based tutorials. The content publishing recipe demands accessibility and SEO. The testing strategy recipe demands comprehensive coverage. However: (1) the adaptive tutorial system collects user behavioral data to personalize the experience, but 25% of enterprise customers have DPAs prohibiting behavioral tracking of their employees \u2014 the personalization system must work WITHOUT tracking for these customers, (2) the content team published onboarding materials without accessibility review (publish_without_a11y anti-pattern), and 2 enterprise customers have accessibility requirements in their procurement contracts, (3) the previous 'one-size-fits-all tutorial' approach (generic_tutorial anti-pattern) caused 60% enterprise churn \u2014 but the proposed role-based system has 8 roles \u00d7 4 product modules = 32 tutorial paths, and the content team can only produce 12 tutorials by the deadline, (4) the testing recipe says 'cover error paths' but the onboarding flow involves 3 external integrations (SSO provider, CRM sync, data migration tool) whose failure modes during first-time-setup are poorly documented. Which 12 of 32 paths do you build, how do you handle the 20 gaps, and how do you handle adaptation without behavioral tracking?\n\nThis task may require combining multiple patterns: procedural recipes,\nanti-pattern avoidance, and path selection. Think holistically.\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete multi-faceted analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"required_capabilities\": list of skill types needed\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": approach explanation",
+      "trace_id": "4e358fb1-6fbb-41c7-a5c5-489771ea637a",
+      "execution_time_ms": 6164.333820343018
+    },
+    "brain_recall": {
+      "response": "Found applicable skill: 'procedural:general:evaluation-validation' (score: 0.64). Steps: validate [target] \u2192 draft [target] \u2192 check [target] \u2192 check [target] \u2192 convert [target] \u2192 check [target] \u2192 schedule [target] \u2192 track [target]",
+      "confidence": "0.637685941461195",
+      "internal_reasoning": "Skill 'procedural:general:evaluation-validation'. has moderate semantic overlap. has been transferred 4 times (100% success).",
+      "skill_id": "5bacf144-4092-4344-ba46-40462f8520d7",
+      "skill_name": "procedural:general:evaluation-validation",
+      "skill_steps": [
+        "validate [target]",
+        "draft [target]",
+        "check [target]",
+        "check [target]",
+        "convert [target]",
+        "check [target]",
+        "schedule [target]",
+        "track [target]"
+      ],
+      "skill_tags": [
+        "generation",
+        "validation",
+        "evaluation",
+        "general",
+        "1\ufe0f\u20e3 **Ideation & Validation** \u2013 Generate topic, validate against audience and SEO signals.\n2\ufe0f\u20e3 **Authoring** \u2013 Writer drafts with style guide; assets tagged in DAM.\n3\ufe0f\u20e3 **Automated QA** \u2013 Run grammar,"
+      ],
+      "combined_score": 0.637685941461195,
+      "structural_score": 0.3,
+      "semantic_score": 0.66747085750103,
+      "adaptations": {
+        "remove_structures": [
+          "validation"
+        ],
+        "complexity": "Target is simpler \u2014 some steps may be unnecessary"
+      },
+      "all_candidates": [
+        {
+          "skill_name": "procedural:general:evaluation-validation",
+          "score": 0.637685941461195,
+          "reasoning": "Skill 'procedural:general:evaluation-validation'. has moderate semantic overlap. has been transferred 4 times (100% success)."
+        },
+        {
+          "skill_name": "procedural:general:abstraction",
+          "score": 0.6061581813716888,
+          "reasoning": "Skill 'procedural:general:abstraction'. has moderate semantic overlap. has been transferred 2 times (100% success)."
+        },
+        {
+          "skill_name": "recipe:devops:sequential-code_linter+test_runner+security_scanner",
+          "score": 0.5616385546858386,
+          "reasoning": "Skill 'recipe:devops:sequential-code_linter+test_runner+security_scanner'. has moderate semantic overlap. has been transferred 11 times (100% success)."
+        }
+      ],
+      "trace_id": "3334225f-5bf3-45ed-9ec0-b53bd11129df",
+      "execution_time_ms": 34.004926681518555
+    },
+    "task_applier": {
+      "response": {
+        "overview": "A three\u2011day sprint to deliver a role\u2011based, accessible, SEO\u2011friendly onboarding experience that works for both tracking\u2011enabled and tracking\u2011blocked customers while covering critical error paths.",
+        "components": [
+          {
+            "name": "Dual\u2011Mode Personalization Engine",
+            "description": "Detects DPA status at account creation. If tracking is allowed, the engine uses behavioral signals; otherwise it falls back to static role/contract data and optional opt\u2011in prompts.",
+            "implementation": {
+              "tech_stack": [
+                "Node.js",
+                "Redis cache",
+                "Feature flag service"
+              ],
+              "tests": [
+                "Unit tests for mode selection",
+                "Integration test with mock analytics"
+              ]
+            }
+          },
+          {
+            "name": "Accessibility & SEO Pipeline",
+            "description": "Automated audit (axe, Lighthouse) runs on every tutorial before publish. For the two customers with strict contracts, a manual WCAG 2.1 AA review is required.",
+            "implementation": {
+              "ci_cd": [
+                "GitHub Actions",
+                "SonarQube"
+              ],
+              "outputs": [
+                "Accessibility score report",
+                "SEO keyword density check"
+              ]
+            }
+          },
+          {
+            "name": "12 Core Tutorial Paths",
+            "description": "Selected via weighted impact matrix (role churn risk, module criticality, integration complexity).",
+            "paths": [
+              "Admin \u2013 Core Dashboard",
+              "Admin \u2013 User Management",
+              "Sales Rep \u2013 Lead Capture",
+              "Sales Rep \u2013 Deal Pipeline",
+              "Marketing \u2013 Campaign Setup",
+              "Marketing \u2013 Analytics Overview",
+              "Finance \u2013 Billing Integration",
+              "Finance \u2013 Expense Reporting",
+              "Support \u2013 Ticket Creation",
+              "Support \u2013 Knowledge Base Search",
+              "IT \u2013 SSO Configuration",
+              "IT \u2013 Data Migration Tool"
+            ],
+            "fallback": "Modular role\u2011agnostic tutorial that stitches missing steps via conditional branching."
+          },
+          {
+            "name": "Error\u2011Path Tutorials & Tests",
+            "description": "Three dedicated tutorials for SSO failure, CRM sync inconsistency, and data migration timeout. Each includes mock failure scenarios.",
+            "tests": [
+              "Automated integration tests with stubs for each provider",
+              "End\u2011to\u2011end smoke test covering all 12 core paths + error tutorials",
+              "Regression suite updated to include new error scenarios"
+            ]
+          }
+        ],
+        "timeline": {
+          "Day1": [
+            "Set up dual\u2011mode engine & audit pipeline",
+            "Define impact matrix and finalize 12 paths"
+          ],
+          "Day2": [
+            "Build tutorials, run automated accessibility/SEO checks",
+            "Create fallback tutorial structure"
+          ],
+          "Day3": [
+            "Write error\u2011path tutorials, execute test suites",
+            "Deploy to staging, gather feedback"
+          ]
+        },
+        "metrics": {
+          "time_to_value": "<72 hours for all customers",
+          "accessibility_score": "\u226595%",
+          "churn_reduction_target": "\u226410%"
+        }
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "Combined procedural evaluation, abstraction, and devops recipe skills to design a clear sprint plan that addresses all constraints: dual\u2011mode personalization for DPAs, accessibility pipeline to avoid publish_without_a11y anti\u2011pattern, selective path creation to mitigate generic_tutorial churn risk, and comprehensive error testing for undocumented integrations.",
+      "_metrics": {
+        "tokens": 2394,
+        "prompt_tokens": 1688,
+        "completion_tokens": 706,
+        "latency_ms": 5948.51,
+        "cost_usd": 0.000374,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a complex task that requires COMPOSING multiple skills.\n\nDOMAIN: general\nTASK: {'domain': 'user_onboarding', 'task': \"Redesign enterprise user onboarding to reduce time-to-value from 2 weeks to 3 days. The onboarding recipe demands adaptive, role-based tutorials. The content publishing recipe demands accessibility and SEO. The testing strategy recipe demands comprehensive coverage. However: (1) the adaptive tutorial system collects user behavioral data to personalize the experience, but 25% of enterprise customers have DPAs prohibiting behavioral tracking of their employees \u2014 the personalization system must work WITHOUT tracking for these customers, (2) the content team published onboarding materials without accessibility review (publish_without_a11y anti-pattern), and 2 enterprise customers have accessibility requirements in their procurement contracts, (3) the previous 'one-size-fits-all tutorial' approach (generic_tutorial anti-pattern) caused 60% enterprise churn \u2014 but the proposed role-based system has 8 roles \u00d7 4 product modules = 32 tutorial paths, and the content team can only produce 12 tutorials by the deadline, (4) the testing recipe says 'cover error paths' but the onboarding flow involves 3 external integrations (SSO provider, CRM sync, data migration tool) whose failure modes during first-time-setup are poorly documented. Which 12 of 32 paths do you build, how do you handle the 20 gaps, and how do you handle adaptation without behavioral tracking?\"}\n\nYOUR ANALYSIS:\n{'domain': 'user_onboarding', 'task': 'Redesign enterprise onboarding to cut time-to-value from 2 weeks to 3 days while meeting adaptive, role\u2011based tutorials, accessibility/SEO publishing, and comprehensive testing.', 'analysis': [{'challenge': 'Behavioral tracking blocked for 25% of customers', 'solution': 'Implement a dual\u2011mode personalization engine: (1) Data\u2011free mode uses static role & contract metadata plus optional opt\u2011in prompts; (2) Tracking mode enriches with behavioral signals. The engine selects the appropriate mode per customer profile and caches decisions to avoid repeated checks.'}, {'challenge': 'Accessibility anti\u2011pattern in published content', 'solution': 'Adopt a lightweight automated accessibility audit pipeline (axe, Lighthouse) that runs on every new tutorial before publishing. For the 2 customers with strict contracts, add manual WCAG 2.1 AA review and sign\u2011off. Publish only after passing both automated and manual checks.'}, {'challenge': 'Limited content capacity: 12 tutorials vs 32 required paths', 'solution': 'Prioritize by impact using a weighted matrix (role churn risk, module criticality, integration complexity). Selected 12 paths:', 'selected_paths': ['Admin \u2013 Core Dashboard', 'Admin \u2013 User Management', 'Sales Rep \u2013 Lead Capture', 'Sales Rep \u2013 Deal Pipeline', 'Marketing \u2013 Campaign Setup', 'Marketing \u2013 Analytics Overview', 'Finance \u2013 Billing Integration', 'Finance \u2013 Expense Reporting', 'Support \u2013 Ticket Creation', 'Support \u2013 Knowledge Base Search', 'IT \u2013 SSO Configuration', 'IT \u2013 Data Migration Tool'], 'gap_handling': ['Create a generic fallback tutorial that covers the remaining 20 paths using modular, role\u2011agnostic content blocks.', 'Implement conditional branching within tutorials to skip or merge steps for roles not covered in the 12 primary paths.', 'Schedule incremental content releases (post\u2011launch updates) to add missing paths as resources allow.']}, {'challenge': 'Poorly documented failure modes for three external integrations', 'solution': 'Perform a rapid risk assessment: map each integration\u2019s critical failure points, create mock failure scenarios, and write dedicated error\u2011path tutorials. Include:', 'error_tutorials': ['SSO Provider \u2013 Authentication Failure', 'CRM Sync \u2013 Data Inconsistency', 'Data Migration Tool \u2013 Timeout/Partial Import'], 'testing_strategy': ['Automated integration tests with stubs/mocks for each failure mode.', 'End\u2011to\u2011end smoke tests covering the 12 primary paths plus the three error tutorials.', 'Regression suite updated to include new error scenarios.']}], 'overall_plan': {'timeline': '3 days', 'deliverables': ['12 role\u2011based tutorials with accessibility compliance', 'Automated audit pipeline', 'Dual\u2011mode personalization engine', 'Error\u2011path tutorials and test suites'], 'metrics': ['Time\u2011to\u2011value < 72 hours for all customers', 'Accessibility score \u2265 95%', 'Churn reduction target: \u2264 10%']}}\n\nBRAIN RECALLED KNOWLEDGE:\nSkill name: procedural:general:evaluation-validation\nSkill type: unknown\nAbstract steps: ['validate [target]', 'draft [target]', 'check [target]', 'check [target]', 'convert [target]', 'check [target]', 'schedule [target]', 'track [target]']\nTransfer score: 0.637685941461195\nAdaptations: {'remove_structures': ['validation'], 'complexity': 'Target is simpler \u2014 some steps may be unnecessary'}\nAll candidates: [{'skill_name': 'procedural:general:evaluation-validation', 'score': 0.637685941461195, 'reasoning': \"Skill 'procedural:general:evaluation-validation'. has moderate semantic overlap. has been transferred 4 times (100% success).\"}, {'skill_name': 'procedural:general:abstraction', 'score': 0.6061581813716888, 'reasoning': \"Skill 'procedural:general:abstraction'. has moderate semantic overlap. has been transferred 2 times (100% success).\"}, {'skill_name': 'recipe:devops:sequential-code_linter+test_runner+security_scanner', 'score': 0.5616385546858386, 'reasoning': \"Skill 'recipe:devops:sequential-code_linter+test_runner+security_scanner'. has moderate semantic overlap. has been transferred 11 times (100% success).\"}]\n\nINSTRUCTIONS:\n- Compose insights from ALL recalled skills into a unified solution.\n- Use recipe patterns for structuring your approach.\n- Use anti-pattern knowledge to AVOID known failure modes.\n- Use path knowledge to select the optimal execution sequence.\n- Clearly note which skills contributed and how you composed them.\n\nReturn JSON with:\n- \"response\": your complete composed solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"skills_composed\": list of skill names/types used\n- \"anti_patterns_avoided\": list of anti-patterns avoided\n- \"composition_strategy\": how you combined multiple skills\n- \"used_recalled_skill\": true or false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on composition",
+      "trace_id": "366fcb51-ee3a-43cb-a44e-83e5ff544cca",
+      "execution_time_ms": 5949.5038986206055
+    },
+    "brain_learn": {
+      "response": "Learned skill: (general)",
+      "confidence": "0.69",
+      "internal_reasoning": "Abstracted 4 steps into transferable skill '(general)'",
+      "skill_id": "9157a6a5-c720-4404-b059-945095913fdd",
+      "skill_name": "(general)",
+      "skill_steps": [
+        "track [target]",
+        "run [target]",
+        "check [target]",
+        "check [target]"
+      ],
+      "skill_tags": [
+        "general",
+        "{'overview': 'A three\u2011day sprint to deliver a role\u2011based, accessible, SEO\u2011friendly onboarding experience that works for both tracking\u2011enabled and tracking\u2011blocked customers while covering critical err"
+      ],
+      "trace_id": "e93f6f52-c050-4363-8bef-c01a136c1888",
+      "execution_time_ms": 15.506982803344727
+    },
+    "brain_feedback": {
+      "response": "Recorded successful transfer for skill 'procedural:general:evaluation-validation'.",
+      "confidence": "0.7835154382109374",
+      "internal_reasoning": "Transfer feedback recorded. Skill now has 5 transfer(s).",
+      "skill_id": "5bacf144-4092-4344-ba46-40462f8520d7",
+      "skill_name": "procedural:general:evaluation-validation",
+      "transfer_count": 5,
+      "transfer_success": true,
+      "trace_id": "2442b88e-4053-453b-8ef4-9d24374ed084",
+      "execution_time_ms": 5.506277084350586
+    },
+    "task_result": {
+      "response": "1\ufe0f\u20e3 **Dual\u2011Mode Personalization Engine** \u2013 Detect DPA status at account creation. If tracking is allowed, the engine uses behavioral signals; otherwise it falls back to static role/contract data and optional opt\u2011in prompts.\n\n2\ufe0f\u20e3 **Accessibility & SEO Pipeline** \u2013 Automated audit (axe, Lighthouse) runs on every tutorial before publish. For the two customers with strict contracts, a manual WCAG\u202f2.1 AA review is required.\n\n3\ufe0f\u20e3 **12 Core Tutorial Paths** \u2013 Selected via weighted impact matrix (role churn risk, module criticality, integration complexity). The chosen paths:\n   \u2022 Admin \u2013 Core Dashboard\n   \u2022 Admin \u2013 User Management\n   \u2022 Sales Rep \u2013 Lead Capture\n   \u2022 Sales Rep \u2013 Deal Pipeline\n   \u2022 Marketing \u2013 Campaign Setup\n   \u2022 Marketing \u2013 Analytics Overview\n   \u2022 Finance \u2013 Billing Integration\n   \u2022 Finance \u2013 Expense Reporting\n   \u2022 Support \u2013 Ticket Creation\n   \u2022 Support \u2013 Knowledge Base Search\n   \u2022 IT \u2013 SSO Configuration\n   \u2022 IT \u2013 Data Migration Tool\n   A modular, role\u2011agnostic fallback stitches missing steps via conditional branching.\n\n4\ufe0f\u20e3 **Error\u2011Path Tutorials & Tests** \u2013 Three dedicated tutorials for SSO failure, CRM sync inconsistency, and data migration timeout. Each includes mock failure scenarios.\n   \u2022 Automated integration tests with stubs for each provider.\n   \u2022 End\u2011to\u2011end smoke test covering all 12 core paths + error tutorials.\n   \u2022 Regression suite updated to include new error scenarios.\n\n5\ufe0f\u20e3 **Timeline** \u2013 Three\u2011day sprint:\n   \u2022 Day\u202f1: Set up dual\u2011mode engine & audit pipeline, finalize 12 paths.\n   \u2022 Day\u202f2: Build tutorials, run automated accessibility/SEO checks, create fallback structure.\n   \u2022 Day\u202f3: Write error\u2011path tutorials, execute test suites, deploy to staging.\n\n6\ufe0f\u20e3 **Metrics** \u2013 Time\u2011to\u2011value <72\u202fh for all customers; Accessibility score \u226595%; Churn reduction target \u226410%.\n\nThis plan delivers a role\u2011based onboarding experience that respects DPAs, meets accessibility contracts, covers critical error paths, and stays within the 12\u2011tutorial production window.",
+      "confidence": "0.96",
+      "internal_reasoning": "I mapped each constraint to a concrete solution component: dual\u2011mode personalization for DPA compliance, an automated audit pipeline for accessibility/SEO, a weighted selection matrix for choosing 12 paths from 32, and dedicated error tutorials plus comprehensive tests for undocumented failure modes. The plan aligns with the sprint timeline and measurable metrics.",
+      "_metrics": {
+        "tokens": 1881,
+        "prompt_tokens": 1304,
+        "completion_tokens": 577,
+        "latency_ms": 4622.11,
+        "cost_usd": 0.000285,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'user_onboarding', 'task': \"Redesign enterprise user onboarding to reduce time-to-value from 2 weeks to 3 days. The onboarding recipe demands adaptive, role-based tutorials. The content publishing recipe demands accessibility and SEO. The testing strategy recipe demands comprehensive coverage. However: (1) the adaptive tutorial system collects user behavioral data to personalize the experience, but 25% of enterprise customers have DPAs prohibiting behavioral tracking of their employees \u2014 the personalization system must work WITHOUT tracking for these customers, (2) the content team published onboarding materials without accessibility review (publish_without_a11y anti-pattern), and 2 enterprise customers have accessibility requirements in their procurement contracts, (3) the previous 'one-size-fits-all tutorial' approach (generic_tutorial anti-pattern) caused 60% enterprise churn \u2014 but the proposed role-based system has 8 roles \u00d7 4 product modules = 32 tutorial paths, and the content team can only produce 12 tutorials by the deadline, (4) the testing recipe says 'cover error paths' but the onboarding flow involves 3 external integrations (SSO provider, CRM sync, data migration tool) whose failure modes during first-time-setup are poorly documented. Which 12 of 32 paths do you build, how do you handle the 20 gaps, and how do you handle adaptation without behavioral tracking?\"}\n\nCOMPOSED SOLUTION:\n{'overview': 'A three\u2011day sprint to deliver a role\u2011based, accessible, SEO\u2011friendly onboarding experience that works for both tracking\u2011enabled and tracking\u2011blocked customers while covering critical error paths.', 'components': [{'name': 'Dual\u2011Mode Personalization Engine', 'description': 'Detects DPA status at account creation. If tracking is allowed, the engine uses behavioral signals; otherwise it falls back to static role/contract data and optional opt\u2011in prompts.', 'implementation': {'tech_stack': ['Node.js', 'Redis cache', 'Feature flag service'], 'tests': ['Unit tests for mode selection', 'Integration test with mock analytics']}}, {'name': 'Accessibility & SEO Pipeline', 'description': 'Automated audit (axe, Lighthouse) runs on every tutorial before publish. For the two customers with strict contracts, a manual WCAG 2.1 AA review is required.', 'implementation': {'ci_cd': ['GitHub Actions', 'SonarQube'], 'outputs': ['Accessibility score report', 'SEO keyword density check']}}, {'name': '12 Core Tutorial Paths', 'description': 'Selected via weighted impact matrix (role churn risk, module criticality, integration complexity).', 'paths': ['Admin \u2013 Core Dashboard', 'Admin \u2013 User Management', 'Sales Rep \u2013 Lead Capture', 'Sales Rep \u2013 Deal Pipeline', 'Marketing \u2013 Campaign Setup', 'Marketing \u2013 Analytics Overview', 'Finance \u2013 Billing Integration', 'Finance \u2013 Expense Reporting', 'Support \u2013 Ticket Creation', 'Support \u2013 Knowledge Base Search', 'IT \u2013 SSO Configuration', 'IT \u2013 Data Migration Tool'], 'fallback': 'Modular role\u2011agnostic tutorial that stitches missing steps via conditional branching.'}, {'name': 'Error\u2011Path Tutorials & Tests', 'description': 'Three dedicated tutorials for SSO failure, CRM sync inconsistency, and data migration timeout. Each includes mock failure scenarios.', 'tests': ['Automated integration tests with stubs for each provider', 'End\u2011to\u2011end smoke test covering all 12 core paths + error tutorials', 'Regression suite updated to include new error scenarios']}], 'timeline': {'Day1': ['Set up dual\u2011mode engine & audit pipeline', 'Define impact matrix and finalize 12 paths'], 'Day2': ['Build tutorials, run automated accessibility/SEO checks', 'Create fallback tutorial structure'], 'Day3': ['Write error\u2011path tutorials, execute test suites', 'Deploy to staging, gather feedback']}, 'metrics': {'time_to_value': '<72 hours for all customers', 'accessibility_score': '\u226595%', 'churn_reduction_target': '\u226410%'}}\n\nCOMPOSITION STRATEGY:\nN/A\n\nBRAIN METRICS:\nSkills composed: []\nAnti-patterns avoided: []\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": list of skills that contributed\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"used_recalled_skill\": copy the boolean from the prior step (true/false) \u2014 whether recalled knowledge actually guided the solution\n- \"recalled_skill\": primary skill or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection",
+      "trace_id": "19dc3eaa-413f-4b9a-86fb-ace86e6ea17a",
+      "execution_time_ms": 4624.111175537109
     }
   }
 }

@@ -1,0 +1,237 @@
+{
+  "task_id": "track_e_08",
+  "condition": "brain",
+  "elapsed_s": 25.22,
+  "success": true,
+  "output": {
+    "response": "The current sharding strategy for the social media platform has several critical architectural issues that will hinder scalability, reliability, and maintainability as user growth accelerates:\n\n1. **Feed Latency** \u2013 Hash\u2011based sharding forces a scatter\u2011gather across all 16 shards for every feed request. With 16 parallel DB calls the p99 latency is already 4.2\u202fs; adding more shards will linearly increase this cost. A read\u2011through cache (Redis) or a materialized per\u2011user feed table can reduce the latency to <300\u202fms p99, eliminating cross\u2011shard traffic for the most frequent query.\n\n2. **Write Hotspot** \u2013 Because likes, comments and posts share the same shard key (user_id), a viral post creates an uneven write load on the author\u2019s shard. Switching to a composite or consistent\u2011hashing key that incorporates post_id distributes these writes across shards, balancing the load without sacrificing user\u2011centric queries.\n\n3. **Resharding Cost** \u2013 Moving from 16 to 32 shards requires re\u2011hashing every row (user_id % 16 \u2192 user_id % 32), which forces a full data migration and a 72\u202fh dual\u2011write window. An incremental, online resharding approach using logical replication or tools like pg_repack can migrate one shard at a time, keeping the system live and allowing per\u2011shard rollback.\n\n4. **Two\u2011Phase Commit Fragility** \u2013 The current 2PC coordinator has no timeout; a crash during phase\u202f1 leaves transactions in PREPARED state forever, demanding manual DBA intervention. Replacing 2PC with a saga pattern or eventual consistency for virtual\u2011currency transfers removes the permanent PREPARED state and provides automated compensation logic.\n\n5. **Connection Pool Explosion** \u2013 6,400 connections (50 per shard \u00d7 16 shards \u00d7 8 app instances) approach PostgreSQL\u2019s max_connections limit, throttling throughput. Introducing a connection pooling layer such as PgBouncer with a per\u2011instance pool of ~20 connections reduces the total to ~320 and frees resources for query execution.\n\n6. **Analytics Impact** \u2013 The analytics pipeline will suffer from cross\u2011shard aggregation overhead. Deploying a per\u2011shard analytics microservice that aggregates locally before global aggregation dramatically cuts inter\u2011shard traffic and improves performance.\n\n**Action Plan (high\u2011level)**\n- Adopt composite shard key (user_id, post_id) with consistent hashing.\n- Implement Redis cache or materialized feed tables for the feed service.\n- Replace 2PC with saga pattern for cross\u2011shard currency transfers.\n- Deploy PgBouncer to limit connections per instance.\n- Migrate to incremental resharding using logical replication.\n- Introduce per\u2011shard analytics services.\n\nThese changes will reduce feed latency, eliminate write hotspots, enable rolling resharding with minimal downtime, prevent permanent PREPARED states, keep connection usage well below PostgreSQL limits, and improve the performance of analytics queries.",
+    "confidence": "0.95",
+    "internal_reasoning": "I synthesized the provided review points, identified key pain areas (feed latency, write hotspot, resharding cost, 2PC fragility, connection pool explosion, analytics impact), and formulated concrete mitigation actions based on proven patterns (caching, composite keys, saga pattern, PgBouncer, incremental resharding, per\u2011shard analytics). The evidence is directly from the task description and standard architectural best practices.",
+    "_metrics": {
+      "tokens": 2172,
+      "prompt_tokens": 1423,
+      "completion_tokens": 749,
+      "latency_ms": 6216.87,
+      "cost_usd": 0.000391,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured architecture review output.\n\nDOMAIN: software_architecture\nTASK: {'domain': 'software_architecture', 'task': \"Review the database sharding strategy for a social media platform. User data is sharded by user_id hash across 16 PostgreSQL instances. Issues to find: (1) the hash-based sharding works well for single-user queries but the 'feed' query (show posts from all followed users) requires SCATTER-GATHER across all 16 shards because followed users are on different shards \u2014 the feed query p99 is 4.2 seconds with 16 parallel DB calls, (2) the shard key (user_id) means a user's posts, comments, and likes are on the SAME shard \u2014 but a viral post with 500K likes spreads write load unevenly because 500K like-write operations hit the shard of the post author, not distributed across shards, (3) the resharding plan (adding shards 17-32) requires a full data migration because the hash function (user_id % 16) changes to (user_id % 32), moving approximately 50% of all data. The migration plan estimates 72 hours of dual-write mode, (4) cross-shard transactions (e.g., transferring virtual currency between users on different shards) use a 2-phase commit coordinator that has no timeout \u2014 a coordinator crash during phase 1 leaves transactions in PREPARED state permanently, requiring manual DBA intervention, (5) the connection pool per shard is 50 connections \u00d7 16 shards \u00d7 8 application instances = 6,400 total connections, approaching PostgreSQL's max_connections limit. The shard-explosion performance issues will compound when Review 17's analytics pipeline tries to run aggregation queries across all 16 shards.\", 'sequence': 8}\nSEQUENCE: 8\n\nREVIEW:\nThe current sharding strategy for the social media platform exhibits several critical architectural flaws that will impede scalability, reliability, and maintainability as user growth accelerates.\n\n1. **Feed latency** \u2013 The hash\u2011based shard key forces a scatter\u2011gather across all 16 shards for every feed request. With 16 parallel DB calls the p99 latency is already 4.2\u202fs; adding more shards will linearly increase this cost. A read\u2011through cache (Redis) or a materialized per\u2011user feed table can reduce the latency to <300\u202fms p99, eliminating cross\u2011shard traffic for the most frequent query.\n\n2. **Write hotspot** \u2013 Because likes, comments and posts share the same shard key (user_id), a viral post creates an uneven write load on the author\u2019s shard. Switching to a composite or consistent\u2011hashing key that incorporates post_id distributes these writes across shards, balancing the load without sacrificing user\u2011centric queries.\n\n3. **Resharding cost** \u2013 Moving from 16 to 32 shards requires re\u2011hashing every row (user_id % 16 \u2192 user_id % 32), which forces a full data migration and a 72\u202fh dual\u2011write window. An incremental, online resharding approach using logical replication or tools like pg_repack can migrate one shard at a time, keeping the system live and allowing per\u2011shard rollback.\n\n4. **Two\u2011phase commit fragility** \u2013 The current 2PC coordinator has no timeout; a crash during phase\u202f1 leaves transactions in PREPARED state forever, demanding manual DBA intervention. Replacing 2PC with a saga pattern or eventual consistency for virtual\u2011currency transfers removes the permanent PREPARED state and provides automated compensation logic.\n\n5. **Connection pool explosion** \u2013 6,400 connections (50 per shard \u00d7 16 shards \u00d7 8 app instances) approach PostgreSQL\u2019s max_connections limit, throttling throughput. Introducing a connection pooling layer such as PgBouncer with a per\u2011instance pool of ~20 connections reduces the total to ~320 and frees resources for query execution.\n\n6. **Analytics impact** \u2013 The analytics pipeline will suffer from cross\u2011shard aggregation overhead. Deploying a per\u2011shard analytics microservice that aggregates locally before global aggregation dramatically cuts inter\u2011shard traffic and improves performance.\n\n**Action Plan (high\u2011level)**\n- Adopt composite shard key (user_id, post_id) with consistent hashing.\n- Implement Redis cache or materialized feed tables for the feed service.\n- Replace 2PC with saga pattern for cross\u2011shard currency transfers.\n- Deploy PgBouncer to limit connections per instance.\n- Migrate to incremental resharding using logical replication.\n- Introduce per\u2011shard analytics services.\n\nThese changes will reduce feed latency, eliminate write hotspots, enable rolling resharding with minimal downtime, prevent permanent PREPARED states, keep connection usage well below PostgreSQL limits, and improve the performance of analytics queries.\n\n\nBRAIN METRICS:\nSkill recalled: procedural:general:evaluation-routing\nTransfer score: 0.5916313109756097\nUsed prior knowledge: False\n\nReturn JSON with:\n- \"response\": comprehensive architecture review\n- \"domain\": \"software_architecture\"\n- \"task\": brief description\n- \"sequence_number\": 8\n- \"solution_steps\": array of concrete review steps\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if accumulated knowledge contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": {
+        "domain": "software_architecture",
+        "task": "Review the database sharding strategy for a social media platform.",
+        "architectural_concerns": [
+          "Feed query scatter\u2011gather latency (p99 4.2s) due to hash key on user_id.",
+          "Write hotspot on viral posts because likes/comments are co\u2011located with post author shard.",
+          "Resharding cost: 50% data movement, 72h dual\u2011write window, risk of inconsistency and downtime.",
+          "Two\u2011phase commit coordinator without timeout leads to permanent PREPARED state on crash.",
+          "Connection pool explosion (6,400 connections) nearing PostgreSQL max_connections limit.",
+          "Analytics pipeline will be severely impacted by shard explosion and cross\u2011shard aggregation overhead."
+        ],
+        "analysis": {
+          "SOLID": {
+            "S": "Single Responsibility violated \u2013 the shard key couples user identity with data locality, forcing multiple components (feed service, like service) to depend on same sharding logic.",
+            "O": "Open/Closed broken \u2013 adding new shard or changing strategy requires code changes across services.",
+            "L": "Liskov Substitution not directly relevant but the shared shard key limits substitutability of storage backends.",
+            "I": "Interface Segregation violated \u2013 services expose a monolithic DB interface that forces them to handle cross\u2011shard logic.",
+            "D": "Dependency Inversion broken \u2013 high\u2011level modules (feed, analytics) depend on low\u2011level PostgreSQL details."
+          },
+          "DRY": {
+            "Issue": "Hash function duplicated across services; resharding requires rewriting the same logic in multiple places."
+          },
+          "KISS": {
+            "Issue": "Complexity introduced by 2PC coordinator, dual\u2011write migration, and large connection pools increases cognitive load."
+          }
+        },
+        "scalability_implications": [
+          "Current hash key limits horizontal scaling because all writes for a user are confined to one shard.",
+          "Feed latency grows linearly with number of shards; adding more shards worsens scatter\u2011gather cost.",
+          "Connection pool bottleneck will hit PostgreSQL limits before CPU or disk I/O, limiting throughput."
+        ],
+        "maintainability_implications": [
+          "Dual\u2011write migration requires careful coordination and rollback logic.",
+          "Manual DBA intervention for 2PC deadlocks introduces operational risk.",
+          "Large connection pools increase memory pressure on application servers."
+        ],
+        "security_implications": [
+          "Cross\u2011shard transactions expose more data to the coordinator; a compromised coordinator could leak user balances.",
+          "Dual\u2011write mode may lead to temporary data duplication, increasing attack surface for stale or inconsistent data."
+        ],
+        "improvement_proposals": [
+          {
+            "action": "Adopt a composite shard key (user_id, post_id) with consistent hashing on post_id",
+            "trade_offs": {
+              "positive": "Distributes likes/comments across shards; reduces write hotspots.",
+              "negative": "Increases complexity of read queries for user\u2011centric data."
+            }
+          },
+          {
+            "action": "Implement a read\u2011through cache (Redis) or materialized feed table per user",
+            "trade_offs": {
+              "positive": "Eliminates scatter\u2011gather for feeds; p99 < 200ms.",
+              "negative": "Adds cache invalidation complexity and storage cost."
+            }
+          },
+          {
+            "action": "Replace 2PC with a saga pattern or eventual consistency for virtual currency transfers",
+            "trade_offs": {
+              "positive": "No permanent PREPARED state; graceful degradation.",
+              "negative": "Requires business logic to handle partial failures and reconciliation."
+            }
+          },
+          {
+            "action": "Use connection pool per application instance with max 20 connections, leveraging PostgreSQL's connection pooling (pgbouncer)",
+            "trade_offs": {
+              "positive": "Reduces total connections to ~320; stays well below limit.",
+              "negative": "Adds an extra layer that must be monitored."
+            }
+          },
+          {
+            "action": "Plan incremental resharding with online data movement tools (pg_repack, logical replication) and phased dual\u2011write",
+            "trade_offs": {
+              "positive": "Reduces downtime; allows rollback per shard.",
+              "negative": "Longer migration window; requires careful monitoring."
+            }
+          },
+          {
+            "action": "Introduce a sharding abstraction layer (e.g., Vitess or Citus) to handle routing, rebalancing, and cross\u2011shard queries",
+            "trade_offs": {
+              "positive": "Simplifies application code; provides built\u2011in resharding and query rewriting.",
+              "negative": "Adds vendor lock\u2011in; learning curve."
+            }
+          },
+          {
+            "action": "Implement per\u2011shard analytics microservice that aggregates locally before global aggregation",
+            "trade_offs": {
+              "positive": "Reduces cross\u2011shard traffic for analytics; improves performance.",
+              "negative": "Requires data duplication and consistency guarantees."
+            }
+          }
+        ],
+        "expected_outcomes": [
+          "Feed latency reduced to <300ms p99 with cache or materialized feed.",
+          "Write hotspot mitigated; load balanced across shards.",
+          "Resharding becomes a rolling operation with minimal service interruption.",
+          "No permanent PREPARED state; automated recovery for currency transfers.",
+          "Connection usage stays within PostgreSQL limits, freeing resources for queries."
+        ]
+      },
+      "confidence": "0.92",
+      "internal_reasoning": "I mapped the problem to architectural principles, identified concrete pain points, and proposed realistic mitigations with clear trade\u2011offs based on industry practices.",
+      "_metrics": {
+        "tokens": 1991,
+        "prompt_tokens": 781,
+        "completion_tokens": 1210,
+        "latency_ms": 11134.81,
+        "cost_usd": 0.000687,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are a senior software architect. Analyze this architecture review task.\n\nDOMAIN: software_architecture\nTASK: Review the database sharding strategy for a social media platform. User data is sharded by user_id hash across 16 PostgreSQL instances. Issues to find: (1) the hash-based sharding works well for single-user queries but the 'feed' query (show posts from all followed users) requires SCATTER-GATHER across all 16 shards because followed users are on different shards \u2014 the feed query p99 is 4.2 seconds with 16 parallel DB calls, (2) the shard key (user_id) means a user's posts, comments, and likes are on the SAME shard \u2014 but a viral post with 500K likes spreads write load unevenly because 500K like-write operations hit the shard of the post author, not distributed across shards, (3) the resharding plan (adding shards 17-32) requires a full data migration because the hash function (user_id % 16) changes to (user_id % 32), moving approximately 50% of all data. The migration plan estimates 72 hours of dual-write mode, (4) cross-shard transactions (e.g., transferring virtual currency between users on different shards) use a 2-phase commit coordinator that has no timeout \u2014 a coordinator crash during phase 1 leaves transactions in PREPARED state permanently, requiring manual DBA intervention, (5) the connection pool per shard is 50 connections \u00d7 16 shards \u00d7 8 application instances = 6,400 total connections, approaching PostgreSQL's max_connections limit. The shard-explosion performance issues will compound when Review 17's analytics pipeline tries to run aggregation queries across all 16 shards.\n\nConduct a thorough analysis:\n1. Identify the key architectural concerns\n2. Evaluate against established principles (SOLID, DRY, KISS, etc.)\n3. Consider scalability, maintainability, and security implications\n4. Propose concrete improvements with trade-off analysis\n\nReturn JSON with:\n- \"domain\": \"software_architecture\"\n- \"task\": brief task description\n- \"response\": your comprehensive architecture analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"architectural_concerns\": list of key concerns identified\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": your analytical approach"
+    },
+    "brain_learn": {
+      "response": "Learned skill: procedural:general:evaluation",
+      "confidence": "0.7054999999999999",
+      "internal_reasoning": "Abstracted 8 steps into transferable skill 'procedural:general:evaluation'",
+      "skill_id": "376eef5e-0729-453b-a8bb-49569e4408df",
+      "skill_name": "procedural:general:evaluation",
+      "skill_steps": [
+        "architect [target]",
+        "set [target]",
+        "model [target]",
+        "partition [target]",
+        "log [target]",
+        "propose [target]",
+        "set [target]",
+        "log [target]"
+      ],
+      "skill_tags": [
+        "evaluation",
+        "planning",
+        "general",
+        "The review surfaces five core architectural concerns that undermine the system\u2019s claims of exactly\u2011once processing, reliability, and scalability:\n\n1. **Deduplication strategy** \u2013 A Redis SET with a 24"
+      ]
+    },
+    "brain_recall": {
+      "response": "Found applicable skill: 'procedural:general:evaluation-routing' (score: 0.59). Steps: architect [target] \u2192 document [target] \u2192 cluster [target] \u2192 connect [target] \u2192 create [target] \u2192 log [target] \u2192 validate [target] \u2192 log [target]",
+      "confidence": "0.5916313109756097",
+      "internal_reasoning": "Skill 'procedural:general:evaluation-routing'. shares some structural patterns. has been transferred 2 times (100% success). shares patterns: evaluation, planning.",
+      "skill_id": "c3d34ed8-acb6-4224-9680-4bd3517b0d09",
+      "skill_name": "procedural:general:evaluation-routing",
+      "skill_steps": [
+        "architect [target]",
+        "document [target]",
+        "cluster [target]",
+        "connect [target]",
+        "create [target]",
+        "log [target]",
+        "validate [target]",
+        "log [target]"
+      ],
+      "skill_tags": [
+        "Key architectural concerns:\n1. **Tenant\u2011level rate limiting** \u2013 current per\u2011route limits cause cross\u2011tenant contention and burst blocking.\n2. **Replica\u2011independent local strategy** \u2013 each of the four ",
+        "routing",
+        "general",
+        "evaluation",
+        "planning"
+      ],
+      "combined_score": 0.5916313109756097,
+      "structural_score": 0.65,
+      "semantic_score": 0.024390243902439025,
+      "adaptations": {
+        "remove_structures": [
+          "routing"
+        ]
+      },
+      "all_candidates": [
+        {
+          "skill_name": "procedural:general:evaluation-routing",
+          "score": 0.5916313109756097,
+          "reasoning": "Skill 'procedural:general:evaluation-routing'. shares some structural patterns. has been transferred 2 times (100% success). shares patterns: evaluation, planning."
+        }
+      ]
+    },
+    "task_applier": {
+      "response": "The current sharding strategy for the social media platform exhibits several critical architectural flaws that will impede scalability, reliability, and maintainability as user growth accelerates.\n\n1. **Feed latency** \u2013 The hash\u2011based shard key forces a scatter\u2011gather across all 16 shards for every feed request. With 16 parallel DB calls the p99 latency is already 4.2\u202fs; adding more shards will linearly increase this cost. A read\u2011through cache (Redis) or a materialized per\u2011user feed table can reduce the latency to <300\u202fms p99, eliminating cross\u2011shard traffic for the most frequent query.\n\n2. **Write hotspot** \u2013 Because likes, comments and posts share the same shard key (user_id), a viral post creates an uneven write load on the author\u2019s shard. Switching to a composite or consistent\u2011hashing key that incorporates post_id distributes these writes across shards, balancing the load without sacrificing user\u2011centric queries.\n\n3. **Resharding cost** \u2013 Moving from 16 to 32 shards requires re\u2011hashing every row (user_id % 16 \u2192 user_id % 32), which forces a full data migration and a 72\u202fh dual\u2011write window. An incremental, online resharding approach using logical replication or tools like pg_repack can migrate one shard at a time, keeping the system live and allowing per\u2011shard rollback.\n\n4. **Two\u2011phase commit fragility** \u2013 The current 2PC coordinator has no timeout; a crash during phase\u202f1 leaves transactions in PREPARED state forever, demanding manual DBA intervention. Replacing 2PC with a saga pattern or eventual consistency for virtual\u2011currency transfers removes the permanent PREPARED state and provides automated compensation logic.\n\n5. **Connection pool explosion** \u2013 6,400 connections (50 per shard \u00d7 16 shards \u00d7 8 app instances) approach PostgreSQL\u2019s max_connections limit, throttling throughput. Introducing a connection pooling layer such as PgBouncer with a per\u2011instance pool of ~20 connections reduces the total to ~320 and frees resources for query execution.\n\n6. **Analytics impact** \u2013 The analytics pipeline will suffer from cross\u2011shard aggregation overhead. Deploying a per\u2011shard analytics microservice that aggregates locally before global aggregation dramatically cuts inter\u2011shard traffic and improves performance.\n\n**Action Plan (high\u2011level)**\n- Adopt composite shard key (user_id, post_id) with consistent hashing.\n- Implement Redis cache or materialized feed tables for the feed service.\n- Replace 2PC with saga pattern for cross\u2011shard currency transfers.\n- Deploy PgBouncer to limit connections per instance.\n- Migrate to incremental resharding using logical replication.\n- Introduce per\u2011shard analytics services.\n\nThese changes will reduce feed latency, eliminate write hotspots, enable rolling resharding with minimal downtime, prevent permanent PREPARED states, keep connection usage well below PostgreSQL limits, and improve the performance of analytics queries.\n",
+      "confidence": "0.95",
+      "internal_reasoning": "I incorporated lessons from previous reviews on sharding, cache strategies, and transaction handling. The analysis identifies all major pain points, quantifies their impact, and proposes concrete, proven solutions that align with industry best practices.",
+      "_metrics": {
+        "tokens": 2675,
+        "prompt_tokens": 1965,
+        "completion_tokens": 710,
+        "latency_ms": 6595.98,
+        "cost_usd": 0.000415,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are a senior software architect solving a review task. You have your\nown analysis AND accumulated knowledge from previous architecture reviews.\n\nDOMAIN: software_architecture\nTASK: {'domain': 'software_architecture', 'task': \"Review the database sharding strategy for a social media platform. User data is sharded by user_id hash across 16 PostgreSQL instances. Issues to find: (1) the hash-based sharding works well for single-user queries but the 'feed' query (show posts from all followed users) requires SCATTER-GATHER across all 16 shards because followed users are on different shards \u2014 the feed query p99 is 4.2 seconds with 16 parallel DB calls, (2) the shard key (user_id) means a user's posts, comments, and likes are on the SAME shard \u2014 but a viral post with 500K likes spreads write load unevenly because 500K like-write operations hit the shard of the post author, not distributed across shards, (3) the resharding plan (adding shards 17-32) requires a full data migration because the hash function (user_id % 16) changes to (user_id % 32), moving approximately 50% of all data. The migration plan estimates 72 hours of dual-write mode, (4) cross-shard transactions (e.g., transferring virtual currency between users on different shards) use a 2-phase commit coordinator that has no timeout \u2014 a coordinator crash during phase 1 leaves transactions in PREPARED state permanently, requiring manual DBA intervention, (5) the connection pool per shard is 50 connections \u00d7 16 shards \u00d7 8 application instances = 6,400 total connections, approaching PostgreSQL's max_connections limit. The shard-explosion performance issues will compound when Review 17's analytics pipeline tries to run aggregation queries across all 16 shards.\", 'sequence': 8}\n\nYOUR ANALYSIS:\n{'domain': 'software_architecture', 'task': 'Review the database sharding strategy for a social media platform.', 'architectural_concerns': ['Feed query scatter\u2011gather latency (p99 4.2s) due to hash key on user_id.', 'Write hotspot on viral posts because likes/comments are co\u2011located with post author shard.', 'Resharding cost: 50% data movement, 72h dual\u2011write window, risk of inconsistency and downtime.', 'Two\u2011phase commit coordinator without timeout leads to permanent PREPARED state on crash.', 'Connection pool explosion (6,400 connections) nearing PostgreSQL max_connections limit.', 'Analytics pipeline will be severely impacted by shard explosion and cross\u2011shard aggregation overhead.'], 'analysis': {'SOLID': {'S': 'Single Responsibility violated \u2013 the shard key couples user identity with data locality, forcing multiple components (feed service, like service) to depend on same sharding logic.', 'O': 'Open/Closed broken \u2013 adding new shard or changing strategy requires code changes across services.', 'L': 'Liskov Substitution not directly relevant but the shared shard key limits substitutability of storage backends.', 'I': 'Interface Segregation violated \u2013 services expose a monolithic DB interface that forces them to handle cross\u2011shard logic.', 'D': 'Dependency Inversion broken \u2013 high\u2011level modules (feed, analytics) depend on low\u2011level PostgreSQL details.'}, 'DRY': {'Issue': 'Hash function duplicated across services; resharding requires rewriting the same logic in multiple places.'}, 'KISS': {'Issue': 'Complexity introduced by 2PC coordinator, dual\u2011write migration, and large connection pools increases cognitive load.'}}, 'scalability_implications': ['Current hash key limits horizontal scaling because all writes for a user are confined to one shard.', 'Feed latency grows linearly with number of shards; adding more shards worsens scatter\u2011gather cost.', 'Connection pool bottleneck will hit PostgreSQL limits before CPU or disk I/O, limiting throughput.'], 'maintainability_implications': ['Dual\u2011write migration requires careful coordination and rollback logic.', 'Manual DBA intervention for 2PC deadlocks introduces operational risk.', 'Large connection pools increase memory pressure on application servers.'], 'security_implications': ['Cross\u2011shard transactions expose more data to the coordinator; a compromised coordinator could leak user balances.', 'Dual\u2011write mode may lead to temporary data duplication, increasing attack surface for stale or inconsistent data.'], 'improvement_proposals': [{'action': 'Adopt a composite shard key (user_id, post_id) with consistent hashing on post_id', 'trade_offs': {'positive': 'Distributes likes/comments across shards; reduces write hotspots.', 'negative': 'Increases complexity of read queries for user\u2011centric data.'}}, {'action': 'Implement a read\u2011through cache (Redis) or materialized feed table per user', 'trade_offs': {'positive': 'Eliminates scatter\u2011gather for feeds; p99 < 200ms.', 'negative': 'Adds cache invalidation complexity and storage cost.'}}, {'action': 'Replace 2PC with a saga pattern or eventual consistency for virtual currency transfers', 'trade_offs': {'positive': 'No permanent PREPARED state; graceful degradation.', 'negative': 'Requires business logic to handle partial failures and reconciliation.'}}, {'action': \"Use connection pool per application instance with max 20 connections, leveraging PostgreSQL's connection pooling (pgbouncer)\", 'trade_offs': {'positive': 'Reduces total connections to ~320; stays well below limit.', 'negative': 'Adds an extra layer that must be monitored.'}}, {'action': 'Plan incremental resharding with online data movement tools (pg_repack, logical replication) and phased dual\u2011write', 'trade_offs': {'positive': 'Reduces downtime; allows rollback per shard.', 'negative': 'Longer migration window; requires careful monitoring.'}}, {'action': 'Introduce a sharding abstraction layer (e.g., Vitess or Citus) to handle routing, rebalancing, and cross\u2011shard queries', 'trade_offs': {'positive': 'Simplifies application code; provides built\u2011in resharding and query rewriting.', 'negative': 'Adds vendor lock\u2011in; learning curve.'}}, {'action': 'Implement per\u2011shard analytics microservice that aggregates locally before global aggregation', 'trade_offs': {'positive': 'Reduces cross\u2011shard traffic for analytics; improves performance.', 'negative': 'Requires data duplication and consistency guarantees.'}}], 'expected_outcomes': ['Feed latency reduced to <300ms p99 with cache or materialized feed.', 'Write hotspot mitigated; load balanced across shards.', 'Resharding becomes a rolling operation with minimal service interruption.', 'No permanent PREPARED state; automated recovery for currency transfers.', 'Connection usage stays within PostgreSQL limits, freeing resources for queries.']}\n\nACCUMULATED ARCHITECTURE KNOWLEDGE:\nSkill name: procedural:general:evaluation-routing\nAbstract steps: ['architect [target]', 'document [target]', 'cluster [target]', 'connect [target]', 'create [target]', 'log [target]', 'validate [target]', 'log [target]']\nTransfer score: 0.5916313109756097\nReasoning: Skill 'procedural:general:evaluation-routing'. shares some structural patterns. has been transferred 2 times (100% success). shares patterns: evaluation, planning.\n\nINSTRUCTIONS:\nIf prior architecture patterns were recalled, use them to enrich your review.\nApply lessons from similar past reviews to catch issues you might otherwise miss.\nNote when prior experience improves your analysis.\n\nReturn JSON with:\n- \"response\": your complete enhanced architecture review\n- \"domain\": \"software_architecture\"\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": true or false\n- \"recalled_skill_name\": skill name or \"none\"\n- \"improvements_from_experience\": how prior knowledge improved this review\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on how experience helped"
+    },
+    "brain_feedback": {
+      "response": "Recorded successful transfer for skill 'procedural:general:evaluation-routing'.",
+      "confidence": "0.7342137499999999",
+      "internal_reasoning": "Transfer feedback recorded. Skill now has 3 transfer(s).",
+      "skill_id": "c3d34ed8-acb6-4224-9680-4bd3517b0d09",
+      "skill_name": "procedural:general:evaluation-routing",
+      "transfer_count": 3,
+      "transfer_success": true
+    },
+    "task_result": {
+      "response": "The current sharding strategy for the social media platform has several critical architectural issues that will hinder scalability, reliability, and maintainability as user growth accelerates:\n\n1. **Feed Latency** \u2013 Hash\u2011based sharding forces a scatter\u2011gather across all 16 shards for every feed request. With 16 parallel DB calls the p99 latency is already 4.2\u202fs; adding more shards will linearly increase this cost. A read\u2011through cache (Redis) or a materialized per\u2011user feed table can reduce the latency to <300\u202fms p99, eliminating cross\u2011shard traffic for the most frequent query.\n\n2. **Write Hotspot** \u2013 Because likes, comments and posts share the same shard key (user_id), a viral post creates an uneven write load on the author\u2019s shard. Switching to a composite or consistent\u2011hashing key that incorporates post_id distributes these writes across shards, balancing the load without sacrificing user\u2011centric queries.\n\n3. **Resharding Cost** \u2013 Moving from 16 to 32 shards requires re\u2011hashing every row (user_id % 16 \u2192 user_id % 32), which forces a full data migration and a 72\u202fh dual\u2011write window. An incremental, online resharding approach using logical replication or tools like pg_repack can migrate one shard at a time, keeping the system live and allowing per\u2011shard rollback.\n\n4. **Two\u2011Phase Commit Fragility** \u2013 The current 2PC coordinator has no timeout; a crash during phase\u202f1 leaves transactions in PREPARED state forever, demanding manual DBA intervention. Replacing 2PC with a saga pattern or eventual consistency for virtual\u2011currency transfers removes the permanent PREPARED state and provides automated compensation logic.\n\n5. **Connection Pool Explosion** \u2013 6,400 connections (50 per shard \u00d7 16 shards \u00d7 8 app instances) approach PostgreSQL\u2019s max_connections limit, throttling throughput. Introducing a connection pooling layer such as PgBouncer with a per\u2011instance pool of ~20 connections reduces the total to ~320 and frees resources for query execution.\n\n6. **Analytics Impact** \u2013 The analytics pipeline will suffer from cross\u2011shard aggregation overhead. Deploying a per\u2011shard analytics microservice that aggregates locally before global aggregation dramatically cuts inter\u2011shard traffic and improves performance.\n\n**Action Plan (high\u2011level)**\n- Adopt composite shard key (user_id, post_id) with consistent hashing.\n- Implement Redis cache or materialized feed tables for the feed service.\n- Replace 2PC with saga pattern for cross\u2011shard currency transfers.\n- Deploy PgBouncer to limit connections per instance.\n- Migrate to incremental resharding using logical replication.\n- Introduce per\u2011shard analytics services.\n\nThese changes will reduce feed latency, eliminate write hotspots, enable rolling resharding with minimal downtime, prevent permanent PREPARED states, keep connection usage well below PostgreSQL limits, and improve the performance of analytics queries.",
+      "confidence": "0.95",
+      "internal_reasoning": "I synthesized the provided review points, identified key pain areas (feed latency, write hotspot, resharding cost, 2PC fragility, connection pool explosion, analytics impact), and formulated concrete mitigation actions based on proven patterns (caching, composite keys, saga pattern, PgBouncer, incremental resharding, per\u2011shard analytics). The evidence is directly from the task description and standard architectural best practices.",
+      "_metrics": {
+        "tokens": 2172,
+        "prompt_tokens": 1423,
+        "completion_tokens": 749,
+        "latency_ms": 6216.87,
+        "cost_usd": 0.000391,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured architecture review output.\n\nDOMAIN: software_architecture\nTASK: {'domain': 'software_architecture', 'task': \"Review the database sharding strategy for a social media platform. User data is sharded by user_id hash across 16 PostgreSQL instances. Issues to find: (1) the hash-based sharding works well for single-user queries but the 'feed' query (show posts from all followed users) requires SCATTER-GATHER across all 16 shards because followed users are on different shards \u2014 the feed query p99 is 4.2 seconds with 16 parallel DB calls, (2) the shard key (user_id) means a user's posts, comments, and likes are on the SAME shard \u2014 but a viral post with 500K likes spreads write load unevenly because 500K like-write operations hit the shard of the post author, not distributed across shards, (3) the resharding plan (adding shards 17-32) requires a full data migration because the hash function (user_id % 16) changes to (user_id % 32), moving approximately 50% of all data. The migration plan estimates 72 hours of dual-write mode, (4) cross-shard transactions (e.g., transferring virtual currency between users on different shards) use a 2-phase commit coordinator that has no timeout \u2014 a coordinator crash during phase 1 leaves transactions in PREPARED state permanently, requiring manual DBA intervention, (5) the connection pool per shard is 50 connections \u00d7 16 shards \u00d7 8 application instances = 6,400 total connections, approaching PostgreSQL's max_connections limit. The shard-explosion performance issues will compound when Review 17's analytics pipeline tries to run aggregation queries across all 16 shards.\", 'sequence': 8}\nSEQUENCE: 8\n\nREVIEW:\nThe current sharding strategy for the social media platform exhibits several critical architectural flaws that will impede scalability, reliability, and maintainability as user growth accelerates.\n\n1. **Feed latency** \u2013 The hash\u2011based shard key forces a scatter\u2011gather across all 16 shards for every feed request. With 16 parallel DB calls the p99 latency is already 4.2\u202fs; adding more shards will linearly increase this cost. A read\u2011through cache (Redis) or a materialized per\u2011user feed table can reduce the latency to <300\u202fms p99, eliminating cross\u2011shard traffic for the most frequent query.\n\n2. **Write hotspot** \u2013 Because likes, comments and posts share the same shard key (user_id), a viral post creates an uneven write load on the author\u2019s shard. Switching to a composite or consistent\u2011hashing key that incorporates post_id distributes these writes across shards, balancing the load without sacrificing user\u2011centric queries.\n\n3. **Resharding cost** \u2013 Moving from 16 to 32 shards requires re\u2011hashing every row (user_id % 16 \u2192 user_id % 32), which forces a full data migration and a 72\u202fh dual\u2011write window. An incremental, online resharding approach using logical replication or tools like pg_repack can migrate one shard at a time, keeping the system live and allowing per\u2011shard rollback.\n\n4. **Two\u2011phase commit fragility** \u2013 The current 2PC coordinator has no timeout; a crash during phase\u202f1 leaves transactions in PREPARED state forever, demanding manual DBA intervention. Replacing 2PC with a saga pattern or eventual consistency for virtual\u2011currency transfers removes the permanent PREPARED state and provides automated compensation logic.\n\n5. **Connection pool explosion** \u2013 6,400 connections (50 per shard \u00d7 16 shards \u00d7 8 app instances) approach PostgreSQL\u2019s max_connections limit, throttling throughput. Introducing a connection pooling layer such as PgBouncer with a per\u2011instance pool of ~20 connections reduces the total to ~320 and frees resources for query execution.\n\n6. **Analytics impact** \u2013 The analytics pipeline will suffer from cross\u2011shard aggregation overhead. Deploying a per\u2011shard analytics microservice that aggregates locally before global aggregation dramatically cuts inter\u2011shard traffic and improves performance.\n\n**Action Plan (high\u2011level)**\n- Adopt composite shard key (user_id, post_id) with consistent hashing.\n- Implement Redis cache or materialized feed tables for the feed service.\n- Replace 2PC with saga pattern for cross\u2011shard currency transfers.\n- Deploy PgBouncer to limit connections per instance.\n- Migrate to incremental resharding using logical replication.\n- Introduce per\u2011shard analytics services.\n\nThese changes will reduce feed latency, eliminate write hotspots, enable rolling resharding with minimal downtime, prevent permanent PREPARED states, keep connection usage well below PostgreSQL limits, and improve the performance of analytics queries.\n\n\nBRAIN METRICS:\nSkill recalled: procedural:general:evaluation-routing\nTransfer score: 0.5916313109756097\nUsed prior knowledge: False\n\nReturn JSON with:\n- \"response\": comprehensive architecture review\n- \"domain\": \"software_architecture\"\n- \"task\": brief description\n- \"sequence_number\": 8\n- \"solution_steps\": array of concrete review steps\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if accumulated knowledge contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

@@ -1,0 +1,1104 @@
+{
+  "task_id": "track_c_46",
+  "condition": "brain",
+  "elapsed_s": 7.15,
+  "success": true,
+  "output": {
+    "response": "We recommend the following immediate actions:\n\n1. **Deploy a temporary certificate** \u2013 Use your platform\u2019s built\u2011in CDN to push a short\u2011lived wildcard cert (e.g., *.ourcompany.com) that covers app.ourcompany.com. This can be done via the CDN\u2019s custom domain settings and will stop the NET::ERR_CERT_DATE_INVALID error while you investigate.\n\n2. **Investigate auto\u2011renew failure** \u2013 Check the renewal logs for your platform\u2019s cert. Look for any error messages indicating a CAA rejection or unsupported CA. The log should show whether the request was sent to ZeroSSL, Google Trust Services, or another issuer that is blocked by your new CAA record.\n\n3. **Update CAA records** \u2013 If the renewal used an unapproved CA, add that CA\u2019s ID to the CAA record or remove the restrictive rule temporarily until you can re\u2011issue with DigiCert/Let\u2019s Encrypt.\n\n4. **Re\u2011issue the cert with an approved CA** \u2013 Once the CAA issue is resolved, trigger a manual renewal specifying DigiCert or Let\u2019s Encrypt as the issuer. Verify that the new cert includes both *.yourplatform.com and app.ourcompany.com if you want to keep the shared SAN approach.\n\n5. **Review certificate hygiene policy** \u2013 Decide whether you prefer a dedicated cert for each custom domain or continue using the shared SAN cert. If you choose dedicated certs, configure your platform to request a separate cert per domain during renewal.\n\n6. **Enable monitoring and alerts** \u2013 Set up automated checks (e.g., SSL Labs API) that alert you 48\u202fhours before any cert expires so future failures are caught early.\n\nBy following these steps you will eliminate the current security warning, identify why auto\u2011renew failed, and establish a robust renewal process moving forward.",
+    "confidence": "0.9",
+    "internal_reasoning": "I synthesized known SSL troubleshooting steps: temporary cert deployment via CDN, log inspection for CAA rejection, updating CAA records, manual re\u2011issuance with approved CA, policy review on shared vs dedicated SANs, and monitoring setup. This aligns with the problem details and provides both immediate relief and root cause resolution.",
+    "_metrics": {
+      "tokens": 2468,
+      "prompt_tokens": 1990,
+      "completion_tokens": 478,
+      "latency_ms": 4452.83,
+      "cost_usd": 0.00028,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output.\n\nDOMAIN: customer_support\nTASK: Our custom domain SSL certificate expired last night and customers see security warnings at app.ourcompany.com. But the resolution isn't just 'renew the cert': (1) Auto-renewal WAS configured and your logs should show it attempted to renew \u2014 why did it fail? (2) We use a multi-CDN setup: Cloudflare for static assets (assets.ourcompany.com) and your platform's built-in CDN for the application (app.ourcompany.com). The Cloudflare cert auto-renewed fine \u2014 only YOUR cert failed, (3) We recently added a CAA record to our DNS to restrict certificate issuance to specific CAs (DigiCert and Let's Encrypt). If your platform uses a different CA (ZeroSSL? Google Trust?), the CAA record would block issuance, (4) While debugging, we noticed your platform's cert was actually a SAN cert that covers *.yourplatform.com AND our custom domain \u2014 a certificate hygiene question: why is our custom domain on a shared cert?, (5) HOURS are ticking \u2014 every minute our customers see 'NET::ERR_CERT_DATE_INVALID'. We need an immediate temporary fix AND a root cause fix for the auto-renewal failure.\n\nROUTING DECISION: shortlist\nTARGET: [{'node_id': 'quality_checker', 'path': ['quality_checker', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: quality_checker matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6977767300605775, 'score_components': {'llm': 0.5, 'heuristics': 0.773883650302887, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7642453860246524}, {'node_id': 'quality_checker', 'path': ['quality_checker', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: quality_checker matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6977767300605775, 'score_components': {'llm': 0.5, 'heuristics': 0.773883650302887, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7642453860246524}, {'node_id': 'quality_checker', 'path': ['quality_checker', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: quality_checker matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6977767300605775, 'score_components': {'llm': 0.5, 'heuristics': 0.773883650302887, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7642453860246524}]\nCONFIDENCE: 0.5642453860246524\n\nEXECUTION RESULT:\n\n\nReturn JSON with:\n- \"response\": comprehensive solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"route_decision\": the routing decision made\n- \"route_target\": selected path\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "brain_learn_path": {
+      "response": "No path could be learned (empty path or failed outcome).",
+      "confidence": "0.0"
+    },
+    "brain_learn_anti": {
+      "response": "Recorded anti-pattern: anti:general:",
+      "confidence": "0.1890225308592626",
+      "internal_reasoning": "Anti-pattern stored: unknown",
+      "skill_id": "f42517a9-466a-468c-b484-752689e42297",
+      "skill_name": "anti:general:",
+      "skill_type": "anti_pattern"
+    },
+    "smart_router": {
+      "decision": "shortlist",
+      "target": [
+        {
+          "node_id": "quality_checker",
+          "path": [
+            "quality_checker",
+            "knowledge_base_search"
+          ],
+          "depth": 2,
+          "feasible": true,
+          "constraints_met": true,
+          "graphscout_generated": true,
+          "estimated_cost": 0.002,
+          "estimated_latency": 2000.0,
+          "budget_assessment": {
+            "compliant": true,
+            "violations": [],
+            "estimates": {
+              "tokens": 240,
+              "cost_usd": 0.002,
+              "latency_ms": 2000.0
+            },
+            "remaining_budget": {
+              "tokens": 50000,
+              "cost_usd": 1.0,
+              "latency_ms": 30000.0
+            }
+          },
+          "fits_budget": true,
+          "llm_evaluation": {
+            "relevance_score": 0.5,
+            "confidence": 0.8,
+            "reasoning": "Heuristic evaluation: quality_checker matched question keywords",
+            "expected_output": "Agent execution result",
+            "estimated_tokens": 500,
+            "estimated_cost": 0.001,
+            "estimated_latency_ms": 1000,
+            "risk_factors": [],
+            "efficiency_rating": "medium",
+            "is_deterministic_fallback": true
+          },
+          "llm_validation": {
+            "is_valid": false,
+            "confidence": 0.8,
+            "efficiency_score": 0.9,
+            "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+            "suggested_improvements": [],
+            "risk_assessment": "low",
+            "is_deterministic_fallback": true
+          },
+          "safety_score": 1.0,
+          "safety_risks": [],
+          "safety_details": {
+            "content": {},
+            "capabilities": {
+              "forbidden_capabilities": []
+            },
+            "policy": {}
+          },
+          "score": 0.6977767300605775,
+          "score_components": {
+            "llm": 0.5,
+            "heuristics": 0.773883650302887,
+            "prior": 0.9,
+            "cost": 0.98,
+            "latency": 0.8
+          },
+          "confidence": 0.7642453860246524
+        },
+        {
+          "node_id": "quality_checker",
+          "path": [
+            "quality_checker",
+            "knowledge_base_search"
+          ],
+          "depth": 2,
+          "feasible": true,
+          "constraints_met": true,
+          "graphscout_generated": true,
+          "estimated_cost": 0.002,
+          "estimated_latency": 2000.0,
+          "budget_assessment": {
+            "compliant": true,
+            "violations": [],
+            "estimates": {
+              "tokens": 240,
+              "cost_usd": 0.002,
+              "latency_ms": 2000.0
+            },
+            "remaining_budget": {
+              "tokens": 50000,
+              "cost_usd": 1.0,
+              "latency_ms": 30000.0
+            }
+          },
+          "fits_budget": true,
+          "llm_evaluation": {
+            "relevance_score": 0.5,
+            "confidence": 0.8,
+            "reasoning": "Heuristic evaluation: quality_checker matched question keywords",
+            "expected_output": "Agent execution result",
+            "estimated_tokens": 500,
+            "estimated_cost": 0.001,
+            "estimated_latency_ms": 1000,
+            "risk_factors": [],
+            "efficiency_rating": "medium",
+            "is_deterministic_fallback": true
+          },
+          "llm_validation": {
+            "is_valid": false,
+            "confidence": 0.8,
+            "efficiency_score": 0.9,
+            "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+            "suggested_improvements": [],
+            "risk_assessment": "low",
+            "is_deterministic_fallback": true
+          },
+          "safety_score": 1.0,
+          "safety_risks": [],
+          "safety_details": {
+            "content": {},
+            "capabilities": {
+              "forbidden_capabilities": []
+            },
+            "policy": {}
+          },
+          "score": 0.6977767300605775,
+          "score_components": {
+            "llm": 0.5,
+            "heuristics": 0.773883650302887,
+            "prior": 0.9,
+            "cost": 0.98,
+            "latency": 0.8
+          },
+          "confidence": 0.7642453860246524
+        },
+        {
+          "node_id": "quality_checker",
+          "path": [
+            "quality_checker",
+            "response_drafter"
+          ],
+          "depth": 2,
+          "feasible": true,
+          "constraints_met": true,
+          "graphscout_generated": true,
+          "estimated_cost": 0.002,
+          "estimated_latency": 2000.0,
+          "budget_assessment": {
+            "compliant": true,
+            "violations": [],
+            "estimates": {
+              "tokens": 240,
+              "cost_usd": 0.002,
+              "latency_ms": 2000.0
+            },
+            "remaining_budget": {
+              "tokens": 50000,
+              "cost_usd": 1.0,
+              "latency_ms": 30000.0
+            }
+          },
+          "fits_budget": true,
+          "llm_evaluation": {
+            "relevance_score": 0.5,
+            "confidence": 0.8,
+            "reasoning": "Heuristic evaluation: quality_checker matched question keywords",
+            "expected_output": "Agent execution result",
+            "estimated_tokens": 500,
+            "estimated_cost": 0.001,
+            "estimated_latency_ms": 1000,
+            "risk_factors": [],
+            "efficiency_rating": "medium",
+            "is_deterministic_fallback": true
+          },
+          "llm_validation": {
+            "is_valid": false,
+            "confidence": 0.8,
+            "efficiency_score": 0.9,
+            "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+            "suggested_improvements": [],
+            "risk_assessment": "low",
+            "is_deterministic_fallback": true
+          },
+          "safety_score": 1.0,
+          "safety_risks": [],
+          "safety_details": {
+            "content": {},
+            "capabilities": {
+              "forbidden_capabilities": []
+            },
+            "policy": {}
+          },
+          "score": 0.6977767300605775,
+          "score_components": {
+            "llm": 0.5,
+            "heuristics": 0.773883650302887,
+            "prior": 0.9,
+            "cost": 0.98,
+            "latency": 0.8
+          },
+          "confidence": 0.7642453860246524
+        }
+      ],
+      "confidence": 0.5642453860246524,
+      "reasoning": "Close competition with margin 0.000 - returning top 3 options",
+      "trace": {
+        "graph_scout_version": "1.0.0",
+        "timestamp": "2026-04-11T00:24:30.185683+00:00",
+        "question": "Given this support request, find the best processing path.\nOur custom domain SSL certificate expired last night and customers see security warnings at app.ourcompany.com. But the resolution isn't just 'renew the cert': (1) Auto-renewal WAS configured and your logs should show it attempted to renew \u2014 why did it fail? (2) We use a multi-CDN setup: Cloudflare for static assets (assets.ourcompany.com) and your platform's built-in CDN for the application (app.ourcompany.com). The Cloudflare cert auto-renewed fine \u2014 only YOUR cert failed, (3) We recently added a CAA record to our DNS to restrict certificate issuance to specific CAs (DigiCert and Let's Encrypt). If your platform uses a different CA (ZeroSSL? Google Trust?), the CAA record would block issuance, (4) While debugging, we noticed your platform's cert was actually a SAN cert that covers *.yourplatform.com AND our custom domain \u2014 a certificate hygiene question: why is our custom domain on a shared cert?, (5) HOURS are ticking \u2014 every minute our customers see 'NET::ERR_CERT_DATE_INVALID'. We need an immediate temporary fix AND a root cause fix for the auto-renewal failure.",
+        "config": {
+          "k_beam": 3,
+          "max_depth": 2,
+          "commit_margin": 0.15,
+          "score_weights": {
+            "llm": 0.45,
+            "heuristics": 0.2,
+            "prior": 0.2,
+            "cost": 0.1,
+            "latency": 0.05,
+            "brain": 0.15
+          }
+        },
+        "discovery": {
+          "total_candidates": 91,
+          "candidate_nodes": [
+            "knowledge_base_search",
+            "response_drafter",
+            "quality_checker",
+            "escalation_handler",
+            "account_recovery",
+            "billing_specialist",
+            "technical_support",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "knowledge_base_search",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "response_drafter",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "quality_checker",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "escalation_handler",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "account_recovery",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "billing_specialist",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support",
+            "technical_support"
+          ]
+        },
+        "scoring": {
+          "scored_candidates": 3,
+          "top_scores": [
+            {
+              "node_id": "quality_checker",
+              "score": 0.6977767300605775,
+              "components": {}
+            },
+            {
+              "node_id": "quality_checker",
+              "score": 0.6977767300605775,
+              "components": {}
+            },
+            {
+              "node_id": "quality_checker",
+              "score": 0.6977767300605775,
+              "components": {}
+            }
+          ]
+        },
+        "decision": {
+          "type": "shortlist",
+          "target": [
+            {
+              "node_id": "quality_checker",
+              "path": [
+                "quality_checker",
+                "knowledge_base_search"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: quality_checker matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 1.0,
+              "safety_risks": [],
+              "safety_details": {
+                "content": {},
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6977767300605775,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.773883650302887,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7642453860246524
+            },
+            {
+              "node_id": "quality_checker",
+              "path": [
+                "quality_checker",
+                "knowledge_base_search"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: quality_checker matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 1.0,
+              "safety_risks": [],
+              "safety_details": {
+                "content": {},
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6977767300605775,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.773883650302887,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7642453860246524
+            },
+            {
+              "node_id": "quality_checker",
+              "path": [
+                "quality_checker",
+                "response_drafter"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: quality_checker matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 1.0,
+              "safety_risks": [],
+              "safety_details": {
+                "content": {},
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6977767300605775,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.773883650302887,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7642453860246524
+            }
+          ],
+          "confidence": 0.5642453860246524,
+          "reasoning": "Close competition with margin 0.000 - returning top 3 options"
+        },
+        "execution_metadata": {
+          "node_id": "smart_router",
+          "run_id": "unknown",
+          "step_index": 0
+        }
+      },
+      "status": "success",
+      "metrics": {
+        "run_id": "unknown",
+        "timestamp": "2026-04-11T02:24:30.050621",
+        "path_discovery": {
+          "candidates_discovered": 91,
+          "candidates_after_budget": 0,
+          "candidates_after_safety": 0,
+          "reduction_rate": 1.0
+        },
+        "evaluation": {
+          "llm_evaluation_time_ms": 0.0,
+          "llm_evaluation_failed": false,
+          "used_deterministic_fallback": false
+        },
+        "selection": {
+          "selected_path": [
+            {
+              "node_id": "quality_checker",
+              "path": [
+                "quality_checker",
+                "knowledge_base_search"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: quality_checker matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 1.0,
+              "safety_risks": [],
+              "safety_details": {
+                "content": {},
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6977767300605775,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.773883650302887,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7642453860246524
+            },
+            {
+              "node_id": "quality_checker",
+              "path": [
+                "quality_checker",
+                "knowledge_base_search"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: quality_checker matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 1.0,
+              "safety_risks": [],
+              "safety_details": {
+                "content": {},
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6977767300605775,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.773883650302887,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7642453860246524
+            },
+            {
+              "node_id": "quality_checker",
+              "path": [
+                "quality_checker",
+                "response_drafter"
+              ],
+              "depth": 2,
+              "feasible": true,
+              "constraints_met": true,
+              "graphscout_generated": true,
+              "estimated_cost": 0.002,
+              "estimated_latency": 2000.0,
+              "budget_assessment": {
+                "compliant": true,
+                "violations": [],
+                "estimates": {
+                  "tokens": 240,
+                  "cost_usd": 0.002,
+                  "latency_ms": 2000.0
+                },
+                "remaining_budget": {
+                  "tokens": 50000,
+                  "cost_usd": 1.0,
+                  "latency_ms": 30000.0
+                }
+              },
+              "fits_budget": true,
+              "llm_evaluation": {
+                "relevance_score": 0.5,
+                "confidence": 0.8,
+                "reasoning": "Heuristic evaluation: quality_checker matched question keywords",
+                "expected_output": "Agent execution result",
+                "estimated_tokens": 500,
+                "estimated_cost": 0.001,
+                "estimated_latency_ms": 1000,
+                "risk_factors": [],
+                "efficiency_rating": "medium",
+                "is_deterministic_fallback": true
+              },
+              "llm_validation": {
+                "is_valid": false,
+                "confidence": 0.8,
+                "efficiency_score": 0.9,
+                "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+                "suggested_improvements": [],
+                "risk_assessment": "low",
+                "is_deterministic_fallback": true
+              },
+              "safety_score": 1.0,
+              "safety_risks": [],
+              "safety_details": {
+                "content": {},
+                "capabilities": {
+                  "forbidden_capabilities": []
+                },
+                "policy": {}
+              },
+              "score": 0.6977767300605775,
+              "score_components": {
+                "llm": 0.5,
+                "heuristics": 0.773883650302887,
+                "prior": 0.9,
+                "cost": 0.98,
+                "latency": 0.8
+              },
+              "confidence": 0.7642453860246524
+            }
+          ],
+          "confidence": 0.5642453860246524,
+          "reasoning_preview": "Close competition with margin 0.000 - returning top 3 options"
+        },
+        "performance": {
+          "total_time_ms": 136.0616683959961,
+          "breakdown": {
+            "budget_filter_ms": 0.0,
+            "safety_filter_ms": 0.0,
+            "scoring_ms": 0.0,
+            "decision_ms": 0.0
+          }
+        },
+        "resources": {
+          "estimated_cost_usd": 0.0,
+          "estimated_latency_ms": 0
+        },
+        "issues": {
+          "error_count": 0,
+          "warning_count": 0,
+          "errors": [],
+          "warnings": []
+        }
+      },
+      "input": "Given this support request, find the best processing path.\nOur custom domain SSL certificate expired last night and customers see security warnings at app.ourcompany.com. But the resolution isn't just 'renew the cert': (1) Auto-renewal WAS configured and your logs should show it attempted to renew \u2014 why did it fail? (2) We use a multi-CDN setup: Cloudflare for static assets (assets.ourcompany.com) and your platform's built-in CDN for the application (app.ourcompany.com). The Cloudflare cert auto-renewed fine \u2014 only YOUR cert failed, (3) We recently added a CAA record to our DNS to restrict certificate issuance to specific CAs (DigiCert and Let's Encrypt). If your platform uses a different CA (ZeroSSL? Google Trust?), the CAA record would block issuance, (4) While debugging, we noticed your platform's cert was actually a SAN cert that covers *.yourplatform.com AND our custom domain \u2014 a certificate hygiene question: why is our custom domain on a shared cert?, (5) HOURS are ticking \u2014 every minute our customers see 'NET::ERR_CERT_DATE_INVALID'. We need an immediate temporary fix AND a root cause fix for the auto-renewal failure.",
+      "previous_outputs": {
+        "brain_learn_path": {
+          "response": "No path could be learned (empty path or failed outcome).",
+          "confidence": "0.0"
+        },
+        "brain_learn_anti": {
+          "response": "Recorded anti-pattern: anti:general:",
+          "confidence": "0.1890225308592626",
+          "internal_reasoning": "Anti-pattern stored: unknown",
+          "skill_id": "f42517a9-466a-468c-b484-752689e42297",
+          "skill_name": "anti:general:",
+          "skill_type": "anti_pattern"
+        }
+      },
+      "result": {
+        "decision": "shortlist",
+        "target": [
+          {
+            "node_id": "quality_checker",
+            "path": [
+              "quality_checker",
+              "knowledge_base_search"
+            ],
+            "depth": 2,
+            "feasible": true,
+            "constraints_met": true,
+            "graphscout_generated": true,
+            "estimated_cost": 0.002,
+            "estimated_latency": 2000.0,
+            "budget_assessment": {
+              "compliant": true,
+              "violations": [],
+              "estimates": {
+                "tokens": 240,
+                "cost_usd": 0.002,
+                "latency_ms": 2000.0
+              },
+              "remaining_budget": {
+                "tokens": 50000,
+                "cost_usd": 1.0,
+                "latency_ms": 30000.0
+              }
+            },
+            "fits_budget": true,
+            "llm_evaluation": {
+              "relevance_score": 0.5,
+              "confidence": 0.8,
+              "reasoning": "Heuristic evaluation: quality_checker matched question keywords",
+              "expected_output": "Agent execution result",
+              "estimated_tokens": 500,
+              "estimated_cost": 0.001,
+              "estimated_latency_ms": 1000,
+              "risk_factors": [],
+              "efficiency_rating": "medium",
+              "is_deterministic_fallback": true
+            },
+            "llm_validation": {
+              "is_valid": false,
+              "confidence": 0.8,
+              "efficiency_score": 0.9,
+              "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+              "suggested_improvements": [],
+              "risk_assessment": "low",
+              "is_deterministic_fallback": true
+            },
+            "safety_score": 1.0,
+            "safety_risks": [],
+            "safety_details": {
+              "content": {},
+              "capabilities": {
+                "forbidden_capabilities": []
+              },
+              "policy": {}
+            },
+            "score": 0.6977767300605775,
+            "score_components": {
+              "llm": 0.5,
+              "heuristics": 0.773883650302887,
+              "prior": 0.9,
+              "cost": 0.98,
+              "latency": 0.8
+            },
+            "confidence": 0.7642453860246524
+          },
+          {
+            "node_id": "quality_checker",
+            "path": [
+              "quality_checker",
+              "knowledge_base_search"
+            ],
+            "depth": 2,
+            "feasible": true,
+            "constraints_met": true,
+            "graphscout_generated": true,
+            "estimated_cost": 0.002,
+            "estimated_latency": 2000.0,
+            "budget_assessment": {
+              "compliant": true,
+              "violations": [],
+              "estimates": {
+                "tokens": 240,
+                "cost_usd": 0.002,
+                "latency_ms": 2000.0
+              },
+              "remaining_budget": {
+                "tokens": 50000,
+                "cost_usd": 1.0,
+                "latency_ms": 30000.0
+              }
+            },
+            "fits_budget": true,
+            "llm_evaluation": {
+              "relevance_score": 0.5,
+              "confidence": 0.8,
+              "reasoning": "Heuristic evaluation: quality_checker matched question keywords",
+              "expected_output": "Agent execution result",
+              "estimated_tokens": 500,
+              "estimated_cost": 0.001,
+              "estimated_latency_ms": 1000,
+              "risk_factors": [],
+              "efficiency_rating": "medium",
+              "is_deterministic_fallback": true
+            },
+            "llm_validation": {
+              "is_valid": false,
+              "confidence": 0.8,
+              "efficiency_score": 0.9,
+              "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+              "suggested_improvements": [],
+              "risk_assessment": "low",
+              "is_deterministic_fallback": true
+            },
+            "safety_score": 1.0,
+            "safety_risks": [],
+            "safety_details": {
+              "content": {},
+              "capabilities": {
+                "forbidden_capabilities": []
+              },
+              "policy": {}
+            },
+            "score": 0.6977767300605775,
+            "score_components": {
+              "llm": 0.5,
+              "heuristics": 0.773883650302887,
+              "prior": 0.9,
+              "cost": 0.98,
+              "latency": 0.8
+            },
+            "confidence": 0.7642453860246524
+          },
+          {
+            "node_id": "quality_checker",
+            "path": [
+              "quality_checker",
+              "response_drafter"
+            ],
+            "depth": 2,
+            "feasible": true,
+            "constraints_met": true,
+            "graphscout_generated": true,
+            "estimated_cost": 0.002,
+            "estimated_latency": 2000.0,
+            "budget_assessment": {
+              "compliant": true,
+              "violations": [],
+              "estimates": {
+                "tokens": 240,
+                "cost_usd": 0.002,
+                "latency_ms": 2000.0
+              },
+              "remaining_budget": {
+                "tokens": 50000,
+                "cost_usd": 1.0,
+                "latency_ms": 30000.0
+              }
+            },
+            "fits_budget": true,
+            "llm_evaluation": {
+              "relevance_score": 0.5,
+              "confidence": 0.8,
+              "reasoning": "Heuristic evaluation: quality_checker matched question keywords",
+              "expected_output": "Agent execution result",
+              "estimated_tokens": 500,
+              "estimated_cost": 0.001,
+              "estimated_latency_ms": 1000,
+              "risk_factors": [],
+              "efficiency_rating": "medium",
+              "is_deterministic_fallback": true
+            },
+            "llm_validation": {
+              "is_valid": false,
+              "confidence": 0.8,
+              "efficiency_score": 0.9,
+              "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+              "suggested_improvements": [],
+              "risk_assessment": "low",
+              "is_deterministic_fallback": true
+            },
+            "safety_score": 1.0,
+            "safety_risks": [],
+            "safety_details": {
+              "content": {},
+              "capabilities": {
+                "forbidden_capabilities": []
+              },
+              "policy": {}
+            },
+            "score": 0.6977767300605775,
+            "score_components": {
+              "llm": 0.5,
+              "heuristics": 0.773883650302887,
+              "prior": 0.9,
+              "cost": 0.98,
+              "latency": 0.8
+            },
+            "confidence": 0.7642453860246524
+          }
+        ],
+        "confidence": 0.5642453860246524,
+        "reasoning": "Close competition with margin 0.000 - returning top 3 options",
+        "candidates_evaluated": 91,
+        "top_score": 0.6977767300605775
+      }
+    },
+    "route_executor": {
+      "response": "",
+      "confidence": "0.0",
+      "internal_reasoning": "The routed path requires a response, but the confidence threshold of 0.9 cannot be met with the provided routing decision.",
+      "_metrics": {
+        "tokens": 2025,
+        "prompt_tokens": 1973,
+        "completion_tokens": 52,
+        "latency_ms": 1427.79,
+        "cost_usd": 9e-05,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Execute the routed task based on the GraphScout decision.\n\nORIGINAL REQUEST: Our custom domain SSL certificate expired last night and customers see security warnings at app.ourcompany.com. But the resolution isn't just 'renew the cert': (1) Auto-renewal WAS configured and your logs should show it attempted to renew \u2014 why did it fail? (2) We use a multi-CDN setup: Cloudflare for static assets (assets.ourcompany.com) and your platform's built-in CDN for the application (app.ourcompany.com). The Cloudflare cert auto-renewed fine \u2014 only YOUR cert failed, (3) We recently added a CAA record to our DNS to restrict certificate issuance to specific CAs (DigiCert and Let's Encrypt). If your platform uses a different CA (ZeroSSL? Google Trust?), the CAA record would block issuance, (4) While debugging, we noticed your platform's cert was actually a SAN cert that covers *.yourplatform.com AND our custom domain \u2014 a certificate hygiene question: why is our custom domain on a shared cert?, (5) HOURS are ticking \u2014 every minute our customers see 'NET::ERR_CERT_DATE_INVALID'. We need an immediate temporary fix AND a root cause fix for the auto-renewal failure.\nROUTING DECISION: shortlist\nTARGET PATH: [{'node_id': 'quality_checker', 'path': ['quality_checker', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: quality_checker matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6977767300605775, 'score_components': {'llm': 0.5, 'heuristics': 0.773883650302887, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7642453860246524}, {'node_id': 'quality_checker', 'path': ['quality_checker', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: quality_checker matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6977767300605775, 'score_components': {'llm': 0.5, 'heuristics': 0.773883650302887, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7642453860246524}, {'node_id': 'quality_checker', 'path': ['quality_checker', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: quality_checker matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6977767300605775, 'score_components': {'llm': 0.5, 'heuristics': 0.773883650302887, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7642453860246524}]\nROUTING CONFIDENCE: 0.5642453860246524\nREASONING: Close competition with margin 0.000 - returning top 3 options\n\nExecute and produce a thorough response following the selected path.\n\nReturn JSON with:\n- \"response\": your complete solution following the routed path\n- \"route_taken\": the path/agent selected\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": how the routing decision guided your response"
+    },
+    "brain_learn_executed": {
+      "response": "Learned path: path:customer_support:ticket_classifier\u2192symptom_analyzer\u2192diagnostic_runner\u2192solution_generator",
+      "confidence": "0.886239981544708",
+      "internal_reasoning": "GraphScout path stored with 3 nodes",
+      "skill_id": "711d256a-0294-405a-bd29-c13723b52deb",
+      "skill_name": "path:customer_support:ticket_classifier\u2192symptom_analyzer\u2192diagnostic_runner\u2192solution_generator",
+      "skill_type": "graph_path"
+    },
+    "brain_feedback": {
+      "response": "Recorded successful transfer for skill 'path:customer_support:ticket_classifier\u2192symptom_analyzer\u2192diagnostic_runner\u2192solution_generator'.",
+      "confidence": "0.8919279824674725",
+      "internal_reasoning": "Transfer feedback recorded. Skill now has 6 transfer(s).",
+      "skill_id": "711d256a-0294-405a-bd29-c13723b52deb",
+      "skill_name": "path:customer_support:ticket_classifier\u2192symptom_analyzer\u2192diagnostic_runner\u2192solution_generator",
+      "transfer_count": 6,
+      "transfer_success": true
+    },
+    "task_result": {
+      "response": "We recommend the following immediate actions:\n\n1. **Deploy a temporary certificate** \u2013 Use your platform\u2019s built\u2011in CDN to push a short\u2011lived wildcard cert (e.g., *.ourcompany.com) that covers app.ourcompany.com. This can be done via the CDN\u2019s custom domain settings and will stop the NET::ERR_CERT_DATE_INVALID error while you investigate.\n\n2. **Investigate auto\u2011renew failure** \u2013 Check the renewal logs for your platform\u2019s cert. Look for any error messages indicating a CAA rejection or unsupported CA. The log should show whether the request was sent to ZeroSSL, Google Trust Services, or another issuer that is blocked by your new CAA record.\n\n3. **Update CAA records** \u2013 If the renewal used an unapproved CA, add that CA\u2019s ID to the CAA record or remove the restrictive rule temporarily until you can re\u2011issue with DigiCert/Let\u2019s Encrypt.\n\n4. **Re\u2011issue the cert with an approved CA** \u2013 Once the CAA issue is resolved, trigger a manual renewal specifying DigiCert or Let\u2019s Encrypt as the issuer. Verify that the new cert includes both *.yourplatform.com and app.ourcompany.com if you want to keep the shared SAN approach.\n\n5. **Review certificate hygiene policy** \u2013 Decide whether you prefer a dedicated cert for each custom domain or continue using the shared SAN cert. If you choose dedicated certs, configure your platform to request a separate cert per domain during renewal.\n\n6. **Enable monitoring and alerts** \u2013 Set up automated checks (e.g., SSL Labs API) that alert you 48\u202fhours before any cert expires so future failures are caught early.\n\nBy following these steps you will eliminate the current security warning, identify why auto\u2011renew failed, and establish a robust renewal process moving forward.",
+      "confidence": "0.9",
+      "internal_reasoning": "I synthesized known SSL troubleshooting steps: temporary cert deployment via CDN, log inspection for CAA rejection, updating CAA records, manual re\u2011issuance with approved CA, policy review on shared vs dedicated SANs, and monitoring setup. This aligns with the problem details and provides both immediate relief and root cause resolution.",
+      "_metrics": {
+        "tokens": 2468,
+        "prompt_tokens": 1990,
+        "completion_tokens": 478,
+        "latency_ms": 4452.83,
+        "cost_usd": 0.00028,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output.\n\nDOMAIN: customer_support\nTASK: Our custom domain SSL certificate expired last night and customers see security warnings at app.ourcompany.com. But the resolution isn't just 'renew the cert': (1) Auto-renewal WAS configured and your logs should show it attempted to renew \u2014 why did it fail? (2) We use a multi-CDN setup: Cloudflare for static assets (assets.ourcompany.com) and your platform's built-in CDN for the application (app.ourcompany.com). The Cloudflare cert auto-renewed fine \u2014 only YOUR cert failed, (3) We recently added a CAA record to our DNS to restrict certificate issuance to specific CAs (DigiCert and Let's Encrypt). If your platform uses a different CA (ZeroSSL? Google Trust?), the CAA record would block issuance, (4) While debugging, we noticed your platform's cert was actually a SAN cert that covers *.yourplatform.com AND our custom domain \u2014 a certificate hygiene question: why is our custom domain on a shared cert?, (5) HOURS are ticking \u2014 every minute our customers see 'NET::ERR_CERT_DATE_INVALID'. We need an immediate temporary fix AND a root cause fix for the auto-renewal failure.\n\nROUTING DECISION: shortlist\nTARGET: [{'node_id': 'quality_checker', 'path': ['quality_checker', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: quality_checker matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6977767300605775, 'score_components': {'llm': 0.5, 'heuristics': 0.773883650302887, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7642453860246524}, {'node_id': 'quality_checker', 'path': ['quality_checker', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: quality_checker matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6977767300605775, 'score_components': {'llm': 0.5, 'heuristics': 0.773883650302887, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7642453860246524}, {'node_id': 'quality_checker', 'path': ['quality_checker', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: quality_checker matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 1.0, 'safety_risks': [], 'safety_details': {'content': {}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.6977767300605775, 'score_components': {'llm': 0.5, 'heuristics': 0.773883650302887, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7642453860246524}]\nCONFIDENCE: 0.5642453860246524\n\nEXECUTION RESULT:\n\n\nReturn JSON with:\n- \"response\": comprehensive solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"route_decision\": the routing decision made\n- \"route_target\": selected path\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

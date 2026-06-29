@@ -1,0 +1,87 @@
+{
+  "task_id": "track_b_01",
+  "condition": "brain",
+  "elapsed_s": 11.46,
+  "success": true,
+  "output": {
+    "response": "To avoid premature optimization, adopt a data\u2011driven cycle:\n1. **Identify candidate areas** \u2013 list functions or modules that developers suspect need tuning.\n2. **Profile the application** \u2013 run realistic workloads and collect CPU, memory, I/O metrics.\n3. **Locate real hotspots** \u2013 rank code paths by impact on overall performance.\n4. **Assess cost vs benefit** \u2013 evaluate complexity, risk of bugs, maintenance overhead for each hotspot.\n5. **Apply minimal changes** \u2013 refactor only the most critical path with clear, testable modifications.\n6. **Re\u2011profile to confirm gains** \u2013 ensure the change actually improves metrics and hasn\u2019t introduced regressions.\n7. **Document decisions** \u2013 record why a section was optimized or left untouched for future reference.\n8. **Set up continuous monitoring** \u2013 automate alerts on key performance indicators so new bottlenecks are caught early.\n\nThis structured approach ensures optimizations target real problems, keep code maintainable, and provide measurable benefits.",
+    "confidence": "0.95",
+    "internal_reasoning": "The solution directly follows the provided steps, ensuring each point is clearly articulated. Confidence is high because the answer aligns with standard best practices for avoiding premature optimization.",
+    "_metrics": {
+      "tokens": 915,
+      "prompt_tokens": 642,
+      "completion_tokens": 273,
+      "latency_ms": 2844.96,
+      "cost_usd": 0.000172,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: software_engineering\nTASK: Anti-Pattern: Premature Optimization\n\nSOLUTION:\nTo avoid the premature optimization anti\u2011pattern, follow a data\u2011driven approach:\n1. **Identify candidate areas** \u2013 list functions or modules that developers think need tuning.\n2. **Profile the application** \u2013 run realistic workloads and collect CPU, memory, I/O metrics.\n3. **Locate real hotspots** \u2013 rank code paths by impact on overall performance.\n4. **Assess cost vs benefit** \u2013 evaluate complexity, risk of bugs, maintenance overhead for each hotspot.\n5. **Apply minimal changes** \u2013 refactor only the most critical path with clear, testable modifications.\n6. **Re\u2011profile to confirm gains** \u2013 ensure the change actually improves metrics and hasn\u2019t introduced regressions.\n7. **Document decisions** \u2013 record why a section was optimized or left untouched for future reference.\n8. **Set up continuous monitoring** \u2013 automate alerts on key performance indicators so new bottlenecks are caught early.\n\nANTI-PATTERNS AVOIDED:\n[]\n\nBRAIN METRICS:\nSkill recalled: None\nTransfer score: N/A\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "brain_learn_anti": {
+      "response": "Recorded anti-pattern: anti:software_engineering:optimizing-code-before-profiling-showed-",
+      "confidence": "0.9",
+      "internal_reasoning": "Anti-pattern stored: Wasted 3 days rewriting a function that accounted for 0.1% of execution time, introducing bugs in the process",
+      "skill_id": "13223aa1-a35b-42d4-a596-4464692a8628",
+      "skill_name": "anti:software_engineering:optimizing-code-before-profiling-showed-",
+      "skill_type": "anti_pattern"
+    },
+    "task_reasoner": {
+      "response": "Domain: software_engineering\nTask: Anti-Pattern: Premature Optimization\nResponse:\n1. Identify the problem area where optimization is considered.\n   - WHY: To focus efforts on real bottlenecks rather than speculative improvements.\n   - Expected output: A list of candidate code sections or features flagged for potential optimization.\n2. Gather performance metrics and profiling data.\n   - WHY: Empirical evidence guides decisions; without data, optimizations are guesswork.\n   - Expected output: Profiling reports showing CPU usage, memory consumption, I/O wait times, etc.\n3. Analyze the collected data to locate actual hotspots.\n   - WHY: Distinguishes between real performance issues and perceived ones caused by premature optimization.\n   - Expected output: Ranked list of functions or modules with highest impact on overall performance.\n4. Evaluate the cost-benefit trade\u2011off for each hotspot.\n   - WHY: Optimization may introduce complexity, bugs, or maintenance overhead; we need to weigh benefits.\n   - Expected output: Decision matrix indicating whether to optimize, refactor, or leave as is.\n5. Implement targeted optimizations with minimal code changes.\n   - WHY: Small, focused changes reduce risk and preserve readability.\n   - Expected output: Refactored code snippets or configuration tweaks that improve performance.\n6. Re\u2011profile after changes to verify impact.\n   - WHY: Ensures the optimization actually yields measurable benefits and hasn't introduced regressions.\n   - Expected output: Updated profiling data showing improved metrics or confirmation of no change.\n7. Document decisions, rationale, and results.\n   - WHY: Future developers can understand why certain optimizations were made and avoid repeating premature optimization.\n   - Expected output: Documentation entries in code comments or design docs.\n8. Set up continuous monitoring to catch new performance regressions early.\n   - WHY: Performance issues may surface as the system evolves; ongoing vigilance prevents re\u2011occurrence of the anti\u2011pattern.\n   - Expected output: Automated alerts or dashboards tracking key performance indicators.\nConfidence: 0.95\n",
+      "confidence": "0.95",
+      "internal_reasoning": "I followed the instruction hierarchy, prioritizing the critical JSON format while embedding a detailed step-by-step analysis within the response string.",
+      "_metrics": {
+        "tokens": 915,
+        "prompt_tokens": 425,
+        "completion_tokens": 490,
+        "latency_ms": 5305.67,
+        "cost_usd": 0.000321,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: software_engineering\nTASK: Anti-Pattern: Premature Optimization\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+    },
+    "brain_recall": {
+      "response": "No applicable skills found for this context.",
+      "confidence": "0.0",
+      "internal_reasoning": "No learned skill matched the target context.",
+      "all_candidates": []
+    },
+    "task_applier": {
+      "response": "To avoid the premature optimization anti\u2011pattern, follow a data\u2011driven approach:\n1. **Identify candidate areas** \u2013 list functions or modules that developers think need tuning.\n2. **Profile the application** \u2013 run realistic workloads and collect CPU, memory, I/O metrics.\n3. **Locate real hotspots** \u2013 rank code paths by impact on overall performance.\n4. **Assess cost vs benefit** \u2013 evaluate complexity, risk of bugs, maintenance overhead for each hotspot.\n5. **Apply minimal changes** \u2013 refactor only the most critical path with clear, testable modifications.\n6. **Re\u2011profile to confirm gains** \u2013 ensure the change actually improves metrics and hasn\u2019t introduced regressions.\n7. **Document decisions** \u2013 record why a section was optimized or left untouched for future reference.\n8. **Set up continuous monitoring** \u2013 automate alerts on key performance indicators so new bottlenecks are caught early.",
+      "confidence": "0.95",
+      "internal_reasoning": "I followed the task instructions to avoid premature optimization by insisting on profiling data before making changes, limiting modifications to high\u2011impact areas, and documenting decisions for future maintenance.",
+      "_metrics": {
+        "tokens": 1264,
+        "prompt_tokens": 1007,
+        "completion_tokens": 257,
+        "latency_ms": 2863.78,
+        "cost_usd": 0.000177,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a task. You have your own analysis AND warnings about\nknown anti-patterns from the Brain's memory.\n\nDOMAIN: general\nTASK: {'domain': 'software_engineering', 'anti_pattern': {'what_failed': 'Optimizing code before profiling showed a bottleneck', 'why': 'Wasted 3 days rewriting a function that accounted for 0.1% of execution time, introducing bugs in the process', 'domain': 'software_engineering', 'severity': 'warning'}, 'task': 'Anti-Pattern: Premature Optimization'}\n\nYOUR ANALYSIS:\nDomain: software_engineering\nTask: Anti-Pattern: Premature Optimization\nResponse:\n1. Identify the problem area where optimization is considered.\n   - WHY: To focus efforts on real bottlenecks rather than speculative improvements.\n   - Expected output: A list of candidate code sections or features flagged for potential optimization.\n2. Gather performance metrics and profiling data.\n   - WHY: Empirical evidence guides decisions; without data, optimizations are guesswork.\n   - Expected output: Profiling reports showing CPU usage, memory consumption, I/O wait times, etc.\n3. Analyze the collected data to locate actual hotspots.\n   - WHY: Distinguishes between real performance issues and perceived ones caused by premature optimization.\n   - Expected output: Ranked list of functions or modules with highest impact on overall performance.\n4. Evaluate the cost-benefit trade\u2011off for each hotspot.\n   - WHY: Optimization may introduce complexity, bugs, or maintenance overhead; we need to weigh benefits.\n   - Expected output: Decision matrix indicating whether to optimize, refactor, or leave as is.\n5. Implement targeted optimizations with minimal code changes.\n   - WHY: Small, focused changes reduce risk and preserve readability.\n   - Expected output: Refactored code snippets or configuration tweaks that improve performance.\n6. Re\u2011profile after changes to verify impact.\n   - WHY: Ensures the optimization actually yields measurable benefits and hasn't introduced regressions.\n   - Expected output: Updated profiling data showing improved metrics or confirmation of no change.\n7. Document decisions, rationale, and results.\n   - WHY: Future developers can understand why certain optimizations were made and avoid repeating premature optimization.\n   - Expected output: Documentation entries in code comments or design docs.\n8. Set up continuous monitoring to catch new performance regressions early.\n   - WHY: Performance issues may surface as the system evolves; ongoing vigilance prevents re\u2011occurrence of the anti\u2011pattern.\n   - Expected output: Automated alerts or dashboards tracking key performance indicators.\nConfidence: 0.95\n\n\nBRAIN RECALL \u2014 ANTI-PATTERNS AND SKILLS:\nSkill name: No skill recalled\nSkill type: unknown\nTransfer score: N/A\nReasoning: No learned skill matched the target context.\n\nINSTRUCTIONS:\n- If anti-patterns were recalled, explicitly AVOID those patterns.\n- State which anti-patterns you are avoiding and why.\n- If no anti-patterns were recalled, solve normally.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"anti_patterns_avoided\": list of anti-pattern names avoided\n- \"used_recalled_skill\": true or false\n- \"recalled_skill_name\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection including anti-pattern avoidance"
+    },
+    "brain_feedback": {
+      "response": "No skill_id provided for feedback.",
+      "confidence": "0.0",
+      "internal_reasoning": "Feedback requires a skill_id from a previous recall."
+    },
+    "task_result": {
+      "response": "To avoid premature optimization, adopt a data\u2011driven cycle:\n1. **Identify candidate areas** \u2013 list functions or modules that developers suspect need tuning.\n2. **Profile the application** \u2013 run realistic workloads and collect CPU, memory, I/O metrics.\n3. **Locate real hotspots** \u2013 rank code paths by impact on overall performance.\n4. **Assess cost vs benefit** \u2013 evaluate complexity, risk of bugs, maintenance overhead for each hotspot.\n5. **Apply minimal changes** \u2013 refactor only the most critical path with clear, testable modifications.\n6. **Re\u2011profile to confirm gains** \u2013 ensure the change actually improves metrics and hasn\u2019t introduced regressions.\n7. **Document decisions** \u2013 record why a section was optimized or left untouched for future reference.\n8. **Set up continuous monitoring** \u2013 automate alerts on key performance indicators so new bottlenecks are caught early.\n\nThis structured approach ensures optimizations target real problems, keep code maintainable, and provide measurable benefits.",
+      "confidence": "0.95",
+      "internal_reasoning": "The solution directly follows the provided steps, ensuring each point is clearly articulated. Confidence is high because the answer aligns with standard best practices for avoiding premature optimization.",
+      "_metrics": {
+        "tokens": 915,
+        "prompt_tokens": 642,
+        "completion_tokens": 273,
+        "latency_ms": 2844.96,
+        "cost_usd": 0.000172,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: software_engineering\nTASK: Anti-Pattern: Premature Optimization\n\nSOLUTION:\nTo avoid the premature optimization anti\u2011pattern, follow a data\u2011driven approach:\n1. **Identify candidate areas** \u2013 list functions or modules that developers think need tuning.\n2. **Profile the application** \u2013 run realistic workloads and collect CPU, memory, I/O metrics.\n3. **Locate real hotspots** \u2013 rank code paths by impact on overall performance.\n4. **Assess cost vs benefit** \u2013 evaluate complexity, risk of bugs, maintenance overhead for each hotspot.\n5. **Apply minimal changes** \u2013 refactor only the most critical path with clear, testable modifications.\n6. **Re\u2011profile to confirm gains** \u2013 ensure the change actually improves metrics and hasn\u2019t introduced regressions.\n7. **Document decisions** \u2013 record why a section was optimized or left untouched for future reference.\n8. **Set up continuous monitoring** \u2013 automate alerts on key performance indicators so new bottlenecks are caught early.\n\nANTI-PATTERNS AVOIDED:\n[]\n\nBRAIN METRICS:\nSkill recalled: None\nTransfer score: N/A\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

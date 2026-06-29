@@ -1,0 +1,182 @@
+{
+  "task_id": "track_d_17",
+  "condition": "brain",
+  "elapsed_s": 19.8,
+  "success": true,
+  "output": {
+    "response": "1\ufe0f\u20e3 **Index Strategy**\n- Audit existing indexes via pg_index/pg_stat_user_indexes; drop redundant single\u2011column indexes.\n- Create composite OLTP index on primary key + frequent FK, built concurrently during low traffic.\n- Add partial OLAP index: CREATE INDEX ON sales(date) WHERE date >= now() - interval '90 days'; include aggregation columns if used in GROUP BY.\n- Use BRIN for very wide tables that need only range scans (e.g., CREATE INDEX ON large_table USING brin (date)).\n\n2\ufe0f\u20e3 **Zero\u2011Downtime Deployment**\n- Split schema changes: first create new columns/indexes concurrently; then switch logic via feature flags or incremental data load.\n- Use logical replication to keep standby up\u2011to\u2011date; perform cutover during maintenance window.\n- Wrap each migration step in a transaction with SET LOCAL lock_timeout = '5s'; provide fallback rollback script.\n\n3\ufe0f\u20e3 **Security Scan Integration**\n- Add pre\u2011commit CI hook that runs custom lint (pgmigrate lint --security) against migration files, checking for privilege escalation or insecure defaults.\n- Store scan results in audit table; fail deployment if any critical issue flagged.\n\n4\ufe0f\u20e3 **Monitoring & Alerting**\n- Tag queries with label='oltp' or 'olap' via pg_stat_statements and custom instrumentation.\n- Grafana dashboards show 95th\u2011percentile latency per label.\n- Two alert policies:\n   \u2022 OLTP: trigger if 95th_percentile_latency > 10ms.\n   \u2022 OLAP: trigger if 95th_percentile_latency > 30s.\n\n5\ufe0f\u20e3 **Maintenance & Documentation**\n- Nightly VACUUM/ANALYZE; weekly ANALYZE after large index changes.\n- Document schema changes in design repo; enforce review via Git hooks that check security scan results before merge.",
+    "confidence": "0.95",
+    "internal_reasoning": "I synthesized the requirements: balanced indexing for OLTP vs OLAP, zero\u2011downtime migration steps, added a security lint step to satisfy CI/CD, and set distinct latency thresholds with query labeling for monitoring. All decisions are based on PostgreSQL best practices and the constraints provided.",
+    "_metrics": {
+      "tokens": 1778,
+      "prompt_tokens": 1274,
+      "completion_tokens": 504,
+      "latency_ms": 4679.8,
+      "cost_usd": 0.000289,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'database_design', 'task': \"Optimize a PostgreSQL database with 100M records where read latency has degraded to 8 seconds for critical queries. The database design recipe suggests index optimization and the CI/CD recipe mandates zero-downtime deployment for schema changes. However: (1) the database serves a mixed workload \u2014 70% OLTP (point lookups, small writes) and 30% OLAP (aggregation queries over 90-day windows). Indexes that speed up OLTP reads slow down OLAP aggregations because the query planner switches from sequential scans to index scans that are SLOWER for large range queries on wide tables, (2) the previous DBA's approach of 'index on every query column' (index_everything anti-pattern) resulted in 45 indexes consuming more space than the actual data and degrading write performance by 5x, (3) the CI/CD recipe says 'don't deploy without security scan' but the database migration tool doesn't have a security scanning step \u2014 adding one requires modifying the migration pipeline, (4) the monitoring recipe requires alerting on query performance regression, but the OLTP and OLAP queries have fundamentally different acceptable latency ranges (10ms vs 30s). You must compose database design, deployment, and monitoring approaches for a workload that contradicts simple optimization heuristics.\"}\n\nCOMPOSED SOLUTION:\n1\ufe0f\u20e3 **Index Strategy**\n   \u2022 Audit existing indexes with `pg_index`/`pg_stat_user_indexes`; drop redundant single\u2011column indexes that are subsumed by composites.\n   \u2022 Create a composite OLTP index on the primary key + most frequent foreign keys (e.g., `(user_id, status)`), built concurrently during low traffic.\n   \u2022 Add a partial OLAP index: `CREATE INDEX ON sales(date) WHERE date >= now() - interval '90 days'` and include aggregation columns if they are frequently used in GROUP BY.\n   \u2022 For very wide tables that only need range scans on dates or numeric ranges, add BRIN indexes (`CREATE INDEX ON large_table USING brin (date)`), which keep index size minimal.\n\n2\ufe0f\u20e3 **Zero\u2011Downtime Deployment**\n   \u2022 Split schema changes into reversible steps: first create new columns/indexes in parallel; then switch application logic via feature flags or a small migration script that adds the column with a default and updates rows incrementally.\n   \u2022 Use logical replication to keep a standby replica up\u2011to\u2011date; perform cutover during a scheduled maintenance window.\n   \u2022 Wrap each migration step in a transaction with `SET LOCAL lock_timeout = '5s'` and provide a fallback script that rolls back if the lock timeout is hit.\n\n3\ufe0f\u20e3 **Security Scan Integration**\n   \u2022 Add a pre\u2011commit hook to the CI pipeline that runs a custom lint tool (`pgmigrate lint --security`) against migration files, checking for privilege escalation or insecure defaults.\n   \u2022 Store scan results in an audit table; fail the deployment if any critical issue is flagged.\n\n4\ufe0f\u20e3 **Monitoring & Alerting**\n   \u2022 Tag queries with `label='oltp'` or `label='olap'` using `pg_stat_statements.track = 'all'` and a custom instrumentation layer.\n   \u2022 Build Grafana dashboards that show 95th\u2011percentile latency per label.\n   \u2022 Create two alert policies:\n     - OLTP: trigger if `95th_percentile_latency > 10ms`.\n     - OLAP: trigger if `95th_percentile_latency > 30s`.\n\n5\ufe0f\u20e3 **Maintenance & Documentation**\n   \u2022 Schedule nightly vacuum/analyze and weekly analyze after large index changes to keep planner statistics accurate.\n   \u2022 Document all schema changes in a design repo; enforce review via Git hooks that check for security scan results before merge.\n\nThis approach balances OLTP speed, OLAP efficiency, zero\u2011downtime migrations, security compliance, and meaningful monitoring without over\u2011indexing or noisy alerts.\n\nCOMPOSITION STRATEGY:\nN/A\n\nBRAIN METRICS:\nSkills composed: []\nAnti-patterns avoided: []\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": list of skills that contributed\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"recalled_skill\": primary skill or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "brain_learn_recipe": {
+      "response": "No recipe could be learned (missing agents or failed outcome).",
+      "confidence": "0.0"
+    },
+    "brain_learn_anti": {
+      "response": "Recorded anti-pattern: anti:devops:deploying-without-running-security-scans",
+      "confidence": "0.3145284843993945",
+      "internal_reasoning": "Anti-pattern stored: unknown",
+      "skill_id": "a182cf09-c14d-4302-938f-5565af1c8cdd",
+      "skill_name": "anti:devops:deploying-without-running-security-scans",
+      "skill_type": "anti_pattern"
+    },
+    "brain_learn_path": {
+      "response": "No path could be learned (empty path or failed outcome).",
+      "confidence": "0.0"
+    },
+    "task_reasoner": {
+      "response": {
+        "domain": "database_design",
+        "task": "Optimize a PostgreSQL database with 100M records where read latency has degraded to 8 seconds for critical queries while balancing OLTP and OLAP workloads, ensuring zero\u2011downtime schema changes, integrating security scans into migrations, and setting appropriate monitoring thresholds.",
+        "analysis": {
+          "index_strategy": [
+            "Create a composite multicolumn index that covers the most common OLTP lookup patterns (e.g., primary key + frequently queried foreign keys).",
+            "Add a separate partial index for OLAP: an index on the date column with a WHERE clause limiting to the last 90 days, combined with columns used in aggregation predicates.",
+            "Drop redundant single\u2011column indexes that are subsumed by the composite ones; use `pg_index` and `pg_stat_user_indexes` to identify candidates.",
+            "Implement BRIN indexes for very wide tables where only range scans on date or numeric ranges are needed for OLAP, reducing index size dramatically."
+          ],
+          "write_impact": [
+            "Re\u2011evaluate write paths: enable `concurrently` index creation during low traffic windows; use `pg_repack` to rebuild large tables without downtime.",
+            "Use `pg_stat_all_tables` to monitor autovacuum and analyze the impact of new indexes on WAL generation."
+          ],
+          "zero_downtime_deployment": [
+            "Adopt a migration strategy that splits schema changes into small, reversible steps: first create new columns/indexes in parallel, then switch application logic via feature flags.",
+            "Use `pg_upgrade` or logical replication to keep replicas up\u2011to\u2011date; perform cutover during scheduled maintenance windows.",
+            "Wrap migrations in a transaction with `SET LOCAL lock_timeout = '5s'` and fallback scripts."
+          ],
+          "security_scan_integration": [
+            "Extend the migration pipeline by adding a pre\u2011commit hook that runs `pgmigrate lint --security` (custom script) to detect privilege escalation or insecure defaults.",
+            "Store scan results in a dedicated audit table; fail the deployment if any critical issue is flagged."
+          ],
+          "monitoring_and_alerting": [
+            "Define two separate alert policies: one for OLTP queries with a 10\u202fms threshold and another for OLAP queries with a 30\u2011second threshold.",
+            "Use `pg_stat_statements` to tag queries by label (e.g., `label='oltp'` or `label='olap'`) via `SET pg_stat_statements.track = 'all';` and custom instrumentation.",
+            "Implement Grafana dashboards that display per\u2011query latency percentiles; set alert rules on `95th_percentile_latency > threshold` for each label."
+          ],
+          "holistic_considerations": [
+            "Balance index size vs. read performance by targeting a 3:1 ratio of index bytes to data bytes.",
+            "Schedule regular maintenance windows for vacuum/analyze to keep planner statistics accurate, especially after adding partial/BRIN indexes.",
+            "Document all changes in the design repo; use `git` hooks to enforce schema change reviews and security scan results."
+          ]
+        },
+        "steps": [
+          {
+            "action": "Audit existing indexes with pg_index and drop redundant ones",
+            "result": "Reduced index count from 45 to ~12, saving ~70% of index storage"
+          },
+          {
+            "action": "Create composite OLTP index (pk + fk) and partial OLAP index on date range",
+            "result": "OLTP point lookups <2\u202fms; OLAP aggregation latency dropped from 8\u202fs to ~1.5\u202fs"
+          },
+          {
+            "action": "Implement BRIN indexes for wide tables used only in OLAP ranges",
+            "result": "Index size reduced by >80%, negligible impact on write path"
+          },
+          {
+            "action": "Add security scan step to migration pipeline (pre\u2011commit hook)",
+            "result": "All deployments now pass a static analysis check; no insecure defaults introduced"
+          },
+          {
+            "action": "Configure Grafana dashboards with separate alert policies for OLTP and OLAP",
+            "result": "Alerts trigger only when latency exceeds 10\u202fms (OLTP) or 30\u202fs (OLAP), reducing noise"
+          }
+        ],
+        "required_capabilities": [
+          "PostgreSQL index design",
+          "Zero\u2011downtime schema migration",
+          "CI/CD pipeline customization",
+          "Security scanning for database schemas",
+          "Performance monitoring and alerting with Grafana/Prometheus"
+        ]
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "I analyzed the workload split, index trade\u2011offs, and CI/CD constraints, then mapped concrete PostgreSQL techniques (composite, partial, BRIN indexes) to achieve balanced performance while respecting zero\u2011downtime and security requirements.",
+      "_metrics": {
+        "tokens": 1721,
+        "prompt_tokens": 679,
+        "completion_tokens": 1042,
+        "latency_ms": 8636.77,
+        "cost_usd": 0.000533,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze this complex task step by step.\n\nDOMAIN: database_design\nTASK: Optimize a PostgreSQL database with 100M records where read latency has degraded to 8 seconds for critical queries. The database design recipe suggests index optimization and the CI/CD recipe mandates zero-downtime deployment for schema changes. However: (1) the database serves a mixed workload \u2014 70% OLTP (point lookups, small writes) and 30% OLAP (aggregation queries over 90-day windows). Indexes that speed up OLTP reads slow down OLAP aggregations because the query planner switches from sequential scans to index scans that are SLOWER for large range queries on wide tables, (2) the previous DBA's approach of 'index on every query column' (index_everything anti-pattern) resulted in 45 indexes consuming more space than the actual data and degrading write performance by 5x, (3) the CI/CD recipe says 'don't deploy without security scan' but the database migration tool doesn't have a security scanning step \u2014 adding one requires modifying the migration pipeline, (4) the monitoring recipe requires alerting on query performance regression, but the OLTP and OLAP queries have fundamentally different acceptable latency ranges (10ms vs 30s). You must compose database design, deployment, and monitoring approaches for a workload that contradicts simple optimization heuristics.\n\nThis task may require combining multiple patterns: procedural recipes,\nanti-pattern avoidance, and path selection. Think holistically.\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete multi-faceted analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"required_capabilities\": list of skill types needed\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": approach explanation"
+    },
+    "brain_recall": {
+      "response": "No applicable skills found for this context.",
+      "confidence": "0.0",
+      "internal_reasoning": "No learned skill matched the target context.",
+      "all_candidates": []
+    },
+    "task_applier": {
+      "response": "1\ufe0f\u20e3 **Index Strategy**\n   \u2022 Audit existing indexes with `pg_index`/`pg_stat_user_indexes`; drop redundant single\u2011column indexes that are subsumed by composites.\n   \u2022 Create a composite OLTP index on the primary key + most frequent foreign keys (e.g., `(user_id, status)`), built concurrently during low traffic.\n   \u2022 Add a partial OLAP index: `CREATE INDEX ON sales(date) WHERE date >= now() - interval '90 days'` and include aggregation columns if they are frequently used in GROUP BY.\n   \u2022 For very wide tables that only need range scans on dates or numeric ranges, add BRIN indexes (`CREATE INDEX ON large_table USING brin (date)`), which keep index size minimal.\n\n2\ufe0f\u20e3 **Zero\u2011Downtime Deployment**\n   \u2022 Split schema changes into reversible steps: first create new columns/indexes in parallel; then switch application logic via feature flags or a small migration script that adds the column with a default and updates rows incrementally.\n   \u2022 Use logical replication to keep a standby replica up\u2011to\u2011date; perform cutover during a scheduled maintenance window.\n   \u2022 Wrap each migration step in a transaction with `SET LOCAL lock_timeout = '5s'` and provide a fallback script that rolls back if the lock timeout is hit.\n\n3\ufe0f\u20e3 **Security Scan Integration**\n   \u2022 Add a pre\u2011commit hook to the CI pipeline that runs a custom lint tool (`pgmigrate lint --security`) against migration files, checking for privilege escalation or insecure defaults.\n   \u2022 Store scan results in an audit table; fail the deployment if any critical issue is flagged.\n\n4\ufe0f\u20e3 **Monitoring & Alerting**\n   \u2022 Tag queries with `label='oltp'` or `label='olap'` using `pg_stat_statements.track = 'all'` and a custom instrumentation layer.\n   \u2022 Build Grafana dashboards that show 95th\u2011percentile latency per label.\n   \u2022 Create two alert policies:\n     - OLTP: trigger if `95th_percentile_latency > 10ms`.\n     - OLAP: trigger if `95th_percentile_latency > 30s`.\n\n5\ufe0f\u20e3 **Maintenance & Documentation**\n   \u2022 Schedule nightly vacuum/analyze and weekly analyze after large index changes to keep planner statistics accurate.\n   \u2022 Document all schema changes in a design repo; enforce review via Git hooks that check for security scan results before merge.\n\nThis approach balances OLTP speed, OLAP efficiency, zero\u2011downtime migrations, security compliance, and meaningful monitoring without over\u2011indexing or noisy alerts.",
+      "confidence": "0.95",
+      "internal_reasoning": "I combined index design best practices (composite & partial indexes, BRIN), zero\u2011downtime migration patterns (feature flags, logical replication), CI pipeline customization for security scanning, and differentiated alert thresholds via pg_stat_statements tagging. All steps directly address the constraints and avoid known anti\u2011patterns such as over\u2011indexing, single\u2011step migrations, and generic latency alerts.",
+      "_metrics": {
+        "tokens": 2372,
+        "prompt_tokens": 1695,
+        "completion_tokens": 677,
+        "latency_ms": 5888.47,
+        "cost_usd": 0.00037,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a complex task that requires COMPOSING multiple skills.\n\nDOMAIN: general\nTASK: {'domain': 'database_design', 'task': \"Optimize a PostgreSQL database with 100M records where read latency has degraded to 8 seconds for critical queries. The database design recipe suggests index optimization and the CI/CD recipe mandates zero-downtime deployment for schema changes. However: (1) the database serves a mixed workload \u2014 70% OLTP (point lookups, small writes) and 30% OLAP (aggregation queries over 90-day windows). Indexes that speed up OLTP reads slow down OLAP aggregations because the query planner switches from sequential scans to index scans that are SLOWER for large range queries on wide tables, (2) the previous DBA's approach of 'index on every query column' (index_everything anti-pattern) resulted in 45 indexes consuming more space than the actual data and degrading write performance by 5x, (3) the CI/CD recipe says 'don't deploy without security scan' but the database migration tool doesn't have a security scanning step \u2014 adding one requires modifying the migration pipeline, (4) the monitoring recipe requires alerting on query performance regression, but the OLTP and OLAP queries have fundamentally different acceptable latency ranges (10ms vs 30s). You must compose database design, deployment, and monitoring approaches for a workload that contradicts simple optimization heuristics.\"}\n\nYOUR ANALYSIS:\n{'domain': 'database_design', 'task': 'Optimize a PostgreSQL database with 100M records where read latency has degraded to 8 seconds for critical queries while balancing OLTP and OLAP workloads, ensuring zero\u2011downtime schema changes, integrating security scans into migrations, and setting appropriate monitoring thresholds.', 'analysis': {'index_strategy': ['Create a composite multicolumn index that covers the most common OLTP lookup patterns (e.g., primary key + frequently queried foreign keys).', 'Add a separate partial index for OLAP: an index on the date column with a WHERE clause limiting to the last 90 days, combined with columns used in aggregation predicates.', 'Drop redundant single\u2011column indexes that are subsumed by the composite ones; use `pg_index` and `pg_stat_user_indexes` to identify candidates.', 'Implement BRIN indexes for very wide tables where only range scans on date or numeric ranges are needed for OLAP, reducing index size dramatically.'], 'write_impact': ['Re\u2011evaluate write paths: enable `concurrently` index creation during low traffic windows; use `pg_repack` to rebuild large tables without downtime.', 'Use `pg_stat_all_tables` to monitor autovacuum and analyze the impact of new indexes on WAL generation.'], 'zero_downtime_deployment': ['Adopt a migration strategy that splits schema changes into small, reversible steps: first create new columns/indexes in parallel, then switch application logic via feature flags.', 'Use `pg_upgrade` or logical replication to keep replicas up\u2011to\u2011date; perform cutover during scheduled maintenance windows.', \"Wrap migrations in a transaction with `SET LOCAL lock_timeout = '5s'` and fallback scripts.\"], 'security_scan_integration': ['Extend the migration pipeline by adding a pre\u2011commit hook that runs `pgmigrate lint --security` (custom script) to detect privilege escalation or insecure defaults.', 'Store scan results in a dedicated audit table; fail the deployment if any critical issue is flagged.'], 'monitoring_and_alerting': ['Define two separate alert policies: one for OLTP queries with a 10\\u202fms threshold and another for OLAP queries with a 30\u2011second threshold.', \"Use `pg_stat_statements` to tag queries by label (e.g., `label='oltp'` or `label='olap'`) via `SET pg_stat_statements.track = 'all';` and custom instrumentation.\", 'Implement Grafana dashboards that display per\u2011query latency percentiles; set alert rules on `95th_percentile_latency > threshold` for each label.'], 'holistic_considerations': ['Balance index size vs. read performance by targeting a 3:1 ratio of index bytes to data bytes.', 'Schedule regular maintenance windows for vacuum/analyze to keep planner statistics accurate, especially after adding partial/BRIN indexes.', 'Document all changes in the design repo; use `git` hooks to enforce schema change reviews and security scan results.']}, 'steps': [{'action': 'Audit existing indexes with pg_index and drop redundant ones', 'result': 'Reduced index count from 45 to ~12, saving ~70% of index storage'}, {'action': 'Create composite OLTP index (pk + fk) and partial OLAP index on date range', 'result': 'OLTP point lookups <2\\u202fms; OLAP aggregation latency dropped from 8\\u202fs to ~1.5\\u202fs'}, {'action': 'Implement BRIN indexes for wide tables used only in OLAP ranges', 'result': 'Index size reduced by >80%, negligible impact on write path'}, {'action': 'Add security scan step to migration pipeline (pre\u2011commit hook)', 'result': 'All deployments now pass a static analysis check; no insecure defaults introduced'}, {'action': 'Configure Grafana dashboards with separate alert policies for OLTP and OLAP', 'result': 'Alerts trigger only when latency exceeds 10\\u202fms (OLTP) or 30\\u202fs (OLAP), reducing noise'}], 'required_capabilities': ['PostgreSQL index design', 'Zero\u2011downtime schema migration', 'CI/CD pipeline customization', 'Security scanning for database schemas', 'Performance monitoring and alerting with Grafana/Prometheus']}\n\nBRAIN RECALLED KNOWLEDGE:\nSkill name: No skill recalled\nSkill type: unknown\nAbstract steps: []\nTransfer score: N/A\nAdaptations: {}\nAll candidates: []\n\nINSTRUCTIONS:\n- Compose insights from ALL recalled skills into a unified solution.\n- Use recipe patterns for structuring your approach.\n- Use anti-pattern knowledge to AVOID known failure modes.\n- Use path knowledge to select the optimal execution sequence.\n- Clearly note which skills contributed and how you composed them.\n\nReturn JSON with:\n- \"response\": your complete composed solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"skills_composed\": list of skill names/types used\n- \"anti_patterns_avoided\": list of anti-patterns avoided\n- \"composition_strategy\": how you combined multiple skills\n- \"used_recalled_skill\": true or false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on composition"
+    },
+    "brain_learn": {
+      "response": "Learned skill: procedural:general:evaluation",
+      "confidence": "0.69",
+      "internal_reasoning": "Abstracted 8 steps into transferable skill 'procedural:general:evaluation'",
+      "skill_id": "ab4eabc9-b506-46c1-b0ed-c910c4e56c86",
+      "skill_name": "procedural:general:evaluation",
+      "skill_steps": [
+        "index [target]",
+        "index [target]",
+        "index [target]",
+        "group [target]",
+        "scan [target]",
+        "deploy [target]",
+        "update [target]",
+        "schedule [target]"
+      ],
+      "skill_tags": [
+        "generation",
+        "general",
+        "1\ufe0f\u20e3 **Index Strategy**\n   \u2022 Audit existing indexes with `pg_index`/`pg_stat_user_indexes`; drop redundant single\u2011column indexes that are subsumed by composites.\n   \u2022 Create a composite OLTP index on t",
+        "evaluation",
+        "planning"
+      ]
+    },
+    "brain_feedback": {
+      "response": "No skill_id provided for feedback.",
+      "confidence": "0.0",
+      "internal_reasoning": "Feedback requires a skill_id from a previous recall."
+    },
+    "task_result": {
+      "response": "1\ufe0f\u20e3 **Index Strategy**\n- Audit existing indexes via pg_index/pg_stat_user_indexes; drop redundant single\u2011column indexes.\n- Create composite OLTP index on primary key + frequent FK, built concurrently during low traffic.\n- Add partial OLAP index: CREATE INDEX ON sales(date) WHERE date >= now() - interval '90 days'; include aggregation columns if used in GROUP BY.\n- Use BRIN for very wide tables that need only range scans (e.g., CREATE INDEX ON large_table USING brin (date)).\n\n2\ufe0f\u20e3 **Zero\u2011Downtime Deployment**\n- Split schema changes: first create new columns/indexes concurrently; then switch logic via feature flags or incremental data load.\n- Use logical replication to keep standby up\u2011to\u2011date; perform cutover during maintenance window.\n- Wrap each migration step in a transaction with SET LOCAL lock_timeout = '5s'; provide fallback rollback script.\n\n3\ufe0f\u20e3 **Security Scan Integration**\n- Add pre\u2011commit CI hook that runs custom lint (pgmigrate lint --security) against migration files, checking for privilege escalation or insecure defaults.\n- Store scan results in audit table; fail deployment if any critical issue flagged.\n\n4\ufe0f\u20e3 **Monitoring & Alerting**\n- Tag queries with label='oltp' or 'olap' via pg_stat_statements and custom instrumentation.\n- Grafana dashboards show 95th\u2011percentile latency per label.\n- Two alert policies:\n   \u2022 OLTP: trigger if 95th_percentile_latency > 10ms.\n   \u2022 OLAP: trigger if 95th_percentile_latency > 30s.\n\n5\ufe0f\u20e3 **Maintenance & Documentation**\n- Nightly VACUUM/ANALYZE; weekly ANALYZE after large index changes.\n- Document schema changes in design repo; enforce review via Git hooks that check security scan results before merge.",
+      "confidence": "0.95",
+      "internal_reasoning": "I synthesized the requirements: balanced indexing for OLTP vs OLAP, zero\u2011downtime migration steps, added a security lint step to satisfy CI/CD, and set distinct latency thresholds with query labeling for monitoring. All decisions are based on PostgreSQL best practices and the constraints provided.",
+      "_metrics": {
+        "tokens": 1778,
+        "prompt_tokens": 1274,
+        "completion_tokens": 504,
+        "latency_ms": 4679.8,
+        "cost_usd": 0.000289,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'database_design', 'task': \"Optimize a PostgreSQL database with 100M records where read latency has degraded to 8 seconds for critical queries. The database design recipe suggests index optimization and the CI/CD recipe mandates zero-downtime deployment for schema changes. However: (1) the database serves a mixed workload \u2014 70% OLTP (point lookups, small writes) and 30% OLAP (aggregation queries over 90-day windows). Indexes that speed up OLTP reads slow down OLAP aggregations because the query planner switches from sequential scans to index scans that are SLOWER for large range queries on wide tables, (2) the previous DBA's approach of 'index on every query column' (index_everything anti-pattern) resulted in 45 indexes consuming more space than the actual data and degrading write performance by 5x, (3) the CI/CD recipe says 'don't deploy without security scan' but the database migration tool doesn't have a security scanning step \u2014 adding one requires modifying the migration pipeline, (4) the monitoring recipe requires alerting on query performance regression, but the OLTP and OLAP queries have fundamentally different acceptable latency ranges (10ms vs 30s). You must compose database design, deployment, and monitoring approaches for a workload that contradicts simple optimization heuristics.\"}\n\nCOMPOSED SOLUTION:\n1\ufe0f\u20e3 **Index Strategy**\n   \u2022 Audit existing indexes with `pg_index`/`pg_stat_user_indexes`; drop redundant single\u2011column indexes that are subsumed by composites.\n   \u2022 Create a composite OLTP index on the primary key + most frequent foreign keys (e.g., `(user_id, status)`), built concurrently during low traffic.\n   \u2022 Add a partial OLAP index: `CREATE INDEX ON sales(date) WHERE date >= now() - interval '90 days'` and include aggregation columns if they are frequently used in GROUP BY.\n   \u2022 For very wide tables that only need range scans on dates or numeric ranges, add BRIN indexes (`CREATE INDEX ON large_table USING brin (date)`), which keep index size minimal.\n\n2\ufe0f\u20e3 **Zero\u2011Downtime Deployment**\n   \u2022 Split schema changes into reversible steps: first create new columns/indexes in parallel; then switch application logic via feature flags or a small migration script that adds the column with a default and updates rows incrementally.\n   \u2022 Use logical replication to keep a standby replica up\u2011to\u2011date; perform cutover during a scheduled maintenance window.\n   \u2022 Wrap each migration step in a transaction with `SET LOCAL lock_timeout = '5s'` and provide a fallback script that rolls back if the lock timeout is hit.\n\n3\ufe0f\u20e3 **Security Scan Integration**\n   \u2022 Add a pre\u2011commit hook to the CI pipeline that runs a custom lint tool (`pgmigrate lint --security`) against migration files, checking for privilege escalation or insecure defaults.\n   \u2022 Store scan results in an audit table; fail the deployment if any critical issue is flagged.\n\n4\ufe0f\u20e3 **Monitoring & Alerting**\n   \u2022 Tag queries with `label='oltp'` or `label='olap'` using `pg_stat_statements.track = 'all'` and a custom instrumentation layer.\n   \u2022 Build Grafana dashboards that show 95th\u2011percentile latency per label.\n   \u2022 Create two alert policies:\n     - OLTP: trigger if `95th_percentile_latency > 10ms`.\n     - OLAP: trigger if `95th_percentile_latency > 30s`.\n\n5\ufe0f\u20e3 **Maintenance & Documentation**\n   \u2022 Schedule nightly vacuum/analyze and weekly analyze after large index changes to keep planner statistics accurate.\n   \u2022 Document all schema changes in a design repo; enforce review via Git hooks that check for security scan results before merge.\n\nThis approach balances OLTP speed, OLAP efficiency, zero\u2011downtime migrations, security compliance, and meaningful monitoring without over\u2011indexing or noisy alerts.\n\nCOMPOSITION STRATEGY:\nN/A\n\nBRAIN METRICS:\nSkills composed: []\nAnti-patterns avoided: []\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": list of skills that contributed\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"recalled_skill\": primary skill or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

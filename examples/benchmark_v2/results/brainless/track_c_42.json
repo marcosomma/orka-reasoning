@@ -1,100 +1,29 @@
 {
   "task_id": "track_c_42",
   "condition": "brainless",
-  "elapsed_s": 2.64,
+  "elapsed_s": 3.16,
   "success": true,
   "output": {
     "response": "",
     "confidence": "0.0",
-    "internal_reasoning": "Unable to provide a confident answer that meets the required 0.9 confidence threshold.",
+    "internal_reasoning": "Unable to provide a confident answer within the required constraints.",
     "_metrics": {
-      "tokens": 2105,
-      "prompt_tokens": 2061,
-      "completion_tokens": 44,
-      "latency_ms": 1072.24,
-      "cost_usd": 6.7e-05,
+      "tokens": 2098,
+      "prompt_tokens": 2060,
+      "completion_tokens": 38,
+      "latency_ms": 1016.44,
+      "cost_usd": 6.4e-05,
       "model": "openai/gpt-oss-20b",
       "provider": "lm_studio"
     },
-    "formatted_prompt": "Produce the FINAL structured output.\n\nDOMAIN: customer_support\nTASK: We need tax documentation but our situation is complex: (1) We're a UK-registered company (VAT number GB123456789) but your billing address shows our US branch office, (2) We need both a W-8BEN-E (for US withholding tax exemption under the US-UK tax treaty, Article 12 royalties provision) and a proper VAT invoice (not a receipt \u2014 a real invoice with your VAT ID, our VAT ID, the correct VAT reverse-charge notation for B2B digital services under EU/UK rules), (3) Your invoices currently don't separate the software subscription (which is a digital service subject to reverse charge) from the professional services component (2 consulting hours from last month, which might have different VAT treatment), (4) Our previous invoices incorrectly applied 20% UK VAT when they should have been zero-rated under reverse charge \u2014 we need corrected credit notes for the last 6 months, and (5) Our quarterly VAT return is due in 3 weeks and HMRC penalties for incorrect returns start at 15% of the underpaid tax. Account: ENT-55001.\n\nROUTING DECISION: shortlist\nTARGET: [{'node_id': 'billing_specialist', 'path': ['billing_specialist', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['medical_content'], 'safety_details': {'content': {'medical_matches': ['\\\\b(medication|treatment|therapy|surgery)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7015563702583314, 'score_components': {'llm': 0.5, 'heuristics': 0.7927818512916566, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7680955830289405}, {'node_id': 'billing_specialist', 'path': ['billing_specialist', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['medical_content'], 'safety_details': {'content': {'medical_matches': ['\\\\b(medication|treatment|therapy|surgery)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7015563702583314, 'score_components': {'llm': 0.5, 'heuristics': 0.7927818512916566, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7680955830289405}, {'node_id': 'billing_specialist', 'path': ['billing_specialist', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['medical_content'], 'safety_details': {'content': {'medical_matches': ['\\\\b(medication|treatment|therapy|surgery)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7015563702583314, 'score_components': {'llm': 0.5, 'heuristics': 0.7927818512916566, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7680955830289405}]\nCONFIDENCE: 0.5680955830289405\n\nEXECUTION RESULT:\n\n\nReturn JSON with:\n- \"response\": comprehensive solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"route_decision\": the routing decision made\n- \"route_target\": selected path\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    "formatted_prompt": "Produce the FINAL structured output.\n\nDOMAIN: customer_support\nTASK: We need tax documentation but our situation is complex: (1) We're a UK-registered company (VAT number GB123456789) but your billing address shows our US branch office, (2) We need both a W-8BEN-E (for US withholding tax exemption under the US-UK tax treaty, Article 12 royalties provision) and a proper VAT invoice (not a receipt \u2014 a real invoice with your VAT ID, our VAT ID, the correct VAT reverse-charge notation for B2B digital services under EU/UK rules), (3) Your invoices currently don't separate the software subscription (which is a digital service subject to reverse charge) from the professional services component (2 consulting hours from last month, which might have different VAT treatment), (4) Our previous invoices incorrectly applied 20% UK VAT when they should have been zero-rated under reverse charge \u2014 we need corrected credit notes for the last 6 months, and (5) Our quarterly VAT return is due in 3 weeks and HMRC penalties for incorrect returns start at 15% of the underpaid tax. Account: ENT-55001.\n\nROUTING DECISION: shortlist\nTARGET: [{'node_id': 'billing_specialist', 'path': ['billing_specialist', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['medical_content'], 'safety_details': {'content': {'medical_matches': ['\\\\b(medication|treatment|therapy|surgery)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7015563702583314, 'score_components': {'llm': 0.5, 'heuristics': 0.7927818512916566, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7680955830289405}, {'node_id': 'billing_specialist', 'path': ['billing_specialist', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['medical_content'], 'safety_details': {'content': {'medical_matches': ['\\\\b(medication|treatment|therapy|surgery)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7015563702583314, 'score_components': {'llm': 0.5, 'heuristics': 0.7927818512916566, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7680955830289405}, {'node_id': 'billing_specialist', 'path': ['billing_specialist', 'quality_checker'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['medical_content'], 'safety_details': {'content': {'medical_matches': ['\\\\b(medication|treatment|therapy|surgery)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7015563702583314, 'score_components': {'llm': 0.5, 'heuristics': 0.7927818512916566, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7680955830289405}]\nCONFIDENCE: 0.5680955830289405\n\nEXECUTION RESULT:\n\n\nReturn JSON with:\n- \"response\": comprehensive solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"route_decision\": the routing decision made\n- \"route_target\": selected path\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection",
+    "trace_id": "463f9dad-870c-410c-b824-4cda0975a961",
+    "execution_time_ms": 1019.4416046142578
   },
   "agent_outputs": {
     "smart_router": {
       "decision": "shortlist",
       "target": [
-        {
-          "node_id": "billing_specialist",
-          "path": [
-            "billing_specialist",
-            "knowledge_base_search"
-          ],
-          "depth": 2,
-          "feasible": true,
-          "constraints_met": true,
-          "graphscout_generated": true,
-          "estimated_cost": 0.002,
-          "estimated_latency": 2000.0,
-          "budget_assessment": {
-            "compliant": true,
-            "violations": [],
-            "estimates": {
-              "tokens": 240,
-              "cost_usd": 0.002,
-              "latency_ms": 2000.0
-            },
-            "remaining_budget": {
-              "tokens": 50000,
-              "cost_usd": 1.0,
-              "latency_ms": 30000.0
-            }
-          },
-          "fits_budget": true,
-          "llm_evaluation": {
-            "relevance_score": 0.5,
-            "confidence": 0.8,
-            "reasoning": "Heuristic evaluation: billing_specialist matched question keywords",
-            "expected_output": "Agent execution result",
-            "estimated_tokens": 500,
-            "estimated_cost": 0.001,
-            "estimated_latency_ms": 1000,
-            "risk_factors": [],
-            "efficiency_rating": "medium",
-            "is_deterministic_fallback": true
-          },
-          "llm_validation": {
-            "is_valid": false,
-            "confidence": 0.8,
-            "efficiency_score": 0.9,
-            "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
-            "suggested_improvements": [],
-            "risk_assessment": "low",
-            "is_deterministic_fallback": true
-          },
-          "safety_score": 0.9,
-          "safety_risks": [
-            "medical_content"
-          ],
-          "safety_details": {
-            "content": {
-              "medical_matches": [
-                "\\b(medication|treatment|therapy|surgery)\\b"
-              ]
-            },
-            "capabilities": {
-              "forbidden_capabilities": []
-            },
-            "policy": {}
-          },
-          "score": 0.7015563702583314,
-          "score_components": {
-            "llm": 0.5,
-            "heuristics": 0.7927818512916566,
-            "prior": 0.9,
-            "cost": 0.98,
-            "latency": 0.8
-          },
-          "confidence": 0.7680955830289405
-        },
         {
           "node_id": "billing_specialist",
           "path": [
@@ -240,13 +169,86 @@
             "latency": 0.8
           },
           "confidence": 0.7680955830289405
+        },
+        {
+          "node_id": "billing_specialist",
+          "path": [
+            "billing_specialist",
+            "quality_checker"
+          ],
+          "depth": 2,
+          "feasible": true,
+          "constraints_met": true,
+          "graphscout_generated": true,
+          "estimated_cost": 0.002,
+          "estimated_latency": 2000.0,
+          "budget_assessment": {
+            "compliant": true,
+            "violations": [],
+            "estimates": {
+              "tokens": 240,
+              "cost_usd": 0.002,
+              "latency_ms": 2000.0
+            },
+            "remaining_budget": {
+              "tokens": 50000,
+              "cost_usd": 1.0,
+              "latency_ms": 30000.0
+            }
+          },
+          "fits_budget": true,
+          "llm_evaluation": {
+            "relevance_score": 0.5,
+            "confidence": 0.8,
+            "reasoning": "Heuristic evaluation: billing_specialist matched question keywords",
+            "expected_output": "Agent execution result",
+            "estimated_tokens": 500,
+            "estimated_cost": 0.001,
+            "estimated_latency_ms": 1000,
+            "risk_factors": [],
+            "efficiency_rating": "medium",
+            "is_deterministic_fallback": true
+          },
+          "llm_validation": {
+            "is_valid": false,
+            "confidence": 0.8,
+            "efficiency_score": 0.9,
+            "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+            "suggested_improvements": [],
+            "risk_assessment": "low",
+            "is_deterministic_fallback": true
+          },
+          "safety_score": 0.9,
+          "safety_risks": [
+            "medical_content"
+          ],
+          "safety_details": {
+            "content": {
+              "medical_matches": [
+                "\\b(medication|treatment|therapy|surgery)\\b"
+              ]
+            },
+            "capabilities": {
+              "forbidden_capabilities": []
+            },
+            "policy": {}
+          },
+          "score": 0.7015563702583314,
+          "score_components": {
+            "llm": 0.5,
+            "heuristics": 0.7927818512916566,
+            "prior": 0.9,
+            "cost": 0.98,
+            "latency": 0.8
+          },
+          "confidence": 0.7680955830289405
         }
       ],
       "confidence": 0.5680955830289405,
       "reasoning": "Close competition with margin 0.000 - returning top 3 options",
       "trace": {
         "graph_scout_version": "1.0.0",
-        "timestamp": "2026-04-10T23:15:44.833817+00:00",
+        "timestamp": "2026-06-28T23:35:15.850759+00:00",
         "question": "Given this support request, find the best processing path.\nWe need tax documentation but our situation is complex: (1) We're a UK-registered company (VAT number GB123456789) but your billing address shows our US branch office, (2) We need both a W-8BEN-E (for US withholding tax exemption under the US-UK tax treaty, Article 12 royalties provision) and a proper VAT invoice (not a receipt \u2014 a real invoice with your VAT ID, our VAT ID, the correct VAT reverse-charge notation for B2B digital services under EU/UK rules), (3) Your invoices currently don't separate the software subscription (which is a digital service subject to reverse charge) from the professional services component (2 consulting hours from last month, which might have different VAT treatment), (4) Our previous invoices incorrectly applied 20% UK VAT when they should have been zero-rated under reverse charge \u2014 we need corrected credit notes for the last 6 months, and (5) Our quarterly VAT return is due in 3 weeks and HMRC penalties for incorrect returns start at 15% of the underpaid tax. Account: ENT-55001.",
         "config": {
           "k_beam": 3,
@@ -261,7 +263,7 @@
           }
         },
         "discovery": {
-          "total_candidates": 91,
+          "total_candidates": 49,
           "candidate_nodes": [
             "knowledge_base_search",
             "response_drafter",
@@ -276,18 +278,6 @@
             "knowledge_base_search",
             "knowledge_base_search",
             "knowledge_base_search",
-            "knowledge_base_search",
-            "knowledge_base_search",
-            "knowledge_base_search",
-            "knowledge_base_search",
-            "knowledge_base_search",
-            "knowledge_base_search",
-            "response_drafter",
-            "response_drafter",
-            "response_drafter",
-            "response_drafter",
-            "response_drafter",
-            "response_drafter",
             "response_drafter",
             "response_drafter",
             "response_drafter",
@@ -300,18 +290,6 @@
             "quality_checker",
             "quality_checker",
             "quality_checker",
-            "quality_checker",
-            "quality_checker",
-            "quality_checker",
-            "quality_checker",
-            "quality_checker",
-            "quality_checker",
-            "escalation_handler",
-            "escalation_handler",
-            "escalation_handler",
-            "escalation_handler",
-            "escalation_handler",
-            "escalation_handler",
             "escalation_handler",
             "escalation_handler",
             "escalation_handler",
@@ -324,30 +302,12 @@
             "account_recovery",
             "account_recovery",
             "account_recovery",
-            "account_recovery",
-            "account_recovery",
-            "account_recovery",
-            "account_recovery",
-            "account_recovery",
-            "account_recovery",
             "billing_specialist",
             "billing_specialist",
             "billing_specialist",
             "billing_specialist",
             "billing_specialist",
             "billing_specialist",
-            "billing_specialist",
-            "billing_specialist",
-            "billing_specialist",
-            "billing_specialist",
-            "billing_specialist",
-            "billing_specialist",
-            "technical_support",
-            "technical_support",
-            "technical_support",
-            "technical_support",
-            "technical_support",
-            "technical_support",
             "technical_support",
             "technical_support",
             "technical_support",
@@ -456,7 +416,7 @@
               "node_id": "billing_specialist",
               "path": [
                 "billing_specialist",
-                "knowledge_base_search"
+                "response_drafter"
               ],
               "depth": 2,
               "feasible": true,
@@ -529,7 +489,7 @@
               "node_id": "billing_specialist",
               "path": [
                 "billing_specialist",
-                "response_drafter"
+                "quality_checker"
               ],
               "depth": 2,
               "feasible": true,
@@ -611,9 +571,9 @@
       "status": "success",
       "metrics": {
         "run_id": "unknown",
-        "timestamp": "2026-04-11T01:15:44.673384",
+        "timestamp": "2026-06-29T01:35:15.620772",
         "path_discovery": {
-          "candidates_discovered": 91,
+          "candidates_discovered": 49,
           "candidates_after_budget": 0,
           "candidates_after_safety": 0,
           "reduction_rate": 1.0
@@ -702,7 +662,7 @@
               "node_id": "billing_specialist",
               "path": [
                 "billing_specialist",
-                "knowledge_base_search"
+                "response_drafter"
               ],
               "depth": 2,
               "feasible": true,
@@ -775,7 +735,7 @@
               "node_id": "billing_specialist",
               "path": [
                 "billing_specialist",
-                "response_drafter"
+                "quality_checker"
               ],
               "depth": 2,
               "feasible": true,
@@ -849,7 +809,7 @@
           "reasoning_preview": "Close competition with margin 0.000 - returning top 3 options"
         },
         "performance": {
-          "total_time_ms": 160.4330539703369,
+          "total_time_ms": 229.98690605163574,
           "breakdown": {
             "budget_filter_ms": 0.0,
             "safety_filter_ms": 0.0,
@@ -873,79 +833,6 @@
       "result": {
         "decision": "shortlist",
         "target": [
-          {
-            "node_id": "billing_specialist",
-            "path": [
-              "billing_specialist",
-              "knowledge_base_search"
-            ],
-            "depth": 2,
-            "feasible": true,
-            "constraints_met": true,
-            "graphscout_generated": true,
-            "estimated_cost": 0.002,
-            "estimated_latency": 2000.0,
-            "budget_assessment": {
-              "compliant": true,
-              "violations": [],
-              "estimates": {
-                "tokens": 240,
-                "cost_usd": 0.002,
-                "latency_ms": 2000.0
-              },
-              "remaining_budget": {
-                "tokens": 50000,
-                "cost_usd": 1.0,
-                "latency_ms": 30000.0
-              }
-            },
-            "fits_budget": true,
-            "llm_evaluation": {
-              "relevance_score": 0.5,
-              "confidence": 0.8,
-              "reasoning": "Heuristic evaluation: billing_specialist matched question keywords",
-              "expected_output": "Agent execution result",
-              "estimated_tokens": 500,
-              "estimated_cost": 0.001,
-              "estimated_latency_ms": 1000,
-              "risk_factors": [],
-              "efficiency_rating": "medium",
-              "is_deterministic_fallback": true
-            },
-            "llm_validation": {
-              "is_valid": false,
-              "confidence": 0.8,
-              "efficiency_score": 0.9,
-              "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
-              "suggested_improvements": [],
-              "risk_assessment": "low",
-              "is_deterministic_fallback": true
-            },
-            "safety_score": 0.9,
-            "safety_risks": [
-              "medical_content"
-            ],
-            "safety_details": {
-              "content": {
-                "medical_matches": [
-                  "\\b(medication|treatment|therapy|surgery)\\b"
-                ]
-              },
-              "capabilities": {
-                "forbidden_capabilities": []
-              },
-              "policy": {}
-            },
-            "score": 0.7015563702583314,
-            "score_components": {
-              "llm": 0.5,
-              "heuristics": 0.7927818512916566,
-              "prior": 0.9,
-              "cost": 0.98,
-              "latency": 0.8
-            },
-            "confidence": 0.7680955830289405
-          },
           {
             "node_id": "billing_specialist",
             "path": [
@@ -1091,43 +978,120 @@
               "latency": 0.8
             },
             "confidence": 0.7680955830289405
+          },
+          {
+            "node_id": "billing_specialist",
+            "path": [
+              "billing_specialist",
+              "quality_checker"
+            ],
+            "depth": 2,
+            "feasible": true,
+            "constraints_met": true,
+            "graphscout_generated": true,
+            "estimated_cost": 0.002,
+            "estimated_latency": 2000.0,
+            "budget_assessment": {
+              "compliant": true,
+              "violations": [],
+              "estimates": {
+                "tokens": 240,
+                "cost_usd": 0.002,
+                "latency_ms": 2000.0
+              },
+              "remaining_budget": {
+                "tokens": 50000,
+                "cost_usd": 1.0,
+                "latency_ms": 30000.0
+              }
+            },
+            "fits_budget": true,
+            "llm_evaluation": {
+              "relevance_score": 0.5,
+              "confidence": 0.8,
+              "reasoning": "Heuristic evaluation: billing_specialist matched question keywords",
+              "expected_output": "Agent execution result",
+              "estimated_tokens": 500,
+              "estimated_cost": 0.001,
+              "estimated_latency_ms": 1000,
+              "risk_factors": [],
+              "efficiency_rating": "medium",
+              "is_deterministic_fallback": true
+            },
+            "llm_validation": {
+              "is_valid": false,
+              "confidence": 0.8,
+              "efficiency_score": 0.9,
+              "validation_reasoning": "Heuristic validation based on path structure (length: 2)",
+              "suggested_improvements": [],
+              "risk_assessment": "low",
+              "is_deterministic_fallback": true
+            },
+            "safety_score": 0.9,
+            "safety_risks": [
+              "medical_content"
+            ],
+            "safety_details": {
+              "content": {
+                "medical_matches": [
+                  "\\b(medication|treatment|therapy|surgery)\\b"
+                ]
+              },
+              "capabilities": {
+                "forbidden_capabilities": []
+              },
+              "policy": {}
+            },
+            "score": 0.7015563702583314,
+            "score_components": {
+              "llm": 0.5,
+              "heuristics": 0.7927818512916566,
+              "prior": 0.9,
+              "cost": 0.98,
+              "latency": 0.8
+            },
+            "confidence": 0.7680955830289405
           }
         ],
         "confidence": 0.5680955830289405,
         "reasoning": "Close competition with margin 0.000 - returning top 3 options",
-        "candidates_evaluated": 91,
+        "candidates_evaluated": 49,
         "top_score": 0.7015563702583314
       }
     },
     "route_executor": {
       "response": "",
       "confidence": "0.0",
-      "internal_reasoning": "The requested confidence threshold of 0.9 cannot be met given the current routing decision and available information.",
+      "internal_reasoning": "The routed decision indicates insufficient confidence to provide a reliable answer within the required constraints.",
       "_metrics": {
-        "tokens": 2092,
-        "prompt_tokens": 2044,
-        "completion_tokens": 48,
-        "latency_ms": 1100.14,
-        "cost_usd": 6.9e-05,
+        "tokens": 2086,
+        "prompt_tokens": 2043,
+        "completion_tokens": 43,
+        "latency_ms": 1045.39,
+        "cost_usd": 6.6e-05,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "Execute the routed task based on the GraphScout decision.\n\nORIGINAL REQUEST: We need tax documentation but our situation is complex: (1) We're a UK-registered company (VAT number GB123456789) but your billing address shows our US branch office, (2) We need both a W-8BEN-E (for US withholding tax exemption under the US-UK tax treaty, Article 12 royalties provision) and a proper VAT invoice (not a receipt \u2014 a real invoice with your VAT ID, our VAT ID, the correct VAT reverse-charge notation for B2B digital services under EU/UK rules), (3) Your invoices currently don't separate the software subscription (which is a digital service subject to reverse charge) from the professional services component (2 consulting hours from last month, which might have different VAT treatment), (4) Our previous invoices incorrectly applied 20% UK VAT when they should have been zero-rated under reverse charge \u2014 we need corrected credit notes for the last 6 months, and (5) Our quarterly VAT return is due in 3 weeks and HMRC penalties for incorrect returns start at 15% of the underpaid tax. Account: ENT-55001.\nROUTING DECISION: shortlist\nTARGET PATH: [{'node_id': 'billing_specialist', 'path': ['billing_specialist', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['medical_content'], 'safety_details': {'content': {'medical_matches': ['\\\\b(medication|treatment|therapy|surgery)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7015563702583314, 'score_components': {'llm': 0.5, 'heuristics': 0.7927818512916566, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7680955830289405}, {'node_id': 'billing_specialist', 'path': ['billing_specialist', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['medical_content'], 'safety_details': {'content': {'medical_matches': ['\\\\b(medication|treatment|therapy|surgery)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7015563702583314, 'score_components': {'llm': 0.5, 'heuristics': 0.7927818512916566, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7680955830289405}, {'node_id': 'billing_specialist', 'path': ['billing_specialist', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['medical_content'], 'safety_details': {'content': {'medical_matches': ['\\\\b(medication|treatment|therapy|surgery)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7015563702583314, 'score_components': {'llm': 0.5, 'heuristics': 0.7927818512916566, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7680955830289405}]\nROUTING CONFIDENCE: 0.5680955830289405\nREASONING: Close competition with margin 0.000 - returning top 3 options\n\nExecute and produce a thorough response following the selected path.\n\nReturn JSON with:\n- \"response\": your complete solution following the routed path\n- \"route_taken\": the path/agent selected\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": how the routing decision guided your response"
+      "formatted_prompt": "Execute the routed task based on the GraphScout decision.\n\nORIGINAL REQUEST: We need tax documentation but our situation is complex: (1) We're a UK-registered company (VAT number GB123456789) but your billing address shows our US branch office, (2) We need both a W-8BEN-E (for US withholding tax exemption under the US-UK tax treaty, Article 12 royalties provision) and a proper VAT invoice (not a receipt \u2014 a real invoice with your VAT ID, our VAT ID, the correct VAT reverse-charge notation for B2B digital services under EU/UK rules), (3) Your invoices currently don't separate the software subscription (which is a digital service subject to reverse charge) from the professional services component (2 consulting hours from last month, which might have different VAT treatment), (4) Our previous invoices incorrectly applied 20% UK VAT when they should have been zero-rated under reverse charge \u2014 we need corrected credit notes for the last 6 months, and (5) Our quarterly VAT return is due in 3 weeks and HMRC penalties for incorrect returns start at 15% of the underpaid tax. Account: ENT-55001.\nROUTING DECISION: shortlist\nTARGET PATH: [{'node_id': 'billing_specialist', 'path': ['billing_specialist', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['medical_content'], 'safety_details': {'content': {'medical_matches': ['\\\\b(medication|treatment|therapy|surgery)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7015563702583314, 'score_components': {'llm': 0.5, 'heuristics': 0.7927818512916566, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7680955830289405}, {'node_id': 'billing_specialist', 'path': ['billing_specialist', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['medical_content'], 'safety_details': {'content': {'medical_matches': ['\\\\b(medication|treatment|therapy|surgery)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7015563702583314, 'score_components': {'llm': 0.5, 'heuristics': 0.7927818512916566, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7680955830289405}, {'node_id': 'billing_specialist', 'path': ['billing_specialist', 'quality_checker'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['medical_content'], 'safety_details': {'content': {'medical_matches': ['\\\\b(medication|treatment|therapy|surgery)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7015563702583314, 'score_components': {'llm': 0.5, 'heuristics': 0.7927818512916566, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7680955830289405}]\nROUTING CONFIDENCE: 0.5680955830289405\nREASONING: Close competition with margin 0.000 - returning top 3 options\n\nExecute and produce a thorough response following the selected path.\n\nReturn JSON with:\n- \"response\": your complete solution following the routed path\n- \"route_taken\": the path/agent selected\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": how the routing decision guided your response",
+      "trace_id": "410f2e91-99f9-42f0-af82-4b95c3abc33e",
+      "execution_time_ms": 1048.0620861053467
     },
     "task_result": {
       "response": "",
       "confidence": "0.0",
-      "internal_reasoning": "Unable to provide a confident answer that meets the required 0.9 confidence threshold.",
+      "internal_reasoning": "Unable to provide a confident answer within the required constraints.",
       "_metrics": {
-        "tokens": 2105,
-        "prompt_tokens": 2061,
-        "completion_tokens": 44,
-        "latency_ms": 1072.24,
-        "cost_usd": 6.7e-05,
+        "tokens": 2098,
+        "prompt_tokens": 2060,
+        "completion_tokens": 38,
+        "latency_ms": 1016.44,
+        "cost_usd": 6.4e-05,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "Produce the FINAL structured output.\n\nDOMAIN: customer_support\nTASK: We need tax documentation but our situation is complex: (1) We're a UK-registered company (VAT number GB123456789) but your billing address shows our US branch office, (2) We need both a W-8BEN-E (for US withholding tax exemption under the US-UK tax treaty, Article 12 royalties provision) and a proper VAT invoice (not a receipt \u2014 a real invoice with your VAT ID, our VAT ID, the correct VAT reverse-charge notation for B2B digital services under EU/UK rules), (3) Your invoices currently don't separate the software subscription (which is a digital service subject to reverse charge) from the professional services component (2 consulting hours from last month, which might have different VAT treatment), (4) Our previous invoices incorrectly applied 20% UK VAT when they should have been zero-rated under reverse charge \u2014 we need corrected credit notes for the last 6 months, and (5) Our quarterly VAT return is due in 3 weeks and HMRC penalties for incorrect returns start at 15% of the underpaid tax. Account: ENT-55001.\n\nROUTING DECISION: shortlist\nTARGET: [{'node_id': 'billing_specialist', 'path': ['billing_specialist', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['medical_content'], 'safety_details': {'content': {'medical_matches': ['\\\\b(medication|treatment|therapy|surgery)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7015563702583314, 'score_components': {'llm': 0.5, 'heuristics': 0.7927818512916566, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7680955830289405}, {'node_id': 'billing_specialist', 'path': ['billing_specialist', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['medical_content'], 'safety_details': {'content': {'medical_matches': ['\\\\b(medication|treatment|therapy|surgery)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7015563702583314, 'score_components': {'llm': 0.5, 'heuristics': 0.7927818512916566, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7680955830289405}, {'node_id': 'billing_specialist', 'path': ['billing_specialist', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['medical_content'], 'safety_details': {'content': {'medical_matches': ['\\\\b(medication|treatment|therapy|surgery)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7015563702583314, 'score_components': {'llm': 0.5, 'heuristics': 0.7927818512916566, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7680955830289405}]\nCONFIDENCE: 0.5680955830289405\n\nEXECUTION RESULT:\n\n\nReturn JSON with:\n- \"response\": comprehensive solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"route_decision\": the routing decision made\n- \"route_target\": selected path\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+      "formatted_prompt": "Produce the FINAL structured output.\n\nDOMAIN: customer_support\nTASK: We need tax documentation but our situation is complex: (1) We're a UK-registered company (VAT number GB123456789) but your billing address shows our US branch office, (2) We need both a W-8BEN-E (for US withholding tax exemption under the US-UK tax treaty, Article 12 royalties provision) and a proper VAT invoice (not a receipt \u2014 a real invoice with your VAT ID, our VAT ID, the correct VAT reverse-charge notation for B2B digital services under EU/UK rules), (3) Your invoices currently don't separate the software subscription (which is a digital service subject to reverse charge) from the professional services component (2 consulting hours from last month, which might have different VAT treatment), (4) Our previous invoices incorrectly applied 20% UK VAT when they should have been zero-rated under reverse charge \u2014 we need corrected credit notes for the last 6 months, and (5) Our quarterly VAT return is due in 3 weeks and HMRC penalties for incorrect returns start at 15% of the underpaid tax. Account: ENT-55001.\n\nROUTING DECISION: shortlist\nTARGET: [{'node_id': 'billing_specialist', 'path': ['billing_specialist', 'knowledge_base_search'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['medical_content'], 'safety_details': {'content': {'medical_matches': ['\\\\b(medication|treatment|therapy|surgery)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7015563702583314, 'score_components': {'llm': 0.5, 'heuristics': 0.7927818512916566, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7680955830289405}, {'node_id': 'billing_specialist', 'path': ['billing_specialist', 'response_drafter'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['medical_content'], 'safety_details': {'content': {'medical_matches': ['\\\\b(medication|treatment|therapy|surgery)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7015563702583314, 'score_components': {'llm': 0.5, 'heuristics': 0.7927818512916566, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7680955830289405}, {'node_id': 'billing_specialist', 'path': ['billing_specialist', 'quality_checker'], 'depth': 2, 'feasible': True, 'constraints_met': True, 'graphscout_generated': True, 'estimated_cost': 0.002, 'estimated_latency': 2000.0, 'budget_assessment': {'compliant': True, 'violations': [], 'estimates': {'tokens': 240, 'cost_usd': 0.002, 'latency_ms': 2000.0}, 'remaining_budget': {'tokens': 50000, 'cost_usd': 1.0, 'latency_ms': 30000.0}}, 'fits_budget': True, 'llm_evaluation': {'relevance_score': 0.5, 'confidence': 0.8, 'reasoning': 'Heuristic evaluation: billing_specialist matched question keywords', 'expected_output': 'Agent execution result', 'estimated_tokens': 500, 'estimated_cost': 0.001, 'estimated_latency_ms': 1000, 'risk_factors': [], 'efficiency_rating': 'medium', 'is_deterministic_fallback': True}, 'llm_validation': {'is_valid': False, 'confidence': 0.8, 'efficiency_score': 0.9, 'validation_reasoning': 'Heuristic validation based on path structure (length: 2)', 'suggested_improvements': [], 'risk_assessment': 'low', 'is_deterministic_fallback': True}, 'safety_score': 0.9, 'safety_risks': ['medical_content'], 'safety_details': {'content': {'medical_matches': ['\\\\b(medication|treatment|therapy|surgery)\\\\b']}, 'capabilities': {'forbidden_capabilities': []}, 'policy': {}}, 'score': 0.7015563702583314, 'score_components': {'llm': 0.5, 'heuristics': 0.7927818512916566, 'prior': 0.9, 'cost': 0.98, 'latency': 0.8}, 'confidence': 0.7680955830289405}]\nCONFIDENCE: 0.5680955830289405\n\nEXECUTION RESULT:\n\n\nReturn JSON with:\n- \"response\": comprehensive solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"route_decision\": the routing decision made\n- \"route_target\": selected path\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection",
+      "trace_id": "463f9dad-870c-410c-b824-4cda0975a961",
+      "execution_time_ms": 1019.4416046142578
     }
   }
 }

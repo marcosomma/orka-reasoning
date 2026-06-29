@@ -258,7 +258,7 @@ async def run_benchmark(
     ``judge_benchmark.py`` and ``aggregate_benchmark.py``.
     """
     if results_dir is None:
-        results_dir = BENCHMARK_DIR / "results"
+        results_dir = BENCHMARK_DIR / "results_orka_0.9.17"
     results_dir = results_dir.resolve()
     results_dir.mkdir(parents=True, exist_ok=True)
 

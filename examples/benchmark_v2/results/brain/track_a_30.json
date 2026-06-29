@@ -1,284 +1,817 @@
 {
   "task_id": "track_a_30",
   "condition": "brain",
-  "elapsed_s": 23.96,
+  "elapsed_s": 28.19,
   "success": true,
   "output": {
     "response": {
-      "title": "Museum Digitization Operations Manual \u2013 Unified Specimen Handling & Imaging Protocols",
-      "table_of_contents": [
-        "1. Introduction & Scope",
-        "2. Department\u2011Specific Workflows",
-        "   2.1 Entomology \u2013 Pinned, Fluid\u2011Preserved, Freeze\u2011Dried",
-        "   2.2 Mammalogy \u2013 Study Skin, Skeletal, Fossil Matrix",
-        "   2.3 Herpetology \u2013 Thin\u2011Section, Fluid\u2011Preserved, Skeletal",
-        "   2.4 Paleobotany \u2013 Fossil Matrix, Thin\u2011Section, Macro",
-        "   2.5 Mineralogy \u2013 Mounts, Thin\u2011Section, CT",
-        "   2.6 Invertebrate Zoology \u2013 Pinned, Fluid\u2011Preserved, Freeze\u2011Dried",
-        "   2.7 Ichthyology \u2013 Prepared Skin, Skeletal, Fluid\u2011Preserved",
-        "   2.8 Ornithology \u2013 Study Skin, Skeletal, Macro",
-        "3. Decision Tree for Imaging Method Selection",
-        "4. Equipment Calibration Checklists (Macro, UV, CT, RTI)",
-        "5. Data Quality Validation Rules (Image, Metadata, File Integrity)",
-        "6. Cross\u2011Reference Matrix: Specimen Types Requiring Multiple Passes",
-        "7. Terminology Glossary & Naming Conventions",
-        "8. Vendor QA Protocols (Vendor A, B, C)",
-        "9. Appendices \u2013 Forms, Templates, Contact Lists"
-      ],
-      "key_components": {
-        "workflow_chapters": "Each chapter contains: specimen handling steps, preservation\u2011specific precautions, recommended imaging modalities, metadata capture fields aligned with Darwin Core/ABCD, and internal QA checkpoints.",
-        "decision_tree": "Flowchart starting with specimen type \u2192 preservation method \u2192 condition \u2192 suggested primary imaging (macro stacking, UV fluorescence, CT, RTI) with fallback options for fragile or degraded items.",
-        "calibration_checklists": "Separate pages for each modality: daily/weekly calibration tasks, reference targets, documentation of results.",
-        "qa_rules": {
-          "image_quality": "Minimum 300 dpi for macro, 600 dpi for thin\u2011section; color accuracy \u00b12% CIELAB.",
-          "metadata_completeness": "\u226595% required fields populated.",
-          "file_integrity": "Checksum verification (SHA-256) and file format validation."
+      "manual_title": "Unified Digitization Operations Manual",
+      "sections": [
+        {
+          "title": "Executive Summary",
+          "content": "Standardizes specimen handling, imaging, and metadata capture across eight curatorial departments for diverse preservation types and imaging modalities."
         },
-        "cross_reference_matrix": "Highlights specimens needing more than one imaging pass (e.g., pinned insect + CT scan) and links to relevant workflow sections.",
-        "glossary": "Unified definitions for terms such as \u2018study skin\u2019, \u2018prepared skin\u2019, \u2018thin\u2011section\u2019, with cross\u2011department synonyms.",
-        "vendor_protocols": {
-          "training_requirements": "Mandatory completion of manual modules and calibration exercises.",
-          "reporting_templates": "Standardized daily logs, QA checklists, incident reports.",
-          "audit_schedule": "Quarterly on\u2011site audits and monthly remote reviews."
+        {
+          "title": "Department\u2011Specific Workflows",
+          "departments": [
+            {
+              "name": "Entomology",
+              "preservation_types": [
+                "pinned",
+                "freeze\u2011dried"
+              ],
+              "imaging_sequence": [
+                "macro stacking",
+                "UV fluorescence",
+                "CT scanning (if internal structures)",
+                "RTI"
+              ],
+              "metadata_standard": "Darwin Core",
+              "handling_protocols": [
+                "Secure pinned specimens with archival pins; avoid pressure points.",
+                "Store freeze\u2011dried beetles at \u201320\u202f\u00b0C until imaging."
+              ],
+              "quality_checks": [
+                "image resolution \u226510\u202fMP",
+                "color accuracy \u00b13%"
+              ]
+            },
+            {
+              "name": "Mammalogy",
+              "preservation_types": [
+                "study skin"
+              ],
+              "imaging_sequence": [
+                "macro stacking",
+                "RTI",
+                "CT scanning (if skeletal elements present)"
+              ],
+              "metadata_standard": "ABCD Schema",
+              "handling_protocols": [
+                "Mount study skins on archival boards; protect from light.",
+                "Use foam inserts for fragile sections."
+              ],
+              "quality_checks": [
+                "image resolution \u226510\u202fMP",
+                "checksum verification"
+              ]
+            },
+            {
+              "name": "Herpetology",
+              "preservation_types": [
+                "study skin"
+              ],
+              "imaging_sequence": [
+                "macro stacking",
+                "UV fluorescence (for scale patterns)",
+                "RTI"
+              ],
+              "metadata_standard": "Darwin Core",
+              "handling_protocols": [
+                "Secure skins with archival pins; avoid moisture.",
+                "Store at 4\u202f\u00b0C if not immediately imaged."
+              ],
+              "quality_checks": [
+                "color fidelity \u00b13%",
+                "metadata completeness \u226595%"
+              ]
+            },
+            {
+              "name": "Paleobotany",
+              "preservation_types": [
+                "fossil matrix",
+                "thin\u2011section"
+              ],
+              "imaging_sequence": [
+                "macro stacking (if surface detail)",
+                "CT scanning (for internal structure)"
+              ],
+              "metadata_standard": "ABCD Schema",
+              "handling_protocols": [
+                "Minimize mechanical contact; use micro\u2011drill only if necessary.",
+                "Support thin\u2011sections with foam."
+              ],
+              "quality_checks": [
+                "image resolution \u226510\u202fMP",
+                "CT dose monitoring"
+              ]
+            },
+            {
+              "name": "Mineralogy",
+              "preservation_types": [
+                "fossil matrix"
+              ],
+              "imaging_sequence": [
+                "macro stacking",
+                "UV fluorescence (for inclusions)",
+                "CT scanning"
+              ],
+              "metadata_standard": "Darwin Core",
+              "handling_protocols": [
+                "Use non\u2011contact handling tools; avoid abrasive contact."
+              ],
+              "quality_checks": [
+                "color accuracy \u00b13%",
+                "CT phantom scan weekly"
+              ]
+            },
+            {
+              "name": "Invertebrate Zoology",
+              "preservation_types": [
+                "fluid\u2011preserved"
+              ],
+              "imaging_sequence": [
+                "macro stacking",
+                "RTI (for surface texture)",
+                "UV fluorescence (if needed)"
+              ],
+              "metadata_standard": "ABCD Schema",
+              "handling_protocols": [
+                "Transfer to fresh ethanol; check for leaks.",
+                "Keep specimens at 4\u202f\u00b0C until imaging."
+              ],
+              "quality_checks": [
+                "image resolution \u226510\u202fMP",
+                "checksum verification"
+              ]
+            },
+            {
+              "name": "Ichthyology",
+              "preservation_types": [
+                "fluid\u2011preserved"
+              ],
+              "imaging_sequence": [
+                "macro stacking",
+                "RTI (for scale patterns)",
+                "CT scanning (if skeletal elements present)"
+              ],
+              "metadata_standard": "Darwin Core",
+              "handling_protocols": [
+                "Use fresh ethanol; avoid agitation."
+              ],
+              "quality_checks": [
+                "color fidelity \u00b13%",
+                "metadata completeness \u226595%"
+              ]
+            },
+            {
+              "name": "Ornithology",
+              "preservation_types": [
+                "study skin"
+              ],
+              "imaging_sequence": [
+                "macro stacking",
+                "RTI (for feather detail)",
+                "UV fluorescence (if needed)"
+              ],
+              "metadata_standard": "ABCD Schema",
+              "handling_protocols": [
+                "Mount skins on archival boards; protect feathers."
+              ],
+              "quality_checks": [
+                "image resolution \u226510\u202fMP",
+                "checksum verification"
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Imaging Decision Tree",
+          "content": "Flowchart that selects imaging methods based on specimen type, preservation state, and research priority. Example paths:\n- Pinned beetle \u2192 Macro stacking \u2192 UV fluorescence \u2192 CT scanning (if internal structures needed).\n- Fluid\u2011preserved fish \u2192 RTI \u2192 CT scanning."
+        },
+        {
+          "title": "Equipment Calibration Checklists",
+          "checklists": [
+            {
+              "equipment": "Macro Camera",
+              "daily_tasks": [
+                "Focus check",
+                "Color chart calibration"
+              ]
+            },
+            {
+              "equipment": "UV Lamp",
+              "daily_tasks": [
+                "Power output verification",
+                "Filter integrity check"
+              ]
+            },
+            {
+              "equipment": "CT Scanner",
+              "weekly_tasks": [
+                "Phantom scan",
+                "Dose monitoring"
+              ]
+            },
+            {
+              "equipment": "RTI Setup",
+              "daily_tasks": [
+                "Light source alignment",
+                "Exposure consistency"
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Data Quality Validation Rules",
+          "rules": [
+            {
+              "rule": "Image resolution \u226510\u202fMP for macro; \u22652\u202fMP for UV/RTI"
+            },
+            {
+              "rule": "Color accuracy within \u00b13% of reference chart"
+            },
+            {
+              "rule": "Metadata completeness score \u226595%"
+            },
+            {
+              "rule": "File checksum matches repository record"
+            }
+          ]
+        },
+        {
+          "title": "Cross\u2011Reference Matrix",
+          "content": "Specimens requiring multiple imaging passes and recommended sequence. Highlights overlap between departments (e.g., herpetology study skins also used by ornithology for feather analysis)."
+        },
+        {
+          "title": "Terminology Glossary",
+          "entries": [
+            {
+              "term": "study skin",
+              "definition": "Prepared skin; standardized across departments."
+            },
+            {
+              "term": "thin\u2011section",
+              "definition": "Micro\u2011section of fossilized plant material."
+            },
+            {
+              "term": "fossil matrix",
+              "definition": "Preserved surrounding rock or sediment."
+            }
+          ]
+        },
+        {
+          "title": "Vendor Quality Assurance Protocols",
+          "components": [
+            {
+              "training": "Mandatory e\u2011learning on manual sections 2\u20135"
+            },
+            {
+              "SOP Adherence Checklist": "Daily log of handling, imaging, metadata capture"
+            },
+            {
+              "Performance Metrics": [
+                "Turnaround time",
+                "Error rate <1%",
+                "Compliance score \u226590%"
+              ]
+            },
+            {
+              "Audit": "Quarterly audit with internal staff"
+            }
+          ]
+        },
+        {
+          "title": "Implementation Roadmap",
+          "phases": [
+            {
+              "phase": 1,
+              "description": "Pilot in two departments; refine workflows."
+            },
+            {
+              "phase": 2,
+              "description": "Full rollout; vendor onboarding."
+            },
+            {
+              "phase": 3,
+              "description": "Continuous improvement via feedback loops."
+            }
+          ]
         }
-      },
-      "implementation_plan": [
-        "Collect baseline data from each department (inventory, current protocols).",
-        "Map preservation methods to imaging techniques.",
-        "Reconcile metadata standards into a unified schema.",
-        "Draft workflow chapters.",
-        "Build decision tree and cross\u2011reference matrix.",
-        "Create calibration checklists and QA rules.",
-        "Compile glossary and vendor protocols.",
-        "Assemble, review, and publish the manual."
       ],
-      "output_formats": [
-        "PDF guide for internal distribution",
-        "HTML version hosted on museum intranet with version control",
-        "Excel templates for metadata capture"
+      "appendices": [
+        {
+          "name": "A",
+          "title": "Imaging Decision Tree (flowchart)"
+        },
+        {
+          "name": "B",
+          "title": "Calibration Checklists"
+        },
+        {
+          "name": "C",
+          "title": "Data Validation Rules"
+        },
+        {
+          "name": "D",
+          "title": "Cross\u2011Reference Matrix"
+        },
+        {
+          "name": "E",
+          "title": "Glossary & Controlled Vocabularies"
+        },
+        {
+          "name": "F",
+          "title": "Vendor SOP Template"
+        }
       ]
     },
     "confidence": "0.95",
-    "internal_reasoning": "The response consolidates all required elements\u2014department workflows, decision tree, calibration checklists, QA rules, cross\u2011references, glossary, and vendor protocols\u2014into a structured manual outline that meets the task specifications.",
+    "internal_reasoning": "Constructed a comprehensive, department\u2011specific workflow structure incorporating preservation types, imaging methods, metadata standards, handling protocols, and quality checks. Added decision tree, calibration checklists, validation rules, cross\u2011references, glossary, vendor QA, and implementation roadmap to meet all task requirements.",
     "_metrics": {
-      "tokens": 2199,
-      "prompt_tokens": 1350,
-      "completion_tokens": 849,
-      "latency_ms": 7409.66,
-      "cost_usd": 0.000466,
+      "tokens": 3314,
+      "prompt_tokens": 1576,
+      "completion_tokens": 1738,
+      "latency_ms": 13042.64,
+      "cost_usd": 0.00082,
       "model": "openai/gpt-oss-20b",
       "provider": "lm_studio"
     },
-    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'museum_curation', 'task': 'Gather specimen handling protocols from 8 curatorial departments (entomology, mammalogy, herpetology, paleobotany, mineralogy, invertebrate zoology, ichthyology, ornithology) each with different preservation methods (pinned, fluid-preserved, freeze-dried, fossil matrix, thin-section, skeletal, study skin), imaging requirements (macro stacking, UV fluorescence, CT scanning, RTI), and metadata standards (Darwin Core, ABCD Schema, custom legacy databases). Structure into a unified digitization operations manual with department-specific workflows, a decision tree for imaging method selection based on specimen type/condition, equipment calibration checklists, and data quality validation rules. Polish with cross-references between specimen types that require multiple imaging passes, terminology glossary reconciling departmental naming conflicts, and quality assurance protocols for the 3 outsourced digitization vendors who will use this manual.'}\n\nSOLUTION:\nThe manual is organized into eight modular chapters, one for each curatorial department, plus cross\u2011cutting sections that provide decision support, calibration, QA, and vendor guidance.\n\n**Structure (Table of Contents)**\n1. Introduction & Scope\n2. Department\u2011Specific Workflows\n   2.1 Entomology \u2013 Pinned, Fluid\u2011Preserved, Freeze\u2011Dried\n   2.2 Mammalogy \u2013 Study Skin, Skeletal, Fossil Matrix\n   2.3 Herpetology \u2013 Thin\u2011Section, Fluid\u2011Preserved, Skeletal\n   2.4 Paleobotany \u2013 Fossil Matrix, Thin\u2011Section, Macro\n   2.5 Mineralogy \u2013 Specimen Mounts, Thin\u2011Section, CT\n   2.6 Invertebrate Zoology \u2013 Pinned, Fluid\u2011Preserved, Freeze\u2011Dried\n   2.7 Ichthyology \u2013 Prepared Skin, Skeletal, Fluid\u2011Preserved\n   2.8 Ornithology \u2013 Study Skin, Skeletal, Macro\n3. Decision Tree for Imaging Method Selection\n4. Equipment Calibration Checklists (Macro, UV, CT, RTI)\n5. Data Quality Validation Rules (Image, Metadata, File Integrity)\n6. Cross\u2011Reference Matrix: Specimen Types Requiring Multiple Passes\n7. Terminology Glossary & Naming Conventions\n8. Vendor QA Protocols (Vendor A, B, C)\n9. Appendices \u2013 Forms, Templates, Contact Lists\n\n**Key Components**\n- **Workflow Chapters**: Each contains specimen handling steps, preservation\u2011specific precautions, recommended imaging modalities, metadata capture fields (aligned with Darwin Core/ABCD), and internal QA checkpoints.\n- **Decision Tree**: A flowchart that starts with specimen type \u2192 preservation method \u2192 condition \u2192 suggested primary imaging (macro stacking, UV fluorescence, CT, RTI) with fallback options for degraded or fragile items.\n- **Calibration Checklists**: Separate pages for each modality, including daily/weekly calibration tasks, reference targets, and documentation of results.\n- **QA Rules**: Minimum acceptable resolution, color accuracy, metadata completeness percentages, checksum verification, and a pre\u2011acceptance checklist.\n- **Cross\u2011Reference Matrix**: Highlights specimens that need more than one imaging pass (e.g., pinned insect + CT scan) and links to the relevant workflow sections.\n- **Glossary**: Unified definitions for terms such as \u201cstudy skin\u201d, \u201cprepared skin\u201d, \u201cthin\u2011section\u201d, etc., with cross\u2011department synonyms.\n- **Vendor Protocols**: Training requirements, reporting templates, escalation paths, and audit schedules tailored to each outsourced vendor.\n\nThe manual is written in clear, concise language, uses consistent terminology, and includes visual aids (flowcharts, tables) for quick reference. It can be published as a PDF guide and hosted on the museum\u2019s intranet with version control.\n\n**Implementation Plan**\n1. Gather baseline data from each department (inventory, current protocols).\n2. Map preservation methods to imaging techniques.\n3. Reconcile metadata standards into a unified schema.\n4. Draft workflow chapters.\n5. Build decision tree and cross\u2011reference matrix.\n6. Create calibration checklists and QA rules.\n7. Compile glossary and vendor protocols.\n8. Assemble, review, and publish the manual.\n\n**Outcome**\nA single, cohesive digitization operations manual that ensures consistent specimen handling, imaging quality, metadata integrity, and vendor compliance across all eight curatorial departments.\n\nBRAIN METRICS:\nSkill recalled: procedural:general:classification-routing\nTransfer score: 0.6573351363636363\nUsed recalled skill: False\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": true if recalled skill contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'museum_curation', 'task': 'Gather specimen handling protocols from 8 curatorial departments (entomology, mammalogy, herpetology, paleobotany, mineralogy, invertebrate zoology, ichthyology, ornithology) each with different preservation methods (pinned, fluid-preserved, freeze-dried, fossil matrix, thin-section, skeletal, study skin), imaging requirements (macro stacking, UV fluorescence, CT scanning, RTI), and metadata standards (Darwin Core, ABCD Schema, custom legacy databases). Structure into a unified digitization operations manual with department-specific workflows, a decision tree for imaging method selection based on specimen type/condition, equipment calibration checklists, and data quality validation rules. Polish with cross-references between specimen types that require multiple imaging passes, terminology glossary reconciling departmental naming conflicts, and quality assurance protocols for the 3 outsourced digitization vendors who will use this manual.'}\n\nSOLUTION:\nUnified Digitization Operations Manual \u2013 Overview\n\n1. Executive Summary\n   \u2022 Purpose: Standardize specimen handling, imaging, and metadata capture across eight curatorial departments.\n   \u2022 Scope: Covers all preservation types (pinned, fluid\u2011preserved, freeze\u2011dried, fossil matrix, thin\u2011section, skeletal, study skin), imaging modalities (macro stacking, UV fluorescence, CT scanning, RTI), and metadata standards (Darwin Core, ABCD Schema, legacy).\n\n2. Departmental Workflows (sample structure \u2013 repeat for each department)\n   a) Specimen Intake & Condition Assessment\n      - Verify preservation type, condition score, and any pre\u2011existing damage.\n      - Record in the departmental intake log.\n   b) Handling Protocols\n      - Pinned: secure with archival pins, avoid pressure points.\n      - Fluid\u2011preserved: transfer to fresh ethanol, check for leaks.\n      - Freeze\u2011dried: keep at \u201320\u202f\u00b0C until imaging.\n      - Fossil matrix: minimal mechanical contact; use micro\u2011drill only if necessary.\n      - Thin\u2011section & Skeletal: support with foam inserts.\n      - Study skin: mount on archival board, avoid light exposure.\n   c) Imaging Sequence\n      1. Macro stacking (if surface detail required)\n      2. UV fluorescence (for hidden structures)\n      3. CT scanning (for internal morphology)\n      4. RTI (for surface texture)\n      - Decision tree reference: see Appendix A.\n   d) Metadata Capture\n      - Use department\u2011specific template mapping to Darwin Core or ABCD.\n      - Mandatory fields: taxon, preservation type, imaging modality, capture date, operator.\n   e) Quality Assurance Checks\n      - Image resolution, color fidelity, metadata completeness.\n      - File integrity via checksum.\n   f) Archival & Release\n      - Store raw and processed files in the institutional repository.\n      - Tag with DOI for public access.\n\n3. Decision Tree for Imaging Method Selection (Appendix A)\n   \u2022 Input: Specimen type, preservation state, research priority.\n   \u2022 Output: Recommended imaging order, fallback options if primary fails.\n   \u2022 Example paths:\n     \u2013 Pinned beetle \u2192 Macro stacking \u2192 UV \u2192 CT (if internal structures needed).\n     \u2013 Fluid\u2011preserved fish \u2192 RTI \u2192 CT.\n\n4. Equipment Calibration Checklists (Appendix B)\n   \u2022 Macro Camera: daily focus check, color chart calibration.\n   \u2022 UV Lamp: power output verification, filter integrity.\n   \u2022 CT Scanner: phantom scan weekly, dose monitoring.\n   \u2022 RTI Setup: light source alignment, camera exposure consistency.\n\n5. Data Quality Validation Rules (Appendix C)\n   \u2022 Image resolution \u2265 10\u202fMP for macro; \u2265 2\u202fMP for UV/RTI.\n   \u2022 Color accuracy within \u00b13% of reference chart.\n   \u2022 Metadata completeness score \u2265 95%.\n   \u2022 File checksum matches repository record.\n\n6. Cross\u2011Reference Matrix (Appendix D)\n   \u2013 Lists specimens requiring multiple imaging passes and the recommended sequence.\n   \u2013 Highlights overlap between departments (e.g., herpetology study skins also used by ornithology for feather analysis).\n\n7. Terminology Glossary (Appendix E)\n   \u2022 Harmonizes terms: \u201cstudy skin\u201d = \u201cprepared skin\u201d; \u201cthin\u2011section\u201d = \u201cmicro\u2011section\u201d, etc.\n   \u2013 Controlled vocabularies linked to Darwin Core terms.\n\n8. Vendor Quality Assurance Protocols\n   \u2022 Training: mandatory e\u2011learning on manual sections 2\u20135.\n   \u2022 SOP Adherence Checklist: daily log of handling, imaging, metadata capture.\n   \u2022 Performance Metrics: turnaround time, error rate <1%, compliance score \u226590%.\n   \u2013 Quarterly audit with internal staff.\n\n9. Appendices\n   A. Imaging Decision Tree (flowchart)\n   B. Calibration Checklists\n   C. Data Validation Rules\n   D. Cross\u2011Reference Matrix\n   E. Glossary & Controlled Vocabularies\n   F. Vendor SOP Template\n\n10. Implementation Roadmap\n    \u2022 Phase 1: Pilot in two departments, refine workflows.\n    \u2022 Phase 2: Full rollout, vendor onboarding.\n    \u2022 Phase 3: Continuous improvement via feedback loops.\n\nThis manual provides a single source of truth for specimen digitization across the museum, ensuring consistency, data quality, and interoperability with external research communities.\n\nBRAIN METRICS:\nSkill recalled: procedural:general:generation-routing\nTransfer score: 0.7924352411031723\nUsed recalled skill: False\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": true if recalled skill contributed\n- \"used_recalled_skill\": copy the boolean from the prior step (true/false) \u2014 whether a recalled skill actually guided the solution\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection",
+    "trace_id": "98d571fd-c7e9-4bde-b41b-a839e4ad286c",
+    "execution_time_ms": 13044.630289077759
   },
   "agent_outputs": {
     "task_reasoner": {
       "response": {
         "domain": "museum_curation",
-        "task": "Create a unified digitization operations manual for eight curatorial departments with varied specimen types, imaging methods, and metadata standards.",
+        "task": "Create a unified digitization operations manual covering specimen handling protocols for eight curatorial departments, each with distinct preservation methods, imaging requirements, and metadata standards.",
         "steps": [
           {
-            "action": "Collect baseline data from each department on specimen categories, preservation methods, and current handling protocols.",
-            "result": "A comprehensive inventory of specimen types, preservation states, and existing workflows."
+            "action": "Collect baseline data from each department on specimen types, current preservation methods, and existing imaging workflows.",
+            "result": "A comprehensive inventory of specimen categories, preservation states (pinned, fluid-preserved, freeze-dried, fossil matrix, thin-section, skeletal, study skin), and the imaging modalities they currently employ."
           },
           {
-            "action": "Map each preservation method to compatible imaging techniques (e.g., pinned \u2192 macro stacking; fluid\u2011preserved \u2192 UV fluorescence).",
-            "result": "An initial compatibility matrix linking preservation methods to recommended imaging modalities."
+            "action": "Map each preservation method to its compatible imaging techniques and required equipment settings.",
+            "result": "A crosswalk table linking preservation type \u2192 suitable imaging methods (macro stacking, UV fluorescence, CT scanning, RTI) and associated calibration parameters."
           },
           {
-            "action": "Identify metadata standards used by each department and reconcile overlaps with Darwin Core, ABCD Schema, and legacy formats.",
-            "result": "A unified metadata mapping table that defines field equivalencies and conversion rules."
+            "action": "Document metadata standards per department (Darwin Core, ABCD Schema, custom legacy databases).",
+            "result": "Standardized metadata templates that include mandatory fields, controlled vocabularies, and mapping rules between legacy and modern schemas."
           },
           {
-            "action": "Draft department\u2011specific workflow sections incorporating specimen handling steps, imaging selection criteria, data capture procedures, and quality checks.",
-            "result": "Eight modular workflow chapters ready for integration into the manual."
+            "action": "Draft department\u2011specific workflows incorporating handling steps, imaging sequences, and metadata capture.",
+            "result": "Clear, stepwise procedures for each department, including specimen preparation, imaging order, data upload, and quality checks."
           },
           {
-            "action": "Develop a decision tree that guides users from specimen type/condition to optimal imaging method, including fallback options for degraded specimens.",
-            "result": "A visual or textual flowchart embedded in the manual for quick reference."
+            "action": "Develop a decision tree for imaging method selection based on specimen type, condition, and research priority.",
+            "result": "An interactive flowchart that guides users from specimen identification to the optimal imaging pathway, with fallback options for compromised specimens."
           },
           {
-            "action": "Create equipment calibration checklists tailored to each imaging modality (macro camera rigs, UV lamps, CT scanners, RTI setups).",
-            "result": "Standardized calibration protocols ensuring consistency across all digitization sessions."
+            "action": "Create equipment calibration checklists tailored to each imaging modality (macro, UV, CT, RTI).",
+            "result": "Standard operating procedures for daily/weekly calibration, including test targets, software settings, and documentation templates."
           },
           {
             "action": "Define data quality validation rules covering image resolution, color fidelity, metadata completeness, and file integrity.",
-            "result": "A set of automated or manual QA criteria to be applied before final acceptance."
+            "result": "A set of automated and manual QA criteria that must be met before files are archived or released."
           },
           {
-            "action": "Cross\u2011reference specimen types that require multiple imaging passes (e.g., pinned insect + CT scan) and embed reminders in the workflow sections.",
-            "result": "Integrated cross\u2011references preventing omission of required imaging steps."
+            "action": "Identify specimens requiring multiple imaging passes and cross\u2011reference them in the manual.",
+            "result": "Annotated specimen lists with recommended imaging sequences, ensuring no step is omitted during digitization."
           },
           {
-            "action": "Compile a terminology glossary reconciling departmental naming conflicts (e.g., \u201cstudy skin\u201d vs. \u201cprepared skin\u201d).",
-            "result": "A single source of truth for key terms used throughout the manual."
+            "action": "Compile a terminology glossary reconciling departmental naming conventions (e.g., \u201cstudy skin\u201d vs. \u201cprepared skin\u201d).",
+            "result": "A unified vocabulary document that reduces ambiguity and facilitates consistent data entry across departments."
           },
           {
-            "action": "Develop quality assurance protocols specifically for the three outsourced digitization vendors, including training requirements, reporting formats, and escalation paths.",
-            "result": "Vendor\u2011specific QA guidelines that align with internal standards."
-          },
-          {
-            "action": "Assemble all components into a cohesive manual structure: introduction, department workflows, decision tree, calibration checklists, QA rules, glossary, vendor protocols, appendices.",
-            "result": "A complete, ready\u2011to\u2011publish digitization operations manual."
+            "action": "Develop quality assurance protocols for the three outsourced digitization vendors, including training requirements, SOP adherence checks, and performance metrics.",
+            "result": "Vendor guidelines that align external work with internal standards, ensuring consistency in handling, imaging, and metadata capture."
           }
         ],
         "confidence": 0.95,
-        "internal_reasoning": "The task requires a systematic approach: gather data, map relationships, draft workflows, create decision aids, standardize calibration and QA, resolve terminology, address vendor needs, then compile everything. Each step is justified by the need to ensure consistency, traceability, and quality across diverse specimen types and imaging technologies."
+        "internal_reasoning": "The task requires a systematic approach: first gather existing data, then map relationships, create standardized workflows, decision tools, calibration procedures, QA rules, cross\u2011references, glossary, and vendor protocols. Each step builds on the previous to produce a cohesive manual."
       },
       "confidence": "0.95",
-      "internal_reasoning": "I structured the response as a detailed plan covering all requested elements, ensuring each action has a clear purpose and expected outcome. The confidence level reflects high certainty in the logical sequence and completeness of the plan.",
+      "internal_reasoning": "I structured the solution by deconstructing the complex requirement into discrete, logical actions that collectively satisfy all specified deliverables while maintaining high confidence in accuracy.",
       "_metrics": {
-        "tokens": 1360,
+        "tokens": 1346,
         "prompt_tokens": 600,
-        "completion_tokens": 760,
-        "latency_ms": 6891.47,
-        "cost_usd": 0.000425,
+        "completion_tokens": 746,
+        "latency_ms": 6154.74,
+        "cost_usd": 0.00038,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: museum_curation\nTASK: Gather specimen handling protocols from 8 curatorial departments (entomology, mammalogy, herpetology, paleobotany, mineralogy, invertebrate zoology, ichthyology, ornithology) each with different preservation methods (pinned, fluid-preserved, freeze-dried, fossil matrix, thin-section, skeletal, study skin), imaging requirements (macro stacking, UV fluorescence, CT scanning, RTI), and metadata standards (Darwin Core, ABCD Schema, custom legacy databases). Structure into a unified digitization operations manual with department-specific workflows, a decision tree for imaging method selection based on specimen type/condition, equipment calibration checklists, and data quality validation rules. Polish with cross-references between specimen types that require multiple imaging passes, terminology glossary reconciling departmental naming conflicts, and quality assurance protocols for the 3 outsourced digitization vendors who will use this manual.\n\n\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: museum_curation\nTASK: Gather specimen handling protocols from 8 curatorial departments (entomology, mammalogy, herpetology, paleobotany, mineralogy, invertebrate zoology, ichthyology, ornithology) each with different preservation methods (pinned, fluid-preserved, freeze-dried, fossil matrix, thin-section, skeletal, study skin), imaging requirements (macro stacking, UV fluorescence, CT scanning, RTI), and metadata standards (Darwin Core, ABCD Schema, custom legacy databases). Structure into a unified digitization operations manual with department-specific workflows, a decision tree for imaging method selection based on specimen type/condition, equipment calibration checklists, and data quality validation rules. Polish with cross-references between specimen types that require multiple imaging passes, terminology glossary reconciling departmental naming conflicts, and quality assurance protocols for the 3 outsourced digitization vendors who will use this manual.\n\n\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation",
+      "trace_id": "95c15841-dc8c-48fb-8af9-005e04f0ad2d",
+      "execution_time_ms": 6155.740022659302
     },
     "brain_learn": {
-      "response": "Learned skill: procedural:general:classification-routing",
-      "confidence": "0.7148100000000001",
-      "internal_reasoning": "Abstracted 2 steps into transferable skill 'procedural:general:classification-routing'",
-      "skill_id": "8d3ddc80-0ff8-4303-a670-ba19f25f2752",
-      "skill_name": "procedural:general:classification-routing",
+      "response": "Learned skill: procedural:general:generation-routing",
+      "confidence": "0.69",
+      "internal_reasoning": "Abstracted 3 steps into transferable skill 'procedural:general:generation-routing'",
+      "skill_id": "48695be9-e4b3-4634-b460-eac68ba8b418",
+      "skill_name": "procedural:general:generation-routing",
       "skill_steps": [
-        "profile [target]",
-        "set [target]"
+        "check [target]",
+        "check [target]",
+        "build [target]"
       ],
       "skill_tags": [
-        "{'domain': 'assistive_technology', 'task': 'Discover interaction needs of five non\u2011verbal user personas for an AAC device and prototype a unified framework that supports all input modalities with grac",
-        "classification",
-        "routing",
-        "general"
-      ]
+        "general",
+        "{'domain': 'museum_curation', 'task': 'Create a unified digitization operations manual covering specimen handling protocols for eight curatorial departments, each with distinct preservation methods, i",
+        "generation",
+        "routing"
+      ],
+      "trace_id": "ee20e2a2-b2b8-49d2-80fa-4ecf902d11c4",
+      "execution_time_ms": 16.003847122192383
     },
     "brain_recall": {
-      "response": "Found applicable skill: 'procedural:general:classification-routing' (score: 0.66). Steps: profile [target] \u2192 set [target]",
-      "confidence": "0.6573351363636363",
-      "internal_reasoning": "Skill 'procedural:general:classification-routing'. has very similar task structure. has been transferred 1 times (100% success). shares structures: routing. shares patterns: classification.",
-      "skill_id": "8d3ddc80-0ff8-4303-a670-ba19f25f2752",
-      "skill_name": "procedural:general:classification-routing",
+      "response": "Found applicable skill: 'procedural:general:generation-routing' (score: 0.79). Steps: check [target] \u2192 check [target] \u2192 build [target]",
+      "confidence": "0.7924352411031723",
+      "internal_reasoning": "Skill 'procedural:general:generation-routing'. has very similar task structure. is semantically close. shares structures: routing. shares patterns: generation.",
+      "skill_id": "48695be9-e4b3-4634-b460-eac68ba8b418",
+      "skill_name": "procedural:general:generation-routing",
       "skill_steps": [
-        "profile [target]",
-        "set [target]"
+        "check [target]",
+        "check [target]",
+        "build [target]"
       ],
       "skill_tags": [
-        "{'domain': 'assistive_technology', 'task': 'Discover interaction needs of five non\u2011verbal user personas for an AAC device and prototype a unified framework that supports all input modalities with grac",
-        "classification",
-        "routing",
-        "general"
+        "general",
+        "{'domain': 'museum_curation', 'task': 'Create a unified digitization operations manual covering specimen handling protocols for eight curatorial departments, each with distinct preservation methods, i",
+        "generation",
+        "routing"
       ],
-      "combined_score": 0.6573351363636363,
-      "structural_score": 0.825,
-      "semantic_score": 0.045454545454545456,
+      "combined_score": 0.7924352411031723,
+      "structural_score": 1.0,
+      "semantic_score": 0.8557409644126892,
       "adaptations": {},
       "all_candidates": [
         {
-          "skill_name": "procedural:general:classification-routing",
-          "score": 0.6573351363636363,
-          "reasoning": "Skill 'procedural:general:classification-routing'. has very similar task structure. has been transferred 1 times (100% success). shares structures: routing. shares patterns: classification."
+          "skill_name": "procedural:general:generation-routing",
+          "score": 0.7924352411031723,
+          "reasoning": "Skill 'procedural:general:generation-routing'. has very similar task structure. is semantically close. shares structures: routing. shares patterns: generation."
         },
         {
-          "skill_name": "procedural:general:evaluation-sequential",
-          "score": 0.5790977034883721,
-          "reasoning": "Skill 'procedural:general:evaluation-sequential'. shares some structural patterns. has been transferred 2 times (100% success). shares structures: routing. shares patterns: generation, classification."
+          "skill_name": "procedural:general:generation-aggregation",
+          "score": 0.7642071514749527,
+          "reasoning": "Skill 'procedural:general:generation-aggregation'. shares some structural patterns. is semantically close. has been transferred 2 times (100% success). shares patterns: generation."
+        },
+        {
+          "skill_name": "procedural:general:generation",
+          "score": 0.7408827445328235,
+          "reasoning": "Skill 'procedural:general:generation'. shares some structural patterns. has moderate semantic overlap. has been transferred 1 times (100% success). shares patterns: generation."
         }
-      ]
+      ],
+      "trace_id": "7ae3b5a0-a72e-43bb-859c-e3f33a9f224b",
+      "execution_time_ms": 28.74135971069336
     },
     "task_applier": {
-      "response": "The manual is organized into eight modular chapters, one for each curatorial department, plus cross\u2011cutting sections that provide decision support, calibration, QA, and vendor guidance.\n\n**Structure (Table of Contents)**\n1. Introduction & Scope\n2. Department\u2011Specific Workflows\n   2.1 Entomology \u2013 Pinned, Fluid\u2011Preserved, Freeze\u2011Dried\n   2.2 Mammalogy \u2013 Study Skin, Skeletal, Fossil Matrix\n   2.3 Herpetology \u2013 Thin\u2011Section, Fluid\u2011Preserved, Skeletal\n   2.4 Paleobotany \u2013 Fossil Matrix, Thin\u2011Section, Macro\n   2.5 Mineralogy \u2013 Specimen Mounts, Thin\u2011Section, CT\n   2.6 Invertebrate Zoology \u2013 Pinned, Fluid\u2011Preserved, Freeze\u2011Dried\n   2.7 Ichthyology \u2013 Prepared Skin, Skeletal, Fluid\u2011Preserved\n   2.8 Ornithology \u2013 Study Skin, Skeletal, Macro\n3. Decision Tree for Imaging Method Selection\n4. Equipment Calibration Checklists (Macro, UV, CT, RTI)\n5. Data Quality Validation Rules (Image, Metadata, File Integrity)\n6. Cross\u2011Reference Matrix: Specimen Types Requiring Multiple Passes\n7. Terminology Glossary & Naming Conventions\n8. Vendor QA Protocols (Vendor A, B, C)\n9. Appendices \u2013 Forms, Templates, Contact Lists\n\n**Key Components**\n- **Workflow Chapters**: Each contains specimen handling steps, preservation\u2011specific precautions, recommended imaging modalities, metadata capture fields (aligned with Darwin Core/ABCD), and internal QA checkpoints.\n- **Decision Tree**: A flowchart that starts with specimen type \u2192 preservation method \u2192 condition \u2192 suggested primary imaging (macro stacking, UV fluorescence, CT, RTI) with fallback options for degraded or fragile items.\n- **Calibration Checklists**: Separate pages for each modality, including daily/weekly calibration tasks, reference targets, and documentation of results.\n- **QA Rules**: Minimum acceptable resolution, color accuracy, metadata completeness percentages, checksum verification, and a pre\u2011acceptance checklist.\n- **Cross\u2011Reference Matrix**: Highlights specimens that need more than one imaging pass (e.g., pinned insect + CT scan) and links to the relevant workflow sections.\n- **Glossary**: Unified definitions for terms such as \u201cstudy skin\u201d, \u201cprepared skin\u201d, \u201cthin\u2011section\u201d, etc., with cross\u2011department synonyms.\n- **Vendor Protocols**: Training requirements, reporting templates, escalation paths, and audit schedules tailored to each outsourced vendor.\n\nThe manual is written in clear, concise language, uses consistent terminology, and includes visual aids (flowcharts, tables) for quick reference. It can be published as a PDF guide and hosted on the museum\u2019s intranet with version control.\n\n**Implementation Plan**\n1. Gather baseline data from each department (inventory, current protocols).\n2. Map preservation methods to imaging techniques.\n3. Reconcile metadata standards into a unified schema.\n4. Draft workflow chapters.\n5. Build decision tree and cross\u2011reference matrix.\n6. Create calibration checklists and QA rules.\n7. Compile glossary and vendor protocols.\n8. Assemble, review, and publish the manual.\n\n**Outcome**\nA single, cohesive digitization operations manual that ensures consistent specimen handling, imaging quality, metadata integrity, and vendor compliance across all eight curatorial departments.",
+      "response": "Unified Digitization Operations Manual \u2013 Overview\n\n1. Executive Summary\n   \u2022 Purpose: Standardize specimen handling, imaging, and metadata capture across eight curatorial departments.\n   \u2022 Scope: Covers all preservation types (pinned, fluid\u2011preserved, freeze\u2011dried, fossil matrix, thin\u2011section, skeletal, study skin), imaging modalities (macro stacking, UV fluorescence, CT scanning, RTI), and metadata standards (Darwin Core, ABCD Schema, legacy).\n\n2. Departmental Workflows (sample structure \u2013 repeat for each department)\n   a) Specimen Intake & Condition Assessment\n      - Verify preservation type, condition score, and any pre\u2011existing damage.\n      - Record in the departmental intake log.\n   b) Handling Protocols\n      - Pinned: secure with archival pins, avoid pressure points.\n      - Fluid\u2011preserved: transfer to fresh ethanol, check for leaks.\n      - Freeze\u2011dried: keep at \u201320\u202f\u00b0C until imaging.\n      - Fossil matrix: minimal mechanical contact; use micro\u2011drill only if necessary.\n      - Thin\u2011section & Skeletal: support with foam inserts.\n      - Study skin: mount on archival board, avoid light exposure.\n   c) Imaging Sequence\n      1. Macro stacking (if surface detail required)\n      2. UV fluorescence (for hidden structures)\n      3. CT scanning (for internal morphology)\n      4. RTI (for surface texture)\n      - Decision tree reference: see Appendix A.\n   d) Metadata Capture\n      - Use department\u2011specific template mapping to Darwin Core or ABCD.\n      - Mandatory fields: taxon, preservation type, imaging modality, capture date, operator.\n   e) Quality Assurance Checks\n      - Image resolution, color fidelity, metadata completeness.\n      - File integrity via checksum.\n   f) Archival & Release\n      - Store raw and processed files in the institutional repository.\n      - Tag with DOI for public access.\n\n3. Decision Tree for Imaging Method Selection (Appendix A)\n   \u2022 Input: Specimen type, preservation state, research priority.\n   \u2022 Output: Recommended imaging order, fallback options if primary fails.\n   \u2022 Example paths:\n     \u2013 Pinned beetle \u2192 Macro stacking \u2192 UV \u2192 CT (if internal structures needed).\n     \u2013 Fluid\u2011preserved fish \u2192 RTI \u2192 CT.\n\n4. Equipment Calibration Checklists (Appendix B)\n   \u2022 Macro Camera: daily focus check, color chart calibration.\n   \u2022 UV Lamp: power output verification, filter integrity.\n   \u2022 CT Scanner: phantom scan weekly, dose monitoring.\n   \u2022 RTI Setup: light source alignment, camera exposure consistency.\n\n5. Data Quality Validation Rules (Appendix C)\n   \u2022 Image resolution \u2265 10\u202fMP for macro; \u2265 2\u202fMP for UV/RTI.\n   \u2022 Color accuracy within \u00b13% of reference chart.\n   \u2022 Metadata completeness score \u2265 95%.\n   \u2022 File checksum matches repository record.\n\n6. Cross\u2011Reference Matrix (Appendix D)\n   \u2013 Lists specimens requiring multiple imaging passes and the recommended sequence.\n   \u2013 Highlights overlap between departments (e.g., herpetology study skins also used by ornithology for feather analysis).\n\n7. Terminology Glossary (Appendix E)\n   \u2022 Harmonizes terms: \u201cstudy skin\u201d = \u201cprepared skin\u201d; \u201cthin\u2011section\u201d = \u201cmicro\u2011section\u201d, etc.\n   \u2013 Controlled vocabularies linked to Darwin Core terms.\n\n8. Vendor Quality Assurance Protocols\n   \u2022 Training: mandatory e\u2011learning on manual sections 2\u20135.\n   \u2022 SOP Adherence Checklist: daily log of handling, imaging, metadata capture.\n   \u2022 Performance Metrics: turnaround time, error rate <1%, compliance score \u226590%.\n   \u2013 Quarterly audit with internal staff.\n\n9. Appendices\n   A. Imaging Decision Tree (flowchart)\n   B. Calibration Checklists\n   C. Data Validation Rules\n   D. Cross\u2011Reference Matrix\n   E. Glossary & Controlled Vocabularies\n   F. Vendor SOP Template\n\n10. Implementation Roadmap\n    \u2022 Phase 1: Pilot in two departments, refine workflows.\n    \u2022 Phase 2: Full rollout, vendor onboarding.\n    \u2022 Phase 3: Continuous improvement via feedback loops.\n\nThis manual provides a single source of truth for specimen digitization across the museum, ensuring consistency, data quality, and interoperability with external research communities.",
       "confidence": "0.95",
-      "internal_reasoning": "I followed my detailed analysis steps to construct a comprehensive manual outline, ensuring each department\u2019s needs are addressed while providing cross\u2011cutting decision aids and QA protocols.",
+      "internal_reasoning": "I synthesized the analysis steps into a structured manual outline, covering workflows, decision trees, calibration, QA, cross\u2011references, glossary, vendor protocols, and implementation plan.",
       "_metrics": {
-        "tokens": 2196,
-        "prompt_tokens": 1376,
-        "completion_tokens": 820,
-        "latency_ms": 7429.37,
-        "cost_usd": 0.000467,
+        "tokens": 2434,
+        "prompt_tokens": 1382,
+        "completion_tokens": 1052,
+        "latency_ms": 8466.7,
+        "cost_usd": 0.000532,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "You are solving a task. You have your own analysis AND access to a\npreviously learned skill from the Brain's memory.\n\nDOMAIN: general\nTASK: {'domain': 'museum_curation', 'task': 'Gather specimen handling protocols from 8 curatorial departments (entomology, mammalogy, herpetology, paleobotany, mineralogy, invertebrate zoology, ichthyology, ornithology) each with different preservation methods (pinned, fluid-preserved, freeze-dried, fossil matrix, thin-section, skeletal, study skin), imaging requirements (macro stacking, UV fluorescence, CT scanning, RTI), and metadata standards (Darwin Core, ABCD Schema, custom legacy databases). Structure into a unified digitization operations manual with department-specific workflows, a decision tree for imaging method selection based on specimen type/condition, equipment calibration checklists, and data quality validation rules. Polish with cross-references between specimen types that require multiple imaging passes, terminology glossary reconciling departmental naming conflicts, and quality assurance protocols for the 3 outsourced digitization vendors who will use this manual.'}\n\nYOUR ANALYSIS:\n{'domain': 'museum_curation', 'task': 'Create a unified digitization operations manual for eight curatorial departments with varied specimen types, imaging methods, and metadata standards.', 'steps': [{'action': 'Collect baseline data from each department on specimen categories, preservation methods, and current handling protocols.', 'result': 'A comprehensive inventory of specimen types, preservation states, and existing workflows.'}, {'action': 'Map each preservation method to compatible imaging techniques (e.g., pinned \u2192 macro stacking; fluid\u2011preserved \u2192 UV fluorescence).', 'result': 'An initial compatibility matrix linking preservation methods to recommended imaging modalities.'}, {'action': 'Identify metadata standards used by each department and reconcile overlaps with Darwin Core, ABCD Schema, and legacy formats.', 'result': 'A unified metadata mapping table that defines field equivalencies and conversion rules.'}, {'action': 'Draft department\u2011specific workflow sections incorporating specimen handling steps, imaging selection criteria, data capture procedures, and quality checks.', 'result': 'Eight modular workflow chapters ready for integration into the manual.'}, {'action': 'Develop a decision tree that guides users from specimen type/condition to optimal imaging method, including fallback options for degraded specimens.', 'result': 'A visual or textual flowchart embedded in the manual for quick reference.'}, {'action': 'Create equipment calibration checklists tailored to each imaging modality (macro camera rigs, UV lamps, CT scanners, RTI setups).', 'result': 'Standardized calibration protocols ensuring consistency across all digitization sessions.'}, {'action': 'Define data quality validation rules covering image resolution, color fidelity, metadata completeness, and file integrity.', 'result': 'A set of automated or manual QA criteria to be applied before final acceptance.'}, {'action': 'Cross\u2011reference specimen types that require multiple imaging passes (e.g., pinned insect + CT scan) and embed reminders in the workflow sections.', 'result': 'Integrated cross\u2011references preventing omission of required imaging steps.'}, {'action': 'Compile a terminology glossary reconciling departmental naming conflicts (e.g., \u201cstudy skin\u201d vs. \u201cprepared skin\u201d).', 'result': 'A single source of truth for key terms used throughout the manual.'}, {'action': 'Develop quality assurance protocols specifically for the three outsourced digitization vendors, including training requirements, reporting formats, and escalation paths.', 'result': 'Vendor\u2011specific QA guidelines that align with internal standards.'}, {'action': 'Assemble all components into a cohesive manual structure: introduction, department workflows, decision tree, calibration checklists, QA rules, glossary, vendor protocols, appendices.', 'result': 'A complete, ready\u2011to\u2011publish digitization operations manual.'}], 'confidence': 0.95, 'internal_reasoning': 'The task requires a systematic approach: gather data, map relationships, draft workflows, create decision aids, standardize calibration and QA, resolve terminology, address vendor needs, then compile everything. Each step is justified by the need to ensure consistency, traceability, and quality across diverse specimen types and imaging technologies.'}\n\nRECALLED SKILL FROM BRAIN:\nSkill name: procedural:general:classification-routing\nAbstract steps: ['profile [target]', 'set [target]']\nTransfer score: 0.6573351363636363\nStructural match: 0.825\nSemantic match: 0.045454545454545456\nAdaptations: {}\n\nINSTRUCTIONS:\nIf a skill was recalled, use its abstract pattern to GUIDE your solution.\nFor each abstract step, explain how you ADAPT it to the current domain.\nIf no skill was recalled, solve using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": true or false\n- \"recalled_skill_name\": skill name or \"none\"\n- \"adaptation_notes\": how you adapted the skill (or \"N/A\")\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+      "formatted_prompt": "You are solving a task. You have your own analysis AND access to a\npreviously learned skill from the Brain's memory.\n\nDOMAIN: general\nTASK: {'domain': 'museum_curation', 'task': 'Gather specimen handling protocols from 8 curatorial departments (entomology, mammalogy, herpetology, paleobotany, mineralogy, invertebrate zoology, ichthyology, ornithology) each with different preservation methods (pinned, fluid-preserved, freeze-dried, fossil matrix, thin-section, skeletal, study skin), imaging requirements (macro stacking, UV fluorescence, CT scanning, RTI), and metadata standards (Darwin Core, ABCD Schema, custom legacy databases). Structure into a unified digitization operations manual with department-specific workflows, a decision tree for imaging method selection based on specimen type/condition, equipment calibration checklists, and data quality validation rules. Polish with cross-references between specimen types that require multiple imaging passes, terminology glossary reconciling departmental naming conflicts, and quality assurance protocols for the 3 outsourced digitization vendors who will use this manual.'}\n\nYOUR ANALYSIS:\n{'domain': 'museum_curation', 'task': 'Create a unified digitization operations manual covering specimen handling protocols for eight curatorial departments, each with distinct preservation methods, imaging requirements, and metadata standards.', 'steps': [{'action': 'Collect baseline data from each department on specimen types, current preservation methods, and existing imaging workflows.', 'result': 'A comprehensive inventory of specimen categories, preservation states (pinned, fluid-preserved, freeze-dried, fossil matrix, thin-section, skeletal, study skin), and the imaging modalities they currently employ.'}, {'action': 'Map each preservation method to its compatible imaging techniques and required equipment settings.', 'result': 'A crosswalk table linking preservation type \u2192 suitable imaging methods (macro stacking, UV fluorescence, CT scanning, RTI) and associated calibration parameters.'}, {'action': 'Document metadata standards per department (Darwin Core, ABCD Schema, custom legacy databases).', 'result': 'Standardized metadata templates that include mandatory fields, controlled vocabularies, and mapping rules between legacy and modern schemas.'}, {'action': 'Draft department\u2011specific workflows incorporating handling steps, imaging sequences, and metadata capture.', 'result': 'Clear, stepwise procedures for each department, including specimen preparation, imaging order, data upload, and quality checks.'}, {'action': 'Develop a decision tree for imaging method selection based on specimen type, condition, and research priority.', 'result': 'An interactive flowchart that guides users from specimen identification to the optimal imaging pathway, with fallback options for compromised specimens.'}, {'action': 'Create equipment calibration checklists tailored to each imaging modality (macro, UV, CT, RTI).', 'result': 'Standard operating procedures for daily/weekly calibration, including test targets, software settings, and documentation templates.'}, {'action': 'Define data quality validation rules covering image resolution, color fidelity, metadata completeness, and file integrity.', 'result': 'A set of automated and manual QA criteria that must be met before files are archived or released.'}, {'action': 'Identify specimens requiring multiple imaging passes and cross\u2011reference them in the manual.', 'result': 'Annotated specimen lists with recommended imaging sequences, ensuring no step is omitted during digitization.'}, {'action': 'Compile a terminology glossary reconciling departmental naming conventions (e.g., \u201cstudy skin\u201d vs. \u201cprepared skin\u201d).', 'result': 'A unified vocabulary document that reduces ambiguity and facilitates consistent data entry across departments.'}, {'action': 'Develop quality assurance protocols for the three outsourced digitization vendors, including training requirements, SOP adherence checks, and performance metrics.', 'result': 'Vendor guidelines that align external work with internal standards, ensuring consistency in handling, imaging, and metadata capture.'}], 'confidence': 0.95, 'internal_reasoning': 'The task requires a systematic approach: first gather existing data, then map relationships, create standardized workflows, decision tools, calibration procedures, QA rules, cross\u2011references, glossary, and vendor protocols. Each step builds on the previous to produce a cohesive manual.'}\n\nRECALLED SKILL FROM BRAIN:\nSkill name: procedural:general:generation-routing\nAbstract steps: ['check [target]', 'check [target]', 'build [target]']\nTransfer score: 0.7924352411031723\nStructural match: 1.0\nSemantic match: 0.8557409644126892\nAdaptations: {}\n\nINSTRUCTIONS:\nIf a skill was recalled, use its abstract pattern to GUIDE your solution.\nFor each abstract step, explain how you ADAPT it to the current domain.\nIf no skill was recalled, solve using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": true or false\n- \"recalled_skill_name\": skill name or \"none\"\n- \"adaptation_notes\": how you adapted the skill (or \"N/A\")\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach",
+      "trace_id": "ced22637-9b6d-4628-9803-50447eabab63",
+      "execution_time_ms": 8467.70429611206
     },
     "brain_feedback": {
-      "response": "Recorded successful transfer for skill 'procedural:general:classification-routing'.",
-      "confidence": "0.7290695",
-      "internal_reasoning": "Transfer feedback recorded. Skill now has 2 transfer(s).",
-      "skill_id": "8d3ddc80-0ff8-4303-a670-ba19f25f2752",
-      "skill_name": "procedural:general:classification-routing",
-      "transfer_count": 2,
-      "transfer_success": true
+      "response": "Recorded successful transfer for skill 'procedural:general:generation-routing'.",
+      "confidence": "0.7054999999999999",
+      "internal_reasoning": "Transfer feedback recorded. Skill now has 1 transfer(s).",
+      "skill_id": "48695be9-e4b3-4634-b460-eac68ba8b418",
+      "skill_name": "procedural:general:generation-routing",
+      "transfer_count": 1,
+      "transfer_success": true,
+      "trace_id": "42782fe0-43b9-4867-ae71-707f5cd45e4b",
+      "execution_time_ms": 5.000829696655273
     },
     "task_result": {
       "response": {
-        "title": "Museum Digitization Operations Manual \u2013 Unified Specimen Handling & Imaging Protocols",
-        "table_of_contents": [
-          "1. Introduction & Scope",
-          "2. Department\u2011Specific Workflows",
-          "   2.1 Entomology \u2013 Pinned, Fluid\u2011Preserved, Freeze\u2011Dried",
-          "   2.2 Mammalogy \u2013 Study Skin, Skeletal, Fossil Matrix",
-          "   2.3 Herpetology \u2013 Thin\u2011Section, Fluid\u2011Preserved, Skeletal",
-          "   2.4 Paleobotany \u2013 Fossil Matrix, Thin\u2011Section, Macro",
-          "   2.5 Mineralogy \u2013 Mounts, Thin\u2011Section, CT",
-          "   2.6 Invertebrate Zoology \u2013 Pinned, Fluid\u2011Preserved, Freeze\u2011Dried",
-          "   2.7 Ichthyology \u2013 Prepared Skin, Skeletal, Fluid\u2011Preserved",
-          "   2.8 Ornithology \u2013 Study Skin, Skeletal, Macro",
-          "3. Decision Tree for Imaging Method Selection",
-          "4. Equipment Calibration Checklists (Macro, UV, CT, RTI)",
-          "5. Data Quality Validation Rules (Image, Metadata, File Integrity)",
-          "6. Cross\u2011Reference Matrix: Specimen Types Requiring Multiple Passes",
-          "7. Terminology Glossary & Naming Conventions",
-          "8. Vendor QA Protocols (Vendor A, B, C)",
-          "9. Appendices \u2013 Forms, Templates, Contact Lists"
-        ],
-        "key_components": {
-          "workflow_chapters": "Each chapter contains: specimen handling steps, preservation\u2011specific precautions, recommended imaging modalities, metadata capture fields aligned with Darwin Core/ABCD, and internal QA checkpoints.",
-          "decision_tree": "Flowchart starting with specimen type \u2192 preservation method \u2192 condition \u2192 suggested primary imaging (macro stacking, UV fluorescence, CT, RTI) with fallback options for fragile or degraded items.",
-          "calibration_checklists": "Separate pages for each modality: daily/weekly calibration tasks, reference targets, documentation of results.",
-          "qa_rules": {
-            "image_quality": "Minimum 300 dpi for macro, 600 dpi for thin\u2011section; color accuracy \u00b12% CIELAB.",
-            "metadata_completeness": "\u226595% required fields populated.",
-            "file_integrity": "Checksum verification (SHA-256) and file format validation."
+        "manual_title": "Unified Digitization Operations Manual",
+        "sections": [
+          {
+            "title": "Executive Summary",
+            "content": "Standardizes specimen handling, imaging, and metadata capture across eight curatorial departments for diverse preservation types and imaging modalities."
           },
-          "cross_reference_matrix": "Highlights specimens needing more than one imaging pass (e.g., pinned insect + CT scan) and links to relevant workflow sections.",
-          "glossary": "Unified definitions for terms such as \u2018study skin\u2019, \u2018prepared skin\u2019, \u2018thin\u2011section\u2019, with cross\u2011department synonyms.",
-          "vendor_protocols": {
-            "training_requirements": "Mandatory completion of manual modules and calibration exercises.",
-            "reporting_templates": "Standardized daily logs, QA checklists, incident reports.",
-            "audit_schedule": "Quarterly on\u2011site audits and monthly remote reviews."
+          {
+            "title": "Department\u2011Specific Workflows",
+            "departments": [
+              {
+                "name": "Entomology",
+                "preservation_types": [
+                  "pinned",
+                  "freeze\u2011dried"
+                ],
+                "imaging_sequence": [
+                  "macro stacking",
+                  "UV fluorescence",
+                  "CT scanning (if internal structures)",
+                  "RTI"
+                ],
+                "metadata_standard": "Darwin Core",
+                "handling_protocols": [
+                  "Secure pinned specimens with archival pins; avoid pressure points.",
+                  "Store freeze\u2011dried beetles at \u201320\u202f\u00b0C until imaging."
+                ],
+                "quality_checks": [
+                  "image resolution \u226510\u202fMP",
+                  "color accuracy \u00b13%"
+                ]
+              },
+              {
+                "name": "Mammalogy",
+                "preservation_types": [
+                  "study skin"
+                ],
+                "imaging_sequence": [
+                  "macro stacking",
+                  "RTI",
+                  "CT scanning (if skeletal elements present)"
+                ],
+                "metadata_standard": "ABCD Schema",
+                "handling_protocols": [
+                  "Mount study skins on archival boards; protect from light.",
+                  "Use foam inserts for fragile sections."
+                ],
+                "quality_checks": [
+                  "image resolution \u226510\u202fMP",
+                  "checksum verification"
+                ]
+              },
+              {
+                "name": "Herpetology",
+                "preservation_types": [
+                  "study skin"
+                ],
+                "imaging_sequence": [
+                  "macro stacking",
+                  "UV fluorescence (for scale patterns)",
+                  "RTI"
+                ],
+                "metadata_standard": "Darwin Core",
+                "handling_protocols": [
+                  "Secure skins with archival pins; avoid moisture.",
+                  "Store at 4\u202f\u00b0C if not immediately imaged."
+                ],
+                "quality_checks": [
+                  "color fidelity \u00b13%",
+                  "metadata completeness \u226595%"
+                ]
+              },
+              {
+                "name": "Paleobotany",
+                "preservation_types": [
+                  "fossil matrix",
+                  "thin\u2011section"
+                ],
+                "imaging_sequence": [
+                  "macro stacking (if surface detail)",
+                  "CT scanning (for internal structure)"
+                ],
+                "metadata_standard": "ABCD Schema",
+                "handling_protocols": [
+                  "Minimize mechanical contact; use micro\u2011drill only if necessary.",
+                  "Support thin\u2011sections with foam."
+                ],
+                "quality_checks": [
+                  "image resolution \u226510\u202fMP",
+                  "CT dose monitoring"
+                ]
+              },
+              {
+                "name": "Mineralogy",
+                "preservation_types": [
+                  "fossil matrix"
+                ],
+                "imaging_sequence": [
+                  "macro stacking",
+                  "UV fluorescence (for inclusions)",
+                  "CT scanning"
+                ],
+                "metadata_standard": "Darwin Core",
+                "handling_protocols": [
+                  "Use non\u2011contact handling tools; avoid abrasive contact."
+                ],
+                "quality_checks": [
+                  "color accuracy \u00b13%",
+                  "CT phantom scan weekly"
+                ]
+              },
+              {
+                "name": "Invertebrate Zoology",
+                "preservation_types": [
+                  "fluid\u2011preserved"
+                ],
+                "imaging_sequence": [
+                  "macro stacking",
+                  "RTI (for surface texture)",
+                  "UV fluorescence (if needed)"
+                ],
+                "metadata_standard": "ABCD Schema",
+                "handling_protocols": [
+                  "Transfer to fresh ethanol; check for leaks.",
+                  "Keep specimens at 4\u202f\u00b0C until imaging."
+                ],
+                "quality_checks": [
+                  "image resolution \u226510\u202fMP",
+                  "checksum verification"
+                ]
+              },
+              {
+                "name": "Ichthyology",
+                "preservation_types": [
+                  "fluid\u2011preserved"
+                ],
+                "imaging_sequence": [
+                  "macro stacking",
+                  "RTI (for scale patterns)",
+                  "CT scanning (if skeletal elements present)"
+                ],
+                "metadata_standard": "Darwin Core",
+                "handling_protocols": [
+                  "Use fresh ethanol; avoid agitation."
+                ],
+                "quality_checks": [
+                  "color fidelity \u00b13%",
+                  "metadata completeness \u226595%"
+                ]
+              },
+              {
+                "name": "Ornithology",
+                "preservation_types": [
+                  "study skin"
+                ],
+                "imaging_sequence": [
+                  "macro stacking",
+                  "RTI (for feather detail)",
+                  "UV fluorescence (if needed)"
+                ],
+                "metadata_standard": "ABCD Schema",
+                "handling_protocols": [
+                  "Mount skins on archival boards; protect feathers."
+                ],
+                "quality_checks": [
+                  "image resolution \u226510\u202fMP",
+                  "checksum verification"
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Imaging Decision Tree",
+            "content": "Flowchart that selects imaging methods based on specimen type, preservation state, and research priority. Example paths:\n- Pinned beetle \u2192 Macro stacking \u2192 UV fluorescence \u2192 CT scanning (if internal structures needed).\n- Fluid\u2011preserved fish \u2192 RTI \u2192 CT scanning."
+          },
+          {
+            "title": "Equipment Calibration Checklists",
+            "checklists": [
+              {
+                "equipment": "Macro Camera",
+                "daily_tasks": [
+                  "Focus check",
+                  "Color chart calibration"
+                ]
+              },
+              {
+                "equipment": "UV Lamp",
+                "daily_tasks": [
+                  "Power output verification",
+                  "Filter integrity check"
+                ]
+              },
+              {
+                "equipment": "CT Scanner",
+                "weekly_tasks": [
+                  "Phantom scan",
+                  "Dose monitoring"
+                ]
+              },
+              {
+                "equipment": "RTI Setup",
+                "daily_tasks": [
+                  "Light source alignment",
+                  "Exposure consistency"
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Data Quality Validation Rules",
+            "rules": [
+              {
+                "rule": "Image resolution \u226510\u202fMP for macro; \u22652\u202fMP for UV/RTI"
+              },
+              {
+                "rule": "Color accuracy within \u00b13% of reference chart"
+              },
+              {
+                "rule": "Metadata completeness score \u226595%"
+              },
+              {
+                "rule": "File checksum matches repository record"
+              }
+            ]
+          },
+          {
+            "title": "Cross\u2011Reference Matrix",
+            "content": "Specimens requiring multiple imaging passes and recommended sequence. Highlights overlap between departments (e.g., herpetology study skins also used by ornithology for feather analysis)."
+          },
+          {
+            "title": "Terminology Glossary",
+            "entries": [
+              {
+                "term": "study skin",
+                "definition": "Prepared skin; standardized across departments."
+              },
+              {
+                "term": "thin\u2011section",
+                "definition": "Micro\u2011section of fossilized plant material."
+              },
+              {
+                "term": "fossil matrix",
+                "definition": "Preserved surrounding rock or sediment."
+              }
+            ]
+          },
+          {
+            "title": "Vendor Quality Assurance Protocols",
+            "components": [
+              {
+                "training": "Mandatory e\u2011learning on manual sections 2\u20135"
+              },
+              {
+                "SOP Adherence Checklist": "Daily log of handling, imaging, metadata capture"
+              },
+              {
+                "Performance Metrics": [
+                  "Turnaround time",
+                  "Error rate <1%",
+                  "Compliance score \u226590%"
+                ]
+              },
+              {
+                "Audit": "Quarterly audit with internal staff"
+              }
+            ]
+          },
+          {
+            "title": "Implementation Roadmap",
+            "phases": [
+              {
+                "phase": 1,
+                "description": "Pilot in two departments; refine workflows."
+              },
+              {
+                "phase": 2,
+                "description": "Full rollout; vendor onboarding."
+              },
+              {
+                "phase": 3,
+                "description": "Continuous improvement via feedback loops."
+              }
+            ]
           }
-        },
-        "implementation_plan": [
-          "Collect baseline data from each department (inventory, current protocols).",
-          "Map preservation methods to imaging techniques.",
-          "Reconcile metadata standards into a unified schema.",
-          "Draft workflow chapters.",
-          "Build decision tree and cross\u2011reference matrix.",
-          "Create calibration checklists and QA rules.",
-          "Compile glossary and vendor protocols.",
-          "Assemble, review, and publish the manual."
         ],
-        "output_formats": [
-          "PDF guide for internal distribution",
-          "HTML version hosted on museum intranet with version control",
-          "Excel templates for metadata capture"
+        "appendices": [
+          {
+            "name": "A",
+            "title": "Imaging Decision Tree (flowchart)"
+          },
+          {
+            "name": "B",
+            "title": "Calibration Checklists"
+          },
+          {
+            "name": "C",
+            "title": "Data Validation Rules"
+          },
+          {
+            "name": "D",
+            "title": "Cross\u2011Reference Matrix"
+          },
+          {
+            "name": "E",
+            "title": "Glossary & Controlled Vocabularies"
+          },
+          {
+            "name": "F",
+            "title": "Vendor SOP Template"
+          }
         ]
       },
       "confidence": "0.95",
-      "internal_reasoning": "The response consolidates all required elements\u2014department workflows, decision tree, calibration checklists, QA rules, cross\u2011references, glossary, and vendor protocols\u2014into a structured manual outline that meets the task specifications.",
+      "internal_reasoning": "Constructed a comprehensive, department\u2011specific workflow structure incorporating preservation types, imaging methods, metadata standards, handling protocols, and quality checks. Added decision tree, calibration checklists, validation rules, cross\u2011references, glossary, vendor QA, and implementation roadmap to meet all task requirements.",
       "_metrics": {
-        "tokens": 2199,
-        "prompt_tokens": 1350,
-        "completion_tokens": 849,
-        "latency_ms": 7409.66,
-        "cost_usd": 0.000466,
+        "tokens": 3314,
+        "prompt_tokens": 1576,
+        "completion_tokens": 1738,
+        "latency_ms": 13042.64,
+        "cost_usd": 0.00082,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'museum_curation', 'task': 'Gather specimen handling protocols from 8 curatorial departments (entomology, mammalogy, herpetology, paleobotany, mineralogy, invertebrate zoology, ichthyology, ornithology) each with different preservation methods (pinned, fluid-preserved, freeze-dried, fossil matrix, thin-section, skeletal, study skin), imaging requirements (macro stacking, UV fluorescence, CT scanning, RTI), and metadata standards (Darwin Core, ABCD Schema, custom legacy databases). Structure into a unified digitization operations manual with department-specific workflows, a decision tree for imaging method selection based on specimen type/condition, equipment calibration checklists, and data quality validation rules. Polish with cross-references between specimen types that require multiple imaging passes, terminology glossary reconciling departmental naming conflicts, and quality assurance protocols for the 3 outsourced digitization vendors who will use this manual.'}\n\nSOLUTION:\nThe manual is organized into eight modular chapters, one for each curatorial department, plus cross\u2011cutting sections that provide decision support, calibration, QA, and vendor guidance.\n\n**Structure (Table of Contents)**\n1. Introduction & Scope\n2. Department\u2011Specific Workflows\n   2.1 Entomology \u2013 Pinned, Fluid\u2011Preserved, Freeze\u2011Dried\n   2.2 Mammalogy \u2013 Study Skin, Skeletal, Fossil Matrix\n   2.3 Herpetology \u2013 Thin\u2011Section, Fluid\u2011Preserved, Skeletal\n   2.4 Paleobotany \u2013 Fossil Matrix, Thin\u2011Section, Macro\n   2.5 Mineralogy \u2013 Specimen Mounts, Thin\u2011Section, CT\n   2.6 Invertebrate Zoology \u2013 Pinned, Fluid\u2011Preserved, Freeze\u2011Dried\n   2.7 Ichthyology \u2013 Prepared Skin, Skeletal, Fluid\u2011Preserved\n   2.8 Ornithology \u2013 Study Skin, Skeletal, Macro\n3. Decision Tree for Imaging Method Selection\n4. Equipment Calibration Checklists (Macro, UV, CT, RTI)\n5. Data Quality Validation Rules (Image, Metadata, File Integrity)\n6. Cross\u2011Reference Matrix: Specimen Types Requiring Multiple Passes\n7. Terminology Glossary & Naming Conventions\n8. Vendor QA Protocols (Vendor A, B, C)\n9. Appendices \u2013 Forms, Templates, Contact Lists\n\n**Key Components**\n- **Workflow Chapters**: Each contains specimen handling steps, preservation\u2011specific precautions, recommended imaging modalities, metadata capture fields (aligned with Darwin Core/ABCD), and internal QA checkpoints.\n- **Decision Tree**: A flowchart that starts with specimen type \u2192 preservation method \u2192 condition \u2192 suggested primary imaging (macro stacking, UV fluorescence, CT, RTI) with fallback options for degraded or fragile items.\n- **Calibration Checklists**: Separate pages for each modality, including daily/weekly calibration tasks, reference targets, and documentation of results.\n- **QA Rules**: Minimum acceptable resolution, color accuracy, metadata completeness percentages, checksum verification, and a pre\u2011acceptance checklist.\n- **Cross\u2011Reference Matrix**: Highlights specimens that need more than one imaging pass (e.g., pinned insect + CT scan) and links to the relevant workflow sections.\n- **Glossary**: Unified definitions for terms such as \u201cstudy skin\u201d, \u201cprepared skin\u201d, \u201cthin\u2011section\u201d, etc., with cross\u2011department synonyms.\n- **Vendor Protocols**: Training requirements, reporting templates, escalation paths, and audit schedules tailored to each outsourced vendor.\n\nThe manual is written in clear, concise language, uses consistent terminology, and includes visual aids (flowcharts, tables) for quick reference. It can be published as a PDF guide and hosted on the museum\u2019s intranet with version control.\n\n**Implementation Plan**\n1. Gather baseline data from each department (inventory, current protocols).\n2. Map preservation methods to imaging techniques.\n3. Reconcile metadata standards into a unified schema.\n4. Draft workflow chapters.\n5. Build decision tree and cross\u2011reference matrix.\n6. Create calibration checklists and QA rules.\n7. Compile glossary and vendor protocols.\n8. Assemble, review, and publish the manual.\n\n**Outcome**\nA single, cohesive digitization operations manual that ensures consistent specimen handling, imaging quality, metadata integrity, and vendor compliance across all eight curatorial departments.\n\nBRAIN METRICS:\nSkill recalled: procedural:general:classification-routing\nTransfer score: 0.6573351363636363\nUsed recalled skill: False\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": true if recalled skill contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'museum_curation', 'task': 'Gather specimen handling protocols from 8 curatorial departments (entomology, mammalogy, herpetology, paleobotany, mineralogy, invertebrate zoology, ichthyology, ornithology) each with different preservation methods (pinned, fluid-preserved, freeze-dried, fossil matrix, thin-section, skeletal, study skin), imaging requirements (macro stacking, UV fluorescence, CT scanning, RTI), and metadata standards (Darwin Core, ABCD Schema, custom legacy databases). Structure into a unified digitization operations manual with department-specific workflows, a decision tree for imaging method selection based on specimen type/condition, equipment calibration checklists, and data quality validation rules. Polish with cross-references between specimen types that require multiple imaging passes, terminology glossary reconciling departmental naming conflicts, and quality assurance protocols for the 3 outsourced digitization vendors who will use this manual.'}\n\nSOLUTION:\nUnified Digitization Operations Manual \u2013 Overview\n\n1. Executive Summary\n   \u2022 Purpose: Standardize specimen handling, imaging, and metadata capture across eight curatorial departments.\n   \u2022 Scope: Covers all preservation types (pinned, fluid\u2011preserved, freeze\u2011dried, fossil matrix, thin\u2011section, skeletal, study skin), imaging modalities (macro stacking, UV fluorescence, CT scanning, RTI), and metadata standards (Darwin Core, ABCD Schema, legacy).\n\n2. Departmental Workflows (sample structure \u2013 repeat for each department)\n   a) Specimen Intake & Condition Assessment\n      - Verify preservation type, condition score, and any pre\u2011existing damage.\n      - Record in the departmental intake log.\n   b) Handling Protocols\n      - Pinned: secure with archival pins, avoid pressure points.\n      - Fluid\u2011preserved: transfer to fresh ethanol, check for leaks.\n      - Freeze\u2011dried: keep at \u201320\u202f\u00b0C until imaging.\n      - Fossil matrix: minimal mechanical contact; use micro\u2011drill only if necessary.\n      - Thin\u2011section & Skeletal: support with foam inserts.\n      - Study skin: mount on archival board, avoid light exposure.\n   c) Imaging Sequence\n      1. Macro stacking (if surface detail required)\n      2. UV fluorescence (for hidden structures)\n      3. CT scanning (for internal morphology)\n      4. RTI (for surface texture)\n      - Decision tree reference: see Appendix A.\n   d) Metadata Capture\n      - Use department\u2011specific template mapping to Darwin Core or ABCD.\n      - Mandatory fields: taxon, preservation type, imaging modality, capture date, operator.\n   e) Quality Assurance Checks\n      - Image resolution, color fidelity, metadata completeness.\n      - File integrity via checksum.\n   f) Archival & Release\n      - Store raw and processed files in the institutional repository.\n      - Tag with DOI for public access.\n\n3. Decision Tree for Imaging Method Selection (Appendix A)\n   \u2022 Input: Specimen type, preservation state, research priority.\n   \u2022 Output: Recommended imaging order, fallback options if primary fails.\n   \u2022 Example paths:\n     \u2013 Pinned beetle \u2192 Macro stacking \u2192 UV \u2192 CT (if internal structures needed).\n     \u2013 Fluid\u2011preserved fish \u2192 RTI \u2192 CT.\n\n4. Equipment Calibration Checklists (Appendix B)\n   \u2022 Macro Camera: daily focus check, color chart calibration.\n   \u2022 UV Lamp: power output verification, filter integrity.\n   \u2022 CT Scanner: phantom scan weekly, dose monitoring.\n   \u2022 RTI Setup: light source alignment, camera exposure consistency.\n\n5. Data Quality Validation Rules (Appendix C)\n   \u2022 Image resolution \u2265 10\u202fMP for macro; \u2265 2\u202fMP for UV/RTI.\n   \u2022 Color accuracy within \u00b13% of reference chart.\n   \u2022 Metadata completeness score \u2265 95%.\n   \u2022 File checksum matches repository record.\n\n6. Cross\u2011Reference Matrix (Appendix D)\n   \u2013 Lists specimens requiring multiple imaging passes and the recommended sequence.\n   \u2013 Highlights overlap between departments (e.g., herpetology study skins also used by ornithology for feather analysis).\n\n7. Terminology Glossary (Appendix E)\n   \u2022 Harmonizes terms: \u201cstudy skin\u201d = \u201cprepared skin\u201d; \u201cthin\u2011section\u201d = \u201cmicro\u2011section\u201d, etc.\n   \u2013 Controlled vocabularies linked to Darwin Core terms.\n\n8. Vendor Quality Assurance Protocols\n   \u2022 Training: mandatory e\u2011learning on manual sections 2\u20135.\n   \u2022 SOP Adherence Checklist: daily log of handling, imaging, metadata capture.\n   \u2022 Performance Metrics: turnaround time, error rate <1%, compliance score \u226590%.\n   \u2013 Quarterly audit with internal staff.\n\n9. Appendices\n   A. Imaging Decision Tree (flowchart)\n   B. Calibration Checklists\n   C. Data Validation Rules\n   D. Cross\u2011Reference Matrix\n   E. Glossary & Controlled Vocabularies\n   F. Vendor SOP Template\n\n10. Implementation Roadmap\n    \u2022 Phase 1: Pilot in two departments, refine workflows.\n    \u2022 Phase 2: Full rollout, vendor onboarding.\n    \u2022 Phase 3: Continuous improvement via feedback loops.\n\nThis manual provides a single source of truth for specimen digitization across the museum, ensuring consistency, data quality, and interoperability with external research communities.\n\nBRAIN METRICS:\nSkill recalled: procedural:general:generation-routing\nTransfer score: 0.7924352411031723\nUsed recalled skill: False\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": true if recalled skill contributed\n- \"used_recalled_skill\": copy the boolean from the prior step (true/false) \u2014 whether a recalled skill actually guided the solution\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection",
+      "trace_id": "98d571fd-c7e9-4bde-b41b-a839e4ad286c",
+      "execution_time_ms": 13044.630289077759
     }
   }
 }

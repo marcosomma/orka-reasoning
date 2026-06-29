@@ -1,126 +1,220 @@
 {
   "task_id": "track_d_03",
   "condition": "brain",
-  "elapsed_s": 17.9,
+  "elapsed_s": 10.7,
   "success": true,
   "output": {
-    "response": "Incident Response Pattern \u2013 Structured, Guarded, Adaptive Workflow\n\n1. Detection & Alerting\n   - Collect alerts from SIEM, IDS/IPS, and application logs.\n   - Auto\u2011tag severity (S0\u2013S3) using predefined thresholds.\n   - Forward to Alert Triager for initial review.\n\n2. Triage (Alert Triager)\n   - Verify alert authenticity; cross\u2011check with threat intel.\n   - Assign incident ID, record timestamp, and capture raw logs.\n   - Determine impact scope: affected services, data sensitivity, business units.\n   - Output: Incident Summary, Initial Severity, Impact Matrix.\n\n3. Impact Assessment (Impact Assessor)\n   - Quantify potential downtime, financial loss, regulatory exposure.\n   - Validate against SLA and compliance matrices.\n   - Decide containment strategy: isolate host, block IPs, or shut down service.\n   - Output: Containment Plan, Escalation Path.\n\n4. Root\u2011Cause Analysis (Root Cause Analyzer)\n   - Perform forensic collection: memory dump, disk image, network traces.\n   - Correlate events across time to identify attack vector.\n   - Document root cause in a structured report.\n   - Output: RCA Report, Evidence Bundle.\n\n5. Fix Implementation (Fix Implementer)\n   - Apply patches or configuration changes based on RCA.\n   - Validate fix in staging; perform regression tests.\n   - Deploy to production with rollback plan.\n   - Verify remediation via re\u2011run of detection rules.\n   - Output: Patch Log, Verification Report.\n\n6. Post\u2011Mortem & Continuous Improvement (Post Mortem Writer)\n   - Compile timeline, decisions, and lessons learned.\n   - Update guardrail thresholds and decision engine rules.\n   - Feed metrics into CMDB for trend analysis.\n   - Deliver final report to stakeholders.\n\nGuardrails:\n- No fix applied without RCA evidence.\n- Evidence must be stored in tamper\u2011evident repository before any action.\n- Escalation only after triage confirms severity > S1 or regulatory impact.\n- Rollback plan mandatory for every change.\n\nDynamic Path Selection:\n- Decision engine routes incidents to appropriate sub\u2011path based on:\n  * Severity level\n  * Asset criticality (e.g., payment gateway vs. internal wiki)\n  * Threat intelligence context (known exploit, zero\u2011day)\n- Rules are versioned and tested against simulated data.\n\nThis pattern integrates procedural core, guardrails, and adaptive decision logic to avoid the anti\u2011pattern of quick fixes masking root causes, ensuring a repeatable, auditable incident response workflow.",
+    "response": "Incident Response Seed Recipe\n\n1. **Scope & Objectives**\n   - Identify incident types (e.g., service outage, data breach).\n   - Define stakeholders and communication channels.\n   - Set success criteria: restore service, prevent recurrence, document lessons.\n\n2. **Triage & Impact Assessment**\n   - Use a decision tree to classify severity (P0\u2013P3).\n   - Assign triager and impact assessor; log initial observations.\n   - Communicate status updates via the incident channel.\n\n3. **Root\u2011Cause Analysis & Fix Implementation**\n   - Collect evidence: logs, metrics, configuration snapshots.\n   - Apply structured techniques (5 Whys, Fishbone) to isolate fault.\n   - Validate fix in a staging environment before production deployment.\n   - Verify resolution with automated tests and monitoring alerts.\n\n4. **Recovery & Validation**\n   - Restore services incrementally; monitor for regressions.\n   - Confirm business continuity through smoke tests.\n   - Update runbooks and rollback plans if needed.\n\n5. **Post\u2011Mortem & Continuous Improvement**\n   - Document findings, root cause, actions taken, and lessons learned.\n   - Review playbook effectiveness; update procedures.\n   - Share insights with relevant teams to prevent recurrence.\n\n**Anti\u2011Pattern Checks**\n- Avoid quick fixes without root\u2011cause analysis.\n- Ensure evidence collection before applying changes.\n- Maintain clear, documented communication throughout.\n\nThis recipe aligns with NIST SP 800\u201161 and ISO\u202f27035, providing a repeatable, auditable process for all incident severities.",
     "confidence": "0.95",
-    "internal_reasoning": "The answer directly maps the provided recipe structure into a detailed step-by-step workflow with explicit guardrails and dynamic routing rules, fully addressing the anti-pattern avoidance requirement.",
+    "internal_reasoning": "I synthesized the provided seed recipe structure, incorporated anti\u2011pattern avoidance, and aligned steps with industry standards to produce a comprehensive, evidence\u2011based solution.",
     "_metrics": {
-      "tokens": 1809,
-      "prompt_tokens": 1179,
-      "completion_tokens": 630,
-      "latency_ms": 5525.93,
-      "cost_usd": 0.000341,
+      "tokens": 1310,
+      "prompt_tokens": 898,
+      "completion_tokens": 412,
+      "latency_ms": 3500.35,
+      "cost_usd": 0.000216,
       "model": "openai/gpt-oss-20b",
       "provider": "lm_studio"
     },
-    "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'incident_management', 'recipe': {'agents': ['alert_triager', 'impact_assessor', 'root_cause_analyzer', 'fix_implementer', 'post_mortem_writer'], 'strategy': 'sequential', 'domain': 'incident_management', 'task': 'Respond to production incidents through structured triage, analysis, and resolution'}, 'anti_pattern': {'what_failed': 'Applying fixes without understanding root cause', 'why': 'Quick fixes masked the real issue, which recurred 3 times in a week with increasing severity', 'domain': 'incident_management', 'severity': 'critical'}, 'path_skill': {'path_nodes': ['triager', 'assessor', 'analyzer', 'implementer', 'post_mortem'], 'score': 0.89, 'domain': 'incident_management', 'task': 'Standard incident response execution path', 'quality': 0.87}, 'task': 'Seed Recipe: Incident Response Pattern'}\n\nCOMPOSED SOLUTION:\nIncident Response Pattern \u2013 Structured, Guarded, Adaptive Workflow\n\n1. Detection & Alerting\n   - Collect alerts from SIEM, IDS/IPS, and application logs.\n   - Auto\u2011tag severity (S0\u2013S3) using predefined thresholds.\n   - Forward to Alert Triager for initial review.\n\n2. Triage (Alert Triager)\n   - Verify alert authenticity; cross\u2011check with threat intel.\n   - Assign incident ID, record timestamp, and capture raw logs.\n   - Determine impact scope: affected services, data sensitivity, business units.\n   - Output: Incident Summary, Initial Severity, Impact Matrix.\n\n3. Impact Assessment (Impact Assessor)\n   - Quantify potential downtime, financial loss, regulatory exposure.\n   - Validate against SLA and compliance matrices.\n   - Decide containment strategy: isolate host, block IPs, or shut down service.\n   - Output: Containment Plan, Escalation Path.\n\n4. Root\u2011Cause Analysis (Root Cause Analyzer)\n   - Perform forensic collection: memory dump, disk image, network traces.\n   - Correlate events across time to identify attack vector.\n   - Document root cause in a structured report.\n   - Output: RCA Report, Evidence Bundle.\n\n5. Fix Implementation (Fix Implementer)\n   - Apply patches or configuration changes based on RCA.\n   - Validate fix in staging; perform regression tests.\n   - Deploy to production with rollback plan.\n   - Verify remediation via re\u2011run of detection rules.\n   - Output: Patch Log, Verification Report.\n\n6. Post\u2011Mortem & Continuous Improvement (Post Mortem Writer)\n   - Compile timeline, decisions, and lessons learned.\n   - Update guardrail thresholds and decision engine rules.\n   - Feed metrics into CMDB for trend analysis.\n   - Deliver final report to stakeholders.\n\nGuardrails:\n- No fix applied without RCA evidence.\n- Evidence must be stored in tamper\u2011evident repository before any action.\n- Escalation only after triage confirms severity > S1 or regulatory impact.\n- Rollback plan mandatory for every change.\n\nDynamic Path Selection:\n- Decision engine routes incidents to appropriate sub\u2011path based on:\n  * Severity level\n  * Asset criticality (e.g., payment gateway vs. internal wiki)\n  * Threat intelligence context (known exploit, zero\u2011day)\n- Rules are versioned and tested against simulated data.\n\nThis pattern integrates procedural core, guardrails, and adaptive decision logic to avoid the anti\u2011pattern of quick fixes masking root causes, ensuring a repeatable, auditable incident response workflow.\n\nCOMPOSITION STRATEGY:\nN/A\n\nBRAIN METRICS:\nSkills composed: []\nAnti-patterns avoided: []\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": list of skills that contributed\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"recalled_skill\": primary skill or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'incident_management', 'recipe': {'agents': ['alert_triager', 'impact_assessor', 'root_cause_analyzer', 'fix_implementer', 'post_mortem_writer'], 'strategy': 'sequential', 'domain': 'incident_management', 'task': 'Respond to production incidents through structured triage, analysis, and resolution'}, 'anti_pattern': {'what_failed': 'Applying fixes without understanding root cause', 'why': 'Quick fixes masked the real issue, which recurred 3 times in a week with increasing severity', 'domain': 'incident_management', 'severity': 'critical'}, 'path_skill': {'path_nodes': ['triager', 'assessor', 'analyzer', 'implementer', 'post_mortem'], 'score': 0.89, 'domain': 'incident_management', 'task': 'Standard incident response execution path', 'quality': 0.87}, 'task': 'Seed Recipe: Incident Response Pattern'}\n\nCOMPOSED SOLUTION:\nThe incident response seed recipe is a structured, anti\u2011pattern\u2011aware workflow that guides responders from detection through lessons learned. It comprises five core phases:\n\n1. **Scope & Objectives** \u2013 Define incident types, stakeholders, and success criteria.\n2. **Triage & Impact Assessment** \u2013 Rapidly classify severity using a decision tree, assign owners, and communicate status.\n3. **Root\u2011Cause Analysis & Fix Implementation** \u2013 Gather evidence, isolate the fault, apply a validated fix, and verify resolution.\n4. **Recovery & Validation** \u2013 Restore services, monitor for regressions, and confirm business continuity.\n5. **Post\u2011Mortem & Continuous Improvement** \u2013 Document findings, update playbooks, and embed lessons into future response plans.\n\nEach phase includes anti\u2011pattern checks (e.g., avoid quick fixes without root\u2011cause analysis, ensure evidence collection, maintain clear communication). The recipe aligns with NIST SP 800\u201161 and ISO\u202f27035 standards, providing a repeatable, auditable process for all incident severities.\n\nCOMPOSITION STRATEGY:\nN/A\n\nBRAIN METRICS:\nSkills composed: []\nAnti-patterns avoided: []\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": list of skills that contributed\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"used_recalled_skill\": copy the boolean from the prior step (true/false) \u2014 whether recalled knowledge actually guided the solution\n- \"recalled_skill\": primary skill or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection",
+    "trace_id": "567f7c11-c970-43e4-a649-d9772936fe1f",
+    "execution_time_ms": 3501.3349056243896
   },
   "agent_outputs": {
     "brain_learn_recipe": {
       "response": "Learned recipe: anti:devops:deploying-without-running-security-scans",
       "confidence": "0.8195",
       "internal_reasoning": "Stored execution recipe with 0 agents",
-      "skill_id": "a182cf09-c14d-4302-938f-5565af1c8cdd",
+      "skill_id": "51094fb4-26fc-4d1e-aaf9-947c2ad394d5",
       "skill_name": "anti:devops:deploying-without-running-security-scans",
-      "skill_type": "anti_pattern"
+      "skill_type": "anti_pattern",
+      "trace_id": "b65e11d7-e1a5-40b4-89c3-91c6d3459f00",
+      "execution_time_ms": 5.99980354309082
     },
     "brain_learn_anti": {
       "response": "Recorded anti-pattern: anti:incident_management:applying-fixes-without-understanding-roo",
       "confidence": "0.9",
       "internal_reasoning": "Anti-pattern stored: Quick fixes masked the real issue, which recurred 3 times in a week with increasing severity",
-      "skill_id": "4d020061-ce0c-4404-b6b1-b70994b09e10",
+      "skill_id": "c46e1a79-57b9-4ef7-8208-77a4caf9f805",
       "skill_name": "anti:incident_management:applying-fixes-without-understanding-roo",
-      "skill_type": "anti_pattern"
+      "skill_type": "anti_pattern",
+      "trace_id": "344ca98b-6fca-448b-b803-9f0e4f043027",
+      "execution_time_ms": 6.003379821777344
     },
     "brain_learn_path": {
       "response": "Learned path: anti:devops:deploying-without-running-security-scans",
       "confidence": "0.828525",
       "internal_reasoning": "GraphScout path stored with 5 nodes",
-      "skill_id": "a182cf09-c14d-4302-938f-5565af1c8cdd",
+      "skill_id": "51094fb4-26fc-4d1e-aaf9-947c2ad394d5",
       "skill_name": "anti:devops:deploying-without-running-security-scans",
-      "skill_type": "anti_pattern"
+      "skill_type": "anti_pattern",
+      "trace_id": "f10c78ef-d4db-4c58-acec-89422fff8dcc",
+      "execution_time_ms": 6.000041961669922
     },
     "task_reasoner": {
-      "response": "The Seed Recipe for an Incident Response Pattern in the incident_management domain should encompass a holistic approach that integrates procedural steps, anti-pattern avoidance, and dynamic path selection. The recipe is structured into three core layers:\n\n1. **Procedural Core** \u2013 A step\u2011by\u2011step workflow covering detection, triage, containment, eradication, recovery, and post\u2011incident review. Each stage includes triggers, decision points, required artifacts (e.g., logs, alerts), and responsible roles.\n\n2. **Anti\u2011Pattern Guardrails** \u2013 Explicit checks that prevent common pitfalls such as over\u2011automation without human oversight, inadequate evidence collection, or premature rollback of mitigations. These guardrails are implemented as conditional gates that must be satisfied before progressing to the next stage.\n\n3. **Dynamic Path Selection Engine** \u2013 A lightweight decision engine (e.g., rule\u2011based or state machine) that selects the appropriate sub\u2011path based on incident severity, asset criticality, and threat intelligence context. This allows the recipe to adapt in real time while still following the overarching procedural core.\n\nThe seed recipe is expressed as a JSON schema that can be instantiated by orchestration tools (e.g., SOAR platforms). It includes:\n- **Metadata**: domain, version, author, last\u2011updated.\n- **Stages**: each with `name`, `description`, `inputs`, `outputs`, and `actions`.\n- **Guardrails**: conditions that must be met before a stage can execute.\n- **Decision Points**: rules mapping incident attributes to next stages.\n- **Artifacts**: evidence types, logs, forensic images, etc., required at each step.\n\nBy combining these layers, the recipe ensures consistent, auditable response while remaining flexible enough to handle diverse incidents. The design also facilitates continuous improvement through post\u2011incident analytics that feed back into guardrail thresholds and decision rules.\n\n**Key Takeaways for Implementation**:\n- Keep procedural steps modular; each can be replaced or extended without breaking the whole flow.\n- Guardrails should be declarative, not imperative, allowing automated compliance checks.\n- Decision engine rules must be versioned and testable against simulated incident data.\n- Store all artifacts in a tamper\u2011evident repository to satisfy evidence integrity requirements.\n\nThis seed recipe provides a reusable foundation that can be tailored to specific organizational policies, regulatory constraints, or technology stacks.",
+      "response": {
+        "domain": "incident_management",
+        "task": "Seed Recipe: Incident Response Pattern",
+        "steps": [
+          {
+            "action": "Define scope and objectives",
+            "result": "Clear understanding of incident types, stakeholders, and desired outcomes."
+          },
+          {
+            "action": "Identify core components of a response pattern",
+            "result": "List of procedural elements: detection, triage, containment, eradication, recovery, lessons learned."
+          },
+          {
+            "action": "Map anti-patterns to avoid",
+            "result": "Checklist of pitfalls such as over\u2011reacting, under\u2011communication, and inadequate evidence collection."
+          },
+          {
+            "action": "Select appropriate path for incident severity",
+            "result": "Decision tree linking severity levels to response actions and escalation thresholds."
+          },
+          {
+            "action": "Integrate procedural recipe with anti-pattern avoidance",
+            "result": "A cohesive seed recipe that guides responders through each phase while mitigating common mistakes."
+          },
+          {
+            "action": "Validate against industry standards (NIST SP 800\u201161, ISO\u202f27035)",
+            "result": "Ensured alignment with best practices and regulatory expectations."
+          }
+        ],
+        "required_capabilities": [
+          "Incident response knowledge",
+          "Process mapping",
+          "Risk assessment",
+          "Communication strategy design",
+          "Standards compliance"
+        ],
+        "confidence": 0.95,
+        "internal_reasoning": "I structured the answer by first outlining the overall goal, then breaking down the recipe into actionable steps that cover procedural flow, anti-pattern checks, and path selection. Each step is paired with an expected outcome to demonstrate completeness."
+      },
       "confidence": "0.95",
-      "internal_reasoning": "I synthesized the task requirements by mapping incident management best practices onto a structured recipe format, ensuring inclusion of procedural steps, anti\u2011pattern safeguards, and adaptive path selection. The confidence is high due to alignment with established frameworks (e.g., NIST IR, SANS Incident Handling).",
+      "internal_reasoning": "The response follows the requested JSON format, includes all required fields, and maintains a confidence level above 0.9 based on comprehensive coverage of the task.",
       "_metrics": {
-        "tokens": 1000,
+        "tokens": 833,
         "prompt_tokens": 419,
-        "completion_tokens": 581,
-        "latency_ms": 5199.79,
-        "cost_usd": 0.000314,
+        "completion_tokens": 414,
+        "latency_ms": 3622.38,
+        "cost_usd": 0.000219,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "You are an expert analyst. Analyze this complex task step by step.\n\nDOMAIN: incident_management\nTASK: Seed Recipe: Incident Response Pattern\n\nThis task may require combining multiple patterns: procedural recipes,\nanti-pattern avoidance, and path selection. Think holistically.\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete multi-faceted analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"required_capabilities\": list of skill types needed\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": approach explanation"
+      "formatted_prompt": "You are an expert analyst. Analyze this complex task step by step.\n\nDOMAIN: incident_management\nTASK: Seed Recipe: Incident Response Pattern\n\nThis task may require combining multiple patterns: procedural recipes,\nanti-pattern avoidance, and path selection. Think holistically.\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete multi-faceted analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"required_capabilities\": list of skill types needed\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": approach explanation",
+      "trace_id": "70619f22-3e57-4c74-ab7f-445483dd5123",
+      "execution_time_ms": 3623.3744621276855
     },
     "brain_recall": {
-      "response": "No applicable skills found for this context.",
-      "confidence": "0.0",
-      "internal_reasoning": "No learned skill matched the target context.",
-      "all_candidates": []
-    },
-    "task_applier": {
-      "response": "Incident Response Pattern \u2013 Structured, Guarded, Adaptive Workflow\n\n1. Detection & Alerting\n   - Collect alerts from SIEM, IDS/IPS, and application logs.\n   - Auto\u2011tag severity (S0\u2013S3) using predefined thresholds.\n   - Forward to Alert Triager for initial review.\n\n2. Triage (Alert Triager)\n   - Verify alert authenticity; cross\u2011check with threat intel.\n   - Assign incident ID, record timestamp, and capture raw logs.\n   - Determine impact scope: affected services, data sensitivity, business units.\n   - Output: Incident Summary, Initial Severity, Impact Matrix.\n\n3. Impact Assessment (Impact Assessor)\n   - Quantify potential downtime, financial loss, regulatory exposure.\n   - Validate against SLA and compliance matrices.\n   - Decide containment strategy: isolate host, block IPs, or shut down service.\n   - Output: Containment Plan, Escalation Path.\n\n4. Root\u2011Cause Analysis (Root Cause Analyzer)\n   - Perform forensic collection: memory dump, disk image, network traces.\n   - Correlate events across time to identify attack vector.\n   - Document root cause in a structured report.\n   - Output: RCA Report, Evidence Bundle.\n\n5. Fix Implementation (Fix Implementer)\n   - Apply patches or configuration changes based on RCA.\n   - Validate fix in staging; perform regression tests.\n   - Deploy to production with rollback plan.\n   - Verify remediation via re\u2011run of detection rules.\n   - Output: Patch Log, Verification Report.\n\n6. Post\u2011Mortem & Continuous Improvement (Post Mortem Writer)\n   - Compile timeline, decisions, and lessons learned.\n   - Update guardrail thresholds and decision engine rules.\n   - Feed metrics into CMDB for trend analysis.\n   - Deliver final report to stakeholders.\n\nGuardrails:\n- No fix applied without RCA evidence.\n- Evidence must be stored in tamper\u2011evident repository before any action.\n- Escalation only after triage confirms severity > S1 or regulatory impact.\n- Rollback plan mandatory for every change.\n\nDynamic Path Selection:\n- Decision engine routes incidents to appropriate sub\u2011path based on:\n  * Severity level\n  * Asset criticality (e.g., payment gateway vs. internal wiki)\n  * Threat intelligence context (known exploit, zero\u2011day)\n- Rules are versioned and tested against simulated data.\n\nThis pattern integrates procedural core, guardrails, and adaptive decision logic to avoid the anti\u2011pattern of quick fixes masking root causes, ensuring a repeatable, auditable incident response workflow.",
-      "confidence": "0.95",
-      "internal_reasoning": "I synthesized the seed recipe structure with the specified agent roles, applied explicit guardrails to counter the known failure mode, and incorporated dynamic path selection logic based on severity and asset criticality. The resulting plan is modular, auditable, and aligns with best practices.",
-      "_metrics": {
-        "tokens": 1854,
-        "prompt_tokens": 1203,
-        "completion_tokens": 651,
-        "latency_ms": 5914.82,
-        "cost_usd": 0.000365,
-        "model": "openai/gpt-oss-20b",
-        "provider": "lm_studio"
-      },
-      "formatted_prompt": "You are solving a complex task that requires COMPOSING multiple skills.\n\nDOMAIN: general\nTASK: {'domain': 'incident_management', 'recipe': {'agents': ['alert_triager', 'impact_assessor', 'root_cause_analyzer', 'fix_implementer', 'post_mortem_writer'], 'strategy': 'sequential', 'domain': 'incident_management', 'task': 'Respond to production incidents through structured triage, analysis, and resolution'}, 'anti_pattern': {'what_failed': 'Applying fixes without understanding root cause', 'why': 'Quick fixes masked the real issue, which recurred 3 times in a week with increasing severity', 'domain': 'incident_management', 'severity': 'critical'}, 'path_skill': {'path_nodes': ['triager', 'assessor', 'analyzer', 'implementer', 'post_mortem'], 'score': 0.89, 'domain': 'incident_management', 'task': 'Standard incident response execution path', 'quality': 0.87}, 'task': 'Seed Recipe: Incident Response Pattern'}\n\nYOUR ANALYSIS:\nThe Seed Recipe for an Incident Response Pattern in the incident_management domain should encompass a holistic approach that integrates procedural steps, anti-pattern avoidance, and dynamic path selection. The recipe is structured into three core layers:\n\n1. **Procedural Core** \u2013 A step\u2011by\u2011step workflow covering detection, triage, containment, eradication, recovery, and post\u2011incident review. Each stage includes triggers, decision points, required artifacts (e.g., logs, alerts), and responsible roles.\n\n2. **Anti\u2011Pattern Guardrails** \u2013 Explicit checks that prevent common pitfalls such as over\u2011automation without human oversight, inadequate evidence collection, or premature rollback of mitigations. These guardrails are implemented as conditional gates that must be satisfied before progressing to the next stage.\n\n3. **Dynamic Path Selection Engine** \u2013 A lightweight decision engine (e.g., rule\u2011based or state machine) that selects the appropriate sub\u2011path based on incident severity, asset criticality, and threat intelligence context. This allows the recipe to adapt in real time while still following the overarching procedural core.\n\nThe seed recipe is expressed as a JSON schema that can be instantiated by orchestration tools (e.g., SOAR platforms). It includes:\n- **Metadata**: domain, version, author, last\u2011updated.\n- **Stages**: each with `name`, `description`, `inputs`, `outputs`, and `actions`.\n- **Guardrails**: conditions that must be met before a stage can execute.\n- **Decision Points**: rules mapping incident attributes to next stages.\n- **Artifacts**: evidence types, logs, forensic images, etc., required at each step.\n\nBy combining these layers, the recipe ensures consistent, auditable response while remaining flexible enough to handle diverse incidents. The design also facilitates continuous improvement through post\u2011incident analytics that feed back into guardrail thresholds and decision rules.\n\n**Key Takeaways for Implementation**:\n- Keep procedural steps modular; each can be replaced or extended without breaking the whole flow.\n- Guardrails should be declarative, not imperative, allowing automated compliance checks.\n- Decision engine rules must be versioned and testable against simulated incident data.\n- Store all artifacts in a tamper\u2011evident repository to satisfy evidence integrity requirements.\n\nThis seed recipe provides a reusable foundation that can be tailored to specific organizational policies, regulatory constraints, or technology stacks.\n\nBRAIN RECALLED KNOWLEDGE:\nSkill name: No skill recalled\nSkill type: unknown\nAbstract steps: []\nTransfer score: N/A\nAdaptations: {}\nAll candidates: []\n\nINSTRUCTIONS:\n- Compose insights from ALL recalled skills into a unified solution.\n- Use recipe patterns for structuring your approach.\n- Use anti-pattern knowledge to AVOID known failure modes.\n- Use path knowledge to select the optimal execution sequence.\n- Clearly note which skills contributed and how you composed them.\n\nReturn JSON with:\n- \"response\": your complete composed solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"skills_composed\": list of skill names/types used\n- \"anti_patterns_avoided\": list of anti-patterns avoided\n- \"composition_strategy\": how you combined multiple skills\n- \"used_recalled_skill\": true or false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on composition"
-    },
-    "brain_learn": {
-      "response": "Learned skill: procedural:general:abstraction-aggregation",
-      "confidence": "0.69",
-      "internal_reasoning": "Abstracted 8 steps into transferable skill 'procedural:general:abstraction-aggregation'",
-      "skill_id": "21b3d3e0-8cde-49ba-9d7a-ab43ce93e3cb",
-      "skill_name": "procedural:general:abstraction-aggregation",
+      "response": "Found applicable skill: 'recipe:devops:sequential-code_linter+test_runner+security_scanner' (score: 0.53). Steps: execute code_linter \u2192 execute test_runner \u2192 execute security_scanner \u2192 execute artifact_builder \u2192 execute deployer",
+      "confidence": "0.5347735942968727",
+      "internal_reasoning": "Skill 'recipe:devops:sequential-code_linter+test_runner+security_scanner'. has moderate semantic overlap. has been transferred 2 times (100% success).",
+      "skill_id": "a10c5adc-58ae-49e8-b7b4-2d4414432a5b",
+      "skill_name": "recipe:devops:sequential-code_linter+test_runner+security_scanner",
       "skill_steps": [
-        "adapt [target]",
-        "detect [target]",
-        "collect [target]",
-        "tag [target]",
-        "review [target]",
-        "verify [target]",
-        "assign [target]",
-        "scope [target]"
+        "execute code_linter",
+        "execute test_runner",
+        "execute security_scanner",
+        "execute artifact_builder",
+        "execute deployer"
       ],
       "skill_tags": [
-        "abstraction",
-        "Incident Response Pattern \u2013 Structured, Guarded, Adaptive Workflow\n\n1. Detection & Alerting\n   - Collect alerts from SIEM, IDS/IPS, and application logs.\n   - Auto\u2011tag severity (S0\u2013S3) using predefine",
-        "general",
-        "aggregation"
-      ]
+        "devops",
+        "sequential",
+        "Build and deploy code through a quality-gated CI/CD pipeline"
+      ],
+      "combined_score": 0.5347735942968727,
+      "structural_score": 0.15,
+      "semantic_score": 0.5240343771874905,
+      "adaptations": {
+        "input_adaptation": {
+          "from": "unknown",
+          "to": "single_text",
+          "suggestion": "Adapt input handling from unknown to single_text"
+        },
+        "remove_structures": [
+          "sequential"
+        ]
+      },
+      "all_candidates": [
+        {
+          "skill_name": "recipe:devops:sequential-code_linter+test_runner+security_scanner",
+          "score": 0.5347735942968727,
+          "reasoning": "Skill 'recipe:devops:sequential-code_linter+test_runner+security_scanner'. has moderate semantic overlap. has been transferred 2 times (100% success)."
+        }
+      ],
+      "trace_id": "c28a860c-b37b-4128-9cf7-9b4548aa2025",
+      "execution_time_ms": 26.999711990356445
     },
-    "brain_feedback": {
-      "response": "No skill_id provided for feedback.",
-      "confidence": "0.0",
-      "internal_reasoning": "Feedback requires a skill_id from a previous recall."
-    },
-    "task_result": {
-      "response": "Incident Response Pattern \u2013 Structured, Guarded, Adaptive Workflow\n\n1. Detection & Alerting\n   - Collect alerts from SIEM, IDS/IPS, and application logs.\n   - Auto\u2011tag severity (S0\u2013S3) using predefined thresholds.\n   - Forward to Alert Triager for initial review.\n\n2. Triage (Alert Triager)\n   - Verify alert authenticity; cross\u2011check with threat intel.\n   - Assign incident ID, record timestamp, and capture raw logs.\n   - Determine impact scope: affected services, data sensitivity, business units.\n   - Output: Incident Summary, Initial Severity, Impact Matrix.\n\n3. Impact Assessment (Impact Assessor)\n   - Quantify potential downtime, financial loss, regulatory exposure.\n   - Validate against SLA and compliance matrices.\n   - Decide containment strategy: isolate host, block IPs, or shut down service.\n   - Output: Containment Plan, Escalation Path.\n\n4. Root\u2011Cause Analysis (Root Cause Analyzer)\n   - Perform forensic collection: memory dump, disk image, network traces.\n   - Correlate events across time to identify attack vector.\n   - Document root cause in a structured report.\n   - Output: RCA Report, Evidence Bundle.\n\n5. Fix Implementation (Fix Implementer)\n   - Apply patches or configuration changes based on RCA.\n   - Validate fix in staging; perform regression tests.\n   - Deploy to production with rollback plan.\n   - Verify remediation via re\u2011run of detection rules.\n   - Output: Patch Log, Verification Report.\n\n6. Post\u2011Mortem & Continuous Improvement (Post Mortem Writer)\n   - Compile timeline, decisions, and lessons learned.\n   - Update guardrail thresholds and decision engine rules.\n   - Feed metrics into CMDB for trend analysis.\n   - Deliver final report to stakeholders.\n\nGuardrails:\n- No fix applied without RCA evidence.\n- Evidence must be stored in tamper\u2011evident repository before any action.\n- Escalation only after triage confirms severity > S1 or regulatory impact.\n- Rollback plan mandatory for every change.\n\nDynamic Path Selection:\n- Decision engine routes incidents to appropriate sub\u2011path based on:\n  * Severity level\n  * Asset criticality (e.g., payment gateway vs. internal wiki)\n  * Threat intelligence context (known exploit, zero\u2011day)\n- Rules are versioned and tested against simulated data.\n\nThis pattern integrates procedural core, guardrails, and adaptive decision logic to avoid the anti\u2011pattern of quick fixes masking root causes, ensuring a repeatable, auditable incident response workflow.",
+    "task_applier": {
+      "response": "The incident response seed recipe is a structured, anti\u2011pattern\u2011aware workflow that guides responders from detection through lessons learned. It comprises five core phases:\n\n1. **Scope & Objectives** \u2013 Define incident types, stakeholders, and success criteria.\n2. **Triage & Impact Assessment** \u2013 Rapidly classify severity using a decision tree, assign owners, and communicate status.\n3. **Root\u2011Cause Analysis & Fix Implementation** \u2013 Gather evidence, isolate the fault, apply a validated fix, and verify resolution.\n4. **Recovery & Validation** \u2013 Restore services, monitor for regressions, and confirm business continuity.\n5. **Post\u2011Mortem & Continuous Improvement** \u2013 Document findings, update playbooks, and embed lessons into future response plans.\n\nEach phase includes anti\u2011pattern checks (e.g., avoid quick fixes without root\u2011cause analysis, ensure evidence collection, maintain clear communication). The recipe aligns with NIST SP 800\u201161 and ISO\u202f27035 standards, providing a repeatable, auditable process for all incident severities.",
       "confidence": "0.95",
-      "internal_reasoning": "The answer directly maps the provided recipe structure into a detailed step-by-step workflow with explicit guardrails and dynamic routing rules, fully addressing the anti-pattern avoidance requirement.",
+      "internal_reasoning": "I synthesized the recalled devops sequential skill (linter, test runner, security scanner) as an analogy for systematic evidence collection and validation steps in root\u2011cause analysis. I mapped the anti\u2011pattern of applying fixes without understanding root cause to the need for a dedicated analysis phase. The path knowledge guided the order: triage \u2192 assessment \u2192 analysis \u2192 implementation \u2192 post\u2011mortem. This composition yields a comprehensive, standards\u2011aligned incident response recipe with high confidence.",
       "_metrics": {
-        "tokens": 1809,
-        "prompt_tokens": 1179,
-        "completion_tokens": 630,
-        "latency_ms": 5525.93,
-        "cost_usd": 0.000341,
+        "tokens": 1545,
+        "prompt_tokens": 1202,
+        "completion_tokens": 343,
+        "latency_ms": 3092.16,
+        "cost_usd": 0.000191,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'incident_management', 'recipe': {'agents': ['alert_triager', 'impact_assessor', 'root_cause_analyzer', 'fix_implementer', 'post_mortem_writer'], 'strategy': 'sequential', 'domain': 'incident_management', 'task': 'Respond to production incidents through structured triage, analysis, and resolution'}, 'anti_pattern': {'what_failed': 'Applying fixes without understanding root cause', 'why': 'Quick fixes masked the real issue, which recurred 3 times in a week with increasing severity', 'domain': 'incident_management', 'severity': 'critical'}, 'path_skill': {'path_nodes': ['triager', 'assessor', 'analyzer', 'implementer', 'post_mortem'], 'score': 0.89, 'domain': 'incident_management', 'task': 'Standard incident response execution path', 'quality': 0.87}, 'task': 'Seed Recipe: Incident Response Pattern'}\n\nCOMPOSED SOLUTION:\nIncident Response Pattern \u2013 Structured, Guarded, Adaptive Workflow\n\n1. Detection & Alerting\n   - Collect alerts from SIEM, IDS/IPS, and application logs.\n   - Auto\u2011tag severity (S0\u2013S3) using predefined thresholds.\n   - Forward to Alert Triager for initial review.\n\n2. Triage (Alert Triager)\n   - Verify alert authenticity; cross\u2011check with threat intel.\n   - Assign incident ID, record timestamp, and capture raw logs.\n   - Determine impact scope: affected services, data sensitivity, business units.\n   - Output: Incident Summary, Initial Severity, Impact Matrix.\n\n3. Impact Assessment (Impact Assessor)\n   - Quantify potential downtime, financial loss, regulatory exposure.\n   - Validate against SLA and compliance matrices.\n   - Decide containment strategy: isolate host, block IPs, or shut down service.\n   - Output: Containment Plan, Escalation Path.\n\n4. Root\u2011Cause Analysis (Root Cause Analyzer)\n   - Perform forensic collection: memory dump, disk image, network traces.\n   - Correlate events across time to identify attack vector.\n   - Document root cause in a structured report.\n   - Output: RCA Report, Evidence Bundle.\n\n5. Fix Implementation (Fix Implementer)\n   - Apply patches or configuration changes based on RCA.\n   - Validate fix in staging; perform regression tests.\n   - Deploy to production with rollback plan.\n   - Verify remediation via re\u2011run of detection rules.\n   - Output: Patch Log, Verification Report.\n\n6. Post\u2011Mortem & Continuous Improvement (Post Mortem Writer)\n   - Compile timeline, decisions, and lessons learned.\n   - Update guardrail thresholds and decision engine rules.\n   - Feed metrics into CMDB for trend analysis.\n   - Deliver final report to stakeholders.\n\nGuardrails:\n- No fix applied without RCA evidence.\n- Evidence must be stored in tamper\u2011evident repository before any action.\n- Escalation only after triage confirms severity > S1 or regulatory impact.\n- Rollback plan mandatory for every change.\n\nDynamic Path Selection:\n- Decision engine routes incidents to appropriate sub\u2011path based on:\n  * Severity level\n  * Asset criticality (e.g., payment gateway vs. internal wiki)\n  * Threat intelligence context (known exploit, zero\u2011day)\n- Rules are versioned and tested against simulated data.\n\nThis pattern integrates procedural core, guardrails, and adaptive decision logic to avoid the anti\u2011pattern of quick fixes masking root causes, ensuring a repeatable, auditable incident response workflow.\n\nCOMPOSITION STRATEGY:\nN/A\n\nBRAIN METRICS:\nSkills composed: []\nAnti-patterns avoided: []\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": list of skills that contributed\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"recalled_skill\": primary skill or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+      "formatted_prompt": "You are solving a complex task that requires COMPOSING multiple skills.\n\nDOMAIN: general\nTASK: {'domain': 'incident_management', 'recipe': {'agents': ['alert_triager', 'impact_assessor', 'root_cause_analyzer', 'fix_implementer', 'post_mortem_writer'], 'strategy': 'sequential', 'domain': 'incident_management', 'task': 'Respond to production incidents through structured triage, analysis, and resolution'}, 'anti_pattern': {'what_failed': 'Applying fixes without understanding root cause', 'why': 'Quick fixes masked the real issue, which recurred 3 times in a week with increasing severity', 'domain': 'incident_management', 'severity': 'critical'}, 'path_skill': {'path_nodes': ['triager', 'assessor', 'analyzer', 'implementer', 'post_mortem'], 'score': 0.89, 'domain': 'incident_management', 'task': 'Standard incident response execution path', 'quality': 0.87}, 'task': 'Seed Recipe: Incident Response Pattern'}\n\nYOUR ANALYSIS:\n{'domain': 'incident_management', 'task': 'Seed Recipe: Incident Response Pattern', 'steps': [{'action': 'Define scope and objectives', 'result': 'Clear understanding of incident types, stakeholders, and desired outcomes.'}, {'action': 'Identify core components of a response pattern', 'result': 'List of procedural elements: detection, triage, containment, eradication, recovery, lessons learned.'}, {'action': 'Map anti-patterns to avoid', 'result': 'Checklist of pitfalls such as over\u2011reacting, under\u2011communication, and inadequate evidence collection.'}, {'action': 'Select appropriate path for incident severity', 'result': 'Decision tree linking severity levels to response actions and escalation thresholds.'}, {'action': 'Integrate procedural recipe with anti-pattern avoidance', 'result': 'A cohesive seed recipe that guides responders through each phase while mitigating common mistakes.'}, {'action': 'Validate against industry standards (NIST SP 800\u201161, ISO\\u202f27035)', 'result': 'Ensured alignment with best practices and regulatory expectations.'}], 'required_capabilities': ['Incident response knowledge', 'Process mapping', 'Risk assessment', 'Communication strategy design', 'Standards compliance'], 'confidence': 0.95, 'internal_reasoning': 'I structured the answer by first outlining the overall goal, then breaking down the recipe into actionable steps that cover procedural flow, anti-pattern checks, and path selection. Each step is paired with an expected outcome to demonstrate completeness.'}\n\nBRAIN RECALLED KNOWLEDGE:\nSkill name: recipe:devops:sequential-code_linter+test_runner+security_scanner\nSkill type: unknown\nAbstract steps: ['execute code_linter', 'execute test_runner', 'execute security_scanner', 'execute artifact_builder', 'execute deployer']\nTransfer score: 0.5347735942968727\nAdaptations: {'input_adaptation': {'from': 'unknown', 'to': 'single_text', 'suggestion': 'Adapt input handling from unknown to single_text'}, 'remove_structures': ['sequential']}\nAll candidates: [{'skill_name': 'recipe:devops:sequential-code_linter+test_runner+security_scanner', 'score': 0.5347735942968727, 'reasoning': \"Skill 'recipe:devops:sequential-code_linter+test_runner+security_scanner'. has moderate semantic overlap. has been transferred 2 times (100% success).\"}]\n\nINSTRUCTIONS:\n- Compose insights from ALL recalled skills into a unified solution.\n- Use recipe patterns for structuring your approach.\n- Use anti-pattern knowledge to AVOID known failure modes.\n- Use path knowledge to select the optimal execution sequence.\n- Clearly note which skills contributed and how you composed them.\n\nReturn JSON with:\n- \"response\": your complete composed solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"skills_composed\": list of skill names/types used\n- \"anti_patterns_avoided\": list of anti-patterns avoided\n- \"composition_strategy\": how you combined multiple skills\n- \"used_recalled_skill\": true or false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on composition",
+      "trace_id": "985731c1-16d3-464d-aa11-6d81c0e640a4",
+      "execution_time_ms": 3093.165397644043
+    },
+    "brain_learn": {
+      "response": "Learned skill: procedural:general:abstraction",
+      "confidence": "0.69",
+      "internal_reasoning": "Abstracted 8 steps into transferable skill 'procedural:general:abstraction'",
+      "skill_id": "d83f53f1-9b1f-4f02-8d0b-8ee0f593c0ab",
+      "skill_name": "procedural:general:abstraction",
+      "skill_steps": [
+        "detect [target]",
+        "scope [target]",
+        "assign [target]",
+        "gather [target]",
+        "restore [target]",
+        "document [target]",
+        "check [target]",
+        "align [target]"
+      ],
+      "skill_tags": [
+        "general",
+        "abstraction",
+        "The incident response seed recipe is a structured, anti\u2011pattern\u2011aware workflow that guides responders from detection through lessons learned. It comprises five core phases:\n\n1. **Scope & Objectives** "
+      ],
+      "trace_id": "baee627b-b35d-4cfb-a4df-bd523c9acf32",
+      "execution_time_ms": 8.000850677490234
+    },
+    "brain_feedback": {
+      "response": "Recorded successful transfer for skill 'recipe:devops:sequential-code_linter+test_runner+security_scanner'.",
+      "confidence": "0.691345",
+      "internal_reasoning": "Transfer feedback recorded. Skill now has 3 transfer(s).",
+      "skill_id": "a10c5adc-58ae-49e8-b7b4-2d4414432a5b",
+      "skill_name": "recipe:devops:sequential-code_linter+test_runner+security_scanner",
+      "transfer_count": 3,
+      "transfer_success": true,
+      "trace_id": "a3aa024c-7773-4b39-9632-8e0aeffc7b48",
+      "execution_time_ms": 3.999948501586914
+    },
+    "task_result": {
+      "response": "Incident Response Seed Recipe\n\n1. **Scope & Objectives**\n   - Identify incident types (e.g., service outage, data breach).\n   - Define stakeholders and communication channels.\n   - Set success criteria: restore service, prevent recurrence, document lessons.\n\n2. **Triage & Impact Assessment**\n   - Use a decision tree to classify severity (P0\u2013P3).\n   - Assign triager and impact assessor; log initial observations.\n   - Communicate status updates via the incident channel.\n\n3. **Root\u2011Cause Analysis & Fix Implementation**\n   - Collect evidence: logs, metrics, configuration snapshots.\n   - Apply structured techniques (5 Whys, Fishbone) to isolate fault.\n   - Validate fix in a staging environment before production deployment.\n   - Verify resolution with automated tests and monitoring alerts.\n\n4. **Recovery & Validation**\n   - Restore services incrementally; monitor for regressions.\n   - Confirm business continuity through smoke tests.\n   - Update runbooks and rollback plans if needed.\n\n5. **Post\u2011Mortem & Continuous Improvement**\n   - Document findings, root cause, actions taken, and lessons learned.\n   - Review playbook effectiveness; update procedures.\n   - Share insights with relevant teams to prevent recurrence.\n\n**Anti\u2011Pattern Checks**\n- Avoid quick fixes without root\u2011cause analysis.\n- Ensure evidence collection before applying changes.\n- Maintain clear, documented communication throughout.\n\nThis recipe aligns with NIST SP 800\u201161 and ISO\u202f27035, providing a repeatable, auditable process for all incident severities.",
+      "confidence": "0.95",
+      "internal_reasoning": "I synthesized the provided seed recipe structure, incorporated anti\u2011pattern avoidance, and aligned steps with industry standards to produce a comprehensive, evidence\u2011based solution.",
+      "_metrics": {
+        "tokens": 1310,
+        "prompt_tokens": 898,
+        "completion_tokens": 412,
+        "latency_ms": 3500.35,
+        "cost_usd": 0.000216,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'incident_management', 'recipe': {'agents': ['alert_triager', 'impact_assessor', 'root_cause_analyzer', 'fix_implementer', 'post_mortem_writer'], 'strategy': 'sequential', 'domain': 'incident_management', 'task': 'Respond to production incidents through structured triage, analysis, and resolution'}, 'anti_pattern': {'what_failed': 'Applying fixes without understanding root cause', 'why': 'Quick fixes masked the real issue, which recurred 3 times in a week with increasing severity', 'domain': 'incident_management', 'severity': 'critical'}, 'path_skill': {'path_nodes': ['triager', 'assessor', 'analyzer', 'implementer', 'post_mortem'], 'score': 0.89, 'domain': 'incident_management', 'task': 'Standard incident response execution path', 'quality': 0.87}, 'task': 'Seed Recipe: Incident Response Pattern'}\n\nCOMPOSED SOLUTION:\nThe incident response seed recipe is a structured, anti\u2011pattern\u2011aware workflow that guides responders from detection through lessons learned. It comprises five core phases:\n\n1. **Scope & Objectives** \u2013 Define incident types, stakeholders, and success criteria.\n2. **Triage & Impact Assessment** \u2013 Rapidly classify severity using a decision tree, assign owners, and communicate status.\n3. **Root\u2011Cause Analysis & Fix Implementation** \u2013 Gather evidence, isolate the fault, apply a validated fix, and verify resolution.\n4. **Recovery & Validation** \u2013 Restore services, monitor for regressions, and confirm business continuity.\n5. **Post\u2011Mortem & Continuous Improvement** \u2013 Document findings, update playbooks, and embed lessons into future response plans.\n\nEach phase includes anti\u2011pattern checks (e.g., avoid quick fixes without root\u2011cause analysis, ensure evidence collection, maintain clear communication). The recipe aligns with NIST SP 800\u201161 and ISO\u202f27035 standards, providing a repeatable, auditable process for all incident severities.\n\nCOMPOSITION STRATEGY:\nN/A\n\nBRAIN METRICS:\nSkills composed: []\nAnti-patterns avoided: []\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": list of skills that contributed\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"used_recalled_skill\": copy the boolean from the prior step (true/false) \u2014 whether recalled knowledge actually guided the solution\n- \"recalled_skill\": primary skill or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection",
+      "trace_id": "567f7c11-c970-43e4-a649-d9772936fe1f",
+      "execution_time_ms": 3501.3349056243896
     }
   }
 }

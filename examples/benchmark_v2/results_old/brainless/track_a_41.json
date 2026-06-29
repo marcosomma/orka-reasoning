@@ -1,0 +1,278 @@
+{
+  "task_id": "track_a_41",
+  "condition": "brainless",
+  "elapsed_s": 21.66,
+  "success": true,
+  "output": {
+    "response": {
+      "domain": "mining_geochemistry",
+      "task": "Extract, harmonise and load assay data from 11 drilling campaigns into a JORC/NI 43-101 compliant database.",
+      "solution_steps": [
+        {
+          "step_number": 1,
+          "action": "Compile raw datasets",
+          "details": "Collect all spreadsheets, CSVs and lab reports for the 11 campaigns. Create a master table with columns: SampleID, Campaign, Depth, Latitude, Longitude, Datum, Method, Cu_ppm, Au_g/t, Mo_ppm, Ag_ppm, DL_Cu, DL_Au, DL_Mo, DL_Ag, QC_Blank, QC_Standard, QC_Duplicate."
+        },
+        {
+          "step_number": 2,
+          "action": "Convert units and datum",
+          "details": "Transform Cu/Mo/Ag from ppm to g/t (divide by 1000). Convert Au from g/t to ppm if needed. Apply NAD27\u2192NAD83 transformation using the appropriate shift for each coordinate set."
+        },
+        {
+          "step_number": 3,
+          "action": "Identify left\u2011censored data",
+          "details": "Flag all values reported as <DL or ND. Record the detection limit per method and element."
+        },
+        {
+          "step_number": 4,
+          "action": "Impute censored values",
+          "details": "Use a regression model (e.g., Tobit) built on uncensored data within each campaign to estimate expected values for censored samples. Replace <DL with the predicted value or 0.5\u00d7DL if prediction is not possible."
+        },
+        {
+          "step_number": 5,
+          "action": "Quantify interlaboratory bias",
+          "details": "From paired umpire re\u2011assay results, calculate multiplicative bias factors for each element/method combination (e.g., FireAssay_Cu = 1.05)."
+        },
+        {
+          "step_number": 6,
+          "action": "Apply bias corrections",
+          "details": "Multiply each assay by its corresponding bias factor. Propagate uncertainty by adding the standard deviation of the bias to the sample\u2019s analytical error."
+        },
+        {
+          "step_number": 7,
+          "action": "Flag potential Ag under\u2011reporting",
+          "details": "Identify aqua regia digests with Ag < DL_Ag but where the sample is from a depth zone known for argentojarosite. Mark these as 'AgIncomplete' and assign a lower reliability tier."
+        },
+        {
+          "step_number": 8,
+          "action": "Assign analytical reliability tiers",
+          "details": "Tier 1: Fire assay with blanks, standards, duplicates; Tier 2: ICP-MS with QC; Tier 3: Aqua regia ICP-OES with QC but flagged AgIncomplete; Tier 4: pXRF or samples lacking QC. Add a 'Reliability_Tier' column."
+        },
+        {
+          "step_number": 9,
+          "action": "Validate dataset",
+          "details": "Run descriptive statistics, check coordinate consistency, compare corrected grades against known ore body models, and ensure no missing mandatory fields for JORC compliance."
+        },
+        {
+          "step_number": 10,
+          "action": "Load into resource estimation database",
+          "details": "Map master table columns to the database schema: SampleID, Depth, Latitude, Longitude, Datum, Method, Reliability_Tier, Cu_corr_ppm, Au_corr_g/t, Mo_corr_ppm, Ag_corr_ppm, QC_Status. Execute bulk insert and run integrity checks."
+        }
+      ],
+      "quality_self_assessment": 0.95,
+      "brain_assisted": false,
+      "recalled_skill": "none",
+      "confidence": 0.95
+    },
+    "confidence": "0.95",
+    "internal_reasoning": "The solution follows the required steps: data compilation, unit/datum conversion, censor handling, bias correction, Ag flagging, tier assignment, validation, and database loading. All actions are justified with standard geochemical practices and JORC/NI 43-101 requirements.",
+    "_metrics": {
+      "tokens": 2002,
+      "prompt_tokens": 1100,
+      "completion_tokens": 902,
+      "latency_ms": 8287.86,
+      "cost_usd": 0.000521,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'mining_geochemistry', 'task': 'Extract geochemical assay results from 11 drilling campaigns spanning 30 years across a polymetallic deposit (Cu-Au-Mo-Ag), where each campaign used different analytical methods (fire assay, 4-acid digest ICP-MS, aqua regia ICP-OES, pXRF field screening) with different detection limits, digestion completeness for refractory minerals, and quality control protocols (some campaigns lack any blank/standard/duplicate data). Transform by harmonizing detection limits using regression-based left-censored data imputation, applying interlaboratory bias corrections derived from paired umpire re-assay programs, converting legacy imperial-unit collar surveys to metric with datum transformation from NAD27 to NAD83, and flagging samples where silver assays from the aqua regia digest likely under-report due to incomplete dissolution of argentojarosite. Load into a JORC/NI 43-101 compliant resource estimation database that requires classification of each sample by analytical reliability tier.'}\n\nSOLUTION:\n{'domain': 'mining_geochemistry', 'task': 'Extract, harmonise and load assay data from 11 drilling campaigns into a JORC/NI 43-101 compliant database.', 'steps': [{'action': 'Compile raw datasets from all 11 campaigns', 'expected_outcome': 'A master spreadsheet containing every sample record with method, reported values, detection limits and QC metadata.'}, {'action': 'Standardise units and datum', 'expected_outcome': 'All samples expressed in SI units (ppm for Cu/Mo/Ag, g/t for Au) and coordinates transformed from NAD27 to NAD83.'}, {'action': 'Identify left\u2011censored observations (<DL or ND)', 'expected_outcome': 'A list of censored values with associated detection limits per method.'}, {'action': 'Apply regression\u2011based imputation for censored data', 'expected_outcome': 'Numeric replacements (e.g., 0.5\u00d7DL or model\u2011derived estimates) that preserve statistical relationships.'}, {'action': 'Quantify interlaboratory bias using paired umpire re\u2011assay results', 'expected_outcome': 'Bias correction factors (multiplicative/additive) for each element/method combination.'}, {'action': 'Adjust assay values by bias corrections and propagate uncertainty', 'expected_outcome': 'A bias\u2011corrected dataset with updated uncertainties.'}, {'action': 'Flag potential Ag under\u2011reporting in aqua\u2011regia digests', 'expected_outcome': 'Samples identified as likely incomplete dissolution of argentojarosite are marked and given a low\u2011reliability flag.'}, {'action': 'Assign analytical reliability tiers (Tier 1\u20134) according to method, QC presence and Ag flagging', 'expected_outcome': 'Each sample annotated with a tier that satisfies JORC/NI 43-101 requirements.'}, {'action': 'Validate the harmonised dataset through statistical checks, coordinate sanity tests and comparison with known ore grades', 'expected_outcome': 'A verified, error\u2011free dataset ready for ingestion.'}, {'action': 'Load data into the resource estimation database ensuring compliance with JORC/NI 43-101 schema (fields for method, tier, QC status, coordinates, corrected values)', 'expected_outcome': 'A fully populated, compliant database ready for modelling.'}]}\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": {
+        "domain": "mining_geochemistry",
+        "task": "Extract and harmonise assay data from 11 multi\u2011decade drilling campaigns for a Cu\u2011Au\u2011Mo\u2011Ag deposit, correct for analytical bias, convert legacy units/datum, flag potential Ag under\u2011reporting, and load into a JORC/NI 43-101 compliant database with reliability tiers.",
+        "steps": [
+          {
+            "action": "Compile raw assay datasets from all campaigns",
+            "result": "A master spreadsheet containing every sample record, method used, reported values, detection limits, and any QC metadata."
+          },
+          {
+            "action": "Standardise units and datum: convert imperial collar surveys to metric, transform coordinates from NAD27 to NAD83, and homogenise concentration units (ppm for Cu/Mo/Ag, g/t for Au).",
+            "result": "All samples expressed in consistent SI units and a common geodetic reference."
+          },
+          {
+            "action": "Identify left\u2011censored data: flag all values reported as <DL or \u201cND\u201d.",
+            "result": "A list of censored observations with associated detection limits for each method."
+          },
+          {
+            "action": "Apply regression\u2011based imputation to replace censored values (e.g., substitution at 0.5\u00d7DL or model\u2011based multiple imputation using method\u2011specific regressions).",
+            "result": "A complete numeric dataset where previously missing values are statistically plausible estimates."
+          },
+          {
+            "action": "Quantify interlaboratory bias: use paired re\u2011assay (umpire) data to calculate mean bias and variance for each element/method combination.",
+            "result": "Bias correction factors (multiplicative or additive) ready for application."
+          },
+          {
+            "action": "Adjust all assay values by the derived bias corrections, propagating uncertainty from both measurement error and bias estimation.",
+            "result": "A bias\u2011corrected dataset with updated uncertainties."
+          },
+          {
+            "action": "Flag samples potentially under\u2011reporting Ag: identify aqua\u2011regia digests that contain argentojarosite (based on mineralogical logs or high Cu/Mo ratios), and apply a conservative Ag adjustment factor or mark as low\u2011reliability.",
+            "result": "A reliability flag for each sample indicating possible Ag under\u2011reporting."
+          },
+          {
+            "action": "Assign analytical reliability tiers: Tier 1 (fire assay, complete digestion, QC present), Tier 2 (ICP\u2011MS/ICP\u2011OES with full QC), Tier 3 (pXRF or incomplete QC), Tier 4 (flagged Ag under\u2011reporting).",
+            "result": "Each sample annotated with a tier that satisfies JORC/NI 43-101 requirements."
+          },
+          {
+            "action": "Validate the harmonised dataset: cross\u2011check statistical distributions, compare against known ore grades, and perform sanity checks on coordinate transformations.",
+            "result": "A verified dataset ready for ingestion."
+          },
+          {
+            "action": "Load data into the resource estimation database, ensuring compliance with JORC/NI 43-101 schema (fields for method, tier, QC status, coordinates, corrected values).",
+            "result": "A fully populated, compliant database ready for modelling."
+          }
+        ],
+        "confidence": "0.95",
+        "internal_reasoning": "The plan follows a logical sequence: data collection \u2192 standardisation \u2192 handling censored data \u2192 bias correction \u2192 quality flagging \u2192 tier assignment \u2192 validation \u2192 ingestion. Each step is justified by the need to meet regulatory standards and produce reliable estimates."
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "I structured the response as a detailed, step\u2011by\u2011step plan that addresses all technical requirements while ensuring compliance with JORC/NI 43-101.",
+      "_metrics": {
+        "tokens": 1446,
+        "prompt_tokens": 617,
+        "completion_tokens": 829,
+        "latency_ms": 7508.64,
+        "cost_usd": 0.000463,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: mining_geochemistry\nTASK: Extract geochemical assay results from 11 drilling campaigns spanning 30 years across a polymetallic deposit (Cu-Au-Mo-Ag), where each campaign used different analytical methods (fire assay, 4-acid digest ICP-MS, aqua regia ICP-OES, pXRF field screening) with different detection limits, digestion completeness for refractory minerals, and quality control protocols (some campaigns lack any blank/standard/duplicate data). Transform by harmonizing detection limits using regression-based left-censored data imputation, applying interlaboratory bias corrections derived from paired umpire re-assay programs, converting legacy imperial-unit collar surveys to metric with datum transformation from NAD27 to NAD83, and flagging samples where silver assays from the aqua regia digest likely under-report due to incomplete dissolution of argentojarosite. Load into a JORC/NI 43-101 compliant resource estimation database that requires classification of each sample by analytical reliability tier.\n\n\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+    },
+    "task_applier": {
+      "response": {
+        "domain": "mining_geochemistry",
+        "task": "Extract, harmonise and load assay data from 11 drilling campaigns into a JORC/NI 43-101 compliant database.",
+        "steps": [
+          {
+            "action": "Compile raw datasets from all 11 campaigns",
+            "expected_outcome": "A master spreadsheet containing every sample record with method, reported values, detection limits and QC metadata."
+          },
+          {
+            "action": "Standardise units and datum",
+            "expected_outcome": "All samples expressed in SI units (ppm for Cu/Mo/Ag, g/t for Au) and coordinates transformed from NAD27 to NAD83."
+          },
+          {
+            "action": "Identify left\u2011censored observations (<DL or ND)",
+            "expected_outcome": "A list of censored values with associated detection limits per method."
+          },
+          {
+            "action": "Apply regression\u2011based imputation for censored data",
+            "expected_outcome": "Numeric replacements (e.g., 0.5\u00d7DL or model\u2011derived estimates) that preserve statistical relationships."
+          },
+          {
+            "action": "Quantify interlaboratory bias using paired umpire re\u2011assay results",
+            "expected_outcome": "Bias correction factors (multiplicative/additive) for each element/method combination."
+          },
+          {
+            "action": "Adjust assay values by bias corrections and propagate uncertainty",
+            "expected_outcome": "A bias\u2011corrected dataset with updated uncertainties."
+          },
+          {
+            "action": "Flag potential Ag under\u2011reporting in aqua\u2011regia digests",
+            "expected_outcome": "Samples identified as likely incomplete dissolution of argentojarosite are marked and given a low\u2011reliability flag."
+          },
+          {
+            "action": "Assign analytical reliability tiers (Tier 1\u20134) according to method, QC presence and Ag flagging",
+            "expected_outcome": "Each sample annotated with a tier that satisfies JORC/NI 43-101 requirements."
+          },
+          {
+            "action": "Validate the harmonised dataset through statistical checks, coordinate sanity tests and comparison with known ore grades",
+            "expected_outcome": "A verified, error\u2011free dataset ready for ingestion."
+          },
+          {
+            "action": "Load data into the resource estimation database ensuring compliance with JORC/NI 43-101 schema (fields for method, tier, QC status, coordinates, corrected values)",
+            "expected_outcome": "A fully populated, compliant database ready for modelling."
+          }
+        ]
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "The plan follows a logical sequence of data compilation, standardisation, censor handling, bias correction, quality flagging, tier assignment, validation and ingestion, ensuring regulatory compliance and reliable resource estimation.",
+      "_metrics": {
+        "tokens": 1959,
+        "prompt_tokens": 1350,
+        "completion_tokens": 609,
+        "latency_ms": 5605.27,
+        "cost_usd": 0.000346,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a task. You have your own step-by-step analysis.\nYou have NO prior experience and NO recalled skills.\n\nDOMAIN: general\nTASK: {'domain': 'mining_geochemistry', 'task': 'Extract geochemical assay results from 11 drilling campaigns spanning 30 years across a polymetallic deposit (Cu-Au-Mo-Ag), where each campaign used different analytical methods (fire assay, 4-acid digest ICP-MS, aqua regia ICP-OES, pXRF field screening) with different detection limits, digestion completeness for refractory minerals, and quality control protocols (some campaigns lack any blank/standard/duplicate data). Transform by harmonizing detection limits using regression-based left-censored data imputation, applying interlaboratory bias corrections derived from paired umpire re-assay programs, converting legacy imperial-unit collar surveys to metric with datum transformation from NAD27 to NAD83, and flagging samples where silver assays from the aqua regia digest likely under-report due to incomplete dissolution of argentojarosite. Load into a JORC/NI 43-101 compliant resource estimation database that requires classification of each sample by analytical reliability tier.'}\n\nYOUR ANALYSIS:\n{'domain': 'mining_geochemistry', 'task': 'Extract and harmonise assay data from 11 multi\u2011decade drilling campaigns for a Cu\u2011Au\u2011Mo\u2011Ag deposit, correct for analytical bias, convert legacy units/datum, flag potential Ag under\u2011reporting, and load into a JORC/NI 43-101 compliant database with reliability tiers.', 'steps': [{'action': 'Compile raw assay datasets from all campaigns', 'result': 'A master spreadsheet containing every sample record, method used, reported values, detection limits, and any QC metadata.'}, {'action': 'Standardise units and datum: convert imperial collar surveys to metric, transform coordinates from NAD27 to NAD83, and homogenise concentration units (ppm for Cu/Mo/Ag, g/t for Au).', 'result': 'All samples expressed in consistent SI units and a common geodetic reference.'}, {'action': 'Identify left\u2011censored data: flag all values reported as <DL or \u201cND\u201d.', 'result': 'A list of censored observations with associated detection limits for each method.'}, {'action': 'Apply regression\u2011based imputation to replace censored values (e.g., substitution at 0.5\u00d7DL or model\u2011based multiple imputation using method\u2011specific regressions).', 'result': 'A complete numeric dataset where previously missing values are statistically plausible estimates.'}, {'action': 'Quantify interlaboratory bias: use paired re\u2011assay (umpire) data to calculate mean bias and variance for each element/method combination.', 'result': 'Bias correction factors (multiplicative or additive) ready for application.'}, {'action': 'Adjust all assay values by the derived bias corrections, propagating uncertainty from both measurement error and bias estimation.', 'result': 'A bias\u2011corrected dataset with updated uncertainties.'}, {'action': 'Flag samples potentially under\u2011reporting Ag: identify aqua\u2011regia digests that contain argentojarosite (based on mineralogical logs or high Cu/Mo ratios), and apply a conservative Ag adjustment factor or mark as low\u2011reliability.', 'result': 'A reliability flag for each sample indicating possible Ag under\u2011reporting.'}, {'action': 'Assign analytical reliability tiers: Tier 1 (fire assay, complete digestion, QC present), Tier 2 (ICP\u2011MS/ICP\u2011OES with full QC), Tier 3 (pXRF or incomplete QC), Tier 4 (flagged Ag under\u2011reporting).', 'result': 'Each sample annotated with a tier that satisfies JORC/NI 43-101 requirements.'}, {'action': 'Validate the harmonised dataset: cross\u2011check statistical distributions, compare against known ore grades, and perform sanity checks on coordinate transformations.', 'result': 'A verified dataset ready for ingestion.'}, {'action': 'Load data into the resource estimation database, ensuring compliance with JORC/NI 43-101 schema (fields for method, tier, QC status, coordinates, corrected values).', 'result': 'A fully populated, compliant database ready for modelling.'}], 'confidence': '0.95', 'internal_reasoning': 'The plan follows a logical sequence: data collection \u2192 standardisation \u2192 handling censored data \u2192 bias correction \u2192 quality flagging \u2192 tier assignment \u2192 validation \u2192 ingestion. Each step is justified by the need to meet regulatory standards and produce reliable estimates.'}\n\nSolve the task using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": false\n- \"recalled_skill_name\": \"none\"\n- \"adaptation_notes\": \"N/A\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+    },
+    "task_result": {
+      "response": {
+        "domain": "mining_geochemistry",
+        "task": "Extract, harmonise and load assay data from 11 drilling campaigns into a JORC/NI 43-101 compliant database.",
+        "solution_steps": [
+          {
+            "step_number": 1,
+            "action": "Compile raw datasets",
+            "details": "Collect all spreadsheets, CSVs and lab reports for the 11 campaigns. Create a master table with columns: SampleID, Campaign, Depth, Latitude, Longitude, Datum, Method, Cu_ppm, Au_g/t, Mo_ppm, Ag_ppm, DL_Cu, DL_Au, DL_Mo, DL_Ag, QC_Blank, QC_Standard, QC_Duplicate."
+          },
+          {
+            "step_number": 2,
+            "action": "Convert units and datum",
+            "details": "Transform Cu/Mo/Ag from ppm to g/t (divide by 1000). Convert Au from g/t to ppm if needed. Apply NAD27\u2192NAD83 transformation using the appropriate shift for each coordinate set."
+          },
+          {
+            "step_number": 3,
+            "action": "Identify left\u2011censored data",
+            "details": "Flag all values reported as <DL or ND. Record the detection limit per method and element."
+          },
+          {
+            "step_number": 4,
+            "action": "Impute censored values",
+            "details": "Use a regression model (e.g., Tobit) built on uncensored data within each campaign to estimate expected values for censored samples. Replace <DL with the predicted value or 0.5\u00d7DL if prediction is not possible."
+          },
+          {
+            "step_number": 5,
+            "action": "Quantify interlaboratory bias",
+            "details": "From paired umpire re\u2011assay results, calculate multiplicative bias factors for each element/method combination (e.g., FireAssay_Cu = 1.05)."
+          },
+          {
+            "step_number": 6,
+            "action": "Apply bias corrections",
+            "details": "Multiply each assay by its corresponding bias factor. Propagate uncertainty by adding the standard deviation of the bias to the sample\u2019s analytical error."
+          },
+          {
+            "step_number": 7,
+            "action": "Flag potential Ag under\u2011reporting",
+            "details": "Identify aqua regia digests with Ag < DL_Ag but where the sample is from a depth zone known for argentojarosite. Mark these as 'AgIncomplete' and assign a lower reliability tier."
+          },
+          {
+            "step_number": 8,
+            "action": "Assign analytical reliability tiers",
+            "details": "Tier 1: Fire assay with blanks, standards, duplicates; Tier 2: ICP-MS with QC; Tier 3: Aqua regia ICP-OES with QC but flagged AgIncomplete; Tier 4: pXRF or samples lacking QC. Add a 'Reliability_Tier' column."
+          },
+          {
+            "step_number": 9,
+            "action": "Validate dataset",
+            "details": "Run descriptive statistics, check coordinate consistency, compare corrected grades against known ore body models, and ensure no missing mandatory fields for JORC compliance."
+          },
+          {
+            "step_number": 10,
+            "action": "Load into resource estimation database",
+            "details": "Map master table columns to the database schema: SampleID, Depth, Latitude, Longitude, Datum, Method, Reliability_Tier, Cu_corr_ppm, Au_corr_g/t, Mo_corr_ppm, Ag_corr_ppm, QC_Status. Execute bulk insert and run integrity checks."
+          }
+        ],
+        "quality_self_assessment": 0.95,
+        "brain_assisted": false,
+        "recalled_skill": "none",
+        "confidence": 0.95
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "The solution follows the required steps: data compilation, unit/datum conversion, censor handling, bias correction, Ag flagging, tier assignment, validation, and database loading. All actions are justified with standard geochemical practices and JORC/NI 43-101 requirements.",
+      "_metrics": {
+        "tokens": 2002,
+        "prompt_tokens": 1100,
+        "completion_tokens": 902,
+        "latency_ms": 8287.86,
+        "cost_usd": 0.000521,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'mining_geochemistry', 'task': 'Extract geochemical assay results from 11 drilling campaigns spanning 30 years across a polymetallic deposit (Cu-Au-Mo-Ag), where each campaign used different analytical methods (fire assay, 4-acid digest ICP-MS, aqua regia ICP-OES, pXRF field screening) with different detection limits, digestion completeness for refractory minerals, and quality control protocols (some campaigns lack any blank/standard/duplicate data). Transform by harmonizing detection limits using regression-based left-censored data imputation, applying interlaboratory bias corrections derived from paired umpire re-assay programs, converting legacy imperial-unit collar surveys to metric with datum transformation from NAD27 to NAD83, and flagging samples where silver assays from the aqua regia digest likely under-report due to incomplete dissolution of argentojarosite. Load into a JORC/NI 43-101 compliant resource estimation database that requires classification of each sample by analytical reliability tier.'}\n\nSOLUTION:\n{'domain': 'mining_geochemistry', 'task': 'Extract, harmonise and load assay data from 11 drilling campaigns into a JORC/NI 43-101 compliant database.', 'steps': [{'action': 'Compile raw datasets from all 11 campaigns', 'expected_outcome': 'A master spreadsheet containing every sample record with method, reported values, detection limits and QC metadata.'}, {'action': 'Standardise units and datum', 'expected_outcome': 'All samples expressed in SI units (ppm for Cu/Mo/Ag, g/t for Au) and coordinates transformed from NAD27 to NAD83.'}, {'action': 'Identify left\u2011censored observations (<DL or ND)', 'expected_outcome': 'A list of censored values with associated detection limits per method.'}, {'action': 'Apply regression\u2011based imputation for censored data', 'expected_outcome': 'Numeric replacements (e.g., 0.5\u00d7DL or model\u2011derived estimates) that preserve statistical relationships.'}, {'action': 'Quantify interlaboratory bias using paired umpire re\u2011assay results', 'expected_outcome': 'Bias correction factors (multiplicative/additive) for each element/method combination.'}, {'action': 'Adjust assay values by bias corrections and propagate uncertainty', 'expected_outcome': 'A bias\u2011corrected dataset with updated uncertainties.'}, {'action': 'Flag potential Ag under\u2011reporting in aqua\u2011regia digests', 'expected_outcome': 'Samples identified as likely incomplete dissolution of argentojarosite are marked and given a low\u2011reliability flag.'}, {'action': 'Assign analytical reliability tiers (Tier 1\u20134) according to method, QC presence and Ag flagging', 'expected_outcome': 'Each sample annotated with a tier that satisfies JORC/NI 43-101 requirements.'}, {'action': 'Validate the harmonised dataset through statistical checks, coordinate sanity tests and comparison with known ore grades', 'expected_outcome': 'A verified, error\u2011free dataset ready for ingestion.'}, {'action': 'Load data into the resource estimation database ensuring compliance with JORC/NI 43-101 schema (fields for method, tier, QC status, coordinates, corrected values)', 'expected_outcome': 'A fully populated, compliant database ready for modelling.'}]}\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

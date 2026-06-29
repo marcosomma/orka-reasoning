@@ -1,0 +1,189 @@
+{
+  "task_id": "track_a_10",
+  "condition": "brain",
+  "elapsed_s": 16.36,
+  "success": true,
+  "output": {
+    "response": "The documentation is organized into the following hierarchy:\n\n1. **Overview** \u2013 High\u2011level description of the system, its purpose, and key concepts.\n2. **Architecture** \u2013 Diagrammatic representation of components, data flow, and deployment topology.\n3. **API Reference** \u2013 Detailed listings of all public functions/classes with signatures, parameters, return types, and example usage snippets.\n4. **Tutorials & Use Cases** \u2013 Step\u2011by\u2011step guides for common scenarios, including code samples that compile against the live codebase.\n5. **Glossary & Terminology** \u2013 Definitions of domain terms gathered from expert interviews.\n6. **Appendices** \u2013 Configuration files, environment variables, and troubleshooting tips.\n\nEach section includes:\n- Inline code examples verified against the repository.\n- Cross\u2011references (e.g., \"See also: `process_data()` in API Reference\").\n- Consistency checks for naming conventions and versioning.\n- Navigation aids such as a table of contents and sidebar links.\n\nThis structure ensures that developers can quickly locate high\u2011level context, dive into implementation details, and reference related concepts without redundancy.",
+    "confidence": "0.95",
+    "internal_reasoning": "I synthesized the execution trace steps into a coherent documentation hierarchy, ensuring each step (extraction, interview, organization, writing, cross\u2011referencing, review) is reflected in the final structure. The confidence is high because all required elements are covered and the output aligns with standard technical documentation practices.",
+    "_metrics": {
+      "tokens": 1229,
+      "prompt_tokens": 899,
+      "completion_tokens": 330,
+      "latency_ms": 3406.38,
+      "cost_usd": 0.00021,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'technical_writing', 'task': 'Gather technical information from code and interviews, structure it into a logical documentation hierarchy, then polish with examples, cross-references, and consistency checks.', 'execution_trace': {'steps': [{'action': 'extract technical details from codebase and API signatures', 'result': 'success'}, {'action': 'interview domain experts for context and use cases', 'result': 'success'}, {'action': 'organize information into a logical hierarchy with clear sections', 'result': 'success'}, {'action': 'write each section with code examples and diagrams', 'result': 'success'}, {'action': 'add cross-references and navigation aids between sections', 'result': 'success'}, {'action': 'review for consistency, accuracy, and completeness', 'result': 'success'}], 'agents': ['code_extractor', 'expert_interviewer', 'organizer', 'writer', 'cross_referencer', 'reviewer'], 'strategy': 'sequential'}, 'outcome': {'success': True, 'quality': 0.88}}\n\nSOLUTION:\nThe documentation process follows a six\u2011step sequential workflow:\n1. **Extract Technical Details** \u2013 Run static analysis tools on the codebase to gather all public API signatures, inline comments, and docstrings.\n2. **Interview Domain Experts** \u2013 Conduct structured interviews to capture real\u2011world use cases, terminology, and business intent.\n3. **Create Logical Hierarchy** \u2013 Design a tree of sections (Overview, Architecture, API Reference, Tutorials, Glossary) that reflects the extracted information and interview insights.\n4. **Write Sections with Examples** \u2013 Draft prose for each section, embedding annotated code snippets and diagrams where appropriate to illustrate concepts.\n5. **Add Cross\u2011References** \u2013 Insert hyperlinks and reference markers between related topics, glossary entries, and external resources to enable seamless navigation.\n6. **Review & Polish** \u2013 Perform consistency checks, style reviews, and validate examples against the live codebase to ensure accuracy and completeness.\n\nThe procedural skill \"reasoning-sequential\" was adapted by mapping its abstract step *collect [target]* to each of these concrete actions, ensuring a disciplined, step\u2011by\u2011step approach that aligns with technical writing best practices.\n\nBRAIN METRICS:\nSkill recalled: procedural:general:reasoning-sequential\nTransfer score: 0.5845975609756098\nUsed recalled skill: False\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": true if recalled skill contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": {
+        "domain": "technical_writing",
+        "task": "Gather technical information from code and interviews, structure it into a logical documentation hierarchy, then polish with examples, cross-references, and consistency checks.",
+        "analysis": [
+          {
+            "step": 1,
+            "action": "Extract technical details from the codebase and API signatures.",
+            "why": "Provides the foundational facts (functions, classes, parameters) needed for accurate documentation.",
+            "expected_output": "A list of all public interfaces with their signatures, descriptions, and any inline comments."
+          },
+          {
+            "step": 2,
+            "action": "Interview domain experts to gather context, use cases, and business intent.",
+            "why": "Ensures the documentation reflects real-world usage and clarifies ambiguous code behavior.",
+            "expected_output": "Transcripts or summarized notes highlighting key scenarios, constraints, and terminology."
+          },
+          {
+            "step": 3,
+            "action": "Organize extracted information into a logical hierarchy with clear sections (e.g., Overview, Architecture, API Reference, Tutorials).",
+            "why": "Creates an intuitive navigation structure that helps readers locate information quickly.",
+            "expected_output": "A tree diagram or outline of the documentation layout."
+          },
+          {
+            "step": 4,
+            "action": "Write each section with code examples and diagrams where appropriate.",
+            "why": "Illustrates concepts concretely, improving comprehension and retention.",
+            "expected_output": "Drafted sections containing prose, annotated code snippets, and visual aids."
+          },
+          {
+            "step": 5,
+            "action": "Add cross-references, links, and navigation aids between related sections.",
+            "why": "Facilitates seamless movement through the documentation and reinforces connections.",
+            "expected_output": "Hyperlinks or reference markers linking to related topics, glossary entries, and external resources."
+          },
+          {
+            "step": 6,
+            "action": "Review for consistency, accuracy, and completeness; perform style checks and validate examples against the live codebase.",
+            "why": "Guarantees that the final document is reliable, up-to-date, and professionally presented.",
+            "expected_output": "A polished, error-free documentation set ready for publication."
+          }
+        ],
+        "steps": [
+          {
+            "action": "Extract technical details from codebase",
+            "result": "Collected API signatures and inline comments"
+          },
+          {
+            "action": "Interview domain experts",
+            "result": "Captured use cases and terminology"
+          },
+          {
+            "action": "Create logical hierarchy",
+            "result": "Defined sections and navigation structure"
+          },
+          {
+            "action": "Write sections with examples",
+            "result": "Drafted content with code snippets and diagrams"
+          },
+          {
+            "action": "Add cross-references",
+            "result": "Integrated links between related topics"
+          },
+          {
+            "action": "Review for consistency",
+            "result": "Finalized documentation ready for release"
+          }
+        ]
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "I followed the sequential strategy outlined in the reference trace, ensuring each step is justified and its output clearly defined. The confidence level reflects high certainty that this plan aligns with best practices for technical documentation.",
+      "_metrics": {
+        "tokens": 1218,
+        "prompt_tokens": 554,
+        "completion_tokens": 664,
+        "latency_ms": 7415.11,
+        "cost_usd": 0.000457,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: technical_writing\nTASK: Gather technical information from code and interviews, structure it into a logical documentation hierarchy, then polish with examples, cross-references, and consistency checks.\n\n\nREFERENCE EXECUTION TRACE:\n\n  Step 1: extract technical details from codebase and API signatures \u2192 success\n\n  Step 2: interview domain experts for context and use cases \u2192 success\n\n  Step 3: organize information into a logical hierarchy with clear sections \u2192 success\n\n  Step 4: write each section with code examples and diagrams \u2192 success\n\n  Step 5: add cross-references and navigation aids between sections \u2192 success\n\n  Step 6: review for consistency, accuracy, and completeness \u2192 success\n\nStrategy: sequential\n\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+    },
+    "brain_learn": {
+      "response": "Learned skill: procedural:general:reasoning-sequential",
+      "confidence": "0.69",
+      "internal_reasoning": "Abstracted 1 steps into transferable skill 'procedural:general:reasoning-sequential'",
+      "skill_id": "bc2a2ba7-938e-4309-a071-3bfcc4e8b285",
+      "skill_name": "procedural:general:reasoning-sequential",
+      "skill_steps": [
+        "collect [target]"
+      ],
+      "skill_tags": [
+        "transformation",
+        "sequential",
+        "{'domain': 'technical_writing', 'task': 'Gather technical information from code and interviews, structure it into a logical documentation hierarchy, then polish with examples, cross-references, and co",
+        "reasoning",
+        "general"
+      ]
+    },
+    "brain_recall": {
+      "response": "Found applicable skill: 'procedural:general:reasoning-sequential' (score: 0.58). Steps: collect [target]",
+      "confidence": "0.5845975609756098",
+      "internal_reasoning": "Skill 'procedural:general:reasoning-sequential'. has very similar task structure. shares structures: sequential, transformation. shares patterns: reasoning.",
+      "skill_id": "bc2a2ba7-938e-4309-a071-3bfcc4e8b285",
+      "skill_name": "procedural:general:reasoning-sequential",
+      "skill_steps": [
+        "collect [target]"
+      ],
+      "skill_tags": [
+        "transformation",
+        "sequential",
+        "{'domain': 'technical_writing', 'task': 'Gather technical information from code and interviews, structure it into a logical documentation hierarchy, then polish with examples, cross-references, and co",
+        "reasoning",
+        "general"
+      ],
+      "combined_score": 0.5845975609756098,
+      "structural_score": 1.0,
+      "semantic_score": 0.024390243902439025,
+      "adaptations": {},
+      "all_candidates": [
+        {
+          "skill_name": "procedural:general:reasoning-sequential",
+          "score": 0.5845975609756098,
+          "reasoning": "Skill 'procedural:general:reasoning-sequential'. has very similar task structure. shares structures: sequential, transformation. shares patterns: reasoning."
+        }
+      ]
+    },
+    "task_applier": {
+      "response": "The documentation process follows a six\u2011step sequential workflow:\n1. **Extract Technical Details** \u2013 Run static analysis tools on the codebase to gather all public API signatures, inline comments, and docstrings.\n2. **Interview Domain Experts** \u2013 Conduct structured interviews to capture real\u2011world use cases, terminology, and business intent.\n3. **Create Logical Hierarchy** \u2013 Design a tree of sections (Overview, Architecture, API Reference, Tutorials, Glossary) that reflects the extracted information and interview insights.\n4. **Write Sections with Examples** \u2013 Draft prose for each section, embedding annotated code snippets and diagrams where appropriate to illustrate concepts.\n5. **Add Cross\u2011References** \u2013 Insert hyperlinks and reference markers between related topics, glossary entries, and external resources to enable seamless navigation.\n6. **Review & Polish** \u2013 Perform consistency checks, style reviews, and validate examples against the live codebase to ensure accuracy and completeness.\n\nThe procedural skill \"reasoning-sequential\" was adapted by mapping its abstract step *collect [target]* to each of these concrete actions, ensuring a disciplined, step\u2011by\u2011step approach that aligns with technical writing best practices.",
+      "confidence": "0.95",
+      "internal_reasoning": "I mapped the recalled sequential reasoning skill to the six detailed steps required for documentation, ensuring each abstract action corresponds to a concrete task. The resulting plan is evidence\u2011based and follows the domain\u2019s workflow.",
+      "_metrics": {
+        "tokens": 1635,
+        "prompt_tokens": 1323,
+        "completion_tokens": 312,
+        "latency_ms": 3714.23,
+        "cost_usd": 0.000229,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a task. You have your own analysis AND access to a\npreviously learned skill from the Brain's memory.\n\nDOMAIN: general\nTASK: {'domain': 'technical_writing', 'task': 'Gather technical information from code and interviews, structure it into a logical documentation hierarchy, then polish with examples, cross-references, and consistency checks.', 'execution_trace': {'steps': [{'action': 'extract technical details from codebase and API signatures', 'result': 'success'}, {'action': 'interview domain experts for context and use cases', 'result': 'success'}, {'action': 'organize information into a logical hierarchy with clear sections', 'result': 'success'}, {'action': 'write each section with code examples and diagrams', 'result': 'success'}, {'action': 'add cross-references and navigation aids between sections', 'result': 'success'}, {'action': 'review for consistency, accuracy, and completeness', 'result': 'success'}], 'agents': ['code_extractor', 'expert_interviewer', 'organizer', 'writer', 'cross_referencer', 'reviewer'], 'strategy': 'sequential'}, 'outcome': {'success': True, 'quality': 0.88}}\n\nYOUR ANALYSIS:\n{'domain': 'technical_writing', 'task': 'Gather technical information from code and interviews, structure it into a logical documentation hierarchy, then polish with examples, cross-references, and consistency checks.', 'analysis': [{'step': 1, 'action': 'Extract technical details from the codebase and API signatures.', 'why': 'Provides the foundational facts (functions, classes, parameters) needed for accurate documentation.', 'expected_output': 'A list of all public interfaces with their signatures, descriptions, and any inline comments.'}, {'step': 2, 'action': 'Interview domain experts to gather context, use cases, and business intent.', 'why': 'Ensures the documentation reflects real-world usage and clarifies ambiguous code behavior.', 'expected_output': 'Transcripts or summarized notes highlighting key scenarios, constraints, and terminology.'}, {'step': 3, 'action': 'Organize extracted information into a logical hierarchy with clear sections (e.g., Overview, Architecture, API Reference, Tutorials).', 'why': 'Creates an intuitive navigation structure that helps readers locate information quickly.', 'expected_output': 'A tree diagram or outline of the documentation layout.'}, {'step': 4, 'action': 'Write each section with code examples and diagrams where appropriate.', 'why': 'Illustrates concepts concretely, improving comprehension and retention.', 'expected_output': 'Drafted sections containing prose, annotated code snippets, and visual aids.'}, {'step': 5, 'action': 'Add cross-references, links, and navigation aids between related sections.', 'why': 'Facilitates seamless movement through the documentation and reinforces connections.', 'expected_output': 'Hyperlinks or reference markers linking to related topics, glossary entries, and external resources.'}, {'step': 6, 'action': 'Review for consistency, accuracy, and completeness; perform style checks and validate examples against the live codebase.', 'why': 'Guarantees that the final document is reliable, up-to-date, and professionally presented.', 'expected_output': 'A polished, error-free documentation set ready for publication.'}], 'steps': [{'action': 'Extract technical details from codebase', 'result': 'Collected API signatures and inline comments'}, {'action': 'Interview domain experts', 'result': 'Captured use cases and terminology'}, {'action': 'Create logical hierarchy', 'result': 'Defined sections and navigation structure'}, {'action': 'Write sections with examples', 'result': 'Drafted content with code snippets and diagrams'}, {'action': 'Add cross-references', 'result': 'Integrated links between related topics'}, {'action': 'Review for consistency', 'result': 'Finalized documentation ready for release'}]}\n\nRECALLED SKILL FROM BRAIN:\nSkill name: procedural:general:reasoning-sequential\nAbstract steps: ['collect [target]']\nTransfer score: 0.5845975609756098\nStructural match: 1.0\nSemantic match: 0.024390243902439025\nAdaptations: {}\n\nINSTRUCTIONS:\nIf a skill was recalled, use its abstract pattern to GUIDE your solution.\nFor each abstract step, explain how you ADAPT it to the current domain.\nIf no skill was recalled, solve using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": true or false\n- \"recalled_skill_name\": skill name or \"none\"\n- \"adaptation_notes\": how you adapted the skill (or \"N/A\")\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+    },
+    "brain_feedback": {
+      "response": "Recorded successful transfer for skill 'procedural:general:reasoning-sequential'.",
+      "confidence": "0.7054999999999999",
+      "internal_reasoning": "Transfer feedback recorded. Skill now has 1 transfer(s).",
+      "skill_id": "bc2a2ba7-938e-4309-a071-3bfcc4e8b285",
+      "skill_name": "procedural:general:reasoning-sequential",
+      "transfer_count": 1,
+      "transfer_success": true
+    },
+    "task_result": {
+      "response": "The documentation is organized into the following hierarchy:\n\n1. **Overview** \u2013 High\u2011level description of the system, its purpose, and key concepts.\n2. **Architecture** \u2013 Diagrammatic representation of components, data flow, and deployment topology.\n3. **API Reference** \u2013 Detailed listings of all public functions/classes with signatures, parameters, return types, and example usage snippets.\n4. **Tutorials & Use Cases** \u2013 Step\u2011by\u2011step guides for common scenarios, including code samples that compile against the live codebase.\n5. **Glossary & Terminology** \u2013 Definitions of domain terms gathered from expert interviews.\n6. **Appendices** \u2013 Configuration files, environment variables, and troubleshooting tips.\n\nEach section includes:\n- Inline code examples verified against the repository.\n- Cross\u2011references (e.g., \"See also: `process_data()` in API Reference\").\n- Consistency checks for naming conventions and versioning.\n- Navigation aids such as a table of contents and sidebar links.\n\nThis structure ensures that developers can quickly locate high\u2011level context, dive into implementation details, and reference related concepts without redundancy.",
+      "confidence": "0.95",
+      "internal_reasoning": "I synthesized the execution trace steps into a coherent documentation hierarchy, ensuring each step (extraction, interview, organization, writing, cross\u2011referencing, review) is reflected in the final structure. The confidence is high because all required elements are covered and the output aligns with standard technical documentation practices.",
+      "_metrics": {
+        "tokens": 1229,
+        "prompt_tokens": 899,
+        "completion_tokens": 330,
+        "latency_ms": 3406.38,
+        "cost_usd": 0.00021,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'technical_writing', 'task': 'Gather technical information from code and interviews, structure it into a logical documentation hierarchy, then polish with examples, cross-references, and consistency checks.', 'execution_trace': {'steps': [{'action': 'extract technical details from codebase and API signatures', 'result': 'success'}, {'action': 'interview domain experts for context and use cases', 'result': 'success'}, {'action': 'organize information into a logical hierarchy with clear sections', 'result': 'success'}, {'action': 'write each section with code examples and diagrams', 'result': 'success'}, {'action': 'add cross-references and navigation aids between sections', 'result': 'success'}, {'action': 'review for consistency, accuracy, and completeness', 'result': 'success'}], 'agents': ['code_extractor', 'expert_interviewer', 'organizer', 'writer', 'cross_referencer', 'reviewer'], 'strategy': 'sequential'}, 'outcome': {'success': True, 'quality': 0.88}}\n\nSOLUTION:\nThe documentation process follows a six\u2011step sequential workflow:\n1. **Extract Technical Details** \u2013 Run static analysis tools on the codebase to gather all public API signatures, inline comments, and docstrings.\n2. **Interview Domain Experts** \u2013 Conduct structured interviews to capture real\u2011world use cases, terminology, and business intent.\n3. **Create Logical Hierarchy** \u2013 Design a tree of sections (Overview, Architecture, API Reference, Tutorials, Glossary) that reflects the extracted information and interview insights.\n4. **Write Sections with Examples** \u2013 Draft prose for each section, embedding annotated code snippets and diagrams where appropriate to illustrate concepts.\n5. **Add Cross\u2011References** \u2013 Insert hyperlinks and reference markers between related topics, glossary entries, and external resources to enable seamless navigation.\n6. **Review & Polish** \u2013 Perform consistency checks, style reviews, and validate examples against the live codebase to ensure accuracy and completeness.\n\nThe procedural skill \"reasoning-sequential\" was adapted by mapping its abstract step *collect [target]* to each of these concrete actions, ensuring a disciplined, step\u2011by\u2011step approach that aligns with technical writing best practices.\n\nBRAIN METRICS:\nSkill recalled: procedural:general:reasoning-sequential\nTransfer score: 0.5845975609756098\nUsed recalled skill: False\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": true if recalled skill contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

@@ -1,134 +1,111 @@
 {
   "task_id": "track_a_08",
   "condition": "brain",
-  "elapsed_s": 13.44,
+  "elapsed_s": 12.42,
   "success": true,
   "output": {
-    "response": {
-      "domain": "compliance",
-      "task": "Audit organizational processes against regulatory requirements, assess compliance gaps with risk scoring, then produce a structured report with remediation timelines and evidence mapping.",
-      "solution_steps": [
-        {
-          "step_number": 1,
-          "action": "Catalog applicable regulatory requirements and controls",
-          "output": "Control matrix listing all relevant regulations (e.g., GDPR, HIPAA, SOX) and associated internal controls."
-        },
-        {
-          "step_number": 2,
-          "action": "Audit current processes against each control requirement",
-          "output": "Audit log detailing alignment or divergence of existing processes from the catalogued controls."
-        },
-        {
-          "step_number": 3,
-          "action": "Identify compliance gaps and score risk exposure",
-          "output": "Risk matrix assigning severity (Low/Medium/High) and likelihood scores to each gap, producing an overall risk exposure rating."
-        },
-        {
-          "step_number": 4,
-          "action": "Design remediation actions for each gap with priority ranking",
-          "output": "Remediation plan listing corrective actions, owners, resources, and prioritized timeline (e.g., Q1 2026, Q2 2026)."
-        },
-        {
-          "step_number": 5,
-          "action": "Map evidence to controls for audit trail completeness",
-          "output": "Evidence mapping table linking each control to supporting documentation or system logs."
-        },
-        {
-          "step_number": 6,
-          "action": "Produce structured compliance report with executive summary",
-          "output": "Final report containing executive summary, detailed findings, risk scoring, remediation roadmap, evidence map, and audit trail appendices."
-        }
-      ],
-      "quality_self_assessment": 0.91,
-      "brain_assisted": false,
-      "recalled_skill": "none",
-      "confidence": 0.95
-    },
+    "response": "Domain: Compliance\nTask: Audit organizational processes against regulatory requirements, assess compliance gaps with risk scoring, then produce a structured report with remediation timelines and evidence mapping.\nSteps:\n1. Catalog applicable regulatory requirements and controls \u2013 compile a comprehensive list of laws, standards, and internal policies (e.g., GDPR, SOX, ISO\u202f27001) that apply to the organization.\n2. Audit current processes against each control requirement \u2013 document actual compliance status for every process with evidence.\n3. Identify compliance gaps and score risk exposure \u2013 produce a gap analysis table assigning severity scores (low/medium/high) based on impact and likelihood.\n4. Design remediation actions for each gap with priority ranking \u2013 outline corrective measures, estimated effort, cost, timeline, and priority order.\n5. Map evidence to controls for audit trail completeness \u2013 create an evidence mapping matrix linking documented evidence (logs, policies, test results) to specific control objectives.\n6. Produce structured compliance report with executive summary \u2013 deliver a final report containing overview, methodology, gap matrix, risk scores, remediation plan, timelines, evidence map, and an executive summary for senior management.",
     "confidence": "0.95",
-    "internal_reasoning": "The solution follows the sequential strategy outlined in the execution trace, ensuring each step is explicitly described and outputs are defined. Confidence is high because all steps directly map to the task requirements.",
+    "internal_reasoning": "I followed the sequential strategy outlined in the execution trace, ensuring each step aligns with audit best practices and produces a comprehensive, actionable report.",
     "_metrics": {
-      "tokens": 1468,
-      "prompt_tokens": 998,
-      "completion_tokens": 470,
-      "latency_ms": 4429.74,
-      "cost_usd": 0.000273,
+      "tokens": 1323,
+      "prompt_tokens": 1032,
+      "completion_tokens": 291,
+      "latency_ms": 3166.22,
+      "cost_usd": 0.000195,
       "model": "openai/gpt-oss-20b",
       "provider": "lm_studio"
     },
-    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'compliance', 'task': 'Audit organizational processes against regulatory requirements, assess compliance gaps with risk scoring, then produce a structured report with remediation timelines and evidence mapping.', 'execution_trace': {'steps': [{'action': 'catalog applicable regulatory requirements and controls', 'result': 'success'}, {'action': 'audit current processes against each control requirement', 'result': 'success'}, {'action': 'identify compliance gaps and score risk exposure', 'result': 'success'}, {'action': 'design remediation actions for each gap with priority ranking', 'result': 'success'}, {'action': 'map evidence to controls for audit trail completeness', 'result': 'success'}, {'action': 'produce structured compliance report with executive summary', 'result': 'success'}], 'agents': ['control_cataloger', 'process_auditor', 'gap_analyzer', 'remediation_planner', 'evidence_mapper', 'reporter'], 'strategy': 'sequential'}, 'outcome': {'success': True, 'quality': 0.91}}\n\nSOLUTION:\n{'domain': 'compliance', 'task': 'Audit organizational processes against regulatory requirements, assess compliance gaps with risk scoring, then produce a structured report with remediation timelines and evidence mapping.', 'steps': [{'action': 'Catalog applicable regulatory requirements and controls', 'expected_outcome': 'A comprehensive control matrix listing all relevant regulations (e.g., GDPR, HIPAA, SOX) and their associated internal controls.'}, {'action': 'Audit current processes against each control requirement', 'expected_outcome': 'An audit log detailing how existing processes align or diverge from the catalogued controls.'}, {'action': 'Identify compliance gaps and score risk exposure', 'expected_outcome': 'A risk matrix assigning severity (Low/Medium/High) and likelihood scores to each identified gap, producing an overall risk exposure rating.'}, {'action': 'Design remediation actions for each gap with priority ranking', 'expected_outcome': 'A remediation plan that lists specific corrective actions, responsible owners, required resources, and a prioritized timeline (e.g., Q1 2026, Q2 2026).'}, {'action': 'Map evidence to controls for audit trail completeness', 'expected_outcome': 'An evidence mapping table linking each control to supporting documentation or system logs that can be used in future audits.'}, {'action': 'Produce structured compliance report with executive summary', 'expected_outcome': 'A final report containing: an executive summary, detailed findings, risk scoring, remediation roadmap, evidence map, and appendices for audit trail.'}], 'used_recalled_skill': False, 'recalled_skill_name': 'none', 'adaptation_notes': 'N/A'}\n\nBRAIN METRICS:\nSkill recalled: procedural:general:evaluation-sequential\nTransfer score: 0.5946886363636363\nUsed recalled skill: False\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": true if recalled skill contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'compliance', 'task': 'Audit organizational processes against regulatory requirements, assess compliance gaps with risk scoring, then produce a structured report with remediation timelines and evidence mapping.', 'execution_trace': {'steps': [{'action': 'catalog applicable regulatory requirements and controls', 'result': 'success'}, {'action': 'audit current processes against each control requirement', 'result': 'success'}, {'action': 'identify compliance gaps and score risk exposure', 'result': 'success'}, {'action': 'design remediation actions for each gap with priority ranking', 'result': 'success'}, {'action': 'map evidence to controls for audit trail completeness', 'result': 'success'}, {'action': 'produce structured compliance report with executive summary', 'result': 'success'}], 'agents': ['control_cataloger', 'process_auditor', 'gap_analyzer', 'remediation_planner', 'evidence_mapper', 'reporter'], 'strategy': 'sequential'}, 'outcome': {'success': True, 'quality': 0.91}}\n\nSOLUTION:\n{'domain': 'compliance', 'task': 'Audit organizational processes against regulatory requirements, assess compliance gaps with risk scoring, then produce a structured report with remediation timelines and evidence mapping.', 'steps': [{'action': 'Catalog applicable regulatory requirements and controls', 'expected_outcome': 'Comprehensive list of laws, standards, and internal policies (e.g., GDPR, SOX, ISO 27001) that apply to the organization.'}, {'action': 'Audit current processes against each control requirement', 'expected_outcome': 'Detailed audit findings documenting actual compliance status for each process.'}, {'action': 'Identify compliance gaps and score risk exposure', 'expected_outcome': 'Gap analysis table with severity scores (low/medium/high) based on impact and likelihood.'}, {'action': 'Design remediation actions for each gap with priority ranking', 'expected_outcome': 'Remediation plan outlining corrective measures, estimated effort, cost, timeline, and priority order.'}, {'action': 'Map evidence to controls for audit trail completeness', 'expected_outcome': 'Evidence mapping matrix linking documented evidence (logs, policies, test results) to specific control objectives.'}, {'action': 'Produce structured compliance report with executive summary', 'expected_outcome': 'Final report containing overview, methodology, gap matrix, risk scores, remediation plan, timelines, evidence map, and an executive summary for senior management.'}], 'used_recalled_skill': True, 'recalled_skill_name': 'procedural:general:analysis-sequential', 'adaptation_notes': \"Applied the abstract step 'analyze [target]' to sequentially audit compliance processes, mapping each phase of the audit to a concrete action and expected outcome.\"}\n\nBRAIN METRICS:\nSkill recalled: procedural:general:analysis-sequential\nTransfer score: 0.8012511418684323\nUsed recalled skill: False\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": true if recalled skill contributed\n- \"used_recalled_skill\": copy the boolean from the prior step (true/false) \u2014 whether a recalled skill actually guided the solution\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection",
+    "trace_id": "2ffee537-3d84-4f9e-be82-a3d2a16fabfa",
+    "execution_time_ms": 3166.217803955078
   },
   "agent_outputs": {
     "task_reasoner": {
-      "response": "Domain: compliance\nTask: Audit organizational processes against regulatory requirements, assess compliance gaps with risk scoring, then produce a structured report with remediation timelines and evidence mapping.\nSteps:\n1. Catalog applicable regulatory requirements and controls \u2013 establishes the baseline of what must be met.\n2. Audit current processes against each control requirement \u2013 identifies actual practice versus expected.\n3. Identify compliance gaps and score risk exposure \u2013 quantifies severity and prioritizes issues.\n4. Design remediation actions for each gap with priority ranking \u2013 provides actionable fixes aligned to risk.\n5. Map evidence to controls for audit trail completeness \u2013 ensures traceability and supports future audits.\n6. Produce structured compliance report with executive summary \u2013 delivers clear communication of findings, risks, and remediation plans.\nExpected outputs: a comprehensive control matrix, risk score table, remediation action plan with timelines, evidence mapping list, and an executive summary report.",
+      "response": "Domain: compliance\nTask: Audit organizational processes against regulatory requirements, assess compliance gaps with risk scoring, then produce a structured report with remediation timelines and evidence mapping.\nStep-by-step analysis:\n1. **Catalog applicable regulatory requirements and controls** \u2013 Identify all laws, standards, and internal policies that apply to the organization (e.g., GDPR, SOX, ISO 27001). This establishes the audit scope.\n2. **Audit current processes against each control requirement** \u2013 Review documentation, interview staff, observe operations, and test controls to determine actual compliance status. Provides baseline data.\n3. **Identify compliance gaps and score risk exposure** \u2013 Compare findings to requirements, list deficiencies, assign severity scores (e.g., low/medium/high) based on impact and likelihood. Highlights priority areas.\n4. **Design remediation actions for each gap with priority ranking** \u2013 Propose corrective measures, estimate effort, cost, and timeline; rank them by risk score and business impact to guide resource allocation.\n5. **Map evidence to controls for audit trail completeness** \u2013 Link documented evidence (logs, policies, test results) to specific control objectives, ensuring traceability and supporting future audits.\n6. **Produce structured compliance report with executive summary** \u2013 Compile findings into a clear format: overview, methodology, gap matrix, risk scores, remediation plan, timelines, and evidence map; include an executive summary for senior management.\nExpected outputs:\n- Comprehensive regulatory requirement list\n- Process audit documentation\n- Gap analysis table with risk scores\n- Remediation action plan with priorities and timelines\n- Evidence mapping matrix\n- Final structured compliance report (PDF/Word)\n",
       "confidence": "0.95",
-      "internal_reasoning": "I followed the sequential strategy outlined in the reference trace, ensuring each step logically builds on the previous one to produce a complete audit outcome.",
+      "internal_reasoning": "I followed the task hierarchy, ensuring each step logically builds on the previous one and aligns with audit best practices. Confidence is high due to clear, evidence-based methodology.",
       "_metrics": {
-        "tokens": 784,
+        "tokens": 949,
         "prompt_tokens": 544,
-        "completion_tokens": 240,
-        "latency_ms": 3158.75,
-        "cost_usd": 0.000191,
+        "completion_tokens": 405,
+        "latency_ms": 4947.11,
+        "cost_usd": 0.000299,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: compliance\nTASK: Audit organizational processes against regulatory requirements, assess compliance gaps with risk scoring, then produce a structured report with remediation timelines and evidence mapping.\n\n\nREFERENCE EXECUTION TRACE:\n\n  Step 1: catalog applicable regulatory requirements and controls \u2192 success\n\n  Step 2: audit current processes against each control requirement \u2192 success\n\n  Step 3: identify compliance gaps and score risk exposure \u2192 success\n\n  Step 4: design remediation actions for each gap with priority ranking \u2192 success\n\n  Step 5: map evidence to controls for audit trail completeness \u2192 success\n\n  Step 6: produce structured compliance report with executive summary \u2192 success\n\nStrategy: sequential\n\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: compliance\nTASK: Audit organizational processes against regulatory requirements, assess compliance gaps with risk scoring, then produce a structured report with remediation timelines and evidence mapping.\n\n\nREFERENCE EXECUTION TRACE:\n\n  Step 1: catalog applicable regulatory requirements and controls \u2192 success\n\n  Step 2: audit current processes against each control requirement \u2192 success\n\n  Step 3: identify compliance gaps and score risk exposure \u2192 success\n\n  Step 4: design remediation actions for each gap with priority ranking \u2192 success\n\n  Step 5: map evidence to controls for audit trail completeness \u2192 success\n\n  Step 6: produce structured compliance report with executive summary \u2192 success\n\nStrategy: sequential\n\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation",
+      "trace_id": "b624ce3d-e231-4f59-a961-b790c8bd5c8d",
+      "execution_time_ms": 4948.107719421387
     },
     "brain_learn": {
       "response": "Learned skill: procedural:general:analysis-sequential",
-      "confidence": "0.7054999999999999",
+      "confidence": "0.7202249999999999",
       "internal_reasoning": "Abstracted 1 steps into transferable skill 'procedural:general:analysis-sequential'",
-      "skill_id": "5b2b1650-36f1-46f5-8552-8565d96ff664",
+      "skill_id": "8bea3df6-29f9-41c6-b10a-49c01b5a100f",
       "skill_name": "procedural:general:analysis-sequential",
       "skill_steps": [
-        "test [target]"
+        "analyze [target]"
       ],
       "skill_tags": [
-        "sequential",
-        "analysis",
-        "generation",
-        "{'domain': 'quality_assurance', 'task': 'Analyze a software specification for testable requirements, generate comprehensive test cases with boundary conditions, then validate test coverage completenes",
         "routing",
-        "general",
+        "generation",
+        "analysis",
+        "sequential",
+        "{'domain': 'quality_assurance', 'task': 'Analyze a software specification for testable requirements, generate comprehensive test cases with boundary conditions, then validate test coverage completenes",
+        "validation",
         "evaluation",
-        "validation"
-      ]
+        "general"
+      ],
+      "trace_id": "be8f2bdb-07aa-44c3-a77c-65569f126636",
+      "execution_time_ms": 7.991313934326172
     },
     "brain_recall": {
-      "response": "Found applicable skill: 'procedural:general:evaluation-sequential' (score: 0.59). Steps: profile [target]",
-      "confidence": "0.5946886363636363",
-      "internal_reasoning": "Skill 'procedural:general:evaluation-sequential'. shares some structural patterns. has been transferred 1 times (100% success). shares structures: sequential. shares patterns: generation, evaluation.",
-      "skill_id": "cf948e17-2e11-4eae-baba-fc56e6e7c3ae",
-      "skill_name": "procedural:general:evaluation-sequential",
+      "response": "Found applicable skill: 'procedural:general:analysis-sequential' (score: 0.80). Steps: analyze [target]",
+      "confidence": "0.8012511418684323",
+      "internal_reasoning": "Skill 'procedural:general:analysis-sequential'. has very similar task structure. has moderate semantic overlap. has been transferred 1 times (100% success). shares structures: sequential, validation. shares patterns: generation, evaluation.",
+      "skill_id": "8bea3df6-29f9-41c6-b10a-49c01b5a100f",
+      "skill_name": "procedural:general:analysis-sequential",
       "skill_steps": [
-        "profile [target]"
+        "analyze [target]"
       ],
       "skill_tags": [
-        "sequential",
-        "{'domain': 'content_strategy', 'task': 'Research a topic thoroughly, draft long\u2011form content with proper structure and evidence, then iteratively refine it based on readability metrics, SEO optimizati",
+        "routing",
         "generation",
-        "general",
-        "iteration",
+        "analysis",
+        "sequential",
+        "{'domain': 'quality_assurance', 'task': 'Analyze a software specification for testable requirements, generate comprehensive test cases with boundary conditions, then validate test coverage completenes",
+        "validation",
         "evaluation",
-        "planning"
+        "general"
       ],
-      "combined_score": 0.5946886363636363,
-      "structural_score": 0.65,
-      "semantic_score": 0.045454545454545456,
+      "combined_score": 0.8012511418684323,
+      "structural_score": 0.7666666666666666,
+      "semantic_score": 0.6995362341403961,
       "adaptations": {
-        "add_structures": [
-          "validation"
-        ],
         "remove_structures": [
-          "iteration"
+          "routing"
         ]
       },
       "all_candidates": [
         {
+          "skill_name": "procedural:general:analysis-sequential",
+          "score": 0.8012511418684323,
+          "reasoning": "Skill 'procedural:general:analysis-sequential'. has very similar task structure. has moderate semantic overlap. has been transferred 1 times (100% success). shares structures: sequential, validation. shares patterns: generation, evaluation."
+        },
+        {
           "skill_name": "procedural:general:evaluation-sequential",
-          "score": 0.5946886363636363,
-          "reasoning": "Skill 'procedural:general:evaluation-sequential'. shares some structural patterns. has been transferred 1 times (100% success). shares structures: sequential. shares patterns: generation, evaluation."
+          "score": 0.7487120046138763,
+          "reasoning": "Skill 'procedural:general:evaluation-sequential'. shares some structural patterns. has moderate semantic overlap. has been transferred 1 times (100% success). shares structures: sequential. shares patterns: generation, evaluation."
+        },
+        {
+          "skill_name": "procedural:general:evaluation-sequential",
+          "score": 0.7239972085078556,
+          "reasoning": "Skill 'procedural:general:evaluation-sequential'. shares some structural patterns. has moderate semantic overlap. has been transferred 1 times (100% success). shares structures: sequential. shares patterns: generation, evaluation."
         }
-      ]
+      ],
+      "trace_id": "9a56c1cd-3aee-4757-a83f-64c6c4627edd",
+      "execution_time_ms": 37.110328674316406
     },
     "task_applier": {
       "response": {
@@ -137,108 +114,75 @@
         "steps": [
           {
             "action": "Catalog applicable regulatory requirements and controls",
-            "expected_outcome": "A comprehensive control matrix listing all relevant regulations (e.g., GDPR, HIPAA, SOX) and their associated internal controls."
+            "expected_outcome": "Comprehensive list of laws, standards, and internal policies (e.g., GDPR, SOX, ISO 27001) that apply to the organization."
           },
           {
             "action": "Audit current processes against each control requirement",
-            "expected_outcome": "An audit log detailing how existing processes align or diverge from the catalogued controls."
+            "expected_outcome": "Detailed audit findings documenting actual compliance status for each process."
           },
           {
             "action": "Identify compliance gaps and score risk exposure",
-            "expected_outcome": "A risk matrix assigning severity (Low/Medium/High) and likelihood scores to each identified gap, producing an overall risk exposure rating."
+            "expected_outcome": "Gap analysis table with severity scores (low/medium/high) based on impact and likelihood."
           },
           {
             "action": "Design remediation actions for each gap with priority ranking",
-            "expected_outcome": "A remediation plan that lists specific corrective actions, responsible owners, required resources, and a prioritized timeline (e.g., Q1 2026, Q2 2026)."
+            "expected_outcome": "Remediation plan outlining corrective measures, estimated effort, cost, timeline, and priority order."
           },
           {
             "action": "Map evidence to controls for audit trail completeness",
-            "expected_outcome": "An evidence mapping table linking each control to supporting documentation or system logs that can be used in future audits."
+            "expected_outcome": "Evidence mapping matrix linking documented evidence (logs, policies, test results) to specific control objectives."
           },
           {
             "action": "Produce structured compliance report with executive summary",
-            "expected_outcome": "A final report containing: an executive summary, detailed findings, risk scoring, remediation roadmap, evidence map, and appendices for audit trail."
+            "expected_outcome": "Final report containing overview, methodology, gap matrix, risk scores, remediation plan, timelines, evidence map, and an executive summary for senior management."
           }
         ],
-        "used_recalled_skill": false,
-        "recalled_skill_name": "none",
-        "adaptation_notes": "N/A"
+        "used_recalled_skill": true,
+        "recalled_skill_name": "procedural:general:analysis-sequential",
+        "adaptation_notes": "Applied the abstract step 'analyze [target]' to sequentially audit compliance processes, mapping each phase of the audit to a concrete action and expected outcome."
       },
       "confidence": "0.95",
-      "internal_reasoning": "The task requires a sequential audit approach, which aligns with the provided analysis steps. No recalled skill was directly applicable, so the solution follows the domain-specific methodology.",
+      "internal_reasoning": "The task aligns perfectly with the recalled procedural skill; I mapped its single abstract step to the six detailed steps required for a compliance audit, ensuring each is actionable and produces measurable outputs.",
       "_metrics": {
-        "tokens": 1415,
-        "prompt_tokens": 953,
-        "completion_tokens": 462,
-        "latency_ms": 4333.96,
-        "cost_usd": 0.000267,
+        "tokens": 1558,
+        "prompt_tokens": 1105,
+        "completion_tokens": 453,
+        "latency_ms": 4008.24,
+        "cost_usd": 0.000247,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "You are solving a task. You have your own analysis AND access to a\npreviously learned skill from the Brain's memory.\n\nDOMAIN: general\nTASK: {'domain': 'compliance', 'task': 'Audit organizational processes against regulatory requirements, assess compliance gaps with risk scoring, then produce a structured report with remediation timelines and evidence mapping.', 'execution_trace': {'steps': [{'action': 'catalog applicable regulatory requirements and controls', 'result': 'success'}, {'action': 'audit current processes against each control requirement', 'result': 'success'}, {'action': 'identify compliance gaps and score risk exposure', 'result': 'success'}, {'action': 'design remediation actions for each gap with priority ranking', 'result': 'success'}, {'action': 'map evidence to controls for audit trail completeness', 'result': 'success'}, {'action': 'produce structured compliance report with executive summary', 'result': 'success'}], 'agents': ['control_cataloger', 'process_auditor', 'gap_analyzer', 'remediation_planner', 'evidence_mapper', 'reporter'], 'strategy': 'sequential'}, 'outcome': {'success': True, 'quality': 0.91}}\n\nYOUR ANALYSIS:\nDomain: compliance\nTask: Audit organizational processes against regulatory requirements, assess compliance gaps with risk scoring, then produce a structured report with remediation timelines and evidence mapping.\nSteps:\n1. Catalog applicable regulatory requirements and controls \u2013 establishes the baseline of what must be met.\n2. Audit current processes against each control requirement \u2013 identifies actual practice versus expected.\n3. Identify compliance gaps and score risk exposure \u2013 quantifies severity and prioritizes issues.\n4. Design remediation actions for each gap with priority ranking \u2013 provides actionable fixes aligned to risk.\n5. Map evidence to controls for audit trail completeness \u2013 ensures traceability and supports future audits.\n6. Produce structured compliance report with executive summary \u2013 delivers clear communication of findings, risks, and remediation plans.\nExpected outputs: a comprehensive control matrix, risk score table, remediation action plan with timelines, evidence mapping list, and an executive summary report.\n\nRECALLED SKILL FROM BRAIN:\nSkill name: procedural:general:evaluation-sequential\nAbstract steps: ['profile [target]']\nTransfer score: 0.5946886363636363\nStructural match: 0.65\nSemantic match: 0.045454545454545456\nAdaptations: {'add_structures': ['validation'], 'remove_structures': ['iteration']}\n\nINSTRUCTIONS:\nIf a skill was recalled, use its abstract pattern to GUIDE your solution.\nFor each abstract step, explain how you ADAPT it to the current domain.\nIf no skill was recalled, solve using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": true or false\n- \"recalled_skill_name\": skill name or \"none\"\n- \"adaptation_notes\": how you adapted the skill (or \"N/A\")\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+      "formatted_prompt": "You are solving a task. You have your own analysis AND access to a\npreviously learned skill from the Brain's memory.\n\nDOMAIN: general\nTASK: {'domain': 'compliance', 'task': 'Audit organizational processes against regulatory requirements, assess compliance gaps with risk scoring, then produce a structured report with remediation timelines and evidence mapping.', 'execution_trace': {'steps': [{'action': 'catalog applicable regulatory requirements and controls', 'result': 'success'}, {'action': 'audit current processes against each control requirement', 'result': 'success'}, {'action': 'identify compliance gaps and score risk exposure', 'result': 'success'}, {'action': 'design remediation actions for each gap with priority ranking', 'result': 'success'}, {'action': 'map evidence to controls for audit trail completeness', 'result': 'success'}, {'action': 'produce structured compliance report with executive summary', 'result': 'success'}], 'agents': ['control_cataloger', 'process_auditor', 'gap_analyzer', 'remediation_planner', 'evidence_mapper', 'reporter'], 'strategy': 'sequential'}, 'outcome': {'success': True, 'quality': 0.91}}\n\nYOUR ANALYSIS:\nDomain: compliance\nTask: Audit organizational processes against regulatory requirements, assess compliance gaps with risk scoring, then produce a structured report with remediation timelines and evidence mapping.\nStep-by-step analysis:\n1. **Catalog applicable regulatory requirements and controls** \u2013 Identify all laws, standards, and internal policies that apply to the organization (e.g., GDPR, SOX, ISO 27001). This establishes the audit scope.\n2. **Audit current processes against each control requirement** \u2013 Review documentation, interview staff, observe operations, and test controls to determine actual compliance status. Provides baseline data.\n3. **Identify compliance gaps and score risk exposure** \u2013 Compare findings to requirements, list deficiencies, assign severity scores (e.g., low/medium/high) based on impact and likelihood. Highlights priority areas.\n4. **Design remediation actions for each gap with priority ranking** \u2013 Propose corrective measures, estimate effort, cost, and timeline; rank them by risk score and business impact to guide resource allocation.\n5. **Map evidence to controls for audit trail completeness** \u2013 Link documented evidence (logs, policies, test results) to specific control objectives, ensuring traceability and supporting future audits.\n6. **Produce structured compliance report with executive summary** \u2013 Compile findings into a clear format: overview, methodology, gap matrix, risk scores, remediation plan, timelines, and evidence map; include an executive summary for senior management.\nExpected outputs:\n- Comprehensive regulatory requirement list\n- Process audit documentation\n- Gap analysis table with risk scores\n- Remediation action plan with priorities and timelines\n- Evidence mapping matrix\n- Final structured compliance report (PDF/Word)\n\n\nRECALLED SKILL FROM BRAIN:\nSkill name: procedural:general:analysis-sequential\nAbstract steps: ['analyze [target]']\nTransfer score: 0.8012511418684323\nStructural match: 0.7666666666666666\nSemantic match: 0.6995362341403961\nAdaptations: {'remove_structures': ['routing']}\n\nINSTRUCTIONS:\nIf a skill was recalled, use its abstract pattern to GUIDE your solution.\nFor each abstract step, explain how you ADAPT it to the current domain.\nIf no skill was recalled, solve using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": true or false\n- \"recalled_skill_name\": skill name or \"none\"\n- \"adaptation_notes\": how you adapted the skill (or \"N/A\")\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach",
+      "trace_id": "d3b6d659-3f48-4495-9fb4-521db533025e",
+      "execution_time_ms": 4009.2406272888184
     },
     "brain_feedback": {
-      "response": "Recorded successful transfer for skill 'procedural:general:evaluation-sequential'.",
-      "confidence": "0.7202249999999999",
+      "response": "Recorded successful transfer for skill 'procedural:general:analysis-sequential'.",
+      "confidence": "0.7342137499999999",
       "internal_reasoning": "Transfer feedback recorded. Skill now has 2 transfer(s).",
-      "skill_id": "cf948e17-2e11-4eae-baba-fc56e6e7c3ae",
-      "skill_name": "procedural:general:evaluation-sequential",
+      "skill_id": "8bea3df6-29f9-41c6-b10a-49c01b5a100f",
+      "skill_name": "procedural:general:analysis-sequential",
       "transfer_count": 2,
-      "transfer_success": true
+      "transfer_success": true,
+      "trace_id": "f6b0ef10-34c4-462b-b070-40f43a7f2a31",
+      "execution_time_ms": 5.992650985717773
     },
     "task_result": {
-      "response": {
-        "domain": "compliance",
-        "task": "Audit organizational processes against regulatory requirements, assess compliance gaps with risk scoring, then produce a structured report with remediation timelines and evidence mapping.",
-        "solution_steps": [
-          {
-            "step_number": 1,
-            "action": "Catalog applicable regulatory requirements and controls",
-            "output": "Control matrix listing all relevant regulations (e.g., GDPR, HIPAA, SOX) and associated internal controls."
-          },
-          {
-            "step_number": 2,
-            "action": "Audit current processes against each control requirement",
-            "output": "Audit log detailing alignment or divergence of existing processes from the catalogued controls."
-          },
-          {
-            "step_number": 3,
-            "action": "Identify compliance gaps and score risk exposure",
-            "output": "Risk matrix assigning severity (Low/Medium/High) and likelihood scores to each gap, producing an overall risk exposure rating."
-          },
-          {
-            "step_number": 4,
-            "action": "Design remediation actions for each gap with priority ranking",
-            "output": "Remediation plan listing corrective actions, owners, resources, and prioritized timeline (e.g., Q1 2026, Q2 2026)."
-          },
-          {
-            "step_number": 5,
-            "action": "Map evidence to controls for audit trail completeness",
-            "output": "Evidence mapping table linking each control to supporting documentation or system logs."
-          },
-          {
-            "step_number": 6,
-            "action": "Produce structured compliance report with executive summary",
-            "output": "Final report containing executive summary, detailed findings, risk scoring, remediation roadmap, evidence map, and audit trail appendices."
-          }
-        ],
-        "quality_self_assessment": 0.91,
-        "brain_assisted": false,
-        "recalled_skill": "none",
-        "confidence": 0.95
-      },
+      "response": "Domain: Compliance\nTask: Audit organizational processes against regulatory requirements, assess compliance gaps with risk scoring, then produce a structured report with remediation timelines and evidence mapping.\nSteps:\n1. Catalog applicable regulatory requirements and controls \u2013 compile a comprehensive list of laws, standards, and internal policies (e.g., GDPR, SOX, ISO\u202f27001) that apply to the organization.\n2. Audit current processes against each control requirement \u2013 document actual compliance status for every process with evidence.\n3. Identify compliance gaps and score risk exposure \u2013 produce a gap analysis table assigning severity scores (low/medium/high) based on impact and likelihood.\n4. Design remediation actions for each gap with priority ranking \u2013 outline corrective measures, estimated effort, cost, timeline, and priority order.\n5. Map evidence to controls for audit trail completeness \u2013 create an evidence mapping matrix linking documented evidence (logs, policies, test results) to specific control objectives.\n6. Produce structured compliance report with executive summary \u2013 deliver a final report containing overview, methodology, gap matrix, risk scores, remediation plan, timelines, evidence map, and an executive summary for senior management.",
       "confidence": "0.95",
-      "internal_reasoning": "The solution follows the sequential strategy outlined in the execution trace, ensuring each step is explicitly described and outputs are defined. Confidence is high because all steps directly map to the task requirements.",
+      "internal_reasoning": "I followed the sequential strategy outlined in the execution trace, ensuring each step aligns with audit best practices and produces a comprehensive, actionable report.",
       "_metrics": {
-        "tokens": 1468,
-        "prompt_tokens": 998,
-        "completion_tokens": 470,
-        "latency_ms": 4429.74,
-        "cost_usd": 0.000273,
+        "tokens": 1323,
+        "prompt_tokens": 1032,
+        "completion_tokens": 291,
+        "latency_ms": 3166.22,
+        "cost_usd": 0.000195,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'compliance', 'task': 'Audit organizational processes against regulatory requirements, assess compliance gaps with risk scoring, then produce a structured report with remediation timelines and evidence mapping.', 'execution_trace': {'steps': [{'action': 'catalog applicable regulatory requirements and controls', 'result': 'success'}, {'action': 'audit current processes against each control requirement', 'result': 'success'}, {'action': 'identify compliance gaps and score risk exposure', 'result': 'success'}, {'action': 'design remediation actions for each gap with priority ranking', 'result': 'success'}, {'action': 'map evidence to controls for audit trail completeness', 'result': 'success'}, {'action': 'produce structured compliance report with executive summary', 'result': 'success'}], 'agents': ['control_cataloger', 'process_auditor', 'gap_analyzer', 'remediation_planner', 'evidence_mapper', 'reporter'], 'strategy': 'sequential'}, 'outcome': {'success': True, 'quality': 0.91}}\n\nSOLUTION:\n{'domain': 'compliance', 'task': 'Audit organizational processes against regulatory requirements, assess compliance gaps with risk scoring, then produce a structured report with remediation timelines and evidence mapping.', 'steps': [{'action': 'Catalog applicable regulatory requirements and controls', 'expected_outcome': 'A comprehensive control matrix listing all relevant regulations (e.g., GDPR, HIPAA, SOX) and their associated internal controls.'}, {'action': 'Audit current processes against each control requirement', 'expected_outcome': 'An audit log detailing how existing processes align or diverge from the catalogued controls.'}, {'action': 'Identify compliance gaps and score risk exposure', 'expected_outcome': 'A risk matrix assigning severity (Low/Medium/High) and likelihood scores to each identified gap, producing an overall risk exposure rating.'}, {'action': 'Design remediation actions for each gap with priority ranking', 'expected_outcome': 'A remediation plan that lists specific corrective actions, responsible owners, required resources, and a prioritized timeline (e.g., Q1 2026, Q2 2026).'}, {'action': 'Map evidence to controls for audit trail completeness', 'expected_outcome': 'An evidence mapping table linking each control to supporting documentation or system logs that can be used in future audits.'}, {'action': 'Produce structured compliance report with executive summary', 'expected_outcome': 'A final report containing: an executive summary, detailed findings, risk scoring, remediation roadmap, evidence map, and appendices for audit trail.'}], 'used_recalled_skill': False, 'recalled_skill_name': 'none', 'adaptation_notes': 'N/A'}\n\nBRAIN METRICS:\nSkill recalled: procedural:general:evaluation-sequential\nTransfer score: 0.5946886363636363\nUsed recalled skill: False\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": true if recalled skill contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'compliance', 'task': 'Audit organizational processes against regulatory requirements, assess compliance gaps with risk scoring, then produce a structured report with remediation timelines and evidence mapping.', 'execution_trace': {'steps': [{'action': 'catalog applicable regulatory requirements and controls', 'result': 'success'}, {'action': 'audit current processes against each control requirement', 'result': 'success'}, {'action': 'identify compliance gaps and score risk exposure', 'result': 'success'}, {'action': 'design remediation actions for each gap with priority ranking', 'result': 'success'}, {'action': 'map evidence to controls for audit trail completeness', 'result': 'success'}, {'action': 'produce structured compliance report with executive summary', 'result': 'success'}], 'agents': ['control_cataloger', 'process_auditor', 'gap_analyzer', 'remediation_planner', 'evidence_mapper', 'reporter'], 'strategy': 'sequential'}, 'outcome': {'success': True, 'quality': 0.91}}\n\nSOLUTION:\n{'domain': 'compliance', 'task': 'Audit organizational processes against regulatory requirements, assess compliance gaps with risk scoring, then produce a structured report with remediation timelines and evidence mapping.', 'steps': [{'action': 'Catalog applicable regulatory requirements and controls', 'expected_outcome': 'Comprehensive list of laws, standards, and internal policies (e.g., GDPR, SOX, ISO 27001) that apply to the organization.'}, {'action': 'Audit current processes against each control requirement', 'expected_outcome': 'Detailed audit findings documenting actual compliance status for each process.'}, {'action': 'Identify compliance gaps and score risk exposure', 'expected_outcome': 'Gap analysis table with severity scores (low/medium/high) based on impact and likelihood.'}, {'action': 'Design remediation actions for each gap with priority ranking', 'expected_outcome': 'Remediation plan outlining corrective measures, estimated effort, cost, timeline, and priority order.'}, {'action': 'Map evidence to controls for audit trail completeness', 'expected_outcome': 'Evidence mapping matrix linking documented evidence (logs, policies, test results) to specific control objectives.'}, {'action': 'Produce structured compliance report with executive summary', 'expected_outcome': 'Final report containing overview, methodology, gap matrix, risk scores, remediation plan, timelines, evidence map, and an executive summary for senior management.'}], 'used_recalled_skill': True, 'recalled_skill_name': 'procedural:general:analysis-sequential', 'adaptation_notes': \"Applied the abstract step 'analyze [target]' to sequentially audit compliance processes, mapping each phase of the audit to a concrete action and expected outcome.\"}\n\nBRAIN METRICS:\nSkill recalled: procedural:general:analysis-sequential\nTransfer score: 0.8012511418684323\nUsed recalled skill: False\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": true if recalled skill contributed\n- \"used_recalled_skill\": copy the boolean from the prior step (true/false) \u2014 whether a recalled skill actually guided the solution\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection",
+      "trace_id": "2ffee537-3d84-4f9e-be82-a3d2a16fabfa",
+      "execution_time_ms": 3166.217803955078
     }
   }
 }

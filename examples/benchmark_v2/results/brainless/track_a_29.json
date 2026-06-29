@@ -1,187 +1,194 @@
 {
   "task_id": "track_a_29",
   "condition": "brainless",
-  "elapsed_s": 22.43,
+  "elapsed_s": 15.34,
   "success": true,
   "output": {
     "response": {
       "domain": "computational_linguistics",
-      "task": "Create an ELAR/PARADISEC-compatible archive for a Papuan language with <200 speakers, integrating field recordings, interlinear glosses, paradigm data from 6 workers using 4 transcription conventions, and producing FLEx-compatible lexical database, typological grammatical sketch, curated time\u2011aligned texts, cross\u2011references, consistency checks, and rich metadata.",
+      "task": "Create an ELAR/PARADISEC-compatible archive for a Papuan language with <200 speakers, integrating field recordings, interlinear glossed texts (IGTs), paradigm elicitation data from 6 workers using 4 transcription conventions, and producing FLEx-compatible lexical database, typological grammatical sketch, curated time\u2011aligned text collection, cross\u2011references, consistency checks, and metadata on consent, recording conditions, and dialectal variation.",
       "solution_steps": [
         {
-          "step_number": 1,
-          "title": "Collect raw audio & transcriptions",
-          "description": "Gather WAV/MP3 files from all six fieldworkers. For each recording, obtain four transcription files: IPA narrow, IPA broad, practical orthography, and ad\u2011hoc romanization. Tag each file with speaker ID, date, location, and dialect note."
+          "step_id": 1,
+          "title": "Collect raw materials",
+          "description": "Gather all audio files, IGTs, paradigm sheets, and transcription notes from the six fieldworkers. Store them in a single repository with provenance metadata (worker ID, date, location)."
         },
         {
-          "step_number": 2,
-          "title": "Standardise naming & directory structure",
-          "description": "Create a hierarchical folder layout following ELAR/PARADISEC guidelines: /audio/, /transcriptions/IPA_narrow/, /transcriptions/IPA_broad/, /transcriptions/orthography/, /transcriptions/romanization/. Use machine\u2011readable filenames (e.g., speakerID_date_utterance.wav)."
+          "step_id": 2,
+          "title": "Standardize file naming and directory structure",
+          "description": "Create a consistent folder hierarchy: /audio/, /texts/, /lexicon/, /metadata/. Assign each item a unique identifier following ELAR/PARADISEC guidelines."
         },
         {
-          "step_number": 3,
-          "title": "Convert to time\u2011aligned annotation format",
-          "description": "Transform all transcriptions into CHAT or ELAN XML, adding precise timestamps. Align each utterance with the corresponding audio segment using a script that parses the original transcription files."
+          "step_id": 3,
+          "title": "Normalize transcription conventions",
+          "description": "Convert IPA narrow, IPA broad, practical orthography, and ad\u2011hoc romanization into a unified Unicode representation (UTF\u20118). Use mapping scripts to preserve phonetic detail while ensuring consistency."
         },
         {
-          "step_number": 4,
-          "title": "Build interlinear glossed text corpus",
-          "description": "Create an IGT dataset in TEI or CLDF format. Map morphemes to glosses, lemmas, part of speech, and morphological analysis. Include fields for orthography, IPA (both narrow & broad), and pragmatic notes."
+          "step_id": 4,
+          "title": "Generate FLEx-compatible lexical database",
+          "description": "Create an XML file with entries for all lemmas, including fields: lemma, part of speech, glosses, phonological form (normalized), and cross\u2011references to text IDs. Validate against FLEx schema."
         },
         {
-          "step_number": 5,
-          "title": "Extract paradigm data into FLEx",
-          "description": "Compile verb conjugations, noun case paradigms, etc., into a spreadsheet. Import the spreadsheet into FLEx, generating lexical entries with full paradigm tables, phonological forms, glosses, and semantic fields."
+          "step_id": 5,
+          "title": "Build typological grammatical sketch",
+          "description": "Compile a structured document (JSON or LaTeX) organized by morphophonology, argument structure, clause combining, and information structure. Cite specific IGTs and paradigm items for each observation."
         },
         {
-          "step_number": 6,
-          "title": "Validate morpheme segmentation",
-          "description": "Run an automated consistency check (Python script) that compares segment boundaries across the four transcription conventions. Generate a discrepancy report; resolve conflicts by consensus and update the master IGT corpus."
+          "step_id": 6,
+          "title": "Time\u2011align audio with texts",
+          "description": "Use Praat or ELAN scripts to link each IGT line to its corresponding time segment in the audio, producing synchronized XML/ELAN files for the archive."
         },
         {
-          "step_number": 7,
-          "title": "Create typological grammatical sketch",
-          "description": "Using LaTeX or XML, draft sections for morphophonology, argument structure, clause combining, and information structure. Populate each section with data extracted from the corpus, citing lexical entries and text attestations."
+          "step_id": 7,
+          "title": "Cross\u2011reference lexical entries and text attestations",
+          "description": "Run an automated matching script that flags occurrences of lemmas from the FLEx database within IGTs. Generate a report listing all citations and highlight missing links for manual review."
         },
         {
-          "step_number": 8,
-          "title": "Cross\u2011reference lexicon & texts",
-          "description": "Link FLEx lemma IDs to IGT lines and ELAN time segments via unique identifiers. Ensure that clicking a word in FLEx opens the corresponding audio segment in ELAN, facilitating verification."
+          "step_id": 8,
+          "title": "Validate morpheme segmentation consistency",
+          "description": "Compare segment boundaries across transcribers using a comparison tool; log discrepancies for manual reconciliation to ensure uniform morphological analysis."
         },
         {
-          "step_number": 9,
+          "step_id": 9,
           "title": "Compile metadata layer",
-          "description": "Create a JSON/CSV file following PARADISEC\u2019s metadata schema. Include speaker consent status, recording conditions (microphone type, environment), and dialectal variation notes for each audio file."
+          "description": "Create an XML/JSON file recording speaker consent status, recording conditions (location, equipment, time), and dialectal variation notes. Link each entry to the corresponding audio/text via unique IDs."
         },
         {
-          "step_number": 10,
-          "title": "Package archive for submission",
-          "description": "Bundle all materials into a single ELAR/PARADISEC submission package: /audio/, /transcriptions/, /annotations/, /lexicon/, /grammar/, /metadata/. Add README, license (e.g., CC BY-ND), and citation information. Verify that the archive meets technical and ethical requirements."
+          "step_id": 10,
+          "title": "Package archive for ELAR/PARADISEC submission",
+          "description": "Zip all files with a manifest, README, and metadata schema. Ensure compliance with ELAR/PARADISEC format requirements before upload."
         }
       ],
-      "quality_self_assessment": 0.95,
+      "quality_self_assessment": {
+        "score": 0.95,
+        "justification": "All steps are evidence\u2011based, align with ELAR/PARADISEC standards, and cover required outputs (lexicon, grammar sketch, time\u2011aligned texts, metadata)."
+      },
       "brain_assisted": false,
       "recalled_skill": "none",
       "confidence": 0.95
     },
     "confidence": "0.95",
-    "internal_reasoning": "The solution follows ELAR/PARADISEC standards, integrates all required data types, and includes explicit steps for consistency checks and metadata. Confidence is high because the plan aligns with established archival practices.",
+    "internal_reasoning": "I mapped the task requirements to a stepwise workflow that follows ELAR/PARADISEC guidelines, ensures cross\u2011referencing and consistency checks, and includes metadata capture.",
     "_metrics": {
-      "tokens": 2269,
-      "prompt_tokens": 1314,
-      "completion_tokens": 955,
-      "latency_ms": 7628.29,
-      "cost_usd": 0.00048,
+      "tokens": 2144,
+      "prompt_tokens": 1236,
+      "completion_tokens": 908,
+      "latency_ms": 5478.11,
+      "cost_usd": 0.000344,
       "model": "openai/gpt-oss-20b",
       "provider": "lm_studio"
     },
-    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'computational_linguistics', 'task': 'Gather linguistic field recordings, interlinear glossed texts, and paradigm elicitation data from a Papuan language with no prior written documentation and fewer than 200 speakers, sourced from 6 fieldworkers using 4 different transcription conventions (IPA narrow, IPA broad, practical orthography, ad-hoc romanization). Structure the materials into an ELAR/PARADISEC-compatible archive with FLEx-interoperable lexical database, grammatical sketch organized by typological feature (morphophonology, argument structure, clause combining, and information structure), and curated text collection with time-aligned audio. Polish with cross-references between lexical entries and text attestations, consistency validation of morpheme segmentation across transcribers, and a metadata layer capturing speaker consent status, recording conditions, and dialectal variation notes.'}\n\nSOLUTION:\n{'domain': 'computational_linguistics', 'task': 'Create an ELAR/PARADISEC-compatible archive for a unwritten Papuan language with <200 speakers, integrating field recordings, interlinear glosses, paradigm data from 6 workers using 4 transcription conventions, and producing FLEx-compatible lexical database, typological grammatical sketch, curated time\u2011aligned texts, cross\u2011references, consistency checks, and rich metadata.', 'steps': [{'action': 'Collect raw audio and transcriptions from all six fieldworkers', 'expected_outcome': 'A master repository of WAV/MP3 files with accompanying transcription files in IPA narrow, IPA broad, practical orthography, and ad\u2011hoc romanization, each tagged with speaker ID, date, location, and dialect note.'}, {'action': 'Standardize file naming and directory structure according to ELAR/PARADISEC guidelines', 'expected_outcome': 'A hierarchical folder layout (e.g., /audio/, /transcriptions/IPA_narrow/, /transcriptions/IPA_broad/, etc.) with consistent, machine\u2011readable filenames.'}, {'action': 'Convert all transcriptions to a unified XML schema (CHAT or ELAN) and align them with the audio using time stamps', 'expected_outcome': 'Time\u2011aligned annotation files (.cha/.xml) that can be imported into ELAN, allowing visual playback of each utterance.'}, {'action': 'Create an interlinear glossed text (IGT) corpus in CLDF/TEI format, mapping morphemes to glosses and lemmas', 'expected_outcome': 'A machine\u2011processable IGT dataset with fields for orthography, IPA, gloss, lemma, part of speech, and morphological analysis.'}, {'action': 'Extract paradigm elicitation data (verb conjugations, noun cases, etc.) into a spreadsheet and import into FLEx', 'expected_outcome': 'An FLEx project containing lexical entries with full paradigm tables, phonological forms, glosses, and semantic fields.'}, {'action': 'Validate morpheme segmentation across transcribers by running an automated consistency check (e.g., using a script that compares segment boundaries)', 'expected_outcome': 'A report highlighting discrepancies; corrected segments are merged into the master IGT corpus.'}, {'action': 'Develop a grammatical sketch organized by typological features (morphophonology, argument structure, clause combining, information structure) using a template in LaTeX or XML', 'expected_outcome': 'A structured document with sections for each feature, populated with data extracted from the corpus and annotated with references to lexical entries.'}, {'action': 'Cross\u2011reference lexical database entries with text attestations by linking lemma IDs to IGT lines and audio segments in ELAN', 'expected_outcome': 'Clickable links in FLEx and ELAN that navigate from a word entry to its occurrences, facilitating verification and further analysis.'}, {'action': 'Compile metadata: speaker consent status, recording conditions (microphone type, environment), and dialectal variation notes into a JSON/CSV file following PARADISEC\u2019s metadata schema', 'expected_outcome': 'A comprehensive metadata package that can be uploaded alongside the archive to satisfy ethical and archival standards.'}, {'action': 'Package all materials into an ELAR/PARADISEC submission bundle (including README, license, citation information)', 'expected_outcome': 'A ready\u2011to\u2011submit archive meeting all technical and ethical requirements for long\u2011term preservation.'}], 'used_recalled_skill': False, 'recalled_skill_name': 'none', 'adaptation_notes': 'N/A'}\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'computational_linguistics', 'task': 'Gather linguistic field recordings, interlinear glossed texts, and paradigm elicitation data from a Papuan language with no prior written documentation and fewer than 200 speakers, sourced from 6 fieldworkers using 4 different transcription conventions (IPA narrow, IPA broad, practical orthography, ad-hoc romanization). Structure the materials into an ELAR/PARADISEC-compatible archive with FLEx-interoperable lexical database, grammatical sketch organized by typological feature (morphophonology, argument structure, clause combining, and information structure), and curated text collection with time-aligned audio. Polish with cross-references between lexical entries and text attestations, consistency validation of morpheme segmentation across transcribers, and a metadata layer capturing speaker consent status, recording conditions, and dialectal variation notes.'}\n\nSOLUTION:\n{'domain': 'computational_linguistics', 'task': 'Create an ELAR/PARADISEC-compatible archive for a Papuan language with <200 speakers, integrating field recordings, interlinear glossed texts (IGTs), paradigm elicitation data from 6 workers using 4 transcription conventions, and producing FLEx-compatible lexical database, typological grammatical sketch, curated time\u2011aligned text collection, cross\u2011references, consistency checks, and metadata on consent, recording conditions, and dialectal variation.', 'steps': [{'action': 'Collect raw materials', 'expected_outcome': 'All audio files, IGTs, paradigm sheets, and transcription notes from the 6 fieldworkers are stored in a single repository with provenance metadata.'}, {'action': 'Standardize file naming and directory structure', 'expected_outcome': 'A consistent folder hierarchy (e.g., /audio/, /texts/, /lexicon/, /metadata/) is established following ELAR/PARADISEC guidelines, ensuring each item has a unique identifier.'}, {'action': 'Convert all transcriptions to a unified format', 'expected_outcome': 'Using a mapping script, IPA narrow/broad, practical orthography, and ad\u2011hoc romanization are converted into a common Unicode representation (UTF\u20118 with diacritics). Each IGT line is aligned with its audio segment.'}, {'action': 'Create FLEx-compatible XML lexical database', 'expected_outcome': 'An .xml file containing entries for all lemmas, with fields for lemma, part of speech, glosses, phonological form (in the unified transcription), and cross\u2011references to text IDs is generated.'}, {'action': 'Build typological grammatical sketch', 'expected_outcome': 'A structured document (JSON or LaTeX) that organizes observations by morphophonology, argument structure, clause combining, and information structure, each section citing specific IGTs and paradigm items.'}, {'action': 'Time\u2011align audio with texts', 'expected_outcome': 'Using Praat or ELAN scripts, each IGT line is linked to its corresponding time segment in the audio, producing a synchronized XML/ELAN file for the archive.'}, {'action': 'Cross\u2011reference lexical entries and text attestations', 'expected_outcome': 'Automated matching of lemmas in the FLEx database with occurrences in the IGTs generates a report listing all citations and flags missing links.'}, {'action': 'Validate morpheme segmentation consistency', 'expected_outcome': 'A comparison tool checks segment boundaries across transcribers; discrepancies are logged for manual review, ensuring uniform morphological analysis.'}, {'action': 'Compile metadata layer', 'expected_outcome': 'An XML/JSON file records speaker consent status, recording conditions (location, equipment, time), and dialectal variation notes, linked to each audio/text item via unique IDs.'}, {'action': 'Package archive for ELAR/PARADISEC submission', 'expected_outcome': 'All files are zipped with a manifest, README, and metadata schema, ready for upload to the repository.'}], 'used_recalled_skill': False, 'recalled_skill_name': 'none', 'adaptation_notes': 'N/A'}\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection",
+    "trace_id": "35921b4e-ed3c-476c-b346-5e13c875922d",
+    "execution_time_ms": 5479.114532470703
   },
   "agent_outputs": {
     "task_reasoner": {
       "response": {
         "domain": "computational_linguistics",
-        "task": "Create an ELAR/PARADISEC-compatible archive for a unwritten Papuan language with <200 speakers, integrating field recordings, interlinear glosses, paradigm data from 6 workers using 4 transcription conventions, and producing FLEx-compatible lexical database, typological grammatical sketch, curated time\u2011aligned texts, cross\u2011references, consistency checks, and rich metadata.",
+        "task": "Create an ELAR/PARADISEC-compatible archive for a unwritten Papuan language with <200 speakers, integrating field recordings, interlinear glosses, paradigm data from 6 workers using 4 transcription conventions, and producing FLEx-compatible lexical database, typological grammatical sketch, curated time-aligned texts, cross-references, consistency checks, and metadata on consent, recording conditions, and dialectal variation.",
         "steps": [
           {
-            "action": "Collect raw audio and transcriptions from all six fieldworkers",
-            "result": "A master repository of WAV/MP3 files with accompanying transcription files in IPA narrow, IPA broad, practical orthography, and ad\u2011hoc romanization, each tagged with speaker ID, date, location, and dialect note."
+            "action": "Collect raw materials",
+            "result": "All audio files, interlinear glossed texts (IGTs), paradigm elicitation sheets, and transcription notes from the 6 fieldworkers are gathered in a single repository with clear provenance metadata."
           },
           {
-            "action": "Standardize file naming and directory structure according to ELAR/PARADISEC guidelines",
-            "result": "A hierarchical folder layout (e.g., /audio/, /transcriptions/IPA_narrow/, /transcriptions/IPA_broad/, etc.) with consistent, machine\u2011readable filenames."
+            "action": "Standardize file naming and directory structure",
+            "result": "A consistent folder hierarchy (e.g., /audio/, /texts/, /lexicon/, /metadata/) is established, following ELAR/PARADISEC guidelines, ensuring each item can be uniquely identified."
           },
           {
-            "action": "Convert all transcriptions to a unified XML schema (e.g., CHAT or ELAN) and align them with the audio using time stamps",
-            "result": "Time\u2011aligned annotation files (.cha/.xml) that can be imported into ELAN, allowing visual playback of each utterance."
+            "action": "Convert all transcriptions to a unified format",
+            "result": "Using a script that maps IPA narrow/broad, practical orthography, and ad-hoc romanization into a common Unicode representation (e.g., UTF-8 with diacritics), each line of IGTs is aligned with its audio segment."
           },
           {
-            "action": "Create an interlinear glossed text (IGT) corpus in CLDF/TEI format, mapping morphemes to glosses and lemmas",
-            "result": "A machine\u2011processable IGT dataset with fields for orthography, IPA, gloss, lemma, part of speech, and morphological analysis."
+            "action": "Create FLEx-compatible XML lexical database",
+            "result": "A .xml file containing entries for all lemmas, with fields for lemma, part-of-speech, glosses, phonological forms (in the unified transcription), and cross-references to text IDs is generated."
           },
           {
-            "action": "Extract paradigm elicitation data (verb conjugations, noun cases, etc.) into a spreadsheet and import into FLEx",
-            "result": "An FLEx project containing lexical entries with full paradigm tables, phonological forms, glosses, and semantic fields."
+            "action": "Build typological grammatical sketch",
+            "result": "A structured document (e.g., JSON or LaTeX) that organizes observations by morphophonology, argument structure, clause combining, and information structure, each section citing specific IGTs and paradigm items."
           },
           {
-            "action": "Validate morpheme segmentation across transcribers by running an automated consistency check (e.g., using a script that compares segment boundaries)",
-            "result": "A report highlighting discrepancies; corrected segments are merged into the master IGT corpus."
+            "action": "Time-align audio with texts",
+            "result": "Using Praat or ELAN scripts, each IGT line is linked to its corresponding time segment in the audio, producing a synchronized XML/ELAN file for the archive."
           },
           {
-            "action": "Develop a grammatical sketch organized by typological features (morphophonology, argument structure, clause combining, information structure) using a template in LaTeX or XML",
-            "result": "A structured document with sections for each feature, populated with data extracted from the corpus and annotated with references to lexical entries."
+            "action": "Cross-reference lexical entries and text attestations",
+            "result": "Automated matching of lemmas in the FLEx database with occurrences in the IGTs, generating a report that lists all citations and flags missing links."
           },
           {
-            "action": "Cross\u2011reference lexical database entries with text attestations by linking lemma IDs to IGT lines and audio segments in ELAN",
-            "result": "Clickable links in FLEx and ELAN that navigate from a word entry to its occurrences, facilitating verification and further analysis."
+            "action": "Validate morpheme segmentation consistency",
+            "result": "A comparison tool checks segment boundaries across transcribers; discrepancies are logged for manual review, ensuring uniform morphological analysis."
           },
           {
-            "action": "Compile metadata: speaker consent status, recording conditions (microphone type, environment), and dialectal variation notes into a JSON/CSV file following PARADISEC\u2019s metadata schema",
-            "result": "A comprehensive metadata package that can be uploaded alongside the archive to satisfy ethical and archival standards."
+            "action": "Compile metadata layer",
+            "result": "An XML/JSON file records speaker consent status, recording conditions (location, equipment, time), and dialectal variation notes, linked to each audio/text item via unique IDs."
           },
           {
-            "action": "Package all materials into an ELAR/PARADISEC submission bundle (including README, license, citation information)",
-            "result": "A ready\u2011to\u2011submit archive meeting all technical and ethical requirements for long\u2011term preservation."
+            "action": "Package archive for ELAR/PARADISEC submission",
+            "result": "All files are zipped with a manifest, README, and metadata schema, ready for upload to the repository."
           }
         ]
       },
       "confidence": "0.95",
-      "internal_reasoning": "I mapped each requirement of the task to concrete actions that are standard in linguistic archiving, ensuring compliance with ELAR/PARADISEC formats, FLEx interoperability, and metadata standards while maintaining cross\u2011referencing and consistency checks.",
+      "internal_reasoning": "I broke down the complex archival task into discrete, logically ordered steps that cover data collection, standardization, database creation, typological analysis, alignment, cross-referencing, consistency checks, metadata compilation, and final packaging, ensuring each requirement is addressed.",
       "_metrics": {
-        "tokens": 1408,
+        "tokens": 1339,
         "prompt_tokens": 577,
-        "completion_tokens": 831,
-        "latency_ms": 7218.37,
-        "cost_usd": 0.000445,
+        "completion_tokens": 762,
+        "latency_ms": 4626.32,
+        "cost_usd": 0.000285,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: computational_linguistics\nTASK: Gather linguistic field recordings, interlinear glossed texts, and paradigm elicitation data from a Papuan language with no prior written documentation and fewer than 200 speakers, sourced from 6 fieldworkers using 4 different transcription conventions (IPA narrow, IPA broad, practical orthography, ad-hoc romanization). Structure the materials into an ELAR/PARADISEC-compatible archive with FLEx-interoperable lexical database, grammatical sketch organized by typological feature (morphophonology, argument structure, clause combining, and information structure), and curated text collection with time-aligned audio. Polish with cross-references between lexical entries and text attestations, consistency validation of morpheme segmentation across transcribers, and a metadata layer capturing speaker consent status, recording conditions, and dialectal variation notes.\n\n\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: computational_linguistics\nTASK: Gather linguistic field recordings, interlinear glossed texts, and paradigm elicitation data from a Papuan language with no prior written documentation and fewer than 200 speakers, sourced from 6 fieldworkers using 4 different transcription conventions (IPA narrow, IPA broad, practical orthography, ad-hoc romanization). Structure the materials into an ELAR/PARADISEC-compatible archive with FLEx-interoperable lexical database, grammatical sketch organized by typological feature (morphophonology, argument structure, clause combining, and information structure), and curated text collection with time-aligned audio. Polish with cross-references between lexical entries and text attestations, consistency validation of morpheme segmentation across transcribers, and a metadata layer capturing speaker consent status, recording conditions, and dialectal variation notes.\n\n\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation",
+      "trace_id": "8db3470b-0c68-4b29-a590-77d9096b3132",
+      "execution_time_ms": 4627.315521240234
     },
     "task_applier": {
       "response": {
         "domain": "computational_linguistics",
-        "task": "Create an ELAR/PARADISEC-compatible archive for a unwritten Papuan language with <200 speakers, integrating field recordings, interlinear glosses, paradigm data from 6 workers using 4 transcription conventions, and producing FLEx-compatible lexical database, typological grammatical sketch, curated time\u2011aligned texts, cross\u2011references, consistency checks, and rich metadata.",
+        "task": "Create an ELAR/PARADISEC-compatible archive for a Papuan language with <200 speakers, integrating field recordings, interlinear glossed texts (IGTs), paradigm elicitation data from 6 workers using 4 transcription conventions, and producing FLEx-compatible lexical database, typological grammatical sketch, curated time\u2011aligned text collection, cross\u2011references, consistency checks, and metadata on consent, recording conditions, and dialectal variation.",
         "steps": [
           {
-            "action": "Collect raw audio and transcriptions from all six fieldworkers",
-            "expected_outcome": "A master repository of WAV/MP3 files with accompanying transcription files in IPA narrow, IPA broad, practical orthography, and ad\u2011hoc romanization, each tagged with speaker ID, date, location, and dialect note."
+            "action": "Collect raw materials",
+            "expected_outcome": "All audio files, IGTs, paradigm sheets, and transcription notes from the 6 fieldworkers are stored in a single repository with provenance metadata."
           },
           {
-            "action": "Standardize file naming and directory structure according to ELAR/PARADISEC guidelines",
-            "expected_outcome": "A hierarchical folder layout (e.g., /audio/, /transcriptions/IPA_narrow/, /transcriptions/IPA_broad/, etc.) with consistent, machine\u2011readable filenames."
+            "action": "Standardize file naming and directory structure",
+            "expected_outcome": "A consistent folder hierarchy (e.g., /audio/, /texts/, /lexicon/, /metadata/) is established following ELAR/PARADISEC guidelines, ensuring each item has a unique identifier."
           },
           {
-            "action": "Convert all transcriptions to a unified XML schema (CHAT or ELAN) and align them with the audio using time stamps",
-            "expected_outcome": "Time\u2011aligned annotation files (.cha/.xml) that can be imported into ELAN, allowing visual playback of each utterance."
+            "action": "Convert all transcriptions to a unified format",
+            "expected_outcome": "Using a mapping script, IPA narrow/broad, practical orthography, and ad\u2011hoc romanization are converted into a common Unicode representation (UTF\u20118 with diacritics). Each IGT line is aligned with its audio segment."
           },
           {
-            "action": "Create an interlinear glossed text (IGT) corpus in CLDF/TEI format, mapping morphemes to glosses and lemmas",
-            "expected_outcome": "A machine\u2011processable IGT dataset with fields for orthography, IPA, gloss, lemma, part of speech, and morphological analysis."
+            "action": "Create FLEx-compatible XML lexical database",
+            "expected_outcome": "An .xml file containing entries for all lemmas, with fields for lemma, part of speech, glosses, phonological form (in the unified transcription), and cross\u2011references to text IDs is generated."
           },
           {
-            "action": "Extract paradigm elicitation data (verb conjugations, noun cases, etc.) into a spreadsheet and import into FLEx",
-            "expected_outcome": "An FLEx project containing lexical entries with full paradigm tables, phonological forms, glosses, and semantic fields."
+            "action": "Build typological grammatical sketch",
+            "expected_outcome": "A structured document (JSON or LaTeX) that organizes observations by morphophonology, argument structure, clause combining, and information structure, each section citing specific IGTs and paradigm items."
           },
           {
-            "action": "Validate morpheme segmentation across transcribers by running an automated consistency check (e.g., using a script that compares segment boundaries)",
-            "expected_outcome": "A report highlighting discrepancies; corrected segments are merged into the master IGT corpus."
+            "action": "Time\u2011align audio with texts",
+            "expected_outcome": "Using Praat or ELAN scripts, each IGT line is linked to its corresponding time segment in the audio, producing a synchronized XML/ELAN file for the archive."
           },
           {
-            "action": "Develop a grammatical sketch organized by typological features (morphophonology, argument structure, clause combining, information structure) using a template in LaTeX or XML",
-            "expected_outcome": "A structured document with sections for each feature, populated with data extracted from the corpus and annotated with references to lexical entries."
+            "action": "Cross\u2011reference lexical entries and text attestations",
+            "expected_outcome": "Automated matching of lemmas in the FLEx database with occurrences in the IGTs generates a report listing all citations and flags missing links."
           },
           {
-            "action": "Cross\u2011reference lexical database entries with text attestations by linking lemma IDs to IGT lines and audio segments in ELAN",
-            "expected_outcome": "Clickable links in FLEx and ELAN that navigate from a word entry to its occurrences, facilitating verification and further analysis."
+            "action": "Validate morpheme segmentation consistency",
+            "expected_outcome": "A comparison tool checks segment boundaries across transcribers; discrepancies are logged for manual review, ensuring uniform morphological analysis."
           },
           {
-            "action": "Compile metadata: speaker consent status, recording conditions (microphone type, environment), and dialectal variation notes into a JSON/CSV file following PARADISEC\u2019s metadata schema",
-            "expected_outcome": "A comprehensive metadata package that can be uploaded alongside the archive to satisfy ethical and archival standards."
+            "action": "Compile metadata layer",
+            "expected_outcome": "An XML/JSON file records speaker consent status, recording conditions (location, equipment, time), and dialectal variation notes, linked to each audio/text item via unique IDs."
           },
           {
-            "action": "Package all materials into an ELAR/PARADISEC submission bundle (including README, license, citation information)",
-            "expected_outcome": "A ready\u2011to\u2011submit archive meeting all technical and ethical requirements for long\u2011term preservation."
+            "action": "Package archive for ELAR/PARADISEC submission",
+            "expected_outcome": "All files are zipped with a manifest, README, and metadata schema, ready for upload to the repository."
           }
         ],
         "used_recalled_skill": false,
@@ -189,91 +196,98 @@
         "adaptation_notes": "N/A"
       },
       "confidence": "0.95",
-      "internal_reasoning": "The solution follows the detailed analysis, mapping each required deliverable to a concrete action and expected outcome, ensuring compliance with ELAR/PARADISEC standards.",
+      "internal_reasoning": "I followed the step\u2011by\u2011step plan from the analysis, ensuring each requirement (transcription conversion, FLEx XML, typological sketch, time alignment, cross\u2011references, consistency checks, metadata) is addressed with clear actions and expected outcomes.",
       "_metrics": {
-        "tokens": 2160,
-        "prompt_tokens": 1300,
-        "completion_tokens": 860,
-        "latency_ms": 7208.16,
-        "cost_usd": 0.000453,
+        "tokens": 2028,
+        "prompt_tokens": 1228,
+        "completion_tokens": 800,
+        "latency_ms": 4916.65,
+        "cost_usd": 0.000309,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "You are solving a task. You have your own step-by-step analysis.\nYou have NO prior experience and NO recalled skills.\n\nDOMAIN: general\nTASK: {'domain': 'computational_linguistics', 'task': 'Gather linguistic field recordings, interlinear glossed texts, and paradigm elicitation data from a Papuan language with no prior written documentation and fewer than 200 speakers, sourced from 6 fieldworkers using 4 different transcription conventions (IPA narrow, IPA broad, practical orthography, ad-hoc romanization). Structure the materials into an ELAR/PARADISEC-compatible archive with FLEx-interoperable lexical database, grammatical sketch organized by typological feature (morphophonology, argument structure, clause combining, and information structure), and curated text collection with time-aligned audio. Polish with cross-references between lexical entries and text attestations, consistency validation of morpheme segmentation across transcribers, and a metadata layer capturing speaker consent status, recording conditions, and dialectal variation notes.'}\n\nYOUR ANALYSIS:\n{'domain': 'computational_linguistics', 'task': 'Create an ELAR/PARADISEC-compatible archive for a unwritten Papuan language with <200 speakers, integrating field recordings, interlinear glosses, paradigm data from 6 workers using 4 transcription conventions, and producing FLEx-compatible lexical database, typological grammatical sketch, curated time\u2011aligned texts, cross\u2011references, consistency checks, and rich metadata.', 'steps': [{'action': 'Collect raw audio and transcriptions from all six fieldworkers', 'result': 'A master repository of WAV/MP3 files with accompanying transcription files in IPA narrow, IPA broad, practical orthography, and ad\u2011hoc romanization, each tagged with speaker ID, date, location, and dialect note.'}, {'action': 'Standardize file naming and directory structure according to ELAR/PARADISEC guidelines', 'result': 'A hierarchical folder layout (e.g., /audio/, /transcriptions/IPA_narrow/, /transcriptions/IPA_broad/, etc.) with consistent, machine\u2011readable filenames.'}, {'action': 'Convert all transcriptions to a unified XML schema (e.g., CHAT or ELAN) and align them with the audio using time stamps', 'result': 'Time\u2011aligned annotation files (.cha/.xml) that can be imported into ELAN, allowing visual playback of each utterance.'}, {'action': 'Create an interlinear glossed text (IGT) corpus in CLDF/TEI format, mapping morphemes to glosses and lemmas', 'result': 'A machine\u2011processable IGT dataset with fields for orthography, IPA, gloss, lemma, part of speech, and morphological analysis.'}, {'action': 'Extract paradigm elicitation data (verb conjugations, noun cases, etc.) into a spreadsheet and import into FLEx', 'result': 'An FLEx project containing lexical entries with full paradigm tables, phonological forms, glosses, and semantic fields.'}, {'action': 'Validate morpheme segmentation across transcribers by running an automated consistency check (e.g., using a script that compares segment boundaries)', 'result': 'A report highlighting discrepancies; corrected segments are merged into the master IGT corpus.'}, {'action': 'Develop a grammatical sketch organized by typological features (morphophonology, argument structure, clause combining, information structure) using a template in LaTeX or XML', 'result': 'A structured document with sections for each feature, populated with data extracted from the corpus and annotated with references to lexical entries.'}, {'action': 'Cross\u2011reference lexical database entries with text attestations by linking lemma IDs to IGT lines and audio segments in ELAN', 'result': 'Clickable links in FLEx and ELAN that navigate from a word entry to its occurrences, facilitating verification and further analysis.'}, {'action': 'Compile metadata: speaker consent status, recording conditions (microphone type, environment), and dialectal variation notes into a JSON/CSV file following PARADISEC\u2019s metadata schema', 'result': 'A comprehensive metadata package that can be uploaded alongside the archive to satisfy ethical and archival standards.'}, {'action': 'Package all materials into an ELAR/PARADISEC submission bundle (including README, license, citation information)', 'result': 'A ready\u2011to\u2011submit archive meeting all technical and ethical requirements for long\u2011term preservation.'}]}\n\nSolve the task using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": false\n- \"recalled_skill_name\": \"none\"\n- \"adaptation_notes\": \"N/A\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+      "formatted_prompt": "You are solving a task. You have your own step-by-step analysis.\nYou have NO prior experience and NO recalled skills.\n\nDOMAIN: general\nTASK: {'domain': 'computational_linguistics', 'task': 'Gather linguistic field recordings, interlinear glossed texts, and paradigm elicitation data from a Papuan language with no prior written documentation and fewer than 200 speakers, sourced from 6 fieldworkers using 4 different transcription conventions (IPA narrow, IPA broad, practical orthography, ad-hoc romanization). Structure the materials into an ELAR/PARADISEC-compatible archive with FLEx-interoperable lexical database, grammatical sketch organized by typological feature (morphophonology, argument structure, clause combining, and information structure), and curated text collection with time-aligned audio. Polish with cross-references between lexical entries and text attestations, consistency validation of morpheme segmentation across transcribers, and a metadata layer capturing speaker consent status, recording conditions, and dialectal variation notes.'}\n\nYOUR ANALYSIS:\n{'domain': 'computational_linguistics', 'task': 'Create an ELAR/PARADISEC-compatible archive for a unwritten Papuan language with <200 speakers, integrating field recordings, interlinear glosses, paradigm data from 6 workers using 4 transcription conventions, and producing FLEx-compatible lexical database, typological grammatical sketch, curated time-aligned texts, cross-references, consistency checks, and metadata on consent, recording conditions, and dialectal variation.', 'steps': [{'action': 'Collect raw materials', 'result': 'All audio files, interlinear glossed texts (IGTs), paradigm elicitation sheets, and transcription notes from the 6 fieldworkers are gathered in a single repository with clear provenance metadata.'}, {'action': 'Standardize file naming and directory structure', 'result': 'A consistent folder hierarchy (e.g., /audio/, /texts/, /lexicon/, /metadata/) is established, following ELAR/PARADISEC guidelines, ensuring each item can be uniquely identified.'}, {'action': 'Convert all transcriptions to a unified format', 'result': 'Using a script that maps IPA narrow/broad, practical orthography, and ad-hoc romanization into a common Unicode representation (e.g., UTF-8 with diacritics), each line of IGTs is aligned with its audio segment.'}, {'action': 'Create FLEx-compatible XML lexical database', 'result': 'A .xml file containing entries for all lemmas, with fields for lemma, part-of-speech, glosses, phonological forms (in the unified transcription), and cross-references to text IDs is generated.'}, {'action': 'Build typological grammatical sketch', 'result': 'A structured document (e.g., JSON or LaTeX) that organizes observations by morphophonology, argument structure, clause combining, and information structure, each section citing specific IGTs and paradigm items.'}, {'action': 'Time-align audio with texts', 'result': 'Using Praat or ELAN scripts, each IGT line is linked to its corresponding time segment in the audio, producing a synchronized XML/ELAN file for the archive.'}, {'action': 'Cross-reference lexical entries and text attestations', 'result': 'Automated matching of lemmas in the FLEx database with occurrences in the IGTs, generating a report that lists all citations and flags missing links.'}, {'action': 'Validate morpheme segmentation consistency', 'result': 'A comparison tool checks segment boundaries across transcribers; discrepancies are logged for manual review, ensuring uniform morphological analysis.'}, {'action': 'Compile metadata layer', 'result': 'An XML/JSON file records speaker consent status, recording conditions (location, equipment, time), and dialectal variation notes, linked to each audio/text item via unique IDs.'}, {'action': 'Package archive for ELAR/PARADISEC submission', 'result': 'All files are zipped with a manifest, README, and metadata schema, ready for upload to the repository.'}]}\n\nSolve the task using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": false\n- \"recalled_skill_name\": \"none\"\n- \"adaptation_notes\": \"N/A\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach",
+      "trace_id": "f80d4e8f-ec5f-45e5-aa88-23b36725009e",
+      "execution_time_ms": 4917.659521102905
     },
     "task_result": {
       "response": {
         "domain": "computational_linguistics",
-        "task": "Create an ELAR/PARADISEC-compatible archive for a Papuan language with <200 speakers, integrating field recordings, interlinear glosses, paradigm data from 6 workers using 4 transcription conventions, and producing FLEx-compatible lexical database, typological grammatical sketch, curated time\u2011aligned texts, cross\u2011references, consistency checks, and rich metadata.",
+        "task": "Create an ELAR/PARADISEC-compatible archive for a Papuan language with <200 speakers, integrating field recordings, interlinear glossed texts (IGTs), paradigm elicitation data from 6 workers using 4 transcription conventions, and producing FLEx-compatible lexical database, typological grammatical sketch, curated time\u2011aligned text collection, cross\u2011references, consistency checks, and metadata on consent, recording conditions, and dialectal variation.",
         "solution_steps": [
           {
-            "step_number": 1,
-            "title": "Collect raw audio & transcriptions",
-            "description": "Gather WAV/MP3 files from all six fieldworkers. For each recording, obtain four transcription files: IPA narrow, IPA broad, practical orthography, and ad\u2011hoc romanization. Tag each file with speaker ID, date, location, and dialect note."
+            "step_id": 1,
+            "title": "Collect raw materials",
+            "description": "Gather all audio files, IGTs, paradigm sheets, and transcription notes from the six fieldworkers. Store them in a single repository with provenance metadata (worker ID, date, location)."
           },
           {
-            "step_number": 2,
-            "title": "Standardise naming & directory structure",
-            "description": "Create a hierarchical folder layout following ELAR/PARADISEC guidelines: /audio/, /transcriptions/IPA_narrow/, /transcriptions/IPA_broad/, /transcriptions/orthography/, /transcriptions/romanization/. Use machine\u2011readable filenames (e.g., speakerID_date_utterance.wav)."
+            "step_id": 2,
+            "title": "Standardize file naming and directory structure",
+            "description": "Create a consistent folder hierarchy: /audio/, /texts/, /lexicon/, /metadata/. Assign each item a unique identifier following ELAR/PARADISEC guidelines."
           },
           {
-            "step_number": 3,
-            "title": "Convert to time\u2011aligned annotation format",
-            "description": "Transform all transcriptions into CHAT or ELAN XML, adding precise timestamps. Align each utterance with the corresponding audio segment using a script that parses the original transcription files."
+            "step_id": 3,
+            "title": "Normalize transcription conventions",
+            "description": "Convert IPA narrow, IPA broad, practical orthography, and ad\u2011hoc romanization into a unified Unicode representation (UTF\u20118). Use mapping scripts to preserve phonetic detail while ensuring consistency."
           },
           {
-            "step_number": 4,
-            "title": "Build interlinear glossed text corpus",
-            "description": "Create an IGT dataset in TEI or CLDF format. Map morphemes to glosses, lemmas, part of speech, and morphological analysis. Include fields for orthography, IPA (both narrow & broad), and pragmatic notes."
+            "step_id": 4,
+            "title": "Generate FLEx-compatible lexical database",
+            "description": "Create an XML file with entries for all lemmas, including fields: lemma, part of speech, glosses, phonological form (normalized), and cross\u2011references to text IDs. Validate against FLEx schema."
           },
           {
-            "step_number": 5,
-            "title": "Extract paradigm data into FLEx",
-            "description": "Compile verb conjugations, noun case paradigms, etc., into a spreadsheet. Import the spreadsheet into FLEx, generating lexical entries with full paradigm tables, phonological forms, glosses, and semantic fields."
+            "step_id": 5,
+            "title": "Build typological grammatical sketch",
+            "description": "Compile a structured document (JSON or LaTeX) organized by morphophonology, argument structure, clause combining, and information structure. Cite specific IGTs and paradigm items for each observation."
           },
           {
-            "step_number": 6,
-            "title": "Validate morpheme segmentation",
-            "description": "Run an automated consistency check (Python script) that compares segment boundaries across the four transcription conventions. Generate a discrepancy report; resolve conflicts by consensus and update the master IGT corpus."
+            "step_id": 6,
+            "title": "Time\u2011align audio with texts",
+            "description": "Use Praat or ELAN scripts to link each IGT line to its corresponding time segment in the audio, producing synchronized XML/ELAN files for the archive."
           },
           {
-            "step_number": 7,
-            "title": "Create typological grammatical sketch",
-            "description": "Using LaTeX or XML, draft sections for morphophonology, argument structure, clause combining, and information structure. Populate each section with data extracted from the corpus, citing lexical entries and text attestations."
+            "step_id": 7,
+            "title": "Cross\u2011reference lexical entries and text attestations",
+            "description": "Run an automated matching script that flags occurrences of lemmas from the FLEx database within IGTs. Generate a report listing all citations and highlight missing links for manual review."
           },
           {
-            "step_number": 8,
-            "title": "Cross\u2011reference lexicon & texts",
-            "description": "Link FLEx lemma IDs to IGT lines and ELAN time segments via unique identifiers. Ensure that clicking a word in FLEx opens the corresponding audio segment in ELAN, facilitating verification."
+            "step_id": 8,
+            "title": "Validate morpheme segmentation consistency",
+            "description": "Compare segment boundaries across transcribers using a comparison tool; log discrepancies for manual reconciliation to ensure uniform morphological analysis."
           },
           {
-            "step_number": 9,
+            "step_id": 9,
             "title": "Compile metadata layer",
-            "description": "Create a JSON/CSV file following PARADISEC\u2019s metadata schema. Include speaker consent status, recording conditions (microphone type, environment), and dialectal variation notes for each audio file."
+            "description": "Create an XML/JSON file recording speaker consent status, recording conditions (location, equipment, time), and dialectal variation notes. Link each entry to the corresponding audio/text via unique IDs."
           },
           {
-            "step_number": 10,
-            "title": "Package archive for submission",
-            "description": "Bundle all materials into a single ELAR/PARADISEC submission package: /audio/, /transcriptions/, /annotations/, /lexicon/, /grammar/, /metadata/. Add README, license (e.g., CC BY-ND), and citation information. Verify that the archive meets technical and ethical requirements."
+            "step_id": 10,
+            "title": "Package archive for ELAR/PARADISEC submission",
+            "description": "Zip all files with a manifest, README, and metadata schema. Ensure compliance with ELAR/PARADISEC format requirements before upload."
           }
         ],
-        "quality_self_assessment": 0.95,
+        "quality_self_assessment": {
+          "score": 0.95,
+          "justification": "All steps are evidence\u2011based, align with ELAR/PARADISEC standards, and cover required outputs (lexicon, grammar sketch, time\u2011aligned texts, metadata)."
+        },
         "brain_assisted": false,
         "recalled_skill": "none",
         "confidence": 0.95
       },
       "confidence": "0.95",
-      "internal_reasoning": "The solution follows ELAR/PARADISEC standards, integrates all required data types, and includes explicit steps for consistency checks and metadata. Confidence is high because the plan aligns with established archival practices.",
+      "internal_reasoning": "I mapped the task requirements to a stepwise workflow that follows ELAR/PARADISEC guidelines, ensures cross\u2011referencing and consistency checks, and includes metadata capture.",
       "_metrics": {
-        "tokens": 2269,
-        "prompt_tokens": 1314,
-        "completion_tokens": 955,
-        "latency_ms": 7628.29,
-        "cost_usd": 0.00048,
+        "tokens": 2144,
+        "prompt_tokens": 1236,
+        "completion_tokens": 908,
+        "latency_ms": 5478.11,
+        "cost_usd": 0.000344,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'computational_linguistics', 'task': 'Gather linguistic field recordings, interlinear glossed texts, and paradigm elicitation data from a Papuan language with no prior written documentation and fewer than 200 speakers, sourced from 6 fieldworkers using 4 different transcription conventions (IPA narrow, IPA broad, practical orthography, ad-hoc romanization). Structure the materials into an ELAR/PARADISEC-compatible archive with FLEx-interoperable lexical database, grammatical sketch organized by typological feature (morphophonology, argument structure, clause combining, and information structure), and curated text collection with time-aligned audio. Polish with cross-references between lexical entries and text attestations, consistency validation of morpheme segmentation across transcribers, and a metadata layer capturing speaker consent status, recording conditions, and dialectal variation notes.'}\n\nSOLUTION:\n{'domain': 'computational_linguistics', 'task': 'Create an ELAR/PARADISEC-compatible archive for a unwritten Papuan language with <200 speakers, integrating field recordings, interlinear glosses, paradigm data from 6 workers using 4 transcription conventions, and producing FLEx-compatible lexical database, typological grammatical sketch, curated time\u2011aligned texts, cross\u2011references, consistency checks, and rich metadata.', 'steps': [{'action': 'Collect raw audio and transcriptions from all six fieldworkers', 'expected_outcome': 'A master repository of WAV/MP3 files with accompanying transcription files in IPA narrow, IPA broad, practical orthography, and ad\u2011hoc romanization, each tagged with speaker ID, date, location, and dialect note.'}, {'action': 'Standardize file naming and directory structure according to ELAR/PARADISEC guidelines', 'expected_outcome': 'A hierarchical folder layout (e.g., /audio/, /transcriptions/IPA_narrow/, /transcriptions/IPA_broad/, etc.) with consistent, machine\u2011readable filenames.'}, {'action': 'Convert all transcriptions to a unified XML schema (CHAT or ELAN) and align them with the audio using time stamps', 'expected_outcome': 'Time\u2011aligned annotation files (.cha/.xml) that can be imported into ELAN, allowing visual playback of each utterance.'}, {'action': 'Create an interlinear glossed text (IGT) corpus in CLDF/TEI format, mapping morphemes to glosses and lemmas', 'expected_outcome': 'A machine\u2011processable IGT dataset with fields for orthography, IPA, gloss, lemma, part of speech, and morphological analysis.'}, {'action': 'Extract paradigm elicitation data (verb conjugations, noun cases, etc.) into a spreadsheet and import into FLEx', 'expected_outcome': 'An FLEx project containing lexical entries with full paradigm tables, phonological forms, glosses, and semantic fields.'}, {'action': 'Validate morpheme segmentation across transcribers by running an automated consistency check (e.g., using a script that compares segment boundaries)', 'expected_outcome': 'A report highlighting discrepancies; corrected segments are merged into the master IGT corpus.'}, {'action': 'Develop a grammatical sketch organized by typological features (morphophonology, argument structure, clause combining, information structure) using a template in LaTeX or XML', 'expected_outcome': 'A structured document with sections for each feature, populated with data extracted from the corpus and annotated with references to lexical entries.'}, {'action': 'Cross\u2011reference lexical database entries with text attestations by linking lemma IDs to IGT lines and audio segments in ELAN', 'expected_outcome': 'Clickable links in FLEx and ELAN that navigate from a word entry to its occurrences, facilitating verification and further analysis.'}, {'action': 'Compile metadata: speaker consent status, recording conditions (microphone type, environment), and dialectal variation notes into a JSON/CSV file following PARADISEC\u2019s metadata schema', 'expected_outcome': 'A comprehensive metadata package that can be uploaded alongside the archive to satisfy ethical and archival standards.'}, {'action': 'Package all materials into an ELAR/PARADISEC submission bundle (including README, license, citation information)', 'expected_outcome': 'A ready\u2011to\u2011submit archive meeting all technical and ethical requirements for long\u2011term preservation.'}], 'used_recalled_skill': False, 'recalled_skill_name': 'none', 'adaptation_notes': 'N/A'}\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'computational_linguistics', 'task': 'Gather linguistic field recordings, interlinear glossed texts, and paradigm elicitation data from a Papuan language with no prior written documentation and fewer than 200 speakers, sourced from 6 fieldworkers using 4 different transcription conventions (IPA narrow, IPA broad, practical orthography, ad-hoc romanization). Structure the materials into an ELAR/PARADISEC-compatible archive with FLEx-interoperable lexical database, grammatical sketch organized by typological feature (morphophonology, argument structure, clause combining, and information structure), and curated text collection with time-aligned audio. Polish with cross-references between lexical entries and text attestations, consistency validation of morpheme segmentation across transcribers, and a metadata layer capturing speaker consent status, recording conditions, and dialectal variation notes.'}\n\nSOLUTION:\n{'domain': 'computational_linguistics', 'task': 'Create an ELAR/PARADISEC-compatible archive for a Papuan language with <200 speakers, integrating field recordings, interlinear glossed texts (IGTs), paradigm elicitation data from 6 workers using 4 transcription conventions, and producing FLEx-compatible lexical database, typological grammatical sketch, curated time\u2011aligned text collection, cross\u2011references, consistency checks, and metadata on consent, recording conditions, and dialectal variation.', 'steps': [{'action': 'Collect raw materials', 'expected_outcome': 'All audio files, IGTs, paradigm sheets, and transcription notes from the 6 fieldworkers are stored in a single repository with provenance metadata.'}, {'action': 'Standardize file naming and directory structure', 'expected_outcome': 'A consistent folder hierarchy (e.g., /audio/, /texts/, /lexicon/, /metadata/) is established following ELAR/PARADISEC guidelines, ensuring each item has a unique identifier.'}, {'action': 'Convert all transcriptions to a unified format', 'expected_outcome': 'Using a mapping script, IPA narrow/broad, practical orthography, and ad\u2011hoc romanization are converted into a common Unicode representation (UTF\u20118 with diacritics). Each IGT line is aligned with its audio segment.'}, {'action': 'Create FLEx-compatible XML lexical database', 'expected_outcome': 'An .xml file containing entries for all lemmas, with fields for lemma, part of speech, glosses, phonological form (in the unified transcription), and cross\u2011references to text IDs is generated.'}, {'action': 'Build typological grammatical sketch', 'expected_outcome': 'A structured document (JSON or LaTeX) that organizes observations by morphophonology, argument structure, clause combining, and information structure, each section citing specific IGTs and paradigm items.'}, {'action': 'Time\u2011align audio with texts', 'expected_outcome': 'Using Praat or ELAN scripts, each IGT line is linked to its corresponding time segment in the audio, producing a synchronized XML/ELAN file for the archive.'}, {'action': 'Cross\u2011reference lexical entries and text attestations', 'expected_outcome': 'Automated matching of lemmas in the FLEx database with occurrences in the IGTs generates a report listing all citations and flags missing links.'}, {'action': 'Validate morpheme segmentation consistency', 'expected_outcome': 'A comparison tool checks segment boundaries across transcribers; discrepancies are logged for manual review, ensuring uniform morphological analysis.'}, {'action': 'Compile metadata layer', 'expected_outcome': 'An XML/JSON file records speaker consent status, recording conditions (location, equipment, time), and dialectal variation notes, linked to each audio/text item via unique IDs.'}, {'action': 'Package archive for ELAR/PARADISEC submission', 'expected_outcome': 'All files are zipped with a manifest, README, and metadata schema, ready for upload to the repository.'}], 'used_recalled_skill': False, 'recalled_skill_name': 'none', 'adaptation_notes': 'N/A'}\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection",
+      "trace_id": "35921b4e-ed3c-476c-b346-5e13c875922d",
+      "execution_time_ms": 5479.114532470703
     }
   }
 }

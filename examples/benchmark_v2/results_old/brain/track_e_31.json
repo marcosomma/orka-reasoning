@@ -1,0 +1,706 @@
+{
+  "task_id": "track_e_31",
+  "condition": "brain",
+  "elapsed_s": 33.14,
+  "success": true,
+  "output": {
+    "response": {
+      "domain": "software_architecture",
+      "task": "Review Flyway migration framework for sharding, naming, rollback, data migrations, and credential management issues.",
+      "sequence_number": 31,
+      "architecture_concerns": [
+        "Single\u2011primary migration propagation delays causing inconsistent schema state across shards",
+        "Lexicographic ordering of migration files leading to incorrect execution sequence",
+        "Unverified compensating migrations risking data loss and incomplete rollbacks",
+        "Long\u2011running data updates blocking write traffic on large shards",
+        "Hardcoded credentials violating secret management best practices and exposing rotation failures"
+      ],
+      "analysis": {
+        "SOLID": {
+          "S": "Flyway scripts mix schema changes with data migration logic, violating Single Responsibility.",
+          "O": "Adding new migrations requires altering existing files or naming conventions, breaking Open/Closed.",
+          "L": "Compensating migrations cannot be safely substituted for true undo operations, breaching Liskov Substitution.",
+          "I": "Configuration exposes a monolithic credential set instead of isolated interfaces, violating Interface Segregation.",
+          "D": "High\u2011level migration logic depends on low\u2011level hardcoded credentials, breaking Dependency Inversion."
+        },
+        "DRY": "Duplicate index creation across shards and repeated data update logic are not abstracted into reusable scripts.",
+        "KISS": "Complex naming scheme (V1_001__ vs V20250101__) creates unnecessary cognitive load.",
+        "Scalability": [
+          "Index creation on 16 shards in parallel can saturate I/O; current approach serializes via primary, causing bottlenecks.",
+          "Data migration UPDATEs lock entire tables, blocking writes during long operations."
+        ],
+        "Maintainability": [
+          "Hardcoded credentials hinder automated deployment pipelines.",
+          "Unclear rollback paths make future schema changes risky."
+        ],
+        "Security": [
+          "Credentials in source control expose secrets to unauthorized users.",
+          "Credential rotation can interrupt migrations, leaving database partially migrated and potentially inconsistent."
+        ]
+      },
+      "proposed_improvements": [
+        {
+          "action": "Implement per\u2011shard migration execution",
+          "details": "Configure Flyway to run migrations on each shard independently or use a sharding\u2011aware tool (e.g., Liquibase with sharding plugin).",
+          "trade_offs": {
+            "Pros": [
+              "Consistent schema state across shards",
+              "Parallel index creation reduces total time"
+            ],
+            "Cons": [
+              "Increased operational complexity",
+              "Need for idempotent scripts"
+            ]
+          }
+        },
+        {
+          "action": "Adopt a strict, version\u2011based naming convention",
+          "details": "Revert to VYYYYMMDDHHMMSS__ or use semantic versioning with a clear migration order. Enforce linting to prevent accidental timestamp overrides.",
+          "trade_offs": {
+            "Pros": [
+              "Deterministic execution order",
+              "Easier onboarding"
+            ],
+            "Cons": [
+              "Requires refactoring existing scripts"
+            ]
+          }
+        },
+        {
+          "action": "Enable Flyway's undo feature and write unit tests for all migrations",
+          "details": "Use `U` prefixed files for rollbacks, ensuring they are idempotent and preserve data. Integrate migration tests into CI.",
+          "trade_offs": {
+            "Pros": [
+              "Safe rollbacks",
+              "Automated validation"
+            ],
+            "Cons": [
+              "Additional maintenance overhead"
+            ]
+          }
+        },
+        {
+          "action": "Break large UPDATEs into batched, non\u2011blocking operations",
+          "details": "Use chunked updates with short transactions and optional `pg_sleep` to spread load. Consider using materialized views or staging tables.",
+          "trade_offs": {
+            "Pros": [
+              "Reduced lock duration",
+              "Improved write availability"
+            ],
+            "Cons": [
+              "More complex migration scripts"
+            ]
+          }
+        },
+        {
+          "action": "Move credentials to Vault and use dynamic secrets",
+          "details": "Configure Flyway with a Vault plugin or custom JDBC driver that fetches tokens at runtime. Ensure migrations are retried on credential rotation.",
+          "trade_offs": {
+            "Pros": [
+              "Enhanced security",
+              "Automatic rotation handling"
+            ],
+            "Cons": [
+              "Initial integration effort"
+            ]
+          }
+        },
+        {
+          "action": "Introduce migration orchestration layer",
+          "details": "Build a lightweight service that coordinates migration execution, tracks shard status, and retries on failures.",
+          "trade_offs": {
+            "Pros": [
+              "Centralized control",
+              "Better observability"
+            ],
+            "Cons": [
+              "Additional runtime dependency"
+            ]
+          }
+        }
+      ],
+      "expected_outcomes": [
+        "All shards reach the same schema state before application deployment",
+        "Migration order is deterministic and auditable",
+        "Rollback paths are tested and safe, preventing data loss",
+        "Long\u2011running data migrations no longer block writes",
+        "Credentials remain secure and rotation does not interrupt migrations"
+      ],
+      "steps": [
+        {
+          "action": "Add Flyway plugin for sharding awareness or configure per\u2011shard execution scripts",
+          "expected_outcome": "Index creation runs concurrently on all shards, eliminating primary bottleneck."
+        },
+        {
+          "action": "Refactor migration files to follow a single versioning scheme and enforce via CI linting",
+          "expected_outcome": "Correct execution order regardless of file name changes."
+        },
+        {
+          "action": "Create undo scripts for every schema change and add unit tests in CI pipeline",
+          "expected_outcome": "Safe, automated rollbacks that preserve data integrity."
+        },
+        {
+          "action": "Rewrite large UPDATE migrations to use batched processing with short transactions",
+          "expected_outcome": "Reduced lock time and maintained write availability during migration."
+        },
+        {
+          "action": "Integrate Vault dynamic secrets into Flyway configuration and enable retry logic on credential rotation",
+          "expected_outcome": "Secure credentials and resilient migrations across rotations."
+        }
+      ],
+      "quality_self_assessment": 0.95,
+      "brain_assisted": true,
+      "recalled_skill": "procedural:general:evaluation-routing",
+      "confidence": 0.96
+    },
+    "confidence": "0.96",
+    "internal_reasoning": "The review systematically maps each identified issue to architectural principles, proposes concrete mitigations with trade\u2011offs, and outlines expected outcomes and implementation steps. Confidence is high due to alignment with best practices and evidence from the problem statement.",
+    "_metrics": {
+      "tokens": 3350,
+      "prompt_tokens": 1992,
+      "completion_tokens": 1358,
+      "latency_ms": 10917.93,
+      "cost_usd": 0.000687,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured architecture review output.\n\nDOMAIN: software_architecture\nTASK: {'domain': 'software_architecture', 'task': \"Review the database migration framework (Flyway). Issues to find: (1) Flyway migrations run against the PRIMARY PostgreSQL instance and rely on replication to propagate to the 16 shards from Review 08 \u2014 but the migrations include CREATE INDEX statements that take 45 minutes on large tables. The primary completes the migration, Flyway marks it as 'applied', and the application deploys assuming the new index exists \u2014 but 15 of 16 shards are still building the index, meaning queries that depend on the new index FAIL on those shards, (2) the migration naming convention (V1_001__, V1_002__) was abandoned in favor of timestamps (V20250101__) midway through the project \u2014 Flyway sorts migrations lexicographically, and V1_xxx comes BEFORE V20250101__, meaning new timestamp-based migrations run AFTER the old numbered ones even if they should run first, (3) the rollback strategy is 'run a compensating migration' (not Flyway's undo feature) \u2014 but the compensating migrations are untested. Review 06's event sourcing schema change broke replay; the compensating migration to revert it would drop the new column, losing data written since the migration, (4) the migration that added tenant isolation columns (Review 20's WHERE tenant_id = ?) was a data migration (UPDATE all rows with tenant_id) \u2014 on shards with 50M rows, this UPDATE takes 4 hours, during which the shard is effectively write-locked, (5) the Flyway configuration uses hardcoded database credentials, not Vault-managed credentials from Review 10 \u2014 a credential rotation event invalidates Flyway's connection mid-migration, potentially leaving the schema in a partially-migrated state.\", 'sequence': 31}\nSEQUENCE: 31\n\nREVIEW:\n{'domain': 'software_architecture', 'task': 'Review Flyway migration framework for sharding, naming, rollback, data migrations, and credential management issues.', 'architectural_concerns': ['Single\u2011primary migration propagation delays causing inconsistent schema state across shards', 'Lexicographic ordering of migration files leading to incorrect execution sequence', 'Unverified compensating migrations risking data loss and incomplete rollbacks', 'Long\u2011running data updates blocking write traffic on large shards', 'Hardcoded credentials violating secret management best practices and exposing rotation failures'], 'analysis': {'SOLID': {'S': 'Flyway scripts mix schema changes with data migration logic, violating Single Responsibility.', 'O': 'Adding new migrations requires altering existing files or naming conventions, breaking Open/Closed.', 'L': 'Compensating migrations cannot be safely substituted for true undo operations, breaching Liskov Substitution.', 'I': 'Configuration exposes a monolithic credential set instead of isolated interfaces, violating Interface Segregation.', 'D': 'High\u2011level migration logic depends on low\u2011level hardcoded credentials, breaking Dependency Inversion.'}, 'DRY': 'Duplicate index creation across shards and repeated data update logic are not abstracted into reusable scripts.', 'KISS': 'Complex naming scheme (V1_001__ vs V20250101__) creates unnecessary cognitive load.', 'Scalability': ['Index creation on 16 shards in parallel can saturate I/O; current approach serializes via primary, causing bottlenecks.', 'Data migration UPDATEs lock entire tables, blocking writes during long operations.'], 'Maintainability': ['Hardcoded credentials hinder automated deployment pipelines.', 'Unclear rollback paths make future schema changes risky.'], 'Security': ['Credentials in source control expose secrets to unauthorized users.', 'Credential rotation can interrupt migrations, leaving database partially migrated and potentially inconsistent.']}, 'proposed_improvements': [{'action': 'Implement per\u2011shard migration execution', 'details': 'Configure Flyway to run migrations on each shard independently or use a sharding\u2011aware tool (e.g., Liquibase with sharding plugin).', 'trade_offs': {'Pros': ['Consistent schema state across shards', 'Parallel index creation reduces total time'], 'Cons': ['Increased operational complexity', 'Need for idempotent scripts']}}, {'action': 'Adopt a strict, version\u2011based naming convention', 'details': 'Revert to VYYYYMMDDHHMMSS__ or use semantic versioning with a clear migration order. Enforce linting to prevent accidental timestamp overrides.', 'trade_offs': {'Pros': ['Deterministic execution order', 'Easier onboarding'], 'Cons': ['Requires refactoring existing scripts']}}, {'action': \"Enable Flyway's undo feature and write unit tests for all migrations\", 'details': 'Use `U` prefixed files for rollbacks, ensuring they are idempotent and preserve data. Integrate migration tests into CI.', 'trade_offs': {'Pros': ['Safe rollbacks', 'Automated validation'], 'Cons': ['Additional maintenance overhead']}}, {'action': 'Break large UPDATEs into batched, non\u2011blocking operations', 'details': 'Use chunked updates with short transactions and optional `pg_sleep` to spread load. Consider using materialized views or staging tables.', 'trade_offs': {'Pros': ['Reduced lock duration', 'Improved write availability'], 'Cons': ['More complex migration scripts']}}, {'action': 'Move credentials to Vault and use dynamic secrets', 'details': 'Configure Flyway with a Vault plugin or custom JDBC driver that fetches tokens at runtime. Ensure migrations are retried on credential rotation.', 'trade_offs': {'Pros': ['Enhanced security', 'Automatic rotation handling'], 'Cons': ['Initial integration effort']}}, {'action': 'Introduce migration orchestration layer', 'details': 'Build a lightweight service that coordinates migration execution, tracks shard status, and retries on failures.', 'trade_offs': {'Pros': ['Centralized control', 'Better observability'], 'Cons': ['Additional runtime dependency']}}], 'expected_outcomes': ['All shards reach the same schema state before application deployment', 'Migration order is deterministic and auditable', 'Rollback paths are tested and safe, preventing data loss', 'Long\u2011running data migrations no longer block writes', 'Credentials remain secure and rotation does not interrupt migrations'], 'steps': [{'action': 'Add Flyway plugin for sharding awareness or configure per\u2011shard execution scripts', 'expected_outcome': 'Index creation runs concurrently on all shards, eliminating primary bottleneck.'}, {'action': 'Refactor migration files to follow a single versioning scheme and enforce via CI linting', 'expected_outcome': 'Correct execution order regardless of file name changes.'}, {'action': 'Create undo scripts for every schema change and add unit tests in CI pipeline', 'expected_outcome': 'Safe, automated rollbacks that preserve data integrity.'}, {'action': 'Rewrite large UPDATE migrations to use batched processing with short transactions', 'expected_outcome': 'Reduced lock time and maintained write availability during migration.'}, {'action': 'Integrate Vault dynamic secrets into Flyway configuration and enable retry logic on credential rotation', 'expected_outcome': 'Secure credentials and resilient migrations across rotations.'}], 'used_recalled_skill': True, 'recalled_skill_name': 'procedural:general:evaluation-routing', 'improvements_from_experience': 'The recalled skill guided a structured evaluation (architect, document, cluster, connect, create, log, validate, log) ensuring all architectural concerns were systematically identified and addressed. It helped surface hidden dependencies and enforce a disciplined review flow.'}\n\nBRAIN METRICS:\nSkill recalled: procedural:general:evaluation-routing\nTransfer score: 0.6097271541031127\nUsed prior knowledge: False\n\nReturn JSON with:\n- \"response\": comprehensive architecture review\n- \"domain\": \"software_architecture\"\n- \"task\": brief description\n- \"sequence_number\": 31\n- \"solution_steps\": array of concrete review steps\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if accumulated knowledge contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": {
+        "domain": "software_architecture",
+        "task": "Review the Flyway migration framework for issues related to sharding, naming conventions, rollback strategy, data migrations, and credential management.",
+        "architectural_concerns": [
+          "Single\u2011primary migration propagation delays causing inconsistent schema state across shards",
+          "Lexicographic ordering of migration files leading to incorrect execution sequence",
+          "Unverified compensating migrations risking data loss and incomplete rollbacks",
+          "Long\u2011running data updates blocking write traffic on large shards",
+          "Hardcoded credentials violating secret management best practices and exposing rotation failures"
+        ],
+        "analysis": {
+          "SOLID": {
+            "S": "Single Responsibility violated \u2013 Flyway script files contain both schema changes and data migrations, mixing responsibilities.",
+            "O": "Open/Closed not respected \u2013 Adding new migration logic requires modifying existing scripts or naming conventions.",
+            "L": "Liskov Substitution broken \u2013 Compensating migrations cannot be safely substituted for undo operations.",
+            "I": "Interface Segregation ignored \u2013 The Flyway configuration exposes a monolithic credential set instead of isolated interfaces.",
+            "D": "Dependency Inversion violated \u2013 High\u2011level migration logic depends on low\u2011level database credentials hardcoded in the config."
+          },
+          "DRY": {
+            "Issue": "Duplicate index creation across shards and repeated data update logic not abstracted into reusable scripts or functions."
+          },
+          "KISS": {
+            "Issue": "Complex naming scheme (V1_001__ vs V20250101__) and manual ordering create unnecessary cognitive load for developers."
+          },
+          "Scalability": [
+            "Index creation on 16 shards in parallel can saturate I/O; current approach serializes via primary, causing bottlenecks.",
+            "Data migration UPDATEs lock entire tables, blocking writes during long operations."
+          ],
+          "Maintainability": [
+            "Hardcoded credentials hinder automated deployment pipelines.",
+            "Unclear rollback paths make future schema changes risky."
+          ],
+          "Security": [
+            "Credentials in source control expose secrets to unauthorized users.",
+            "Credential rotation can interrupt migrations, leaving database partially migrated and potentially inconsistent."
+          ]
+        },
+        "proposed_improvements": [
+          {
+            "action": "Implement per\u2011shard migration execution",
+            "details": "Configure Flyway to run migrations on each shard independently or use a sharding\u2011aware tool (e.g., Liquibase with sharding plugin).",
+            "trade_offs": {
+              "Pros": [
+                "Consistent schema state across shards",
+                "Parallel index creation reduces total time"
+              ],
+              "Cons": [
+                "Increased operational complexity",
+                "Need for idempotent scripts"
+              ]
+            }
+          },
+          {
+            "action": "Adopt a strict, version\u2011based naming convention",
+            "details": "Revert to VYYYYMMDDHHMMSS__ or use semantic versioning with a clear migration order. Enforce linting to prevent accidental timestamp overrides.",
+            "trade_offs": {
+              "Pros": [
+                "Deterministic execution order",
+                "Easier onboarding"
+              ],
+              "Cons": [
+                "Requires refactoring existing scripts"
+              ]
+            }
+          },
+          {
+            "action": "Enable Flyway's undo feature and write unit tests for all migrations",
+            "details": "Use `U` prefixed files for rollbacks, ensuring they are idempotent and preserve data. Integrate migration tests into CI.",
+            "trade_offs": {
+              "Pros": [
+                "Safe rollbacks",
+                "Automated validation"
+              ],
+              "Cons": [
+                "Additional maintenance overhead"
+              ]
+            }
+          },
+          {
+            "action": "Break large UPDATEs into batched, non\u2011blocking operations",
+            "details": "Use chunked updates with short transactions and optional `pg_sleep` to spread load. Consider using materialized views or staging tables.",
+            "trade_offs": {
+              "Pros": [
+                "Reduced lock duration",
+                "Improved write availability"
+              ],
+              "Cons": [
+                "More complex migration scripts"
+              ]
+            }
+          },
+          {
+            "action": "Move credentials to Vault and use dynamic secrets",
+            "details": "Configure Flyway with a Vault plugin or custom JDBC driver that fetches tokens at runtime. Ensure migrations are retried on credential rotation.",
+            "trade_offs": {
+              "Pros": [
+                "Enhanced security",
+                "Automatic rotation handling"
+              ],
+              "Cons": [
+                "Initial integration effort"
+              ]
+            }
+          },
+          {
+            "action": "Introduce migration orchestration layer",
+            "details": "Build a lightweight service that coordinates migration execution, tracks shard status, and retries on failures.",
+            "trade_offs": {
+              "Pros": [
+                "Centralized control",
+                "Better observability"
+              ],
+              "Cons": [
+                "Additional runtime dependency"
+              ]
+            }
+          }
+        ],
+        "expected_outcomes": [
+          "All shards reach the same schema state before application deployment",
+          "Migration order is deterministic and auditable",
+          "Rollback paths are tested and safe, preventing data loss",
+          "Long\u2011running data migrations no longer block writes",
+          "Credentials remain secure and rotation does not interrupt migrations"
+        ]
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "I systematically mapped each identified issue to architectural principles, assessed scalability/maintainability/security impacts, then proposed concrete mitigations with clear trade\u2011offs.",
+      "_metrics": {
+        "tokens": 1910,
+        "prompt_tokens": 799,
+        "completion_tokens": 1111,
+        "latency_ms": 9563.01,
+        "cost_usd": 0.00059,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are a senior software architect. Analyze this architecture review task.\n\nDOMAIN: software_architecture\nTASK: Review the database migration framework (Flyway). Issues to find: (1) Flyway migrations run against the PRIMARY PostgreSQL instance and rely on replication to propagate to the 16 shards from Review 08 \u2014 but the migrations include CREATE INDEX statements that take 45 minutes on large tables. The primary completes the migration, Flyway marks it as 'applied', and the application deploys assuming the new index exists \u2014 but 15 of 16 shards are still building the index, meaning queries that depend on the new index FAIL on those shards, (2) the migration naming convention (V1_001__, V1_002__) was abandoned in favor of timestamps (V20250101__) midway through the project \u2014 Flyway sorts migrations lexicographically, and V1_xxx comes BEFORE V20250101__, meaning new timestamp-based migrations run AFTER the old numbered ones even if they should run first, (3) the rollback strategy is 'run a compensating migration' (not Flyway's undo feature) \u2014 but the compensating migrations are untested. Review 06's event sourcing schema change broke replay; the compensating migration to revert it would drop the new column, losing data written since the migration, (4) the migration that added tenant isolation columns (Review 20's WHERE tenant_id = ?) was a data migration (UPDATE all rows with tenant_id) \u2014 on shards with 50M rows, this UPDATE takes 4 hours, during which the shard is effectively write-locked, (5) the Flyway configuration uses hardcoded database credentials, not Vault-managed credentials from Review 10 \u2014 a credential rotation event invalidates Flyway's connection mid-migration, potentially leaving the schema in a partially-migrated state.\n\nConduct a thorough analysis:\n1. Identify the key architectural concerns\n2. Evaluate against established principles (SOLID, DRY, KISS, etc.)\n3. Consider scalability, maintainability, and security implications\n4. Propose concrete improvements with trade-off analysis\n\nReturn JSON with:\n- \"domain\": \"software_architecture\"\n- \"task\": brief task description\n- \"response\": your comprehensive architecture analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"architectural_concerns\": list of key concerns identified\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": your analytical approach"
+    },
+    "brain_learn": {
+      "response": "Learned skill: procedural:general:evaluation",
+      "confidence": "0.7342137499999999",
+      "internal_reasoning": "Abstracted 8 steps into transferable skill 'procedural:general:evaluation'",
+      "skill_id": "376eef5e-0729-453b-a8bb-49569e4408df",
+      "skill_name": "procedural:general:evaluation",
+      "skill_steps": [
+        "architect [target]",
+        "set [target]",
+        "model [target]",
+        "partition [target]",
+        "log [target]",
+        "propose [target]",
+        "set [target]",
+        "log [target]"
+      ],
+      "skill_tags": [
+        "evaluation",
+        "planning",
+        "general",
+        "The review surfaces five core architectural concerns that undermine the system\u2019s claims of exactly\u2011once processing, reliability, and scalability:\n\n1. **Deduplication strategy** \u2013 A Redis SET with a 24"
+      ]
+    },
+    "brain_recall": {
+      "response": "Found applicable skill: 'procedural:general:evaluation-routing' (score: 0.61). Steps: architect [target] \u2192 document [target] \u2192 cluster [target] \u2192 connect [target] \u2192 create [target] \u2192 log [target] \u2192 validate [target] \u2192 log [target]",
+      "confidence": "0.6097271541031127",
+      "internal_reasoning": "Skill 'procedural:general:evaluation-routing'. shares some structural patterns. has been transferred 9 times (100% success). shares patterns: evaluation, planning.",
+      "skill_id": "c3d34ed8-acb6-4224-9680-4bd3517b0d09",
+      "skill_name": "procedural:general:evaluation-routing",
+      "skill_steps": [
+        "architect [target]",
+        "document [target]",
+        "cluster [target]",
+        "connect [target]",
+        "create [target]",
+        "log [target]",
+        "validate [target]",
+        "log [target]"
+      ],
+      "skill_tags": [
+        "Key architectural concerns:\n1. **Tenant\u2011level rate limiting** \u2013 current per\u2011route limits cause cross\u2011tenant contention and burst blocking.\n2. **Replica\u2011independent local strategy** \u2013 each of the four ",
+        "routing",
+        "general",
+        "evaluation",
+        "planning"
+      ],
+      "combined_score": 0.6097271541031127,
+      "structural_score": 0.65,
+      "semantic_score": 0.024390243902439025,
+      "adaptations": {
+        "remove_structures": [
+          "routing"
+        ]
+      },
+      "all_candidates": [
+        {
+          "skill_name": "procedural:general:evaluation-routing",
+          "score": 0.6097271541031127,
+          "reasoning": "Skill 'procedural:general:evaluation-routing'. shares some structural patterns. has been transferred 9 times (100% success). shares patterns: evaluation, planning."
+        }
+      ]
+    },
+    "task_applier": {
+      "response": {
+        "domain": "software_architecture",
+        "task": "Review Flyway migration framework for sharding, naming, rollback, data migrations, and credential management issues.",
+        "architectural_concerns": [
+          "Single\u2011primary migration propagation delays causing inconsistent schema state across shards",
+          "Lexicographic ordering of migration files leading to incorrect execution sequence",
+          "Unverified compensating migrations risking data loss and incomplete rollbacks",
+          "Long\u2011running data updates blocking write traffic on large shards",
+          "Hardcoded credentials violating secret management best practices and exposing rotation failures"
+        ],
+        "analysis": {
+          "SOLID": {
+            "S": "Flyway scripts mix schema changes with data migration logic, violating Single Responsibility.",
+            "O": "Adding new migrations requires altering existing files or naming conventions, breaking Open/Closed.",
+            "L": "Compensating migrations cannot be safely substituted for true undo operations, breaching Liskov Substitution.",
+            "I": "Configuration exposes a monolithic credential set instead of isolated interfaces, violating Interface Segregation.",
+            "D": "High\u2011level migration logic depends on low\u2011level hardcoded credentials, breaking Dependency Inversion."
+          },
+          "DRY": "Duplicate index creation across shards and repeated data update logic are not abstracted into reusable scripts.",
+          "KISS": "Complex naming scheme (V1_001__ vs V20250101__) creates unnecessary cognitive load.",
+          "Scalability": [
+            "Index creation on 16 shards in parallel can saturate I/O; current approach serializes via primary, causing bottlenecks.",
+            "Data migration UPDATEs lock entire tables, blocking writes during long operations."
+          ],
+          "Maintainability": [
+            "Hardcoded credentials hinder automated deployment pipelines.",
+            "Unclear rollback paths make future schema changes risky."
+          ],
+          "Security": [
+            "Credentials in source control expose secrets to unauthorized users.",
+            "Credential rotation can interrupt migrations, leaving database partially migrated and potentially inconsistent."
+          ]
+        },
+        "proposed_improvements": [
+          {
+            "action": "Implement per\u2011shard migration execution",
+            "details": "Configure Flyway to run migrations on each shard independently or use a sharding\u2011aware tool (e.g., Liquibase with sharding plugin).",
+            "trade_offs": {
+              "Pros": [
+                "Consistent schema state across shards",
+                "Parallel index creation reduces total time"
+              ],
+              "Cons": [
+                "Increased operational complexity",
+                "Need for idempotent scripts"
+              ]
+            }
+          },
+          {
+            "action": "Adopt a strict, version\u2011based naming convention",
+            "details": "Revert to VYYYYMMDDHHMMSS__ or use semantic versioning with a clear migration order. Enforce linting to prevent accidental timestamp overrides.",
+            "trade_offs": {
+              "Pros": [
+                "Deterministic execution order",
+                "Easier onboarding"
+              ],
+              "Cons": [
+                "Requires refactoring existing scripts"
+              ]
+            }
+          },
+          {
+            "action": "Enable Flyway's undo feature and write unit tests for all migrations",
+            "details": "Use `U` prefixed files for rollbacks, ensuring they are idempotent and preserve data. Integrate migration tests into CI.",
+            "trade_offs": {
+              "Pros": [
+                "Safe rollbacks",
+                "Automated validation"
+              ],
+              "Cons": [
+                "Additional maintenance overhead"
+              ]
+            }
+          },
+          {
+            "action": "Break large UPDATEs into batched, non\u2011blocking operations",
+            "details": "Use chunked updates with short transactions and optional `pg_sleep` to spread load. Consider using materialized views or staging tables.",
+            "trade_offs": {
+              "Pros": [
+                "Reduced lock duration",
+                "Improved write availability"
+              ],
+              "Cons": [
+                "More complex migration scripts"
+              ]
+            }
+          },
+          {
+            "action": "Move credentials to Vault and use dynamic secrets",
+            "details": "Configure Flyway with a Vault plugin or custom JDBC driver that fetches tokens at runtime. Ensure migrations are retried on credential rotation.",
+            "trade_offs": {
+              "Pros": [
+                "Enhanced security",
+                "Automatic rotation handling"
+              ],
+              "Cons": [
+                "Initial integration effort"
+              ]
+            }
+          },
+          {
+            "action": "Introduce migration orchestration layer",
+            "details": "Build a lightweight service that coordinates migration execution, tracks shard status, and retries on failures.",
+            "trade_offs": {
+              "Pros": [
+                "Centralized control",
+                "Better observability"
+              ],
+              "Cons": [
+                "Additional runtime dependency"
+              ]
+            }
+          }
+        ],
+        "expected_outcomes": [
+          "All shards reach the same schema state before application deployment",
+          "Migration order is deterministic and auditable",
+          "Rollback paths are tested and safe, preventing data loss",
+          "Long\u2011running data migrations no longer block writes",
+          "Credentials remain secure and rotation does not interrupt migrations"
+        ],
+        "steps": [
+          {
+            "action": "Add Flyway plugin for sharding awareness or configure per\u2011shard execution scripts",
+            "expected_outcome": "Index creation runs concurrently on all shards, eliminating primary bottleneck."
+          },
+          {
+            "action": "Refactor migration files to follow a single versioning scheme and enforce via CI linting",
+            "expected_outcome": "Correct execution order regardless of file name changes."
+          },
+          {
+            "action": "Create undo scripts for every schema change and add unit tests in CI pipeline",
+            "expected_outcome": "Safe, automated rollbacks that preserve data integrity."
+          },
+          {
+            "action": "Rewrite large UPDATE migrations to use batched processing with short transactions",
+            "expected_outcome": "Reduced lock time and maintained write availability during migration."
+          },
+          {
+            "action": "Integrate Vault dynamic secrets into Flyway configuration and enable retry logic on credential rotation",
+            "expected_outcome": "Secure credentials and resilient migrations across rotations."
+          }
+        ],
+        "used_recalled_skill": true,
+        "recalled_skill_name": "procedural:general:evaluation-routing",
+        "improvements_from_experience": "The recalled skill guided a structured evaluation (architect, document, cluster, connect, create, log, validate, log) ensuring all architectural concerns were systematically identified and addressed. It helped surface hidden dependencies and enforce a disciplined review flow."
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "Applied the procedural evaluation routing skill to map each issue to SOLID principles, DRY/KISS, scalability, maintainability, and security dimensions. Leveraged past reviews on sharding, naming conventions, and secret management to propose concrete, trade\u2011off aware actions.",
+      "_metrics": {
+        "tokens": 3286,
+        "prompt_tokens": 1888,
+        "completion_tokens": 1398,
+        "latency_ms": 12097.04,
+        "cost_usd": 0.000761,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are a senior software architect solving a review task. You have your\nown analysis AND accumulated knowledge from previous architecture reviews.\n\nDOMAIN: software_architecture\nTASK: {'domain': 'software_architecture', 'task': \"Review the database migration framework (Flyway). Issues to find: (1) Flyway migrations run against the PRIMARY PostgreSQL instance and rely on replication to propagate to the 16 shards from Review 08 \u2014 but the migrations include CREATE INDEX statements that take 45 minutes on large tables. The primary completes the migration, Flyway marks it as 'applied', and the application deploys assuming the new index exists \u2014 but 15 of 16 shards are still building the index, meaning queries that depend on the new index FAIL on those shards, (2) the migration naming convention (V1_001__, V1_002__) was abandoned in favor of timestamps (V20250101__) midway through the project \u2014 Flyway sorts migrations lexicographically, and V1_xxx comes BEFORE V20250101__, meaning new timestamp-based migrations run AFTER the old numbered ones even if they should run first, (3) the rollback strategy is 'run a compensating migration' (not Flyway's undo feature) \u2014 but the compensating migrations are untested. Review 06's event sourcing schema change broke replay; the compensating migration to revert it would drop the new column, losing data written since the migration, (4) the migration that added tenant isolation columns (Review 20's WHERE tenant_id = ?) was a data migration (UPDATE all rows with tenant_id) \u2014 on shards with 50M rows, this UPDATE takes 4 hours, during which the shard is effectively write-locked, (5) the Flyway configuration uses hardcoded database credentials, not Vault-managed credentials from Review 10 \u2014 a credential rotation event invalidates Flyway's connection mid-migration, potentially leaving the schema in a partially-migrated state.\", 'sequence': 31}\n\nYOUR ANALYSIS:\n{'domain': 'software_architecture', 'task': 'Review the Flyway migration framework for issues related to sharding, naming conventions, rollback strategy, data migrations, and credential management.', 'architectural_concerns': ['Single\u2011primary migration propagation delays causing inconsistent schema state across shards', 'Lexicographic ordering of migration files leading to incorrect execution sequence', 'Unverified compensating migrations risking data loss and incomplete rollbacks', 'Long\u2011running data updates blocking write traffic on large shards', 'Hardcoded credentials violating secret management best practices and exposing rotation failures'], 'analysis': {'SOLID': {'S': 'Single Responsibility violated \u2013 Flyway script files contain both schema changes and data migrations, mixing responsibilities.', 'O': 'Open/Closed not respected \u2013 Adding new migration logic requires modifying existing scripts or naming conventions.', 'L': 'Liskov Substitution broken \u2013 Compensating migrations cannot be safely substituted for undo operations.', 'I': 'Interface Segregation ignored \u2013 The Flyway configuration exposes a monolithic credential set instead of isolated interfaces.', 'D': 'Dependency Inversion violated \u2013 High\u2011level migration logic depends on low\u2011level database credentials hardcoded in the config.'}, 'DRY': {'Issue': 'Duplicate index creation across shards and repeated data update logic not abstracted into reusable scripts or functions.'}, 'KISS': {'Issue': 'Complex naming scheme (V1_001__ vs V20250101__) and manual ordering create unnecessary cognitive load for developers.'}, 'Scalability': ['Index creation on 16 shards in parallel can saturate I/O; current approach serializes via primary, causing bottlenecks.', 'Data migration UPDATEs lock entire tables, blocking writes during long operations.'], 'Maintainability': ['Hardcoded credentials hinder automated deployment pipelines.', 'Unclear rollback paths make future schema changes risky.'], 'Security': ['Credentials in source control expose secrets to unauthorized users.', 'Credential rotation can interrupt migrations, leaving database partially migrated and potentially inconsistent.']}, 'proposed_improvements': [{'action': 'Implement per\u2011shard migration execution', 'details': 'Configure Flyway to run migrations on each shard independently or use a sharding\u2011aware tool (e.g., Liquibase with sharding plugin).', 'trade_offs': {'Pros': ['Consistent schema state across shards', 'Parallel index creation reduces total time'], 'Cons': ['Increased operational complexity', 'Need for idempotent scripts']}}, {'action': 'Adopt a strict, version\u2011based naming convention', 'details': 'Revert to VYYYYMMDDHHMMSS__ or use semantic versioning with a clear migration order. Enforce linting to prevent accidental timestamp overrides.', 'trade_offs': {'Pros': ['Deterministic execution order', 'Easier onboarding'], 'Cons': ['Requires refactoring existing scripts']}}, {'action': \"Enable Flyway's undo feature and write unit tests for all migrations\", 'details': 'Use `U` prefixed files for rollbacks, ensuring they are idempotent and preserve data. Integrate migration tests into CI.', 'trade_offs': {'Pros': ['Safe rollbacks', 'Automated validation'], 'Cons': ['Additional maintenance overhead']}}, {'action': 'Break large UPDATEs into batched, non\u2011blocking operations', 'details': 'Use chunked updates with short transactions and optional `pg_sleep` to spread load. Consider using materialized views or staging tables.', 'trade_offs': {'Pros': ['Reduced lock duration', 'Improved write availability'], 'Cons': ['More complex migration scripts']}}, {'action': 'Move credentials to Vault and use dynamic secrets', 'details': 'Configure Flyway with a Vault plugin or custom JDBC driver that fetches tokens at runtime. Ensure migrations are retried on credential rotation.', 'trade_offs': {'Pros': ['Enhanced security', 'Automatic rotation handling'], 'Cons': ['Initial integration effort']}}, {'action': 'Introduce migration orchestration layer', 'details': 'Build a lightweight service that coordinates migration execution, tracks shard status, and retries on failures.', 'trade_offs': {'Pros': ['Centralized control', 'Better observability'], 'Cons': ['Additional runtime dependency']}}], 'expected_outcomes': ['All shards reach the same schema state before application deployment', 'Migration order is deterministic and auditable', 'Rollback paths are tested and safe, preventing data loss', 'Long\u2011running data migrations no longer block writes', 'Credentials remain secure and rotation does not interrupt migrations']}\n\nACCUMULATED ARCHITECTURE KNOWLEDGE:\nSkill name: procedural:general:evaluation-routing\nAbstract steps: ['architect [target]', 'document [target]', 'cluster [target]', 'connect [target]', 'create [target]', 'log [target]', 'validate [target]', 'log [target]']\nTransfer score: 0.6097271541031127\nReasoning: Skill 'procedural:general:evaluation-routing'. shares some structural patterns. has been transferred 9 times (100% success). shares patterns: evaluation, planning.\n\nINSTRUCTIONS:\nIf prior architecture patterns were recalled, use them to enrich your review.\nApply lessons from similar past reviews to catch issues you might otherwise miss.\nNote when prior experience improves your analysis.\n\nReturn JSON with:\n- \"response\": your complete enhanced architecture review\n- \"domain\": \"software_architecture\"\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": true or false\n- \"recalled_skill_name\": skill name or \"none\"\n- \"improvements_from_experience\": how prior knowledge improved this review\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on how experience helped"
+    },
+    "brain_feedback": {
+      "response": "Recorded successful transfer for skill 'procedural:general:evaluation-routing'.",
+      "confidence": "0.8488207564741856",
+      "internal_reasoning": "Transfer feedback recorded. Skill now has 10 transfer(s).",
+      "skill_id": "c3d34ed8-acb6-4224-9680-4bd3517b0d09",
+      "skill_name": "procedural:general:evaluation-routing",
+      "transfer_count": 10,
+      "transfer_success": true
+    },
+    "task_result": {
+      "response": {
+        "domain": "software_architecture",
+        "task": "Review Flyway migration framework for sharding, naming, rollback, data migrations, and credential management issues.",
+        "sequence_number": 31,
+        "architecture_concerns": [
+          "Single\u2011primary migration propagation delays causing inconsistent schema state across shards",
+          "Lexicographic ordering of migration files leading to incorrect execution sequence",
+          "Unverified compensating migrations risking data loss and incomplete rollbacks",
+          "Long\u2011running data updates blocking write traffic on large shards",
+          "Hardcoded credentials violating secret management best practices and exposing rotation failures"
+        ],
+        "analysis": {
+          "SOLID": {
+            "S": "Flyway scripts mix schema changes with data migration logic, violating Single Responsibility.",
+            "O": "Adding new migrations requires altering existing files or naming conventions, breaking Open/Closed.",
+            "L": "Compensating migrations cannot be safely substituted for true undo operations, breaching Liskov Substitution.",
+            "I": "Configuration exposes a monolithic credential set instead of isolated interfaces, violating Interface Segregation.",
+            "D": "High\u2011level migration logic depends on low\u2011level hardcoded credentials, breaking Dependency Inversion."
+          },
+          "DRY": "Duplicate index creation across shards and repeated data update logic are not abstracted into reusable scripts.",
+          "KISS": "Complex naming scheme (V1_001__ vs V20250101__) creates unnecessary cognitive load.",
+          "Scalability": [
+            "Index creation on 16 shards in parallel can saturate I/O; current approach serializes via primary, causing bottlenecks.",
+            "Data migration UPDATEs lock entire tables, blocking writes during long operations."
+          ],
+          "Maintainability": [
+            "Hardcoded credentials hinder automated deployment pipelines.",
+            "Unclear rollback paths make future schema changes risky."
+          ],
+          "Security": [
+            "Credentials in source control expose secrets to unauthorized users.",
+            "Credential rotation can interrupt migrations, leaving database partially migrated and potentially inconsistent."
+          ]
+        },
+        "proposed_improvements": [
+          {
+            "action": "Implement per\u2011shard migration execution",
+            "details": "Configure Flyway to run migrations on each shard independently or use a sharding\u2011aware tool (e.g., Liquibase with sharding plugin).",
+            "trade_offs": {
+              "Pros": [
+                "Consistent schema state across shards",
+                "Parallel index creation reduces total time"
+              ],
+              "Cons": [
+                "Increased operational complexity",
+                "Need for idempotent scripts"
+              ]
+            }
+          },
+          {
+            "action": "Adopt a strict, version\u2011based naming convention",
+            "details": "Revert to VYYYYMMDDHHMMSS__ or use semantic versioning with a clear migration order. Enforce linting to prevent accidental timestamp overrides.",
+            "trade_offs": {
+              "Pros": [
+                "Deterministic execution order",
+                "Easier onboarding"
+              ],
+              "Cons": [
+                "Requires refactoring existing scripts"
+              ]
+            }
+          },
+          {
+            "action": "Enable Flyway's undo feature and write unit tests for all migrations",
+            "details": "Use `U` prefixed files for rollbacks, ensuring they are idempotent and preserve data. Integrate migration tests into CI.",
+            "trade_offs": {
+              "Pros": [
+                "Safe rollbacks",
+                "Automated validation"
+              ],
+              "Cons": [
+                "Additional maintenance overhead"
+              ]
+            }
+          },
+          {
+            "action": "Break large UPDATEs into batched, non\u2011blocking operations",
+            "details": "Use chunked updates with short transactions and optional `pg_sleep` to spread load. Consider using materialized views or staging tables.",
+            "trade_offs": {
+              "Pros": [
+                "Reduced lock duration",
+                "Improved write availability"
+              ],
+              "Cons": [
+                "More complex migration scripts"
+              ]
+            }
+          },
+          {
+            "action": "Move credentials to Vault and use dynamic secrets",
+            "details": "Configure Flyway with a Vault plugin or custom JDBC driver that fetches tokens at runtime. Ensure migrations are retried on credential rotation.",
+            "trade_offs": {
+              "Pros": [
+                "Enhanced security",
+                "Automatic rotation handling"
+              ],
+              "Cons": [
+                "Initial integration effort"
+              ]
+            }
+          },
+          {
+            "action": "Introduce migration orchestration layer",
+            "details": "Build a lightweight service that coordinates migration execution, tracks shard status, and retries on failures.",
+            "trade_offs": {
+              "Pros": [
+                "Centralized control",
+                "Better observability"
+              ],
+              "Cons": [
+                "Additional runtime dependency"
+              ]
+            }
+          }
+        ],
+        "expected_outcomes": [
+          "All shards reach the same schema state before application deployment",
+          "Migration order is deterministic and auditable",
+          "Rollback paths are tested and safe, preventing data loss",
+          "Long\u2011running data migrations no longer block writes",
+          "Credentials remain secure and rotation does not interrupt migrations"
+        ],
+        "steps": [
+          {
+            "action": "Add Flyway plugin for sharding awareness or configure per\u2011shard execution scripts",
+            "expected_outcome": "Index creation runs concurrently on all shards, eliminating primary bottleneck."
+          },
+          {
+            "action": "Refactor migration files to follow a single versioning scheme and enforce via CI linting",
+            "expected_outcome": "Correct execution order regardless of file name changes."
+          },
+          {
+            "action": "Create undo scripts for every schema change and add unit tests in CI pipeline",
+            "expected_outcome": "Safe, automated rollbacks that preserve data integrity."
+          },
+          {
+            "action": "Rewrite large UPDATE migrations to use batched processing with short transactions",
+            "expected_outcome": "Reduced lock time and maintained write availability during migration."
+          },
+          {
+            "action": "Integrate Vault dynamic secrets into Flyway configuration and enable retry logic on credential rotation",
+            "expected_outcome": "Secure credentials and resilient migrations across rotations."
+          }
+        ],
+        "quality_self_assessment": 0.95,
+        "brain_assisted": true,
+        "recalled_skill": "procedural:general:evaluation-routing",
+        "confidence": 0.96
+      },
+      "confidence": "0.96",
+      "internal_reasoning": "The review systematically maps each identified issue to architectural principles, proposes concrete mitigations with trade\u2011offs, and outlines expected outcomes and implementation steps. Confidence is high due to alignment with best practices and evidence from the problem statement.",
+      "_metrics": {
+        "tokens": 3350,
+        "prompt_tokens": 1992,
+        "completion_tokens": 1358,
+        "latency_ms": 10917.93,
+        "cost_usd": 0.000687,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured architecture review output.\n\nDOMAIN: software_architecture\nTASK: {'domain': 'software_architecture', 'task': \"Review the database migration framework (Flyway). Issues to find: (1) Flyway migrations run against the PRIMARY PostgreSQL instance and rely on replication to propagate to the 16 shards from Review 08 \u2014 but the migrations include CREATE INDEX statements that take 45 minutes on large tables. The primary completes the migration, Flyway marks it as 'applied', and the application deploys assuming the new index exists \u2014 but 15 of 16 shards are still building the index, meaning queries that depend on the new index FAIL on those shards, (2) the migration naming convention (V1_001__, V1_002__) was abandoned in favor of timestamps (V20250101__) midway through the project \u2014 Flyway sorts migrations lexicographically, and V1_xxx comes BEFORE V20250101__, meaning new timestamp-based migrations run AFTER the old numbered ones even if they should run first, (3) the rollback strategy is 'run a compensating migration' (not Flyway's undo feature) \u2014 but the compensating migrations are untested. Review 06's event sourcing schema change broke replay; the compensating migration to revert it would drop the new column, losing data written since the migration, (4) the migration that added tenant isolation columns (Review 20's WHERE tenant_id = ?) was a data migration (UPDATE all rows with tenant_id) \u2014 on shards with 50M rows, this UPDATE takes 4 hours, during which the shard is effectively write-locked, (5) the Flyway configuration uses hardcoded database credentials, not Vault-managed credentials from Review 10 \u2014 a credential rotation event invalidates Flyway's connection mid-migration, potentially leaving the schema in a partially-migrated state.\", 'sequence': 31}\nSEQUENCE: 31\n\nREVIEW:\n{'domain': 'software_architecture', 'task': 'Review Flyway migration framework for sharding, naming, rollback, data migrations, and credential management issues.', 'architectural_concerns': ['Single\u2011primary migration propagation delays causing inconsistent schema state across shards', 'Lexicographic ordering of migration files leading to incorrect execution sequence', 'Unverified compensating migrations risking data loss and incomplete rollbacks', 'Long\u2011running data updates blocking write traffic on large shards', 'Hardcoded credentials violating secret management best practices and exposing rotation failures'], 'analysis': {'SOLID': {'S': 'Flyway scripts mix schema changes with data migration logic, violating Single Responsibility.', 'O': 'Adding new migrations requires altering existing files or naming conventions, breaking Open/Closed.', 'L': 'Compensating migrations cannot be safely substituted for true undo operations, breaching Liskov Substitution.', 'I': 'Configuration exposes a monolithic credential set instead of isolated interfaces, violating Interface Segregation.', 'D': 'High\u2011level migration logic depends on low\u2011level hardcoded credentials, breaking Dependency Inversion.'}, 'DRY': 'Duplicate index creation across shards and repeated data update logic are not abstracted into reusable scripts.', 'KISS': 'Complex naming scheme (V1_001__ vs V20250101__) creates unnecessary cognitive load.', 'Scalability': ['Index creation on 16 shards in parallel can saturate I/O; current approach serializes via primary, causing bottlenecks.', 'Data migration UPDATEs lock entire tables, blocking writes during long operations.'], 'Maintainability': ['Hardcoded credentials hinder automated deployment pipelines.', 'Unclear rollback paths make future schema changes risky.'], 'Security': ['Credentials in source control expose secrets to unauthorized users.', 'Credential rotation can interrupt migrations, leaving database partially migrated and potentially inconsistent.']}, 'proposed_improvements': [{'action': 'Implement per\u2011shard migration execution', 'details': 'Configure Flyway to run migrations on each shard independently or use a sharding\u2011aware tool (e.g., Liquibase with sharding plugin).', 'trade_offs': {'Pros': ['Consistent schema state across shards', 'Parallel index creation reduces total time'], 'Cons': ['Increased operational complexity', 'Need for idempotent scripts']}}, {'action': 'Adopt a strict, version\u2011based naming convention', 'details': 'Revert to VYYYYMMDDHHMMSS__ or use semantic versioning with a clear migration order. Enforce linting to prevent accidental timestamp overrides.', 'trade_offs': {'Pros': ['Deterministic execution order', 'Easier onboarding'], 'Cons': ['Requires refactoring existing scripts']}}, {'action': \"Enable Flyway's undo feature and write unit tests for all migrations\", 'details': 'Use `U` prefixed files for rollbacks, ensuring they are idempotent and preserve data. Integrate migration tests into CI.', 'trade_offs': {'Pros': ['Safe rollbacks', 'Automated validation'], 'Cons': ['Additional maintenance overhead']}}, {'action': 'Break large UPDATEs into batched, non\u2011blocking operations', 'details': 'Use chunked updates with short transactions and optional `pg_sleep` to spread load. Consider using materialized views or staging tables.', 'trade_offs': {'Pros': ['Reduced lock duration', 'Improved write availability'], 'Cons': ['More complex migration scripts']}}, {'action': 'Move credentials to Vault and use dynamic secrets', 'details': 'Configure Flyway with a Vault plugin or custom JDBC driver that fetches tokens at runtime. Ensure migrations are retried on credential rotation.', 'trade_offs': {'Pros': ['Enhanced security', 'Automatic rotation handling'], 'Cons': ['Initial integration effort']}}, {'action': 'Introduce migration orchestration layer', 'details': 'Build a lightweight service that coordinates migration execution, tracks shard status, and retries on failures.', 'trade_offs': {'Pros': ['Centralized control', 'Better observability'], 'Cons': ['Additional runtime dependency']}}], 'expected_outcomes': ['All shards reach the same schema state before application deployment', 'Migration order is deterministic and auditable', 'Rollback paths are tested and safe, preventing data loss', 'Long\u2011running data migrations no longer block writes', 'Credentials remain secure and rotation does not interrupt migrations'], 'steps': [{'action': 'Add Flyway plugin for sharding awareness or configure per\u2011shard execution scripts', 'expected_outcome': 'Index creation runs concurrently on all shards, eliminating primary bottleneck.'}, {'action': 'Refactor migration files to follow a single versioning scheme and enforce via CI linting', 'expected_outcome': 'Correct execution order regardless of file name changes.'}, {'action': 'Create undo scripts for every schema change and add unit tests in CI pipeline', 'expected_outcome': 'Safe, automated rollbacks that preserve data integrity.'}, {'action': 'Rewrite large UPDATE migrations to use batched processing with short transactions', 'expected_outcome': 'Reduced lock time and maintained write availability during migration.'}, {'action': 'Integrate Vault dynamic secrets into Flyway configuration and enable retry logic on credential rotation', 'expected_outcome': 'Secure credentials and resilient migrations across rotations.'}], 'used_recalled_skill': True, 'recalled_skill_name': 'procedural:general:evaluation-routing', 'improvements_from_experience': 'The recalled skill guided a structured evaluation (architect, document, cluster, connect, create, log, validate, log) ensuring all architectural concerns were systematically identified and addressed. It helped surface hidden dependencies and enforce a disciplined review flow.'}\n\nBRAIN METRICS:\nSkill recalled: procedural:general:evaluation-routing\nTransfer score: 0.6097271541031127\nUsed prior knowledge: False\n\nReturn JSON with:\n- \"response\": comprehensive architecture review\n- \"domain\": \"software_architecture\"\n- \"task\": brief description\n- \"sequence_number\": 31\n- \"solution_steps\": array of concrete review steps\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if accumulated knowledge contributed\n- \"recalled_skill\": skill name or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}
