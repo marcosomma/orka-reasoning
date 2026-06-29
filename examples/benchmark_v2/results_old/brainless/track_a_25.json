@@ -1,0 +1,561 @@
+{
+  "task_id": "track_a_25",
+  "condition": "brainless",
+  "elapsed_s": 27.06,
+  "success": true,
+  "output": {
+    "response": {
+      "audit_summary": {
+        "scope": "Part\u2011145 maintenance organization operating 12 workshops across 3 countries under a single approval",
+        "regulatory_basis": [
+          "EASA Regulation (EU) 2021/1963 \u2013 Part\u2011145",
+          "AMC/GM material for human factors, calibration, NCM and EFB data integrity"
+        ],
+        "identified_gaps": {
+          "human_factors_training": "15% of certifying staff have expired CRM modules",
+          "tool_calibration_traceability": "Inconsistent traceability for pooled equipment shared across workshops",
+          "non_conformance_management": "40 open findings from 3 competent authority inspections remain unresolved",
+          "EFB_maintenance_data_integrity": "Recent software update introduced rendering errors in AMM diagrams"
+        }
+      },
+      "risk_prioritisation": [
+        {
+          "issue": "Expired CRM modules",
+          "risk_level": "High \u2013 direct impact on human factor performance and continued airworthiness",
+          "priority_order": 1
+        },
+        {
+          "issue": "Open findings from CA inspections",
+          "risk_level": "High \u2013 regulatory compliance risk, potential suspension of approval",
+          "priority_order": 2
+        },
+        {
+          "issue": "EFB diagram rendering errors",
+          "risk_level": "Medium\u2011High \u2013 affects maintenance data integrity and potential mis\u2011maintenance",
+          "priority_order": 3
+        },
+        {
+          "issue": "Calibration traceability inconsistencies",
+          "risk_level": "Medium \u2013 could lead to unverified tool use",
+          "priority_order": 4
+        }
+      ],
+      "corrective_action_plan": [
+        {
+          "area": "Human Factors Training",
+          "action": "Immediate re\u2011certification of all staff with expired CRM modules; establish quarterly refresher schedule and automated expiry alerts.",
+          "evidence_package": [
+            "Updated training records (PDF/Excel)",
+            "CRM module completion certificates",
+            "Automated reminder system logs"
+          ],
+          "timeline": {
+            "start_month": 0,
+            "completion_month": 1
+          }
+        },
+        {
+          "area": "Non\u2011Conformance Management",
+          "action": "Root\u2011cause analysis of all 40 findings; implement corrective actions; submit closure report to each CA within 3 months.",
+          "evidence_package": [
+            "NCM root\u2011cause reports",
+            "Corrective action implementation logs",
+            "Closure certificates from CAs"
+          ],
+          "timeline": {
+            "start_month": 0,
+            "completion_month": 3
+          }
+        },
+        {
+          "area": "EFB Maintenance Data Integrity",
+          "action": "Rollback to previous stable EFB version; re\u2011validate all AMM diagrams; apply vendor bug fix and conduct regression testing.",
+          "evidence_package": [
+            "Software release notes",
+            "Regression test results (PDF)",
+            "Validated AMM diagram set"
+          ],
+          "timeline": {
+            "start_month": 0,
+            "completion_month": 2
+          }
+        },
+        {
+          "area": "Tool Calibration Traceability",
+          "action": "Implement centralized calibration database; audit all pooled equipment within 6 months; enforce single\u2011point traceability.",
+          "evidence_package": [
+            "Calibration logs (digital)",
+            "Database access and audit trail reports",
+            "Audit completion certificates"
+          ],
+          "timeline": {
+            "start_month": 2,
+            "completion_month": 6
+          }
+        }
+      ],
+      "overall_timeline_summary": {
+        "Month_0_to_1": [
+          "Re\u2011certify expired CRM modules",
+          "Rollback EFB software and initiate regression testing"
+        ],
+        "Month_2_to_3": [
+          "Submit NCM closure reports to CAs",
+          "Begin calibration database implementation"
+        ],
+        "Month_4_to_6": [
+          "Complete calibration audit and finalize CAP documentation",
+          "Prepare evidence package for Part\u2011145 approval holder"
+        ]
+      },
+      "evidence_mapping_table": [
+        {
+          "finding_id": "HF-01",
+          "gap_description": "Expired CRM modules",
+          "closing_evidence": [
+            "Updated training records",
+            "CRM certificates"
+          ]
+        },
+        {
+          "finding_id": "NCM-01",
+          "gap_description": "Open findings from CA inspections",
+          "closing_evidence": [
+            "NCM root\u2011cause reports",
+            "Closure certificates"
+          ]
+        },
+        {
+          "finding_id": "EFB-01",
+          "gap_description": "Rendering errors in AMM diagrams",
+          "closing_evidence": [
+            "Regression test results",
+            "Validated AMM diagram set"
+          ]
+        },
+        {
+          "finding_id": "CAL-01",
+          "gap_description": "Calibration traceability inconsistencies",
+          "closing_evidence": [
+            "Centralized calibration database logs",
+            "Audit completion certificates"
+          ]
+        }
+      ]
+    },
+    "confidence": "0.95",
+    "internal_reasoning": "All elements directly reflect the audit findings and regulatory requirements; timelines are risk\u2011prioritized with high\u2011impact issues first.",
+    "_metrics": {
+      "tokens": 2550,
+      "prompt_tokens": 1438,
+      "completion_tokens": 1112,
+      "latency_ms": 9933.39,
+      "cost_usd": 0.000625,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'aviation_safety', 'task': 'Audit a Part-145 aircraft maintenance organization against EASA Regulation (EU) 2021/1963 and the associated AMC/GM material, covering 12 workshops across 3 countries operating under a single approval. Assess compliance gaps in: human factors training program currency (noting that 15% of certifying staff have expired CRM modules), tool calibration traceability across workshops that share pooled equipment, non-conformance management where 40 open findings span 3 competent authority inspections, and EFB (Electronic Flight Bag) maintenance data integrity where a recent software update introduced rendering errors in AMM diagrams. Produce a corrective action plan satisfying EASA standardization inspection expectations, with evidence mapping showing which objective evidence package closes each finding, and a risk-prioritized timeline that front-loads anything affecting continued airworthiness.'}\n\nSOLUTION:\n{'audit_summary': {'scope': 'Part\u2011145 maintenance organization operating 12 workshops across 3 countries under a single approval', 'regulatory_basis': ['EASA Regulation (EU) 2021/1963 \u2013 Part\u2011145', 'AMC/GM material for human factors, calibration, NCM and EFB data integrity'], 'identified_gaps': {'human_factors_training': '15% of certifying staff have expired CRM modules', 'tool_calibration_traceability': 'Inconsistent traceability for pooled equipment shared across workshops', 'non_conformance_management': '40 open findings from 3 competent authority inspections remain unresolved', 'EFB_maintenance_data_integrity': 'Recent software update introduced rendering errors in AMM diagrams'}}, 'risk_prioritisation': [{'issue': 'Expired CRM modules', 'risk_level': 'High \u2013 direct impact on human factor performance and continued airworthiness', 'priority_order': 1}, {'issue': 'Open findings from CA inspections', 'risk_level': 'High \u2013 regulatory compliance risk, potential suspension of approval', 'priority_order': 2}, {'issue': 'EFB diagram rendering errors', 'risk_level': 'Medium\u2011High \u2013 affects maintenance data integrity and potential mis\u2011maintenance', 'priority_order': 3}, {'issue': 'Calibration traceability inconsistencies', 'risk_level': 'Medium \u2013 could lead to unverified tool use', 'priority_order': 4}], 'corrective_action_plan': [{'area': 'Human Factors Training', 'action': 'Immediate re\u2011certification of all staff with expired CRM modules; establish quarterly refresher schedule and automated expiry alerts.', 'evidence_package': ['Updated training records (PDF/Excel)', 'CRM module completion certificates', 'Automated reminder system logs'], 'timeline': {'start_month': 0, 'completion_month': 1}}, {'area': 'Non\u2011Conformance Management', 'action': 'Root\u2011cause analysis of all 40 findings; implement corrective actions; submit closure report to each CA within 3 months.', 'evidence_package': ['NCM root\u2011cause reports', 'Corrective action implementation logs', 'Closure certificates from CAs'], 'timeline': {'start_month': 0, 'completion_month': 3}}, {'area': 'EFB Maintenance Data Integrity', 'action': 'Rollback to previous stable EFB version; re\u2011validate all AMM diagrams; apply vendor bug fix and conduct regression testing.', 'evidence_package': ['Software release notes', 'Regression test results (PDF)', 'Validated AMM diagram set'], 'timeline': {'start_month': 0, 'completion_month': 2}}, {'area': 'Tool Calibration Traceability', 'action': 'Implement centralized calibration database; audit all pooled equipment within 6 months; enforce single\u2011point traceability.', 'evidence_package': ['Calibration logs (digital)', 'Database access and audit trail reports', 'Audit completion certificates'], 'timeline': {'start_month': 2, 'completion_month': 6}}], 'overall_timeline_summary': {'Month_0_to_1': ['Re\u2011certify expired CRM modules', 'Rollback EFB software and initiate regression testing'], 'Month_2_to_3': ['Submit NCM closure reports to CAs', 'Begin calibration database implementation'], 'Month_4_to_6': ['Complete calibration audit and finalize CAP documentation', 'Prepare evidence package for Part\u2011145 approval holder']}, 'evidence_mapping_table': [{'finding_id': 'HF-01', 'gap_description': 'Expired CRM modules', 'closing_evidence': ['Updated training records', 'CRM certificates']}, {'finding_id': 'NCM-01', 'gap_description': 'Open findings from CA inspections', 'closing_evidence': ['NCM root\u2011cause reports', 'Closure certificates']}, {'finding_id': 'EFB-01', 'gap_description': 'Rendering errors in AMM diagrams', 'closing_evidence': ['Regression test results', 'Validated AMM diagram set']}, {'finding_id': 'CAL-01', 'gap_description': 'Calibration traceability inconsistencies', 'closing_evidence': ['Centralized calibration database logs', 'Audit completion certificates']}]}\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": {
+        "domain": "aviation_safety",
+        "task": "Audit a Part-145 organization across 12 workshops in 3 countries for compliance gaps and produce corrective action plan with evidence mapping and risk\u2011prioritized timeline.",
+        "steps": [
+          {
+            "action": "Collect baseline audit data",
+            "result": "A comprehensive dataset of current training records, calibration logs, non\u2011conformance reports, EFB maintenance logs, and inspection findings."
+          },
+          {
+            "action": "Map regulatory requirements to audit criteria",
+            "result": "A matrix linking each EASA Regulation (EU) 2021/1963 clause and AMC/GM material to specific audit checkpoints for human factors training, tool calibration, NCM, and EFB data integrity."
+          },
+          {
+            "action": "Identify compliance gaps",
+            "result": [
+              "15% of certifying staff have expired CRM modules.",
+              "Tool calibration traceability is inconsistent across pooled equipment.",
+              "40 open findings from 3 CA inspections remain unresolved.",
+              "EFB software update caused rendering errors in AMM diagrams."
+            ]
+          },
+          {
+            "action": "Prioritize gaps by risk to continued airworthiness",
+            "result": [
+              "Expired CRM modules (high risk due to human factor impact).",
+              "EFB diagram errors (medium\u2011high risk affecting maintenance data integrity).",
+              "Open findings from CA inspections (high risk for regulatory compliance).",
+              "Calibration traceability issues (medium risk)."
+            ]
+          },
+          {
+            "action": "Develop corrective action plan (CAP)",
+            "result": {
+              "human_factors_training": {
+                "action": "Immediate re\u2011certification of expired CRM modules; quarterly refresher schedule.",
+                "evidence_package": [
+                  "Updated training records",
+                  "CRM module completion certificates"
+                ]
+              },
+              "tool_calibration_traceability": {
+                "action": "Implement centralized calibration database; audit all pooled equipment within 6 months.",
+                "evidence_package": [
+                  "Calibration logs",
+                  "Database access reports"
+                ]
+              },
+              "non_conformance_management": {
+                "action": "Close 40 findings via root\u2011cause analysis and corrective actions; submit closure report to CA within 3 months.",
+                "evidence_package": [
+                  "NCM closure documents",
+                  "Inspection audit trail"
+                ]
+              },
+              "EFB_maintenance_integrity": {
+                "action": "Rollback to previous stable EFB version, re\u2011validate AMM diagrams, update software with bug fix; conduct regression testing.",
+                "evidence_package": [
+                  "Software release notes",
+                  "Regression test results",
+                  "Updated AMM diagram validation"
+                ]
+              }
+            }
+          },
+          {
+            "action": "Create risk\u2011prioritized timeline",
+            "result": [
+              "Month 0-1: Re\u2011certify expired CRM modules; rollback EFB software.",
+              "Month 2-3: Submit NCM closure report to CA; begin calibration database implementation.",
+              "Month 4-6: Complete calibration audit; finalize CAP documentation and evidence package."
+            ]
+          },
+          {
+            "action": "Prepare audit report for Part\u2011145 approval holder",
+            "result": "A formal document detailing findings, CAP, evidence mapping, timeline, and risk assessment ready for submission to the competent authority."
+          }
+        ],
+        "confidence": 0.92,
+        "internal_reasoning": "I structured the response as a logical audit workflow: data collection, regulatory mapping, gap identification, risk prioritization, corrective action planning with evidence linkage, and a timeline that front\u2011loads high\u2011risk items to satisfy EASA expectations."
+      },
+      "confidence": "0.92",
+      "internal_reasoning": "The approach follows the task requirements step by step, ensuring each output element is justified and evidence\u2011based.",
+      "_metrics": {
+        "tokens": 1383,
+        "prompt_tokens": 580,
+        "completion_tokens": 803,
+        "latency_ms": 7102.67,
+        "cost_usd": 0.000438,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: aviation_safety\nTASK: Audit a Part-145 aircraft maintenance organization against EASA Regulation (EU) 2021/1963 and the associated AMC/GM material, covering 12 workshops across 3 countries operating under a single approval. Assess compliance gaps in: human factors training program currency (noting that 15% of certifying staff have expired CRM modules), tool calibration traceability across workshops that share pooled equipment, non-conformance management where 40 open findings span 3 competent authority inspections, and EFB (Electronic Flight Bag) maintenance data integrity where a recent software update introduced rendering errors in AMM diagrams. Produce a corrective action plan satisfying EASA standardization inspection expectations, with evidence mapping showing which objective evidence package closes each finding, and a risk-prioritized timeline that front-loads anything affecting continued airworthiness.\n\n\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+    },
+    "task_applier": {
+      "response": {
+        "audit_summary": {
+          "scope": "Part\u2011145 maintenance organization operating 12 workshops across 3 countries under a single approval",
+          "regulatory_basis": [
+            "EASA Regulation (EU) 2021/1963 \u2013 Part\u2011145",
+            "AMC/GM material for human factors, calibration, NCM and EFB data integrity"
+          ],
+          "identified_gaps": {
+            "human_factors_training": "15% of certifying staff have expired CRM modules",
+            "tool_calibration_traceability": "Inconsistent traceability for pooled equipment shared across workshops",
+            "non_conformance_management": "40 open findings from 3 competent authority inspections remain unresolved",
+            "EFB_maintenance_data_integrity": "Recent software update introduced rendering errors in AMM diagrams"
+          }
+        },
+        "risk_prioritisation": [
+          {
+            "issue": "Expired CRM modules",
+            "risk_level": "High \u2013 direct impact on human factor performance and continued airworthiness",
+            "priority_order": 1
+          },
+          {
+            "issue": "Open findings from CA inspections",
+            "risk_level": "High \u2013 regulatory compliance risk, potential suspension of approval",
+            "priority_order": 2
+          },
+          {
+            "issue": "EFB diagram rendering errors",
+            "risk_level": "Medium\u2011High \u2013 affects maintenance data integrity and potential mis\u2011maintenance",
+            "priority_order": 3
+          },
+          {
+            "issue": "Calibration traceability inconsistencies",
+            "risk_level": "Medium \u2013 could lead to unverified tool use",
+            "priority_order": 4
+          }
+        ],
+        "corrective_action_plan": [
+          {
+            "area": "Human Factors Training",
+            "action": "Immediate re\u2011certification of all staff with expired CRM modules; establish quarterly refresher schedule and automated expiry alerts.",
+            "evidence_package": [
+              "Updated training records (PDF/Excel)",
+              "CRM module completion certificates",
+              "Automated reminder system logs"
+            ],
+            "timeline": {
+              "start_month": 0,
+              "completion_month": 1
+            }
+          },
+          {
+            "area": "Non\u2011Conformance Management",
+            "action": "Root\u2011cause analysis of all 40 findings; implement corrective actions; submit closure report to each CA within 3 months.",
+            "evidence_package": [
+              "NCM root\u2011cause reports",
+              "Corrective action implementation logs",
+              "Closure certificates from CAs"
+            ],
+            "timeline": {
+              "start_month": 0,
+              "completion_month": 3
+            }
+          },
+          {
+            "area": "EFB Maintenance Data Integrity",
+            "action": "Rollback to previous stable EFB version; re\u2011validate all AMM diagrams; apply vendor bug fix and conduct regression testing.",
+            "evidence_package": [
+              "Software release notes",
+              "Regression test results (PDF)",
+              "Validated AMM diagram set"
+            ],
+            "timeline": {
+              "start_month": 0,
+              "completion_month": 2
+            }
+          },
+          {
+            "area": "Tool Calibration Traceability",
+            "action": "Implement centralized calibration database; audit all pooled equipment within 6 months; enforce single\u2011point traceability.",
+            "evidence_package": [
+              "Calibration logs (digital)",
+              "Database access and audit trail reports",
+              "Audit completion certificates"
+            ],
+            "timeline": {
+              "start_month": 2,
+              "completion_month": 6
+            }
+          }
+        ],
+        "overall_timeline_summary": {
+          "Month_0_to_1": [
+            "Re\u2011certify expired CRM modules",
+            "Rollback EFB software and initiate regression testing"
+          ],
+          "Month_2_to_3": [
+            "Submit NCM closure reports to CAs",
+            "Begin calibration database implementation"
+          ],
+          "Month_4_to_6": [
+            "Complete calibration audit and finalize CAP documentation",
+            "Prepare evidence package for Part\u2011145 approval holder"
+          ]
+        },
+        "evidence_mapping_table": [
+          {
+            "finding_id": "HF-01",
+            "gap_description": "Expired CRM modules",
+            "closing_evidence": [
+              "Updated training records",
+              "CRM certificates"
+            ]
+          },
+          {
+            "finding_id": "NCM-01",
+            "gap_description": "Open findings from CA inspections",
+            "closing_evidence": [
+              "NCM root\u2011cause reports",
+              "Closure certificates"
+            ]
+          },
+          {
+            "finding_id": "EFB-01",
+            "gap_description": "Rendering errors in AMM diagrams",
+            "closing_evidence": [
+              "Regression test results",
+              "Validated AMM diagram set"
+            ]
+          },
+          {
+            "finding_id": "CAL-01",
+            "gap_description": "Calibration traceability inconsistencies",
+            "closing_evidence": [
+              "Centralized calibration database logs",
+              "Audit completion certificates"
+            ]
+          }
+        ]
+      },
+      "confidence": "0.92",
+      "internal_reasoning": "Structured the response by first summarising audit scope and gaps, then prioritising risks, followed by a detailed CAP with evidence mapping and a risk\u2011prioritised timeline that front\u2011loads high\u2011risk items to satisfy EASA expectations.",
+      "_metrics": {
+        "tokens": 2386,
+        "prompt_tokens": 1271,
+        "completion_tokens": 1115,
+        "latency_ms": 9637.66,
+        "cost_usd": 0.000606,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a task. You have your own step-by-step analysis.\nYou have NO prior experience and NO recalled skills.\n\nDOMAIN: general\nTASK: {'domain': 'aviation_safety', 'task': 'Audit a Part-145 aircraft maintenance organization against EASA Regulation (EU) 2021/1963 and the associated AMC/GM material, covering 12 workshops across 3 countries operating under a single approval. Assess compliance gaps in: human factors training program currency (noting that 15% of certifying staff have expired CRM modules), tool calibration traceability across workshops that share pooled equipment, non-conformance management where 40 open findings span 3 competent authority inspections, and EFB (Electronic Flight Bag) maintenance data integrity where a recent software update introduced rendering errors in AMM diagrams. Produce a corrective action plan satisfying EASA standardization inspection expectations, with evidence mapping showing which objective evidence package closes each finding, and a risk-prioritized timeline that front-loads anything affecting continued airworthiness.'}\n\nYOUR ANALYSIS:\n{'domain': 'aviation_safety', 'task': 'Audit a Part-145 organization across 12 workshops in 3 countries for compliance gaps and produce corrective action plan with evidence mapping and risk\u2011prioritized timeline.', 'steps': [{'action': 'Collect baseline audit data', 'result': 'A comprehensive dataset of current training records, calibration logs, non\u2011conformance reports, EFB maintenance logs, and inspection findings.'}, {'action': 'Map regulatory requirements to audit criteria', 'result': 'A matrix linking each EASA Regulation (EU) 2021/1963 clause and AMC/GM material to specific audit checkpoints for human factors training, tool calibration, NCM, and EFB data integrity.'}, {'action': 'Identify compliance gaps', 'result': ['15% of certifying staff have expired CRM modules.', 'Tool calibration traceability is inconsistent across pooled equipment.', '40 open findings from 3 CA inspections remain unresolved.', 'EFB software update caused rendering errors in AMM diagrams.']}, {'action': 'Prioritize gaps by risk to continued airworthiness', 'result': ['Expired CRM modules (high risk due to human factor impact).', 'EFB diagram errors (medium\u2011high risk affecting maintenance data integrity).', 'Open findings from CA inspections (high risk for regulatory compliance).', 'Calibration traceability issues (medium risk).']}, {'action': 'Develop corrective action plan (CAP)', 'result': {'human_factors_training': {'action': 'Immediate re\u2011certification of expired CRM modules; quarterly refresher schedule.', 'evidence_package': ['Updated training records', 'CRM module completion certificates']}, 'tool_calibration_traceability': {'action': 'Implement centralized calibration database; audit all pooled equipment within 6 months.', 'evidence_package': ['Calibration logs', 'Database access reports']}, 'non_conformance_management': {'action': 'Close 40 findings via root\u2011cause analysis and corrective actions; submit closure report to CA within 3 months.', 'evidence_package': ['NCM closure documents', 'Inspection audit trail']}, 'EFB_maintenance_integrity': {'action': 'Rollback to previous stable EFB version, re\u2011validate AMM diagrams, update software with bug fix; conduct regression testing.', 'evidence_package': ['Software release notes', 'Regression test results', 'Updated AMM diagram validation']}}}, {'action': 'Create risk\u2011prioritized timeline', 'result': ['Month 0-1: Re\u2011certify expired CRM modules; rollback EFB software.', 'Month 2-3: Submit NCM closure report to CA; begin calibration database implementation.', 'Month 4-6: Complete calibration audit; finalize CAP documentation and evidence package.']}, {'action': 'Prepare audit report for Part\u2011145 approval holder', 'result': 'A formal document detailing findings, CAP, evidence mapping, timeline, and risk assessment ready for submission to the competent authority.'}], 'confidence': 0.92, 'internal_reasoning': 'I structured the response as a logical audit workflow: data collection, regulatory mapping, gap identification, risk prioritization, corrective action planning with evidence linkage, and a timeline that front\u2011loads high\u2011risk items to satisfy EASA expectations.'}\n\nSolve the task using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"used_recalled_skill\": false\n- \"recalled_skill_name\": \"none\"\n- \"adaptation_notes\": \"N/A\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+    },
+    "task_result": {
+      "response": {
+        "audit_summary": {
+          "scope": "Part\u2011145 maintenance organization operating 12 workshops across 3 countries under a single approval",
+          "regulatory_basis": [
+            "EASA Regulation (EU) 2021/1963 \u2013 Part\u2011145",
+            "AMC/GM material for human factors, calibration, NCM and EFB data integrity"
+          ],
+          "identified_gaps": {
+            "human_factors_training": "15% of certifying staff have expired CRM modules",
+            "tool_calibration_traceability": "Inconsistent traceability for pooled equipment shared across workshops",
+            "non_conformance_management": "40 open findings from 3 competent authority inspections remain unresolved",
+            "EFB_maintenance_data_integrity": "Recent software update introduced rendering errors in AMM diagrams"
+          }
+        },
+        "risk_prioritisation": [
+          {
+            "issue": "Expired CRM modules",
+            "risk_level": "High \u2013 direct impact on human factor performance and continued airworthiness",
+            "priority_order": 1
+          },
+          {
+            "issue": "Open findings from CA inspections",
+            "risk_level": "High \u2013 regulatory compliance risk, potential suspension of approval",
+            "priority_order": 2
+          },
+          {
+            "issue": "EFB diagram rendering errors",
+            "risk_level": "Medium\u2011High \u2013 affects maintenance data integrity and potential mis\u2011maintenance",
+            "priority_order": 3
+          },
+          {
+            "issue": "Calibration traceability inconsistencies",
+            "risk_level": "Medium \u2013 could lead to unverified tool use",
+            "priority_order": 4
+          }
+        ],
+        "corrective_action_plan": [
+          {
+            "area": "Human Factors Training",
+            "action": "Immediate re\u2011certification of all staff with expired CRM modules; establish quarterly refresher schedule and automated expiry alerts.",
+            "evidence_package": [
+              "Updated training records (PDF/Excel)",
+              "CRM module completion certificates",
+              "Automated reminder system logs"
+            ],
+            "timeline": {
+              "start_month": 0,
+              "completion_month": 1
+            }
+          },
+          {
+            "area": "Non\u2011Conformance Management",
+            "action": "Root\u2011cause analysis of all 40 findings; implement corrective actions; submit closure report to each CA within 3 months.",
+            "evidence_package": [
+              "NCM root\u2011cause reports",
+              "Corrective action implementation logs",
+              "Closure certificates from CAs"
+            ],
+            "timeline": {
+              "start_month": 0,
+              "completion_month": 3
+            }
+          },
+          {
+            "area": "EFB Maintenance Data Integrity",
+            "action": "Rollback to previous stable EFB version; re\u2011validate all AMM diagrams; apply vendor bug fix and conduct regression testing.",
+            "evidence_package": [
+              "Software release notes",
+              "Regression test results (PDF)",
+              "Validated AMM diagram set"
+            ],
+            "timeline": {
+              "start_month": 0,
+              "completion_month": 2
+            }
+          },
+          {
+            "area": "Tool Calibration Traceability",
+            "action": "Implement centralized calibration database; audit all pooled equipment within 6 months; enforce single\u2011point traceability.",
+            "evidence_package": [
+              "Calibration logs (digital)",
+              "Database access and audit trail reports",
+              "Audit completion certificates"
+            ],
+            "timeline": {
+              "start_month": 2,
+              "completion_month": 6
+            }
+          }
+        ],
+        "overall_timeline_summary": {
+          "Month_0_to_1": [
+            "Re\u2011certify expired CRM modules",
+            "Rollback EFB software and initiate regression testing"
+          ],
+          "Month_2_to_3": [
+            "Submit NCM closure reports to CAs",
+            "Begin calibration database implementation"
+          ],
+          "Month_4_to_6": [
+            "Complete calibration audit and finalize CAP documentation",
+            "Prepare evidence package for Part\u2011145 approval holder"
+          ]
+        },
+        "evidence_mapping_table": [
+          {
+            "finding_id": "HF-01",
+            "gap_description": "Expired CRM modules",
+            "closing_evidence": [
+              "Updated training records",
+              "CRM certificates"
+            ]
+          },
+          {
+            "finding_id": "NCM-01",
+            "gap_description": "Open findings from CA inspections",
+            "closing_evidence": [
+              "NCM root\u2011cause reports",
+              "Closure certificates"
+            ]
+          },
+          {
+            "finding_id": "EFB-01",
+            "gap_description": "Rendering errors in AMM diagrams",
+            "closing_evidence": [
+              "Regression test results",
+              "Validated AMM diagram set"
+            ]
+          },
+          {
+            "finding_id": "CAL-01",
+            "gap_description": "Calibration traceability inconsistencies",
+            "closing_evidence": [
+              "Centralized calibration database logs",
+              "Audit completion certificates"
+            ]
+          }
+        ]
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "All elements directly reflect the audit findings and regulatory requirements; timelines are risk\u2011prioritized with high\u2011impact issues first.",
+      "_metrics": {
+        "tokens": 2550,
+        "prompt_tokens": 1438,
+        "completion_tokens": 1112,
+        "latency_ms": 9933.39,
+        "cost_usd": 0.000625,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: general\nTASK: {'domain': 'aviation_safety', 'task': 'Audit a Part-145 aircraft maintenance organization against EASA Regulation (EU) 2021/1963 and the associated AMC/GM material, covering 12 workshops across 3 countries operating under a single approval. Assess compliance gaps in: human factors training program currency (noting that 15% of certifying staff have expired CRM modules), tool calibration traceability across workshops that share pooled equipment, non-conformance management where 40 open findings span 3 competent authority inspections, and EFB (Electronic Flight Bag) maintenance data integrity where a recent software update introduced rendering errors in AMM diagrams. Produce a corrective action plan satisfying EASA standardization inspection expectations, with evidence mapping showing which objective evidence package closes each finding, and a risk-prioritized timeline that front-loads anything affecting continued airworthiness.'}\n\nSOLUTION:\n{'audit_summary': {'scope': 'Part\u2011145 maintenance organization operating 12 workshops across 3 countries under a single approval', 'regulatory_basis': ['EASA Regulation (EU) 2021/1963 \u2013 Part\u2011145', 'AMC/GM material for human factors, calibration, NCM and EFB data integrity'], 'identified_gaps': {'human_factors_training': '15% of certifying staff have expired CRM modules', 'tool_calibration_traceability': 'Inconsistent traceability for pooled equipment shared across workshops', 'non_conformance_management': '40 open findings from 3 competent authority inspections remain unresolved', 'EFB_maintenance_data_integrity': 'Recent software update introduced rendering errors in AMM diagrams'}}, 'risk_prioritisation': [{'issue': 'Expired CRM modules', 'risk_level': 'High \u2013 direct impact on human factor performance and continued airworthiness', 'priority_order': 1}, {'issue': 'Open findings from CA inspections', 'risk_level': 'High \u2013 regulatory compliance risk, potential suspension of approval', 'priority_order': 2}, {'issue': 'EFB diagram rendering errors', 'risk_level': 'Medium\u2011High \u2013 affects maintenance data integrity and potential mis\u2011maintenance', 'priority_order': 3}, {'issue': 'Calibration traceability inconsistencies', 'risk_level': 'Medium \u2013 could lead to unverified tool use', 'priority_order': 4}], 'corrective_action_plan': [{'area': 'Human Factors Training', 'action': 'Immediate re\u2011certification of all staff with expired CRM modules; establish quarterly refresher schedule and automated expiry alerts.', 'evidence_package': ['Updated training records (PDF/Excel)', 'CRM module completion certificates', 'Automated reminder system logs'], 'timeline': {'start_month': 0, 'completion_month': 1}}, {'area': 'Non\u2011Conformance Management', 'action': 'Root\u2011cause analysis of all 40 findings; implement corrective actions; submit closure report to each CA within 3 months.', 'evidence_package': ['NCM root\u2011cause reports', 'Corrective action implementation logs', 'Closure certificates from CAs'], 'timeline': {'start_month': 0, 'completion_month': 3}}, {'area': 'EFB Maintenance Data Integrity', 'action': 'Rollback to previous stable EFB version; re\u2011validate all AMM diagrams; apply vendor bug fix and conduct regression testing.', 'evidence_package': ['Software release notes', 'Regression test results (PDF)', 'Validated AMM diagram set'], 'timeline': {'start_month': 0, 'completion_month': 2}}, {'area': 'Tool Calibration Traceability', 'action': 'Implement centralized calibration database; audit all pooled equipment within 6 months; enforce single\u2011point traceability.', 'evidence_package': ['Calibration logs (digital)', 'Database access and audit trail reports', 'Audit completion certificates'], 'timeline': {'start_month': 2, 'completion_month': 6}}], 'overall_timeline_summary': {'Month_0_to_1': ['Re\u2011certify expired CRM modules', 'Rollback EFB software and initiate regression testing'], 'Month_2_to_3': ['Submit NCM closure reports to CAs', 'Begin calibration database implementation'], 'Month_4_to_6': ['Complete calibration audit and finalize CAP documentation', 'Prepare evidence package for Part\u2011145 approval holder']}, 'evidence_mapping_table': [{'finding_id': 'HF-01', 'gap_description': 'Expired CRM modules', 'closing_evidence': ['Updated training records', 'CRM certificates']}, {'finding_id': 'NCM-01', 'gap_description': 'Open findings from CA inspections', 'closing_evidence': ['NCM root\u2011cause reports', 'Closure certificates']}, {'finding_id': 'EFB-01', 'gap_description': 'Rendering errors in AMM diagrams', 'closing_evidence': ['Regression test results', 'Validated AMM diagram set']}, {'finding_id': 'CAL-01', 'gap_description': 'Calibration traceability inconsistencies', 'closing_evidence': ['Centralized calibration database logs', 'Audit completion certificates']}]}\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete solution steps\n- \"quality_self_assessment\": 0.0-1.0 with brief justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

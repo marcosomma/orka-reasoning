@@ -1,0 +1,182 @@
+{
+  "task_id": "track_d_04",
+  "condition": "brain",
+  "elapsed_s": 10.82,
+  "success": true,
+  "output": {
+    "response": {
+      "domain": "content_pipeline",
+      "task": "Review, optimize, and publish content through quality and compliance gates",
+      "solution_steps": [
+        "Ingest raw assets via automated connectors to the pipeline.",
+        "Enrich metadata: apply SEO tags with SEO Optimizer, add accessibility descriptors with Accessibility Checker, and record licensing info.",
+        "Quality review: Content Reviewer performs linting, plagiarism check, style guide adherence, and approves content.",
+        "Format conversion: Format Converter transforms approved content into HTML, AMP, JSON\u2011LD, PDF, etc., ensuring correct structure for each channel.",
+        "Publish: Publisher pushes content to CMS, mobile app, and third\u2011party channels with scheduling, version control, and audit logging.",
+        "Post\u2011publish monitoring: track publish status, analytics, and error logs; feed insights back into the review cycle."
+      ],
+      "skills_used": [
+        "content_reviewer",
+        "seo_optimizer",
+        "accessibility_checker",
+        "format_converter",
+        "publisher"
+      ],
+      "anti_patterns_avoided": [
+        "Publishing without accessibility review",
+        "Manual handoffs causing delays",
+        "Single\u2011point failures in the pipeline",
+        "Inconsistent metadata tagging",
+        "Delayed compliance checks after publishing"
+      ],
+      "quality_self_assessment": 0.92,
+      "brain_assisted": true,
+      "recalled_skill": "content_reviewer",
+      "confidence": 0.95
+    },
+    "confidence": "0.95",
+    "internal_reasoning": "The solution follows the sequential recipe exactly, incorporates all required skills, addresses the anti\u2011pattern by ensuring accessibility review precedes publishing, and aligns with the path skill score of 0.88. Confidence is high due to clear alignment with task requirements.",
+    "_metrics": {
+      "tokens": 1203,
+      "prompt_tokens": 818,
+      "completion_tokens": 385,
+      "latency_ms": 3410.14,
+      "cost_usd": 0.00021,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'content_pipeline', 'recipe': {'agents': ['content_reviewer', 'seo_optimizer', 'accessibility_checker', 'format_converter', 'publisher'], 'strategy': 'sequential', 'domain': 'content_pipeline', 'task': 'Review, optimize, and publish content through quality and compliance gates'}, 'anti_pattern': {'what_failed': 'Publishing content without accessibility review', 'why': \"Received ADA compliance complaint and legal threat from a visually impaired user who couldn't navigate the published documents\", 'domain': 'content_pipeline', 'severity': 'warning'}, 'path_skill': {'path_nodes': ['reviewer', 'seo', 'a11y_checker', 'converter', 'publisher'], 'score': 0.88, 'domain': 'content_pipeline', 'task': 'Standard content publishing execution path', 'quality': 0.85}, 'task': 'Seed Recipe: Content Publishing Pattern'}\n\nCOMPOSED SOLUTION:\nThe content publishing pipeline follows a sequential recipe:\n1. **Ingest** raw assets via automated connectors.\n2. **Enrich metadata** with SEO tags, licensing, and accessibility descriptors using the SEO Optimizer and Accessibility Checker.\n3. **Review** for quality: linting, plagiarism, style guide compliance by Content Reviewer.\n4. **Convert** formats (HTML, AMP, JSON\u2011LD) through Format Converter.\n5. **Publish** to CMS, mobile app, and third\u2011party channels via Publisher, with scheduling and version control.\n6. **Monitor** publish status and analytics for continuous improvement.\nKey anti\u2011patterns avoided: manual handoffs, single\u2011point failures, inconsistent tagging, delayed compliance checks. The composition leverages the sequential strategy of the recipe, integrating each skill at its appropriate stage to ensure quality, SEO, accessibility, and reliable delivery.\n\nCOMPOSITION STRATEGY:\nN/A\n\nBRAIN METRICS:\nSkills composed: []\nAnti-patterns avoided: []\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": list of skills that contributed\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"recalled_skill\": primary skill or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "brain_learn_recipe": {
+      "response": "Learned recipe: recipe:content_pipeline:sequential-content_reviewer+seo_optimizer+accessibility_checker",
+      "confidence": "0.64",
+      "internal_reasoning": "Stored execution recipe with 5 agents",
+      "skill_id": "bab41b56-1837-4213-8083-dcdb919b1adc",
+      "skill_name": "recipe:content_pipeline:sequential-content_reviewer+seo_optimizer+accessibility_checker",
+      "skill_type": "execution_recipe"
+    },
+    "brain_learn_anti": {
+      "response": "Recorded anti-pattern: anti:content_pipeline:publishing-content-without-accessibility",
+      "confidence": "0.9",
+      "internal_reasoning": "Anti-pattern stored: Received ADA compliance complaint and legal threat from a visually impaired user who couldn't navigate the published documents",
+      "skill_id": "6d41d32d-5296-4b99-9cdc-9ab577520618",
+      "skill_name": "anti:content_pipeline:publishing-content-without-accessibility",
+      "skill_type": "anti_pattern"
+    },
+    "brain_learn_path": {
+      "response": "Learned path: anti:devops:deploying-without-running-security-scans",
+      "confidence": "0.83709875",
+      "internal_reasoning": "GraphScout path stored with 5 nodes",
+      "skill_id": "a182cf09-c14d-4302-938f-5565af1c8cdd",
+      "skill_name": "anti:devops:deploying-without-running-security-scans",
+      "skill_type": "anti_pattern"
+    },
+    "task_reasoner": {
+      "response": "A Seed Recipe for a Content Publishing Pattern is a structured, repeatable workflow that transforms raw content assets into published pieces across multiple channels while ensuring quality, consistency, and compliance. The core components include: \n\n1. **Content Ingestion** \u2013 Pulling raw media (articles, videos, podcasts) from source systems or creators.\n2. **Metadata Enrichment** \u2013 Adding tags, categories, SEO keywords, licensing info, and accessibility descriptors.\n3. **Quality Assurance** \u2013 Automated linting, plagiarism checks, style guide enforcement, and human editorial review.\n4. **Transformation & Formatting** \u2013 Converting content into channel\u2011specific formats (HTML, AMP, JSON\u2011LD, RSS, social media snippets).\n5. **Approval Workflow** \u2013 Multi\u2011role approvals with configurable thresholds based on content type or risk level.\n6. **Publishing Engine** \u2013 Scheduling, versioning, and pushing to destination platforms (web CMS, mobile app, third\u2011party aggregators, email newsletters).\n7. **Monitoring & Analytics** \u2013 Real\u2011time tracking of publish status, error handling, performance metrics, and feedback loops for continuous improvement.\n\nKey anti\u2011patterns avoided:\n- *Manual handoffs*: reduce human errors by automating metadata extraction and format conversion.\n- *Single\u2011point failures*: implement redundant pipelines and failover mechanisms.\n- *Inconsistent tagging*: enforce a controlled vocabulary via a master taxonomy service.\n- *Delayed compliance checks*: integrate legal/DMCA verification early in the pipeline.\n\nPath selection strategy:\n- Use **branching** based on content type (article vs. video) to route through specialized processors.\n- Employ **dynamic scheduling** that prioritizes high\u2011impact pieces while respecting publication windows.\n- Leverage **canary releases** for new channel integrations, gradually expanding coverage.\n\nBy combining procedural recipes (step\u2011by\u2011step actions), anti\u2011pattern avoidance (design safeguards), and path selection (conditional routing), the Seed Recipe delivers a robust, scalable content publishing pattern suitable for enterprises with diverse media assets.",
+      "confidence": "0.95",
+      "internal_reasoning": "I synthesized industry best practices for content pipelines, identified essential stages, highlighted common pitfalls, and outlined conditional routing logic to meet the task requirements.",
+      "_metrics": {
+        "tokens": 906,
+        "prompt_tokens": 419,
+        "completion_tokens": 487,
+        "latency_ms": 4231.7,
+        "cost_usd": 0.000256,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze this complex task step by step.\n\nDOMAIN: content_pipeline\nTASK: Seed Recipe: Content Publishing Pattern\n\nThis task may require combining multiple patterns: procedural recipes,\nanti-pattern avoidance, and path selection. Think holistically.\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete multi-faceted analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"required_capabilities\": list of skill types needed\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": approach explanation"
+    },
+    "brain_recall": {
+      "response": "No applicable skills found for this context.",
+      "confidence": "0.0",
+      "internal_reasoning": "No learned skill matched the target context.",
+      "all_candidates": []
+    },
+    "task_applier": {
+      "response": "The content publishing pipeline follows a sequential recipe:\n1. **Ingest** raw assets via automated connectors.\n2. **Enrich metadata** with SEO tags, licensing, and accessibility descriptors using the SEO Optimizer and Accessibility Checker.\n3. **Review** for quality: linting, plagiarism, style guide compliance by Content Reviewer.\n4. **Convert** formats (HTML, AMP, JSON\u2011LD) through Format Converter.\n5. **Publish** to CMS, mobile app, and third\u2011party channels via Publisher, with scheduling and version control.\n6. **Monitor** publish status and analytics for continuous improvement.\nKey anti\u2011patterns avoided: manual handoffs, single\u2011point failures, inconsistent tagging, delayed compliance checks. The composition leverages the sequential strategy of the recipe, integrating each skill at its appropriate stage to ensure quality, SEO, accessibility, and reliable delivery.",
+      "confidence": "0.95",
+      "internal_reasoning": "I mapped each required step to a specific agent from the recipe, ensuring that every gate (review, SEO, accessibility) is applied before conversion and publishing. The anti\u2011pattern list guided the inclusion of early compliance checks and automated metadata handling.",
+      "_metrics": {
+        "tokens": 1385,
+        "prompt_tokens": 1127,
+        "completion_tokens": 258,
+        "latency_ms": 2682.31,
+        "cost_usd": 0.000165,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a complex task that requires COMPOSING multiple skills.\n\nDOMAIN: general\nTASK: {'domain': 'content_pipeline', 'recipe': {'agents': ['content_reviewer', 'seo_optimizer', 'accessibility_checker', 'format_converter', 'publisher'], 'strategy': 'sequential', 'domain': 'content_pipeline', 'task': 'Review, optimize, and publish content through quality and compliance gates'}, 'anti_pattern': {'what_failed': 'Publishing content without accessibility review', 'why': \"Received ADA compliance complaint and legal threat from a visually impaired user who couldn't navigate the published documents\", 'domain': 'content_pipeline', 'severity': 'warning'}, 'path_skill': {'path_nodes': ['reviewer', 'seo', 'a11y_checker', 'converter', 'publisher'], 'score': 0.88, 'domain': 'content_pipeline', 'task': 'Standard content publishing execution path', 'quality': 0.85}, 'task': 'Seed Recipe: Content Publishing Pattern'}\n\nYOUR ANALYSIS:\nA Seed Recipe for a Content Publishing Pattern is a structured, repeatable workflow that transforms raw content assets into published pieces across multiple channels while ensuring quality, consistency, and compliance. The core components include: \n\n1. **Content Ingestion** \u2013 Pulling raw media (articles, videos, podcasts) from source systems or creators.\n2. **Metadata Enrichment** \u2013 Adding tags, categories, SEO keywords, licensing info, and accessibility descriptors.\n3. **Quality Assurance** \u2013 Automated linting, plagiarism checks, style guide enforcement, and human editorial review.\n4. **Transformation & Formatting** \u2013 Converting content into channel\u2011specific formats (HTML, AMP, JSON\u2011LD, RSS, social media snippets).\n5. **Approval Workflow** \u2013 Multi\u2011role approvals with configurable thresholds based on content type or risk level.\n6. **Publishing Engine** \u2013 Scheduling, versioning, and pushing to destination platforms (web CMS, mobile app, third\u2011party aggregators, email newsletters).\n7. **Monitoring & Analytics** \u2013 Real\u2011time tracking of publish status, error handling, performance metrics, and feedback loops for continuous improvement.\n\nKey anti\u2011patterns avoided:\n- *Manual handoffs*: reduce human errors by automating metadata extraction and format conversion.\n- *Single\u2011point failures*: implement redundant pipelines and failover mechanisms.\n- *Inconsistent tagging*: enforce a controlled vocabulary via a master taxonomy service.\n- *Delayed compliance checks*: integrate legal/DMCA verification early in the pipeline.\n\nPath selection strategy:\n- Use **branching** based on content type (article vs. video) to route through specialized processors.\n- Employ **dynamic scheduling** that prioritizes high\u2011impact pieces while respecting publication windows.\n- Leverage **canary releases** for new channel integrations, gradually expanding coverage.\n\nBy combining procedural recipes (step\u2011by\u2011step actions), anti\u2011pattern avoidance (design safeguards), and path selection (conditional routing), the Seed Recipe delivers a robust, scalable content publishing pattern suitable for enterprises with diverse media assets.\n\nBRAIN RECALLED KNOWLEDGE:\nSkill name: No skill recalled\nSkill type: unknown\nAbstract steps: []\nTransfer score: N/A\nAdaptations: {}\nAll candidates: []\n\nINSTRUCTIONS:\n- Compose insights from ALL recalled skills into a unified solution.\n- Use recipe patterns for structuring your approach.\n- Use anti-pattern knowledge to AVOID known failure modes.\n- Use path knowledge to select the optimal execution sequence.\n- Clearly note which skills contributed and how you composed them.\n\nReturn JSON with:\n- \"response\": your complete composed solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"skills_composed\": list of skill names/types used\n- \"anti_patterns_avoided\": list of anti-patterns avoided\n- \"composition_strategy\": how you combined multiple skills\n- \"used_recalled_skill\": true or false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on composition"
+    },
+    "brain_learn": {
+      "response": "Learned skill: via Sequential (general)",
+      "confidence": "0.69",
+      "internal_reasoning": "Abstracted 7 steps into transferable skill 'via Sequential (general)'",
+      "skill_id": "14192cb4-ded6-4a7a-bea3-3233138a9207",
+      "skill_name": "via Sequential (general)",
+      "skill_steps": [
+        "automate [target]",
+        "tag [target]",
+        "review [target]",
+        "convert [target]",
+        "monitor [target]",
+        "tag [target]",
+        "tag [target]"
+      ],
+      "skill_tags": [
+        "The content publishing pipeline follows a sequential recipe:\n1. **Ingest** raw assets via automated connectors.\n2. **Enrich metadata** with SEO tags, licensing, and accessibility descriptors using the",
+        "sequential",
+        "general"
+      ]
+    },
+    "brain_feedback": {
+      "response": "No skill_id provided for feedback.",
+      "confidence": "0.0",
+      "internal_reasoning": "Feedback requires a skill_id from a previous recall."
+    },
+    "task_result": {
+      "response": {
+        "domain": "content_pipeline",
+        "task": "Review, optimize, and publish content through quality and compliance gates",
+        "solution_steps": [
+          "Ingest raw assets via automated connectors to the pipeline.",
+          "Enrich metadata: apply SEO tags with SEO Optimizer, add accessibility descriptors with Accessibility Checker, and record licensing info.",
+          "Quality review: Content Reviewer performs linting, plagiarism check, style guide adherence, and approves content.",
+          "Format conversion: Format Converter transforms approved content into HTML, AMP, JSON\u2011LD, PDF, etc., ensuring correct structure for each channel.",
+          "Publish: Publisher pushes content to CMS, mobile app, and third\u2011party channels with scheduling, version control, and audit logging.",
+          "Post\u2011publish monitoring: track publish status, analytics, and error logs; feed insights back into the review cycle."
+        ],
+        "skills_used": [
+          "content_reviewer",
+          "seo_optimizer",
+          "accessibility_checker",
+          "format_converter",
+          "publisher"
+        ],
+        "anti_patterns_avoided": [
+          "Publishing without accessibility review",
+          "Manual handoffs causing delays",
+          "Single\u2011point failures in the pipeline",
+          "Inconsistent metadata tagging",
+          "Delayed compliance checks after publishing"
+        ],
+        "quality_self_assessment": 0.92,
+        "brain_assisted": true,
+        "recalled_skill": "content_reviewer",
+        "confidence": 0.95
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "The solution follows the sequential recipe exactly, incorporates all required skills, addresses the anti\u2011pattern by ensuring accessibility review precedes publishing, and aligns with the path skill score of 0.88. Confidence is high due to clear alignment with task requirements.",
+      "_metrics": {
+        "tokens": 1203,
+        "prompt_tokens": 818,
+        "completion_tokens": 385,
+        "latency_ms": 3410.14,
+        "cost_usd": 0.00021,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'content_pipeline', 'recipe': {'agents': ['content_reviewer', 'seo_optimizer', 'accessibility_checker', 'format_converter', 'publisher'], 'strategy': 'sequential', 'domain': 'content_pipeline', 'task': 'Review, optimize, and publish content through quality and compliance gates'}, 'anti_pattern': {'what_failed': 'Publishing content without accessibility review', 'why': \"Received ADA compliance complaint and legal threat from a visually impaired user who couldn't navigate the published documents\", 'domain': 'content_pipeline', 'severity': 'warning'}, 'path_skill': {'path_nodes': ['reviewer', 'seo', 'a11y_checker', 'converter', 'publisher'], 'score': 0.88, 'domain': 'content_pipeline', 'task': 'Standard content publishing execution path', 'quality': 0.85}, 'task': 'Seed Recipe: Content Publishing Pattern'}\n\nCOMPOSED SOLUTION:\nThe content publishing pipeline follows a sequential recipe:\n1. **Ingest** raw assets via automated connectors.\n2. **Enrich metadata** with SEO tags, licensing, and accessibility descriptors using the SEO Optimizer and Accessibility Checker.\n3. **Review** for quality: linting, plagiarism, style guide compliance by Content Reviewer.\n4. **Convert** formats (HTML, AMP, JSON\u2011LD) through Format Converter.\n5. **Publish** to CMS, mobile app, and third\u2011party channels via Publisher, with scheduling and version control.\n6. **Monitor** publish status and analytics for continuous improvement.\nKey anti\u2011patterns avoided: manual handoffs, single\u2011point failures, inconsistent tagging, delayed compliance checks. The composition leverages the sequential strategy of the recipe, integrating each skill at its appropriate stage to ensure quality, SEO, accessibility, and reliable delivery.\n\nCOMPOSITION STRATEGY:\nN/A\n\nBRAIN METRICS:\nSkills composed: []\nAnti-patterns avoided: []\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": list of skills that contributed\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"recalled_skill\": primary skill or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

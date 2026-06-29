@@ -1,0 +1,126 @@
+{
+  "task_id": "track_d_07",
+  "condition": "brainless",
+  "elapsed_s": 14.9,
+  "success": true,
+  "output": {
+    "response": {
+      "domain": "api_design",
+      "task": "Review and validate API designs for consistency, security, and developer experience",
+      "solution_steps": [
+        "Collect all design artefacts: OpenAPI spec, contract tests, sample payloads.",
+        "Run automated schema validation (e.g., Speccy) to ensure syntax and type correctness.",
+        "Execute security scanning with OWASP ZAP or Snyk API for common vulnerabilities.",
+        "Apply naming conventions review: verify endpoint paths, resource names, and query parameters follow a consistent pattern (plural nouns, hyphen\u2011separated words).",
+        "Check response consistency: confirm all endpoints return responses in the same shape (status code, standard error object, pagination structure where applicable).",
+        "Validate security practices: ensure OAuth2 scopes are appropriate, rate limits defined, and input validation present on all mutable operations.",
+        "Document findings with evidence (spec snippets, scanner outputs) in a shared tracker.",
+        "Decision path execution: approve if no critical issues; request changes for minor inconsistencies; reject and require redesign for major security flaws.",
+        "Iterate until approval: re\u2011run steps 2\u20136 after fixes.",
+        "Publish & monitor: deploy with monitoring hooks, conduct post\u2011launch review to capture real\u2011world integration feedback."
+      ],
+      "skills_used": [
+        "schema_validator",
+        "naming_reviewer",
+        "consistency_checker",
+        "security_reviewer",
+        "doc_generator"
+      ],
+      "anti_patterns_avoided": [
+        "Inconsistent naming conventions and response formats leading to longer integration times."
+      ],
+      "quality_self_assessment": 0.92,
+      "brain_assisted": false,
+      "recalled_skill": "none",
+      "confidence": 0.95
+    },
+    "confidence": "0.95",
+    "internal_reasoning": "The solution follows the sequential recipe, incorporates all required agents, addresses the anti\u2011pattern, and meets the confidence threshold.",
+    "_metrics": {
+      "tokens": 1350,
+      "prompt_tokens": 928,
+      "completion_tokens": 422,
+      "latency_ms": 3881.83,
+      "cost_usd": 0.000239,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'api_design', 'recipe': {'agents': ['schema_validator', 'naming_reviewer', 'consistency_checker', 'security_reviewer', 'doc_generator'], 'strategy': 'sequential', 'domain': 'api_design', 'task': 'Review and validate API designs for consistency, security, and developer experience'}, 'anti_pattern': {'what_failed': 'Designing API endpoints with inconsistent naming conventions and response formats', 'why': 'Client developers spent 3x longer integrating due to unpredictable response shapes and naming patterns', 'domain': 'api_design', 'severity': 'warning'}, 'path_skill': {'path_nodes': ['schema', 'naming', 'consistency', 'security', 'docs'], 'score': 0.89, 'domain': 'api_design', 'task': 'API design review execution path', 'quality': 0.86}, 'task': 'Seed Recipe: API Design Review Pattern'}\n\nSOLUTION:\nTo review an API design for consistency, security, and developer experience, follow this structured sequence:\n\n1. **Collect the Design Artefacts** \u2013 Gather the OpenAPI/GraphQL spec, contract tests, and sample payloads.\n2. **Run Automated Validation** \u2013 Use schema validators (e.g., Speccy) to check syntax and type correctness; run security scanners (OWASP ZAP or Snyk API) for common vulnerabilities.\n3. **Apply Naming Conventions Review** \u2013 Verify that endpoint paths, resource names, and query parameters follow a consistent pattern (plural nouns, hyphen\u2011separated words). Flag any deviations.\n4. **Check Response Consistency** \u2013 Ensure all endpoints return responses in the same shape: status code, standard error object, and pagination structure where applicable.\n5. **Validate Security Practices** \u2013 Confirm OAuth2 scopes are appropriate, rate limits are defined, and input validation is present on all mutable operations.\n6. **Document Findings** \u2013 Log each issue with evidence (spec snippet, scanner output) in a shared tracker.\n7. **Decision Path Execution** \u2013 If no critical issues: approve; if minor inconsistencies: request changes; if major security flaws: reject and require redesign.\n8. **Iterate Until Approval** \u2013 Re\u2011run steps 2\u20136 after fixes until the design meets all criteria.\n9. **Publish & Monitor** \u2013 Deploy with monitoring hooks, then conduct a post\u2011launch review to capture real\u2011world integration feedback.\n\nThis approach ensures that naming and response formats are predictable, security is robust, and developers can integrate efficiently.\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": []\n- \"anti_patterns_avoided\": []\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": "The Seed Recipe for an API Design Review Pattern is a structured, repeatable process that guides teams through evaluating and refining their APIs before they go live. It combines procedural steps (the \"seed\"), anti\u2011pattern avoidance rules, and decision paths to ensure consistency, quality, and alignment with business goals.\n\n**Core Components of the Seed Recipe**\n1. **Preparation & Context Gathering** \u2013 Define scope, stakeholders, target consumers, and success metrics.\n2. **Baseline Design Capture** \u2013 Document current API (or draft) using a standardized template (endpoints, payloads, auth, versioning).\n3. **Design Review Checklist** \u2013 A comprehensive list of criteria covering:\n   - *Principles*: RESTful/GraphQL consistency, resource naming, idempotency, error handling.\n   - *Security*: OAuth2 scopes, rate limiting, input validation.\n   - *Performance*: pagination strategy, caching headers, compression.\n   - *Observability*: logging, metrics, tracing.\n4. **Anti\u2011Pattern Detection Rules** \u2013 Automated or manual checks for:\n   - Over\u2011exposed internal models.\n   - Inconsistent status codes.\n   - Unnecessary authentication on public endpoints.\n   - Duplicate resources across versions.\n5. **Decision Path Matrix** \u2013 A flowchart that maps review outcomes to actions: approve, request changes, or reject. It includes escalation paths and documentation requirements.\n6. **Feedback Loop & Continuous Improvement** \u2013 Capture lessons learned, update the checklist, and feed insights back into the design process.\n\n**Procedure (Step\u2011by\u2011Step)**\n1. *Kick\u2011off Meeting* \u2013 Align on goals, timeline, and roles.\n2. *Collect Design Artefacts* \u2013 API spec (OpenAPI/GraphQL SDL), contract tests, sample payloads.\n3. *Run Automated Checks* \u2013 Linting, schema validation, security scanning.\n4. *Human Review Sessions* \u2013 Cross\u2011functional teams review checklist items and anti\u2011patterns.\n5. *Document Findings* \u2013 Use a shared issue tracker; attach evidence (screenshots, logs).\n6. *Decision Path Execution* \u2013 Apply the matrix to determine next steps.\n7. *Iterate & Re\u2011review* \u2013 Implement changes, re\u2011run checks until approval.\n8. *Publish & Monitor* \u2013 Deploy with monitoring hooks and post\u2011launch review.\n\n**Key Benefits**\n- Consistency across APIs.\n- Early detection of costly defects.\n- Clear accountability and traceability.\n- Continuous learning through feedback loops.\n\n**Common Pitfalls to Avoid**\n- Treating the review as a one\u2011time audit rather than an iterative process.\n- Overloading the checklist with non\u2011critical items, leading to analysis paralysis.\n- Ignoring consumer feedback; the recipe should include stakeholder interviews.\n- Skipping versioning strategy discussion, which can cause breaking changes later.\n\n**Tooling Suggestions**\n- OpenAPI/GraphQL validators (Speccy, GraphQL Voyager).\n- Security scanners (OWASP ZAP, Snyk API).\n- Collaboration platforms (Confluence, Notion) for templates.\n- Issue trackers with custom fields to capture review outcomes.\n\nBy embedding this seed recipe into your API development lifecycle, teams can systematically evaluate design quality, mitigate risks early, and deliver robust APIs that meet both technical standards and business needs.",
+      "confidence": "0.95",
+      "internal_reasoning": "I synthesized established API design best practices, anti\u2011pattern guidelines, and decision\u2011making frameworks to construct a comprehensive, step\u2011by\u2011step recipe. The confidence is high because the content aligns with widely accepted industry patterns.",
+      "_metrics": {
+        "tokens": 1209,
+        "prompt_tokens": 420,
+        "completion_tokens": 789,
+        "latency_ms": 6976.59,
+        "cost_usd": 0.00043,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze this complex task step by step.\n\nDOMAIN: api_design\nTASK: Seed Recipe: API Design Review Pattern\n\nThis task may require combining multiple patterns: procedural recipes,\nanti-pattern avoidance, and path selection. Think holistically.\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete multi-faceted analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"required_capabilities\": list of skill types needed\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": approach explanation"
+    },
+    "task_applier": {
+      "response": "To review an API design for consistency, security, and developer experience, follow this structured sequence:\n\n1. **Collect the Design Artefacts** \u2013 Gather the OpenAPI/GraphQL spec, contract tests, and sample payloads.\n2. **Run Automated Validation** \u2013 Use schema validators (e.g., Speccy) to check syntax and type correctness; run security scanners (OWASP ZAP or Snyk API) for common vulnerabilities.\n3. **Apply Naming Conventions Review** \u2013 Verify that endpoint paths, resource names, and query parameters follow a consistent pattern (plural nouns, hyphen\u2011separated words). Flag any deviations.\n4. **Check Response Consistency** \u2013 Ensure all endpoints return responses in the same shape: status code, standard error object, and pagination structure where applicable.\n5. **Validate Security Practices** \u2013 Confirm OAuth2 scopes are appropriate, rate limits are defined, and input validation is present on all mutable operations.\n6. **Document Findings** \u2013 Log each issue with evidence (spec snippet, scanner output) in a shared tracker.\n7. **Decision Path Execution** \u2013 If no critical issues: approve; if minor inconsistencies: request changes; if major security flaws: reject and require redesign.\n8. **Iterate Until Approval** \u2013 Re\u2011run steps 2\u20136 after fixes until the design meets all criteria.\n9. **Publish & Monitor** \u2013 Deploy with monitoring hooks, then conduct a post\u2011launch review to capture real\u2011world integration feedback.\n\nThis approach ensures that naming and response formats are predictable, security is robust, and developers can integrate efficiently.",
+      "confidence": "0.95",
+      "internal_reasoning": "I synthesized the provided seed recipe into a concise, step\u2011by\u2011step guide, ensuring each critical area (schema validation, naming consistency, response shape, security checks) is addressed sequentially. The confidence reflects alignment with industry best practices and the explicit instructions.",
+      "_metrics": {
+        "tokens": 1710,
+        "prompt_tokens": 1298,
+        "completion_tokens": 412,
+        "latency_ms": 3812.88,
+        "cost_usd": 0.000235,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a complex task from scratch with NO prior experience.\n\nDOMAIN: general\nTASK: {'domain': 'api_design', 'recipe': {'agents': ['schema_validator', 'naming_reviewer', 'consistency_checker', 'security_reviewer', 'doc_generator'], 'strategy': 'sequential', 'domain': 'api_design', 'task': 'Review and validate API designs for consistency, security, and developer experience'}, 'anti_pattern': {'what_failed': 'Designing API endpoints with inconsistent naming conventions and response formats', 'why': 'Client developers spent 3x longer integrating due to unpredictable response shapes and naming patterns', 'domain': 'api_design', 'severity': 'warning'}, 'path_skill': {'path_nodes': ['schema', 'naming', 'consistency', 'security', 'docs'], 'score': 0.89, 'domain': 'api_design', 'task': 'API design review execution path', 'quality': 0.86}, 'task': 'Seed Recipe: API Design Review Pattern'}\n\nYOUR ANALYSIS:\nThe Seed Recipe for an API Design Review Pattern is a structured, repeatable process that guides teams through evaluating and refining their APIs before they go live. It combines procedural steps (the \"seed\"), anti\u2011pattern avoidance rules, and decision paths to ensure consistency, quality, and alignment with business goals.\n\n**Core Components of the Seed Recipe**\n1. **Preparation & Context Gathering** \u2013 Define scope, stakeholders, target consumers, and success metrics.\n2. **Baseline Design Capture** \u2013 Document current API (or draft) using a standardized template (endpoints, payloads, auth, versioning).\n3. **Design Review Checklist** \u2013 A comprehensive list of criteria covering:\n   - *Principles*: RESTful/GraphQL consistency, resource naming, idempotency, error handling.\n   - *Security*: OAuth2 scopes, rate limiting, input validation.\n   - *Performance*: pagination strategy, caching headers, compression.\n   - *Observability*: logging, metrics, tracing.\n4. **Anti\u2011Pattern Detection Rules** \u2013 Automated or manual checks for:\n   - Over\u2011exposed internal models.\n   - Inconsistent status codes.\n   - Unnecessary authentication on public endpoints.\n   - Duplicate resources across versions.\n5. **Decision Path Matrix** \u2013 A flowchart that maps review outcomes to actions: approve, request changes, or reject. It includes escalation paths and documentation requirements.\n6. **Feedback Loop & Continuous Improvement** \u2013 Capture lessons learned, update the checklist, and feed insights back into the design process.\n\n**Procedure (Step\u2011by\u2011Step)**\n1. *Kick\u2011off Meeting* \u2013 Align on goals, timeline, and roles.\n2. *Collect Design Artefacts* \u2013 API spec (OpenAPI/GraphQL SDL), contract tests, sample payloads.\n3. *Run Automated Checks* \u2013 Linting, schema validation, security scanning.\n4. *Human Review Sessions* \u2013 Cross\u2011functional teams review checklist items and anti\u2011patterns.\n5. *Document Findings* \u2013 Use a shared issue tracker; attach evidence (screenshots, logs).\n6. *Decision Path Execution* \u2013 Apply the matrix to determine next steps.\n7. *Iterate & Re\u2011review* \u2013 Implement changes, re\u2011run checks until approval.\n8. *Publish & Monitor* \u2013 Deploy with monitoring hooks and post\u2011launch review.\n\n**Key Benefits**\n- Consistency across APIs.\n- Early detection of costly defects.\n- Clear accountability and traceability.\n- Continuous learning through feedback loops.\n\n**Common Pitfalls to Avoid**\n- Treating the review as a one\u2011time audit rather than an iterative process.\n- Overloading the checklist with non\u2011critical items, leading to analysis paralysis.\n- Ignoring consumer feedback; the recipe should include stakeholder interviews.\n- Skipping versioning strategy discussion, which can cause breaking changes later.\n\n**Tooling Suggestions**\n- OpenAPI/GraphQL validators (Speccy, GraphQL Voyager).\n- Security scanners (OWASP ZAP, Snyk API).\n- Collaboration platforms (Confluence, Notion) for templates.\n- Issue trackers with custom fields to capture review outcomes.\n\nBy embedding this seed recipe into your API development lifecycle, teams can systematically evaluate design quality, mitigate risks early, and deliver robust APIs that meet both technical standards and business needs.\n\nSolve the task using only your own analysis.\nYou have no previously learned recipes, anti-patterns, or path knowledge.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"skills_composed\": []\n- \"anti_patterns_avoided\": []\n- \"composition_strategy\": \"N/A \u2014 no prior skills available\"\n- \"used_recalled_skill\": false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+    },
+    "task_result": {
+      "response": {
+        "domain": "api_design",
+        "task": "Review and validate API designs for consistency, security, and developer experience",
+        "solution_steps": [
+          "Collect all design artefacts: OpenAPI spec, contract tests, sample payloads.",
+          "Run automated schema validation (e.g., Speccy) to ensure syntax and type correctness.",
+          "Execute security scanning with OWASP ZAP or Snyk API for common vulnerabilities.",
+          "Apply naming conventions review: verify endpoint paths, resource names, and query parameters follow a consistent pattern (plural nouns, hyphen\u2011separated words).",
+          "Check response consistency: confirm all endpoints return responses in the same shape (status code, standard error object, pagination structure where applicable).",
+          "Validate security practices: ensure OAuth2 scopes are appropriate, rate limits defined, and input validation present on all mutable operations.",
+          "Document findings with evidence (spec snippets, scanner outputs) in a shared tracker.",
+          "Decision path execution: approve if no critical issues; request changes for minor inconsistencies; reject and require redesign for major security flaws.",
+          "Iterate until approval: re\u2011run steps 2\u20136 after fixes.",
+          "Publish & monitor: deploy with monitoring hooks, conduct post\u2011launch review to capture real\u2011world integration feedback."
+        ],
+        "skills_used": [
+          "schema_validator",
+          "naming_reviewer",
+          "consistency_checker",
+          "security_reviewer",
+          "doc_generator"
+        ],
+        "anti_patterns_avoided": [
+          "Inconsistent naming conventions and response formats leading to longer integration times."
+        ],
+        "quality_self_assessment": 0.92,
+        "brain_assisted": false,
+        "recalled_skill": "none",
+        "confidence": 0.95
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "The solution follows the sequential recipe, incorporates all required agents, addresses the anti\u2011pattern, and meets the confidence threshold.",
+      "_metrics": {
+        "tokens": 1350,
+        "prompt_tokens": 928,
+        "completion_tokens": 422,
+        "latency_ms": 3881.83,
+        "cost_usd": 0.000239,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'api_design', 'recipe': {'agents': ['schema_validator', 'naming_reviewer', 'consistency_checker', 'security_reviewer', 'doc_generator'], 'strategy': 'sequential', 'domain': 'api_design', 'task': 'Review and validate API designs for consistency, security, and developer experience'}, 'anti_pattern': {'what_failed': 'Designing API endpoints with inconsistent naming conventions and response formats', 'why': 'Client developers spent 3x longer integrating due to unpredictable response shapes and naming patterns', 'domain': 'api_design', 'severity': 'warning'}, 'path_skill': {'path_nodes': ['schema', 'naming', 'consistency', 'security', 'docs'], 'score': 0.89, 'domain': 'api_design', 'task': 'API design review execution path', 'quality': 0.86}, 'task': 'Seed Recipe: API Design Review Pattern'}\n\nSOLUTION:\nTo review an API design for consistency, security, and developer experience, follow this structured sequence:\n\n1. **Collect the Design Artefacts** \u2013 Gather the OpenAPI/GraphQL spec, contract tests, and sample payloads.\n2. **Run Automated Validation** \u2013 Use schema validators (e.g., Speccy) to check syntax and type correctness; run security scanners (OWASP ZAP or Snyk API) for common vulnerabilities.\n3. **Apply Naming Conventions Review** \u2013 Verify that endpoint paths, resource names, and query parameters follow a consistent pattern (plural nouns, hyphen\u2011separated words). Flag any deviations.\n4. **Check Response Consistency** \u2013 Ensure all endpoints return responses in the same shape: status code, standard error object, and pagination structure where applicable.\n5. **Validate Security Practices** \u2013 Confirm OAuth2 scopes are appropriate, rate limits are defined, and input validation is present on all mutable operations.\n6. **Document Findings** \u2013 Log each issue with evidence (spec snippet, scanner output) in a shared tracker.\n7. **Decision Path Execution** \u2013 If no critical issues: approve; if minor inconsistencies: request changes; if major security flaws: reject and require redesign.\n8. **Iterate Until Approval** \u2013 Re\u2011run steps 2\u20136 after fixes until the design meets all criteria.\n9. **Publish & Monitor** \u2013 Deploy with monitoring hooks, then conduct a post\u2011launch review to capture real\u2011world integration feedback.\n\nThis approach ensures that naming and response formats are predictable, security is robust, and developers can integrate efficiently.\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": []\n- \"anti_patterns_avoided\": []\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

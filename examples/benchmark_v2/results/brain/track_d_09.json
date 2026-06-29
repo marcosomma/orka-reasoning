@@ -1,100 +1,20 @@
 {
   "task_id": "track_d_09",
   "condition": "brain",
-  "elapsed_s": 15.83,
+  "elapsed_s": 11.45,
   "success": true,
   "output": {
     "response": {
       "domain": "database_design",
       "task": "Review and optimize database schemas for performance, normalization, and migration safety",
       "solution_steps": [
-        {
-          "step_number": 1,
-          "title": "Preparation",
-          "actions": [
-            "Collect ER diagrams, data dictionary, sample data dumps, and current query logs.",
-            "Define review goals: normalize to 3NF, reduce index bloat, improve write performance, ensure safe migration."
-          ]
-        },
-        {
-          "step_number": 2,
-          "title": "Baseline Assessment",
-          "actions": [
-            "Run schema_analyzer on the live database to capture table sizes, column types, nullability, and current indexes.",
-            "Generate a report of referential integrity violations, missing surrogate keys, and naming inconsistencies."
-          ],
-          "skills_used": [
-            "schema_analyzer"
-          ]
-        },
-        {
-          "step_number": 3,
-          "title": "Anti\u2011Pattern Detection",
-          "actions": [
-            "Execute normalization_checker to identify over/under\u2011normalization, duplicate columns, and missing foreign key constraints.",
-            "Flag any existing indexes on every column (the known anti\u2011pattern) and document their impact."
-          ],
-          "skills_used": [
-            "normalization_checker"
-          ],
-          "anti_patterns_avoided": [
-            {
-              "name": "Indexing Every Column",
-              "reason": "Avoids write degradation and storage bloat"
-            }
-          ]
-        },
-        {
-          "step_number": 4,
-          "title": "Index Review",
-          "actions": [
-            "Apply index_advisor to analyze query predicates, join conditions, and update patterns.",
-            "Recommend indexes only on columns that appear in WHERE clauses or JOIN keys with high selectivity.",
-            "Remove redundant composite indexes that cover the same columns as single-column indexes."
-          ],
-          "skills_used": [
-            "index_advisor"
-          ]
-        },
-        {
-          "step_number": 5,
-          "title": "Query Analysis",
-          "actions": [
-            "Feed a representative workload into query_optimizer to capture slow queries.",
-            "Suggest targeted index additions, query rewrites, or partitioning strategies.",
-            "Validate that proposed changes do not introduce new anti\u2011patterns."
-          ],
-          "skills_used": [
-            "query_optimizer"
-          ]
-        },
-        {
-          "step_number": 6,
-          "title": "Migration Planning",
-          "actions": [
-            "Use migration_planner to design an incremental rollout: schema change scripts, data validation checks, and rollback procedures.",
-            "Schedule changes during low\u2011traffic windows and monitor performance regressions post\u2011deployment."
-          ],
-          "skills_used": [
-            "migration_planner"
-          ]
-        },
-        {
-          "step_number": 7,
-          "title": "Documentation & Communication",
-          "actions": [
-            "Compile a review report summarizing findings, recommended indexes, normalization fixes, and migration plan.",
-            "Present the report to stakeholders and obtain sign\u2011off before implementation."
-          ]
-        },
-        {
-          "step_number": 8,
-          "title": "Verification Loop",
-          "actions": [
-            "Re\u2011run schema_analyzer, normalization_checker, index_advisor, and query_optimizer after changes.",
-            "Confirm that issues are resolved and no new anti\u2011patterns have appeared."
-          ]
-        }
+        "1\ufe0f\u20e3 Schema Analysis: Map entities, keys, relationships; ensure mandatory FKs where business logic requires.",
+        "2\ufe0f\u20e3 Normalization Check: Verify 3NF/BCNF compliance; flag over\u2011normalization that hurts read performance.",
+        "3\ufe0f\u20e3 Index Strategy: Recommend indexes only on high\u2011selectivity columns used in WHERE/JOIN/ORDER BY clauses; avoid blanket indexing.",
+        "4\ufe0f\u20e3 Query Optimization: Review sample workloads, suggest covering indexes and query rewrites to reduce I/O.",
+        "5\ufe0f\u20e3 Migration Planning: Create safe rollout plan with incremental index creation, zero\u2011downtime data migrations, rollback scripts.",
+        "6\ufe0f\u20e3 Documentation & Constraints: Capture all constraints, defaults, triggers; align them with the ER diagram.",
+        "7\ufe0f\u20e3 Iterative Review: Loop steps 1\u20135 for new features or performance issues, documenting decisions."
       ],
       "skills_used": [
         "schema_analyzer",
@@ -104,205 +24,193 @@
         "migration_planner"
       ],
       "anti_patterns_avoided": [
-        {
-          "name": "Indexing Every Column",
-          "justification": "Prevents write\u2011side performance degradation and storage bloat"
-        }
+        "Over\u2011indexing every column causing write slowdown and storage bloat",
+        "Nullable FK chains breaking referential integrity",
+        "Excessive normalization leading to join storms"
       ],
       "quality_self_assessment": 0.95,
       "brain_assisted": true,
+      "used_recalled_skill": true,
       "recalled_skill": "schema_analyzer",
       "confidence": 0.97
     },
     "confidence": "0.97",
-    "internal_reasoning": "The solution follows the sequential recipe, applies each agent appropriately, explicitly avoids the known anti\u2011pattern, and provides a comprehensive, step\u2011by\u2011step plan with clear actions and skill attribution.",
+    "internal_reasoning": "I synthesized the provided recipe and anti\u2011pattern details into a sequential, step\u2011by\u2011step plan that maps each agent to its role. The steps directly address normalization, indexing, query performance, migration safety, and documentation, while explicitly avoiding the noted anti\u2011patterns. Confidence is high due to alignment with best practices and explicit evidence from the task description.",
     "_metrics": {
-      "tokens": 1778,
-      "prompt_tokens": 912,
-      "completion_tokens": 866,
-      "latency_ms": 7216.94,
-      "cost_usd": 0.000445,
+      "tokens": 1522,
+      "prompt_tokens": 1055,
+      "completion_tokens": 467,
+      "latency_ms": 4056.57,
+      "cost_usd": 0.00025,
       "model": "openai/gpt-oss-20b",
       "provider": "lm_studio"
     },
-    "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'database_design', 'recipe': {'agents': ['schema_analyzer', 'normalization_checker', 'index_advisor', 'query_optimizer', 'migration_planner'], 'strategy': 'sequential', 'domain': 'database_design', 'task': 'Review and optimize database schemas for performance, normalization, and migration safety'}, 'anti_pattern': {'what_failed': 'Adding indexes on every column expecting universal query speedup', 'why': 'Write performance degraded 5x from excessive index maintenance, insert-heavy workloads caused lock contention and storage bloat', 'domain': 'database_design', 'severity': 'warning'}, 'path_skill': {'path_nodes': ['schema', 'normalization', 'index', 'query', 'migration'], 'score': 0.9, 'domain': 'database_design', 'task': 'Database design review execution path', 'quality': 0.88}, 'task': 'Seed Recipe: Database Design Review Pattern'}\n\nCOMPOSED SOLUTION:\n1\ufe0f\u20e3 **Preparation** \u2013 Collect ER diagrams, data dictionary, sample data and define review goals.\n2\ufe0f\u20e3 **Baseline Assessment** \u2013 Run automated checks (schema_analyzer) for key usage, referential integrity, and normalization levels.\n3\ufe0f\u20e3 **Anti\u2011Pattern Detection** \u2013 Use normalisation_checker to flag over/under\u2011normalization, missing surrogate keys, inconsistent naming, and unindexed FKs. Avoid the known anti\u2011pattern of indexing every column.\n4\ufe0f\u20e3 **Index Review** \u2013 Apply index_advisor to recommend indexes only on selective columns that appear in query predicates or join conditions; skip bulk indexing.\n5\ufe0f\u20e3 **Query Analysis** \u2013 Feed sample workloads into query_optimizer to identify slow queries and suggest targeted index or rewrite strategies.\n6\ufe0f\u20e3 **Migration Planning** \u2013 With migration_planner, create a safe rollout plan: incremental schema changes, data validation scripts, rollback procedures, and performance regression tests.\n7\ufe0f\u20e3 **Documentation & Communication** \u2013 Compile findings, decisions, and action items into a review report; share with stakeholders.\n8\ufe0f\u20e3 **Verification Loop** \u2013 Re\u2011run checks after implementing changes to confirm issues are resolved and no new anti\u2011patterns appear.\n\nCOMPOSITION STRATEGY:\nN/A\n\nBRAIN METRICS:\nSkills composed: []\nAnti-patterns avoided: []\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": list of skills that contributed\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"recalled_skill\": primary skill or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'database_design', 'recipe': {'agents': ['schema_analyzer', 'normalization_checker', 'index_advisor', 'query_optimizer', 'migration_planner'], 'strategy': 'sequential', 'domain': 'database_design', 'task': 'Review and optimize database schemas for performance, normalization, and migration safety'}, 'anti_pattern': {'what_failed': 'Adding indexes on every column expecting universal query speedup', 'why': 'Write performance degraded 5x from excessive index maintenance, insert-heavy workloads caused lock contention and storage bloat', 'domain': 'database_design', 'severity': 'warning'}, 'path_skill': {'path_nodes': ['schema', 'normalization', 'index', 'query', 'migration'], 'score': 0.9, 'domain': 'database_design', 'task': 'Database design review execution path', 'quality': 0.88}, 'task': 'Seed Recipe: Database Design Review Pattern'}\n\nCOMPOSED SOLUTION:\n1\ufe0f\u20e3 **Schema Analysis** \u2013 Use the schema_analyzer to map entities, keys, and relationships, ensuring every FK is mandatory where business logic requires it.\n2\ufe0f\u20e3 **Normalization Check** \u2013 Run normalization_checker to verify 3NF/BCNF compliance; flag any over\u2011normalization that would hurt read performance. \n3\ufe0f\u20e3 **Index Strategy** \u2013 index_advisor recommends indexes only on columns used in WHERE, JOIN, ORDER BY clauses with high selectivity, avoiding blanket indexing of every column.\n4\ufe0f\u20e3 **Query Optimization** \u2013 query_optimizer reviews sample workloads, suggests covering indexes and query rewrites to reduce I/O.\n5\ufe0f\u20e3 **Migration Planning** \u2013 migration_planner creates a safe rollout plan: incremental index creation, zero\u2011downtime data migrations, and rollback scripts.\n6\ufe0f\u20e3 **Documentation & Constraints** \u2013 Capture all constraints, defaults, and triggers; ensure they align with the ER diagram.\n7\ufe0f\u20e3 **Iterative Review** \u2013 Loop steps 1\u20135 for each new feature or performance issue, documenting decisions.\n\n**Anti\u2011patterns avoided:**\n- Over\u2011indexing every column (causing write slowdown).\n- Nullable FK chains that break referential integrity.\n- Excessive normalization leading to join storms.\n\n**Composition strategy:** Combined procedural evaluation-validation with a sequential recipe of schema_analyzer \u2192 normalization_checker \u2192 index_advisor \u2192 query_optimizer \u2192 migration_planner, guided by the path_nodes sequence. Each skill feeds its output into the next, ensuring data\u2011driven decisions and safety nets for migrations.\n\n**Skills used:** procedural:general:evaluation-validation, recipe:api_design:sequential-schema_validator+naming_reviewer+consistency_checker (adapted), schema_analyzer, normalization_checker, index_advisor, query_optimizer, migration_planner.\n\nCOMPOSITION STRATEGY:\nN/A\n\nBRAIN METRICS:\nSkills composed: []\nAnti-patterns avoided: []\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": list of skills that contributed\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"used_recalled_skill\": copy the boolean from the prior step (true/false) \u2014 whether recalled knowledge actually guided the solution\n- \"recalled_skill\": primary skill or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection",
+    "trace_id": "20c3ed03-ed70-49a0-ac68-eb63e1864411",
+    "execution_time_ms": 4057.5811862945557
   },
   "agent_outputs": {
     "brain_learn_recipe": {
       "response": "Learned recipe: recipe:content_pipeline:sequential-content_reviewer+seo_optimizer+accessibility_checker",
       "confidence": "0.658",
       "internal_reasoning": "Stored execution recipe with 5 agents",
-      "skill_id": "bab41b56-1837-4213-8083-dcdb919b1adc",
+      "skill_id": "f974a628-ce49-46cb-a44c-a42bb7a6f060",
       "skill_name": "recipe:content_pipeline:sequential-content_reviewer+seo_optimizer+accessibility_checker",
-      "skill_type": "execution_recipe"
+      "skill_type": "execution_recipe",
+      "trace_id": "69668a76-a412-44b0-9dbe-46523165577b",
+      "execution_time_ms": 11.107444763183594
     },
     "brain_learn_anti": {
       "response": "Recorded anti-pattern: anti:devops:deploying-without-running-security-scans",
       "confidence": "0.6954151137187501",
       "internal_reasoning": "Anti-pattern stored: Write performance degraded 5x from excessive index maintenance, insert-heavy workloads caused lock contention and storage bloat",
-      "skill_id": "a182cf09-c14d-4302-938f-5565af1c8cdd",
+      "skill_id": "51094fb4-26fc-4d1e-aaf9-947c2ad394d5",
       "skill_name": "anti:devops:deploying-without-running-security-scans",
-      "skill_type": "anti_pattern"
+      "skill_type": "anti_pattern",
+      "trace_id": "2d806777-1ed3-4a64-8e04-69cea55dbbf8",
+      "execution_time_ms": 11.00015640258789
     },
     "brain_learn_path": {
       "response": "Learned path: anti:content_pipeline:publishing-content-without-accessibility",
       "confidence": "0.9142625000000001",
       "internal_reasoning": "GraphScout path stored with 5 nodes",
-      "skill_id": "6d41d32d-5296-4b99-9cdc-9ab577520618",
+      "skill_id": "f05c73d2-4cf7-4e04-bf3c-a57158b474aa",
       "skill_name": "anti:content_pipeline:publishing-content-without-accessibility",
-      "skill_type": "anti_pattern"
+      "skill_type": "anti_pattern",
+      "trace_id": "0ce6f331-0411-4e20-99ba-3465ee9836bf",
+      "execution_time_ms": 12.045860290527344
     },
     "task_reasoner": {
-      "response": "A Seed Recipe for a Database Design Review Pattern is a structured, repeatable approach that combines procedural steps, anti\u2011pattern avoidance, and decision paths to evaluate and refine database schemas. The recipe consists of:\n\n1. **Preparation** \u2013 Gather artifacts (ER diagrams, data dictionaries, sample data) and set review objectives.\n2. **Baseline Assessment** \u2013 Verify compliance with core design principles: normalization, referential integrity, proper key usage, and appropriate indexing.\n3. **Anti\u2011Pattern Detection** \u2013 Systematically scan for known pitfalls such as:\n   - *Over\u2011normalization* (splitting data into too many tables)\n   - *Under\u2011normalization* (data duplication)\n   - *Missing surrogate keys*\n   - *Inconsistent naming conventions*\n   - *Unindexed foreign keys*\n4. **Path Selection** \u2013 Choose remediation paths based on impact and effort:\n   - *Low\u2011impact, quick fixes* (e.g., adding missing indexes)\n   - *Medium\u2011impact refactors* (e.g., consolidating redundant tables)\n   - *High\u2011impact redesigns* (e.g., rethinking the data model for new business requirements)\n5. **Documentation & Communication** \u2013 Record findings, decisions, and action items in a review report; share with stakeholders.\n6. **Follow\u2011up & Verification** \u2013 Re\u2011run automated checks after changes to confirm issues are resolved.\n\nThe recipe is modular: each step can be executed independently or as part of an iterative cycle. It encourages evidence\u2011based decisions, reduces subjective bias, and aligns the review process with best practices in database design.\n\nBy following this Seed Recipe, teams can consistently produce high\u2011quality database designs that are scalable, maintainable, and aligned with business goals.",
+      "response": "The Seed Recipe: Database Design Review Pattern is a structured approach that blends procedural steps, anti\u2011pattern checks, and decision paths to ensure a robust database schema. It starts with a *seed*\u2014a minimal viable design (tables, keys, relationships)\u2014and iteratively expands it while validating against common pitfalls such as over\u2011normalization, missing indexes, or ambiguous cardinality. The pattern\u2019s core steps are: 1) Define the domain model and identify primary entities; 2) Create an initial ER diagram with mandatory attributes and foreign keys; 3) Apply anti\u2011pattern avoidance rules (e.g., avoid NULLable FK chains, redundant columns); 4) Evaluate performance implications (index strategy, partitioning); 5) Iterate: add derived tables or denormalize where justified by read/write trade\u2011offs; 6) Document constraints and data integrity rules. Decision paths are guided by metrics like query frequency, update load, and scalability needs, allowing the designer to choose between normalization for consistency or denormalization for speed. This pattern promotes early validation, reduces costly redesigns, and aligns database evolution with business requirements.",
       "confidence": "0.95",
-      "internal_reasoning": "I synthesized established DB design principles, common anti\u2011patterns, and decision\u2011making frameworks to construct a comprehensive yet concise recipe. The confidence is set at 0.95 because the components are well\u2011documented in industry literature.",
+      "internal_reasoning": "I synthesized the seed recipe concept by mapping procedural steps (initial ER diagram), anti\u2011pattern checks (common pitfalls), and path selection criteria (performance vs consistency). The confidence is high due to well\u2011documented design principles.",
       "_metrics": {
-        "tokens": 887,
+        "tokens": 721,
         "prompt_tokens": 420,
-        "completion_tokens": 467,
-        "latency_ms": 4052.79,
-        "cost_usd": 0.000245,
+        "completion_tokens": 301,
+        "latency_ms": 2830.33,
+        "cost_usd": 0.000171,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "You are an expert analyst. Analyze this complex task step by step.\n\nDOMAIN: database_design\nTASK: Seed Recipe: Database Design Review Pattern\n\nThis task may require combining multiple patterns: procedural recipes,\nanti-pattern avoidance, and path selection. Think holistically.\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete multi-faceted analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"required_capabilities\": list of skill types needed\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": approach explanation"
+      "formatted_prompt": "You are an expert analyst. Analyze this complex task step by step.\n\nDOMAIN: database_design\nTASK: Seed Recipe: Database Design Review Pattern\n\nThis task may require combining multiple patterns: procedural recipes,\nanti-pattern avoidance, and path selection. Think holistically.\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete multi-faceted analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"required_capabilities\": list of skill types needed\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": approach explanation",
+      "trace_id": "7b5f6f14-c662-49b1-9b5c-d698f1facd83",
+      "execution_time_ms": 2831.3345909118652
     },
     "brain_recall": {
-      "response": "No applicable skills found for this context.",
-      "confidence": "0.0",
-      "internal_reasoning": "No learned skill matched the target context.",
-      "all_candidates": []
+      "response": "Found applicable skill: 'procedural:general:evaluation-validation' (score: 0.67). Steps: validate [target] \u2192 draft [target] \u2192 check [target] \u2192 check [target] \u2192 convert [target] \u2192 check [target] \u2192 schedule [target] \u2192 track [target]",
+      "confidence": "0.6653308780415852",
+      "internal_reasoning": "Skill 'procedural:general:evaluation-validation'. has very similar task structure. has moderate semantic overlap. shares structures: validation. shares patterns: evaluation.",
+      "skill_id": "5bacf144-4092-4344-ba46-40462f8520d7",
+      "skill_name": "procedural:general:evaluation-validation",
+      "skill_steps": [
+        "validate [target]",
+        "draft [target]",
+        "check [target]",
+        "check [target]",
+        "convert [target]",
+        "check [target]",
+        "schedule [target]",
+        "track [target]"
+      ],
+      "skill_tags": [
+        "generation",
+        "validation",
+        "evaluation",
+        "general",
+        "1\ufe0f\u20e3 **Ideation & Validation** \u2013 Generate topic, validate against audience and SEO signals.\n2\ufe0f\u20e3 **Authoring** \u2013 Writer drafts with style guide; assets tagged in DAM.\n3\ufe0f\u20e3 **Automated QA** \u2013 Run grammar,"
+      ],
+      "combined_score": 0.6653308780415852,
+      "structural_score": 0.7666666666666666,
+      "semantic_score": 0.6558551788330078,
+      "adaptations": {},
+      "all_candidates": [
+        {
+          "skill_name": "procedural:general:evaluation-validation",
+          "score": 0.6653308780415852,
+          "reasoning": "Skill 'procedural:general:evaluation-validation'. has very similar task structure. has moderate semantic overlap. shares structures: validation. shares patterns: evaluation."
+        },
+        {
+          "skill_name": "recipe:api_design:sequential-schema_validator+naming_reviewer+consistency_checker",
+          "score": 0.6283597533845902,
+          "reasoning": "Skill 'recipe:api_design:sequential-schema_validator+naming_reviewer+consistency_checker'. shares some structural patterns. has moderate semantic overlap. shares structures: validation. shares patterns: evaluation."
+        },
+        {
+          "skill_name": "recipe:devops:sequential-code_linter+test_runner+security_scanner",
+          "score": 0.6078144748871115,
+          "reasoning": "Skill 'recipe:devops:sequential-code_linter+test_runner+security_scanner'. has moderate semantic overlap. has been transferred 8 times (100% success). shares patterns: evaluation."
+        }
+      ],
+      "trace_id": "65501cf4-6d79-4cf5-bb86-1bf2f2a407b9",
+      "execution_time_ms": 17.01211929321289
     },
     "task_applier": {
-      "response": "1\ufe0f\u20e3 **Preparation** \u2013 Collect ER diagrams, data dictionary, sample data and define review goals.\n2\ufe0f\u20e3 **Baseline Assessment** \u2013 Run automated checks (schema_analyzer) for key usage, referential integrity, and normalization levels.\n3\ufe0f\u20e3 **Anti\u2011Pattern Detection** \u2013 Use normalisation_checker to flag over/under\u2011normalization, missing surrogate keys, inconsistent naming, and unindexed FKs. Avoid the known anti\u2011pattern of indexing every column.\n4\ufe0f\u20e3 **Index Review** \u2013 Apply index_advisor to recommend indexes only on selective columns that appear in query predicates or join conditions; skip bulk indexing.\n5\ufe0f\u20e3 **Query Analysis** \u2013 Feed sample workloads into query_optimizer to identify slow queries and suggest targeted index or rewrite strategies.\n6\ufe0f\u20e3 **Migration Planning** \u2013 With migration_planner, create a safe rollout plan: incremental schema changes, data validation scripts, rollback procedures, and performance regression tests.\n7\ufe0f\u20e3 **Documentation & Communication** \u2013 Compile findings, decisions, and action items into a review report; share with stakeholders.\n8\ufe0f\u20e3 **Verification Loop** \u2013 Re\u2011run checks after implementing changes to confirm issues are resolved and no new anti\u2011patterns appear.",
+      "response": "1\ufe0f\u20e3 **Schema Analysis** \u2013 Use the schema_analyzer to map entities, keys, and relationships, ensuring every FK is mandatory where business logic requires it.\n2\ufe0f\u20e3 **Normalization Check** \u2013 Run normalization_checker to verify 3NF/BCNF compliance; flag any over\u2011normalization that would hurt read performance. \n3\ufe0f\u20e3 **Index Strategy** \u2013 index_advisor recommends indexes only on columns used in WHERE, JOIN, ORDER BY clauses with high selectivity, avoiding blanket indexing of every column.\n4\ufe0f\u20e3 **Query Optimization** \u2013 query_optimizer reviews sample workloads, suggests covering indexes and query rewrites to reduce I/O.\n5\ufe0f\u20e3 **Migration Planning** \u2013 migration_planner creates a safe rollout plan: incremental index creation, zero\u2011downtime data migrations, and rollback scripts.\n6\ufe0f\u20e3 **Documentation & Constraints** \u2013 Capture all constraints, defaults, and triggers; ensure they align with the ER diagram.\n7\ufe0f\u20e3 **Iterative Review** \u2013 Loop steps 1\u20135 for each new feature or performance issue, documenting decisions.\n\n**Anti\u2011patterns avoided:**\n- Over\u2011indexing every column (causing write slowdown).\n- Nullable FK chains that break referential integrity.\n- Excessive normalization leading to join storms.\n\n**Composition strategy:** Combined procedural evaluation-validation with a sequential recipe of schema_analyzer \u2192 normalization_checker \u2192 index_advisor \u2192 query_optimizer \u2192 migration_planner, guided by the path_nodes sequence. Each skill feeds its output into the next, ensuring data\u2011driven decisions and safety nets for migrations.\n\n**Skills used:** procedural:general:evaluation-validation, recipe:api_design:sequential-schema_validator+naming_reviewer+consistency_checker (adapted), schema_analyzer, normalization_checker, index_advisor, query_optimizer, migration_planner.",
       "confidence": "0.95",
-      "internal_reasoning": "I combined the procedural steps from the Seed Recipe with specific skill outputs: schema_analyzer for baseline, normalisation_checker for anti\u2011pattern detection, index_advisor for selective indexing, query_optimizer for workload\u2011based tuning, and migration_planner for safe rollout. This sequential path avoids the known failure of indiscriminate indexing, ensures normalization integrity, and provides a clear verification loop.",
+      "internal_reasoning": "I mapped the recalled skills onto the required steps, ensuring each domain area is covered and anti\u2011patterns are explicitly referenced. The confidence is high due to clear alignment with the seed recipe and path knowledge.",
       "_metrics": {
-        "tokens": 1453,
-        "prompt_tokens": 1083,
-        "completion_tokens": 370,
-        "latency_ms": 3825.15,
-        "cost_usd": 0.000236,
+        "tokens": 1689,
+        "prompt_tokens": 1230,
+        "completion_tokens": 459,
+        "latency_ms": 4077.48,
+        "cost_usd": 0.000251,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "You are solving a complex task that requires COMPOSING multiple skills.\n\nDOMAIN: general\nTASK: {'domain': 'database_design', 'recipe': {'agents': ['schema_analyzer', 'normalization_checker', 'index_advisor', 'query_optimizer', 'migration_planner'], 'strategy': 'sequential', 'domain': 'database_design', 'task': 'Review and optimize database schemas for performance, normalization, and migration safety'}, 'anti_pattern': {'what_failed': 'Adding indexes on every column expecting universal query speedup', 'why': 'Write performance degraded 5x from excessive index maintenance, insert-heavy workloads caused lock contention and storage bloat', 'domain': 'database_design', 'severity': 'warning'}, 'path_skill': {'path_nodes': ['schema', 'normalization', 'index', 'query', 'migration'], 'score': 0.9, 'domain': 'database_design', 'task': 'Database design review execution path', 'quality': 0.88}, 'task': 'Seed Recipe: Database Design Review Pattern'}\n\nYOUR ANALYSIS:\nA Seed Recipe for a Database Design Review Pattern is a structured, repeatable approach that combines procedural steps, anti\u2011pattern avoidance, and decision paths to evaluate and refine database schemas. The recipe consists of:\n\n1. **Preparation** \u2013 Gather artifacts (ER diagrams, data dictionaries, sample data) and set review objectives.\n2. **Baseline Assessment** \u2013 Verify compliance with core design principles: normalization, referential integrity, proper key usage, and appropriate indexing.\n3. **Anti\u2011Pattern Detection** \u2013 Systematically scan for known pitfalls such as:\n   - *Over\u2011normalization* (splitting data into too many tables)\n   - *Under\u2011normalization* (data duplication)\n   - *Missing surrogate keys*\n   - *Inconsistent naming conventions*\n   - *Unindexed foreign keys*\n4. **Path Selection** \u2013 Choose remediation paths based on impact and effort:\n   - *Low\u2011impact, quick fixes* (e.g., adding missing indexes)\n   - *Medium\u2011impact refactors* (e.g., consolidating redundant tables)\n   - *High\u2011impact redesigns* (e.g., rethinking the data model for new business requirements)\n5. **Documentation & Communication** \u2013 Record findings, decisions, and action items in a review report; share with stakeholders.\n6. **Follow\u2011up & Verification** \u2013 Re\u2011run automated checks after changes to confirm issues are resolved.\n\nThe recipe is modular: each step can be executed independently or as part of an iterative cycle. It encourages evidence\u2011based decisions, reduces subjective bias, and aligns the review process with best practices in database design.\n\nBy following this Seed Recipe, teams can consistently produce high\u2011quality database designs that are scalable, maintainable, and aligned with business goals.\n\nBRAIN RECALLED KNOWLEDGE:\nSkill name: No skill recalled\nSkill type: unknown\nAbstract steps: []\nTransfer score: N/A\nAdaptations: {}\nAll candidates: []\n\nINSTRUCTIONS:\n- Compose insights from ALL recalled skills into a unified solution.\n- Use recipe patterns for structuring your approach.\n- Use anti-pattern knowledge to AVOID known failure modes.\n- Use path knowledge to select the optimal execution sequence.\n- Clearly note which skills contributed and how you composed them.\n\nReturn JSON with:\n- \"response\": your complete composed solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"skills_composed\": list of skill names/types used\n- \"anti_patterns_avoided\": list of anti-patterns avoided\n- \"composition_strategy\": how you combined multiple skills\n- \"used_recalled_skill\": true or false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on composition"
+      "formatted_prompt": "You are solving a complex task that requires COMPOSING multiple skills.\n\nDOMAIN: general\nTASK: {'domain': 'database_design', 'recipe': {'agents': ['schema_analyzer', 'normalization_checker', 'index_advisor', 'query_optimizer', 'migration_planner'], 'strategy': 'sequential', 'domain': 'database_design', 'task': 'Review and optimize database schemas for performance, normalization, and migration safety'}, 'anti_pattern': {'what_failed': 'Adding indexes on every column expecting universal query speedup', 'why': 'Write performance degraded 5x from excessive index maintenance, insert-heavy workloads caused lock contention and storage bloat', 'domain': 'database_design', 'severity': 'warning'}, 'path_skill': {'path_nodes': ['schema', 'normalization', 'index', 'query', 'migration'], 'score': 0.9, 'domain': 'database_design', 'task': 'Database design review execution path', 'quality': 0.88}, 'task': 'Seed Recipe: Database Design Review Pattern'}\n\nYOUR ANALYSIS:\nThe Seed Recipe: Database Design Review Pattern is a structured approach that blends procedural steps, anti\u2011pattern checks, and decision paths to ensure a robust database schema. It starts with a *seed*\u2014a minimal viable design (tables, keys, relationships)\u2014and iteratively expands it while validating against common pitfalls such as over\u2011normalization, missing indexes, or ambiguous cardinality. The pattern\u2019s core steps are: 1) Define the domain model and identify primary entities; 2) Create an initial ER diagram with mandatory attributes and foreign keys; 3) Apply anti\u2011pattern avoidance rules (e.g., avoid NULLable FK chains, redundant columns); 4) Evaluate performance implications (index strategy, partitioning); 5) Iterate: add derived tables or denormalize where justified by read/write trade\u2011offs; 6) Document constraints and data integrity rules. Decision paths are guided by metrics like query frequency, update load, and scalability needs, allowing the designer to choose between normalization for consistency or denormalization for speed. This pattern promotes early validation, reduces costly redesigns, and aligns database evolution with business requirements.\n\nBRAIN RECALLED KNOWLEDGE:\nSkill name: procedural:general:evaluation-validation\nSkill type: unknown\nAbstract steps: ['validate [target]', 'draft [target]', 'check [target]', 'check [target]', 'convert [target]', 'check [target]', 'schedule [target]', 'track [target]']\nTransfer score: 0.6653308780415852\nAdaptations: {}\nAll candidates: [{'skill_name': 'procedural:general:evaluation-validation', 'score': 0.6653308780415852, 'reasoning': \"Skill 'procedural:general:evaluation-validation'. has very similar task structure. has moderate semantic overlap. shares structures: validation. shares patterns: evaluation.\"}, {'skill_name': 'recipe:api_design:sequential-schema_validator+naming_reviewer+consistency_checker', 'score': 0.6283597533845902, 'reasoning': \"Skill 'recipe:api_design:sequential-schema_validator+naming_reviewer+consistency_checker'. shares some structural patterns. has moderate semantic overlap. shares structures: validation. shares patterns: evaluation.\"}, {'skill_name': 'recipe:devops:sequential-code_linter+test_runner+security_scanner', 'score': 0.6078144748871115, 'reasoning': \"Skill 'recipe:devops:sequential-code_linter+test_runner+security_scanner'. has moderate semantic overlap. has been transferred 8 times (100% success). shares patterns: evaluation.\"}]\n\nINSTRUCTIONS:\n- Compose insights from ALL recalled skills into a unified solution.\n- Use recipe patterns for structuring your approach.\n- Use anti-pattern knowledge to AVOID known failure modes.\n- Use path knowledge to select the optimal execution sequence.\n- Clearly note which skills contributed and how you composed them.\n\nReturn JSON with:\n- \"response\": your complete composed solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"skills_composed\": list of skill names/types used\n- \"anti_patterns_avoided\": list of anti-patterns avoided\n- \"composition_strategy\": how you combined multiple skills\n- \"used_recalled_skill\": true or false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on composition",
+      "trace_id": "47fcf0d6-141b-4180-ac39-7a3d742b671c",
+      "execution_time_ms": 4078.4671306610107
     },
     "brain_learn": {
-      "response": "Learned skill: procedural:general:evaluation-aggregation",
-      "confidence": "0.7054999999999999",
-      "internal_reasoning": "Abstracted 1 steps into transferable skill 'procedural:general:evaluation-aggregation'",
-      "skill_id": "a8b6a766-34d8-478f-80be-84d9ccd9df29",
-      "skill_name": "procedural:general:evaluation-aggregation",
+      "response": "Learned skill: procedural:general:analysis-transformation",
+      "confidence": "0.69",
+      "internal_reasoning": "Abstracted 8 steps into transferable skill 'procedural:general:analysis-transformation'",
+      "skill_id": "76457fa7-b3f6-484b-bff5-77ae02fbcac4",
+      "skill_name": "procedural:general:analysis-transformation",
       "skill_steps": [
-        "collect [target]"
+        "analyze [target]",
+        "check [target]",
+        "index [target]",
+        "index [target]",
+        "index [target]",
+        "document [target]",
+        "document [target]",
+        "index [target]"
       ],
       "skill_tags": [
-        "{'domain': 'api_design', 'task': 'Review and validate API designs for consistency, security, and developer experience', 'steps': [{'action': 'Gather design artifacts', 'expected_outcome': 'Collect Ope",
-        "general",
-        "routing",
-        "evaluation",
+        "transformation",
+        "analysis",
         "validation",
-        "aggregation"
-      ]
+        "general",
+        "1\ufe0f\u20e3 **Schema Analysis** \u2013 Use the schema_analyzer to map entities, keys, and relationships, ensuring every FK is mandatory where business logic requires it.\n2\ufe0f\u20e3 **Normalization Check** \u2013 Run normaliza",
+        "reasoning"
+      ],
+      "trace_id": "77562418-506a-46c3-8d30-4fe81c7ebf48",
+      "execution_time_ms": 12.521505355834961
     },
     "brain_feedback": {
-      "response": "No skill_id provided for feedback.",
-      "confidence": "0.0",
-      "internal_reasoning": "Feedback requires a skill_id from a previous recall."
+      "response": "Recorded successful transfer for skill 'procedural:general:evaluation-validation'.",
+      "confidence": "0.7342137499999999",
+      "internal_reasoning": "Transfer feedback recorded. Skill now has 1 transfer(s).",
+      "skill_id": "5bacf144-4092-4344-ba46-40462f8520d7",
+      "skill_name": "procedural:general:evaluation-validation",
+      "transfer_count": 1,
+      "transfer_success": true,
+      "trace_id": "b259182b-bdf6-4667-94fd-71e7642fdd88",
+      "execution_time_ms": 6.278753280639648
     },
     "task_result": {
       "response": {
         "domain": "database_design",
         "task": "Review and optimize database schemas for performance, normalization, and migration safety",
         "solution_steps": [
-          {
-            "step_number": 1,
-            "title": "Preparation",
-            "actions": [
-              "Collect ER diagrams, data dictionary, sample data dumps, and current query logs.",
-              "Define review goals: normalize to 3NF, reduce index bloat, improve write performance, ensure safe migration."
-            ]
-          },
-          {
-            "step_number": 2,
-            "title": "Baseline Assessment",
-            "actions": [
-              "Run schema_analyzer on the live database to capture table sizes, column types, nullability, and current indexes.",
-              "Generate a report of referential integrity violations, missing surrogate keys, and naming inconsistencies."
-            ],
-            "skills_used": [
-              "schema_analyzer"
-            ]
-          },
-          {
-            "step_number": 3,
-            "title": "Anti\u2011Pattern Detection",
-            "actions": [
-              "Execute normalization_checker to identify over/under\u2011normalization, duplicate columns, and missing foreign key constraints.",
-              "Flag any existing indexes on every column (the known anti\u2011pattern) and document their impact."
-            ],
-            "skills_used": [
-              "normalization_checker"
-            ],
-            "anti_patterns_avoided": [
-              {
-                "name": "Indexing Every Column",
-                "reason": "Avoids write degradation and storage bloat"
-              }
-            ]
-          },
-          {
-            "step_number": 4,
-            "title": "Index Review",
-            "actions": [
-              "Apply index_advisor to analyze query predicates, join conditions, and update patterns.",
-              "Recommend indexes only on columns that appear in WHERE clauses or JOIN keys with high selectivity.",
-              "Remove redundant composite indexes that cover the same columns as single-column indexes."
-            ],
-            "skills_used": [
-              "index_advisor"
-            ]
-          },
-          {
-            "step_number": 5,
-            "title": "Query Analysis",
-            "actions": [
-              "Feed a representative workload into query_optimizer to capture slow queries.",
-              "Suggest targeted index additions, query rewrites, or partitioning strategies.",
-              "Validate that proposed changes do not introduce new anti\u2011patterns."
-            ],
-            "skills_used": [
-              "query_optimizer"
-            ]
-          },
-          {
-            "step_number": 6,
-            "title": "Migration Planning",
-            "actions": [
-              "Use migration_planner to design an incremental rollout: schema change scripts, data validation checks, and rollback procedures.",
-              "Schedule changes during low\u2011traffic windows and monitor performance regressions post\u2011deployment."
-            ],
-            "skills_used": [
-              "migration_planner"
-            ]
-          },
-          {
-            "step_number": 7,
-            "title": "Documentation & Communication",
-            "actions": [
-              "Compile a review report summarizing findings, recommended indexes, normalization fixes, and migration plan.",
-              "Present the report to stakeholders and obtain sign\u2011off before implementation."
-            ]
-          },
-          {
-            "step_number": 8,
-            "title": "Verification Loop",
-            "actions": [
-              "Re\u2011run schema_analyzer, normalization_checker, index_advisor, and query_optimizer after changes.",
-              "Confirm that issues are resolved and no new anti\u2011patterns have appeared."
-            ]
-          }
+          "1\ufe0f\u20e3 Schema Analysis: Map entities, keys, relationships; ensure mandatory FKs where business logic requires.",
+          "2\ufe0f\u20e3 Normalization Check: Verify 3NF/BCNF compliance; flag over\u2011normalization that hurts read performance.",
+          "3\ufe0f\u20e3 Index Strategy: Recommend indexes only on high\u2011selectivity columns used in WHERE/JOIN/ORDER BY clauses; avoid blanket indexing.",
+          "4\ufe0f\u20e3 Query Optimization: Review sample workloads, suggest covering indexes and query rewrites to reduce I/O.",
+          "5\ufe0f\u20e3 Migration Planning: Create safe rollout plan with incremental index creation, zero\u2011downtime data migrations, rollback scripts.",
+          "6\ufe0f\u20e3 Documentation & Constraints: Capture all constraints, defaults, triggers; align them with the ER diagram.",
+          "7\ufe0f\u20e3 Iterative Review: Loop steps 1\u20135 for new features or performance issues, documenting decisions."
         ],
         "skills_used": [
           "schema_analyzer",
@@ -312,28 +220,30 @@
           "migration_planner"
         ],
         "anti_patterns_avoided": [
-          {
-            "name": "Indexing Every Column",
-            "justification": "Prevents write\u2011side performance degradation and storage bloat"
-          }
+          "Over\u2011indexing every column causing write slowdown and storage bloat",
+          "Nullable FK chains breaking referential integrity",
+          "Excessive normalization leading to join storms"
         ],
         "quality_self_assessment": 0.95,
         "brain_assisted": true,
+        "used_recalled_skill": true,
         "recalled_skill": "schema_analyzer",
         "confidence": 0.97
       },
       "confidence": "0.97",
-      "internal_reasoning": "The solution follows the sequential recipe, applies each agent appropriately, explicitly avoids the known anti\u2011pattern, and provides a comprehensive, step\u2011by\u2011step plan with clear actions and skill attribution.",
+      "internal_reasoning": "I synthesized the provided recipe and anti\u2011pattern details into a sequential, step\u2011by\u2011step plan that maps each agent to its role. The steps directly address normalization, indexing, query performance, migration safety, and documentation, while explicitly avoiding the noted anti\u2011patterns. Confidence is high due to alignment with best practices and explicit evidence from the task description.",
       "_metrics": {
-        "tokens": 1778,
-        "prompt_tokens": 912,
-        "completion_tokens": 866,
-        "latency_ms": 7216.94,
-        "cost_usd": 0.000445,
+        "tokens": 1522,
+        "prompt_tokens": 1055,
+        "completion_tokens": 467,
+        "latency_ms": 4056.57,
+        "cost_usd": 0.00025,
         "model": "openai/gpt-oss-20b",
         "provider": "lm_studio"
       },
-      "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'database_design', 'recipe': {'agents': ['schema_analyzer', 'normalization_checker', 'index_advisor', 'query_optimizer', 'migration_planner'], 'strategy': 'sequential', 'domain': 'database_design', 'task': 'Review and optimize database schemas for performance, normalization, and migration safety'}, 'anti_pattern': {'what_failed': 'Adding indexes on every column expecting universal query speedup', 'why': 'Write performance degraded 5x from excessive index maintenance, insert-heavy workloads caused lock contention and storage bloat', 'domain': 'database_design', 'severity': 'warning'}, 'path_skill': {'path_nodes': ['schema', 'normalization', 'index', 'query', 'migration'], 'score': 0.9, 'domain': 'database_design', 'task': 'Database design review execution path', 'quality': 0.88}, 'task': 'Seed Recipe: Database Design Review Pattern'}\n\nCOMPOSED SOLUTION:\n1\ufe0f\u20e3 **Preparation** \u2013 Collect ER diagrams, data dictionary, sample data and define review goals.\n2\ufe0f\u20e3 **Baseline Assessment** \u2013 Run automated checks (schema_analyzer) for key usage, referential integrity, and normalization levels.\n3\ufe0f\u20e3 **Anti\u2011Pattern Detection** \u2013 Use normalisation_checker to flag over/under\u2011normalization, missing surrogate keys, inconsistent naming, and unindexed FKs. Avoid the known anti\u2011pattern of indexing every column.\n4\ufe0f\u20e3 **Index Review** \u2013 Apply index_advisor to recommend indexes only on selective columns that appear in query predicates or join conditions; skip bulk indexing.\n5\ufe0f\u20e3 **Query Analysis** \u2013 Feed sample workloads into query_optimizer to identify slow queries and suggest targeted index or rewrite strategies.\n6\ufe0f\u20e3 **Migration Planning** \u2013 With migration_planner, create a safe rollout plan: incremental schema changes, data validation scripts, rollback procedures, and performance regression tests.\n7\ufe0f\u20e3 **Documentation & Communication** \u2013 Compile findings, decisions, and action items into a review report; share with stakeholders.\n8\ufe0f\u20e3 **Verification Loop** \u2013 Re\u2011run checks after implementing changes to confirm issues are resolved and no new anti\u2011patterns appear.\n\nCOMPOSITION STRATEGY:\nN/A\n\nBRAIN METRICS:\nSkills composed: []\nAnti-patterns avoided: []\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": list of skills that contributed\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"recalled_skill\": primary skill or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+      "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'database_design', 'recipe': {'agents': ['schema_analyzer', 'normalization_checker', 'index_advisor', 'query_optimizer', 'migration_planner'], 'strategy': 'sequential', 'domain': 'database_design', 'task': 'Review and optimize database schemas for performance, normalization, and migration safety'}, 'anti_pattern': {'what_failed': 'Adding indexes on every column expecting universal query speedup', 'why': 'Write performance degraded 5x from excessive index maintenance, insert-heavy workloads caused lock contention and storage bloat', 'domain': 'database_design', 'severity': 'warning'}, 'path_skill': {'path_nodes': ['schema', 'normalization', 'index', 'query', 'migration'], 'score': 0.9, 'domain': 'database_design', 'task': 'Database design review execution path', 'quality': 0.88}, 'task': 'Seed Recipe: Database Design Review Pattern'}\n\nCOMPOSED SOLUTION:\n1\ufe0f\u20e3 **Schema Analysis** \u2013 Use the schema_analyzer to map entities, keys, and relationships, ensuring every FK is mandatory where business logic requires it.\n2\ufe0f\u20e3 **Normalization Check** \u2013 Run normalization_checker to verify 3NF/BCNF compliance; flag any over\u2011normalization that would hurt read performance. \n3\ufe0f\u20e3 **Index Strategy** \u2013 index_advisor recommends indexes only on columns used in WHERE, JOIN, ORDER BY clauses with high selectivity, avoiding blanket indexing of every column.\n4\ufe0f\u20e3 **Query Optimization** \u2013 query_optimizer reviews sample workloads, suggests covering indexes and query rewrites to reduce I/O.\n5\ufe0f\u20e3 **Migration Planning** \u2013 migration_planner creates a safe rollout plan: incremental index creation, zero\u2011downtime data migrations, and rollback scripts.\n6\ufe0f\u20e3 **Documentation & Constraints** \u2013 Capture all constraints, defaults, and triggers; ensure they align with the ER diagram.\n7\ufe0f\u20e3 **Iterative Review** \u2013 Loop steps 1\u20135 for each new feature or performance issue, documenting decisions.\n\n**Anti\u2011patterns avoided:**\n- Over\u2011indexing every column (causing write slowdown).\n- Nullable FK chains that break referential integrity.\n- Excessive normalization leading to join storms.\n\n**Composition strategy:** Combined procedural evaluation-validation with a sequential recipe of schema_analyzer \u2192 normalization_checker \u2192 index_advisor \u2192 query_optimizer \u2192 migration_planner, guided by the path_nodes sequence. Each skill feeds its output into the next, ensuring data\u2011driven decisions and safety nets for migrations.\n\n**Skills used:** procedural:general:evaluation-validation, recipe:api_design:sequential-schema_validator+naming_reviewer+consistency_checker (adapted), schema_analyzer, normalization_checker, index_advisor, query_optimizer, migration_planner.\n\nCOMPOSITION STRATEGY:\nN/A\n\nBRAIN METRICS:\nSkills composed: []\nAnti-patterns avoided: []\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": list of skills that contributed\n- \"anti_patterns_avoided\": list of avoided patterns\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": true if brain knowledge contributed\n- \"used_recalled_skill\": copy the boolean from the prior step (true/false) \u2014 whether recalled knowledge actually guided the solution\n- \"recalled_skill\": primary skill or \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection",
+      "trace_id": "20c3ed03-ed70-49a0-ac68-eb63e1864411",
+      "execution_time_ms": 4057.5811862945557
     }
   }
 }

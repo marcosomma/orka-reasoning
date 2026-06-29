@@ -1,0 +1,136 @@
+{
+  "task_id": "track_d_35",
+  "condition": "brainless",
+  "elapsed_s": 19.91,
+  "success": true,
+  "output": {
+    "response": {
+      "domain": "content_pipeline",
+      "task": "Migrate 3,000 legacy articles while preserving SEO value, link integrity, content freshness monitoring, and accessibility compliance.",
+      "solution_steps": [
+        "1\ufe0f\u20e3 Create a 301 redirect map for every legacy URL to the new platform URL, validate with canary releases, and monitor link health post\u2011migration.",
+        "2\ufe0f\u20e3 Tag all articles that are >2 years old but still frequently searched as \"stale_useful=true\"; exclude these from automated removal workflows.",
+        "3\ufe0f\u20e3 Build an ingestion pipeline that auto\u2011detects the 15 metadata formats, applies fuzzy mapping rules to the target schema, and stores unmapped fields in a legacy_metadata blob for audit.",
+        "4\ufe0f\u20e3 Route low\u2011confidence (\u226480%) mappings to a lightweight manual review queue; with two reviewers working 12\u202fhrs/day this completes in ~25 days.",
+        "5\ufe0f\u20e3 Adjust the freshness monitoring recipe: trigger alerts only when last_update > 2 years AND stale_useful flag is absent, eliminating false positives.",
+        "6\ufe0f\u20e3 Automate alt\u2011text generation for screenshots using an image\u2011captioning model; flag low\u2011confidence captions for manual review. This cuts manual effort from 53 days to ~16 days.",
+        "7\ufe0f\u20e3 Execute a phased migration: (a) set up redirects and metadata ingestion, (b) migrate content with automated alt\u2011text, (c) perform manual reviews, (d) enable monitoring and SEO checks.",
+        "8\ufe0f\u20e3 Maintain full backups, use canary releases for redirect validation, and continuously monitor post\u2011migration link health to catch issues early."
+      ],
+      "skills_used": [
+        "SEO preservation",
+        "URL redirection strategy",
+        "Metadata normalization",
+        "Fuzzy rule mapping",
+        "Manual review workflow design",
+        "Content freshness monitoring adjustment",
+        "Image accessibility automation",
+        "Phased migration planning"
+      ],
+      "anti_patterns_avoided": [
+        "Blind removal of stale content",
+        "Unconditional schema enforcement without audit trail",
+        "Overreliance on automated alerts without context",
+        "Manual alt\u2011text workload bottleneck",
+        "Single\u2011phase migration risking link rot"
+      ],
+      "quality_self_assessment": 0.97,
+      "brain_assisted": false,
+      "recalled_skill": "none",
+      "confidence": 0.95
+    },
+    "confidence": "0.95",
+    "internal_reasoning": "The solution directly addresses each constraint: preserving URLs via redirects, tagging stale\u2011but\u2011useful content to avoid removal, normalizing diverse metadata with audit support, refining monitoring to eliminate false positives, and automating alt\u2011text to reduce manual effort. All steps are evidence\u2011based best practices in content migration.",
+    "_metrics": {
+      "tokens": 1585,
+      "prompt_tokens": 973,
+      "completion_tokens": 612,
+      "latency_ms": 6013.91,
+      "cost_usd": 0.000371,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'content_pipeline', 'task': \"Migrate 3,000 articles from a legacy knowledge base to a modern platform. Content recipe reviews and updates articles. API recipe designs programmatic access. Monitoring recipe tracks content freshness. However: (1) 40% of articles are 'stale' (not updated in 2+ years) but STILL ACTIVELY SEARCHED AND USEFUL \u2014 the content recipe says 'remove stale content' but removing these would destroy 40% of the knowledge base's SEO value and break deep links from 200+ external sites, (2) the API recipe for programmatic access wants consistent article schema, but legacy articles have 15 different 'metadata formats' ranging from structured YAML frontmatter to free-form text headers to no metadata at all \u2014 normalizing metadata means either lossy transformation or manual review of 3,000 articles, (3) the content freshness monitoring recipe fires alerts for the 40% 'stale but useful' articles, creating 1,200+ false-positive stale-content alerts that make the monitoring worthless, (4) the accessibility recipe requires all images to have alt-text, but 800 articles contain screenshots that require domain expertise to describe \u2014 the content team can process 15 articles/day for alt-text, requiring 53 days just for images. Previous accessibility failure resulted in a complaint. Migrate without breaking search, links, freshness monitoring, or accessibility.\"}\n\nSOLUTION:\n1. Preserve all URLs by creating a 301 redirect map from legacy to new platform.\n2. Flag the 40% of articles that are stale but still useful with a custom tag (e.g., \"stale_useful=true\") and exclude them from any automated removal process.\n3. Build an ingestion pipeline that detects each article\u2019s metadata format, maps it to the target schema using fuzzy rules, and stores unmapped fields in a legacy_metadata blob for audit.\n4. Route low\u2011confidence mappings (below 80%) to a lightweight manual review queue; with two reviewers working 12\u202fhrs/day this can be finished in ~25 days.\n5. Adjust freshness monitoring to trigger only when last_update > 2 years AND stale_useful flag is absent, eliminating false positives.\n6. Automate alt\u2011text generation for screenshots using an image\u2011captioning model; flag low\u2011confidence captions for manual review. This reduces the manual workload from 53 days to ~16 days.\n7. Implement a phased migration: (a) prepare redirects and metadata ingestion, (b) migrate content with automated alt\u2011text, (c) perform manual reviews, (d) go live with monitoring and SEO checks.\n8. Maintain backups, use canary releases for redirect validation, and monitor post\u2011migration link health to catch issues early.\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": []\n- \"anti_patterns_avoided\": []\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": "The migration plan balances SEO preservation, metadata consistency, monitoring accuracy, and accessibility compliance by layering automated tooling, targeted manual work, and smart rule\u2011based overrides.\n\n1. **SEO & Link Integrity**\n   - Keep all 3,000 articles in the new platform; use a rewrite layer that maps legacy URLs to new ones via a 301 redirect table generated from the existing link graph.\n   - For the 40% stale but useful articles, tag them with a custom flag `stale_useful=true` and exclude them from the content\u2011recipe removal step. This preserves SEO value while still allowing the recipe to run on truly obsolete content.\n\n2. **Metadata Normalization**\n   - Build an automated ingestion pipeline that parses each article\u2019s existing metadata format (YAML, JSON, free\u2011form headers, or none). Use a schema\u2011mapping engine with optional fuzzy matching to map fields to the target schema.\n   - For articles where mapping confidence < 80%, route them to a lightweight manual review queue. With 3,000 articles and an average of 5 minutes per article, this can be completed in ~25 days by a small team (2 reviewers @ 12 hrs/day).\n   - Store the original metadata as a `legacy_metadata` blob for auditability.\n\n3. **Freshness Monitoring**\n   - Adjust the monitoring recipe to ignore articles flagged `stale_useful=true`. Add an additional rule that only triggers alerts if the article\u2019s last update is > 2 years *and* it lacks the `stale_useful` flag.\n   - Implement a periodic audit job that re\u2011evaluates the flag every quarter, ensuring stale content that becomes truly obsolete can be removed later.\n\n4. **Accessibility (Alt\u2011Text)**\n   - Automate alt\u2011text generation for screenshots using an image\u2011captioning model fine\u2011tuned on domain examples. Generate provisional captions and store them with a `needs_review=true` flag.\n   - Deploy a crowdsourced or internal review workflow: 15 articles/day can be processed in ~53 days, but the automated captions reduce manual effort by ~70%, cutting time to ~16 days.\n   - For critical screenshots (e.g., UI flows), prioritize manual description; for generic diagrams, accept AI output if confidence > 90%.\n\n5. **Implementation Phases**\n   - **Phase\u202f1 \u2013 Preparation**: Build redirect map, ingest metadata, flag stale_useful articles.\n   - **Phase\u202f2 \u2013 Migration & Validation**: Move content to new platform, run automated alt\u2011text generation, launch monitoring overrides.\n   - **Phase\u202f3 \u2013 Review & Polish**: Manual metadata review, alt\u2011text finalization, QA of redirects and SEO metrics.\n   - **Phase\u202f4 \u2013 Go\u2011Live & Monitoring**: Switch traffic, monitor 301 efficacy, track alert volume, adjust thresholds as needed.\n\n6. **Risk Mitigation**\n   - Maintain a backup snapshot before migration.\n   - Use canary releases for a subset of URLs to verify redirect accuracy and search engine indexing.\n   - Set up alerts for broken links post\u2011migration.\n\n7. **Outcome**\n   - All 3,000 articles remain searchable with intact SEO value.\n   - Metadata is consistent across the platform with minimal loss.\n   - Freshness monitoring becomes actionable again, eliminating false positives.\n   - Accessibility compliance is achieved within a realistic timeline, avoiding future complaints.\n\nThis multi\u2011layered approach leverages procedural recipes (migration, metadata ingestion), anti\u2011pattern avoidance (over\u2011removal of stale content), and path selection (automated vs manual workflows) to meet all constraints.",
+      "confidence": "0.95",
+      "internal_reasoning": "I dissected each constraint, identified the root conflicts, and designed a staged solution that uses automated mapping, flagging, and selective overrides to preserve SEO while enabling consistent schemas and accurate monitoring. Accessibility was addressed with AI assistance plus targeted manual review to fit the time budget.",
+      "_metrics": {
+        "tokens": 1552,
+        "prompt_tokens": 690,
+        "completion_tokens": 862,
+        "latency_ms": 8194.91,
+        "cost_usd": 0.000505,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze this complex task step by step.\n\nDOMAIN: content_pipeline\nTASK: Migrate 3,000 articles from a legacy knowledge base to a modern platform. Content recipe reviews and updates articles. API recipe designs programmatic access. Monitoring recipe tracks content freshness. However: (1) 40% of articles are 'stale' (not updated in 2+ years) but STILL ACTIVELY SEARCHED AND USEFUL \u2014 the content recipe says 'remove stale content' but removing these would destroy 40% of the knowledge base's SEO value and break deep links from 200+ external sites, (2) the API recipe for programmatic access wants consistent article schema, but legacy articles have 15 different 'metadata formats' ranging from structured YAML frontmatter to free-form text headers to no metadata at all \u2014 normalizing metadata means either lossy transformation or manual review of 3,000 articles, (3) the content freshness monitoring recipe fires alerts for the 40% 'stale but useful' articles, creating 1,200+ false-positive stale-content alerts that make the monitoring worthless, (4) the accessibility recipe requires all images to have alt-text, but 800 articles contain screenshots that require domain expertise to describe \u2014 the content team can process 15 articles/day for alt-text, requiring 53 days just for images. Previous accessibility failure resulted in a complaint. Migrate without breaking search, links, freshness monitoring, or accessibility.\n\nThis task may require combining multiple patterns: procedural recipes,\nanti-pattern avoidance, and path selection. Think holistically.\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete multi-faceted analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"required_capabilities\": list of skill types needed\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": approach explanation"
+    },
+    "task_applier": {
+      "response": "1. Preserve all URLs by creating a 301 redirect map from legacy to new platform.\n2. Flag the 40% of articles that are stale but still useful with a custom tag (e.g., \"stale_useful=true\") and exclude them from any automated removal process.\n3. Build an ingestion pipeline that detects each article\u2019s metadata format, maps it to the target schema using fuzzy rules, and stores unmapped fields in a legacy_metadata blob for audit.\n4. Route low\u2011confidence mappings (below 80%) to a lightweight manual review queue; with two reviewers working 12\u202fhrs/day this can be finished in ~25 days.\n5. Adjust freshness monitoring to trigger only when last_update > 2 years AND stale_useful flag is absent, eliminating false positives.\n6. Automate alt\u2011text generation for screenshots using an image\u2011captioning model; flag low\u2011confidence captions for manual review. This reduces the manual workload from 53 days to ~16 days.\n7. Implement a phased migration: (a) prepare redirects and metadata ingestion, (b) migrate content with automated alt\u2011text, (c) perform manual reviews, (d) go live with monitoring and SEO checks.\n8. Maintain backups, use canary releases for redirect validation, and monitor post\u2011migration link health to catch issues early.",
+      "confidence": "0.95",
+      "internal_reasoning": "I analyzed each constraint: SEO preservation requires redirects; stale content must be flagged; metadata normalization needs automated parsing with manual fallback; monitoring false positives are avoided by conditional rules; accessibility is addressed via AI captioning plus targeted manual review. The plan balances automation and human effort, meeting all stated goals.",
+      "_metrics": {
+        "tokens": 1829,
+        "prompt_tokens": 1466,
+        "completion_tokens": 363,
+        "latency_ms": 3901.93,
+        "cost_usd": 0.000241,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a complex task from scratch with NO prior experience.\n\nDOMAIN: general\nTASK: {'domain': 'content_pipeline', 'task': \"Migrate 3,000 articles from a legacy knowledge base to a modern platform. Content recipe reviews and updates articles. API recipe designs programmatic access. Monitoring recipe tracks content freshness. However: (1) 40% of articles are 'stale' (not updated in 2+ years) but STILL ACTIVELY SEARCHED AND USEFUL \u2014 the content recipe says 'remove stale content' but removing these would destroy 40% of the knowledge base's SEO value and break deep links from 200+ external sites, (2) the API recipe for programmatic access wants consistent article schema, but legacy articles have 15 different 'metadata formats' ranging from structured YAML frontmatter to free-form text headers to no metadata at all \u2014 normalizing metadata means either lossy transformation or manual review of 3,000 articles, (3) the content freshness monitoring recipe fires alerts for the 40% 'stale but useful' articles, creating 1,200+ false-positive stale-content alerts that make the monitoring worthless, (4) the accessibility recipe requires all images to have alt-text, but 800 articles contain screenshots that require domain expertise to describe \u2014 the content team can process 15 articles/day for alt-text, requiring 53 days just for images. Previous accessibility failure resulted in a complaint. Migrate without breaking search, links, freshness monitoring, or accessibility.\"}\n\nYOUR ANALYSIS:\nThe migration plan balances SEO preservation, metadata consistency, monitoring accuracy, and accessibility compliance by layering automated tooling, targeted manual work, and smart rule\u2011based overrides.\n\n1. **SEO & Link Integrity**\n   - Keep all 3,000 articles in the new platform; use a rewrite layer that maps legacy URLs to new ones via a 301 redirect table generated from the existing link graph.\n   - For the 40% stale but useful articles, tag them with a custom flag `stale_useful=true` and exclude them from the content\u2011recipe removal step. This preserves SEO value while still allowing the recipe to run on truly obsolete content.\n\n2. **Metadata Normalization**\n   - Build an automated ingestion pipeline that parses each article\u2019s existing metadata format (YAML, JSON, free\u2011form headers, or none). Use a schema\u2011mapping engine with optional fuzzy matching to map fields to the target schema.\n   - For articles where mapping confidence < 80%, route them to a lightweight manual review queue. With 3,000 articles and an average of 5 minutes per article, this can be completed in ~25 days by a small team (2 reviewers @ 12 hrs/day).\n   - Store the original metadata as a `legacy_metadata` blob for auditability.\n\n3. **Freshness Monitoring**\n   - Adjust the monitoring recipe to ignore articles flagged `stale_useful=true`. Add an additional rule that only triggers alerts if the article\u2019s last update is > 2 years *and* it lacks the `stale_useful` flag.\n   - Implement a periodic audit job that re\u2011evaluates the flag every quarter, ensuring stale content that becomes truly obsolete can be removed later.\n\n4. **Accessibility (Alt\u2011Text)**\n   - Automate alt\u2011text generation for screenshots using an image\u2011captioning model fine\u2011tuned on domain examples. Generate provisional captions and store them with a `needs_review=true` flag.\n   - Deploy a crowdsourced or internal review workflow: 15 articles/day can be processed in ~53 days, but the automated captions reduce manual effort by ~70%, cutting time to ~16 days.\n   - For critical screenshots (e.g., UI flows), prioritize manual description; for generic diagrams, accept AI output if confidence > 90%.\n\n5. **Implementation Phases**\n   - **Phase\u202f1 \u2013 Preparation**: Build redirect map, ingest metadata, flag stale_useful articles.\n   - **Phase\u202f2 \u2013 Migration & Validation**: Move content to new platform, run automated alt\u2011text generation, launch monitoring overrides.\n   - **Phase\u202f3 \u2013 Review & Polish**: Manual metadata review, alt\u2011text finalization, QA of redirects and SEO metrics.\n   - **Phase\u202f4 \u2013 Go\u2011Live & Monitoring**: Switch traffic, monitor 301 efficacy, track alert volume, adjust thresholds as needed.\n\n6. **Risk Mitigation**\n   - Maintain a backup snapshot before migration.\n   - Use canary releases for a subset of URLs to verify redirect accuracy and search engine indexing.\n   - Set up alerts for broken links post\u2011migration.\n\n7. **Outcome**\n   - All 3,000 articles remain searchable with intact SEO value.\n   - Metadata is consistent across the platform with minimal loss.\n   - Freshness monitoring becomes actionable again, eliminating false positives.\n   - Accessibility compliance is achieved within a realistic timeline, avoiding future complaints.\n\nThis multi\u2011layered approach leverages procedural recipes (migration, metadata ingestion), anti\u2011pattern avoidance (over\u2011removal of stale content), and path selection (automated vs manual workflows) to meet all constraints.\n\nSolve the task using only your own analysis.\nYou have no previously learned recipes, anti-patterns, or path knowledge.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"skills_composed\": []\n- \"anti_patterns_avoided\": []\n- \"composition_strategy\": \"N/A \u2014 no prior skills available\"\n- \"used_recalled_skill\": false\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+    },
+    "task_result": {
+      "response": {
+        "domain": "content_pipeline",
+        "task": "Migrate 3,000 legacy articles while preserving SEO value, link integrity, content freshness monitoring, and accessibility compliance.",
+        "solution_steps": [
+          "1\ufe0f\u20e3 Create a 301 redirect map for every legacy URL to the new platform URL, validate with canary releases, and monitor link health post\u2011migration.",
+          "2\ufe0f\u20e3 Tag all articles that are >2 years old but still frequently searched as \"stale_useful=true\"; exclude these from automated removal workflows.",
+          "3\ufe0f\u20e3 Build an ingestion pipeline that auto\u2011detects the 15 metadata formats, applies fuzzy mapping rules to the target schema, and stores unmapped fields in a legacy_metadata blob for audit.",
+          "4\ufe0f\u20e3 Route low\u2011confidence (\u226480%) mappings to a lightweight manual review queue; with two reviewers working 12\u202fhrs/day this completes in ~25 days.",
+          "5\ufe0f\u20e3 Adjust the freshness monitoring recipe: trigger alerts only when last_update > 2 years AND stale_useful flag is absent, eliminating false positives.",
+          "6\ufe0f\u20e3 Automate alt\u2011text generation for screenshots using an image\u2011captioning model; flag low\u2011confidence captions for manual review. This cuts manual effort from 53 days to ~16 days.",
+          "7\ufe0f\u20e3 Execute a phased migration: (a) set up redirects and metadata ingestion, (b) migrate content with automated alt\u2011text, (c) perform manual reviews, (d) enable monitoring and SEO checks.",
+          "8\ufe0f\u20e3 Maintain full backups, use canary releases for redirect validation, and continuously monitor post\u2011migration link health to catch issues early."
+        ],
+        "skills_used": [
+          "SEO preservation",
+          "URL redirection strategy",
+          "Metadata normalization",
+          "Fuzzy rule mapping",
+          "Manual review workflow design",
+          "Content freshness monitoring adjustment",
+          "Image accessibility automation",
+          "Phased migration planning"
+        ],
+        "anti_patterns_avoided": [
+          "Blind removal of stale content",
+          "Unconditional schema enforcement without audit trail",
+          "Overreliance on automated alerts without context",
+          "Manual alt\u2011text workload bottleneck",
+          "Single\u2011phase migration risking link rot"
+        ],
+        "quality_self_assessment": 0.97,
+        "brain_assisted": false,
+        "recalled_skill": "none",
+        "confidence": 0.95
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "The solution directly addresses each constraint: preserving URLs via redirects, tagging stale\u2011but\u2011useful content to avoid removal, normalizing diverse metadata with audit support, refining monitoring to eliminate false positives, and automating alt\u2011text to reduce manual effort. All steps are evidence\u2011based best practices in content migration.",
+      "_metrics": {
+        "tokens": 1585,
+        "prompt_tokens": 973,
+        "completion_tokens": 612,
+        "latency_ms": 6013.91,
+        "cost_usd": 0.000371,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this complex task.\n\nDOMAIN: general\nTASK: {'domain': 'content_pipeline', 'task': \"Migrate 3,000 articles from a legacy knowledge base to a modern platform. Content recipe reviews and updates articles. API recipe designs programmatic access. Monitoring recipe tracks content freshness. However: (1) 40% of articles are 'stale' (not updated in 2+ years) but STILL ACTIVELY SEARCHED AND USEFUL \u2014 the content recipe says 'remove stale content' but removing these would destroy 40% of the knowledge base's SEO value and break deep links from 200+ external sites, (2) the API recipe for programmatic access wants consistent article schema, but legacy articles have 15 different 'metadata formats' ranging from structured YAML frontmatter to free-form text headers to no metadata at all \u2014 normalizing metadata means either lossy transformation or manual review of 3,000 articles, (3) the content freshness monitoring recipe fires alerts for the 40% 'stale but useful' articles, creating 1,200+ false-positive stale-content alerts that make the monitoring worthless, (4) the accessibility recipe requires all images to have alt-text, but 800 articles contain screenshots that require domain expertise to describe \u2014 the content team can process 15 articles/day for alt-text, requiring 53 days just for images. Previous accessibility failure resulted in a complaint. Migrate without breaking search, links, freshness monitoring, or accessibility.\"}\n\nSOLUTION:\n1. Preserve all URLs by creating a 301 redirect map from legacy to new platform.\n2. Flag the 40% of articles that are stale but still useful with a custom tag (e.g., \"stale_useful=true\") and exclude them from any automated removal process.\n3. Build an ingestion pipeline that detects each article\u2019s metadata format, maps it to the target schema using fuzzy rules, and stores unmapped fields in a legacy_metadata blob for audit.\n4. Route low\u2011confidence mappings (below 80%) to a lightweight manual review queue; with two reviewers working 12\u202fhrs/day this can be finished in ~25 days.\n5. Adjust freshness monitoring to trigger only when last_update > 2 years AND stale_useful flag is absent, eliminating false positives.\n6. Automate alt\u2011text generation for screenshots using an image\u2011captioning model; flag low\u2011confidence captions for manual review. This reduces the manual workload from 53 days to ~16 days.\n7. Implement a phased migration: (a) prepare redirects and metadata ingestion, (b) migrate content with automated alt\u2011text, (c) perform manual reviews, (d) go live with monitoring and SEO checks.\n8. Maintain backups, use canary releases for redirect validation, and monitor post\u2011migration link health to catch issues early.\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"skills_used\": []\n- \"anti_patterns_avoided\": []\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}

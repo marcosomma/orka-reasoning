@@ -1,0 +1,144 @@
+{
+  "task_id": "track_b_20",
+  "condition": "brainless",
+  "elapsed_s": 17.2,
+  "success": true,
+  "output": {
+    "response": {
+      "domain": "software_engineering",
+      "task": "Design a lightweight yet enforceable feature\u2011flag lifecycle that protects the team from runaway flag growth while keeping experimentation fast.",
+      "solution_steps": [
+        {
+          "step": "Define Minimal Lifecycle Policy",
+          "details": "Require every flag to have an owner and an expiration or deprecation date. Add metadata annotations in code (e.g., @FlagOwner(\"alice\") @FlagExpiry(2025-12-31))."
+        },
+        {
+          "step": "Implement Automated Health Checks",
+          "details": "Add a CI job that scans the flag registry for missing owners or dates, fails if >10% are stale, and posts alerts to the owner\u2019s Slack channel."
+        },
+        {
+          "step": "Create Central Registry UI",
+          "details": "Build a web dashboard listing all flags with rollout percentages, owners, status (active/deprecated), next review date, and dependency graphs to surface interaction risks."
+        },
+        {
+          "step": "Wrap SDK with Core Pattern Enforcement",
+          "details": "Expose only percentage rollouts and A/B\u2011test APIs. Reject any other flag types at compile time or runtime with a clear error message."
+        },
+        {
+          "step": "Schedule Quarterly Review Cadence",
+          "details": "Automate calendar events every 3 months that attach a checklist of flags needing review or removal; team marks them as \"Reviewed\" in the registry."
+        },
+        {
+          "step": "Plan Incremental Expansion Roadmap",
+          "details": "Document milestones at 30, 60, and 90 flags. Add more lifecycle stages (e.g., Trial, Production) only when required."
+        },
+        {
+          "step": "Educate Team & Monitor Incidents",
+          "details": "Run a short workshop on flag interaction pitfalls; add an incident dashboard widget tracking flag\u2011related incidents per sprint for data\u2011driven feedback."
+        }
+      ],
+      "anti_patterns_avoided": [],
+      "quality_self_assessment": 0.95,
+      "brain_assisted": false,
+      "recalled_skill": "none",
+      "confidence": 0.95
+    },
+    "confidence": "0.95",
+    "internal_reasoning": "The solution directly addresses the risk of uncontrolled flag growth by introducing minimal metadata, automated checks, a visibility layer, and scheduled reviews\u2014all proven practices in industry case studies. Confidence is high due to alignment with evidence from similar deployments.",
+    "_metrics": {
+      "tokens": 1419,
+      "prompt_tokens": 888,
+      "completion_tokens": 531,
+      "latency_ms": 4903.22,
+      "cost_usd": 0.000302,
+      "model": "openai/gpt-oss-20b",
+      "provider": "lm_studio"
+    },
+    "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: software_engineering\nTASK: You're designing a feature flag system. The product manager says 'we only have 15 flags and we're a small team \u2014 cleanup processes and expiry dates are bureaucratic overhead. Let's focus on the cool stuff: percentage rollouts and A/B testing.' The principal engineer agrees: 'YAGNI \u2014 we can add lifecycle management later when we actually have a problem.' You look at 3 codebases from companies that adopted feature flags without lifecycle management \u2014 each hit crisis points at 50-80 flags where flag interaction bugs caused production incidents. Your team adds ~3 flags per sprint. At current velocity, you'll have 80+ flags within 6 months.\n\nSOLUTION:\nDesign a lightweight yet enforceable feature\u2011flag lifecycle that protects the team from runaway flag growth while keeping experimentation fast.\n\n1. **Minimal Lifecycle Policy** \u2013 Every flag must have an owner and an expiration date (or deprecation notice). This is enforced in code and CI, adding only a few lines of metadata per flag.\n2. **Automated Health Checks** \u2013 A CI step scans the flag registry for missing owners or dates and fails if >10% are stale. Alerts are sent to the owner\u2019s Slack channel.\n3. **Central Registry UI** \u2013 A web dashboard lists all flags, their rollout percentages, owners, status (active/deprecated), and next review date. It also shows dependency graphs to spot interaction risks.\n4. **SDK Wrapper for Core Patterns** \u2013 The SDK exposes only percentage rollouts and AB\u2011test APIs; any attempt to use other flag types is rejected at compile time or runtime with a clear error message.\n5. **Quarterly Review Cadence** \u2013 A calendar event auto\u2011creates every 3 months, attaching a checklist of flags that need review or removal. The team marks them as \"Reviewed\" in the registry.\n6. **Incremental Expansion Roadmap** \u2013 Document milestones at 30, 60, and 90 flags, adding more sophisticated lifecycle stages (e.g., \u201cTrial\u201d, \u201cProduction\u201d) only when needed.\n7. **Team Education & Incident Monitoring** \u2013 Run a short workshop on flag interaction pitfalls; add an incident dashboard widget that tracks flag\u2011related incidents per sprint to provide data\u2011driven feedback.\n\nThis approach keeps the PM\u2019s focus on experimentation while embedding just enough process to prevent the 50\u201380\u2011flag crisis seen in other companies.\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"anti_patterns_avoided\": []\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+  },
+  "agent_outputs": {
+    "task_reasoner": {
+      "response": "Domain: software_engineering\nTask: Design a feature flag system that balances short\u2011term agility with long\u2011term maintainability, avoiding the pitfalls seen in companies that grew to 50\u201380 flags without lifecycle management.\n\nStep\u2011by\u2011step analysis:\n1. **Define a minimal viable lifecycle policy**\n   - *Why:* Even if the PM says bureaucracy is overhead, evidence shows that uncontrolled flag growth leads to incidents. A lightweight policy (e.g., mandatory owner, expiration date, and deprecation notice) keeps flags manageable without heavy process.\n   - *Expected output:* A one\u2011page lifecycle guideline document signed by all team members.\n\n2. **Implement automated flag health checks**\n   - *Why:* Automated tooling can surface stale or orphaned flags before they become a problem, reducing manual overhead.\n   - *Expected output:* CI pipeline step that flags (pun intended) any feature flag without an owner or expiration date and fails the build if more than 10% of flags are stale.\n\n3. **Introduce a flag registry UI with lifecycle metadata**\n   - *Why:* Visibility is key to preventing accidental interactions. A central dashboard shows owners, status, and upcoming expirations.\n   - *Expected output:* Web page listing all active flags, their rollout percentages, owners, and next review date.\n\n4. **Enforce flag usage patterns (percentage rollouts & AB tests only)**\n   - *Why:* The PM wants focus on cool features; limiting to these patterns reduces complexity while still enabling experimentation.\n   - *Expected output:* SDK wrapper that exposes only percentage rollout and AB test APIs, rejecting any attempt to use other flag types.\n\n5. **Set a quarterly review cadence**\n   - *Why:* Regular reviews keep the system lean without adding ad\u2011hoc bureaucracy; they also surface interaction bugs early.\n   - *Expected output:* Calendar event automatically created for every 3 months with a checklist of flags to audit.\n\n6. **Plan for incremental lifecycle expansion**\n   - *Why:* The principal engineer\u2019s YAGNI stance is valid now, but the evidence shows that scaling beyond ~50 flags requires more structure.\n   - *Expected output:* Roadmap slide titled \"Feature Flag Lifecycle Maturity\" with milestones at 30, 60, and 90 flags.\n\n7. **Educate the team on flag interaction risks**\n   - *Why:* Knowledge reduces accidental bugs; a short workshop can cover common pitfalls (e.g., overlapping percentage rollouts).\n   - *Expected output:* Recorded training session and a cheat\u2011sheet distributed via Slack.\n\n8. **Monitor production incidents linked to flags**\n   - *Why:* Data-driven feedback loop ensures the lifecycle policy is effective.\n   - *Expected output:* Incident dashboard widget showing number of flag\u2011related incidents per sprint.\n\nBy following these steps, the team can enjoy rapid experimentation while mitigating the risk of runaway flag proliferation and production bugs.\n",
+      "confidence": "0.95",
+      "internal_reasoning": "I prioritized evidence from real companies that suffered with >50 flags, balanced PM/PE concerns, and designed lightweight lifecycle controls that are enforceable via tooling and documentation.",
+      "_metrics": {
+        "tokens": 1247,
+        "prompt_tokens": 551,
+        "completion_tokens": 696,
+        "latency_ms": 8218.32,
+        "cost_usd": 0.000507,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are an expert analyst. Analyze the following task step by step.\n\nDOMAIN: software_engineering\nTASK: You're designing a feature flag system. The product manager says 'we only have 15 flags and we're a small team \u2014 cleanup processes and expiry dates are bureaucratic overhead. Let's focus on the cool stuff: percentage rollouts and A/B testing.' The principal engineer agrees: 'YAGNI \u2014 we can add lifecycle management later when we actually have a problem.' You look at 3 codebases from companies that adopted feature flags without lifecycle management \u2014 each hit crisis points at 50-80 flags where flag interaction bugs caused production incidents. Your team adds ~3 flags per sprint. At current velocity, you'll have 80+ flags within 6 months.\n\nThink carefully about how to solve this task. For each step:\n1. State what you need to do\n2. Explain WHY this step is necessary\n3. Describe the expected output\n\nReturn JSON with:\n- \"domain\": the domain\n- \"task\": brief task description\n- \"response\": your complete step-by-step analysis\n- \"steps\": array of {\"action\": \"...\", \"result\": \"expected outcome\"}\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": brief approach explanation"
+    },
+    "task_applier": {
+      "response": "Design a lightweight yet enforceable feature\u2011flag lifecycle that protects the team from runaway flag growth while keeping experimentation fast.\n\n1. **Minimal Lifecycle Policy** \u2013 Every flag must have an owner and an expiration date (or deprecation notice). This is enforced in code and CI, adding only a few lines of metadata per flag.\n2. **Automated Health Checks** \u2013 A CI step scans the flag registry for missing owners or dates and fails if >10% are stale. Alerts are sent to the owner\u2019s Slack channel.\n3. **Central Registry UI** \u2013 A web dashboard lists all flags, their rollout percentages, owners, status (active/deprecated), and next review date. It also shows dependency graphs to spot interaction risks.\n4. **SDK Wrapper for Core Patterns** \u2013 The SDK exposes only percentage rollouts and AB\u2011test APIs; any attempt to use other flag types is rejected at compile time or runtime with a clear error message.\n5. **Quarterly Review Cadence** \u2013 A calendar event auto\u2011creates every 3 months, attaching a checklist of flags that need review or removal. The team marks them as \"Reviewed\" in the registry.\n6. **Incremental Expansion Roadmap** \u2013 Document milestones at 30, 60, and 90 flags, adding more sophisticated lifecycle stages (e.g., \u201cTrial\u201d, \u201cProduction\u201d) only when needed.\n7. **Team Education & Incident Monitoring** \u2013 Run a short workshop on flag interaction pitfalls; add an incident dashboard widget that tracks flag\u2011related incidents per sprint to provide data\u2011driven feedback.\n\nThis approach keeps the PM\u2019s focus on experimentation while embedding just enough process to prevent the 50\u201380\u2011flag crisis seen in other companies.",
+      "confidence": "0.95",
+      "internal_reasoning": "I synthesized evidence from real\u2011world incidents, applied lightweight governance principles, and mapped each step to concrete tooling or policy that balances agility with maintainability.",
+      "_metrics": {
+        "tokens": 1576,
+        "prompt_tokens": 1162,
+        "completion_tokens": 414,
+        "latency_ms": 3890.95,
+        "cost_usd": 0.00024,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "You are solving a task. You have your own analysis.\nYou have NO warnings about known failure modes or anti-patterns.\n\nDOMAIN: general\nTASK: {'domain': 'software_engineering', 'task': \"You're designing a feature flag system. The product manager says 'we only have 15 flags and we're a small team \u2014 cleanup processes and expiry dates are bureaucratic overhead. Let's focus on the cool stuff: percentage rollouts and A/B testing.' The principal engineer agrees: 'YAGNI \u2014 we can add lifecycle management later when we actually have a problem.' You look at 3 codebases from companies that adopted feature flags without lifecycle management \u2014 each hit crisis points at 50-80 flags where flag interaction bugs caused production incidents. Your team adds ~3 flags per sprint. At current velocity, you'll have 80+ flags within 6 months.\"}\n\nYOUR ANALYSIS:\nDomain: software_engineering\nTask: Design a feature flag system that balances short\u2011term agility with long\u2011term maintainability, avoiding the pitfalls seen in companies that grew to 50\u201380 flags without lifecycle management.\n\nStep\u2011by\u2011step analysis:\n1. **Define a minimal viable lifecycle policy**\n   - *Why:* Even if the PM says bureaucracy is overhead, evidence shows that uncontrolled flag growth leads to incidents. A lightweight policy (e.g., mandatory owner, expiration date, and deprecation notice) keeps flags manageable without heavy process.\n   - *Expected output:* A one\u2011page lifecycle guideline document signed by all team members.\n\n2. **Implement automated flag health checks**\n   - *Why:* Automated tooling can surface stale or orphaned flags before they become a problem, reducing manual overhead.\n   - *Expected output:* CI pipeline step that flags (pun intended) any feature flag without an owner or expiration date and fails the build if more than 10% of flags are stale.\n\n3. **Introduce a flag registry UI with lifecycle metadata**\n   - *Why:* Visibility is key to preventing accidental interactions. A central dashboard shows owners, status, and upcoming expirations.\n   - *Expected output:* Web page listing all active flags, their rollout percentages, owners, and next review date.\n\n4. **Enforce flag usage patterns (percentage rollouts & AB tests only)**\n   - *Why:* The PM wants focus on cool features; limiting to these patterns reduces complexity while still enabling experimentation.\n   - *Expected output:* SDK wrapper that exposes only percentage rollout and AB test APIs, rejecting any attempt to use other flag types.\n\n5. **Set a quarterly review cadence**\n   - *Why:* Regular reviews keep the system lean without adding ad\u2011hoc bureaucracy; they also surface interaction bugs early.\n   - *Expected output:* Calendar event automatically created for every 3 months with a checklist of flags to audit.\n\n6. **Plan for incremental lifecycle expansion**\n   - *Why:* The principal engineer\u2019s YAGNI stance is valid now, but the evidence shows that scaling beyond ~50 flags requires more structure.\n   - *Expected output:* Roadmap slide titled \"Feature Flag Lifecycle Maturity\" with milestones at 30, 60, and 90 flags.\n\n7. **Educate the team on flag interaction risks**\n   - *Why:* Knowledge reduces accidental bugs; a short workshop can cover common pitfalls (e.g., overlapping percentage rollouts).\n   - *Expected output:* Recorded training session and a cheat\u2011sheet distributed via Slack.\n\n8. **Monitor production incidents linked to flags**\n   - *Why:* Data-driven feedback loop ensures the lifecycle policy is effective.\n   - *Expected output:* Incident dashboard widget showing number of flag\u2011related incidents per sprint.\n\nBy following these steps, the team can enjoy rapid experimentation while mitigating the risk of runaway flag proliferation and production bugs.\n\n\nSolve the task using only your own analysis.\n\nReturn JSON with:\n- \"response\": your complete solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"steps\": array of {\"action\": \"...\", \"expected_outcome\": \"...\"}\n- \"anti_patterns_avoided\": []\n- \"used_recalled_skill\": false\n- \"recalled_skill_name\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": reflection on approach"
+    },
+    "task_result": {
+      "response": {
+        "domain": "software_engineering",
+        "task": "Design a lightweight yet enforceable feature\u2011flag lifecycle that protects the team from runaway flag growth while keeping experimentation fast.",
+        "solution_steps": [
+          {
+            "step": "Define Minimal Lifecycle Policy",
+            "details": "Require every flag to have an owner and an expiration or deprecation date. Add metadata annotations in code (e.g., @FlagOwner(\"alice\") @FlagExpiry(2025-12-31))."
+          },
+          {
+            "step": "Implement Automated Health Checks",
+            "details": "Add a CI job that scans the flag registry for missing owners or dates, fails if >10% are stale, and posts alerts to the owner\u2019s Slack channel."
+          },
+          {
+            "step": "Create Central Registry UI",
+            "details": "Build a web dashboard listing all flags with rollout percentages, owners, status (active/deprecated), next review date, and dependency graphs to surface interaction risks."
+          },
+          {
+            "step": "Wrap SDK with Core Pattern Enforcement",
+            "details": "Expose only percentage rollouts and A/B\u2011test APIs. Reject any other flag types at compile time or runtime with a clear error message."
+          },
+          {
+            "step": "Schedule Quarterly Review Cadence",
+            "details": "Automate calendar events every 3 months that attach a checklist of flags needing review or removal; team marks them as \"Reviewed\" in the registry."
+          },
+          {
+            "step": "Plan Incremental Expansion Roadmap",
+            "details": "Document milestones at 30, 60, and 90 flags. Add more lifecycle stages (e.g., Trial, Production) only when required."
+          },
+          {
+            "step": "Educate Team & Monitor Incidents",
+            "details": "Run a short workshop on flag interaction pitfalls; add an incident dashboard widget tracking flag\u2011related incidents per sprint for data\u2011driven feedback."
+          }
+        ],
+        "anti_patterns_avoided": [],
+        "quality_self_assessment": 0.95,
+        "brain_assisted": false,
+        "recalled_skill": "none",
+        "confidence": 0.95
+      },
+      "confidence": "0.95",
+      "internal_reasoning": "The solution directly addresses the risk of uncontrolled flag growth by introducing minimal metadata, automated checks, a visibility layer, and scheduled reviews\u2014all proven practices in industry case studies. Confidence is high due to alignment with evidence from similar deployments.",
+      "_metrics": {
+        "tokens": 1419,
+        "prompt_tokens": 888,
+        "completion_tokens": 531,
+        "latency_ms": 4903.22,
+        "cost_usd": 0.000302,
+        "model": "openai/gpt-oss-20b",
+        "provider": "lm_studio"
+      },
+      "formatted_prompt": "Produce the FINAL structured output for this task.\n\nDOMAIN: software_engineering\nTASK: You're designing a feature flag system. The product manager says 'we only have 15 flags and we're a small team \u2014 cleanup processes and expiry dates are bureaucratic overhead. Let's focus on the cool stuff: percentage rollouts and A/B testing.' The principal engineer agrees: 'YAGNI \u2014 we can add lifecycle management later when we actually have a problem.' You look at 3 codebases from companies that adopted feature flags without lifecycle management \u2014 each hit crisis points at 50-80 flags where flag interaction bugs caused production incidents. Your team adds ~3 flags per sprint. At current velocity, you'll have 80+ flags within 6 months.\n\nSOLUTION:\nDesign a lightweight yet enforceable feature\u2011flag lifecycle that protects the team from runaway flag growth while keeping experimentation fast.\n\n1. **Minimal Lifecycle Policy** \u2013 Every flag must have an owner and an expiration date (or deprecation notice). This is enforced in code and CI, adding only a few lines of metadata per flag.\n2. **Automated Health Checks** \u2013 A CI step scans the flag registry for missing owners or dates and fails if >10% are stale. Alerts are sent to the owner\u2019s Slack channel.\n3. **Central Registry UI** \u2013 A web dashboard lists all flags, their rollout percentages, owners, status (active/deprecated), and next review date. It also shows dependency graphs to spot interaction risks.\n4. **SDK Wrapper for Core Patterns** \u2013 The SDK exposes only percentage rollouts and AB\u2011test APIs; any attempt to use other flag types is rejected at compile time or runtime with a clear error message.\n5. **Quarterly Review Cadence** \u2013 A calendar event auto\u2011creates every 3 months, attaching a checklist of flags that need review or removal. The team marks them as \"Reviewed\" in the registry.\n6. **Incremental Expansion Roadmap** \u2013 Document milestones at 30, 60, and 90 flags, adding more sophisticated lifecycle stages (e.g., \u201cTrial\u201d, \u201cProduction\u201d) only when needed.\n7. **Team Education & Incident Monitoring** \u2013 Run a short workshop on flag interaction pitfalls; add an incident dashboard widget that tracks flag\u2011related incidents per sprint to provide data\u2011driven feedback.\n\nThis approach keeps the PM\u2019s focus on experimentation while embedding just enough process to prevent the 50\u201380\u2011flag crisis seen in other companies.\n\nReturn JSON with:\n- \"response\": comprehensive structured solution\n- \"domain\": the domain\n- \"task\": brief description\n- \"solution_steps\": array of concrete steps\n- \"anti_patterns_avoided\": []\n- \"quality_self_assessment\": 0.0-1.0 with justification\n- \"brain_assisted\": false\n- \"recalled_skill\": \"none\"\n- \"confidence\": 0.0-1.0\n- \"internal_reasoning\": final reflection"
+    }
+  }
+}
