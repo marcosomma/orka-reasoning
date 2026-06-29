@@ -141,7 +141,11 @@ class OrchestratorBase:
         )  # Cast to RedisStackMemoryLogger for type checking
         self.fork_manager = ForkGroupManager(self.memory.redis)
 
-        self.queue = self.orchestrator_cfg["agents"][:]  # Initial agent execution queue
+        from .execution.ordering import ordered_initial_queue
+
+        # Initial agent execution queue, reordered to honor agent-level depends_on
+        # (stable: unchanged when dependencies don't require a reorder).
+        self.queue = ordered_initial_queue(self.orchestrator_cfg["agents"][:], self.agent_cfgs)
         self.run_id = str(uuid4())  # Unique run/session ID
         self.step_index = 0  # Step counter for traceability
 

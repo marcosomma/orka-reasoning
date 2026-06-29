@@ -73,7 +73,10 @@ class SkillGraph:
     """
 
     def __init__(self, memory: Any) -> None:
-        self._memory = memory
+        # Uses raw Redis primitives (hset/sadd/srem/smembers/...) which the
+        # RedisStackMemoryLogger does not fully proxy; it exposes the raw client as
+        # `.redis`. Test fakes implement the primitives directly (no `.redis`).
+        self._memory = getattr(memory, "redis", None) or memory
 
     # ========== Skill CRUD ==========
 

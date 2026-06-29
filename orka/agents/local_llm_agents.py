@@ -26,8 +26,9 @@ Local LLM Agents Module
 ======================
 
 This module provides agents for interfacing with locally running large language models.
-Supports various local LLM serving solutions including Ollama, LM Studio, LMDeploy,
-and other OpenAI-compatible APIs.
+It speaks three provider protocols directly (no litellm): ``ollama`` (native API),
+``lm_studio`` (OpenAI-compatible), and ``openai_compatible``. Any other OpenAI-compatible
+server (vLLM, LMDeploy, etc.) is reachable through the ``openai_compatible`` provider.
 
 Local LLM agents enable:
 - Fully offline LLM workflows
@@ -114,8 +115,8 @@ class LocalLLMAgent(BaseAgent):
     Calls a local LLM endpoint (e.g. Ollama, LM Studio) with a prompt and returns the response.
 
     This agent mimics the same interface as OpenAI-based agents but uses local model endpoints
-    for inference. It supports various local LLM serving solutions like Ollama, LM Studio,
-    LMDeploy, and other OpenAI-compatible APIs.
+    for inference. Three providers are implemented directly: ``ollama``, ``lm_studio``, and
+    ``openai_compatible`` (the catch-all for any OpenAI-compatible server, e.g. vLLM/LMDeploy).
 
     Supported Providers:
     ------------------

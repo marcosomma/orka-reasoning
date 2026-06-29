@@ -29,17 +29,23 @@ dependencies = [
   "python-dotenv>=0.19.0",
   "GPUtil>=1.4.0",
   "psutil>=7.0.0",
-  # CLI runtime dependency required by litellm/uvicorn toolchain
+  # CLI runtime dependency for the uvicorn/typer toolchain
   "click>=8.1.8,<9.0.0",
-  
+
   # AI and LLM
   "openai>=1.0.0",
-  "litellm>=1.0.0",
   "numpy>=2.3.1",
   "sentence_transformers>=5.0.0",
-  
+  # Direct deps previously satisfied transitively via litellm; declared explicitly
+  # now that it's gone. aiohttp: local-LLM HTTP + dry-run providers. tiktoken:
+  # token counting in local_llm_agents (imported at module level).
+  "aiohttp>=3.8.0",
+  "tiktoken>=0.5.0",
+
   # Search and APIs
   "ddgs>=3.0.0",
+  # Directly imported (lazily) by search tools + plan-validator http client.
+  "requests>=2.28.0",
   
   # Web Framework
   "fastapi>=0.68.0",

@@ -84,9 +84,21 @@ class SkillTransferEngine:
 
     Scoring Weights:
         - structural: 0.35 — How similar the task shapes are
-        - semantic: 0.25 — How similar the descriptions are
+        - semantic: 0.25 — How similar the descriptions are (embedding cosine when an
+          embedder is supplied; keyword overlap otherwise)
         - transfer: 0.25 — How well the skill has transferred before
         - confidence: 0.15 — How reliable the skill is overall
+
+    What this engine does (and does NOT do):
+        - It RECALLS the most applicable known skills for a new context and RANKS them.
+        - "Adaptation" is *advisory*: ``_suggest_adaptations`` returns a description of the
+          input/output/structure/complexity deltas (e.g. "adapt input from X to Y"). It
+          does NOT rewrite the skill's procedure — the calling LLM applies the guidance
+          in-prompt. Treat candidates as retrieval + hints, not an auto-transformer.
+        - Semantic matching is strongest for skills carrying ``task_description`` /
+          ``domain_keywords`` (concrete terms); for legacy procedural skills it uses the
+          description text. (Structure is scored separately, so the semantic axis embeds
+          meaning only, not the shared structural tokens.)
     """
 
     WEIGHT_STRUCTURAL = 0.35
@@ -247,8 +259,15 @@ class SkillTransferEngine:
         """
         if self._embedder is not None:
             try:
-                skill_text = skill.to_embedding_text()
-                target_text = target_features.to_embedding_text()
+                # The SEMANTIC axis compares MEANING (task/description), not structural
+                # tokens — structure is already scored separately by structural_score, so
+                # embedding the shared "structures:/patterns:" boilerplate here would
+                # double-count it and dilute discrimination. Prefer the concrete
+                # task_description/description and the target's goal+task.
+                skill_text = skill.task_description or skill.description or skill.to_embedding_text()
+                target_text = " ".join(
+                    p for p in [target_features.abstract_goal, *target_features.domain_hints] if p
+                ) or target_features.to_embedding_text()
                 skill_vec = self._embedder.encode(skill_text)
                 target_vec = self._embedder.encode(target_text)
                 # Cosine similarity

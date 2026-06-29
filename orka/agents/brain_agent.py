@@ -73,7 +73,9 @@ class BrainAgent(BaseAgent):
                 raise RuntimeError(
                     f"BrainAgent '{self.agent_id}' requires a memory_logger. " "Ensure the orchestrator provides one."
                 )
-            self._brain = Brain(memory=mem)
+            from ..brain.embedding import default_brain_embedder
+
+            self._brain = Brain(memory=mem, embedder=default_brain_embedder())
         return self._brain
 
     # ------------------------------------------------------------------ #

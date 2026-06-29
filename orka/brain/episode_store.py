@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 
 # Redis key prefixes
 _EPISODE_PREFIX = "orka:brain:episode:"
+_VEC_PREFIX = "orka:brain:episode:vec:"
 _EPISODE_INDEX = "orka:brain:episode:index"
 _TIMELINE_KEY = "orka:brain:episode:timeline"
 _DOMAIN_PREFIX = "orka:brain:episode:domain:"
@@ -59,7 +60,11 @@ class EpisodeStore:
     """
 
     def __init__(self, memory: Any, embedder: Any | None = None) -> None:
-        self._memory = memory
+        # EpisodeStore uses raw Redis primitives (set/get/zadd/zrange/sadd/hset/...).
+        # The RedisStackMemoryLogger does not proxy those — it exposes the raw client
+        # as `.redis`. Test fakes implement the primitives directly, so fall back to
+        # the object itself when there is no `.redis` attribute.
+        self._memory = getattr(memory, "redis", None) or memory
         self._embedder = embedder
         self._last_cleanup: datetime = datetime.now(UTC)
 
@@ -102,6 +107,11 @@ class EpisodeStore:
         # Name index for fast enumeration
         self._memory.hset(_EPISODE_INDEX, episode.id, episode.task_domain)
 
+        # Compute the embedding ONCE here so recall doesn't re-embed every candidate
+        # on every query. Best-effort: recall lazily backfills if this is missing.
+        if self._embedder is not None:
+            self._store_embedding(episode.id, episode.to_embedding_text())
+
         logger.debug(
             "Saved episode '%s' (domain=%s, success=%s)",
             episode.id,
@@ -109,6 +119,34 @@ class EpisodeStore:
             episode.success,
         )
         return episode.id
+
+    # ---- embedding cache (vectors persisted alongside episodes) ----
+
+    def _store_embedding(self, episode_id: str, text: str) -> Any:
+        """Encode ``text`` and persist the vector for ``episode_id``. Returns the vector."""
+        if self._embedder is None:
+            return None
+        try:
+            import numpy as np
+
+            vec = np.asarray(self._embedder.encode(text), dtype=np.float32)
+            self._memory.set(f"{_VEC_PREFIX}{episode_id}", vec.tobytes())
+            return vec
+        except Exception:  # pragma: no cover - embedding cache is best-effort
+            logger.debug("Failed to store embedding for episode %s", episode_id)
+            return None
+
+    def _load_embedding(self, episode_id: str) -> Any:
+        """Load the persisted vector for ``episode_id`` (or ``None``)."""
+        try:
+            import numpy as np
+
+            raw = self._memory.get(f"{_VEC_PREFIX}{episode_id}")
+            if raw is None:
+                return None
+            return np.frombuffer(raw, dtype=np.float32)
+        except Exception:  # pragma: no cover
+            return None
 
     def get_episode(self, episode_id: str) -> Episode | None:
         """Retrieve an episode by ID.
@@ -151,8 +189,12 @@ class EpisodeStore:
             self._memory.srem(f"{_TYPE_PREFIX}{episode.task_type}", episode_id)
         self._memory.hdel(_EPISODE_INDEX, episode_id)
 
-        # Remove the episode data
+        # Remove the episode data and its cached embedding
         self._memory.delete(f"{_EPISODE_PREFIX}{episode_id}")
+        try:
+            self._memory.delete(f"{_VEC_PREFIX}{episode_id}")
+        except Exception:  # pragma: no cover
+            pass
 
         logger.debug("Deleted episode %s", episode_id)
         return True
@@ -264,25 +306,35 @@ class EpisodeStore:
         candidates: list[Episode],
         top_k: int,
     ) -> list[tuple[Episode, float]]:
-        """Semantic search via sentence embeddings."""
+        """Semantic search via sentence embeddings.
+
+        Encodes the query ONCE and reuses each episode's vector persisted at save time
+        (lazily backfilling any episode that predates the embedding cache), instead of
+        re-encoding every candidate on every call.
+        """
         if self._embedder is None:
             return self._keyword_search(query_text, candidates, top_k)
         try:
-            query_vec = self._embedder.encode(query_text)
+            import numpy as np
+
+            query_vec = np.asarray(self._embedder.encode(query_text), dtype=np.float32)
         except Exception:
             logger.warning("Embedder failed, falling back to keyword search")
             return self._keyword_search(query_text, candidates, top_k)
 
+        norm_q = float(np.linalg.norm(query_vec))
         scored: list[tuple[Episode, float]] = []
         for ep in candidates:
+            ep_vec = self._load_embedding(ep.id)
+            if ep_vec is None:
+                # Backfill: episode saved before the embedding cache existed.
+                ep_vec = self._store_embedding(ep.id, ep.to_embedding_text())
+            if ep_vec is None:
+                continue
             try:
-                ep_vec = self._embedder.encode(ep.to_embedding_text())
-                # Cosine similarity
-                dot = sum(a * b for a, b in zip(query_vec, ep_vec))
-                norm_q = math.sqrt(sum(a * a for a in query_vec))
-                norm_e = math.sqrt(sum(b * b for b in ep_vec))
+                norm_e = float(np.linalg.norm(ep_vec))
                 if norm_q > 0 and norm_e > 0:
-                    sim = (dot / (norm_q * norm_e) + 1) / 2  # Normalize to [0, 1]
+                    sim = (float(np.dot(query_vec, ep_vec)) / (norm_q * norm_e) + 1) / 2
                 else:
                     sim = 0.0
                 scored.append((ep, sim))

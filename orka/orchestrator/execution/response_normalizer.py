@@ -33,6 +33,61 @@ class ResponseNormalizer:
         payload_out: Dict[str, Any] = {"agent_id": agent_id}
 
         try:
+            # Unwrap a BaseAgent OrkaResponse before generic routing.
+            # BaseAgent.run wraps _run_impl output as
+            #   {result: <legacy dict>, status, component_id, component_type, ...}
+            # and does NOT promote confidence/cost/internal_reasoning to the top level —
+            # they live inside `result`. Without this, the generic block below sees no
+            # top-level "response" key, routes to from_node_response, and silently
+            # defaults confidence to 0.0 and drops cost_usd (data loss).
+            # Only unwrap genuine LLM legacy responses — those carry a "response" key.
+            # Node/agent outputs (e.g. GraphScout returns {decision, target, confidence,
+            # result}) also have "confidence"/"_metrics" but NO "response"; treating them
+            # as LLM responses would extract a non-existent "response" field and null out
+            # their real result. Require "response" so those fall through to from_node_response.
+            if (
+                isinstance(agent_result, dict)
+                and "component_type" in agent_result
+                and "status" in agent_result
+                and isinstance(agent_result.get("result"), dict)
+                and "response" in agent_result["result"]
+            ):
+                inner = dict(agent_result["result"])
+                for k in (
+                    "cost_usd", "token_usage", "confidence", "formatted_prompt",
+                    "internal_reasoning", "trace_id", "execution_time_ms",
+                ):
+                    if agent_result.get(k) is not None and inner.get(k) is None:
+                        inner[k] = agent_result[k]
+                # CRITICAL: keep `result` as the full inner dict. build_previous_outputs
+                # exposes previous_outputs[agent_id] = payload["result"], so templates
+                # navigate it as previous_outputs.x.<field> (e.g. .response, .domain,
+                # .episode_count). Collapsing result to inner["response"] would make it a
+                # bare string and break that navigation. We additionally PROMOTE the
+                # rich fields (confidence/cost/...) to the top level for logging/metrics.
+                payload_out.update(
+                    {
+                        "result": inner,
+                        "status": agent_result.get("status") or "success",
+                        "error": agent_result.get("error"),
+                        "response": inner.get("response"),
+                        "confidence": inner.get("confidence", 0.0),
+                        "internal_reasoning": inner.get("internal_reasoning", ""),
+                        "formatted_prompt": inner.get("formatted_prompt", ""),
+                        "execution_time_ms": agent_result.get("execution_time_ms"),
+                        "token_usage": inner.get("token_usage"),
+                        "cost_usd": inner.get("cost_usd"),
+                        "_metrics": inner.get("_metrics", {}),
+                        "trace_id": inner.get("trace_id") or agent_result.get("trace_id"),
+                    }
+                )
+                # Also surface agent-specific extras at the top level for any consumer
+                # that reads the normalized payload directly (not via previous_outputs).
+                for k, v in inner.items():
+                    if k not in payload_out:
+                        payload_out[k] = v
+                return normalize_payload(payload_out)
+
             # Dict-like results (LLM agents, nodes, memory agents)
             if isinstance(agent_result, dict) and (
                 "result" in agent_result or "memories" in agent_result or "response" in agent_result

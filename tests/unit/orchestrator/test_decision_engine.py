@@ -188,6 +188,55 @@ class TestDecisionEngine:
         assert decision["decision_type"] == "fallback"
         assert "error" in decision["reasoning"]
 
+    @pytest.mark.asyncio
+    async def test_make_decision_single_terminal_commits(self):
+        """require_terminal: a sole terminal path commits regardless of margin."""
+        config = self.create_mock_config(commit_margin=0.1, require_terminal=True)
+        engine = DecisionEngine(config)
+
+        candidates = [
+            {"node_id": "a1", "path": ["a1", "response_builder"], "score": 0.8, "confidence": 0.7},
+            {"node_id": "a2", "path": ["a2"], "score": 0.6, "confidence": 0.5},  # not terminal
+        ]
+        decision = await engine.make_decision(candidates, {})
+
+        assert decision["decision_type"] == "commit_path"
+        assert decision["target"] == ["a1", "response_builder"]
+
+    @pytest.mark.asyncio
+    async def test_make_decision_terminal_clear_winner_commits(self):
+        """require_terminal: best terminal beats runner-up by >= margin -> commit_path."""
+        config = self.create_mock_config(commit_margin=0.1, require_terminal=True)
+        engine = DecisionEngine(config)
+
+        candidates = [
+            {"node_id": "a1", "path": ["a1", "response_builder"], "score": 0.9, "confidence": 0.8},
+            {"node_id": "a2", "path": ["a2", "response_builder"], "score": 0.7, "confidence": 0.6},
+        ]
+        decision = await engine.make_decision(candidates, {})
+
+        assert decision["decision_type"] == "commit_path"
+        assert decision["target"] == ["a1", "response_builder"]
+
+    @pytest.mark.asyncio
+    async def test_make_decision_terminal_ambiguous_shortlists(self):
+        """require_terminal: terminal paths within the margin -> shortlist, not commit.
+
+        This is the regression guard for the commit_margin being dead under
+        require_terminal: with two near-tied terminal paths it must NOT blindly commit.
+        """
+        config = self.create_mock_config(commit_margin=0.1, k_beam=2, require_terminal=True)
+        engine = DecisionEngine(config)
+
+        candidates = [
+            {"node_id": "a1", "path": ["a1", "response_builder"], "score": 0.80, "confidence": 0.7},
+            {"node_id": "a2", "path": ["a2", "response_builder"], "score": 0.75, "confidence": 0.69},
+        ]
+        decision = await engine.make_decision(candidates, {})
+
+        assert decision["decision_type"] == "shortlist"
+        assert len(decision["target"]) == 2
+
     def test_find_terminal_paths_2_hop(self):
         """Test _find_terminal_paths finds 2-hop terminal paths."""
         config = self.create_mock_config()

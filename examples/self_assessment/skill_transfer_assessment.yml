@@ -1,0 +1,102 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Self-Assessment — Skill-Transfer Brain (stabilized POC)
+# ═══════════════════════════════════════════════════════════════════════
+# Verifies the integrity of the whole system AND the skill-transfer behavior:
+#   • a skill learned in one domain is RECALLED for a semantically-related task in a
+#     DIFFERENT domain (cross-domain transfer via the wired embedder);
+#   • recall returns a transfer score AND adaptation guidance (the advisory deltas the
+#     LLM would apply — the engine does not auto-rewrite procedures);
+#   • execution invariants hold.
+#
+# Run:  ORKA_TIMEOUT_SECONDS=600 orka run \
+#         examples/self_assessment/skill_transfer_assessment.yml "verify skill transfer"
+# Requires: Redis (orka-start) + an OpenAI-compatible LLM at model_url.
+# ═══════════════════════════════════════════════════════════════════════
+
+orchestrator:
+  id: skill-transfer-self-assessment
+  strategy: sequential
+  memory_preset: "procedural"
+  agents:
+    - learn_skill
+    - recall_skill
+    - integrity_check
+    - assessment_report
+
+agents:
+  # Learn a skill in the data-engineering domain.
+  - id: learn_skill
+    type: brain
+    operation: learn
+    prompt: |
+      {
+        "domain": "data_engineering",
+        "task": "validate records before deduplication",
+        "skill_name": "Validate-Before-Dedup",
+        "response": "Validate each record's schema and required fields first, then run deduplication so corrupt rows are caught before they are merged.",
+        "steps": ["validate record schema", "check required fields", "run deduplication", "verify merged output"],
+        "confidence": 0.9
+      }
+    params:
+      timeout: 30
+
+  # Recall for a semantically-related task in a DIFFERENT domain (CRM, not ETL).
+  - id: recall_skill
+    type: brain
+    operation: recall
+    prompt: |
+      {
+        "task": "How do I clean up corrupt entries before merging duplicate customer records?",
+        "domain": "crm",
+        "top_k": 3,
+        "min_score": 0.2
+      }
+    params:
+      timeout: 30
+
+  - id: integrity_check
+    type: invariant_validator
+    depends_on: recall_skill
+    prompt: |
+      EXECUTION_DATA_JSON:
+      {{ get_execution_artifacts(previous_outputs) | to_json_string }}
+    params:
+      max_depth: 50
+      strict_tool_errors: false
+
+  - id: assessment_report
+    type: local_llm
+    model: openai/gpt-oss-20b
+    model_url: http://localhost:1234
+    provider: lm_studio
+    temperature: 0.1
+    timeout: 120
+    depends_on: integrity_check
+    prompt: |
+      You are auditing the skill-transfer subsystem.
+
+      RECALL RESULT (for a CRM task about cleaning corrupt entries before merging duplicates):
+      recalled skill: {{ previous_outputs.recall_skill.skill_name | default('none') }}
+      combined_score: {{ previous_outputs.recall_skill.combined_score | default('MISSING') }}
+      semantic_score: {{ previous_outputs.recall_skill.semantic_score | default('MISSING') }}
+      adaptations: {{ previous_outputs.recall_skill.adaptations | default({}) }}
+
+      EXECUTION INTEGRITY:
+      {{ previous_outputs.integrity_check.response | default(previous_outputs.integrity_check) }}
+
+      Decide:
+      1. cross_domain_recall_ok: true if a skill was recalled (skill_name is not 'none')
+         that is clearly relevant to "validate/clean before deduplication/merge" — i.e. the
+         data-engineering skill transferred to the CRM task across domains.
+      2. semantic_contributed_ok: true if semantic_score is a number greater than 0.
+      3. integrity_ok: true if invariant validation reports no violations.
+
+      Return ONLY JSON:
+      {
+        "cross_domain_recall_ok": true/false,
+        "semantic_contributed_ok": true/false,
+        "integrity_ok": true/false,
+        "overall": "PASS" or "FAIL",
+        "evidence": "one sentence citing the recalled skill and score",
+        "confidence": 0.0-1.0
+      }

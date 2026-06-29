@@ -136,7 +136,7 @@ class SmartPathEvaluator(
             Candidates with evaluation results (LLM or deterministic)
         """
         # Check if LLM evaluation is disabled
-        if not getattr(self.config, "llm_evaluation_enabled", True):
+        if not getattr(self.config, "llm_evaluation_enabled", False):
             logger.info("LLM evaluation disabled, using deterministic evaluator")
             return self.deterministic_evaluator.evaluate_candidates(candidates, question, context)
 
@@ -239,7 +239,7 @@ class SmartPathEvaluator(
     async def _call_evaluation_llm(self, prompt: str, schema_key: str = "path-evaluator") -> str:
         """Call LLM for Stage 1/comprehensive evaluation with schema instructions."""
         try:
-            if not getattr(self.config, "llm_evaluation_enabled", True):
+            if not getattr(self.config, "llm_evaluation_enabled", False):
                 logger.warning("LLM evaluation disabled, cannot proceed without LLM")
                 raise ValueError("LLM evaluation is required but disabled")
 
@@ -304,7 +304,7 @@ class SmartPathEvaluator(
     async def _call_validation_llm(self, prompt: str) -> str:
         """Call LLM for Stage 2 validation."""
         try:
-            if not getattr(self.config, "llm_evaluation_enabled", True):
+            if not getattr(self.config, "llm_evaluation_enabled", False):
                 logger.warning("LLM validation disabled, cannot proceed without LLM")
                 raise ValueError("LLM validation is required but disabled")
 

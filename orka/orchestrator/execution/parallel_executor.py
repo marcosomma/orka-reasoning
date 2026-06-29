@@ -70,9 +70,11 @@ class ParallelExecutor:
 
             branch_tasks = [runner_callable(branch) for branch in branches]
 
+            from ...utils.concurrency import default_timeout_seconds
+
             branch_results = await asyncio.wait_for(
                 asyncio.gather(*branch_tasks, return_exceptions=True),
-                timeout=300,
+                timeout=default_timeout_seconds(),
             )
 
             result_logs: List[Dict[str, Any]] = []

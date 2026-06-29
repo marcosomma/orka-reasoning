@@ -86,36 +86,47 @@ Implementation Features
 - Optimized queue processing algorithms
 - Resource pooling for external connections
 
-Execution Patterns
------------------
+Execution Model
+---------------
 
-**Sequential Execution:**
+Execution is always a **sequential queue** built from the orchestrator's ``agents``
+list (reordered to honor any agent-level ``depends_on``). Concurrency and branching
+are expressed through *nodes*, not a top-level ``strategy`` switch:
+
+**Linear flow** — agents run in queue order:
 ```yaml
 orchestrator:
-  strategy: sequential
   agents: [classifier, router, processor, responder]
 ```
 
-**Parallel Execution:**
-```yaml
-orchestrator:
-  strategy: parallel
-  fork_groups:
-    - agents: [validator_1, validator_2, validator_3]
-      join_agent: aggregator
-```
-
-**Conditional Branching:**
+**Parallelism** — a ``fork`` node fans out branches that a ``join`` node syncs:
 ```yaml
 agents:
-  - id: router
-    type: router
-    conditions:
-      - condition: "{{ classification == 'urgent' }}"
-        next_agents: [urgent_handler]
-      - condition: "{{ classification == 'normal' }}"
-        next_agents: [normal_handler]
+  - id: checks
+    type: fork
+    targets:
+      - [validator_1]
+      - [validator_2]
+  - id: aggregator
+    type: join
+    group: checks
 ```
+
+**Conditional branching** — a ``router`` node selects the next agents:
+```yaml
+agents:
+  - id: route
+    type: router
+    params:
+      decision_key: classification
+      routing_map:
+        urgent: [urgent_handler]
+        normal: [normal_handler]
+```
+
+Note: a top-level ``strategy:`` key may appear in configs but does not switch the
+execution engine — the engine always runs the sequential queue. ``strategy`` is read
+only by the graph-introspection/visualization layer.
 
 Integration Points
 -----------------
@@ -197,34 +208,38 @@ class ExecutionEngine(
 
     Proof: See `tests/integration/test_execution_*` and `docs/INTEGRATION_EXAMPLES.md` for concrete verification and examples.
 
-    Execution Patterns:
+    Execution Model:
 
-    Sequential Processing:
+    The engine runs a single sequential queue (ordered by the ``agents`` list and
+    any ``depends_on``). Parallelism and branching come from nodes, not a top-level
+    ``strategy`` switch:
+
+    Linear flow:
     ```yaml
     orchestrator:
-      strategy: sequential
       agents: [classifier, router, processor, responder]
     ```
 
-    Parallel Processing:
+    Parallelism (fork/join nodes):
     ```yaml
-    orchestrator:
-      strategy: parallel
-      agents: [validator_1, validator_2, validator_3]
+    agents:
+      - {id: checks, type: fork, targets: [[validator_1], [validator_2]]}
+      - {id: aggregator, type: join, group: checks}
     ```
 
-    Decision Tree:
+    Conditional branching (router node):
     ```yaml
-    orchestrator:
-      strategy: decision-tree
-      agents: [classifier, router, [path_a, path_b], aggregator]
+    agents:
+      - {id: route, type: router, params: {decision_key: kind, routing_map: {a: [path_a], b: [path_b]}}}
     ```
 
-    Advanced Features:
-    - Intelligent retry logic with exponential backoff
-    - Near real-time monitoring and performance metrics (deployment-dependent)
-    - Resource management and connection pooling
-    - Distributed execution capabilities (operational validation required)
+    A top-level ``strategy:`` key is not read by the engine (it only affects graph
+    visualization); the queue is always sequential.
+
+    Features:
+    - Branch-level retry with exponential backoff (see _run_branch_with_retry)
+    - Per-run metrics collection
+    - Concurrency/timeout bounded by ORKA_MAX_CONCURRENT_REQUESTS / ORKA_TIMEOUT_SECONDS
 
     Use Cases:
     - Multi-step AI reasoning workflows

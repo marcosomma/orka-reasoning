@@ -108,14 +108,19 @@ class TestRunExecution:
     @pytest.fixture
     def mock_request(self):
         request = MagicMock(spec=Request)
-        request.json = AsyncMock(return_value={
+        # The hardened run_execution reads the raw body (for the size limit) and json.loads
+        # it, rather than calling request.json(). Provide the body as JSON bytes.
+        payload = {
             "input": "test input",
             "yaml_config": """orchestrator:
   id: test_orch
 agents:
   - id: agent1
-    type: dummy"""
-        })
+    type: dummy""",
+        }
+        request.body = AsyncMock(return_value=json.dumps(payload).encode("utf-8"))
+        # No ORKA_API_KEY in tests -> the api-key block is skipped and headers untouched.
+        request.headers = {}
         return request
 
     @pytest.mark.asyncio
@@ -130,7 +135,7 @@ agents:
 
         response = await run_execution(mock_request)
 
-        mock_request.json.assert_awaited_once()
+        mock_request.body.assert_awaited_once()
         mock_mkstemp.assert_called_once_with(suffix=".yml")
         # mock_close is not a mock object, so we can't assert called on it
         mock_open.assert_called_once_with("/tmp/test_config.yml", "w", encoding="utf-8")
@@ -238,7 +243,8 @@ def test_server_startup_with_env_port(mock_exit, mock_run):
     with patch.dict("os.environ", {"ORKA_PORT": "8002"}):
         from orka import server
         server.main()
-    mock_run.assert_called_once_with(app, host="0.0.0.0", port=8002)
+    # Hardened default: bind localhost (set ORKA_SERVER_HOST=0.0.0.0 to expose).
+    mock_run.assert_called_once_with(app, host="127.0.0.1", port=8002)
 
 @patch("uvicorn.run")
 @patch("sys.exit")
@@ -246,7 +252,8 @@ def test_server_startup_default_port(mock_exit, mock_run):
     with patch.dict("os.environ", {}):
         from orka import server
         server.main()
-    mock_run.assert_called_once_with(app, host="0.0.0.0", port=8001)
+    # Hardened default: bind localhost (set ORKA_SERVER_HOST=0.0.0.0 to expose).
+    mock_run.assert_called_once_with(app, host="127.0.0.1", port=8001)
 
 
 class DummyRedisClient:

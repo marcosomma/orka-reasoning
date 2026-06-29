@@ -34,6 +34,13 @@ agents:
         stability.consistent_direction: 0.20
         stability.not_degrading: 0.15
         convergence.within_tolerance: 0.15
+
+    # Embedding-agreement is an explicit opt-in fallback (the old agent-name
+    # auto-detection for progressive/conservative/realist/purist has been removed).
+    # In practice the loop_validator's boolean scoring wins first; this is the
+    # documented safety net for this perspective-debate workflow.
+    score_extraction_config:
+      agreement_fallback: true
     
     # 🔧 OPTIMIZED: Reduced extraction patterns and length
     cognitive_extraction:

@@ -71,6 +71,9 @@ class GraphScoutConfig:
     k_beam: int = 3
     max_depth: int = 2
     commit_margin: float = 0.15
+    # Hard cap on candidate paths emitted by discovery (post-dedup). Bounds the
+    # combinatorial blow-up of universal-routing DFS; excess is dropped with a log.
+    max_candidates: int = 50
 
     # Scoring mode selection
     scoring_mode: str = "numeric"  # "numeric" (default) or "boolean" (deterministic)
@@ -504,13 +507,14 @@ class GraphScoutAgent(BaseNode):
         """Apply Brain skill recall to boost or penalize candidate paths."""
         try:
             from ..brain.brain import Brain
+            from ..brain.embedding import default_brain_embedder
             from ..brain.skill import SkillType
 
             memory = context.get("memory")
             if memory is None:
                 return candidates
 
-            brain = Brain(memory=memory)
+            brain = Brain(memory=memory, embedder=default_brain_embedder())
             recalled = await brain.recall(
                 context={"task": question},
                 skill_types=[

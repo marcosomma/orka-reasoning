@@ -36,12 +36,6 @@ try:
 except Exception:
     rs_mod = None
 
-try:
-    import litellm.llms.custom_httpx.async_client_cleanup as _litellm_async_cleanup
-except Exception:
-    _litellm_async_cleanup = None
-
-
 # Minimal test-time shim for redis to avoid network/ConnectionPool side-effects.
 def _ensure_redis_shim():
     # Prefer the real redis package if it's installed.
@@ -210,20 +204,6 @@ def global_test_mocks(request, monkeypatch):
 os.environ["PYTEST_RUNNING"] = "true"
 os.environ["ORKA_ENV"] = "test"
 
-# LiteLLM registers an async-client cleanup that can emit a
-# "coroutine ... was never awaited" RuntimeWarning at interpreter shutdown
-# (after pytest has already finished).
-# We neutralize that cleanup in tests to keep warning policy strict for OrKa code.
-try:
-    import litellm.llms.custom_httpx.async_client_cleanup as _litellm_async_cleanup
-
-    def _orka__noop_close_litellm_async_clients(*args, **kwargs):
-        return None
-
-    _litellm_async_cleanup.close_litellm_async_clients = _orka__noop_close_litellm_async_clients
-except Exception:
-    pass
-
 # Mock external services that should not run in unit tests
 MOCK_EXTERNAL_SERVICES = [
     'redis.Redis',
@@ -231,7 +211,6 @@ MOCK_EXTERNAL_SERVICES = [
     'sentence_transformers.SentenceTransformer',
     'ddgs.DDGS',
     'openai.OpenAI',
-    'litellm.completion',
     'httpx.AsyncClient',
 ]
 
@@ -266,12 +245,6 @@ def mock_external_services(request):
         {"title": "Test Result", "body": "Test content", "href": "https://test.com"}
     ]
     
-    # Mock LiteLLM
-    litellm_mock = Mock()
-    litellm_mock.completion.return_value = Mock(
-        choices=[Mock(message=Mock(content="Test LLM response"))]
-    )
-    
     # ddgs is an optional dependency; patching ddgs.DDGS requires the module to exist.
     # In minimal CI environments it may be absent, so we stub it in sys.modules first.
     if "ddgs" not in sys.modules:
@@ -283,8 +256,6 @@ def mock_external_services(request):
          patch('redis.asyncio.Redis', return_value=redis_mock), \
          patch('sentence_transformers.SentenceTransformer', return_value=embedder_mock), \
          patch('ddgs.DDGS', return_value=ddgs_mock), \
-         patch('litellm.completion', return_value=litellm_mock), \
-         patch('litellm.llms.custom_httpx.async_client_cleanup.close_litellm_async_clients', lambda *a, **k: None), \
          patch('httpx.AsyncClient'):
         yield
 

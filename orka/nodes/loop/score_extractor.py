@@ -237,6 +237,22 @@ class LoopScoreExtractor:
         return None
 
     async def extract_score(self, result: Dict[str, Any]) -> float:
+        """Extract a loop score in [0,1] from the iteration's agent outputs.
+
+        Strategies are tried in this fixed precedence (first match wins):
+          1. Boolean scoring — when a score_calculator is configured and an agent
+             emits structured ``boolean_evaluations`` (the principled path).
+          2. High-priority "score agent" regex — AGREEMENT_SCORE/SCORE patterns in a
+             configured high-priority agent's response.
+          3. Config strategies (in declared order): ``direct_key`` → ``pattern`` →
+             ``agent_key``.
+          4. Guard: if high-priority score agents are present but produced nothing,
+             return 0.0 (never override an explicit-but-empty score with a heuristic).
+          5. Embedding-agreement fallback — cosine similarity across agent responses,
+             ONLY when ``agreement_fallback: true`` is set in the scoring config
+             (the old agent-name auto-detection has been removed).
+          6. Otherwise 0.0.
+        """
         if not result:
             return 0.0
 
@@ -467,20 +483,17 @@ class LoopScoreExtractor:
             )
             return 0.0
 
-        cognitive_agents = [
-            aid
-            for aid in agent_ids
-            if any(word in aid.lower() for word in ["progressive", "conservative", "realist", "purist"])
-        ]
-        if len(cognitive_agents) >= 2:
-            logger.info(
-                "Detected cognitive debate with agents: %s (no score moderators found)",
-                cognitive_agents,
-            )
-            logger.info("Using embedding-based agreement computation as final fallback")
+        # Embedding-agreement fallback (cosine similarity across agent responses).
+        # Strictly opt-in via `agreement_fallback: true` in the loop's
+        # score_extraction_config. (Historically this was auto-triggered by hardcoded
+        # agent names — progressive/conservative/realist/purist — which made a core node
+        # behave differently based on naming; that magic has been removed.)
+        agreement_fallback = bool(self.score_extraction_config.get("agreement_fallback", False))
+        if agreement_fallback and len(agent_ids) >= 2:
+            logger.info("Using embedding-based agreement computation (agreement_fallback enabled)")
             try:
                 agreement_score = await self._compute_agreement_score(result)
-                logger.info("[OK] Computed fallback agreement score: %s", agreement_score)
+                logger.info("[OK] Computed agreement score: %s", agreement_score)
                 return float(agreement_score)
             except Exception as e:
                 logger.error("Failed to compute agreement score: %s", e)

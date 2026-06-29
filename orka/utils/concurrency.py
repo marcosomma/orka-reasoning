@@ -44,12 +44,48 @@ await concurrency.shutdown()
 
 import asyncio
 import logging
+import os
 from functools import wraps
 from typing import Any, Callable, Optional, TypeVar
 
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")  # Type variable for generic return types
+
+
+def default_max_concurrency() -> int:
+    """Resolve the default concurrency limit from ORKA_MAX_CONCURRENT_REQUESTS (fallback 10)."""
+    try:
+        value = int(os.getenv("ORKA_MAX_CONCURRENT_REQUESTS", "10"))
+        return value if value > 0 else 10
+    except (TypeError, ValueError):
+        logger.warning("Invalid ORKA_MAX_CONCURRENT_REQUESTS; using default 10")
+        return 10
+
+
+def default_timeout_seconds() -> float:
+    """Resolve the default operation timeout from ORKA_TIMEOUT_SECONDS (fallback 300s)."""
+    try:
+        value = float(os.getenv("ORKA_TIMEOUT_SECONDS", "300"))
+        return value if value > 0 else 300.0
+    except (TypeError, ValueError):
+        logger.warning("Invalid ORKA_TIMEOUT_SECONDS; using default 300")
+        return 300.0
+
+
+def default_agent_timeout_seconds() -> float:
+    """Resolve the per-agent execution timeout.
+
+    Honors ORKA_TIMEOUT_SECONDS so a single env var can raise every agent's timeout
+    (useful for slower local models); falls back to 120s to preserve prior behavior.
+    An explicit ``timeout`` in an agent's YAML config still overrides this.
+    """
+    try:
+        value = float(os.getenv("ORKA_TIMEOUT_SECONDS", "120"))
+        return value if value > 0 else 120.0
+    except (TypeError, ValueError):
+        logger.warning("Invalid ORKA_TIMEOUT_SECONDS; using default 120")
+        return 120.0
 
 
 class ConcurrencyManager:
@@ -65,15 +101,18 @@ class ConcurrencyManager:
         _active_tasks (set): Tracks all active tasks for later cleanup
     """
 
-    def __init__(self, max_concurrency: int = 10):
+    def __init__(self, max_concurrency: int | None = None):
         """
         Initialize a new concurrency manager.
 
         Args:
             max_concurrency: Maximum number of tasks allowed to run concurrently.
-                            Default is 10. Set based on system resources and
-                            expected load patterns.
+                            When None, resolved from ORKA_MAX_CONCURRENT_REQUESTS
+                            (default 10). Set based on system resources and load.
         """
+        if max_concurrency is None:
+            max_concurrency = default_max_concurrency()
+        self.max_concurrency = max_concurrency
         self.semaphore = asyncio.Semaphore(max_concurrency)
         self._active_tasks: set[asyncio.Task] = set()
 

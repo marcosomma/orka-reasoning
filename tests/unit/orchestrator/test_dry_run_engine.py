@@ -197,6 +197,23 @@ class TestSmartPathEvaluator:
         assert result[0]["llm_evaluation"]["is_deterministic_fallback"] is True
 
     @pytest.mark.asyncio
+    async def test_simulate_candidates_defaults_to_deterministic_when_flag_absent(self):
+        """Fail-safe: if the config lacks llm_evaluation_enabled, default to deterministic.
+
+        Mirrors GraphScoutConfig's real default (False). Were the getattr default still
+        True, this would attempt a (mock-config) LLM call instead of the safe fallback.
+        """
+        config = self.create_mock_config()
+        del config.llm_evaluation_enabled  # attribute truly absent -> exercise getattr default
+        evaluator = SmartPathEvaluator(config)
+
+        candidates = [{"node_id": "test_agent", "path": ["test_agent"]}]
+        result = await evaluator.simulate_candidates(candidates, "Test question", {}, Mock())
+
+        assert len(result) == 1
+        assert result[0]["llm_evaluation"]["is_deterministic_fallback"] is True
+
+    @pytest.mark.asyncio
     async def test_simulate_candidates_llm_failure_with_fallback(self):
         """Test simulate_candidates with LLM failure and fallback enabled."""
         config = self.create_mock_config()

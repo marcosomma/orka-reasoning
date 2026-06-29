@@ -55,10 +55,17 @@ class QueueProcessor:
             if not hasattr(engine, "queue"):
                 engine.queue = []
 
-            # Initialize queue from orchestrator_cfg if available (tests expect orchestrator_cfg to drive the run)
+            # Initialize queue from orchestrator_cfg if available (tests expect orchestrator_cfg to drive the run).
+            # Reorder by agent-level depends_on (stable; unchanged when deps don't force a reorder).
             if hasattr(engine, "orchestrator_cfg"):
                 try:
-                    engine.queue = list(engine.orchestrator_cfg.get("agents", []))
+                    from .ordering import ordered_initial_queue
+
+                    agent_ids = list(engine.orchestrator_cfg.get("agents", []))
+                    engine.queue = ordered_initial_queue(agent_ids, getattr(engine, "agent_cfgs", None))
+                except ValueError:
+                    # depends_on cycle — fail the run with a clear error.
+                    raise
                 except Exception:
                     engine.queue = []
 
