@@ -368,22 +368,21 @@ def hybrid_vector_search(
                         logger.debug(
                             f"- No score field found. Available fields: {available_fields}"
                         )
-                        raw_score = 0.0
 
                     try:
-                        score = float(raw_score)
-                        import math
+                        if raw_score is None:
+                            score = 0.0  # unknown score -> no similarity claim
+                        else:
+                            distance = float(raw_score)
+                            import math
 
-                        if math.isnan(score) or math.isinf(score):
-                            score = 0.0
-                        # This maps distance [0, 2] to similarity [1, 0]
-                        if score < 0:
-                            score = 1.0  # Treat negative as perfect similarity
-                        elif score > 2:
-                            score = 0.0  # Treat > 2 as no similarity
-
-                        # Ensure final score is in [0, 1] range
-                        score = max(0.0, min(1.0, score))
+                            if math.isnan(distance) or math.isinf(distance):
+                                score = 0.0  # unusable score -> no similarity
+                            else:
+                                # Cosine distance [0, 2] -> similarity [1, 0]
+                                # (distance 0 = identical vectors = similarity 1.0)
+                                distance = max(0.0, min(2.0, distance))
+                                score = 1.0 - distance / 2.0
                         logger.debug(
                             f"- Converted cosine distance {raw_score} -> similarity {score}"
                         )
