@@ -101,7 +101,10 @@ class RedisStackMemoryLogger(
         self.format_params = format_params or {}
         self.stream_key = stream_key
         self.debug_keep_previous_outputs = debug_keep_previous_outputs
-        self.memory_decay_config: dict[str, Any] | None = effective_decay_config
+        # Use the preset-resolved config from BaseMemoryLogger.__init__ (self.decay_config),
+        # not the raw input: the decay/metrics mixins read memory_decay_config, and the
+        # raw dict never sees memory_preset resolution.
+        self.memory_decay_config: dict[str, Any] | None = self.decay_config
 
         # Initialize connection manager (composition)
         self._conn_mgr = ConnectionManager(
