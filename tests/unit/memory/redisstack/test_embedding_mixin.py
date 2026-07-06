@@ -103,11 +103,14 @@ class TestEmbeddingMixinGetEmbedding:
         assert result is not None
         np.testing.assert_array_equal(result, embedding)
 
-    def test_get_embedding_with_fallback(self):
+    def test_get_embedding_async_context_uses_real_encoder(self):
+        """In an async context the real model (encode_sync) must be preferred;
+        the hash fallback would silently defeat semantic search."""
         logger = MockEmbeddingLogger()
         mock_embedder = MagicMock()
         mock_embedder.embedding_dim = 384
-        mock_embedder._fallback_encode.return_value = np.array([0.5, 0.5, 0.5])
+        real_vec = np.array([0.1, 0.2, 0.3])
+        mock_embedder.encode_sync.return_value = real_vec
         logger.embedder = mock_embedder
 
         # Simulate being in an async context
@@ -115,8 +118,54 @@ class TestEmbeddingMixinGetEmbedding:
             mock_asyncio.get_running_loop.return_value = MagicMock()
             result = logger._get_embedding_sync("test text")
 
-        assert result is not None
+        np.testing.assert_array_equal(result, real_vec)
+        mock_embedder.encode_sync.assert_called_once_with("test text")
+        mock_embedder._fallback_encode.assert_not_called()
+
+    def test_get_embedding_async_context_fallback_without_encode_sync(self):
+        """Hash fallback is only used when the embedder has no sync encoder."""
+        logger = MockEmbeddingLogger()
+        fallback_vec = np.array([0.5, 0.5, 0.5])
+        # spec limits attributes: no encode_sync available
+        mock_embedder = MagicMock(spec=["_fallback_encode", "embedding_dim"])
+        mock_embedder.embedding_dim = 384
+        mock_embedder._fallback_encode.return_value = fallback_vec
+        logger.embedder = mock_embedder
+
+        with patch("orka.memory.redisstack.embedding_mixin.asyncio") as mock_asyncio:
+            mock_asyncio.get_running_loop.return_value = MagicMock()
+            result = logger._get_embedding_sync("test text")
+
+        np.testing.assert_array_equal(result, fallback_vec)
         mock_embedder._fallback_encode.assert_called_once_with("test text")
+
+    def test_get_embedding_in_running_loop_uses_real_model(self):
+        """Regression (deep-review 2026-07): log_memory during orchestration runs
+        inside an event loop; embeddings stored there must come from the real
+        model, not the hash-based fallback, or stored vectors are incomparable
+        with real query vectors and vector search returns noise."""
+        import asyncio as real_asyncio
+
+        from orka.utils.embedder import AsyncEmbedder
+
+        with patch.object(AsyncEmbedder, "_load_model"):
+            embedder = AsyncEmbedder("dummy-model")
+        real_vec = np.full(embedder.embedding_dim, 0.25, dtype=np.float32)
+        embedder.model = MagicMock()
+        embedder.model.encode.return_value = real_vec
+        embedder.model_loaded = True
+
+        logger = MockEmbeddingLogger()
+        logger.embedder = embedder
+
+        async def in_loop():
+            return logger._get_embedding_sync("regression text")
+
+        result = real_asyncio.run(in_loop())
+
+        np.testing.assert_array_equal(result, real_vec)
+        hash_vec = embedder._fallback_encode("regression text")
+        assert not np.array_equal(result, hash_vec)
 
     def test_get_embedding_error_returns_zeros(self):
         logger = MockEmbeddingLogger()
