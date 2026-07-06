@@ -321,7 +321,7 @@ class PathExecutorNode(BaseNode):
         """
         Extract agent path from previous_outputs using path_source.
 
-        [DEBUG] Bug #3 Fix: Try multiple path variants to handle different output structures
+        Try multiple path variants to handle different output structures
 
         Args:
             context: Execution context with previous_outputs

@@ -58,7 +58,7 @@ def create_past_loop_object(
         "reasoning_quality": reasoning_quality,
         "convergence_trend": convergence_trend,
         "timestamp": datetime.now().isoformat(),
-        # BUG #9: do NOT include full result/previous_outputs in templates (trace bloat)
+        # Do NOT include full result/previous_outputs in templates (trace bloat)
         "input": safe_input,
         "insights": cognitive_insights.get("insights", ""),
         "improvements": cognitive_insights.get("improvements", ""),
@@ -108,7 +108,7 @@ def create_past_loop_object(
     past_loop_obj.setdefault("loop_number", loop_number)  # type: ignore[arg-type]
     past_loop_obj.setdefault("score", score)  # type: ignore[arg-type]
     past_loop_obj.setdefault("timestamp", datetime.now().isoformat())  # type: ignore[arg-type]
-    # BUG #9: do NOT add "result" field (trace bloat)
+    # Do NOT add "result" field (trace bloat)
     _ = safe_result  # keep variable for parity; intentionally unused
 
     return past_loop_obj

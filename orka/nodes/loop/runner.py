@@ -102,7 +102,7 @@ async def run_loop(
         # Add to our local past_loops array
         past_loops.append(past_loop_obj)
 
-        # [DEBUG] Fix: Limit past_loops size to prevent unbounded growth
+        # Limit past_loops size to prevent unbounded growth
         MAX_PAST_LOOPS_PER_RUN = 20
         if len(past_loops) > MAX_PAST_LOOPS_PER_RUN:
             past_loops = past_loops[-MAX_PAST_LOOPS_PER_RUN:]

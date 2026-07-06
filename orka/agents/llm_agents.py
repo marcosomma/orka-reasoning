@@ -132,7 +132,7 @@ def _extract_json_content(text: str) -> str:
 
 def _normalize_python_to_json(text: str) -> str:
     """
-    [DEBUG] Bug #6 Fix: Normalize Python dict syntax to valid JSON.
+    Normalize Python dict syntax to valid JSON.
     
     Converts common Python syntax to JSON:
     - Single quotes to double quotes
@@ -161,7 +161,7 @@ def _parse_json_safely(json_content: str) -> dict[str, Any] | None:
         return None
     except json.JSONDecodeError:
         try:
-            # [DEBUG] Bug #6 Fix: Try normalizing Python syntax to JSON before fixing
+            # Try normalizing Python syntax to JSON before fixing
             normalized = _normalize_python_to_json(json_content)
             result = json.loads(normalized)
             if isinstance(result, dict):
