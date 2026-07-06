@@ -111,3 +111,33 @@ def test_raw_legacy_dict_still_works():
     )
     assert payload["confidence"] == 0.5
     assert payload["response"] == "ok"
+
+
+class TestConfidenceIsNumeric:
+    """Regression (deep-review 2026-07): every normalization/fallback path must
+    default confidence to float 0.0, never the string "0.0" - templates and
+    scorers compare confidence numerically."""
+
+    def test_build_previous_outputs_response_only_confidence_is_float(self):
+        from orka.orchestrator.metrics import MetricsCollector
+
+        collector = MetricsCollector.__new__(MetricsCollector)
+        logs = [{"agent_id": "a1", "payload": {"response": "hello"}}]
+        outputs = collector.build_previous_outputs(logs)
+
+        conf = outputs["a1"]["confidence"]
+        assert isinstance(conf, float)
+        assert conf == 0.0
+        assert conf < 0.5  # numeric comparison must not raise
+
+    def test_queue_processor_has_no_inline_normalizer_duplicate(self):
+        """The inline fallback duplicated ResponseNormalizer and had drifted
+        (string "0.0" confidence). It must stay gone: queue_processor now
+        lazily attaches the real ResponseNormalizer instead."""
+        import inspect
+
+        from orka.orchestrator.execution import queue_processor
+
+        src = inspect.getsource(queue_processor)
+        assert '"0.0"' not in src
+        assert "from_llm_agent_response" not in src

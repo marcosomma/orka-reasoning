@@ -341,7 +341,8 @@ class MetricsCollector:
             elif "response" in payload:
                 outputs[agent_id] = {
                     "response": payload["response"],
-                    "confidence": payload.get("confidence", "0.0"),
+                    # float, not "0.0": templates/scorers compare confidence numerically
+                    "confidence": payload.get("confidence", 0.0),
                     "internal_reasoning": payload.get("internal_reasoning", ""),
                     "_metrics": payload.get("_metrics", {}),
                     "formatted_prompt": payload.get("formatted_prompt", ""),

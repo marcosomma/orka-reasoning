@@ -128,7 +128,8 @@ class ResponseProcessor:
                 if "response" not in payload_out:
                     payload_out["response"] = payload_out.get("result") or ""
                 if "confidence" not in payload_out:
-                    payload_out["confidence"] = payload_out.get("confidence", "0.0")
+                    # float, not "0.0": templates/scorers compare confidence numerically
+                    payload_out["confidence"] = 0.0
             except Exception:
                 logger.debug("Failed to set fallback response/confidence for %s", agent_id_ret)
 
