@@ -338,7 +338,10 @@ class Brain:
         skill.record_transfer(record)
         self._graph.save_skill(skill)
 
-        # If transfer was successful, create a TRANSFERRED_TO edge
+        # The transfer outcome is recorded on the skill itself (record_transfer
+        # above: confidence, success rate, TTL, transfer history). No graph edge
+        # is created here — TRANSFERRED_TO edges connect two skills, and feedback
+        # only knows the target *context*, not a target skill.
         if success:
             logger.info(f"Skill '{skill.name}' successfully transferred " f"(confidence now {skill.confidence:.2f})")
         else:

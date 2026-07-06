@@ -43,6 +43,15 @@ from ..contracts import Context
 logger = logging.getLogger(__name__)
 
 
+def _coerce_bool(value: Any) -> bool:
+    """Coerce a payload value to bool, treating the strings "false"/"no"/"0"
+    as False. Payload values come from rendered Jinja templates, so booleans
+    frequently arrive as strings and plain bool() would make "false" truthy."""
+    if isinstance(value, str):
+        return value.strip().lower() not in ("false", "no", "0", "")
+    return bool(value)
+
+
 class BrainAgent(BaseAgent):
     """Orchestrator agent that wraps the Brain learn/recall cycle.
 
@@ -210,9 +219,17 @@ class BrainAgent(BaseAgent):
             "input": payload.get("input_description", response_text[:100]),
         }
 
+        # Outcome is caller-scored: workflows can pass success/quality (e.g. from
+        # an independent scorer agent). Hardcoding success=True here would make
+        # the learn path unable to record failures, contradicting the Brain's
+        # record-both-successes-and-failures design.
+        try:
+            quality = min(1.0, float(payload.get("quality", confidence)))
+        except (TypeError, ValueError):
+            quality = 0.5
         outcome = {
-            "success": True,
-            "quality": min(1.0, float(confidence)),
+            "success": _coerce_bool(payload.get("success", True)),
+            "quality": quality,
         }
 
         skill = await brain.learn(
@@ -322,9 +339,7 @@ class BrainAgent(BaseAgent):
             "input": payload.get("input_description", ""),
         }
 
-        success = payload.get("success", True)
-        if isinstance(success, str):
-            success = success.lower() not in ("false", "0", "no")
+        success = _coerce_bool(payload.get("success", True))
 
         adaptations = payload.get("adaptations", {})
 
@@ -375,12 +390,10 @@ class BrainAgent(BaseAgent):
             "output_format": payload.get("output_format", ""),
         }
 
-        success = payload.get("success", True)
-        if isinstance(success, str):
-            success = success.lower() not in ("false", "0", "no")
+        success = _coerce_bool(payload.get("success", True))
 
         outcome = {
-            "success": bool(success),
+            "success": success,
             "quality": float(payload.get("quality", payload.get("confidence", 0.7))),
         }
         if "duration_ms" in payload:
@@ -469,12 +482,10 @@ class BrainAgent(BaseAgent):
             "task": payload.get("task", ""),
         }
 
-        success = payload.get("success", True)
-        if isinstance(success, str):
-            success = success.lower() not in ("false", "0", "no")
+        success = _coerce_bool(payload.get("success", True))
 
         outcome = {
-            "success": bool(success),
+            "success": success,
             "quality": float(payload.get("quality", score)),
         }
 
@@ -518,12 +529,10 @@ class BrainAgent(BaseAgent):
             "model": payload.get("model", "unknown"),
         }
 
-        success = payload.get("success", True)
-        if isinstance(success, str):
-            success = success.lower() not in ("false", "0", "no")
+        success = _coerce_bool(payload.get("success", True))
 
         outcome: Dict[str, Any] = {
-            "success": bool(success),
+            "success": success,
             "quality": float(payload.get("quality", 0.5)),
             "outcome_summary": str(payload.get("outcome_summary", "")),
             "what_worked": payload.get("what_worked", []),
