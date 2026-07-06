@@ -10,7 +10,7 @@ Creator of OrKa (Orchestrator Kit Agents)
 
 ## Abstract
 
-A prior study introduced OrKa Brain, a procedural skill memory loop for LLM agent systems, and evaluated it on a 30-task benchmark. That study reported a modest pairwise preference for the Brain condition (63.3 percent), near-parity on absolute rubric scores, and a ceiling effect: the underlying model already possessed the procedural knowledge the Brain recalled. This follow-up scales the evaluation roughly eight-fold, to 250 tasks across five distinct track types (cross-domain transfer, anti-pattern avoidance, brain-assisted routing, multi-skill composition, and longitudinal accumulation), under the same single local model and the same LLM-as-judge protocol. The headline finding is sobering and is the opposite of a victory lap. At scale the raw pairwise advantage shrinks to 53.8 percent, and the pairwise judge exhibits a severe position bias: it selects the first-presented option 74.4 percent of the time regardless of content. After controlling for position, the Brain advantage disappears or reverses on four of five tracks. It survives in exactly one place: the longitudinal same-domain track, where the Brain condition is preferred 74 percent of the time even when assigned to the disfavored position. The absolute rubric scores again show near-parity (plus 0.12 overall on a 10-point scale), confirming the ceiling effect at scale. The semantic-retrieval and LLM-abstraction upgrades identified as future work in the first paper were not enabled in this run, so this study measures scale and task diversity, not improved mechanisms. I report the negative and confounded results in full, because they change the honest reading of the first paper.
+A prior study introduced OrKa Brain, a procedural skill memory loop for LLM agent systems, and evaluated it on a 30-task benchmark. That study reported a modest pairwise preference for the Brain condition (60.7 percent, 17 of 28 decisive comparisons; an uncorrected 63.3 percent figure circulated before the denominator fix), near-parity on absolute rubric scores, and a ceiling effect: the underlying model already possessed the procedural knowledge the Brain recalled. This follow-up scales the evaluation roughly eight-fold, to 250 tasks across five distinct track types (cross-domain transfer, anti-pattern avoidance, brain-assisted routing, multi-skill composition, and longitudinal accumulation), under the same single local model and the same LLM-as-judge protocol. The headline finding is sobering and is the opposite of a victory lap. At scale the raw pairwise advantage shrinks to 53.8 percent, and the pairwise judge exhibits a severe position bias: it selects the first-presented option 74.4 percent of the time regardless of content. After controlling for position, the Brain advantage disappears or reverses on four of five tracks. It survives in exactly one place: the longitudinal same-domain track, where the Brain condition is preferred 74 percent of the time even when assigned to the disfavored position. The absolute rubric scores again show near-parity (plus 0.12 overall on a 10-point scale), confirming the ceiling effect at scale. The semantic-retrieval and LLM-abstraction upgrades identified as future work in the first paper were not enabled in this run, so this study measures scale and task diversity, not improved mechanisms. I report the negative and confounded results in full, because they change the honest reading of the first paper.
 
 ---
 
@@ -38,7 +38,7 @@ The first benchmark had 30 tasks in 2 tracks. This benchmark (OrKa Brain v2 Benc
 
 ### 2.2 Protocol and Model (unchanged)
 
-The execution model is the same single local model used in the first study, openai/gpt-oss-20b served by LM Studio at localhost:1234, offline, with RedisStack on port 6380. The evaluation protocol is the same dual LLM-as-judge design: per-output rubric scoring on six dimensions and side-by-side pairwise comparison with randomized A and B assignment. The judge is the same local model family as the executor, so the self-evaluation caveat from the first paper still applies.
+The execution model is the same single local model used in the first study, openai/gpt-oss-20b served by LM Studio at localhost:1234, offline, with RedisStack on port 6380. The evaluation protocol is the same dual LLM-as-judge design: per-output rubric scoring on six dimensions and side-by-side pairwise comparison with randomized A and B assignment. The judge is qwen/qwen3-coder-30b, a different model family from the executor (verified in the judge workflow configs and in the `_metrics.model` field of all 749 committed judge outputs). This removes the first paper's same-family self-evaluation caveat; the remaining judge caveats are a single judge model and judge-pass instability (Section 7, threat 7).
 
 ### 2.3 Retrieval Mechanism (unchanged, and this matters)
 
@@ -114,7 +114,7 @@ The overall delta is plus 0.12 on a 10-point scale, statistically indistinguisha
 | More Complete | 135 | 100 | 14 |
 | More Trustworthy | 135 | 104 | 10 |
 
-The raw pairwise preference for Brain is 53.8 percent, down from 63.3 percent in the first study. The per-question pattern is consistent (Brain preferred on all three), but the margin is smaller and, as the next section shows, the raw number is not trustworthy.
+The raw pairwise preference for Brain is 53.8 percent, down from 60.7 percent in the first study. The per-question pattern is consistent (Brain preferred on all three), but the margin is smaller and, as the next section shows, the raw number is not trustworthy.
 
 ### 5.3 The Position-Bias Problem
 
@@ -176,7 +176,7 @@ The ceiling effect is the most robust finding across both studies. At 30 tasks a
 
 ### 6.2 What v2 Overturns or Weakens
 
-The first paper's most quotable number was the 63.3 percent pairwise preference. This follow-up shows that number was fragile in two ways. It shrinks to 53.8 percent at scale, and it rests on a pairwise protocol whose position bias has grown to 74.4 percent. The position-controlled analysis is the key correction: pooled across tracks, with the Brain in the disfavored position, the preference reverses to 37 percent. The honest statement is that this benchmark does not show a general pairwise advantage for the keyword-based Brain. It shows a track-specific one.
+The first paper's most quotable number was the 60.7 percent pairwise preference. This follow-up shows that number was fragile in two ways. It shrinks to 53.8 percent at scale, and it rests on a pairwise protocol whose position bias has grown to 74.4 percent. The position-controlled analysis is the key correction: pooled across tracks, with the Brain in the disfavored position, the preference reverses to 37 percent. The honest statement is that this benchmark does not show a general pairwise advantage for the keyword-based Brain. It shows a track-specific one.
 
 The cross-domain transfer claim weakens further. Track A was built precisely to test transfer to 40 novel domains, and in the fair comparison the Brain wins 21 percent of the time. The anti-pattern track is worse for the Brain (8 percent). These are the capabilities a procedural memory is supposed to deliver, and the keyword-based implementation does not deliver them here.
 
@@ -196,13 +196,15 @@ It would be easy to report the raw 53.8 percent and the strong raw Track D and E
 
 2. **Pipeline-length and context-injection confound.** As in the first study, the Brain condition adds agent steps and injects recalled context into the application prompt. Any surviving advantage, including Track E, could stem from extra context rather than skill recall specifically. An ablation with a length-matched brainless pipeline is still needed.
 
-3. **Single model, single run, self-evaluation.** All outputs come from one local model on one run, judged by the same model family. Non-determinism is uncontrolled, and self-preference is possible. Multiple runs with mean and standard deviation, and a judge from a different model family, would strengthen every number here.
+3. **Single model, single run, single judge.** All outputs come from one local model on one run, judged by a single cross-family judge (qwen/qwen3-coder-30b; an earlier draft of this paper wrongly described the judge as the executor's own family). Non-determinism is uncontrolled. Multiple runs with mean and standard deviation, and multiple judge models, would strengthen every number here.
 
 4. **Mechanisms not under test.** The semantic embedder and LLM-powered abstraction were not enabled. This study cannot speak to whether those upgrades help. It can only say that the keyword-based v1-class Brain does not show a general advantage at scale.
 
 5. **Track C confound.** The routing track ran on a since-corrected GraphScout and is excluded from pooled conclusions.
 
 6. **Unparseable judge outputs.** 13 brain and 3 brainless rubric outputs and one pairwise comparison were unparseable. These are dropped, not imputed, which slightly reduces the effective sample.
+
+7. **Judge-pass instability.** The same judge model, run earlier with identical configuration on the same outputs, produced materially different numbers (retained in `results_old/`): rubric delta +0.06 (9.37 vs 9.31, over 212/223 parseable scores) instead of +0.12 (8.39 vs 8.27, over 237/246), pairwise 61.6 percent instead of 53.8, and Track C rubric at 8.52/8.12 instead of 5.94/5.57. This paper reports the later pass; the divergence between passes is itself evidence of LLM-as-judge evaluation instability and is analyzed as a central finding in the companion paper (docs/PAPER_MEMORY_BINDING.md). No conclusion in this paper depends on a number that flips sign between the two passes except the rubric-delta magnitude, which is near-zero in both.
 
 ---
 
@@ -218,13 +220,13 @@ The first paper's future-work list stands, with reordered priorities driven by t
 
 4. **Focus on long-horizon same-domain workloads.** Track E is where the signal lives. Extend it (longer sequences, harder accumulation) and add a length-matched control to isolate recall from context injection.
 
-5. **Multiple runs and a cross-family judge** to put error bars on every figure and remove the self-evaluation caveat.
+5. **Multiple runs and multiple judge passes/models** to put error bars on every figure — the divergence between the two existing judge passes (threat 7) shows a single pass cannot be trusted to the first decimal.
 
 ---
 
 ## 9. Conclusion
 
-This follow-up scaled the OrKa Brain evaluation from 30 tasks to 250 across five track types and re-examined the pairwise protocol that produced the first paper's headline. The result is a correction more than an advance. The ceiling effect is confirmed and strengthened: at scale, absolute rubric quality is near-identical between the Brain and a stateless baseline (plus 0.12 on 10). The raw pairwise preference shrank from 63.3 to 53.8 percent, and a 74.4 percent position bias means even that smaller number cannot be read directly. Position-controlled, the pooled preference reverses to favor the stateless baseline, with one exception: the longitudinal same-domain track, where the Brain is preferred 74 percent of the time even from the disfavored position, although without the upward learning curve the track was designed to show.
+This follow-up scaled the OrKa Brain evaluation from 30 tasks to 250 across five track types and re-examined the pairwise protocol that produced the first paper's headline. The result is a correction more than an advance. The ceiling effect is confirmed and strengthened: at scale, absolute rubric quality is near-identical between the Brain and a stateless baseline (plus 0.12 on 10). The raw pairwise preference shrank from 60.7 to 53.8 percent, and a 74.4 percent position bias means even that smaller number cannot be read directly. Position-controlled, the pooled preference reverses to favor the stateless baseline, with one exception: the longitudinal same-domain track, where the Brain is preferred 74 percent of the time even from the disfavored position, although without the upward learning curve the track was designed to show.
 
 The keyword-based Brain, evaluated honestly and at scale, does not demonstrate the cross-domain transfer or anti-pattern avoidance it was built to provide. It demonstrates one thing: in a long, same-domain workload, recalling prior context yields consistently and slightly more preferable outputs. Whether the semantic-retrieval and abstraction upgrades change that picture is the next experiment, and it is now clear which tracks to run it on. The first paper said the plumbing works and the question is whether better mechanisms fill it usefully. This paper narrows the question: the plumbing works, the keyword fill does not help in general, and the only place it helps is the place the next study should push hardest.
 
@@ -290,7 +292,8 @@ The aggregator supports `--exclude-tracks C` to drop the confounded routing trac
 
 | Parameter | Value |
 |-----------|-------|
-| Model (execution and judge) | openai/gpt-oss-20b (LM Studio, localhost:1234) |
+| Execution model | openai/gpt-oss-20b (LM Studio, localhost:1234) |
+| Judge model | qwen/qwen3-coder-30b (LM Studio, temp 0.1) |
 | Embedder | not configured (keyword Jaccard recall) |
 | Redis | RedisStack on port 6380 |
 | Tasks | 250 (5 tracks x 50) |

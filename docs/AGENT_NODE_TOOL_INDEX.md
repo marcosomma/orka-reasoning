@@ -15,6 +15,7 @@ Agents that use language models for processing and generation.
 | **binary** | Simple rule-based true/false | [📖 View](./agents/binary.md) |
 | **validate_and_structure** | Answer validation with structured output | [📖 View](./agents/validate-and-structure.md) |
 | **plan_validator** | Validate and critique execution paths | [📖 View](./agents/plan-validator.md) |
+| **invariant_validator** | Deterministic (non-LLM) checks on execution artifacts — depth limits, required agents, structural invariants | see `orka/agents/invariant_validator_agent.py` docstring |
 
 ## 🧠 Brain Agent
 

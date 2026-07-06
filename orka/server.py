@@ -85,9 +85,9 @@ Implementation Details
     )
 
 **CORS Configuration**
-- Permissive CORS for development environments
-- Configurable origins, methods, and headers
-- Credential support for authenticated requests
+- Restricted to local origins by default (http://localhost:8080, http://127.0.0.1:8080)
+- Override with ORKA_CORS_ORIGINS (comma-separated); "*" disables credentials
+- Credential support for authenticated requests on non-wildcard origins
 
 **Temporary File Handling**
 - UTF-8 encoding for international character support
@@ -172,7 +172,8 @@ Deployment Configuration
 ORKA_PORT=8080 python -m orka.server
 
 # Production deployment with Uvicorn
-uvicorn orka.server:app --host 0.0.0.0 --port 8000 --workers 4
+# (binds 127.0.0.1 by default; expose deliberately and gate with ORKA_API_KEY)
+ORKA_API_KEY=<secret> uvicorn orka.server:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
 **Docker Deployment**

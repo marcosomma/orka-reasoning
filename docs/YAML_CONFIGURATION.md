@@ -70,7 +70,6 @@ Orka supports various types of agents that can be configured in the YAML workflo
        temperature: 0.7
        max_tokens: 1000
        prompt: "Generate a detailed answer: {{ input }}"
-       system_prompt: "You are a helpful assistant..."
    ```
 
 2. **OpenAI Binary Agent**
@@ -81,7 +80,6 @@ Orka supports various types of agents that can be configured in the YAML workflo
        model: "gpt-4"
        temperature: 0.2
        prompt: "Should this be approved? {{ input }}"
-       system_prompt: "You are a decision maker..."
    ```
 
 3. **OpenAI Classification Agent**
