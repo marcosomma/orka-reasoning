@@ -1,3 +1,131 @@
+# [0.9.17] · 2026-07-08 🔬
+OrKa v0.9.17 – Benchmark V2 Scale Results, GraphScout Correctness Fixes & Memory System Hardening
+
+### Summary
+This release delivers the **Benchmark V2 follow-up study** (250 tasks, 5 tracks, 500 runs, OrKa Brain v2 Benchmark Dataset v2.0.0), three **critical GraphScout correctness fixes** that unblocked the routing track, a suite of **memory system bug fixes** (silent embedding degradation, memory_preset decay inertness, inverted cosine similarity), and a **dependency clean-up** following the litellm removal. Coverage rose to **88.94%** (3,181 tests). Key benchmark finding: the raw pairwise preference shrinks to 53.8% at scale and a 74.4% position bias invalidates the raw figure; position-controlled analysis finds the only durable signal in the longitudinal same-domain track (Track E: 74% Brain preference even from the disfavoured position).
+
+### Added
+* **Benchmark V2 Scale Results & Follow-up Paper**
+  - Full 250-task, 5-track, 500-run evaluation results in `examples/benchmark_v2/results/`
+  - `benchmark_v2_report_local.json` — aggregated rubric and pairwise numbers, position-controlled per-track breakdown
+  - `PAPER_FOLLOWUP_V2.md` — companion paper with corrected figures, position-bias analysis, and revised future-work priorities
+  - Key figures: rubric delta +0.12 (ceiling confirmed at scale); raw pairwise 53.8%; position-controlled fair estimate 37% pooled (excl. Track E); Track E fair 74%
+
+* **Orchestrator: `depends_on` Topological Execution Ordering**
+  - `orka/orchestrator/execution/ordering.py` — `topological_queue()` reorders the initial agent queue so `depends_on` edges are respected and cycle detection raises early
+  - `QueueProcessor` and `OrchestratorBase` updated to use the ordered queue; no YAML changes required
+  - Tests: `tests/unit/orchestrator/test_depends_on_ordering.py`
+
+* **ResponseNormalizer: preserve rich fields from wrapped OrkaResponses**
+  - `orka/orchestrator/execution/response_normalizer.py` — standalone normalizer module replacing the drifted inline duplicate in `QueueProcessor`
+  - Preserves `confidence` (as float, not string), `cost`, and structured node outputs that lack a top-level `response` key
+  - Tests: `tests/unit/orchestrator/test_normalizer_orkaresponse.py` (143 assertions)
+
+* **Server: CORS hardening and API key validation**
+  - FastAPI `/api/run` endpoint now validates `X-API-Key` against `ORKA_API_KEY` env var when set
+  - CORS origins restricted to localhost by default; bind address defaults to `127.0.0.1`
+  - Tests: `tests/unit/streaming/test_streaming_p6_fixes.py`
+
+* **Brain: EpisodeStore Redis-backed episodic memory**
+  - `orka/brain/episode_store.py` hardened with embedding integration and batch-fetch optimisations
+  - `orka/brain/embedding.py` — `AsyncEmbedder` with LRU cache, `encode_sync` preferred path in async contexts
+  - Tests: episode embedding cache, episode outcome signal, episode semantic recall, transfer semantic recall (4 new files)
+
+* **Self-assessment: auto-discovering runner**
+  - `examples/self_assessment/check.sh` now globs all `*.yml` in the folder, runs all workflows, and emits a summary table with PASS/FAIL/ERROR per workflow
+
+* **New scoring and loop tests**
+  - `tests/unit/scoring/test_preset_weights_sum.py` — all preset weight vectors sum to 1.0 and thresholds are in range
+  - `tests/unit/nodes/test_loop_score_extraction.py`
+  - `tests/unit/brain/test_episode_*.py` (3 files)
+  - `tests/unit/brain/test_transfer_semantic_recall.py`
+
+### Fixed
+* **`[Critical]` Embedding fallback silently degraded semantic search** (`orka/memory/redisstack/embedding_mixin.py`)
+  - `_get_embedding_sync` routed every call through `_fallback_encode` (hash-based) whenever an event loop was running, i.e. during every normal orchestration run. Stored vectors were hash-based while `memory_reader` queries used real model vectors, making HNSW similarity scores meaningless and silently degrading semantic search to text fallbacks
+  - Fix: prefer `embedder.encode_sync` (the real synchronous model call) in async contexts; hash fallback only when no sync encoder exists, now logged at `WARNING`
+
+* **`[Critical]` `memory_preset` decay/TTL was inert on RedisStack backend** (`orka/memory/`, `orka/orchestrator/base.py`)
+  - Four stacked defects caused TTLs to silently fall back to 2h/168h regardless of preset: (1) `_init_decay_config` never read the nested `decay` key inside preset dicts; (2) `RedisStackMemoryLogger.memory_decay_config` was assigned the raw constructor input, bypassing preset resolution; (3) the decay mixin read bare `long_term_hours`/`short_term_hours` keys that presets don't write; (4) `OrchestratorBase._init_decay_config` baked hardcoded defaults that deep-merged over any preset
+  - Fix: flatten preset `decay` sub-dict after merge; use resolved `self.decay_config`; fall back to `default_`-prefixed keys (parity with redis_logger); only inject defaults when no preset is configured
+  - Precedence is now: preset baseline < explicit YAML decay < env vars
+  - Tests: `tests/unit/memory/test_memory_preset_decay.py` (145 lines)
+
+* **`[Critical]` Cosine similarity inverted in hybrid vector search** (`orka/memory/redisstack/embedding_mixin.py`)
+  - KNN result score claimed to map distance `[0,2]` to similarity `[1,0]` but only clamped the raw distance: a perfect match (distance 0) reported similarity 0.0, so readers sorting by `similarity_score` descending ranked best matches last
+  - Fix: `similarity = 1 - d/2`; missing or NaN scores report 0.0 instead of inheriting a 0.0 distance that read as perfect
+
+* **`[Critical]` GraphScout: duplicate discovery paths and dead `commit_margin` logic** (`orka/nodes/graph_scout_agent.py`)
+  - `_ensure_terminal_path` appended a response-builder suffix to prefix paths, colliding with already-produced full paths; recursion re-emitted paths via different branches; nothing deduplicated. DFS also seeded from response-builder nodes producing nonsensical `rb → X` paths
+  - `make_decision` committed to the top-scored terminal path the instant any terminal path existed, making the configurable `commit_margin`/shortlist logic dead in all normal runs (terminal paths are almost always found)
+  - Fix: `discover_paths` deduplicates candidates by full path tuple (first-wins), bounds to `max_candidates` (default 50, configurable; truncation logged); `_explore_extended_paths` skips response-builder start nodes; `commit_margin` now applied *among* terminal paths
+  - Tests: 4 `GraphState`-based tests (no duplicates, RBs only terminal, cap honoured, dedup preserves first occurrence); 3 `commit_margin` tests (sole terminal, clear winner, near-tie shortlist)
+
+* **Brain `brain_learn` always recorded `success=True`** (`orka/agents/brain_agent.py`)
+  - `_handle_learn` hardcoded `outcome={success: True}` unconditionally, so the learn path could never record a failure, contradicting `Brain.learn`'s design
+  - Fix: workflows can now pass `success`/`quality` (e.g. from an independent scorer agent); defaults unchanged for backward compatibility
+  - Added `_coerce_bool` helper consolidating the repeated string-bool coercion across 5 call sites
+
+* **Confidence default was the string `"0.0"` in three fallback paths** (`orka/agents/`, `orka/orchestrator/`)
+  - `ResponseNormalizer` and template scorers expected `float`; string `"0.0"` broke numeric comparisons silently
+  - Fix: unified to `float(0.0)` across all fallback paths
+
+* **Dry-run LLM-eval default was `True` when attribute absent** (`orka/orchestrator/dry_run_engine.py`)
+  - Three `getattr(self.config, 'llm_evaluation_enabled', True)` reads defaulted to `True`, contradicting `GraphScoutConfig`'s real default (`False`); any caller with a bare config would silently enable LLM eval and crash
+  - Fix: default to `False` (fails safe to deterministic evaluator)
+
+* **`aiohttp`, `tiktoken`, `requests` undeclared after litellm removal** (`pyproject.toml`)
+  - All three were litellm transitive deps imported directly by OrKa source; their removal broke test collection with 148 `ModuleNotFoundError`s on a fresh `pip install -e .`
+  - Fix: declared explicitly in `[project.dependencies]`
+
+* **`conftest` autouse fixture imported removed litellm** (`tests/conftest.py`)
+  - `mock_external_services` patched `litellm.completion` (now uninstalled), raising `ModuleNotFoundError` in 1,409 tests on CI
+  - Fix: removed all litellm mocking; no OrKa code imports litellm
+
+* **InvariantValidatorAgent read execution data from `input` not formatted prompt** (`orka/agents/invariant_validator_agent.py`)
+  - Fix: reads from the formatted prompt; tests updated
+
+### Changed
+* **SkillTransferEngine semantic matching prioritises task description and domain hints**
+  - `orka/brain/transfer_engine.py` — semantic similarity computation improved; scoring weight documentation clarified
+  - `orka/brain/embedding.py` — `AsyncEmbedder` LRU cache amortises re-embedding at recall to O(1)
+
+* **LoopScoreExtractor: shallow YAML config merging preserves default strategy**
+  - `orka/nodes/loop/config.py` — shallow merge prevents nested strategy key from being wiped
+  - `orka/nodes/loop/score_extractor.py` — documented fallback chain for all score extraction paths
+
+* **StreamingOrchestrator feeds accumulated conversation history to satellites**
+  - `orka/streaming/runtime.py` — satellites receive prior turn context
+
+* **Environment variable handling for concurrency limits and operation timeouts**
+  - `orka/utils/concurrency.py` — `ORKA_MAX_CONCURRENCY` env var controls semaphore bound
+
+### Removed / Cleaned
+* Removed committed debug artifacts: `brain_v2_graphscout_results.json`, `brain_v2_recipe_results.json`, `chat.txt`, `benchmark_v2_dataset.json.bak`, stale `.coverage` binary
+* Added `.coverage` and `*.bak` to `.gitignore`
+* Removed `orka/scoring/presets.py.backup` (stale duplicate)
+* Stripped `[DEBUG] Bug #N` prefixes from production code comments and docstrings
+* Dropped `filterwarnings` for litellm from `pytest.ini`; coverage `fail_under` aligned to 80
+* `docs/MEMORY_SYSTEM_GUIDE.md` — dropped 1,300 stale lines inside an unclosed HTML comment that were never rendered
+
+### Benchmark V2 Key Numbers (full results in `examples/benchmark_v2/results/`)
+
+| Metric | Value |
+|--------|-------|
+| Overall rubric delta (Brain minus Brainless) | +0.12 (8.39 vs 8.27) |
+| Raw pairwise Brain win rate | 53.8% (134/249) |
+| Judge position-A selection rate | 74.4% (527/708) — dominant bias |
+| Position-controlled Brain preference, Tracks A+B+D+E | 37% (38/103) |
+| Track E (longitudinal), Brain in disfavoured position | **74% (17/23)** |
+| Track C status | Excluded — confounded by pre-fix GraphScout |
+
+### Compatibility
+* **No breaking changes** to existing YAML schemas or public Python APIs
+* `depends_on` ordering is additive; existing workflows without `depends_on` are unaffected
+* Memory preset precedence change is a bug fix; any workflow that relied on the broken (hardcoded-default-wins) behaviour will now get the preset TTLs it declared
+
+---
+
 # [0.9.16] · 2026-04-12 🔬
 OrKa v0.9.16 – Benchmark V2 Results & Episodic Memory Foundation
 
