@@ -758,3 +758,63 @@ async def test_dispatch_routes_to_recall_episodes(memory):
     }
     result = await agent._run_impl(ctx)
     assert "episode_count" in result
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Outcome honesty (deep-review 2026-07): learn must not hardcode success=True
+# ═══════════════════════════════════════════════════════════════════════
+
+
+@pytest.mark.asyncio(loop_scope="function")
+async def test_learn_respects_failure_outcome_new_context(memory):
+    """A failed execution in a fresh context must NOT mint a new skill."""
+    agent = BrainAgent(agent_id="t_fail_learn", operation="learn", memory_logger=memory)
+    payload = _make_learn_payload()
+    payload["success"] = "false"  # template-rendered string, not bool
+    ctx = {"formatted_prompt": json.dumps(payload), "input": "test"}
+
+    result = await agent._run_impl(ctx)
+
+    assert "skill_id" not in result
+
+
+@pytest.mark.asyncio(loop_scope="function")
+async def test_learn_failure_recorded_on_existing_skill(memory):
+    """A failed re-execution of a known skill must lower its success rate."""
+    agent = BrainAgent(agent_id="t_fail_existing", operation="learn", memory_logger=memory)
+    ok_ctx = {"formatted_prompt": json.dumps(_make_learn_payload()), "input": "test"}
+    first = await agent._run_impl(ok_ctx)
+    skill_id = first["skill_id"]
+
+    failed = _make_learn_payload()
+    failed["success"] = False
+    await agent._run_impl({"formatted_prompt": json.dumps(failed), "input": "test"})
+
+    skill = agent._brain._graph.get_skill(skill_id)
+    assert skill.success_rate < 1.0
+
+
+@pytest.mark.asyncio(loop_scope="function")
+async def test_learn_default_outcome_still_success(memory):
+    """Without an explicit success flag the learn path keeps its old default."""
+    agent = BrainAgent(agent_id="t_default_learn", operation="learn", memory_logger=memory)
+    ctx = {"formatted_prompt": json.dumps(_make_learn_payload()), "input": "test"}
+
+    result = await agent._run_impl(ctx)
+
+    assert "skill_id" in result
+
+
+def test_coerce_bool_handles_template_strings():
+    from orka.agents.brain_agent import _coerce_bool
+
+    assert _coerce_bool(True) is True
+    assert _coerce_bool(False) is False
+    assert _coerce_bool("false") is False
+    assert _coerce_bool("False") is False
+    assert _coerce_bool("no") is False
+    assert _coerce_bool("0") is False
+    assert _coerce_bool("") is False
+    assert _coerce_bool("true") is True
+    assert _coerce_bool("yes") is True
+    assert _coerce_bool(1) is True

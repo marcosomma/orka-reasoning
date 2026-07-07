@@ -68,20 +68,21 @@ class EmbeddingMixin:
                 in_async = False
 
             if in_async:
-                # In async context - use fallback encoding if available
+                # In async context we cannot asyncio.run(), but the real model call
+                # is synchronous under the hood (encode_sync). Briefly blocking the
+                # loop for a real embedding beats storing hash-based fallback vectors,
+                # which are incomparable with real query vectors and silently defeat
+                # semantic search.
+                if hasattr(self.embedder, "encode_sync"):
+                    return self.embedder.encode_sync(text)
                 if hasattr(self.embedder, "_fallback_encode"):
-                    logger.debug("In async context, using fallback encoding")
-                    result = self.embedder._fallback_encode(text)
-                    if result is not None:
-                        return result
-                    # Fallback returned None, try sync method
-                    if hasattr(self.embedder, "encode_sync"):
-                        return self.embedder.encode_sync(text)
-                    logger.debug("No sync encoding available in async context")
-                    return None
-                else:
-                    logger.debug("No fallback encoder available in async context")
-                    return None
+                    logger.warning(
+                        "Embedder has no encode_sync; storing hash-based fallback "
+                        "embedding (semantic search quality degraded)"
+                    )
+                    return self.embedder._fallback_encode(text)
+                logger.debug("No sync or fallback encoding available in async context")
+                return None
             else:
                 # No running event loop - safe to use asyncio.run()
                 return asyncio.run(self.embedder.encode(text))

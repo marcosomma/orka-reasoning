@@ -152,11 +152,18 @@ class MemoryDecayMixin:
         if decay_config is None or not decay_config.get("enabled", True):
             return None
 
-        # Base expiry times
+        # Base expiry times. Global config (presets, orchestrator YAML) uses the
+        # default_-prefixed keys; agent-level overrides may use the bare names.
         if memory_type == "long_term":
-            base_hours = decay_config.get("long_term_hours", 168.0)  # 7 days
+            base_hours = decay_config.get(
+                "long_term_hours",
+                decay_config.get("default_long_term_hours", 168.0),  # 7 days
+            )
         else:
-            base_hours = decay_config.get("short_term_hours", 2.0)  # 2 hours
+            base_hours = decay_config.get(
+                "short_term_hours",
+                decay_config.get("default_short_term_hours", 2.0),  # 2 hours
+            )
 
         # Adjust based on importance
         importance_multiplier = 1.0 + importance_score

@@ -155,9 +155,9 @@ class TestHybridVectorSearch:
         client = DummyRedisClient()
         ft = client.ft("orka_enhanced_memory")
         ft._search_results = DummySearchResults([
-            DummyDoc("1", content="A", node_id="n1", trace_id="t1", vector_score=0.1),  # distance -> similarity clamped to <=1
-            DummyDoc("2", content="B", node_id="n2", trace_id="t1", score=3.0),  # >2 -> 0.0
-            DummyDoc("3", content="C", node_id="n3", trace_id="t2", similarity=-0.5),  # negative -> 1.0 then clamped
+            DummyDoc("1", content="A", node_id="n1", trace_id="t1", vector_score=0.1),  # distance 0.1 -> similarity 0.95
+            DummyDoc("2", content="B", node_id="n2", trace_id="t1", score=3.0),  # clamped to 2 -> 0.0
+            DummyDoc("3", content="C", node_id="n3", trace_id="t2", similarity=-0.5),  # clamped to 0 -> 1.0
             DummyDoc("4", content="D", node_id="n4", trace_id="t1"),  # missing score -> 0.0
         ])
         vec = np.ones(4, dtype=np.float32)
@@ -165,6 +165,30 @@ class TestHybridVectorSearch:
         assert all(r["trace_id"] == "t1" for r in out)
         assert len(out) == 3
         assert all(0.0 <= r["score"] <= 1.0 for r in out)
+        by_key = {r["key"]: r["score"] for r in out}
+        assert by_key["1"] == pytest.approx(0.95)
+        assert by_key["2"] == 0.0
+        assert by_key["4"] == 0.0
+
+    def test_vector_score_conversion_inverts_distance(self):
+        """Regression (deep-review 2026-07): the reported score is a SIMILARITY.
+        Previously the raw cosine distance was clamped without inversion, so a
+        perfect match (distance 0) scored 0.0 and readers sorting descending
+        ranked the best matches last."""
+        client = DummyRedisClient()
+        ft = client.ft("orka_enhanced_memory")
+        ft._search_results = DummySearchResults([
+            DummyDoc("close", content="A", node_id="n1", trace_id="t", vector_score=0.0),
+            DummyDoc("mid", content="B", node_id="n2", trace_id="t", vector_score=1.0),
+            DummyDoc("far", content="C", node_id="n3", trace_id="t", vector_score=2.0),
+        ])
+        vec = np.ones(4, dtype=np.float32)
+        out = bmi.hybrid_vector_search(client, "q", vec, num_results=3)
+        by_key = {r["key"]: r["score"] for r in out}
+        assert by_key["close"] == 1.0
+        assert by_key["mid"] == 0.5
+        assert by_key["far"] == 0.0
+        assert by_key["close"] > by_key["mid"] > by_key["far"]
 
     def test_vector_search_fallback_to_text(self):
         client = DummyRedisClient()

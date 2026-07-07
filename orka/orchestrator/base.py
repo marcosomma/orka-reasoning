@@ -174,13 +174,20 @@ class OrchestratorBase:
         Returns:
             Processed decay configuration with defaults applied
         """
-        # Start with default configuration
-        decay_config = {
-            "enabled": False,  # Opt-in by default for backward compatibility
-            "default_short_term_hours": 1.0,
-            "default_long_term_hours": 24.0,
-            "check_interval_minutes": 30,
-        }
+        # When a memory_preset is configured it provides the decay baseline
+        # (TTLs, importance rules, enabled). Baking hardcoded defaults here would
+        # override the preset during merge, making `memory_preset:` inert. Only
+        # explicit YAML decay config and env vars may override a preset.
+        if self.orchestrator_cfg.get("memory_preset"):
+            decay_config: dict[str, Any] = {}
+        else:
+            # Start with default configuration
+            decay_config = {
+                "enabled": False,  # Opt-in by default for backward compatibility
+                "default_short_term_hours": 1.0,
+                "default_long_term_hours": 24.0,
+                "check_interval_minutes": 30,
+            }
 
         # Extract from orchestrator YAML config
         orchestrator_memory_config = self.orchestrator_cfg.get("memory", {})

@@ -173,7 +173,7 @@ class LoopNode(BaseNode):
         logger.debug(f"LoopNode.run() original_input: {original_input}")
         logger.debug(f"LoopNode.run() original_input type: {type(original_input)}")
 
-        # [DEBUG] GraphScout Fix: Extract parent orchestrator's agents for internal workflow
+        # Extract parent orchestrator's agents for the internal workflow
         if "orchestrator" in payload and hasattr(payload["orchestrator"], "agent_cfgs"):
             self._parent_agents = payload["orchestrator"].agent_cfgs
             logger.debug(

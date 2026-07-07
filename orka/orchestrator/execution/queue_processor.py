@@ -17,10 +17,6 @@ from datetime import UTC, datetime
 from time import time
 from typing import Any, Dict, List, Optional
 
-from ...contracts import OrkaResponse
-from ...response_builder import ResponseBuilder
-from ...response_builder import OrkaResponse as _OrkaResponse
-
 logger = logging.getLogger(__name__)
 
 
@@ -131,43 +127,14 @@ class QueueProcessor:
                     # Normalize result to payload_out dict using ResponseNormalizer
                     payload_out: Dict[str, Any] = {"agent_id": agent_id_ret}
                     try:
-                        if hasattr(engine, "_response_normalizer"):
-                            normalized = engine._response_normalizer.normalize(agent, agent_id_ret, agent_result)
-                            payload_out.update(normalized)
-                        else:
-                            # Fallback to inline conversion if normalizer is not present
-                            if isinstance(agent_result, dict) and (
-                                "result" in agent_result or "memories" in agent_result or "response" in agent_result
-                            ):
-                                if "response" in agent_result:
-                                    converted = ResponseBuilder.from_llm_agent_response(agent_result, agent_id_ret)
-                                elif "memories" in agent_result:
-                                    converted = ResponseBuilder.from_memory_agent_response(agent_result, agent_id_ret)
-                                else:
-                                    converted = ResponseBuilder.from_node_response(agent_result, agent_id_ret)
-                                payload_out.update({
-                                    "result": converted.get("result"),
-                                    "status": converted.get("status"),
-                                    "error": converted.get("error"),
-                                    "response": converted.get("result"),
-                                    "confidence": converted.get("confidence", "0.0"),
-                                    "internal_reasoning": converted.get("internal_reasoning", ""),
-                                    "formatted_prompt": converted.get("formatted_prompt", ""),
-                                    "execution_time_ms": converted.get("execution_time_ms"),
-                                    "token_usage": converted.get("token_usage"),
-                                    "cost_usd": converted.get("cost_usd"),
-                                    "memory_entries": converted.get("memory_entries"),
-                                    "_metrics": converted.get("metrics", {}),
-                                    "trace_id": converted.get("trace_id"),
-                                })
-                            else:
-                                converted = ResponseBuilder.from_tool_response(agent_result, agent_id_ret)
-                                payload_out.update({
-                                    "result": converted.get("result"),
-                                    "status": converted.get("status"),
-                                    "response": converted.get("result"),
-                                    "_metrics": converted.get("metrics", {}),
-                                })
+                        if not hasattr(engine, "_response_normalizer"):
+                            # Lazily attach the real normalizer instead of duplicating
+                            # its logic inline (the inline copy had already drifted).
+                            from .response_normalizer import ResponseNormalizer
+
+                            engine._response_normalizer = ResponseNormalizer(engine)
+                        normalized = engine._response_normalizer.normalize(agent, agent_id_ret, agent_result)
+                        payload_out.update(normalized)
                     except Exception as e:
                         logger.error(f"Failed to normalize result for agent {agent_id_ret}: {e}")
                         payload_out.update({"result": None, "status": "error", "error": str(e)})

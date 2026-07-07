@@ -67,10 +67,13 @@ Usage
         context={"domain": "code_review", "task": "identify key changes"},
     )
 
-    # Execute with transferred skills
-    result = await brain.execute(
-        input_data="Review this PR",
+    # Application is NOT done by the Brain: recall returns transfer candidates
+    # with advisory adaptation deltas, and the calling LLM/workflow applies
+    # them in-prompt. Close the loop by reporting the outcome:
+    await brain.feedback(
+        skill_id=applicable_skills[0].skill.id,
         context={"domain": "code_review"},
+        success=True,
     )
 """
 

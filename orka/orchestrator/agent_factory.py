@@ -30,7 +30,7 @@ from ..agents import (
 )
 from ..memory.base_logger import BaseMemoryLogger
 from ..memory.redisstack_logger import RedisStackMemoryLogger
-from ..nodes import (  # path_executor_node - lazy loaded to avoid circular imports (Bug #1)
+from ..nodes import (  # path_executor_node - lazy loaded to avoid circular imports
     failing_node,
     failover_node,
     fork_node,
@@ -68,7 +68,7 @@ AgentClass = Union[
     Type[fork_node.ForkNode],
     Type[loop_node.LoopNode],
     Type[loop_validator_node.LoopValidatorNode],
-    # Type[path_executor_node.PathExecutorNode], - lazy loaded (Bug #1 fix)
+    # Type[path_executor_node.PathExecutorNode], - lazy loaded
     Type[GraphScoutAgent],
     Type[MemoryReaderNode],
     Type[MemoryWriterNode],
@@ -95,7 +95,7 @@ AGENT_TYPES: Dict[str, AgentClass] = {
     "fork": fork_node.ForkNode,
     "loop": loop_node.LoopNode,
     "loop_validator": loop_validator_node.LoopValidatorNode,
-    "path_executor": "special_handler",  # [DEBUG] Bug #1: Lazy loaded to avoid circular imports
+    "path_executor": "special_handler",  # Lazy loaded to avoid circular imports
     "graph-scout": GraphScoutAgent,
     "memory": "special_handler",  # This will be handled specially in init_single_agent
     "brain": "special_handler",  # Handled specially with memory injection
@@ -276,7 +276,7 @@ class AgentFactory:
                 )
 
             if agent_type == "path_executor":
-                # [DEBUG] Bug #1 Fix: Lazy load PathExecutorNode to avoid circular imports
+                # Lazy load PathExecutorNode to avoid circular imports
                 from ..nodes import path_executor_node
 
                 # PathExecutorNode doesn't need prompt or queue

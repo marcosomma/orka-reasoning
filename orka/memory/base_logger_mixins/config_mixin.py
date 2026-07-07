@@ -48,7 +48,18 @@ class ConfigMixin:
         try:
             from ..presets import merge_preset_with_config
 
-            return merge_preset_with_config(memory_preset, decay_config, operation)
+            merged = merge_preset_with_config(memory_preset, decay_config, operation)
+            # Presets nest their decay settings under a "decay" key, but
+            # _init_decay_config and the decay/metrics mixins read flat top-level
+            # keys (default_short_term_hours, enabled, ...). Flatten the nested
+            # block so preset TTLs actually take effect; explicit flat keys from
+            # the caller's decay_config keep precedence over the preset.
+            preset_decay = merged.get("decay")
+            if isinstance(preset_decay, dict):
+                flat = dict(preset_decay)
+                flat.update({k: v for k, v in merged.items() if k != "decay"})
+                return flat
+            return merged
         except ImportError:
             logger.warning("Memory presets not available, using custom config only")
             return decay_config
